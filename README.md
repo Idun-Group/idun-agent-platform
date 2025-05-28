@@ -9,8 +9,8 @@ A Python package for managing Idun agents.
     <img src="https://img.shields.io/pypi/v/idun-agent-manager.svg" alt="PyPI Version">
   </a>
   <!-- Build Status -->
-  <a href="https://github.com/geoffreyharrazi/idun-agent-manager/actions/workflows/ci.yml">
-    <img src="https://github.com/geoffreyharrazi/idun-agent-manager/actions/workflows/ci.yml/badge.svg" alt="Build Status">
+  <a href="https://github.com/idun-group/idun-agent-manager/actions/workflows/ci.yml">
+    <img src="https://github.com/idun-group/idun-agent-manager/actions/workflows/ci.yml/badge.svg" alt="Build Status">
   </a>
   <!-- License -->
   <a href="LICENSE">
@@ -29,8 +29,8 @@ A Python package for managing Idun agents.
     <img src="https://img.shields.io/badge/coverage-100%25-brightgreen.svg" alt="Test Coverage">
   </a> -->
   <!-- GitHub Stars -->
-  <a href="https://github.com/geoffreyharrazi/idun-agent-manager/stargazers">
-    <img src="https://img.shields.io/github/stars/geoffreyharrazi/idun-agent-manager.svg?style=social&label=Star&maxAge=2592000" alt="GitHub Stars">
+  <a href="https://github.com/Idun-Group/idun-agent-manager/stargazers">
+    <img src="https://img.shields.io/github/stars/Idun-Group/idun-agent-manager.svg?style=social&label=Star&maxAge=2592000" alt="GitHub Stars">
   </a>
 </p>
 
@@ -64,7 +64,7 @@ poetry add idun-agent-manager
 For development, clone the repository and install using Poetry:
 
 ```bash
-git clone https://github.com/geoffreyharrazi/idun-agent-manager.git
+git clone https://github.com/Idun-Group/idun-agent-manager.git
 cd idun-agent-manager
 poetry install
 ```
