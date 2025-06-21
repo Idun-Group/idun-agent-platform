@@ -3,6 +3,7 @@ import sqlite3
 import importlib.util
 import asyncio
 import aiosqlite
+import uuid
 from idun_agent_manager.core.iagent import IAgent
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
@@ -13,6 +14,7 @@ class LanggraphAgent(IAgent):
     """
 
     def __init__(self, initial_config: Optional[Dict[str, Any]] = None):
+        self._id = str(uuid.uuid4())
         self._agent_type = "LangGraph"
         self._input_schema: Any = None # Define based on expected LangGraph input
         self._output_schema: Any = None # Define based on expected LangGraph output
@@ -22,10 +24,14 @@ class LanggraphAgent(IAgent):
         self._connection: Any = None # To hold the async db connection
         self._configuration: Dict[str, Any] = initial_config or {}
         self._name: str = self._configuration.get("name", "Unnamed LangGraph Agent")
-        self._infos: Dict[str, Any] = {"status": "Uninitialized", "name": self._name}
+        self._infos: Dict[str, Any] = {"status": "Uninitialized", "name": self._name, "id": self._id}
         self._a2a_card: Optional[Dict[str, Any]] = None
         self._a2a_server_details: Optional[Dict[str, Any]] = None
         # Initialization is now an explicit async step to be called by the user.
+
+    @property
+    def id(self) -> str:
+        return self._id
 
     @property
     def agent_type(self) -> str:

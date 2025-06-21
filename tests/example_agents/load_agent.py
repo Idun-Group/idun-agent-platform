@@ -39,6 +39,7 @@ async def main():
 
         print("Agent loaded successfully.")
         print(f"Agent Name: {agent.name}")
+        print(f"Agent ID: {agent.id}")
         print(f"Agent Info: {agent.infos}")
         print("-" * 30)
 

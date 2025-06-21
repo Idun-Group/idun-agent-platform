@@ -9,6 +9,12 @@ class IAgent(ABC):
 
     @property
     @abstractmethod
+    def id(self) -> str:
+        """Unique identifier for the agent instance."""
+        pass
+
+    @property
+    @abstractmethod
     def agent_type(self) -> str:
         """Type or category of the agent (e.g., 'LangGraph', 'ADK')."""
         pass

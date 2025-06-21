@@ -1,4 +1,6 @@
 from typing import Any, Dict, Optional, Generator
+import uuid
+import asyncio
 from idun_agent_manager.core.iagent import IAgent
 
 class ADKAgent(IAgent):
@@ -7,16 +9,21 @@ class ADKAgent(IAgent):
     """
 
     def __init__(self, initial_config: Optional[Dict[str, Any]] = None):
+        self._id = str(uuid.uuid4())
         self._agent_type = "ADK"
         self._input_schema: Any = None
         self._output_schema: Any = None
         self._agent_instance: Any = None
         self._configuration: Dict[str, Any] = initial_config or {}
-        self._infos: Dict[str, Any] = {"status": "Uninitialized"}
+        self._infos: Dict[str, Any] = {"status": "Uninitialized", "id": self._id}
         self._a2a_card: Optional[Dict[str, Any]] = None
         self._a2a_server_details: Optional[Dict[str, Any]] = None
         if initial_config:
-            self.initialize(initial_config)
+            asyncio.run(self.initialize(initial_config))
+
+    @property
+    def id(self) -> str:
+        return self._id
 
     @property
     def agent_type(self) -> str:
@@ -53,7 +60,7 @@ class ADKAgent(IAgent):
     def a2a_server_details(self) -> Optional[Dict[str, Any]]:
         return self._a2a_server_details
 
-    def initialize(self, config: Dict[str, Any]) -> None:
+    async def initialize(self, config: Dict[str, Any]) -> None:
         """Initializes the ADK agent with the given configuration."""
         self._configuration = config
         print(f"ADKAgent: Initializing with config: {config}")
