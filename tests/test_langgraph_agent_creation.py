@@ -1,5 +1,6 @@
 import unittest
 import os
+import asyncio
 from idun_agent_manager.core.agents.langgraph_agent_impl import LanggraphAgent
 
 class TestLanggraphAgentCreation(unittest.TestCase):
@@ -50,6 +51,37 @@ class TestLanggraphAgentCreation(unittest.TestCase):
             
         except Exception as e:
             self.fail(f"Agent creation failed with an exception: {e}")
+
+    def test_chat_with_agent(self):
+        """Tests chatting with an initialized LanggraphAgent."""
+        agent_config = {
+            "name": "Test Echo Agent",
+            "agent_path": "tests/example_agents/simple_graph.py:simple_test_graph",
+            "checkpoint": {
+                "type": "sqlite",
+                "db_path": self.db_path
+            }
+        }
+        agent = LanggraphAgent(initial_config=agent_config)
+
+        async def run_chat():
+            # Chat with the agent
+            session_id = "test-session-123"
+            chat_message = {"query": "Hello, world!", "session_id": session_id}
+            
+            response = await agent.process_message(chat_message)
+
+            self.assertIn("You said: Hello, world!", response)
+            print(f"\nChat test successful. Agent response: {response}")
+
+            # Test conversation memory
+            chat_message_2 = {"query": "How are you?", "session_id": session_id}
+            response_2 = await agent.process_message(chat_message_2)
+            self.assertIn("You said: How are you?", response_2)
+            print(f"Second chat in session successful. Agent response: {response_2}")
+
+        # Run the async test function
+        asyncio.run(run_chat())
 
 if __name__ == '__main__':
     unittest.main() 

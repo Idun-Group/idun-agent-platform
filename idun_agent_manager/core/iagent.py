@@ -68,7 +68,7 @@ class IAgent(ABC):
         pass
 
     @abstractmethod
-    def initialize(self, config: Dict[str, Any]) -> None:
+    async def initialize(self, config: Dict[str, Any]) -> None:
         """Initializes the agent with a given configuration.
         This method should set up the underlying agent framework instance.
         Args:

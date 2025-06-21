@@ -1,8 +1,10 @@
 from typing import Any, Dict, Optional, Generator
 import sqlite3
 import importlib.util
+import asyncio
+import aiosqlite
 from idun_agent_manager.core.iagent import IAgent
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
 
 class LanggraphAgent(IAgent):
@@ -17,13 +19,13 @@ class LanggraphAgent(IAgent):
         self._agent_instance: Any = None # This will hold the LangGraph runnable
         self._checkpointer: Any = None
         self._store: Any = None
+        self._connection: Any = None # To hold the async db connection
         self._configuration: Dict[str, Any] = initial_config or {}
         self._name: str = self._configuration.get("name", "Unnamed LangGraph Agent")
         self._infos: Dict[str, Any] = {"status": "Uninitialized", "name": self._name}
         self._a2a_card: Optional[Dict[str, Any]] = None
         self._a2a_server_details: Optional[Dict[str, Any]] = None
-        if initial_config:
-            self.initialize(initial_config)
+        # Initialization is now an explicit async step to be called by the user.
 
     @property
     def agent_type(self) -> str:
@@ -65,13 +67,13 @@ class LanggraphAgent(IAgent):
     def a2a_server_details(self) -> Optional[Dict[str, Any]]:
         return self._a2a_server_details
 
-    def initialize(self, config: Dict[str, Any]) -> None:
-        """Initializes the LangGraph agent with the given configuration."""
+    async def initialize(self, config: Dict[str, Any]) -> None:
+        """Initializes the LangGraph agent asynchronously."""
         self._configuration = config
         self._name = config.get("name", "Unnamed LangGraph Agent")
         self._infos["name"] = self._name
 
-        self._setup_persistence(config)
+        await self._setup_persistence(config)
 
         agent_path = config.get("agent_path")
         if not agent_path:
@@ -98,8 +100,15 @@ class LanggraphAgent(IAgent):
         self._infos["status"] = "Initialized"
         self._infos["config_used"] = config
 
-    def _setup_persistence(self, config: Dict[str, Any]) -> None:
-        """Configures the agent's persistence (checkpoint and store)."""
+    async def close(self):
+        """Closes any open resources, like database connections."""
+        if self._connection:
+            await self._connection.close()
+            self._connection = None
+            print("Database connection closed.")
+
+    async def _setup_persistence(self, config: Dict[str, Any]) -> None:
+        """Configures the agent's persistence (checkpoint and store) asynchronously."""
         # Checkpoint configuration
         checkpoint_config = config.get("checkpoint")
         if checkpoint_config:
@@ -108,8 +117,10 @@ class LanggraphAgent(IAgent):
                 db_path = checkpoint_config.get("db_path")
                 if not db_path:
                     raise ValueError("db_path must be specified for sqlite checkpoint")
-                self._checkpointer = SqliteSaver(conn=sqlite3.connect(db_path))
-                self._infos["checkpoint"] = {"type": "sqlite", "db_path": db_path}
+                # Manually create the connection and the saver
+                self._connection = await aiosqlite.connect(db_path)
+                self._checkpointer = AsyncSqliteSaver(conn=self._connection)
+                self._infos["checkpoint"] = {"type": "sqlite_async", "db_path": db_path}
             elif checkpoint_type == "postgres":
                 raise NotImplementedError("Postgres checkpoint not yet implemented.")
             else:
@@ -165,13 +176,37 @@ class LanggraphAgent(IAgent):
         return graph_builder
 
     async def process_message(self, message: Any) -> Any:
-        """Processes a single input message and returns a response."""
+        """
+        Processes a single input message to chat with the agent.
+        The message should be a dictionary containing 'query' and 'session_id'.
+        """
         if self._agent_instance is None:
             raise RuntimeError("Agent not initialized. Call initialize() before processing messages.")
-        # TODO: Implement message processing using self._agent_instance.ainvoke()
-        print(f"LanggraphAgent: Processing message: {message}")
-        # return await self._agent_instance.ainvoke(message, config=self._get_session_config())
-        raise NotImplementedError("LanggraphAgent.process_message not implemented.")
+
+        if not isinstance(message, dict) or "query" not in message or "session_id" not in message:
+            raise ValueError("Message must be a dictionary with 'query' and 'session_id' keys.")
+
+        # LangGraph expects a list of messages.
+        # With checkpointing, the history is managed by the graph.
+        # We just need to provide the new message.
+        graph_input = {"messages": [("user", message["query"])]}
+        config = {"configurable": {"thread_id": message["session_id"]}}
+
+        # ainvoke the agent
+        output = await self._agent_instance.ainvoke(graph_input, config)
+
+        # The output of a graph with MessagesState contains the full message history.
+        # The last message is the agent's response.
+        if output and "messages" in output and output["messages"]:
+            response_message = output["messages"][-1]
+            if hasattr(response_message, 'content'):
+                return response_message.content
+            # Handle if it's a dict (less common for AIMessage but good to have)
+            elif isinstance(response_message, dict) and 'content' in response_message:
+                return response_message['content']
+            return response_message
+
+        return output
 
     async def process_message_stream(self, message: Any) -> Generator[Any, None, None]:
         """Processes a single input message and returns a stream of responses."""
