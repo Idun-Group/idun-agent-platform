@@ -1,17 +1,25 @@
 from fastapi import FastAPI
-from idun_agent_manager.api import agent_router
+from idun_agent_manager.api.api import api_router
+from idun_agent_manager.db import sqlite_db
 
 app = FastAPI(
     title="Idun Agent Manager",
-    description="A unified orchestration and observability layer for LLM agent frameworks.",
+    description="A manager for creating, running, and interacting with various AI agents.",
     version="0.1.0",
 )
 
-app.include_router(agent_router.router)
+@app.on_event("startup")
+def on_startup():
+    """Initialize the database when the application starts."""
+    print("Initializing database...")
+    sqlite_db.initialize_db()
+    print("Database initialized.")
 
-@app.get("/health", tags=["Health"])
-async def health_check():
-    return {"status": "ok"}
+app.include_router(api_router, prefix="/api/v1")
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Idun Agent Manager API"}
 
 # To run this application (from the project root directory):
 # poetry run uvicorn idun_agent_manager.main:app --reload 

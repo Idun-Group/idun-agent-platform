@@ -172,6 +172,27 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-.db
-.db-shm
-.db-wai
+
+# Database files
+*.db
+*.db-shm
+*.db-wai
+*.db-journal*
+*.sqlite
+*.sqlite3
+agents.db
+checkpoint_async.db
+
+# Python virtual environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Poetry
+poetry.lock

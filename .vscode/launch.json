@@ -5,11 +5,33 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Current File",
+            "name": "Debug FastAPI Server",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
+            "module": "uvicorn",
+            "args": [
+                "idun_agent_manager.main:app",
+                "--host", "127.0.0.1",
+                "--port", "8000",
+                "--reload"
+            ],
+            "jinja": true,
+            "justMyCode": true,
+            "console": "integratedTerminal",
+            "purpose": ["debug-in-terminal"]
+        },
+        {
+            "name": "Debug Streamlit UI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "idun_agent_manager/ui/app.py"
+            ],
+            "justMyCode": true,
+            "console": "integratedTerminal",
+            "purpose": ["debug-in-terminal"]
         }
     ]
 }
