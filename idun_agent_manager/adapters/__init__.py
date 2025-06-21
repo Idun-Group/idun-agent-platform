@@ -1,0 +1,1 @@
+# idun_agent_manager/adapters/__init__.py 
