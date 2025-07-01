@@ -4,6 +4,9 @@ from idun_agent_manager.models.agent_models import Agent
 from idun_agent_manager.db import sqlite_db
 from idun_agent_manager.services.agent_manager import agent_manager
 from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
+from idun_agent_manager.ag_ui.encoder.encoder import EventEncoder
+import asyncio
 
 class ChatRequest(BaseModel):
     session_id: str
@@ -64,6 +67,29 @@ async def chat_with_agent(agent_id: str, request: ChatRequest):
             session_id=request.session_id,
             response=response_content
         )
+    except (ValueError, NotImplementedError) as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        # For other unexpected errors
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {e}")
+
+@router.post("/{agent_id}/run")
+async def run_agent(agent_id: str, request: ChatRequest):
+    """
+    Load an agent and process a message with it, streaming ag-ui events.
+    """
+    try:
+        agent = await agent_manager.get_or_load_agent(agent_id)
+        
+        async def event_stream():
+            encoder = EventEncoder()
+            message = {"query": request.query, "session_id": request.session_id}
+            async for event in agent.process_message_stream(message):
+                yield encoder.encode(event)
+                # Force the event loop to send the chunk now
+                await asyncio.sleep(0.01)
+
+        return StreamingResponse(event_stream(), media_type="text/event-stream")
     except (ValueError, NotImplementedError) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:

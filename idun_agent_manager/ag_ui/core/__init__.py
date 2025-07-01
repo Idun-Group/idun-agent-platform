@@ -2,7 +2,8 @@
 This module contains the core types and events for the Agent User Interaction Protocol.
 """
 
-from ag_ui.core.events import (
+from .types import Message, State, Tool, Context, FunctionCall, ToolCall
+from .events import (
     EventType,
     BaseEvent,
     TextMessageStartEvent,
@@ -24,23 +25,6 @@ from ag_ui.core.events import (
     StepStartedEvent,
     StepFinishedEvent,
     Event
-)
-
-from ag_ui.core.types import (
-    FunctionCall,
-    ToolCall,
-    BaseMessage,
-    DeveloperMessage,
-    SystemMessage,
-    AssistantMessage,
-    UserMessage,
-    ToolMessage,
-    Message,
-    Role,
-    Context,
-    Tool,
-    RunAgentInput,
-    State
 )
 
 __all__ = [

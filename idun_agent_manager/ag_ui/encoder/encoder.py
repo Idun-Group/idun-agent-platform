@@ -2,9 +2,11 @@
 This module contains the EventEncoder class
 """
 
-from ag_ui.core.events import BaseEvent
+import json
+from typing import Optional
+from idun_agent_manager.ag_ui.core.events import BaseEvent
 
-AGUI_MEDIA_TYPE = "application/vnd.ag-ui.event+proto"
+AGUI_MEDIA_TYPE = "text/event-stream"
 
 class EventEncoder:
     """
