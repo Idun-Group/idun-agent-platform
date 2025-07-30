@@ -4,9 +4,10 @@ from pydantic import BaseModel, Field
 import uuid
 
 class FrameworkType(str, Enum):
-    LANGGRAPH = "LANGGRAPH"
+    LANGGRAPH = "langgraph"
     AUTOGEN = "AUTOGEN"
-    ADK = "ADK"
+    ADK = "adk"
+    SMOL = "smol"
 
 class ToolType(str, Enum):
     FUNCTION = "FUNCTION"

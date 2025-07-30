@@ -13,6 +13,9 @@ Complete guide for using the Google Agent Development Kit (ADK) implementation, 
 - Session management
 - Troubleshooting
 
+### [SmolAgent Implementation Guide](./smol_agent_guide.md)
+Complete guide for using the Hugging Face `smolagents` implementation.
+
 ## Agent Framework Support
 
 The Idun Agent Manager currently supports:
@@ -21,6 +24,7 @@ The Idun Agent Manager currently supports:
 |-----------|--------|---------------|
 | **LangGraph** | ✅ Fully Implemented | See code examples in `tests/example_agents/` |
 | **Google ADK** | ✅ Fully Implemented | [ADK Agent Guide](./adk_agent_guide.md) |
+| **SmolAgent** | ✅ Fully Implemented | [SmolAgent Guide](./smol_agent_guide.md) |
 
 ## Quick Comparison
 
@@ -33,6 +37,11 @@ The Idun Agent Manager currently supports:
 - **Best for**: Google Cloud environments, Gemini model integration
 - **Strengths**: Native Google integration, built-in tools, enterprise features
 - **Use cases**: Google ecosystem applications, production deployments
+
+### SmolAgent
+- **Best for**: Code-centric tasks, rapid prototyping with open models
+- **Strengths**: Agents that think in code, flexible model backends, simple architecture
+- **Use cases**: Web search, data analysis, code generation tasks
 
 ## Getting Started
 
@@ -49,6 +58,12 @@ cd tests
 python test_adk_agent_creation.py
 ```
 
+### SmolAgent Example
+```bash
+cd tests
+python test_smol_agent_creation.py
+```
+
 ### LangGraph Agent Example
 ```bash
 cd tests
@@ -57,11 +72,11 @@ python test_langgraph_agent_creation.py
 
 ## API Usage
 
-Both agent types can be used through the same unified API:
+All agent types can be used through the same unified API:
 
 ```python
 # Initialize agent (framework-specific)
-agent = ADKAgent()  # or LanggraphAgent()
+agent = SmolAgent()  # or LanggraphAgent(), ADKAgent()
 await agent.initialize(config)
 
 # Use agent (same interface)

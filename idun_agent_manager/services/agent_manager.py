@@ -3,6 +3,7 @@ import asyncio
 from idun_agent_manager.core.iagent import IAgent
 from idun_agent_manager.core.agents.langgraph_agent_impl import LanggraphAgent
 from idun_agent_manager.core.agents.adk_agent_impl import ADKAgent
+from idun_agent_manager.core.agents.smol_agent_impl import SmolAgent
 from idun_agent_manager.db import sqlite_db
 from idun_agent_manager.models.agent_models import FrameworkType
 
@@ -45,6 +46,9 @@ class AgentManager:
         elif agent_model.framework_type == FrameworkType.ADK:
             # ADKAgent's initialize is not fully async, but we await it for consistency
             agent_instance = ADKAgent()
+            await agent_instance.initialize(agent_config)
+        elif agent_model.framework_type == FrameworkType.SMOL:
+            agent_instance = SmolAgent()
             await agent_instance.initialize(agent_config)
         else:
             raise NotImplementedError(f"Framework {agent_model.framework_type} not supported.")

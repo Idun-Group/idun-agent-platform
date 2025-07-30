@@ -7,13 +7,13 @@ import uuid
 from idun_agent_manager.core.iagent import IAgent
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
-from idun_agent_manager.ag_ui.core.events import (
+from ag_ui.core.events import (
     RunStartedEvent, RunFinishedEvent, TextMessageStartEvent,
     TextMessageContentEvent, TextMessageEndEvent, EventType,
     ToolCallStartEvent, ToolCallArgsEvent, ToolCallEndEvent, ThinkingStartEvent, ThinkingEndEvent,
     StepStartedEvent, StepFinishedEvent
 )
-from idun_agent_manager.ag_ui.core.types import UserMessage
+from ag_ui.core.types import UserMessage
 import json
 
 class LanggraphAgent(IAgent):

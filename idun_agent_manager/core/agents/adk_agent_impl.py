@@ -3,13 +3,13 @@ import uuid
 import asyncio
 import json
 from idun_agent_manager.core.iagent import IAgent
-from idun_agent_manager.ag_ui.core.events import (
+from ag_ui.core.events import (
     RunStartedEvent, RunFinishedEvent, TextMessageStartEvent,
     TextMessageContentEvent, TextMessageEndEvent, EventType,
     ToolCallStartEvent, ToolCallArgsEvent, ToolCallEndEvent, ThinkingStartEvent, ThinkingEndEvent,
     StepStartedEvent, StepFinishedEvent
 )
-from idun_agent_manager.ag_ui.core.types import UserMessage
+from ag_ui.core.types import UserMessage
 
 class ADKAgent(IAgent):
     """Implementation for an ADK (Agent Development Kit) agent.
