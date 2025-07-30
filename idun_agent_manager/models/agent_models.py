@@ -22,6 +22,18 @@ class ToolDefinition(BaseModel):
     schema_: Optional[Dict[str, Any]] = Field(default_factory=dict, alias="schema", description="The schema of the tool's input/output, often a JSON schema.")
     type: ToolType = Field(..., description="The type of the tool.")
 
+class AgentCreate(BaseModel):
+    name: str
+    description: str
+    framework_type: FrameworkType
+    config: Dict[str, Any]
+    # agent_path is now optional, as it can be derived from the uploaded file.
+    agent_path: Optional[str] = None
+    agent_variable: Optional[str] = None
+
+class AgentRead(BaseModel):
+    id: str
+
 class Agent(BaseModel):
     """
     Represents an agent configuration.

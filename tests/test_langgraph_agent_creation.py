@@ -52,7 +52,7 @@ class TestLanggraphAgentCreation(unittest.TestCase):
         except Exception as e:
             self.fail(f"Agent creation failed with an exception: {e}")
 
-    def test_chat_with_agent(self):
+    def test_run_agent_no_stream(self):
         """Tests chatting with an initialized LanggraphAgent."""
         agent_config = {
             "name": "Test Echo Agent",
