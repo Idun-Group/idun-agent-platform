@@ -15,7 +15,11 @@ dependencies = [
     "aiosqlite (>=0.21.0,<0.22.0)",
     "streamlit (>=1.46.0,<2.0.0)",
     "httpx (>=0.28.1,<0.29.0)",
-    "pydantic (>=2.11.7,<3.0.0)"
+    "pydantic (>=2.11.7,<3.0.0)",
+    "langchain-core (>=0.3.66,<0.4.0)",
+    "langchain-google-vertexai (>=2.0.26,<3.0.0)",
+    "google-adk (>=1.5.0,<2.0.0)",
+    "ag-ui-protocol (>=0.1.8,<0.2.0)"
 ]
 
 

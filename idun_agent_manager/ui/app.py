@@ -46,7 +46,7 @@ def delete_agent(agent_id):
         st.error(f"API Error: {e.response.status_code} - {e.response.text}")
     return False
 
-def chat_with_agent(agent_id, session_id, query):
+def run_agent_no_stream(agent_id, session_id, query):
     """Sends a chat message to a specific agent."""
     request_body = {"session_id": session_id, "query": query}
     try:
@@ -158,7 +158,7 @@ def agent_chat_section():
                 st.markdown(prompt)
 
             with st.spinner("Agent is thinking..."):
-                response = chat_with_agent(selected_agent_id, session_id, prompt)
+                response = run_agent_no_stream(selected_agent_id, session_id, prompt)
                 st.session_state.messages[session_id].append({"role": "assistant", "content": response})
                 with st.chat_message("assistant"):
                     st.markdown(response)
