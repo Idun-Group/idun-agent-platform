@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional, AsyncGenerator, Union
 import uuid
 import asyncio
 import json
-from idun_agent_manager.core.iagent import IAgent
+from ..iagent import IAgent
 from ag_ui.core.events import (
     RunStartedEvent, RunFinishedEvent, TextMessageStartEvent,
     TextMessageContentEvent, TextMessageEndEvent, EventType,
