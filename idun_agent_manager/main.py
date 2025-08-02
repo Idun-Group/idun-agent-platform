@@ -2,11 +2,24 @@ from fastapi import FastAPI
 from idun_agent_manager.api.api import api_router
 from idun_agent_manager.db import sqlite_db
 from fastapi.middleware.cors import CORSMiddleware
+import os
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize the database when the application starts."""
+    print("Initializing database...")
+    sqlite_db.initialize_db()
+    print("Database initialized.")
+    yield
+
 
 app = FastAPI(
     title="Idun Agent Manager",
     description="A manager for creating, running, and interacting with various AI agents.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 origins = [
@@ -22,13 +35,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.on_event("startup")
-def on_startup():
-    """Initialize the database when the application starts."""
-    print("Initializing database...")
-    sqlite_db.initialize_db()
-    print("Database initialized.")
 
 app.include_router(api_router, prefix="/api/v1")
 

@@ -1,94 +1,78 @@
-# idun-agent-manager
+# Idun Agent Manager - Containerized Architecture
 
-A Python package for managing Idun agents.
+Welcome to the refactored, containerized version of the Idun Agent Manager. This new architecture uses Docker and Traefik to provide a secure, scalable, and isolated environment for each AI agent.
 
-<!-- Badges -->
-<p align="left">
-  <!-- PyPI Version -->
-  <a href="https://pypi.org/project/idun-agent-manager/">
-    <img src="https://img.shields.io/pypi/v/idun-agent-manager.svg" alt="PyPI Version">
-  </a>
-  <!-- Build Status -->
-  <a href="https://github.com/idun-group/idun-agent-manager/actions/workflows/ci.yml">
-    <img src="https://github.com/idun-group/idun-agent-manager/actions/workflows/ci.yml/badge.svg" alt="Build Status">
-  </a>
-  <!-- License -->
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License">
-  </a>
-  <!-- Python Versions -->
-  <a href="https://pypi.org/project/idun-agent-manager/">
-    <img src="https://img.shields.io/pypi/pyversions/idun-agent-manager.svg" alt="Python Versions">
-  </a>
-  <!-- Code style: black -->
-  <a href="https://github.com/psf/black">
-    <img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code style: black">
-  </a>
-  <!-- Test Coverage (Placeholder) -->
-  <!-- <a href="[LINK_TO_COVERAGE_REPORT]">
-    <img src="https://img.shields.io/badge/coverage-100%25-brightgreen.svg" alt="Test Coverage">
-  </a> -->
-  <!-- GitHub Stars -->
-  <a href="https://github.com/Idun-Group/idun-agent-manager/stargazers">
-    <img src="https://img.shields.io/github/stars/Idun-Group/idun-agent-manager.svg?style=social&label=Star&maxAge=2592000" alt="GitHub Stars">
-  </a>
-</p>
+The old method of loading agents from a local file path using `importlib` has been **completely replaced** by a Docker-based deployment workflow.
 
----
+## Prerequisites
 
-## Overview
+-   Docker and Docker Compose installed and running on your machine.
+-   Python 3.10+ (for interacting with the backend if needed).
+-   A `.zip` file of your agent's code. The zip file should contain at minimum:
+    -   `main.py`: A FastAPI application for your agent.
+    -   `requirements.txt`: A list of your agent's Python dependencies.
 
-*(Briefly describe what your project does. What problem does it solve? Who is it for?)*
+## Setup and Installation
 
-## Features
+Follow these steps to set up the environment and run the application.
 
-*   Feature 1
-*   Feature 2
-*   Feature 3
-*   ...
+### 1. Initial Setup
 
-## Installation
+Clone the repository and navigate to the project root directory.
 
-You can install `idun-agent-manager` from PyPI using pip:
+### 2. Build and Start the Core Services
+
+The first time you run the application, you need to build the main backend controller and start the Traefik proxy. This is done using `docker-compose`.
 
 ```bash
-pip install idun-agent-manager
+docker-compose up -d --build backend
 ```
 
-Or, if you are using Poetry:
+-   `docker-compose up`: This command starts the services defined in `docker-compose.yml`.
+-   `-d`: Runs the containers in detached mode (in the background).
+-   `--build backend`: Forces a build of the `backend` service's Docker image before starting it.
 
-```bash
-poetry add idun-agent-manager
-```
+After this step, you will have two services running:
+-   **`idun-backend-controller`**: The main FastAPI application.
+-   **`idun-traefik-proxy`**: The Traefik reverse proxy.
 
-For development, clone the repository and install using Poetry:
+You can check the status of your containers with `docker ps`.
 
-```bash
-git clone https://github.com/Idun-Group/idun-agent-manager.git
-cd idun-agent-manager
-poetry install
-```
+### 3. Verify the Setup
 
-## Usage
+-   **Backend API**: The main controller's API should be accessible through Traefik at `http://localhost/api`. (Note: The root path of the backend isn't exposed through Traefik in this setup, but its endpoints under `/api` would be if configured).
+-   **Traefik Dashboard**: You can view the Traefik dashboard to see configured routers and services at `http://localhost:8080/dashboard/`.
 
-*(Provide a simple "getting started" example or refer to more detailed documentation if available.)*
+## New Workflow: Deploying an Agent
 
-```python
-# Example usage:
-# from idun_agent_manager import some_function
-#
-# result = some_function()
-# print(result)
-```
+With the old `importlib` logic removed, here is the new, secure workflow for deploying an agent:
 
-## Contributing
+1.  **Prepare Your Agent**:
+    Ensure your agent code is in a directory with a `main.py` (your FastAPI app for the agent) and a `requirements.txt`. Create a `.zip` archive of this directory.
 
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for more details on how to submit pull requests, report issues, and suggest improvements.
+2.  **Upload Your Agent**:
+    Use an API client (like Postman, Insomnia, or a `curl` command) to send a `POST` request to the `/upload-agent` endpoint.
 
-## License
+    **Example using `curl`:**
+    ```bash
+    curl -X POST "http://localhost:8000/upload-agent" \
+         -F "agent_name=MyFirstAgent" \
+         -F "file=@/path/to/your/agent.zip"
+    ```
+    *(Note: We are calling port 8000 directly here for simplicity, but in a production setup, this would also go through the Traefik proxy on port 80).*
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+3.  **Backend Orchestration**:
+    When you send this request, the backend controller performs the following actions automatically:
+    -   Creates a unique, isolated directory for your agent.
+    -   Generates a `Dockerfile` tailored to your agent.
+    -   Builds a new Docker image for your agent.
+    -   Updates `docker-compose.yml` with a new service definition for your agent.
+    -   Starts your agent as a new container.
 
-## Code of Conduct
+4.  **Access Your Deployed Agent**:
+    The API response will provide you with the URL to access your newly deployed agent, which will look something like this:
+    `http://localhost/agents/agent-myfirstagent-abcdef`
 
-Everyone interacting in the `idun-agent-manager` project's codebases, issue trackers, chat rooms, and mailing lists is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+    Traefik will automatically route requests to this path to your agent's container.
+
+You can now interact with your agent's API securely at its unique URL. Each new agent you upload will get its own isolated container and URL.

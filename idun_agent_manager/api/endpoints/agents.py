@@ -1,11 +1,11 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, Form
-from idun_agent_manager.models.agent_models import Agent, AgentRead, AgentCreate, AgentConfig
+from idun_agent_manager.models.agent_models import Agent
 from idun_agent_manager.db import sqlite_db
 from idun_agent_manager.services.agent_manager import agent_manager
 from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
-from ag_ui.core.event_encoder import EventEncoder
+from ag_ui.encoder import EventEncoder
 import asyncio
 import json
 import tempfile
@@ -13,6 +13,27 @@ import zipfile
 import shutil
 import os
 import sys
+import uuid
+import docker
+import yaml
+from fastapi import Body
+
+
+### Docker initialization ###
+# Initialize Docker client from environment
+try:
+    docker_client = docker.from_env()
+except docker.errors.DockerException:
+    raise RuntimeError("Docker is not running or not configured correctly. Please start Docker and try again.")
+
+# Path to the master docker-compose file
+DOCKER_COMPOSE_FILE = './docker-compose.yml'
+AGENTS_DATA_DIR = 'agents_data'
+
+# Ensure agents data directory exists
+os.makedirs(AGENTS_DATA_DIR, exist_ok=True)
+########################################################
+
 
 class ChatRequest(BaseModel):
     session_id: str
@@ -25,7 +46,118 @@ class ChatResponse(BaseModel):
 
 router = APIRouter()
 
-@router.post("/", response_model=AgentRead, status_code=status.HTTP_201_CREATED)
+@router.post("/upload-agent", response_model=Agent, status_code=status.HTTP_201_CREATED)
+async def upload_agent(
+    name: str = Form(...),
+    description: str = Form(...),
+    framework_type: str = Form(...),
+    config: str = Form(...), # JSON string for config
+    agent_path: str = Form(...), # e.g., 'main.py'
+    agent_variable: str = Form(...), # e.g., 'app'
+    file: UploadFile = File(...)
+):
+    """
+    Receives a .zip file of an agent, containerizes it, and deploys it as a new service.
+    This endpoint is the new standard for creating agents.
+    """
+    if not file.filename.endswith('.zip'):
+        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a .zip file.")
+
+    service_name = f"agent-{name.lower().replace(' ', '-')}-{uuid.uuid4().hex[:6]}"
+    agent_dir = os.path.join(AGENTS_DATA_DIR, service_name)
+    os.makedirs(agent_dir, exist_ok=True)
+
+    try:
+        # 1. Unzip the uploaded file
+        with tempfile.TemporaryDirectory() as temp_dir:
+            zip_path = os.path.join(temp_dir, file.filename)
+            with open(zip_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(agent_dir)
+
+        # 2. Generate a Dockerfile for the agent from the template
+        module_path = agent_path.replace('.py', '').replace('/', '.')
+        uvicorn_entrypoint = f"{module_path}:{agent_variable}"
+        
+        with open('agent.Dockerfile.template', 'r') as f:
+            dockerfile_template = f.read()
+        
+        dockerfile_content = dockerfile_template.replace('AGENT_ENTRYPOINT', uvicorn_entrypoint)
+        
+        with open(os.path.join(agent_dir, 'Dockerfile'), 'w') as f:
+            f.write(dockerfile_content)
+
+        # 3. Build the Docker image for the new agent
+        print(f"Building image for service: {service_name}...")
+        image, build_logs = docker_client.images.build(
+            path=agent_dir,
+            tag=f"{service_name}:latest",
+            rm=True
+        )
+        print(f"Image {image.id} built successfully.")
+
+        # 4. Check if the required Docker network exists
+        try:
+            idun_network = docker_client.networks.get('idun_network')
+        except docker.errors.NotFound:
+            raise HTTPException(
+                status_code=500, 
+                detail="Docker network 'idun_network' not found. Please ensure the main application environment is running."
+            )
+
+        # 5. Run the agent as a standalone container
+        print(f"Starting container for service: {service_name}...")
+        container = docker_client.containers.run(
+            image=f"{service_name}:latest",
+            name=service_name,
+            detach=True,
+            network=idun_network.name,
+            labels={
+                "traefik.enable": "true",
+                f"traefik.http.routers.{service_name}.rule": f"PathPrefix(`/api/v1/agents/{service_name}`)",
+                f"traefik.http.services.{service_name}.loadbalancer.server.port": "8001",
+            }
+        )
+        print(f"Container {container.id} started successfully for service {service_name}.")
+        
+        service_url = f"http://localhost/api/v1/agents/{service_name}"
+        
+        # 6. Create Agent in DB
+        config_dict = json.loads(config)
+        config_dict['service_url'] = service_url
+        config_dict['service_name'] = service_name
+        
+        agent_create_data = {
+            "name": name,
+            "description": description,
+            "framework_type": framework_type,
+            "config": config_dict,
+            "agent_path": agent_path,
+            "agent_variable": agent_variable
+        }
+        agent_create = Agent(**agent_create_data)
+        agent_model = sqlite_db.create_agent_in_db(agent_create)
+
+        return Agent.model_dump(agent_model)
+
+    except docker.errors.BuildError as e:
+        error_logs = "\n".join([log.get('stream', '').strip() for log in e.build_log])
+        shutil.rmtree(agent_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"Docker build failed:\n{error_logs}")
+    except docker.errors.APIError as e:
+        shutil.rmtree(agent_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"Docker API failed to start container: {e}")
+    except json.JSONDecodeError:
+        shutil.rmtree(agent_dir, ignore_errors=True)
+        raise HTTPException(status_code=400, detail="Invalid JSON format for 'config' field.")
+    except Exception as e:
+        shutil.rmtree(agent_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+
+@router.post("/", response_model=Agent, status_code=status.HTTP_201_CREATED, deprecated=True)
 async def create_agent(
     name: str = Form(...),
     description: str = Form(...),
@@ -96,16 +228,16 @@ async def create_agent(
             "agent_path": agent_path, # Store the original relative path
             "agent_variable": agent_variable
         }
-        agent_create = AgentCreate(**agent_create_data)
+        agent_create = Agent(**agent_create_data)
         
-        agent_model = sqlite_db.add_agent_to_db(agent_create)
+        agent_model = sqlite_db.create_agent_in_db(agent_create)
         
         # NOTE: Temporary directory cleanup is a complex issue. If the agent is loaded
         # into memory, the temp directory must persist for the lifetime of the process.
         # A more robust solution might involve a scheduled cleanup task for orphaned
         # agent directories. For now, we leave it.
 
-        return AgentRead.from_orm(agent_model)
+        return agent_model
 
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format for 'config' field.")
@@ -119,20 +251,21 @@ async def create_agent(
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
 
 
-@router.get("/", response_model=List[AgentRead])
+
+@router.get("/", response_model=List[Agent])
 def list_agents():
     """List all agent configurations from the database."""
     agents_db = sqlite_db.list_agents_from_db()
-    return [AgentRead.from_orm(agent) for agent in agents_db]
+    return agents_db
 
 
-@router.get("/{agent_id}", response_model=AgentRead)
+@router.get("/{agent_id}", response_model=Agent)
 def get_agent(agent_id: str):
     """Retrieve a specific agent's configuration from the database."""
     agent_db = sqlite_db.get_agent_from_db(agent_id)
     if not agent_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
-    return AgentRead.from_orm(agent_db)
+    return agent_db
 
 
 @router.delete("/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)

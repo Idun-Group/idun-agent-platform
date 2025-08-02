@@ -22,17 +22,15 @@ class ToolDefinition(BaseModel):
     schema_: Optional[Dict[str, Any]] = Field(default_factory=dict, alias="schema", description="The schema of the tool's input/output, often a JSON schema.")
     type: ToolType = Field(..., description="The type of the tool.")
 
-class AgentCreate(BaseModel):
-    name: str
-    description: str
-    framework_type: FrameworkType
-    config: Dict[str, Any]
-    # agent_path is now optional, as it can be derived from the uploaded file.
-    agent_path: Optional[str] = None
-    agent_variable: Optional[str] = None
-
-class AgentRead(BaseModel):
-    id: str
+# class AgentCreate(BaseModel):
+#     id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Unique identifier for the agent.")
+#     name: str
+#     description: str
+#     framework_type: FrameworkType
+#     config: Dict[str, Any]
+#     # agent_path is now optional, as it can be derived from the uploaded file.
+#     agent_path: Optional[str] = None
+#     agent_variable: Optional[str] = None
 
 class Agent(BaseModel):
     """
@@ -45,6 +43,10 @@ class Agent(BaseModel):
     config: Dict[str, Any] = Field(default_factory=dict, description="Framework-specific configuration for the agent.")
     llm_config: Optional[Dict[str, Any]] = Field(default_factory=dict, description="LLM configuration for the agent.")
     tools: List[ToolDefinition] = Field(default_factory=list, description="A list of tools available to the agent.")
+    # agent_path is now optional, as it can be derived from the uploaded file.
+    agent_path: Optional[str] = None
+    agent_variable: Optional[str] = None
+
 
     class Config:
         use_enum_values = True # Ensures enum values are used in serialization
@@ -73,7 +75,9 @@ if __name__ == "__main__":
         framework_type=FrameworkType.LANGGRAPH,
         config={"graph_definition": "some_graph_path_or_spec"},
         llm_config={"model_name": "gpt-4", "temperature": 0.7},
-        tools=[sample_tool]
+        tools=[sample_tool],
+        agent_path="main.py",
+        agent_variable="app"
     )
 
     print(sample_agent.model_dump_json(indent=2))
