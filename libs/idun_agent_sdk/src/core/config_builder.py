@@ -5,7 +5,7 @@ This module provides a fluent API for building configuration objects using Pydan
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
 """
 
-from typing import Dict, Any, Optional, Type
+from typing import Dict, Any, Optional, Type, Union
 from pathlib import Path
 import yaml
 
@@ -345,6 +345,51 @@ class ConfigBuilder:
         app_config = ConfigBuilder.load_from_file(config_path)
         agent = await ConfigBuilder.initialize_agent_from_config(app_config)
         return app_config, agent
+    
+    @staticmethod
+    def resolve_config(
+        config_path: Optional[str] = None,
+        config_dict: Optional[Dict[str, Any]] = None,
+        app_config: Optional[AppConfig] = None
+    ) -> AppConfig:
+        """
+        Umbrella function to resolve configuration from various sources.
+        
+        This function handles all the different ways configuration can be provided
+        and returns a validated AppConfig. It follows a priority order:
+        1. app_config (pre-validated AppConfig from ConfigBuilder)
+        2. config_dict (dictionary to be validated)
+        3. config_path (file path to load and validate)
+        4. default "config.yaml" file
+        
+        Args:
+            config_path: Path to a YAML configuration file
+            config_dict: Dictionary containing configuration
+            app_config: Pre-validated AppConfig instance
+            
+        Returns:
+            AppConfig: Validated configuration object
+            
+        Raises:
+            FileNotFoundError: If config file doesn't exist
+            ValidationError: If configuration is invalid
+        """
+        if app_config:
+            # Use pre-validated AppConfig (from ConfigBuilder)
+            print("✅ Using pre-validated AppConfig")
+            return app_config
+        elif config_dict:
+            # Validate dictionary config
+            print("✅ Validated dictionary configuration")
+            return AppConfig.model_validate(config_dict)
+        elif config_path:
+            # Load from file using ConfigBuilder
+            print(f"✅ Loaded configuration from {config_path}")
+            return ConfigBuilder.load_from_file(config_path)
+        else:
+            # Default to loading config.yaml
+            print("✅ Loaded default configuration from config.yaml")
+            return ConfigBuilder.load_from_file("config.yaml")
     
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> "ConfigBuilder":

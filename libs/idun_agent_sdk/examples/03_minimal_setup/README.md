@@ -2,11 +2,13 @@
 
 This example demonstrates the absolute minimal way to get an agent running with the Idun Agent SDK - just one function call!
 
+With the new ConfigBuilder umbrella functions, configuration resolution is now completely transparent and automatic.
+
 ## 📋 What This Example Shows
 
 - The simplest possible server startup
 - One-line agent deployment
-- Minimal configuration requirements
+- Automatic configuration resolution with ConfigBuilder
 - Quick prototyping approach
 
 ## 🚀 Quick Start
@@ -45,11 +47,26 @@ from idun_agent_sdk.core.server_runner import run_server_from_config
 run_server_from_config("config.yaml", reload=True)
 ```
 
-That's it! No need to create apps, manage configurations, or handle server setup.
+That's it! Behind the scenes, this uses `ConfigBuilder.resolve_config()` to automatically:
+- Load and validate the YAML configuration
+- Handle different configuration sources
+- Provide helpful error messages
+- Initialize the agent with proper lifecycle management
+
+## ✨ What Happens Automatically
+
+The new umbrella function `ConfigBuilder.resolve_config()` handles:
+
+1. **Configuration Loading**: Automatically loads from YAML files
+2. **Validation**: Uses Pydantic models to validate all settings
+3. **Error Handling**: Provides clear error messages for invalid configs
+4. **Fallbacks**: Gracefully handles missing or incorrect configurations
+5. **Logging**: Informative messages about what configuration was loaded
 
 ## 🎯 Key Benefits
 
 - **Zero Boilerplate**: Absolute minimum code required
+- **Automatic Resolution**: ConfigBuilder handles all configuration complexity
 - **Perfect for Prototyping**: Get started in seconds
 - **Learning Friendly**: Easy to understand what's happening
 - **Quick Demos**: Great for showing off your agent quickly
@@ -72,6 +89,17 @@ Want it even shorter? You can run directly from the command line:
 # Future CLI feature (coming soon):
 # idun run config.yaml --reload
 ```
+
+## 🔧 Behind the Scenes
+
+When you call `run_server_from_config("config.yaml")`, here's what happens:
+
+1. `ConfigBuilder.resolve_config()` loads and validates the YAML
+2. `create_app()` uses the resolved config to create the FastAPI app
+3. Agent is initialized once at startup using the lifespan manager
+4. Server starts with the configured port and settings
+
+All with automatic error handling and informative logging!
 
 ## 🎓 Learning Path
 

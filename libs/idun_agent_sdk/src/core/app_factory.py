@@ -15,6 +15,7 @@ from ..server.lifespan import lifespan
 from ..server.routers.agent import agent_router
 from ..server.routers.base import base_router
 from ..server.server_config import AppConfig
+from ..core.config_builder import ConfigBuilder
 from ..agent_frameworks.langgraph_agent import LanggraphAgent
 
 
@@ -66,25 +67,12 @@ def create_app(
         app = create_app(app_config=config)
     """
     
-    # Load configuration from various sources
-    if app_config:
-        # Use pre-validated AppConfig (from ConfigBuilder)
-        validated_config = app_config
-        print("✅ Using pre-validated AppConfig")
-    elif config_dict:
-        # Validate dictionary config
-        validated_config = AppConfig.model_validate(config_dict)
-        print("✅ Validated dictionary configuration")
-    elif config_path:
-        # Load from file using ConfigBuilder
-        from ..core.config_builder import ConfigBuilder
-        validated_config = ConfigBuilder.load_from_file(config_path)
-        print(f"✅ Loaded configuration from {config_path}")
-    else:
-        # Default to loading config.yaml
-        from ..core.config_builder import ConfigBuilder
-        validated_config = ConfigBuilder.load_from_file("config.yaml")
-        print("✅ Loaded default configuration from config.yaml")
+    # Resolve configuration from various sources using ConfigBuilder's umbrella function
+    validated_config = ConfigBuilder.resolve_config(
+        config_path=config_path,
+        config_dict=config_dict,
+        app_config=app_config
+    )
         
     # Create the FastAPI application
     app = FastAPI(
