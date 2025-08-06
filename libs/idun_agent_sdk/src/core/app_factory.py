@@ -1,0 +1,106 @@
+"""
+Application Factory for Idun Agent SDK
+
+This module provides the main entry point for users to create a FastAPI application
+with their agent integrated. It handles all the complexity of setting up routes,
+dependencies, and lifecycle management behind the scenes.
+"""
+
+from typing import Optional, Dict, Any, Union
+from pathlib import Path
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+
+from ..server.lifespan import lifespan
+from ..server.routers.agent import agent_router
+from ..server.routers.base import base_router
+from ..server.server_config import AppConfig
+from ..agent_frameworks.langgraph_agent import LanggraphAgent
+
+
+def create_app(
+    config_path: Optional[str] = None, 
+    config_dict: Optional[Dict[str, Any]] = None,
+    app_config: Optional[AppConfig] = None
+) -> FastAPI:
+    """
+    Create a FastAPI application with an integrated agent.
+    
+    This is the main entry point for users of the Idun Agent SDK. It creates a fully
+    configured FastAPI application that serves your agent with proper lifecycle management,
+    routing, and error handling.
+    
+    Args:
+        config_path: Path to a YAML configuration file. If not provided, looks for 'config.yaml'
+                    in the current directory.
+        config_dict: Dictionary containing configuration. If provided, takes precedence over config_path.
+                    Useful for programmatic configuration.
+        app_config: Pre-validated AppConfig instance (from ConfigBuilder.build()). 
+                   Takes precedence over other options.
+    
+    Returns:
+        FastAPI: A configured FastAPI application ready to serve your agent.
+    
+    Example:
+        # Using a config file
+        app = create_app("my_agent_config.yaml")
+        
+        # Using a config dictionary
+        config = {
+            "sdk": {"api": {"port": 8000}},
+            "agent": {
+                "type": "langgraph",
+                "config": {
+                    "name": "My Agent",
+                    "graph_definition": "my_agent.py:graph"
+                }
+            }
+        }
+        app = create_app(config_dict=config)
+        
+        # Using ConfigBuilder (recommended)
+        from idun_agent_sdk import ConfigBuilder
+        config = (ConfigBuilder()
+                 .with_langgraph_agent(name="My Agent", graph_definition="my_agent.py:graph")
+                 .build())
+        app = create_app(app_config=config)
+    """
+    
+    # Load configuration from various sources
+    if app_config:
+        # Use pre-validated AppConfig (from ConfigBuilder)
+        validated_config = app_config
+        print("✅ Using pre-validated AppConfig")
+    elif config_dict:
+        # Validate dictionary config
+        validated_config = AppConfig.model_validate(config_dict)
+        print("✅ Validated dictionary configuration")
+    elif config_path:
+        # Load from file using ConfigBuilder
+        from ..core.config_builder import ConfigBuilder
+        validated_config = ConfigBuilder.load_from_file(config_path)
+        print(f"✅ Loaded configuration from {config_path}")
+    else:
+        # Default to loading config.yaml
+        from ..core.config_builder import ConfigBuilder
+        validated_config = ConfigBuilder.load_from_file("config.yaml")
+        print("✅ Loaded default configuration from config.yaml")
+        
+    # Create the FastAPI application
+    app = FastAPI(
+        lifespan=lifespan,
+        title="Idun Agent SDK Server",
+        description="A production-ready server for conversational AI agents",
+        version="0.1.0",
+        docs_url="/docs",
+        redoc_url="/redoc",
+    )
+
+    # Store configuration in app state for lifespan to use
+    app.state.app_config = validated_config
+
+    # Include the routers
+    app.include_router(agent_router, prefix="/agent", tags=["Agent"])
+    app.include_router(base_router, prefix="/", tags=["Base"])
+
+    return app 

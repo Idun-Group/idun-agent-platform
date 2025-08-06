@@ -1,0 +1,23 @@
+# Idun Agent SDK Configuration
+# This file defines both SDK settings and agent configuration
+
+# SDK Configuration - Controls the server and platform behavior
+sdk:
+  api:
+    port: 8000                    # Port where the server will run
+  telemetry:
+    provider: "langfuse"          # Telemetry provider for monitoring
+
+# Agent Configuration - Defines which agent to load and how
+agent:
+  type: "langgraph"               # Agent framework type
+  
+  # Agent-specific configuration (passed to the LangGraph adapter)
+  config:
+    name: "My Example LangGraph Agent"
+    graph_definition: "example_agent.py:app"  # Path to your graph definition
+    
+    # Optional: Enable conversation persistence
+    checkpointer:
+      type: "sqlite"
+      db_url: "sqlite:///example_checkpoint.db" 

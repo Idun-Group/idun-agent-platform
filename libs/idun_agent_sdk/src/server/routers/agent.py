@@ -14,9 +14,9 @@ class ChatResponse(BaseModel):
     session_id: str
     response: str
 
-router = APIRouter()
+agent_router = APIRouter()
 
-@router.post("/invoke", response_model=ChatResponse)
+@agent_router.post("/invoke", response_model=ChatResponse)
 async def invoke(request: ChatRequest, agent: BaseAgent = Depends(get_agent)):
     """
     Process a chat message with the agent without streaming.
@@ -33,7 +33,7 @@ async def invoke(request: ChatRequest, agent: BaseAgent = Depends(get_agent)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/stream")
+@agent_router.post("/stream")
 async def stream(request: ChatRequest, agent: BaseAgent = Depends(get_agent)):
     """
     Process a message with the agent, streaming ag-ui events.
