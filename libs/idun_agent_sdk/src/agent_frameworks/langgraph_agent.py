@@ -4,7 +4,6 @@ import importlib.util
 import asyncio
 import aiosqlite
 import uuid
-from idun_agent_manager.core.iagent import IAgent
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
 from ag_ui.core.events import (
@@ -15,27 +14,26 @@ from ag_ui.core.events import (
 )
 from ag_ui.core.types import UserMessage
 import json
+from src.agent_frameworks.base_agent import BaseAgent
+from src.agent_frameworks.langgraph_agent_config import LangGraphAgentConfig, SqliteCheckpointConfig
 
-class LanggraphAgent(IAgent):
+class LanggraphAgent(BaseAgent):
     """Placeholder implementation for a LangGraph agent.
     This class will wrap a LangGraph agent/graph and adapt it to the IAgent interface.
     """
 
-    def __init__(self, initial_config: Optional[Dict[str, Any]] = None):
+    def __init__(self):
         self._id = str(uuid.uuid4())
         self._agent_type = "LangGraph"
-        self._input_schema: Any = None # Define based on expected LangGraph input
-        self._output_schema: Any = None # Define based on expected LangGraph output
-        self._agent_instance: Any = None # This will hold the LangGraph runnable
+        self._input_schema: Any = None 
+        self._output_schema: Any = None
+        self._agent_instance: Any = None
         self._checkpointer: Any = None
         self._store: Any = None
-        self._connection: Any = None # To hold the async db connection
-        self._configuration: Dict[str, Any] = initial_config or {}
-        self._name: str = self._configuration.get("name", "Unnamed LangGraph Agent")
+        self._connection: Any = None
+        self._configuration: Optional[LangGraphAgentConfig] = None
+        self._name: str = "Unnamed LangGraph Agent"
         self._infos: Dict[str, Any] = {"status": "Uninitialized", "name": self._name, "id": self._id}
-        self._a2a_card: Optional[Dict[str, Any]] = None
-        self._a2a_server_details: Optional[Dict[str, Any]] = None
-        # Initialization is now an explicit async step to be called by the user.
 
     @property
     def id(self) -> str:
@@ -64,55 +62,43 @@ class LanggraphAgent(IAgent):
         return self._agent_instance
 
     @property
-    def configuration(self) -> Dict[str, Any]:
+    def configuration(self) -> LangGraphAgentConfig:
+        if not self._configuration:
+            raise RuntimeError("Agent not configured. Call initialize() first.")
         return self._configuration
 
     @property
     def infos(self) -> Dict[str, Any]:
-        # Potentially update infos dynamically based on agent state
         self._infos["underlying_agent_type"] = str(type(self._agent_instance)) if self._agent_instance else "N/A"
         return self._infos
 
-    @property
-    def a2a_card(self) -> Optional[Dict[str, Any]]:
-        return self._a2a_card
-
-    @property
-    def a2a_server_details(self) -> Optional[Dict[str, Any]]:
-        return self._a2a_server_details
-
     async def initialize(self, config: Dict[str, Any]) -> None:
         """Initializes the LangGraph agent asynchronously."""
-        self._configuration = config
-        self._name = config.get("name", "Unnamed LangGraph Agent")
+        self._configuration = LangGraphAgentConfig.model_validate(config)
+        
+        self._name = self._configuration.name or "Unnamed LangGraph Agent"
         self._infos["name"] = self._name
 
-        await self._setup_persistence(config)
+        await self._setup_persistence()
 
-        agent_path = config.get("agent_path")
-        if not agent_path:
-            raise ValueError("agent_path must be specified to load the LangGraph agent.")
+        graph_builder = self._load_graph_builder(self._configuration.graph_definition)
+        self._infos["graph_definition"] = self._configuration.graph_definition
 
-        graph_builder = self._load_graph_builder(agent_path)
-        self._infos["agent_path"] = agent_path
-
-        # Compile the graph with the checkpointer and store
         self._agent_instance = graph_builder.compile(
             checkpointer=self._checkpointer, store=self._store
         )
 
-        # The input/output schemas can be derived from the compiled graph
         if self._agent_instance:
             self._input_schema = self._agent_instance.input_schema
             self._output_schema = self._agent_instance.output_schema
             self._infos["input_schema"] = str(self._input_schema)
             self._infos["output_schema"] = str(self._output_schema)
         else:
-            self._input_schema = config.get("input_schema_definition", Any)  # Fallback
-            self._output_schema = config.get("output_schema_definition", Any)  # Fallback
+            self._input_schema = self._configuration.input_schema_definition
+            self._output_schema = self._configuration.output_schema_definition
 
         self._infos["status"] = "Initialized"
-        self._infos["config_used"] = config
+        self._infos["config_used"] = self._configuration.model_dump()
 
     async def close(self):
         """Closes any open resources, like database connections."""
@@ -121,51 +107,29 @@ class LanggraphAgent(IAgent):
             self._connection = None
             print("Database connection closed.")
 
-    async def _setup_persistence(self, config: Dict[str, Any]) -> None:
+    async def _setup_persistence(self) -> None:
         """Configures the agent's persistence (checkpoint and store) asynchronously."""
-        # Checkpoint configuration
-        checkpoint_config = config.get("checkpoint")
-        if checkpoint_config:
-            checkpoint_type = checkpoint_config.get("type")
-            if checkpoint_type == "sqlite":
-                db_path = checkpoint_config.get("db_path")
-                if not db_path:
-                    raise ValueError("db_path must be specified for sqlite checkpoint")
-                # Manually create the connection and the saver
-                self._connection = await aiosqlite.connect(db_path)
+        if not self._configuration:
+            return
+
+        if self._configuration.checkpointer:
+            if isinstance(self._configuration.checkpointer, SqliteCheckpointConfig):
+                self._connection = await aiosqlite.connect(self._configuration.checkpointer.db_path)
                 self._checkpointer = AsyncSqliteSaver(conn=self._connection)
-                self._infos["checkpoint"] = {"type": "sqlite_async", "db_path": db_path}
-            elif checkpoint_type == "postgres":
-                raise NotImplementedError("Postgres checkpoint not yet implemented.")
+                self._infos["checkpointer"] = self._configuration.checkpointer.model_dump()
             else:
-                raise ValueError(f"Unsupported checkpoint type: {checkpoint_type}")
+                raise NotImplementedError("Only SQLite checkpointer is supported.")
 
-        # Store configuration
-        store_config = config.get("store")
-        if store_config:
-            store_type = store_config.get("type")
-            if store_type == "sqlite":
-                # The langgraph documentation does not clearly specify a SqliteStore.
-                # It provides SqliteSaver for checkpoints. For stores, it gives examples
-                # for InMemoryStore, PostgresStore, and RedisStore.
-                # It's possible the checkpointer is intended to be used as the store for sqlite.
-                # For now, we'll mark this as not implemented.
-                raise NotImplementedError(
-                    "Sqlite store not yet implemented. "
-                    "LangGraph docs do not specify a separate SqliteStore."
-                )
-            elif store_type == "postgres":
-                raise NotImplementedError("Postgres store not yet implemented.")
-            else:
-                raise ValueError(f"Unsupported store type: {store_type}")
+        if self._configuration.store:
+            raise NotImplementedError("Store functionality is not yet implemented.")
 
-    def _load_graph_builder(self, agent_path: str) -> StateGraph:
+    def _load_graph_builder(self, graph_definition: str) -> StateGraph:
         """Loads a StateGraph instance from a specified path."""
         try:
-            module_path, graph_variable_name = agent_path.rsplit(":", 1)
+            module_path, graph_variable_name = graph_definition.rsplit(":", 1)
         except ValueError:
             raise ValueError(
-                "agent_path must be in the format 'path/to/file.py:variable_name'"
+                "graph_definition must be in the format 'path/to/file.py:variable_name'"
             )
 
         try:
@@ -180,7 +144,7 @@ class LanggraphAgent(IAgent):
 
             graph_builder = getattr(module, graph_variable_name)
         except (FileNotFoundError, ImportError, AttributeError) as e:
-            raise ValueError(f"Failed to load agent from {agent_path}: {e}")
+            raise ValueError(f"Failed to load agent from {graph_definition}: {e}")
 
         if not isinstance(graph_builder, StateGraph):
             raise TypeError(
@@ -188,8 +152,8 @@ class LanggraphAgent(IAgent):
             )
 
         return graph_builder
-
-    async def process_message(self, message: Any) -> Any:
+        
+    async def invoke(self, message: Any) -> Any:
         """
         Processes a single input message to chat with the agent.
         The message should be a dictionary containing 'query' and 'session_id'.
@@ -200,29 +164,22 @@ class LanggraphAgent(IAgent):
         if not isinstance(message, dict) or "query" not in message or "session_id" not in message:
             raise ValueError("Message must be a dictionary with 'query' and 'session_id' keys.")
 
-        # LangGraph expects a list of messages.
-        # With checkpointing, the history is managed by the graph.
-        # We just need to provide the new message.
         graph_input = {"messages": [("user", message["query"])]}
         config = {"configurable": {"thread_id": message["session_id"]}}
 
-        # ainvoke the agent
         output = await self._agent_instance.ainvoke(graph_input, config)
 
-        # The output of a graph with MessagesState contains the full message history.
-        # The last message is the agent's response.
         if output and "messages" in output and output["messages"]:
             response_message = output["messages"][-1]
             if hasattr(response_message, 'content'):
                 return response_message.content
-            # Handle if it's a dict (less common for AIMessage but good to have)
             elif isinstance(response_message, dict) and 'content' in response_message:
                 return response_message['content']
             return response_message
 
         return output
 
-    async def process_message_stream(self, message: Any) -> AsyncGenerator[Any, None]:
+    async def stream(self, message: Any) -> AsyncGenerator[Any, None]:
         """Processes a single input message and returns a stream of ag-ui events."""
         if self._agent_instance is None:
             raise RuntimeError("Agent not initialized. Call initialize() before processing messages.")
@@ -230,7 +187,6 @@ class LanggraphAgent(IAgent):
         if isinstance(message, dict) and "query" in message and "session_id" in message:
             run_id = f"run_{uuid.uuid4()}"
             thread_id = message["session_id"]
-            # To alice with the ag-ui spec, we should use the UserMessage model
             user_message = UserMessage(id=f"msg_{uuid.uuid4()}", role="user", content=message["query"])
             graph_input = {"messages": [user_message.model_dump(by_alias=True, exclude_none=True)]}
         else:
@@ -306,51 +262,3 @@ class LanggraphAgent(IAgent):
             yield TextMessageEndEvent(type=EventType.TEXT_MESSAGE_END, message_id=current_message_id)
 
         yield RunFinishedEvent(type=EventType.RUN_FINISHED, run_id=run_id, thread_id=thread_id)
-
-    def get_session(self, session_id: Optional[str] = None) -> Any:
-        """Retrieves or establishes a session for the agent."""
-        # TODO: Implement session management for LangGraph (e.g., using "thread_id" in config)
-        print(f"LanggraphAgent: Getting session for ID: {session_id}")
-        # This might just return a config dictionary for LangGraph's configurable fields.
-        # return {"configurable": {"thread_id": session_id or str(uuid.uuid4())}}
-        raise NotImplementedError("LanggraphAgent.get_session not implemented.")
-
-    def get_memory(self, session_id: Optional[str] = None) -> Any:
-        """Accesses the agent's memory, optionally for a specific session."""
-        # TODO: Implement memory access, possibly via LangGraph checkpoints or custom memory setup.
-        print(f"LanggraphAgent: Getting memory for session ID: {session_id}")
-        raise NotImplementedError("LanggraphAgent.get_memory not implemented.")
-
-    def set_observability(self, observability_provider: Any) -> None:
-        """Configures observability (logging, tracing, metrics)."""
-        # TODO: Implement observability setup (e.g., configuring LangSmith)
-        print(f"LanggraphAgent: Setting observability provider: {observability_provider}")
-        self._infos["observability_provider"] = str(observability_provider)
-        # raise NotImplementedError("LanggraphAgent.set_observability not implemented.")
-
-    def get_infos(self) -> Dict[str, Any]:
-        """Returns information about the agent instance."""
-        return self.infos # Accesses the property, which can be dynamic
-
-    def get_workflow(self) -> Any:
-        """Returns the definition or representation of the agent's workflow."""
-        # TODO: Return the LangGraph graph definition or a representation of it.
-        print("LanggraphAgent: Getting workflow.")
-        # return self._agent_instance.graph. F(if applicable and accessible)
-        raise NotImplementedError("LanggraphAgent.get_workflow not implemented.")
-
-    def set_a2a_server(self, server_info: Dict[str, Any]) -> None:
-        """Configures the agent-to-agent communication server."""
-        print(f"LanggraphAgent: Setting A2A server info: {server_info}")
-        self._a2a_server_details = server_info
-        self._infos["a2a_server_configured"] = True
-        # raise NotImplementedError("LanggraphAgent.set_a2a_server not implemented.")
-
-    # Helper to construct session config for LangGraph, if needed
-    def _get_session_config(self, session_id: Optional[str] = None) -> Dict[str, Any]:
-        # This is a conceptual helper. Actual session handling may vary.
-        # If LangGraph uses thread_id for sessions:
-        # current_session_id = session_id or getattr(self, "_current_session_id", str(uuid.uuid4()))
-        # self._current_session_id = current_session_id # Store if managing sessions internally
-        # return {"configurable": {"thread_id": current_session_id}}
-        return {} 

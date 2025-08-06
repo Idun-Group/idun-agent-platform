@@ -1,0 +1,29 @@
+[project]
+name = "idun-agent-sdk"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Geoffrey HARRAZI",email = "geoffreyharrazi@gmail.com"}
+]
+license = {text = "MIT License"}
+readme = "README.md"
+requires-python = "^3.11"
+dependencies = [
+    "fastapi (>=0.116.1,<0.117.0)",
+    "uvicorn (>=0.35.0,<0.36.0)",
+    "langgraph (>=0.6.3,<0.7.0)",
+    "langgraph-checkpoint-sqlite (>=2.0.11,<3.0.0)",
+    "streamlit (>=1.47.1,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "pydantic (>=2.11.7,<3.0.0)",
+    "langchain-core (>=0.3.72,<0.4.0)",
+    "langchain-google-vertexai (>=2.0.27,<3.0.0)",
+    "google-adk (>=1.9.0,<2.0.0)",
+    "ag-ui-protocol (>=0.1.8,<0.2.0)",
+    "aiosqlite (>=0.21.0,<0.22.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
