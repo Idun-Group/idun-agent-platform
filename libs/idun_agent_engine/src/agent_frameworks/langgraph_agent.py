@@ -72,7 +72,7 @@ class LanggraphAgent(BaseAgent):
         self._infos["underlying_agent_type"] = str(type(self._agent_instance)) if self._agent_instance else "N/A"
         return self._infos
 
-    async def initialize(self, config: Dict[str, Any]) -> None:
+    async def initialize(self, config: LangGraphAgentConfig) -> None:
         """Initializes the LangGraph agent asynchronously."""
         self._configuration = LangGraphAgentConfig.model_validate(config)
         
@@ -175,7 +175,10 @@ class LanggraphAgent(BaseAgent):
                 return response_message.content
             elif isinstance(response_message, dict) and 'content' in response_message:
                 return response_message['content']
-            return response_message
+            elif isinstance(response_message, tuple):
+                return response_message[1] 
+            else:
+                response_message
 
         return output
 

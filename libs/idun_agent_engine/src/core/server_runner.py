@@ -56,9 +56,9 @@ def run_server(
         app,
         host=host,
         port=port,
-        reload=reload,
+        # reload=reload,
         log_level=log_level,
-        workers=workers
+        # workers=workers
     )
 
 

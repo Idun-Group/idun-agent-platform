@@ -8,9 +8,15 @@ This is the most common and recommended approach for production deployments.
 import sys
 from pathlib import Path
 
-# Add the project root to the Python path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
+# # Print current sys.path before adding project root
+# print("Python path before:", sys.path)
+
+# # Add the project root to the Python path
+# project_root = Path(__file__).parent.parent.parent
+# sys.path.insert(0, str(project_root))
+
+# # Print current sys.path after adding project root
+print("Python path:", sys.path)
 
 from src import create_app, run_server
 

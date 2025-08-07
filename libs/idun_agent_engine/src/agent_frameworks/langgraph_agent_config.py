@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any, Union, Literal
 from urllib.parse import urlparse
 from src.agent_frameworks.base_agent_config import BaseAgentConfig
@@ -8,7 +8,8 @@ class SqliteCheckpointConfig(BaseModel):
     type: Literal["sqlite"]
     db_url: str
 
-    @validator('db_url')
+    @field_validator('db_url')
+    @classmethod
     def db_url_must_be_sqlite(cls, v: str) -> str:
         if not v.startswith("sqlite:///"):
             raise ValueError("SQLite DB URL must start with 'sqlite:///'")

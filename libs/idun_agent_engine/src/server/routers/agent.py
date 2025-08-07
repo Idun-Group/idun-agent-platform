@@ -10,7 +10,6 @@ class ChatRequest(BaseModel):
     query: str
 
 class ChatResponse(BaseModel):
-    agent_id: str
     session_id: str
     response: str
 
@@ -26,7 +25,6 @@ async def invoke(request: ChatRequest, agent: BaseAgent = Depends(get_agent)):
         response_content = await agent.invoke(message)
         
         return ChatResponse(
-            agent_id=agent.id,
             session_id=request.session_id,
             response=response_content
         )

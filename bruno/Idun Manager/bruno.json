@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "Idun Manager",
+  "name": "Idun Agent Platform",
   "type": "collection",
   "ignore": [
     "node_modules",
