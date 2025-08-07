@@ -19,7 +19,7 @@ RUN poetry config virtualenvs.create false && \
 
 # Copy the application code into the container at /app
 COPY idun_agent_manager ./idun_agent_manager/
-COPY sdk ./sdk/
+COPY engine ./engine/
 # Copy the docker-compose file into the container at /app
 COPY docker-compose.yml ./
 
@@ -27,4 +27,4 @@ COPY docker-compose.yml ./
 EXPOSE 8000
 
 # Define the command to run the application
-CMD ["poetry", "run", "uvicorn", "idun_agent_sdk.server.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["poetry", "run", "uvicorn", "idun_agent_engine.server.main:app", "--host", "0.0.0.0", "--port", "8000"]
