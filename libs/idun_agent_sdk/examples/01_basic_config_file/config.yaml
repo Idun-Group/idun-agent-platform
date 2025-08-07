@@ -1,12 +1,10 @@
 # Idun Agent SDK Configuration
-# This file defines both SDK settings and agent configuration
+# This file defines both server settings and agent configuration
 
-# SDK Configuration - Controls the server and platform behavior
-sdk:
+# Server Configuration - Controls the server and platform behavior
+server:
   api:
     port: 8000                    # Port where the server will run
-  telemetry:
-    provider: "langfuse"          # Telemetry provider for monitoring
 
 # Agent Configuration - Defines which agent to load and how
 agent:

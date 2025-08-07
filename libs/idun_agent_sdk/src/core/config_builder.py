@@ -9,8 +9,9 @@ from typing import Dict, Any, Optional, Type, Union
 from pathlib import Path
 import yaml
 
-from ..server.server_config import AppConfig, SDKConfig, AgentConfig, AppAPIConfig, AppTelemetryConfig
+from .engine_config import EngineConfig, ServerConfig, AgentConfig
 from ..agent_frameworks.langgraph_agent_config import LangGraphAgentConfig, SqliteCheckpointConfig
+from src.server.server_config import ServerAPIConfig
 from ..agent_frameworks.base_agent import BaseAgent
 
 
@@ -25,7 +26,6 @@ class ConfigBuilder:
     Example:
         config = (ConfigBuilder()
                  .with_api_port(8080)
-                 .with_telemetry("langfuse")
                  .with_langgraph_agent(
                      name="My Agent",
                      graph_definition="my_agent.py:graph",
@@ -37,7 +37,7 @@ class ConfigBuilder:
     
     def __init__(self):
         """Initialize a new configuration builder with default values."""
-        self._sdk_config = SDKConfig()
+        self._server_config = ServerConfig()
         self._agent_config: Optional[AgentConfig] = None
     
     def with_api_port(self, port: int) -> "ConfigBuilder":
@@ -51,38 +51,37 @@ class ConfigBuilder:
             ConfigBuilder: This builder instance for method chaining
         """
         # Create new API config with updated port
-        api_config = AppAPIConfig(port=port)
-        self._sdk_config = SDKConfig(
+        api_config = ServerAPIConfig(port=port)
+        self._server_config = ServerConfig(
             api=api_config,
-            telemetry=self._sdk_config.telemetry
         )
         return self
     
-    def with_telemetry(self, provider: str) -> "ConfigBuilder":
-        """
-        Set the telemetry provider.
+    # def with_telemetry(self, provider: str) -> "ConfigBuilder":
+    #     """
+    #     Set the telemetry provider.
         
-        Args:
-            provider: The telemetry provider name (e.g., "langfuse", "wandb")
+    #     Args:
+    #         provider: The telemetry provider name (e.g., "langfuse", "wandb")
             
-        Returns:
-            ConfigBuilder: This builder instance for method chaining
-        """
-        # Create new telemetry config with updated provider
-        telemetry_config = AppTelemetryConfig(provider=provider)
-        self._sdk_config = SDKConfig(
-            api=self._sdk_config.api,
-            telemetry=telemetry_config
-        )
-        return self
+    #     Returns:
+    #         ConfigBuilder: This builder instance for method chaining
+    #     """
+    #     # Create new telemetry config with updated provider
+    #     telemetry_config = ServerTelemetryConfig(provider=provider)
+    #     self._server_config = ServerConfig(
+    #         api=self._server_config.api,
+    #         telemetry=telemetry_config
+    #     )
+    #     return self
     
-    def with_sdk_config(
+    def with_server_config(
         self, 
         api_port: Optional[int] = None,
         telemetry_provider: Optional[str] = None
     ) -> "ConfigBuilder":
         """
-        Set SDK configuration options directly.
+        Set server configuration options directly.
         
         Args:
             api_port: Optional API port
@@ -91,10 +90,9 @@ class ConfigBuilder:
         Returns:
             ConfigBuilder: This builder instance for method chaining
         """
-        api_config = AppAPIConfig(port=api_port) if api_port else self._sdk_config.api
-        telemetry_config = AppTelemetryConfig(provider=telemetry_provider) if telemetry_provider else self._sdk_config.telemetry
+        api_config = ServerAPIConfig(port=api_port) if api_port else self._server_config.api
         
-        self._sdk_config = SDKConfig(api=api_config, telemetry=telemetry_config)
+        self._server_config = ServerConfig(api=api_config)
         return self
     
     def with_langgraph_agent(
@@ -166,12 +164,12 @@ class ConfigBuilder:
         )
         return self
     
-    def build(self) -> AppConfig:
+    def build(self) -> EngineConfig:
         """
         Build and return the complete configuration as a validated Pydantic model.
         
         Returns:
-            AppConfig: The complete, validated configuration object
+            EngineConfig: The complete, validated configuration object
             
         Raises:
             ValueError: If the configuration is incomplete or invalid
@@ -180,8 +178,8 @@ class ConfigBuilder:
             raise ValueError("Agent configuration is required. Use with_langgraph_agent() or with_custom_agent()")
         
         # Create and validate the complete configuration
-        return AppConfig(
-            sdk=self._sdk_config,
+        return EngineConfig(
+            server=self._server_config,
             agent=self._agent_config
         )
     
@@ -194,8 +192,8 @@ class ConfigBuilder:
         Returns:
             Dict[str, Any]: The complete configuration dictionary
         """
-        app_config = self.build()
-        return app_config.model_dump()
+        engine_config = self.build()
+        return engine_config.model_dump()
     
     def save_to_file(self, file_path: str) -> None:
         """
@@ -218,16 +216,16 @@ class ConfigBuilder:
         Raises:
             ValueError: If agent type is unsupported or configuration is invalid
         """
-        app_config = self.build()
-        return await self.initialize_agent_from_config(app_config)
+        engine_config = self.build()
+        return await self.initialize_agent_from_config(engine_config)
     
     @staticmethod
-    async def initialize_agent_from_config(app_config: AppConfig) -> BaseAgent:
+    async def initialize_agent_from_config(engine_config: EngineConfig) -> BaseAgent:
         """
-        Initialize an agent instance from a validated AppConfig.
+        Initialize an agent instance from a validated EngineConfig.
         
         Args:
-            app_config: Validated configuration object
+            engine_config: Validated configuration object
             
         Returns:
             BaseAgent: Initialized agent instance
@@ -235,8 +233,8 @@ class ConfigBuilder:
         Raises:
             ValueError: If agent type is unsupported
         """
-        agent_config_dict = app_config.agent.config
-        agent_type = app_config.agent.type
+        agent_config_dict = engine_config.agent.config
+        agent_type = engine_config.agent.type
 
         # Initialize the appropriate agent
         agent_instance = None
@@ -307,15 +305,15 @@ class ConfigBuilder:
             raise ValueError(f"Unsupported agent type: {agent_type}")
     
     @staticmethod
-    def load_from_file(config_path: str = "config.yaml") -> AppConfig:
+    def load_from_file(config_path: str = "config.yaml") -> EngineConfig:
         """
-        Load configuration from a YAML file and return a validated AppConfig.
+        Load configuration from a YAML file and return a validated EngineConfig.
         
         Args:
             config_path: Path to the configuration YAML file
             
         Returns:
-            AppConfig: Validated configuration object
+            EngineConfig: Validated configuration object
             
         Raises:
             FileNotFoundError: If the configuration file doesn't exist
@@ -329,10 +327,10 @@ class ConfigBuilder:
         with open(path, 'r') as f:
             config_data = yaml.safe_load(f)
         
-        return AppConfig.model_validate(config_data)
+        return EngineConfig.model_validate(config_data)
     
     @staticmethod
-    async def load_and_initialize_agent(config_path: str = "config.yaml") -> tuple[AppConfig, BaseAgent]:
+    async def load_and_initialize_agent(config_path: str = "config.yaml") -> tuple[EngineConfig, BaseAgent]:
         """
         Load configuration and initialize agent in one step.
         
@@ -340,24 +338,24 @@ class ConfigBuilder:
             config_path: Path to the configuration YAML file
             
         Returns:
-            tuple[AppConfig, BaseAgent]: Configuration and initialized agent
+            tuple[EngineConfig, BaseAgent]: Configuration and initialized agent
         """
-        app_config = ConfigBuilder.load_from_file(config_path)
-        agent = await ConfigBuilder.initialize_agent_from_config(app_config)
-        return app_config, agent
+        engine_config = ConfigBuilder.load_from_file(config_path)
+        agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+        return engine_config, agent
     
     @staticmethod
     def resolve_config(
         config_path: Optional[str] = None,
         config_dict: Optional[Dict[str, Any]] = None,
-        app_config: Optional[AppConfig] = None
-    ) -> AppConfig:
+        engine_config: Optional[EngineConfig] = None
+    ) -> EngineConfig:
         """
         Umbrella function to resolve configuration from various sources.
         
         This function handles all the different ways configuration can be provided
-        and returns a validated AppConfig. It follows a priority order:
-        1. app_config (pre-validated AppConfig from ConfigBuilder)
+        and returns a validated EngineConfig. It follows a priority order:
+        1. engine_config (pre-validated EngineConfig from ConfigBuilder)
         2. config_dict (dictionary to be validated)
         3. config_path (file path to load and validate)
         4. default "config.yaml" file
@@ -365,23 +363,23 @@ class ConfigBuilder:
         Args:
             config_path: Path to a YAML configuration file
             config_dict: Dictionary containing configuration
-            app_config: Pre-validated AppConfig instance
+            engine_config: Pre-validated EngineConfig instance
             
         Returns:
-            AppConfig: Validated configuration object
+            EngineConfig: Validated configuration object
             
         Raises:
             FileNotFoundError: If config file doesn't exist
             ValidationError: If configuration is invalid
         """
-        if app_config:
-            # Use pre-validated AppConfig (from ConfigBuilder)
-            print("✅ Using pre-validated AppConfig")
-            return app_config
+        if engine_config:
+            # Use pre-validated EngineConfig (from ConfigBuilder)
+            print("✅ Using pre-validated EngineConfig")
+            return engine_config
         elif config_dict:
             # Validate dictionary config
             print("✅ Validated dictionary configuration")
-            return AppConfig.model_validate(config_dict)
+            return EngineConfig.model_validate(config_dict)
         elif config_path:
             # Load from file using ConfigBuilder
             print(f"✅ Loaded configuration from {config_path}")
@@ -408,12 +406,12 @@ class ConfigBuilder:
             ValidationError: If the configuration dictionary is invalid
         """
         # Validate the entire config first
-        app_config = AppConfig.model_validate(config_dict)
+        engine_config = EngineConfig.model_validate(config_dict)
         
         # Create a new builder
         builder = cls()
-        builder._sdk_config = app_config.sdk
-        builder._agent_config = app_config.agent
+        builder._server_config = engine_config.server
+        builder._agent_config = engine_config.agent
         
         return builder
     
@@ -428,21 +426,21 @@ class ConfigBuilder:
         Returns:
             ConfigBuilder: A new builder instance with the loaded configuration
         """
-        app_config = cls.load_from_file(config_path)
-        return cls.from_app_config(app_config)
+        engine_config = cls.load_from_file(config_path)
+        return cls.from_engine_config(engine_config)
     
     @classmethod
-    def from_app_config(cls, app_config: AppConfig) -> "ConfigBuilder":
+    def from_engine_config(cls, engine_config: EngineConfig) -> "ConfigBuilder":
         """
-        Create a ConfigBuilder from an existing AppConfig instance.
+        Create a ConfigBuilder from an existing EngineConfig instance.
         
         Args:
-            app_config: Existing AppConfig instance
+            engine_config: Existing EngineConfig instance
             
         Returns:
             ConfigBuilder: A new builder instance with the provided configuration
         """
         builder = cls()
-        builder._sdk_config = app_config.sdk
-        builder._agent_config = app_config.agent
+        builder._server_config = engine_config.server
+        builder._agent_config = engine_config.agent
         return builder 

@@ -6,14 +6,14 @@ from ..core.config_builder import ConfigBuilder
 async def lifespan(app: FastAPI):
     # Load config and initialize agent on startup
     print("Server starting up...")
-    app_config = app.state.app_config
+    engine_config = app.state.engine_config
     
     # Use ConfigBuilder's centralized agent initialization
-    agent_instance = await ConfigBuilder.initialize_agent_from_config(app_config)
+    agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config)
     
     # Store both in app state
     app.state.agent = agent_instance
-    app.state.config = app_config
+    app.state.config = engine_config
     
     agent_name = getattr(agent_instance, 'name', 'Unknown')
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")

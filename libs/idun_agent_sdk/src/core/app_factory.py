@@ -14,15 +14,15 @@ from contextlib import asynccontextmanager
 from ..server.lifespan import lifespan
 from ..server.routers.agent import agent_router
 from ..server.routers.base import base_router
-from ..server.server_config import AppConfig
-from ..core.config_builder import ConfigBuilder
+from .engine_config import EngineConfig
+from .config_builder import ConfigBuilder
 from ..agent_frameworks.langgraph_agent import LanggraphAgent
 
 
 def create_app(
     config_path: Optional[str] = None, 
     config_dict: Optional[Dict[str, Any]] = None,
-    app_config: Optional[AppConfig] = None
+    engine_config: Optional[EngineConfig] = None
 ) -> FastAPI:
     """
     Create a FastAPI application with an integrated agent.
@@ -36,8 +36,8 @@ def create_app(
                     in the current directory.
         config_dict: Dictionary containing configuration. If provided, takes precedence over config_path.
                     Useful for programmatic configuration.
-        app_config: Pre-validated AppConfig instance (from ConfigBuilder.build()). 
-                   Takes precedence over other options.
+        engine_config: Pre-validated EngineConfig instance (from ConfigBuilder.build()). 
+                      Takes precedence over other options.
     
     Returns:
         FastAPI: A configured FastAPI application ready to serve your agent.
@@ -48,7 +48,7 @@ def create_app(
         
         # Using a config dictionary
         config = {
-            "sdk": {"api": {"port": 8000}},
+            "server": {"api": {"port": 8000}},
             "agent": {
                 "type": "langgraph",
                 "config": {
@@ -64,14 +64,14 @@ def create_app(
         config = (ConfigBuilder()
                  .with_langgraph_agent(name="My Agent", graph_definition="my_agent.py:graph")
                  .build())
-        app = create_app(app_config=config)
+        app = create_app(engine_config=config)
     """
     
     # Resolve configuration from various sources using ConfigBuilder's umbrella function
     validated_config = ConfigBuilder.resolve_config(
         config_path=config_path,
         config_dict=config_dict,
-        app_config=app_config
+        engine_config=engine_config
     )
         
     # Create the FastAPI application
@@ -85,7 +85,7 @@ def create_app(
     )
 
     # Store configuration in app state for lifespan to use
-    app.state.app_config = validated_config
+    app.state.engine_config = validated_config
 
     # Include the routers
     app.include_router(agent_router, prefix="/agent", tags=["Agent"])

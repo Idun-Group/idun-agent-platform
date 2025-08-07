@@ -81,18 +81,18 @@ def run_server_from_config(config_path: str = "config.yaml", **kwargs) -> None:
     from .config_builder import ConfigBuilder
     
     # Load configuration using ConfigBuilder
-    app_config = ConfigBuilder.load_from_file(config_path)
+    engine_config = ConfigBuilder.load_from_file(config_path)
     
     # Create app with the loaded config
-    app = create_app(app_config=app_config)
+    app = create_app(engine_config=engine_config)
     
     # Extract port from config if not overridden
     if 'port' not in kwargs:
-        kwargs['port'] = app_config.sdk.api.port
+        kwargs['port'] = engine_config.server.api.port
     
     # Show configuration info
     print(f"🔧 Loaded configuration from {config_path}")
-    print(f"🤖 Agent: {app_config.agent.config.get('name', 'Unknown')} ({app_config.agent.type})")
+    print(f"🤖 Agent: {engine_config.agent.config.get('name', 'Unknown')} ({engine_config.agent.type})")
     
     run_server(app, **kwargs)
 
@@ -120,20 +120,20 @@ def run_server_from_builder(config_builder, **kwargs) -> None:
     
     # Build the configuration if it's a ConfigBuilder instance
     if hasattr(config_builder, 'build'):
-        app_config = config_builder.build()
+        engine_config = config_builder.build()
     else:
-        # Assume it's already an AppConfig
-        app_config = config_builder
+        # Assume it's already an EngineConfig
+        engine_config = config_builder
     
     # Create app with the config
-    app = create_app(app_config=app_config)
+    app = create_app(engine_config=engine_config)
     
     # Extract port from config if not overridden
     if 'port' not in kwargs:
-        kwargs['port'] = app_config.sdk.api.port
+        kwargs['port'] = engine_config.server.api.port
     
     # Show configuration info
     print(f"🔧 Using programmatic configuration")
-    print(f"🤖 Agent: {app_config.agent.config.get('name', 'Unknown')} ({app_config.agent.type})")
+    print(f"🤖 Agent: {engine_config.agent.config.get('name', 'Unknown')} ({engine_config.agent.type})")
     
     run_server(app, **kwargs) 

@@ -23,7 +23,6 @@ def basic_config_example():
     
     config = (ConfigBuilder()
               .with_api_port(8000)
-              .with_telemetry("langfuse")
               .with_langgraph_agent(
                   name="Programmatic Example Agent",
                   graph_definition=str(Path(__file__).parent / "smart_agent.py:app"),
@@ -45,14 +44,13 @@ def environment_based_config():
     
     config = (ConfigBuilder()
               .with_api_port(port)
-              .with_telemetry(telemetry_provider)
               .with_langgraph_agent(
                   name=f"Smart Agent ({environment})",
                   graph_definition=str(Path(__file__).parent / "smart_agent.py:app"),
                   sqlite_checkpointer=f"{environment}_smart_agent.db")
               .build())
     
-    print(f"📊 Configuration validated: Port={config.sdk.api.port}, Environment={environment}")
+    print(f"📊 Configuration validated: Port={config.server.api.port}, Environment={environment}")
     print(f"🤖 Agent: {config.agent.config['name']}")
     return config
 
@@ -79,7 +77,7 @@ def load_and_modify_config():
         
         print(f"✅ Loaded and modified config from {basic_config_path}")
         print(f"🤖 Modified agent name: {modified_config.agent.config['name']}")
-        print(f"🌐 Modified port: {modified_config.sdk.api.port}")
+        print(f"🌐 Modified port: {modified_config.server.api.port}")
         
         return modified_config
         
@@ -99,7 +97,6 @@ def conditional_config():
         # Production configuration
         config = (ConfigBuilder()
                   .with_api_port(80)
-                  .with_telemetry("langfuse")
                   .with_langgraph_agent(
                       name="Production Smart Agent",
                       graph_definition=str(Path(__file__).parent / "smart_agent.py:app"),
@@ -109,7 +106,6 @@ def conditional_config():
         # Development configuration
         config = (ConfigBuilder()
                   .with_api_port(8003)
-                  .with_telemetry("langfuse")
                   .with_langgraph_agent(
                       name="Development Smart Agent",
                       graph_definition=str(Path(__file__).parent / "smart_agent.py:app"),
@@ -119,7 +115,7 @@ def conditional_config():
     mode = "production" if is_production else "development"
     print(f"📊 Running in {mode} mode with validated config")
     print(f"🤖 Agent: {config.agent.config['name']}")
-    print(f"🌐 Port: {config.sdk.api.port}")
+    print(f"🌐 Port: {config.server.api.port}")
     return config
 
 
@@ -130,7 +126,6 @@ def save_and_load_config():
     # Build a configuration
     original_config = (ConfigBuilder()
                       .with_api_port(8004)
-                      .with_telemetry("langfuse")
                       .with_langgraph_agent(
                           name="Save and Load Agent",
                           graph_definition=str(Path(__file__).parent / "smart_agent.py:app"),
@@ -141,7 +136,7 @@ def save_and_load_config():
     
     # Save to file using ConfigBuilder
     config_file = Path(__file__).parent / "generated_config.yaml"
-    config_builder = ConfigBuilder.from_app_config(original_config)
+    config_builder = ConfigBuilder.from_engine_config(original_config)
     config_builder.save_to_file(str(config_file))
     print(f"💾 Configuration saved to {config_file}")
     
@@ -165,7 +160,6 @@ def builder_direct_run():
     # Create ConfigBuilder but don't build it yet
     builder = (ConfigBuilder()
               .with_api_port(8005)
-              .with_telemetry("langfuse")
               .with_langgraph_agent(
                   name="Direct Run Agent",
                   graph_definition=str(Path(__file__).parent / "smart_agent.py:app"),
@@ -197,14 +191,14 @@ async def demonstrate_agent_initialization():
     basic_config_path = str(Path(__file__).parent.parent / "01_basic_config_file" / "config.yaml")
     
     try:
-        app_config, agent2 = await ConfigBuilder.load_and_initialize_agent(basic_config_path)
+        engine_config, agent2 = await ConfigBuilder.load_and_initialize_agent(basic_config_path)
         print(f"✅ Agent loaded from file: {agent2.name} (ID: {agent2.id})")
-        print(f"📊 Config details: Port={app_config.sdk.api.port}, Type={app_config.agent.type}")
+        print(f"📊 Config details: Port={engine_config.server.api.port}, Type={engine_config.agent.type}")
     except FileNotFoundError:
         print(f"⚠️  Config file not found, skipping file-based initialization")
     
     # Method 3: Initialize from existing config
-    print("\n🔧 Method 3: Initialize from existing AppConfig")
+    print("\n🔧 Method 3: Initialize from existing EngineConfig")
     config = builder.build()
     agent3 = await ConfigBuilder.initialize_agent_from_config(config)
     print(f"✅ Agent initialized from config: {agent3.name} (ID: {agent3.id})")
@@ -249,7 +243,7 @@ def main():
     
     # Create and run the app using the validated config (recommended way)
     print("🚀 Starting server with validated Pydantic configuration...")
-    app = create_app(app_config=config)
+    app = create_app(engine_config=config)
     run_server(app, reload=True)
 
 
@@ -277,5 +271,6 @@ Available examples:
   - run_server_from_builder() - Run server directly from builder
   - Full type safety with Pydantic models
   - Centralized agent management
+  - Renamed: EngineConfig (was AppConfig), ServerConfig (was SDKConfig)
 """)
     main() 

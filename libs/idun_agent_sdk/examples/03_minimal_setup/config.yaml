@@ -1,7 +1,7 @@
 # Minimal Configuration for Idun Agent SDK
 # Just the essentials to get your agent running!
 
-sdk:
+server:
   api:
     port: 8000
 

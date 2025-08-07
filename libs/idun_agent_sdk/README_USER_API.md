@@ -53,7 +53,6 @@ from idun_agent_sdk import ConfigBuilder, create_app, run_server
 
 config = (ConfigBuilder()
           .with_api_port(8080)
-          .with_telemetry("langfuse")
           .with_langgraph_agent(
               name="My Agent",
               graph_definition="my_agent.py:graph",
