@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
+
 from src.agent.base import BaseAgent
 from src.agent.model import BaseAgentConfig
 
@@ -12,7 +14,7 @@ class CrewAIAgent(BaseAgent[BaseAgentConfig]):
     """
 
     def __init__(self) -> None:
-        self._configuration: Optional[BaseAgentConfig] = None
+        self._configuration: BaseAgentConfig | None = None
 
     @property
     def id(self) -> str:  # pragma: no cover - placeholder
@@ -27,10 +29,10 @@ class CrewAIAgent(BaseAgent[BaseAgentConfig]):
         raise NotImplementedError
 
     @property
-    def infos(self) -> Dict[str, Any]:  # pragma: no cover - placeholder
+    def infos(self) -> dict[str, Any]:  # pragma: no cover - placeholder
         return {"status": "NotImplemented"}
 
-    async def initialize(self, config: Dict[str, Any]) -> None:  # pragma: no cover - placeholder
+    async def initialize(self, config: dict[str, Any]) -> None:  # pragma: no cover - placeholder
         raise NotImplementedError("CrewAIAgent is not implemented yet")
 
     async def invoke(self, message: Any) -> Any:  # pragma: no cover - placeholder

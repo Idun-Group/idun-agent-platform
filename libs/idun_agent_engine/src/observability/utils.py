@@ -1,5 +1,6 @@
-from typing import Any
 import os
+from typing import Any
+
 
 def _resolve_env(value: Any) -> Any:
     if isinstance(value, str):

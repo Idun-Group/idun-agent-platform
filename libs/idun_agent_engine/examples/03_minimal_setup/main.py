@@ -21,7 +21,7 @@ if __name__ == "__main__":
     print("🚀 Starting minimal agent server...")
     print("📖 This demonstrates the simplest possible setup!")
     print("✨ Now with enhanced ConfigBuilder umbrella functions!")
-    
+
     # One line to rule them all!
     # This internally uses ConfigBuilder.resolve_config() for maximum flexibility
-    run_server_from_config("config.yaml", reload=True) 
+    run_server_from_config("config.yaml", reload=True)

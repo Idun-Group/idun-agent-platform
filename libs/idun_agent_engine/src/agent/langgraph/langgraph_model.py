@@ -1,7 +1,10 @@
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Dict, Any, Union, Literal
+from typing import Any, Literal, Union
 from urllib.parse import urlparse
+
+from pydantic import BaseModel, field_validator
+
 from src.agent.model import BaseAgentConfig
+
 
 class SqliteCheckpointConfig(BaseModel):
     """Configuration for SQLite checkpointer."""
@@ -36,7 +39,7 @@ class LangGraphAgentConfig(BaseAgentConfig):
     This model validates the 'config' block for an agent of type 'langgraph'.
     """
     graph_definition: str
-    checkpointer: Optional[CheckpointConfig] = None
-    store: Optional[Dict[str, Any]] = None  # Placeholder for store config
+    checkpointer: CheckpointConfig | None = None
+    store: dict[str, Any] | None = None  # Placeholder for store config
 
 

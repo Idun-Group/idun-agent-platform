@@ -1,5 +1,7 @@
 from fastapi import Request
+
 from ..core.config_builder import ConfigBuilder
+
 
 async def get_agent(request: Request):
     """
@@ -12,7 +14,7 @@ async def get_agent(request: Request):
         # like in some testing scenarios.
         # Consider logging a warning here.
         print("⚠️  Agent not found in app state, initializing fallback agent...")
-        
+
         app_config = ConfigBuilder.load_from_file()
         agent = await ConfigBuilder.initialize_agent_from_config(app_config)
         return agent

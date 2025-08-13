@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-import asyncio
-from src.server.dependencies import get_agent
+
 from src.agent.base import BaseAgent
+from src.server.dependencies import get_agent
+
 
 class ChatRequest(BaseModel):
     session_id: str
@@ -23,7 +24,7 @@ async def invoke(request: ChatRequest, agent: BaseAgent = Depends(get_agent)):
     try:
         message = {"query": request.query, "session_id": request.session_id}
         response_content = await agent.invoke(message)
-        
+
         return ChatResponse(
             session_id=request.session_id,
             response=response_content

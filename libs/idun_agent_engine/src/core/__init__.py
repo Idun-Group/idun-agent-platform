@@ -9,4 +9,4 @@ This module contains the user-facing API components that make it easy to:
 
 The core module abstracts away the internal complexity while providing
 a clean, intuitive interface for end users.
-""" 
+"""

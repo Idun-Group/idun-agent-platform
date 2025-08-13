@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
-from abc import ABC, abstractmethod
 import os
+from abc import ABC, abstractmethod
+from typing import Any
 
 # Re-export config for backward compatibility
 from .model import ObservabilityConfig
@@ -16,23 +16,23 @@ class ObservabilityHandlerBase(ABC):
 
     provider: str
 
-    def __init__(self, options: Optional[Dict[str, Any]] = None) -> None:
-        self.options: Dict[str, Any] = options or {}
+    def __init__(self, options: dict[str, Any] | None = None) -> None:
+        self.options: dict[str, Any] = options or {}
 
     @abstractmethod
-    def get_callbacks(self) -> List[Any]:
+    def get_callbacks(self) -> list[Any]:
         """Return a list of callbacks (can be empty)."""
         raise NotImplementedError
 
-    def get_run_name(self) -> Optional[str]:
+    def get_run_name(self) -> str | None:
         """Optional run name used by frameworks that support it."""
         run_name = self.options.get("run_name")
         return run_name if isinstance(run_name, str) else None
 
 
 def _normalize_config(
-    config: Union[ObservabilityConfig, Dict[str, Any], None]
-) -> Dict[str, Any]:
+    config: ObservabilityConfig | dict[str, Any] | None
+) -> dict[str, Any]:
     if config is None:
         return {"enabled": False}
     if isinstance(config, ObservabilityConfig):
@@ -50,8 +50,8 @@ def _normalize_config(
 
 
 def create_observability_handler(
-    config: Union[ObservabilityConfig, Dict[str, Any], None]
-) -> tuple[Optional[ObservabilityHandlerBase], Optional[Dict[str, Any]]]:
+    config: ObservabilityConfig | dict[str, Any] | None
+) -> tuple[ObservabilityHandlerBase | None, dict[str, Any] | None]:
     """Factory to create an observability handler based on provider.
 
     Accepts either an `ObservabilityConfig` or a raw dict.
@@ -60,7 +60,7 @@ def create_observability_handler(
     normalized = _normalize_config(config)
     provider = normalized.get("provider")
     enabled = normalized.get("enabled", False)
-    options: Dict[str, Any] = normalized.get("options", {})
+    options: dict[str, Any] = normalized.get("options", {})
 
     if not enabled or not provider:
         return None, {"enabled": False}
@@ -80,7 +80,7 @@ def create_observability_handler(
         from .phoenix.phoenix_handler import PhoenixHandler
 
         handler = PhoenixHandler(options)
-        info: Dict[str, Any] = {
+        info: dict[str, Any] = {
             "enabled": True,
             "provider": "phoenix",
             "collector": os.getenv("PHOENIX_COLLECTOR_ENDPOINT"),

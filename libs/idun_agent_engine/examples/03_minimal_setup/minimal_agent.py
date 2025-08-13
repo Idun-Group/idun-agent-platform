@@ -5,8 +5,9 @@ The absolute simplest LangGraph agent possible.
 Perfect for understanding the basics or quick prototyping.
 """
 
-from langgraph.graph import StateGraph, END
 from typing import TypedDict
+
+from langgraph.graph import END, StateGraph
 
 
 class State(TypedDict):
@@ -26,4 +27,4 @@ graph.set_entry_point("echo")
 graph.add_edge("echo", END)
 
 # This is what the Engine will import
-app = graph 
+app = graph

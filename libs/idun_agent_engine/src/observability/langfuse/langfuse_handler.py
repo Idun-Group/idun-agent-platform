@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional, Dict
 import os
-from ..utils import _resolve_env
+from typing import Any
+
 from ..base import ObservabilityHandlerBase
+from ..utils import _resolve_env
 
 
 class LangfuseHandler(ObservabilityHandlerBase):
     provider = "langfuse"
 
-    def __init__(self, options: Optional[Dict[str, Any]] = None):
+    def __init__(self, options: dict[str, Any] | None = None):
         super().__init__(options)
         opts = self.options
 
@@ -26,12 +27,12 @@ class LangfuseHandler(ObservabilityHandlerBase):
             os.environ["LANGFUSE_SECRET_KEY"] = secret_key
 
         # Instantiate callback handler lazily to avoid hard dep if not installed
-        self._callbacks: List[Any] = []
+        self._callbacks: list[Any] = []
         self._langfuse_client = None
         try:
             from langfuse import get_client
             from langfuse.langchain import CallbackHandler
-            
+
             self._langfuse_client = get_client()
 
             try:
@@ -47,10 +48,10 @@ class LangfuseHandler(ObservabilityHandlerBase):
             self._callbacks = []
 
     @staticmethod
-    def _resolve_env(value: Optional[str]) -> Optional[str]:
+    def _resolve_env(value: str | None) -> str | None:
         return _resolve_env(value)
 
-    def get_callbacks(self) -> List[Any]:
+    def get_callbacks(self) -> list[Any]:
         return self._callbacks
 
     def get_client(self):

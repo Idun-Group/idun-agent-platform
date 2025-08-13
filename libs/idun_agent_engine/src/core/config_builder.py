@@ -5,14 +5,19 @@ This module provides a fluent API for building configuration objects using Pydan
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
 """
 
-from typing import Dict, Any, Optional, Type, Union
 from pathlib import Path
+from typing import Any
+
 import yaml
 
-from .engine_config import EngineConfig, ServerConfig, AgentConfig
-from ..agent.langgraph.langgraph_model import LangGraphAgentConfig, SqliteCheckpointConfig
 from src.server.server_config import ServerAPIConfig
+
 from ..agent.base import BaseAgent
+from ..agent.langgraph.langgraph_model import (
+    LangGraphAgentConfig,
+    SqliteCheckpointConfig,
+)
+from .engine_config import AgentConfig, EngineConfig, ServerConfig
 
 
 class ConfigBuilder:
@@ -34,12 +39,12 @@ class ConfigBuilder:
         
         app = create_app(config_dict=config.model_dump())
     """
-    
+
     def __init__(self):
         """Initialize a new configuration builder with default values."""
         self._server_config = ServerConfig()
-        self._agent_config: Optional[AgentConfig] = None
-    
+        self._agent_config: AgentConfig | None = None
+
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """
         Set the API port for the server.
@@ -56,14 +61,14 @@ class ConfigBuilder:
             api=api_config,
         )
         return self
-    
+
     # def with_telemetry(self, provider: str) -> "ConfigBuilder":
     #     """
     #     Set the telemetry provider.
-        
+
     #     Args:
     #         provider: The telemetry provider name (e.g., "langfuse", "wandb")
-            
+
     #     Returns:
     #         ConfigBuilder: This builder instance for method chaining
     #     """
@@ -74,11 +79,11 @@ class ConfigBuilder:
     #         telemetry=telemetry_config
     #     )
     #     return self
-    
+
     def with_server_config(
-        self, 
-        api_port: Optional[int] = None,
-        telemetry_provider: Optional[str] = None
+        self,
+        api_port: int | None = None,
+        telemetry_provider: str | None = None
     ) -> "ConfigBuilder":
         """
         Set server configuration options directly.
@@ -91,15 +96,15 @@ class ConfigBuilder:
             ConfigBuilder: This builder instance for method chaining
         """
         api_config = ServerAPIConfig(port=api_port) if api_port else self._server_config.api
-        
+
         self._server_config = ServerConfig(api=api_config)
         return self
-    
+
     def with_langgraph_agent(
         self,
         name: str,
         graph_definition: str,
-        sqlite_checkpointer: Optional[str] = None,
+        sqlite_checkpointer: str | None = None,
         **additional_config
     ) -> "ConfigBuilder":
         """
@@ -120,7 +125,7 @@ class ConfigBuilder:
             "graph_definition": graph_definition,
             **additional_config
         }
-        
+
         # Add checkpointer if specified
         if sqlite_checkpointer:
             checkpointer = SqliteCheckpointConfig(
@@ -128,21 +133,21 @@ class ConfigBuilder:
                 db_url=f"sqlite:///{sqlite_checkpointer}"
             )
             agent_config_dict["checkpointer"] = checkpointer
-        
+
         # Create and validate the LangGraph config
         langgraph_config = LangGraphAgentConfig.model_validate(agent_config_dict)
-        
+
         # Create the agent config
         self._agent_config = AgentConfig(
             type="langgraph",
             config=langgraph_config.model_dump()
         )
         return self
-    
+
     def with_custom_agent(
         self,
         agent_type: str,
-        config: Dict[str, Any]
+        config: dict[str, Any]
     ) -> "ConfigBuilder":
         """
         Configure a custom agent type.
@@ -163,7 +168,7 @@ class ConfigBuilder:
             config=config
         )
         return self
-    
+
     def build(self) -> EngineConfig:
         """
         Build and return the complete configuration as a validated Pydantic model.
@@ -176,14 +181,14 @@ class ConfigBuilder:
         """
         if not self._agent_config:
             raise ValueError("Agent configuration is required. Use with_langgraph_agent() or with_custom_agent()")
-        
+
         # Create and validate the complete configuration
         return EngineConfig(
             server=self._server_config,
             agent=self._agent_config
         )
-    
-    def build_dict(self) -> Dict[str, Any]:
+
+    def build_dict(self) -> dict[str, Any]:
         """
         Build and return the configuration as a dictionary.
         
@@ -194,7 +199,7 @@ class ConfigBuilder:
         """
         engine_config = self.build()
         return engine_config.model_dump()
-    
+
     def save_to_file(self, file_path: str) -> None:
         """
         Save the configuration to a YAML file.
@@ -205,7 +210,7 @@ class ConfigBuilder:
         config = self.build_dict()
         with open(file_path, 'w') as f:
             yaml.dump(config, f, default_flow_style=False, indent=2)
-    
+
     async def build_and_initialize_agent(self) -> BaseAgent:
         """
         Build configuration and initialize the agent in one step.
@@ -218,7 +223,7 @@ class ConfigBuilder:
         """
         engine_config = self.build()
         return await self.initialize_agent_from_config(engine_config)
-    
+
     @staticmethod
     async def initialize_agent_from_config(engine_config: EngineConfig) -> BaseAgent:
         """
@@ -254,13 +259,13 @@ class ConfigBuilder:
         #     agent_instance = AutoGenAgent()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
-        
+
         # Initialize the agent with its configuration
         await agent_instance.initialize(agent_config_dict)
         return agent_instance
-    
+
     @staticmethod
-    def get_agent_class(agent_type: str) -> Type[BaseAgent]:
+    def get_agent_class(agent_type: str) -> type[BaseAgent]:
         """
         Get the agent class for a given agent type without initializing it.
         
@@ -285,9 +290,9 @@ class ConfigBuilder:
         #     return CrewAIAgent
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
-    
+
     @staticmethod
-    def validate_agent_config(agent_type: str, config: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_agent_config(agent_type: str, config: dict[str, Any]) -> dict[str, Any]:
         """
         Validate agent configuration against the appropriate Pydantic model.
         
@@ -310,7 +315,7 @@ class ConfigBuilder:
         #     return validated_config.model_dump()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
-    
+
     @staticmethod
     def load_from_file(config_path: str = "config.yaml") -> EngineConfig:
         """
@@ -331,11 +336,11 @@ class ConfigBuilder:
             # Resolve relative to the current working directory
             path = Path.cwd() / path
 
-        with open(path, 'r') as f:
+        with open(path) as f:
             config_data = yaml.safe_load(f)
-        
+
         return EngineConfig.model_validate(config_data)
-    
+
     @staticmethod
     async def load_and_initialize_agent(config_path: str = "config.yaml") -> tuple[EngineConfig, BaseAgent]:
         """
@@ -350,12 +355,12 @@ class ConfigBuilder:
         engine_config = ConfigBuilder.load_from_file(config_path)
         agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
         return engine_config, agent
-    
+
     @staticmethod
     def resolve_config(
-        config_path: Optional[str] = None,
-        config_dict: Optional[Dict[str, Any]] = None,
-        engine_config: Optional[EngineConfig] = None
+        config_path: str | None = None,
+        config_dict: dict[str, Any] | None = None,
+        engine_config: EngineConfig | None = None
     ) -> EngineConfig:
         """
         Umbrella function to resolve configuration from various sources.
@@ -395,9 +400,9 @@ class ConfigBuilder:
             # Default to loading config.yaml
             print("✅ Loaded default configuration from config.yaml")
             return ConfigBuilder.load_from_file("config.yaml")
-    
+
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> "ConfigBuilder":
+    def from_dict(cls, config_dict: dict[str, Any]) -> "ConfigBuilder":
         """
         Create a ConfigBuilder from an existing configuration dictionary.
         
@@ -414,14 +419,14 @@ class ConfigBuilder:
         """
         # Validate the entire config first
         engine_config = EngineConfig.model_validate(config_dict)
-        
+
         # Create a new builder
         builder = cls()
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
-        
+
         return builder
-    
+
     @classmethod
     def from_file(cls, config_path: str = "config.yaml") -> "ConfigBuilder":
         """
@@ -435,7 +440,7 @@ class ConfigBuilder:
         """
         engine_config = cls.load_from_file(config_path)
         return cls.from_engine_config(engine_config)
-    
+
     @classmethod
     def from_engine_config(cls, engine_config: EngineConfig) -> "ConfigBuilder":
         """
@@ -450,4 +455,4 @@ class ConfigBuilder:
         builder = cls()
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
-        return builder 
+        return builder

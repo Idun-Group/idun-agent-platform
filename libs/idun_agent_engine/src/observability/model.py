@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
+
 from .utils import _resolve_env
 
 
@@ -19,10 +21,10 @@ class ObservabilityConfig(BaseModel):
           run_name: "my-run"
     """
 
-    provider: Optional[str] = Field(default=None)
+    provider: str | None = Field(default=None)
     enabled: bool = Field(default=False)
     # Keep options generic to support different providers while remaining strongly-typed at the top level
-    options: Dict[str, Any] = Field(default_factory=dict)
+    options: dict[str, Any] = Field(default_factory=dict)
 
     def _resolve_value(self, value: Any) -> Any:
         if isinstance(value, dict):
@@ -31,7 +33,7 @@ class ObservabilityConfig(BaseModel):
             return [self._resolve_value(v) for v in value]
         return _resolve_env(value)
 
-    def resolved(self) -> "ObservabilityConfig":
+    def resolved(self) -> ObservabilityConfig:
         """Return a copy of the config with env placeholders resolved in options."""
         resolved_options = self._resolve_value(self.options)
         return ObservabilityConfig(

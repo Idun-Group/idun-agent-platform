@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, AsyncGenerator, TypeVar, Generic
+from collections.abc import AsyncGenerator
+from typing import Any, Generic, TypeVar
+
 from .model import BaseAgentConfig
 
 ConfigType = TypeVar("ConfigType", bound=BaseAgentConfig)
@@ -41,12 +43,12 @@ class BaseAgent(ABC, Generic[ConfigType]):
 
     @property
     @abstractmethod
-    def infos(self) -> Dict[str, Any]:
+    def infos(self) -> dict[str, Any]:
         """General information about the agent instance (e.g., version, status, metadata)."""
         pass
 
     @abstractmethod
-    async def initialize(self, config: Dict[str, Any]) -> None:
+    async def initialize(self, config: dict[str, Any]) -> None:
         """Initializes the agent with a given configuration.
         This method should set up the underlying agent framework instance.
         Args:

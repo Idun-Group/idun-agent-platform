@@ -1,6 +1,6 @@
 # Add a health check endpoint
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter
+
 from ..._version import __version__
 
 base_router = APIRouter()
@@ -45,7 +45,7 @@ def read_root():
 #             }
 #         }
 #     }
-    
+
 #     # Add agent information if available in app state
 #     if hasattr(request.app.state, "config") and request.app.state.config:
 #         config = request.app.state.config
@@ -55,5 +55,5 @@ def read_root():
 #             "status": "loaded"
 #         }
 #         info["server"]["port"] = config.server.api.port
-    
+
 #     return info

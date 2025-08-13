@@ -5,16 +5,19 @@ This module contains the core configuration models for the entire Engine engine.
 These models define the overall structure and validation for the complete system.
 """
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional, Union, Literal
-from src.server.server_config import ServerConfig
-from src.agent.model import BaseAgentConfig
+
 from src.agent.langgraph.langgraph_model import LangGraphAgentConfig
+from src.agent.model import BaseAgentConfig
+from src.server.server_config import ServerConfig
+
 
 class AgentConfig(BaseModel):
     """Configuration for agent specification and settings."""
     type: Literal["langgraph", "ADK", "CREWAI"] = Field(default="langgraph")
-    config: Union[BaseAgentConfig, LangGraphAgentConfig] = Field(default_factory=BaseAgentConfig)
+    config: BaseAgentConfig | LangGraphAgentConfig = Field(default_factory=BaseAgentConfig)
 
 class EngineConfig(BaseModel):
     """
@@ -25,4 +28,4 @@ class EngineConfig(BaseModel):
     loaded from config.yaml files or built programmatically.
     """
     server: ServerConfig = Field(default_factory=ServerConfig)
-    agent: AgentConfig 
+    agent: AgentConfig
