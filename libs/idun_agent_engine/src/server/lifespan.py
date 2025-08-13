@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     app.state.agent = agent_instance
     app.state.config = engine_config
 
-    agent_name = getattr(agent_instance, 'name', 'Unknown')
+    agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
 
     yield

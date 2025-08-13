@@ -16,8 +16,11 @@ class PhoenixHandler(ObservabilityHandlerBase):
 
         # Resolve and set env vars as required by Phoenix
         api_key = self._resolve_env(opts.get("api_key")) or os.getenv("PHOENIX_API_KEY")
-        collector = self._resolve_env(opts.get("collector")) or \
-                    self._resolve_env(opts.get("collector_endpoint")) or os.getenv("PHOENIX_COLLECTOR_ENDPOINT")
+        collector = (
+            self._resolve_env(opts.get("collector"))
+            or self._resolve_env(opts.get("collector_endpoint"))
+            or os.getenv("PHOENIX_COLLECTOR_ENDPOINT")
+        )
         self.project_name: str = opts.get("project_name") or "default"
 
         if api_key:
@@ -38,7 +41,10 @@ class PhoenixHandler(ObservabilityHandlerBase):
         try:
             from openinference.instrumentation.langchain import LangChainInstrumentor
             from phoenix.otel import register  # type: ignore
-            tracer_provider = register(project_name=self.project_name, auto_instrument=True)
+
+            tracer_provider = register(
+                project_name=self.project_name, auto_instrument=True
+            )
             LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
         except Exception:
             # Silent failure; user may not have phoenix installed
@@ -51,5 +57,3 @@ class PhoenixHandler(ObservabilityHandlerBase):
     def get_callbacks(self) -> list[Any]:
         # Phoenix instruments globally; return empty list
         return self._callbacks
-
-

@@ -16,6 +16,7 @@ from langgraph.graph import END, StateGraph
 
 class AgentState(TypedDict):
     """State structure for our smart agent."""
+
     messages: Annotated[list, operator.add]
     user_intent: str
     conversation_count: int
@@ -38,7 +39,7 @@ def analyze_intent(state):
 
     return {
         "user_intent": intent,
-        "conversation_count": state.get("conversation_count", 0) + 1
+        "conversation_count": state.get("conversation_count", 0) + 1,
     }
 
 
@@ -47,7 +48,7 @@ def respond_greeting(state):
     greetings = [
         "Hello! I'm your smart assistant. How can I help you today?",
         "Hi there! Great to meet you. What can I do for you?",
-        "Hey! I'm here and ready to assist. What's on your mind?"
+        "Hey! I'm here and ready to assist. What's on your mind?",
     ]
 
     response = random.choice(greetings)
@@ -72,7 +73,7 @@ def respond_question(state):
     responses = [
         "That's an interesting question! While I'm a demo agent, I'd be happy to help you think through that.",
         "Great question! In a real implementation, I'd use advanced AI models to provide detailed answers.",
-        "I love questions! This smart agent example shows how you can route different types of conversations."
+        "I love questions! This smart agent example shows how you can route different types of conversations.",
     ]
 
     response = random.choice(responses)
@@ -89,7 +90,7 @@ def respond_farewell(state):
     farewells = [
         "Goodbye! It was great chatting with you.",
         "See you later! Feel free to come back anytime.",
-        "Take care! Thanks for trying out the smart agent example."
+        "Take care! Thanks for trying out the smart agent example.",
     ]
 
     response = random.choice(farewells)
@@ -101,7 +102,7 @@ def respond_general(state):
     responses = [
         "That's interesting! Tell me more.",
         "I see! This smart agent can handle various types of conversations.",
-        "Thanks for sharing! I'm learning about different conversation patterns."
+        "Thanks for sharing! I'm learning about different conversation patterns.",
     ]
 
     response = random.choice(responses)
@@ -148,8 +149,8 @@ def create_graph():
             "help": "help",
             "question": "question",
             "farewell": "farewell",
-            "general": "general"
-        }
+            "general": "general",
+        },
     )
 
     # All response nodes lead to END

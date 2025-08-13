@@ -20,30 +20,30 @@ from .engine_config import EngineConfig
 def create_app(
     config_path: str | None = None,
     config_dict: dict[str, Any] | None = None,
-    engine_config: EngineConfig | None = None
+    engine_config: EngineConfig | None = None,
 ) -> FastAPI:
     """
     Create a FastAPI application with an integrated agent.
-    
+
     This is the main entry point for users of the Idun Agent Engine. It creates a fully
     configured FastAPI application that serves your agent with proper lifecycle management,
     routing, and error handling.
-    
+
     Args:
         config_path: Path to a YAML configuration file. If not provided, looks for 'config.yaml'
                     in the current directory.
         config_dict: Dictionary containing configuration. If provided, takes precedence over config_path.
                     Useful for programmatic configuration.
-        engine_config: Pre-validated EngineConfig instance (from ConfigBuilder.build()). 
+        engine_config: Pre-validated EngineConfig instance (from ConfigBuilder.build()).
                       Takes precedence over other options.
-    
+
     Returns:
         FastAPI: A configured FastAPI application ready to serve your agent.
-    
+
     Example:
         # Using a config file
         app = create_app("my_agent_config.yaml")
-        
+
         # Using a config dictionary
         config = {
             "server": {"api": {"port": 8000}},
@@ -56,7 +56,7 @@ def create_app(
             }
         }
         app = create_app(config_dict=config)
-        
+
         # Using ConfigBuilder (recommended)
         from idun_agent_engine import ConfigBuilder
         config = (ConfigBuilder()
@@ -67,9 +67,7 @@ def create_app(
 
     # Resolve configuration from various sources using ConfigBuilder's umbrella function
     validated_config = ConfigBuilder.resolve_config(
-        config_path=config_path,
-        config_dict=config_dict,
-        engine_config=engine_config
+        config_path=config_path, config_dict=config_dict, engine_config=engine_config
     )
 
     # Create the FastAPI application

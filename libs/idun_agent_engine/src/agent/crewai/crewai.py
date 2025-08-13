@@ -32,14 +32,15 @@ class CrewAIAgent(BaseAgent[BaseAgentConfig]):
     def infos(self) -> dict[str, Any]:  # pragma: no cover - placeholder
         return {"status": "NotImplemented"}
 
-    async def initialize(self, config: dict[str, Any]) -> None:  # pragma: no cover - placeholder
+    async def initialize(
+        self, config: dict[str, Any]
+    ) -> None:  # pragma: no cover - placeholder
         raise NotImplementedError("CrewAIAgent is not implemented yet")
 
     async def invoke(self, message: Any) -> Any:  # pragma: no cover - placeholder
         raise NotImplementedError("CrewAIAgent is not implemented yet")
 
-    async def stream(self, message: Any) -> AsyncGenerator[Any, None]:  # pragma: no cover - placeholder
+    async def stream(
+        self, message: Any
+    ) -> AsyncGenerator[Any, None]:  # pragma: no cover - placeholder
         raise NotImplementedError("CrewAIAgent is not implemented yet")
-
-
-

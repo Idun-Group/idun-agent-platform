@@ -44,5 +44,5 @@ __all__ = [
     "run_server_from_builder",
     "ConfigBuilder",
     "BaseAgent",
-    "__version__"
+    "__version__",
 ]

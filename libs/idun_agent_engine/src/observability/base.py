@@ -90,6 +90,8 @@ def create_observability_handler(
             info["project_name"] = project_name
         return handler, info
 
-    return None, {"enabled": False, "provider": provider, "error": "Unsupported provider"}
-
-
+    return None, {
+        "enabled": False,
+        "provider": provider,
+        "error": "Unsupported provider",
+    }

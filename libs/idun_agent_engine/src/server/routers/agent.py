@@ -10,11 +10,14 @@ class ChatRequest(BaseModel):
     session_id: str
     query: str
 
+
 class ChatResponse(BaseModel):
     session_id: str
     response: str
 
+
 agent_router = APIRouter()
+
 
 @agent_router.post("/invoke", response_model=ChatResponse)
 async def invoke(request: ChatRequest, agent: BaseAgent = Depends(get_agent)):
@@ -25,12 +28,10 @@ async def invoke(request: ChatRequest, agent: BaseAgent = Depends(get_agent)):
         message = {"query": request.query, "session_id": request.session_id}
         response_content = await agent.invoke(message)
 
-        return ChatResponse(
-            session_id=request.session_id,
-            response=response_content
-        )
+        return ChatResponse(session_id=request.session_id, response=response_content)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @agent_router.post("/stream")
 async def stream(request: ChatRequest, agent: BaseAgent = Depends(get_agent)):
@@ -38,6 +39,7 @@ async def stream(request: ChatRequest, agent: BaseAgent = Depends(get_agent)):
     Process a message with the agent, streaming ag-ui events.
     """
     try:
+
         async def event_stream():
             message = {"query": request.query, "session_id": request.session_id}
             async for event in agent.stream(message):

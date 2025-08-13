@@ -6,6 +6,7 @@ from .model import BaseAgentConfig
 
 ConfigType = TypeVar("ConfigType", bound=BaseAgentConfig)
 
+
 class BaseAgent(ABC, Generic[ConfigType]):
     """
     Abstract Base Class defining the common interface for all agents frameworks
@@ -79,7 +80,7 @@ class BaseAgent(ABC, Generic[ConfigType]):
         # For the ABC, we can't have a `yield` directly in the abstract method body.
         # The signature itself defines it as an async generator.
         # Example: async for chunk in agent.stream(message): ...
-        if False: # pragma: no cover (This is just to make it a generator type for static analysis)
+        if (
+            False
+        ):  # pragma: no cover (This is just to make it a generator type for static analysis)
             yield
-
-

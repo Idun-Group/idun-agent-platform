@@ -16,8 +16,12 @@ class LangfuseHandler(ObservabilityHandlerBase):
 
         # Resolve and set env vars as required by Langfuse
         host = self._resolve_env(opts.get("host")) or os.getenv("LANGFUSE_HOST")
-        public_key = self._resolve_env(opts.get("public_key")) or os.getenv("LANGFUSE_PUBLIC_KEY")
-        secret_key = self._resolve_env(opts.get("secret_key")) or os.getenv("LANGFUSE_SECRET_KEY")
+        public_key = self._resolve_env(opts.get("public_key")) or os.getenv(
+            "LANGFUSE_PUBLIC_KEY"
+        )
+        secret_key = self._resolve_env(opts.get("secret_key")) or os.getenv(
+            "LANGFUSE_SECRET_KEY"
+        )
 
         if host:
             os.environ["LANGFUSE_HOST"] = host
@@ -39,7 +43,9 @@ class LangfuseHandler(ObservabilityHandlerBase):
                 if self._langfuse_client.auth_check():
                     print("Langfuse client is authenticated and ready!")
                 else:
-                    print("Authentication failed. Please check your credentials and host.")
+                    print(
+                        "Authentication failed. Please check your credentials and host."
+                    )
             except Exception:
                 pass
 
@@ -56,5 +62,3 @@ class LangfuseHandler(ObservabilityHandlerBase):
 
     def get_client(self):
         return self._langfuse_client
-
-

@@ -30,7 +30,11 @@ class LanggraphAgent(agent_base.BaseAgent):
         self._connection: Any = None
         self._configuration: lg_model.LangGraphAgentConfig | None = None
         self._name: str = "Unnamed LangGraph Agent"
-        self._infos: dict[str, Any] = {"status": "Uninitialized", "name": self._name, "id": self._id}
+        self._infos: dict[str, Any] = {
+            "status": "Uninitialized",
+            "name": self._name,
+            "id": self._id,
+        }
         # Observability (provider-agnostic)
         self._obs_callbacks: list[Any] | None = None
         self._obs_run_name: str | None = None
@@ -69,7 +73,9 @@ class LanggraphAgent(agent_base.BaseAgent):
 
     @property
     def infos(self) -> dict[str, Any]:
-        self._infos["underlying_agent_type"] = str(type(self._agent_instance)) if self._agent_instance else "N/A"
+        self._infos["underlying_agent_type"] = (
+            str(type(self._agent_instance)) if self._agent_instance else "N/A"
+        )
         return self._infos
 
     async def initialize(self, config: lg_model.LangGraphAgentConfig) -> None:
@@ -88,16 +94,20 @@ class LanggraphAgent(agent_base.BaseAgent):
                 obs_cfg = self._configuration.observability.resolved()  # type: ignore[attr-defined]
             elif getattr(self._configuration, "langfuse", None):
                 lf = self._configuration.langfuse.resolved()  # type: ignore[attr-defined]
-                obs_cfg = type("_Temp", (), {
-                    "provider": "langfuse",
-                    "enabled": lf.enabled,
-                    "options": {
-                        "host": lf.host,
-                        "public_key": lf.public_key,
-                        "secret_key": lf.secret_key,
-                        "run_name": lf.run_name,
+                obs_cfg = type(
+                    "_Temp",
+                    (),
+                    {
+                        "provider": "langfuse",
+                        "enabled": lf.enabled,
+                        "options": {
+                            "host": lf.host,
+                            "public_key": lf.public_key,
+                            "secret_key": lf.secret_key,
+                            "run_name": lf.run_name,
+                        },
                     },
-                })()
+                )()
         except Exception:
             obs_cfg = None
 
@@ -108,11 +118,13 @@ class LanggraphAgent(agent_base.BaseAgent):
             if provider == "langfuse" and not options.get("run_name"):
                 options["run_name"] = self._name
 
-            handler, info = observability.create_observability_handler({
-                "provider": provider,
-                "enabled": True,
-                "options": options,
-            })
+            handler, info = observability.create_observability_handler(
+                {
+                    "provider": provider,
+                    "enabled": True,
+                    "options": options,
+                }
+            )
             if handler:
                 self._obs_callbacks = handler.get_callbacks()
                 self._obs_run_name = handler.get_run_name()
@@ -151,10 +163,16 @@ class LanggraphAgent(agent_base.BaseAgent):
             return
 
         if self._configuration.checkpointer:
-            if isinstance(self._configuration.checkpointer, lg_model.SqliteCheckpointConfig):
-                self._connection = await aiosqlite.connect(self._configuration.checkpointer.db_path)
+            if isinstance(
+                self._configuration.checkpointer, lg_model.SqliteCheckpointConfig
+            ):
+                self._connection = await aiosqlite.connect(
+                    self._configuration.checkpointer.db_path
+                )
                 self._checkpointer = AsyncSqliteSaver(conn=self._connection)
-                self._infos["checkpointer"] = self._configuration.checkpointer.model_dump()
+                self._infos["checkpointer"] = (
+                    self._configuration.checkpointer.model_dump()
+                )
             else:
                 raise NotImplementedError("Only SQLite checkpointer is supported.")
 
@@ -197,10 +215,18 @@ class LanggraphAgent(agent_base.BaseAgent):
         The message should be a dictionary containing 'query' and 'session_id'.
         """
         if self._agent_instance is None:
-            raise RuntimeError("Agent not initialized. Call initialize() before processing messages.")
+            raise RuntimeError(
+                "Agent not initialized. Call initialize() before processing messages."
+            )
 
-        if not isinstance(message, dict) or "query" not in message or "session_id" not in message:
-            raise ValueError("Message must be a dictionary with 'query' and 'session_id' keys.")
+        if (
+            not isinstance(message, dict)
+            or "query" not in message
+            or "session_id" not in message
+        ):
+            raise ValueError(
+                "Message must be a dictionary with 'query' and 'session_id' keys."
+            )
 
         graph_input = {"messages": [("user", message["query"])]}
         config: dict[str, Any] = {"configurable": {"thread_id": message["session_id"]}}
@@ -213,10 +239,10 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         if output and "messages" in output and output["messages"]:
             response_message = output["messages"][-1]
-            if hasattr(response_message, 'content'):
+            if hasattr(response_message, "content"):
                 return response_message.content
-            elif isinstance(response_message, dict) and 'content' in response_message:
-                return response_message['content']
+            elif isinstance(response_message, dict) and "content" in response_message:
+                return response_message["content"]
             elif isinstance(response_message, tuple):
                 return response_message[1]
             else:
@@ -227,15 +253,23 @@ class LanggraphAgent(agent_base.BaseAgent):
     async def stream(self, message: Any) -> AsyncGenerator[Any, None]:
         """Processes a single input message and returns a stream of ag-ui events."""
         if self._agent_instance is None:
-            raise RuntimeError("Agent not initialized. Call initialize() before processing messages.")
+            raise RuntimeError(
+                "Agent not initialized. Call initialize() before processing messages."
+            )
 
         if isinstance(message, dict) and "query" in message and "session_id" in message:
             run_id = f"run_{uuid.uuid4()}"
             thread_id = message["session_id"]
-            user_message = ag_types.UserMessage(id=f"msg_{uuid.uuid4()}", role="user", content=message["query"])
-            graph_input = {"messages": [user_message.model_dump(by_alias=True, exclude_none=True)]}
+            user_message = ag_types.UserMessage(
+                id=f"msg_{uuid.uuid4()}", role="user", content=message["query"]
+            )
+            graph_input = {
+                "messages": [user_message.model_dump(by_alias=True, exclude_none=True)]
+            }
         else:
-            raise ValueError("Unsupported message format for process_message_stream. Expects {'query': str, 'session_id': str}")
+            raise ValueError(
+                "Unsupported message format for process_message_stream. Expects {'query': str, 'session_id': str}"
+            )
 
         config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
         if self._obs_callbacks:
@@ -248,24 +282,37 @@ class LanggraphAgent(agent_base.BaseAgent):
         tool_call_name = None
         current_step_name = None
 
-        async for event in self._agent_instance.astream_events(graph_input, config=config, version="v2"):
+        async for event in self._agent_instance.astream_events(
+            graph_input, config=config, version="v2"
+        ):
             kind = event["event"]
             name = event["name"]
 
             if kind == "on_chain_start":
                 current_step_name = name
                 if current_step_name.lower() == "langgraph":
-                     yield ag_events.RunStartedEvent(type=ag_events.EventType.RUN_STARTED, run_id=run_id, thread_id=thread_id)
+                    yield ag_events.RunStartedEvent(
+                        type=ag_events.EventType.RUN_STARTED,
+                        run_id=run_id,
+                        thread_id=thread_id,
+                    )
                 else:
-                    yield ag_events.StepStartedEvent(type=ag_events.EventType.STEP_STARTED, step_name=name)
+                    yield ag_events.StepStartedEvent(
+                        type=ag_events.EventType.STEP_STARTED, step_name=name
+                    )
 
             elif kind == "on_chain_end":
                 if current_step_name:
-                    yield ag_events.StepFinishedEvent(type=ag_events.EventType.STEP_FINISHED, step_name=name)
+                    yield ag_events.StepFinishedEvent(
+                        type=ag_events.EventType.STEP_FINISHED, step_name=name
+                    )
                     current_step_name = None
 
             elif kind == "on_llm_start":
-                yield ag_events.ThinkingStartEvent(type=ag_events.EventType.THINKING_START, title=f"Thinking with {name}...")
+                yield ag_events.ThinkingStartEvent(
+                    type=ag_events.EventType.THINKING_START,
+                    title=f"Thinking with {name}...",
+                )
 
             elif kind == "on_llm_end":
                 yield ag_events.ThinkingEndEvent(type=ag_events.EventType.THINKING_END)
@@ -274,42 +321,80 @@ class LanggraphAgent(agent_base.BaseAgent):
                 chunk = event["data"]["chunk"]
                 if not current_message_id and (chunk.content or chunk.tool_calls):
                     current_message_id = f"msg_{uuid.uuid4()}"
-                    yield ag_events.TextMessageStartEvent(type=ag_events.EventType.TEXT_MESSAGE_START, message_id=current_message_id, role="assistant")
+                    yield ag_events.TextMessageStartEvent(
+                        type=ag_events.EventType.TEXT_MESSAGE_START,
+                        message_id=current_message_id,
+                        role="assistant",
+                    )
 
                 if chunk.content:
-                    yield ag_events.TextMessageContentEvent(type=ag_events.EventType.TEXT_MESSAGE_CONTENT, message_id=current_message_id, delta=chunk.content)
+                    yield ag_events.TextMessageContentEvent(
+                        type=ag_events.EventType.TEXT_MESSAGE_CONTENT,
+                        message_id=current_message_id,
+                        delta=chunk.content,
+                    )
 
                 if chunk.tool_calls:
                     for tc in chunk.tool_calls:
-                        if 'id' in tc and tc['id'] != current_tool_call_id:
-                            if current_tool_call_id: # End previous tool call if a new one starts
-                                yield ag_events.ToolCallEndEvent(type=ag_events.EventType.TOOL_CALL_END, tool_call_id=current_tool_call_id)
+                        if "id" in tc and tc["id"] != current_tool_call_id:
+                            if (
+                                current_tool_call_id
+                            ):  # End previous tool call if a new one starts
+                                yield ag_events.ToolCallEndEvent(
+                                    type=ag_events.EventType.TOOL_CALL_END,
+                                    tool_call_id=current_tool_call_id,
+                                )
 
-                            current_tool_call_id = tc['id']
-                            tool_call_name = tc['function']['name']
-                            yield ag_events.ToolCallStartEvent(type=ag_events.EventType.TOOL_CALL_START, tool_call_id=current_tool_call_id, tool_call_name=tool_call_name, parent_message_id=current_message_id)
+                            current_tool_call_id = tc["id"]
+                            tool_call_name = tc["function"]["name"]
+                            yield ag_events.ToolCallStartEvent(
+                                type=ag_events.EventType.TOOL_CALL_START,
+                                tool_call_id=current_tool_call_id,
+                                tool_call_name=tool_call_name,
+                                parent_message_id=current_message_id,
+                            )
 
-                        if 'function' in tc and 'arguments' in tc['function'] and tc['function']['arguments']:
-                            yield ag_events.ToolCallArgsEvent(type=ag_events.EventType.TOOL_CALL_ARGS, tool_call_id=current_tool_call_id, delta=tc['function']['arguments'])
+                        if (
+                            "function" in tc
+                            and "arguments" in tc["function"]
+                            and tc["function"]["arguments"]
+                        ):
+                            yield ag_events.ToolCallArgsEvent(
+                                type=ag_events.EventType.TOOL_CALL_ARGS,
+                                tool_call_id=current_tool_call_id,
+                                delta=tc["function"]["arguments"],
+                            )
 
             elif kind == "on_tool_start":
-                yield ag_events.StepStartedEvent(type=ag_events.EventType.STEP_STARTED, step_name=name)
+                yield ag_events.StepStartedEvent(
+                    type=ag_events.EventType.STEP_STARTED, step_name=name
+                )
 
             elif kind == "on_tool_end":
                 # Tool end event from langgraph has the tool output, but ag-ui model doesn't have a place for it in ToolCallEndEvent
                 if current_tool_call_id:
-                    yield ag_events.ToolCallEndEvent(type=ag_events.EventType.TOOL_CALL_END, tool_call_id=current_tool_call_id)
+                    yield ag_events.ToolCallEndEvent(
+                        type=ag_events.EventType.TOOL_CALL_END,
+                        tool_call_id=current_tool_call_id,
+                    )
                     current_tool_call_id = None
 
-                yield ag_events.StepFinishedEvent(type=ag_events.EventType.STEP_FINISHED, step_name=name)
+                yield ag_events.StepFinishedEvent(
+                    type=ag_events.EventType.STEP_FINISHED, step_name=name
+                )
                 tool_call_name = None
 
         if current_tool_call_id:
-             yield ag_events.ToolCallEndEvent(type=ag_events.EventType.TOOL_CALL_END, tool_call_id=current_tool_call_id)
+            yield ag_events.ToolCallEndEvent(
+                type=ag_events.EventType.TOOL_CALL_END,
+                tool_call_id=current_tool_call_id,
+            )
 
         if current_message_id:
-            yield ag_events.TextMessageEndEvent(type=ag_events.EventType.TEXT_MESSAGE_END, message_id=current_message_id)
+            yield ag_events.TextMessageEndEvent(
+                type=ag_events.EventType.TEXT_MESSAGE_END, message_id=current_message_id
+            )
 
-        yield ag_events.RunFinishedEvent(type=ag_events.EventType.RUN_FINISHED, run_id=run_id, thread_id=thread_id)
-
-
+        yield ag_events.RunFinishedEvent(
+            type=ag_events.EventType.RUN_FINISHED, run_id=run_id, thread_id=thread_id
+        )

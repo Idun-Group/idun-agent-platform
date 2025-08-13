@@ -5,10 +5,12 @@ from ..._version import __version__
 
 base_router = APIRouter()
 
+
 @base_router.get("/health")
 def health_check():
     """Health check endpoint for monitoring and load balancers."""
     return {"status": "healthy", "engine_version": __version__}
+
 
 # Add a root endpoint with helpful information
 @base_router.get("/")
@@ -18,11 +20,9 @@ def read_root():
         "message": "Welcome to your Idun Agent Engine server!",
         "docs": "/docs",
         "health": "/health",
-        "agent_endpoints": {
-            "invoke": "/agent/invoke",
-            "stream": "/agent/stream"
-        }
+        "agent_endpoints": {"invoke": "/agent/invoke", "stream": "/agent/stream"},
     }
+
 
 # # Add info endpoint for detailed server and agent information
 # @base_router.get("/info")

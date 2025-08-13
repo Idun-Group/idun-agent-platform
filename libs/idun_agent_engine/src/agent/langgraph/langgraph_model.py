@@ -8,10 +8,11 @@ from src.agent.model import BaseAgentConfig
 
 class SqliteCheckpointConfig(BaseModel):
     """Configuration for SQLite checkpointer."""
+
     type: Literal["sqlite"]
     db_url: str
 
-    @field_validator('db_url')
+    @field_validator("db_url")
     @classmethod
     def db_url_must_be_sqlite(cls, v: str) -> str:
         if not v.startswith("sqlite:///"):
@@ -26,8 +27,9 @@ class SqliteCheckpointConfig(BaseModel):
         path = urlparse(self.db_url).path
         # If the original URL has 3 slashes, it's a relative path, so we strip the leading '/'
         if self.db_url.startswith("sqlite:///"):
-            return path.lstrip('/')
+            return path.lstrip("/")
         return path
+
 
 # A discriminated union for different checkpointer types.
 CheckpointConfig = Union[SqliteCheckpointConfig]
@@ -38,8 +40,7 @@ class LangGraphAgentConfig(BaseAgentConfig):
     Configuration model for LangGraph agents.
     This model validates the 'config' block for an agent of type 'langgraph'.
     """
+
     graph_definition: str
     checkpointer: CheckpointConfig | None = None
     store: dict[str, Any] | None = None  # Placeholder for store config
-
-

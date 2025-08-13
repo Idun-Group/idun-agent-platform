@@ -9,5 +9,3 @@ __all__ = [
     "ObservabilityHandlerBase",
     "create_observability_handler",
 ]
-
-

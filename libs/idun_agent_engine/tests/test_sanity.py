@@ -3,4 +3,3 @@ def test_import_package() -> None:
 
     pkg = importlib.import_module("idun_agent_engine")
     assert hasattr(pkg, "create_app")
-

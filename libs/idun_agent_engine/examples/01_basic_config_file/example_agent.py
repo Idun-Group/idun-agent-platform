@@ -13,6 +13,7 @@ from langgraph.graph import END, StateGraph
 
 class AgentState(TypedDict):
     """State structure for our agent."""
+
     messages: Annotated[list, operator.add]
 
 

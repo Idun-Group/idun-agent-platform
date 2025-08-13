@@ -6,5 +6,3 @@ __all__ = [
     "LangGraphAgentConfig",
     "SqliteCheckpointConfig",
 ]
-
-

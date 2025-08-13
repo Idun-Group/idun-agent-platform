@@ -13,10 +13,10 @@ from typing import Any
 def validate_config_dict(config: dict[str, Any]) -> list[str]:
     """
     Validate a configuration dictionary and return a list of issues.
-    
+
     Args:
         config: Configuration dictionary to validate
-        
+
     Returns:
         List[str]: List of validation errors (empty if valid)
     """
@@ -72,7 +72,9 @@ def _validate_graph_definition(graph_def: str) -> list[str]:
     try:
         module_path, variable_name = graph_def.rsplit(":", 1)
     except ValueError:
-        errors.append(f"Graph definition '{graph_def}' must be in format 'path/to/file.py:variable_name'")
+        errors.append(
+            f"Graph definition '{graph_def}' must be in format 'path/to/file.py:variable_name'"
+        )
         return errors
 
     # Check if file exists
@@ -94,10 +96,10 @@ def _validate_graph_definition(graph_def: str) -> list[str]:
 def check_agent_requirements(agent_type: str) -> list[str]:
     """
     Check if the required packages for an agent type are installed.
-    
+
     Args:
         agent_type: The type of agent to check requirements for
-        
+
     Returns:
         List[str]: List of missing requirements
     """
@@ -120,7 +122,7 @@ def check_agent_requirements(agent_type: str) -> list[str]:
 def diagnose_setup() -> dict[str, Any]:
     """
     Run a comprehensive diagnosis of the current setup.
-    
+
     Returns:
         Dict[str, Any]: Diagnosis results including versions, dependencies, etc.
     """
@@ -128,11 +130,12 @@ def diagnose_setup() -> dict[str, Any]:
         "python_version": None,
         "installed_packages": {},
         "system_info": {},
-        "recommendations": []
+        "recommendations": [],
     }
 
     # Get Python version
     import sys
+
     diagnosis["python_version"] = sys.version
 
     # Check for common packages
@@ -140,7 +143,9 @@ def diagnose_setup() -> dict[str, Any]:
     for package in packages_to_check:
         try:
             module = __import__(package)
-            diagnosis["installed_packages"][package] = getattr(module, "__version__", "unknown")
+            diagnosis["installed_packages"][package] = getattr(
+                module, "__version__", "unknown"
+            )
         except ImportError:
             diagnosis["installed_packages"][package] = "not installed"
 

@@ -16,16 +16,21 @@ from src.server.server_config import ServerConfig
 
 class AgentConfig(BaseModel):
     """Configuration for agent specification and settings."""
+
     type: Literal["langgraph", "ADK", "CREWAI"] = Field(default="langgraph")
-    config: BaseAgentConfig | LangGraphAgentConfig = Field(default_factory=BaseAgentConfig)
+    config: BaseAgentConfig | LangGraphAgentConfig = Field(
+        default_factory=BaseAgentConfig
+    )
+
 
 class EngineConfig(BaseModel):
     """
     Main engine configuration model for the entire Idun Agent Engine.
-    
+
     This is the top-level configuration that encompasses both server settings
     and agent configuration. It represents the complete system configuration
     loaded from config.yaml files or built programmatically.
     """
+
     server: ServerConfig = Field(default_factory=ServerConfig)
     agent: AgentConfig
