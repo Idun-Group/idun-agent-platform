@@ -1,6 +1,5 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
-import os
 from src.observability.base import ObservabilityConfig
 
 
