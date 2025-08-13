@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, AsyncGenerator, TypeVar, Generic
-from .base_agent_config import BaseAgentConfig
+from .model import BaseAgentConfig
 
 ConfigType = TypeVar("ConfigType", bound=BaseAgentConfig)
 
@@ -79,3 +79,5 @@ class BaseAgent(ABC, Generic[ConfigType]):
         # Example: async for chunk in agent.stream(message): ...
         if False: # pragma: no cover (This is just to make it a generator type for static analysis)
             yield
+
+

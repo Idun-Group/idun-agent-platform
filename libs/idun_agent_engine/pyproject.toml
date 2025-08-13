@@ -8,7 +8,7 @@ readme = "README.md"
 packages = [{include = "idun_agent_engine", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.13,<3.14"
 fastapi = ">=0.116.1,<0.117.0"
 uvicorn = ">=0.35.0,<0.36.0"
 langgraph = ">=0.6.3,<0.7.0"
@@ -22,6 +22,11 @@ google-adk = ">=1.9.0,<2.0.0"
 ag-ui-protocol = ">=0.1.8,<0.2.0"
 aiosqlite = ">=0.21.0,<0.22.0"
 langfuse = "^3.2.2"
+arize-phoenix-otel = ">=0.2.0,<1.0.0"
+openinference-instrumentation-langchain = ">=0.1.13,<1.0.0"
+python-dotenv = "^1.1.1"
+langchain = "^0.3.27"
+arize-phoenix = "^11.22.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

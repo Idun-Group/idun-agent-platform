@@ -196,3 +196,6 @@ __pycache__/
 
 # Poetry
 poetry.lock
+
+# Environment variables
+.env

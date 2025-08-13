@@ -10,9 +10,9 @@ from pathlib import Path
 import yaml
 
 from .engine_config import EngineConfig, ServerConfig, AgentConfig
-from ..agent_frameworks.langgraph_agent_config import LangGraphAgentConfig, SqliteCheckpointConfig
+from ..agent.langgraph.langgraph_model import LangGraphAgentConfig, SqliteCheckpointConfig
 from src.server.server_config import ServerAPIConfig
-from ..agent_frameworks.base_agent import BaseAgent
+from ..agent.base import BaseAgent
 
 
 class ConfigBuilder:
@@ -240,14 +240,17 @@ class ConfigBuilder:
         # Initialize the appropriate agent
         agent_instance = None
         if agent_type == "langgraph":
-            from ..agent_frameworks.langgraph_agent import LanggraphAgent
+            from ..agent.langgraph.langgraph import LanggraphAgent
             agent_instance = LanggraphAgent()
+        elif agent_type == "CREWAI":
+            from ..agent.crewai.crewai import CrewAIAgent
+            agent_instance = CrewAIAgent()
         # Future agent types can be added here:
         # elif agent_type == "crewai":
-        #     from ..agent_frameworks.crewai_agent import CrewAIAgent
+        #     from ..agent.crewai.agent import CrewAIAgent
         #     agent_instance = CrewAIAgent()
         # elif agent_type == "autogen":
-        #     from ..agent_frameworks.autogen_agent import AutoGenAgent
+        #     from ..agent.autogen.agent import AutoGenAgent
         #     agent_instance = AutoGenAgent()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
@@ -271,11 +274,14 @@ class ConfigBuilder:
             ValueError: If agent type is unsupported
         """
         if agent_type == "langgraph":
-            from ..agent_frameworks.langgraph_agent import LanggraphAgent
+            from ..agent.langgraph.langgraph import LanggraphAgent
             return LanggraphAgent
+        elif agent_type == "CREWAI":
+            from ..agent.crewai.crewai import CrewAIAgent
+            return CrewAIAgent
         # Future agent types can be added here:
         # elif agent_type == "crewai":
-        #     from ..agent_frameworks.crewai_agent import CrewAIAgent
+        #     from ..agent.crewai.agent import CrewAIAgent
         #     return CrewAIAgent
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")

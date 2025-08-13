@@ -28,7 +28,7 @@ For more advanced usage, see the documentation.
 from .core.app_factory import create_app
 from .core.server_runner import run_server, run_server_from_config, run_server_from_builder
 from .core.config_builder import ConfigBuilder
-from .agent_frameworks.base_agent import BaseAgent
+from .agent.base import BaseAgent
 
 # Version information - import from separate module to avoid circular imports
 from ._version import __version__

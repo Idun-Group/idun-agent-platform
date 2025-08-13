@@ -1,9 +1,10 @@
-from typing import Any, Dict, Optional, AsyncGenerator
+from typing import Any, Dict, Optional, AsyncGenerator, List
 import sqlite3
 import importlib.util
 import asyncio
 import aiosqlite
 import uuid
+import os
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
 from ag_ui.core.events import (
@@ -14,8 +15,9 @@ from ag_ui.core.events import (
 )
 from ag_ui.core.types import UserMessage
 import json
-from src.agent_frameworks.base_agent import BaseAgent
-from src.agent_frameworks.langgraph_agent_config import LangGraphAgentConfig, SqliteCheckpointConfig
+from src.agent.base import BaseAgent
+from .langgraph_model import LangGraphAgentConfig, SqliteCheckpointConfig
+from src.observability import create_observability_handler
 
 class LanggraphAgent(BaseAgent):
     """Placeholder implementation for a LangGraph agent.
@@ -34,6 +36,9 @@ class LanggraphAgent(BaseAgent):
         self._configuration: Optional[LangGraphAgentConfig] = None
         self._name: str = "Unnamed LangGraph Agent"
         self._infos: Dict[str, Any] = {"status": "Uninitialized", "name": self._name, "id": self._id}
+        # Observability (provider-agnostic)
+        self._obs_callbacks: Optional[List[Any]] = None
+        self._obs_run_name: Optional[str] = None
 
     @property
     def id(self) -> str:
@@ -80,6 +85,44 @@ class LanggraphAgent(BaseAgent):
         self._infos["name"] = self._name
 
         await self._setup_persistence()
+
+        # Observability (provider-agnostic). Prefer generic block; fallback to legacy langfuse block.
+        obs_cfg = None
+        try:
+            if getattr(self._configuration, "observability", None):
+                obs_cfg = self._configuration.observability.resolved()  # type: ignore[attr-defined]
+            elif getattr(self._configuration, "langfuse", None):
+                lf = self._configuration.langfuse.resolved()  # type: ignore[attr-defined]
+                obs_cfg = type("_Temp", (), {
+                    "provider": "langfuse",
+                    "enabled": lf.enabled,
+                    "options": {
+                        "host": lf.host,
+                        "public_key": lf.public_key,
+                        "secret_key": lf.secret_key,
+                        "run_name": lf.run_name,
+                    },
+                })()
+        except Exception:
+            obs_cfg = None
+
+        if obs_cfg and getattr(obs_cfg, "enabled", False):
+            provider = getattr(obs_cfg, "provider", None)
+            options = dict(getattr(obs_cfg, "options", {}) or {})
+            # Fallback: if using Langfuse and run_name is not provided, use agent name
+            if provider == "langfuse" and not options.get("run_name", "Unnamed LangGraph Agent"):
+                options["run_name"] = self._name
+
+            handler, info = create_observability_handler({
+                "provider": provider,
+                "enabled": True,
+                "options": options,
+            })
+            if handler:
+                self._obs_callbacks = handler.get_callbacks()
+                self._obs_run_name = handler.get_run_name()
+            if info:
+                self._infos["observability"] = dict(info)
 
         graph_builder = self._load_graph_builder(self._configuration.graph_definition)
         self._infos["graph_definition"] = self._configuration.graph_definition
@@ -165,7 +208,11 @@ class LanggraphAgent(BaseAgent):
             raise ValueError("Message must be a dictionary with 'query' and 'session_id' keys.")
 
         graph_input = {"messages": [("user", message["query"])]}
-        config = {"configurable": {"thread_id": message["session_id"]}}
+        config: Dict[str, Any] = {"configurable": {"thread_id": message["session_id"]}}
+        if self._obs_callbacks:
+            config["callbacks"] = self._obs_callbacks
+            if self._obs_run_name:
+                config["run_name"] = self._obs_run_name
 
         output = await self._agent_instance.ainvoke(graph_input, config)
 
@@ -190,12 +237,16 @@ class LanggraphAgent(BaseAgent):
         if isinstance(message, dict) and "query" in message and "session_id" in message:
             run_id = f"run_{uuid.uuid4()}"
             thread_id = message["session_id"]
-            user_message = UserMessage(id=f"msg_{uuid.uuid4()}", role="user", content=message["query"])
+            user_message = UserMessage(id=f"msg_{uuid.uuid4()}", role="user", content=message["query"]) 
             graph_input = {"messages": [user_message.model_dump(by_alias=True, exclude_none=True)]}
         else:
             raise ValueError("Unsupported message format for process_message_stream. Expects {'query': str, 'session_id': str}")
 
-        config = {"configurable": {"thread_id": thread_id}}
+        config: Dict[str, Any] = {"configurable": {"thread_id": thread_id}}
+        if self._obs_callbacks:
+            config["callbacks"] = self._obs_callbacks
+            if self._obs_run_name:
+                config["run_name"] = self._obs_run_name
 
         current_message_id = None
         current_tool_call_id = None
@@ -265,3 +316,5 @@ class LanggraphAgent(BaseAgent):
             yield TextMessageEndEvent(type=EventType.TEXT_MESSAGE_END, message_id=current_message_id)
 
         yield RunFinishedEvent(type=EventType.RUN_FINISHED, run_id=run_id, thread_id=thread_id)
+
+

@@ -7,6 +7,9 @@ This is the most common and recommended approach for production deployments.
 
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # # Print current sys.path before adding project root
 # print("Python path before:", sys.path)

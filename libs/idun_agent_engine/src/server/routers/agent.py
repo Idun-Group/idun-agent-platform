@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import asyncio
 from src.server.dependencies import get_agent
-from src.agent_frameworks.base_agent import BaseAgent
+from src.agent.base import BaseAgent
 
 class ChatRequest(BaseModel):
     session_id: str

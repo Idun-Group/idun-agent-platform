@@ -171,4 +171,4 @@ After completing these examples:
 - [Idun Agent Engine Documentation](../README_USER_API.md)
 - [LangGraph Documentation](https://python.langchain.com/docs/langgraph)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Agent Framework Adapters](../src/agent_frameworks/) 
+- [Agent Adapters](../src/agent/) 

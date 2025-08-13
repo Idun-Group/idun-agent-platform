@@ -16,7 +16,7 @@ from ..server.routers.agent import agent_router
 from ..server.routers.base import base_router
 from .engine_config import EngineConfig
 from .config_builder import ConfigBuilder
-from ..agent_frameworks.langgraph_agent import LanggraphAgent
+from ..agent.langgraph.langgraph import LanggraphAgent
 
 
 def create_app(
