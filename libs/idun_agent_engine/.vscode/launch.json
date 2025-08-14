@@ -1,0 +1,225 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Example 1: Basic Config File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/01_basic_config_file/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "examples",
+                "order": 1
+            }
+        },
+        {
+            "name": "Example 2: Programmatic Config - Basic",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/02_programmatic_config/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": ["basic"],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "examples",
+                "order": 2
+            }
+        },
+        {
+            "name": "Example 2: Programmatic Config - Environment",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/02_programmatic_config/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "PORT": "8081",
+                "ENVIRONMENT": "staging",
+                "TELEMETRY_PROVIDER": "langfuse"
+            },
+            "args": ["environment"],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "examples",
+                "order": 3
+            }
+        },
+        {
+            "name": "Example 2: Programmatic Config - Load & Modify",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/02_programmatic_config/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": ["load_modify"],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "examples",
+                "order": 4
+            }
+        },
+        {
+            "name": "Example 2: Programmatic Config - Conditional",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/02_programmatic_config/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "ENVIRONMENT": "production"
+            },
+            "args": ["conditional"],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "examples",
+                "order": 5
+            }
+        },
+        {
+            "name": "Example 2: Programmatic Config - Save & Load",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/02_programmatic_config/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": ["save_load"],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "examples",
+                "order": 6
+            }
+        },
+        {
+            "name": "Example 2: Programmatic Config - Direct Run",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/02_programmatic_config/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": ["direct_run"],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "examples",
+                "order": 7
+            }
+        },
+        {
+            "name": "Example 2: Programmatic Config - Agent Init Demo",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/02_programmatic_config/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": ["agent_init"],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "examples",
+                "order": 8
+            }
+        },
+        {
+            "name": "Example 3: Minimal Setup",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/03_minimal_setup/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "examples",
+                "order": 9
+            }
+        },
+        {
+            "name": "Debug: Core ConfigBuilder",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/core/config_builder.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [],
+            "justMyCode": false,
+            "stopOnEntry": true,
+            "presentation": {
+                "group": "debug",
+                "order": 1
+            }
+        },
+        {
+            "name": "Debug: LangGraph Agent",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/agent_frameworks/langgraph_agent.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [],
+            "justMyCode": false,
+            "stopOnEntry": true,
+            "presentation": {
+                "group": "debug",
+                "order": 2
+            }
+        },
+        {
+            "name": "Test: Run with Default Config",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/__init__.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": [],
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "presentation": {
+                "group": "test",
+                "order": 1
+            }
+        }
+    ]
+}

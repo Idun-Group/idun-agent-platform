@@ -158,4 +158,4 @@ The test suite covers:
 ## Additional Resources
 
 - [Official `smolagents` Repository](https://github.com/huggingface/smolagents)
-- [Official `smolagents` Documentation](https://huggingface.co/docs/smolagents/en/index) 
+- [Official `smolagents` Documentation](https://huggingface.co/docs/smolagents/en/index)

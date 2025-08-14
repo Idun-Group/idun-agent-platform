@@ -1,0 +1,39 @@
+name: Publish idun-agent-engine
+
+on:
+  push:
+    tags:
+      - 'idun-agent-engine-v*'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+
+      - name: Build wheel and sdist (engine)
+        working-directory: libs/idun_agent_engine
+        run: |
+          poetry build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: libs/idun_agent_engine/dist
+          skip-existing: true
+          verbose: true
+          password: ${{ secrets.PYPI_API_TOKEN }}

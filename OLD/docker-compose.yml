@@ -1,0 +1,45 @@
+version: '3.13'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: idun-backend-controller
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./agents_data:/app/agents_data
+      - ./idun_agent_manager:/app/idun_agent_manager
+    environment:
+      - DOCKER_HOST=unix://var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    ports:
+      - "8000:8000"
+    networks:
+      - idun_network
+
+  traefik:
+    image: "traefik:v3.5"
+    container_name: idun-traefik-proxy
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080" # Traefik Dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - idun_network
+
+networks:
+  idun_network:
+    name: idun_network
+    driver: bridge
+
+# --- AGENT SERVICES WILL BE DYNAMICALLY APPENDED HERE ---

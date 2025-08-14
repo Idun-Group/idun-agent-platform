@@ -1,0 +1,15 @@
+server:
+  api:
+    port: 8000
+  telemetry:
+    provider: "langfuse"
+
+agent:
+  type: "langgraph"
+
+  config:
+    name: "My LangGraph Agent"
+    graph_definition: "main:app"
+    checkpointer:
+      type: "sqlite"
+      db_url: "sqlite:///checkpoint.db"

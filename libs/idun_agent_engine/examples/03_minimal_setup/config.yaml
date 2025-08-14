@@ -1,0 +1,12 @@
+# Minimal Configuration for Idun Agent Engine
+# Just the essentials to get your agent running!
+
+server:
+  api:
+    port: 8000
+
+agent:
+  type: "langgraph"
+  config:
+    name: "Minimal Agent"
+    graph_definition: "minimal_agent.py:app"

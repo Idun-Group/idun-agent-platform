@@ -1,0 +1,35 @@
+# Idun Agent Engine Configuration
+# This file defines both server settings and agent configuration
+
+# Server Configuration - Controls the server and platform behavior
+server:
+  api:
+    port: 8000                    # Port where the server will run
+
+# Agent Configuration - Defines which agent to load and how
+agent:
+  type: "langgraph"               # Agent framework type
+  # Agent-specific configuration (passed to the LangGraph adapter)
+  config:
+    name: "My Example LangGraph Agent"
+    graph_definition: "./examples/01_basic_config_file/example_agent.py:app"  # Path to your graph definition
+    # Observability (provider-agnostic). Example with Langfuse or Phoenix
+    observability:
+      provider: phoenix #langfuse # or phoenix
+      enabled: true
+      options:
+        # Langfuse options
+        host: ${LANGFUSE_HOST}
+        public_key: ${LANGFUSE_PUBLIC_KEY}
+        secret_key: ${LANGFUSE_SECRET_KEY}
+        run_name: "idun-langgraph-run"
+        # Phoenix options (if provider: phoenix)
+        # api_key: ${PHOENIX_API_KEY}
+        # collector_endpoint: ${PHOENIX_COLLECTOR_ENDPOINT}
+        # project_name: "default"
+        # run_name: "idun-langgraph-run"
+
+    # Optional: Enable conversation persistence
+    checkpointer:
+      type: "sqlite"
+      db_url: "sqlite:///example_checkpoint.db"

@@ -50,4 +50,4 @@ By contributing to this project, you agree to abide by our [Code of Conduct](COD
 
 ## Questions?
 
-If you have any questions, feel free to ask by opening an issue. 
+If you have any questions, feel free to ask by opening an issue.
