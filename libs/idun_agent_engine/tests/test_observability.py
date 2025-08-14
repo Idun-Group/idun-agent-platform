@@ -1,6 +1,6 @@
 """Tests for generic observability factory behavior."""
 
-from src.observability import create_observability_handler
+from idun_agent_engine.src.observability import create_observability_handler
 
 
 def test_create_observability_handler_disabled() -> None:

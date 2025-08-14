@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.core.config_builder import ConfigBuilder
+from idun_agent_engine.src.core.config_builder import ConfigBuilder
 
 
 def test_with_langgraph_agent_builds_engine_config(tmp_path: Path) -> None:

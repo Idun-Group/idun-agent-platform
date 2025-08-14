@@ -1,8 +1,7 @@
 """Tests for basic server routes."""
 
 from fastapi.testclient import TestClient
-
-from src.core.app_factory import create_app
+from idun_agent_engine.src.core.app_factory import create_app
 
 
 def test_health_and_root_routes(tmp_path) -> None:
