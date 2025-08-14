@@ -1,6 +1,7 @@
 """Tests for basic server routes."""
 
 from fastapi.testclient import TestClient
+
 from idun_agent_engine.src.core.app_factory import create_app
 
 

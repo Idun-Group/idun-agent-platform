@@ -6,10 +6,11 @@ These models define the overall structure and validation for the complete system
 
 from typing import Literal
 
+from pydantic import BaseModel, Field
+
 from idun_agent_engine.agent.langgraph.langgraph_model import LangGraphAgentConfig
 from idun_agent_engine.agent.model import BaseAgentConfig
 from idun_agent_engine.server.server_config import ServerConfig
-from pydantic import BaseModel, Field
 
 
 class AgentConfig(BaseModel):

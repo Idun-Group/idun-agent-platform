@@ -2,8 +2,9 @@
 
 from typing import Any
 
-from idun_agent_engine.observability.base import ObservabilityConfig
 from pydantic import BaseModel, Field
+
+from idun_agent_engine.observability.base import ObservabilityConfig
 
 
 class BaseAgentConfig(BaseModel):

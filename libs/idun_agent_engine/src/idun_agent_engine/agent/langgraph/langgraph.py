@@ -8,11 +8,12 @@ from typing import Any
 import aiosqlite
 from ag_ui.core import events as ag_events
 from ag_ui.core import types as ag_types
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from langgraph.graph import StateGraph
+
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
 from idun_agent_engine.agent.langgraph import langgraph_model as lg_model
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from langgraph.graph import StateGraph
 
 
 class LanggraphAgent(agent_base.BaseAgent):

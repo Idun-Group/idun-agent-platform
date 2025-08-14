@@ -3,8 +3,9 @@
 from typing import Any, Literal
 from urllib.parse import urlparse
 
-from idun_agent_engine.agent.model import BaseAgentConfig
 from pydantic import BaseModel, field_validator
+
+from idun_agent_engine.agent.model import BaseAgentConfig
 
 
 class SqliteCheckpointConfig(BaseModel):
