@@ -1,11 +1,14 @@
+"""Dependency injection helpers for FastAPI routes."""
+
 from fastapi import Request
 
 from ..core.config_builder import ConfigBuilder
 
 
 async def get_agent(request: Request):
-    """
-    Dependency to get the pre-initialized agent instance from the app state.
+    """Return the pre-initialized agent instance from the app state.
+
+    Falls back to loading from the default config if not present (e.g., tests).
     """
     if hasattr(request.app.state, "agent"):
         return request.app.state.agent

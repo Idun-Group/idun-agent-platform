@@ -77,7 +77,7 @@ This minimal setup is perfect when:
 
 - You're just getting started with the Engine
 - You want to quickly prototype an agent
-- You're doing demos or proof-of-concepts  
+- You're doing demos or proof-of-concepts
 - You don't need custom FastAPI configuration
 - You want the fastest path from agent to server
 
@@ -104,7 +104,7 @@ All with automatic error handling and informative logging!
 ## 🎓 Learning Path
 
 1. **Start Here**: Use this minimal example to get familiar
-2. **Add Configuration**: Move to [Example 2](../02_programmatic_config/) for dynamic config  
+2. **Add Configuration**: Move to [Example 2](../02_programmatic_config/) for dynamic config
 3. **Full Control**: Try [Example 1](../01_basic_config_file/) for production setups
 
 ## 📚 Next Steps
@@ -112,4 +112,4 @@ All with automatic error handling and informative logging!
 - Modify `minimal_agent.py` to see how your changes affect the server
 - Try different configurations in `config.yaml`
 - When you need more control, check out the other examples
-- Read the [full Engine documentation](../../README_USER_API.md) 
+- Read the [full Engine documentation](../../README_USER_API.md)

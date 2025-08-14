@@ -8,6 +8,7 @@ router = APIRouter(
     tags=["Agents"],
 )
 
+
 @router.post("/", response_model=Agent, status_code=status.HTTP_201_CREATED)
 def create_agent(agent: Agent = Body(...)):
     """
@@ -19,12 +20,14 @@ def create_agent(agent: Agent = Body(...)):
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
+
 @router.get("/", response_model=List[Agent])
 def list_agents():
     """
     List all agents.
     """
     return in_memory_db.list_agents_from_db()
+
 
 @router.get("/{agent_id}", response_model=Agent)
 def get_agent(agent_id: str):
@@ -34,8 +37,11 @@ def get_agent(agent_id: str):
     """
     agent = in_memory_db.get_agent_from_db(agent_id)
     if not agent:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found"
+        )
     return agent
+
 
 @router.put("/{agent_id}", response_model=Agent)
 def update_agent(agent_id: str, agent_update: Agent = Body(...)):
@@ -53,12 +59,15 @@ def update_agent(agent_id: str, agent_update: Agent = Body(...)):
         # Option 2: Allow it, but be mindful. Let's assume for now the path ID is canonical for update target.
         # We will update the agent with agent_id, using data from agent_update.
         # The DB function handles potential ID change in the object itself.
-        pass # The DB function will handle the update logic including potential ID change.
+        pass  # The DB function will handle the update logic including potential ID change.
 
     updated_agent = in_memory_db.update_agent_in_db(agent_id, agent_update)
     if not updated_agent:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found"
+        )
     return updated_agent
+
 
 @router.delete("/{agent_id}", response_model=Agent, status_code=status.HTTP_200_OK)
 def delete_agent(agent_id: str):
@@ -68,5 +77,7 @@ def delete_agent(agent_id: str):
     """
     deleted_agent = in_memory_db.delete_agent_from_db(agent_id)
     if not deleted_agent:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
-    return deleted_agent 
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found"
+        )
+    return deleted_agent

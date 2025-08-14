@@ -9,4 +9,4 @@ agent:
   type: "langgraph"
   config:
     name: "Minimal Agent"
-    graph_definition: "minimal_agent.py:app" 
+    graph_definition: "minimal_agent.py:app"

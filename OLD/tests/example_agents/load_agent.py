@@ -3,7 +3,7 @@ import sys
 import asyncio
 
 # Add the project root to the Python path to allow for absolute imports
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -25,10 +25,7 @@ async def main():
         agent_config = {
             "name": "My Async Echo Agent",
             "agent_path": "tests/example_agents/simple_graph.py:simple_test_graph",
-            "checkpoint": {
-                "type": "sqlite",
-                "db_path": db_path
-            }
+            "checkpoint": {"type": "sqlite", "db_path": db_path},
         }
 
         print("Creating and initializing agent asynchronously...")
@@ -44,7 +41,7 @@ async def main():
         print("-" * 30)
 
         session_id = "my-async-chat-session-1"
-        
+
         # First interaction
         query1 = "Hello, this is my first async message."
         print(f"User (session: {session_id}): {query1}")
@@ -65,7 +62,7 @@ async def main():
         if agent:
             # 3. Close the connection
             await agent.close()
-        
+
         # 4. Now it's safe to clean up the db file
         if os.path.exists(db_path):
             os.remove(db_path)

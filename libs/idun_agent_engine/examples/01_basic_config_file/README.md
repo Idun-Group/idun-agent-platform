@@ -78,4 +78,4 @@ You can modify the configuration to:
 
 - Check out [Example 2](../02_programmatic_config/) for programmatic configuration
 - Check out [Example 3](../03_minimal_setup/) for the most minimal setup
-- Read the [full Engine documentation](../../README_USER_API.md) 
+- Read the [full Engine documentation](../../README_USER_API.md)

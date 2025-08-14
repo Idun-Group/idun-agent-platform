@@ -256,4 +256,21 @@ The Idun Agent Engine is designed to be extensible. To add support for new agent
 
 ## 📄 License
 
-MIT License - see LICENSE file for details. 
+MIT License - see LICENSE file for details.
+
+---
+
+### Release & Publishing
+
+This package is built with Poetry. To publish a new release to PyPI:
+
+1. Update version in `pyproject.toml`.
+2. Commit and tag with the pattern `idun-agent-engine-vX.Y.Z`.
+3. Push the tag to GitHub. The `Publish idun-agent-engine` workflow will build and publish to PyPI using `PYPI_API_TOKEN` secret.
+
+Manual build (optional):
+
+```bash
+cd libs/idun_agent_engine
+poetry build
+```

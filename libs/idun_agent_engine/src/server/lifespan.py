@@ -1,3 +1,8 @@
+"""Server lifespan management utilities.
+
+Initializes the agent at startup and cleans up resources on shutdown.
+"""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,6 +12,7 @@ from ..core.config_builder import ConfigBuilder
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """FastAPI lifespan context to initialize and teardown the agent."""
     # Load config and initialize agent on startup
     print("Server starting up...")
     engine_config = app.state.engine_config

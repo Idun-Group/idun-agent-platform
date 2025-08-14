@@ -1,5 +1,4 @@
-"""
-Server Runner for Idun Agent Engine
+"""Server Runner for Idun Agent Engine.
 
 This module provides convenient functions to run FastAPI applications created with
 the Idun Agent Engine. It handles common deployment scenarios and provides sensible defaults.
@@ -17,8 +16,7 @@ def run_server(
     log_level: str = "info",
     workers: int | None = None,
 ) -> None:
-    """
-    Run a FastAPI application created with Idun Agent Engine.
+    """Run a FastAPI application created with Idun Agent Engine.
 
     This is a convenience function that wraps uvicorn.run() with sensible defaults
     for serving agent applications. It automatically handles common deployment scenarios.
@@ -43,7 +41,6 @@ def run_server(
         # Run in production mode
         run_server(app, workers=4)
     """
-
     print(f"🌐 Starting Idun Agent Engine server on http://{host}:{port}")
     print(f"📚 API documentation available at http://{host}:{port}/docs")
 
@@ -64,8 +61,7 @@ def run_server(
 
 
 def run_server_from_config(config_path: str = "config.yaml", **kwargs) -> None:
-    """
-    Create and run a server directly from a configuration file.
+    """Create and run a server directly from a configuration file.
 
     This is the most convenient way to start a server - it combines create_app()
     and run_server() in a single function call using ConfigBuilder.
@@ -101,8 +97,7 @@ def run_server_from_config(config_path: str = "config.yaml", **kwargs) -> None:
 
 
 def run_server_from_builder(config_builder, **kwargs) -> None:
-    """
-    Create and run a server directly from a ConfigBuilder instance.
+    """Create and run a server directly from a ConfigBuilder instance.
 
     This allows for programmatic configuration with immediate server startup.
 

@@ -1,3 +1,5 @@
+"""Langfuse observability handler implementation."""
+
 from __future__ import annotations
 
 import os
@@ -8,9 +10,12 @@ from ..utils import _resolve_env
 
 
 class LangfuseHandler(ObservabilityHandlerBase):
+    """Langfuse handler providing LangChain callbacks and client setup."""
+
     provider = "langfuse"
 
     def __init__(self, options: dict[str, Any] | None = None):
+        """Initialize handler, resolving env and preparing callbacks."""
         super().__init__(options)
         opts = self.options
 
@@ -58,7 +63,9 @@ class LangfuseHandler(ObservabilityHandlerBase):
         return _resolve_env(value)
 
     def get_callbacks(self) -> list[Any]:
+        """Return LangChain-compatible callback handlers (if available)."""
         return self._callbacks
 
     def get_client(self):
+        """Return underlying Langfuse client instance (if created)."""
         return self._langfuse_client

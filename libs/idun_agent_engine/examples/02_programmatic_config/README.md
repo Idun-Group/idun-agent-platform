@@ -90,4 +90,4 @@ The example shows different configuration approaches:
 - Check out [Example 1](../01_basic_config_file/) for YAML-based configuration
 - Check out [Example 3](../03_minimal_setup/) for the most minimal setup
 - Read about [ConfigBuilder API](../../README_USER_API.md#configuration-reference)
-- Learn about [custom agent types](../../README_USER_API.md#supported-agent-types) 
+- Learn about [custom agent types](../../README_USER_API.md#supported-agent-types)

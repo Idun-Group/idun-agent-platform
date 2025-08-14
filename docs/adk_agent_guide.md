@@ -129,20 +129,20 @@ Here's a complete example of a weather agent:
 def get_weather(location: str) -> str:
     """
     Get the current weather for a location.
-    
+
     Args:
         location: The city or location to get weather for
-        
+
     Returns:
         A weather description string
     """
     weather_data = {
         "paris": "Sunny, 22°C",
-        "london": "Cloudy, 15°C", 
+        "london": "Cloudy, 15°C",
         "new york": "Rainy, 18°C",
         "tokyo": "Clear, 25°C",
     }
-    
+
     location_lower = location.lower()
     if location_lower in weather_data:
         return f"Weather in {location}: {weather_data[location_lower]}"
@@ -154,7 +154,7 @@ WEATHER_AGENT_CONFIG = {
     "name": "WeatherAgent",
     "model": "gemini-2.0-flash",
     "description": "Provides weather information for cities",
-    "instruction": """You are a helpful weather assistant. 
+    "instruction": """You are a helpful weather assistant.
     When users ask about weather, use the get_weather tool to provide accurate information.
     Be friendly and conversational in your responses.""",
     "tools": [get_weather]
@@ -168,17 +168,17 @@ async def main():
     # Create and initialize agent
     agent = ADKAgent()
     await agent.initialize(WEATHER_AGENT_CONFIG)
-    
+
     # Test the agent
     message = {
         "query": "What's the weather like in Tokyo?",
         "session_id": "demo_session"
     }
-    
+
     # Get response
     response = await agent.process_message(message)
     print(f"Response: {response}")
-    
+
     # Stream events
     print("\nStreaming events:")
     async for event in agent.process_message_stream(message):
@@ -300,4 +300,4 @@ To contribute to the ADK implementation:
 For issues specific to the ADK implementation, check:
 1. This documentation
 2. The test files for examples
-3. Google ADK documentation for ADK-specific questions 
+3. Google ADK documentation for ADK-specific questions

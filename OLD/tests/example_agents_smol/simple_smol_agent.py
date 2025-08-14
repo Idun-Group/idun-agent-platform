@@ -14,11 +14,9 @@ AGENT_CONFIG = {
         "type": "InferenceClientModel",
         "model_id": "HuggingFaceH4/zephyr-7b-beta",
         # You might need to pass your HF token if the model is gated or you hit rate limits
-        # "token": os.environ.get("HF_TOKEN") 
+        # "token": os.environ.get("HF_TOKEN")
     },
-    "tools_config": [
-        "WebSearchTool"
-    ]
+    "tools_config": ["WebSearchTool"],
 }
 
 # Alternate configuration using LiteLLM with a local Ollama model
@@ -30,9 +28,7 @@ AGENT_CONFIG_OLLAMA = {
     "model_config": {
         "type": "LiteLLMModel",
         "model_id": "ollama/llama3",
-        "api_base": "http://localhost:11434"
+        "api_base": "http://localhost:11434",
     },
-    "tools_config": [
-        "WebSearchTool"
-    ]
-} 
+    "tools_config": ["WebSearchTool"],
+}

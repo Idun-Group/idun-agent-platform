@@ -1,3 +1,5 @@
+"""Phoenix observability handler implementation."""
+
 from __future__ import annotations
 
 import os
@@ -8,9 +10,12 @@ from ..utils import _resolve_env
 
 
 class PhoenixHandler(ObservabilityHandlerBase):
+    """Phoenix handler configuring OpenTelemetry and LangChain instrumentation."""
+
     provider = "phoenix"
 
     def __init__(self, options: dict[str, Any] | None = None):
+        """Initialize handler, resolving env and setting up instrumentation."""
         super().__init__(options)
         opts = self.options
 
@@ -55,5 +60,5 @@ class PhoenixHandler(ObservabilityHandlerBase):
         return _resolve_env(value)
 
     def get_callbacks(self) -> list[Any]:
-        # Phoenix instruments globally; return empty list
+        """Return callbacks (Phoenix instruments globally; this may be empty)."""
         return self._callbacks

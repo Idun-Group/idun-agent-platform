@@ -1,5 +1,4 @@
-"""
-Simple LangGraph Agent Example
+"""Simple LangGraph Agent Example.
 
 This is a basic LangGraph agent that demonstrates the minimum required
 structure for integration with the Idun Agent Engine.

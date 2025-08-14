@@ -3,8 +3,8 @@ import os
 import asyncio
 from idun_agent_manager.core.agents.langgraph_agent_impl import LanggraphAgent
 
-class TestLanggraphAgentCreation(unittest.TestCase):
 
+class TestLanggraphAgentCreation(unittest.TestCase):
     def setUp(self):
         """Set up a dummy database file for the test."""
         self.db_path = "test_checkpoint.db"
@@ -24,31 +24,30 @@ class TestLanggraphAgentCreation(unittest.TestCase):
         agent_config = {
             "name": "Test Simple Agent",
             "agent_path": "tests/example_agents/simple_graph.py:simple_test_graph",
-            "checkpoint": {
-                "type": "sqlite",
-                "db_path": self.db_path
-            }
+            "checkpoint": {"type": "sqlite", "db_path": self.db_path},
         }
 
         # Directly instantiate and initialize the agent
         try:
             agent = LanggraphAgent(initial_config=agent_config)
-            
+
             # The __init__ method calls initialize, so we can check the state now.
-            self.assertIsNotNone(agent.agent_instance, "Agent instance should be compiled.")
+            self.assertIsNotNone(
+                agent.agent_instance, "Agent instance should be compiled."
+            )
             self.assertEqual(agent.name, "Test Simple Agent")
-            
+
             # Check if the agent's info reflects the configuration
             infos = agent.infos
             self.assertEqual(infos.get("status"), "Initialized")
             self.assertEqual(infos.get("name"), "Test Simple Agent")
             self.assertIn("checkpoint", infos)
             self.assertEqual(infos["checkpoint"]["type"], "sqlite")
-            
+
             print("\nLanggraphAgent created and initialized successfully.")
             print(f"Agent Name: {agent.name}")
             print(f"Agent Info: {agent.infos}")
-            
+
         except Exception as e:
             self.fail(f"Agent creation failed with an exception: {e}")
 
@@ -57,10 +56,7 @@ class TestLanggraphAgentCreation(unittest.TestCase):
         agent_config = {
             "name": "Test Echo Agent",
             "agent_path": "tests/example_agents/simple_graph.py:simple_test_graph",
-            "checkpoint": {
-                "type": "sqlite",
-                "db_path": self.db_path
-            }
+            "checkpoint": {"type": "sqlite", "db_path": self.db_path},
         }
         agent = LanggraphAgent(initial_config=agent_config)
 
@@ -68,7 +64,7 @@ class TestLanggraphAgentCreation(unittest.TestCase):
             # Chat with the agent
             session_id = "test-session-123"
             chat_message = {"query": "Hello, world!", "session_id": session_id}
-            
+
             response = await agent.process_message(chat_message)
 
             self.assertIn("You said: Hello, world!", response)
@@ -83,5 +79,6 @@ class TestLanggraphAgentCreation(unittest.TestCase):
         # Run the async test function
         asyncio.run(run_chat())
 
-if __name__ == '__main__':
-    unittest.main() 
+
+if __name__ == "__main__":
+    unittest.main()

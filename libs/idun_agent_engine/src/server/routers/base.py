@@ -1,4 +1,5 @@
-# Add a health check endpoint
+"""Base routes for service health and landing info."""
+
 from fastapi import APIRouter
 
 from ..._version import __version__

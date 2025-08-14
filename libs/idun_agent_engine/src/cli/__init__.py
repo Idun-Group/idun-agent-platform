@@ -1,5 +1,4 @@
-"""
-Command Line Interface for Idun Agent Engine
+"""Command Line Interface for Idun Agent Engine.
 
 This module will provide CLI tools for:
 - Generating boilerplate projects

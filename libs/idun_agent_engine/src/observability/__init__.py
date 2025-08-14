@@ -1,3 +1,5 @@
+"""Observability package providing provider-agnostic tracing interfaces."""
+
 from .base import (
     ObservabilityConfig,
     ObservabilityHandlerBase,

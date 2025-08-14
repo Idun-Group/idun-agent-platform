@@ -1,5 +1,4 @@
-"""
-Configuration and Setup Validation Utilities
+"""Configuration and Setup Validation Utilities.
 
 This module provides functions to validate configurations, check agent setups,
 and help users diagnose common issues.
@@ -11,8 +10,7 @@ from typing import Any
 
 
 def validate_config_dict(config: dict[str, Any]) -> list[str]:
-    """
-    Validate a configuration dictionary and return a list of issues.
+    """Validate a configuration dictionary and return a list of issues.
 
     Args:
         config: Configuration dictionary to validate
@@ -58,9 +56,8 @@ def _validate_langgraph_config(config: dict[str, Any]) -> list[str]:
         checkpointer = config["checkpointer"]
         if not isinstance(checkpointer, dict):
             errors.append("Checkpointer must be a dictionary")
-        elif checkpointer.get("type") == "sqlite":
-            if "db_url" not in checkpointer:
-                errors.append("SQLite checkpointer missing 'db_url'")
+        elif checkpointer.get("type") == "sqlite" and "db_url" not in checkpointer:
+            errors.append("SQLite checkpointer missing 'db_url'")
 
     return errors
 
@@ -94,8 +91,7 @@ def _validate_graph_definition(graph_def: str) -> list[str]:
 
 
 def check_agent_requirements(agent_type: str) -> list[str]:
-    """
-    Check if the required packages for an agent type are installed.
+    """Check if the required packages for an agent type are installed.
 
     Args:
         agent_type: The type of agent to check requirements for
@@ -106,22 +102,16 @@ def check_agent_requirements(agent_type: str) -> list[str]:
     missing = []
 
     if agent_type == "langgraph":
-        try:
-            import langgraph
-        except ImportError:
+        if importlib.util.find_spec("langgraph") is None:
             missing.append("langgraph")
-
-        try:
-            import aiosqlite
-        except ImportError:
+        if importlib.util.find_spec("aiosqlite") is None:
             missing.append("aiosqlite")
 
     return missing
 
 
 def diagnose_setup() -> dict[str, Any]:
-    """
-    Run a comprehensive diagnosis of the current setup.
+    """Run a comprehensive diagnosis of the current setup.
 
     Returns:
         Dict[str, Any]: Diagnosis results including versions, dependencies, etc.

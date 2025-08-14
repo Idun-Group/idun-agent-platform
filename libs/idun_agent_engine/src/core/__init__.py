@@ -1,5 +1,4 @@
-"""
-Core module for the Idun Agent Engine
+"""Core module for the Idun Agent Engine.
 
 This module contains the user-facing API components that make it easy to:
 - Create FastAPI applications with agent integrations

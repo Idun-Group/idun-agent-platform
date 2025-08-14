@@ -1,5 +1,4 @@
-"""
-Example 3: Minimal Setup
+"""Example 3: Minimal Setup.
 
 This is the absolute minimal way to run an agent with the Idun Agent Engine.
 Perfect for prototyping, demos, and getting started quickly.
@@ -14,7 +13,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-# That's it! Just one function call to run your agent server
+"""Minimal setup to run your agent server from a config file."""
+
 from src.core.server_runner import run_server_from_config
 
 if __name__ == "__main__":

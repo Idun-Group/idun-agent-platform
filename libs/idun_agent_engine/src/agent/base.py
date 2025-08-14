@@ -1,16 +1,19 @@
+"""Agent base interfaces.
+
+Defines the abstract `BaseAgent` used by all agent implementations.
+"""
+
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from .model import BaseAgentConfig
 
-ConfigType = TypeVar("ConfigType", bound=BaseAgentConfig)
 
+class BaseAgent[ConfigType: BaseAgentConfig](ABC):
+    """Abstract base for agents pluggable into the Idun Agent Engine.
 
-class BaseAgent(ABC, Generic[ConfigType]):
-    """
-    Abstract Base Class defining the common interface for all agents frameworks
-    pluggable into the Idun Agent Engine.
+    Implements the public protocol that concrete agent adapters must follow.
     """
 
     _configuration: ConfigType
@@ -30,14 +33,16 @@ class BaseAgent(ABC, Generic[ConfigType]):
     @property
     @abstractmethod
     def agent_instance(self) -> Any:
-        """The underlying agent instance from the specific framework (e.g., a LangGraph runnable).
+        """Get the underlying agent instance from the specific framework.
+
         This might be set after initialization.
         """
         pass
 
     @property
     def configuration(self) -> ConfigType:
-        """Configuration settings for the agent.
+        """Return current configuration settings for the agent.
+
         This is typically the configuration used during initialization.
         """
         return self._configuration
@@ -50,8 +55,10 @@ class BaseAgent(ABC, Generic[ConfigType]):
 
     @abstractmethod
     async def initialize(self, config: dict[str, Any]) -> None:
-        """Initializes the agent with a given configuration.
+        """Initialize the agent with a given configuration.
+
         This method should set up the underlying agent framework instance.
+
         Args:
             config: A dictionary containing the agent's configuration.
         """
@@ -59,20 +66,26 @@ class BaseAgent(ABC, Generic[ConfigType]):
 
     @abstractmethod
     async def invoke(self, message: Any) -> Any:
-        """Processes a single input message and returns a response.
-        This should be an awaitable method if the underlying agent processes asynchronously.
+        """Process a single input message and return a response.
+
+        This should be an awaitable method if the underlying agent processes
+        asynchronously.
+
         Args:
             message: The input message for the agent.
+
         Returns:
             The agent's response.
         """
         pass
 
     @abstractmethod
-    async def stream(self, message: Any) -> AsyncGenerator[Any, None]:
-        """Processes a single input message and returns an asynchronous stream of responses.
+    async def stream(self, message: Any) -> AsyncGenerator[Any]:
+        """Process a single input message and return an asynchronous stream.
+
         Args:
             message: The input message for the agent.
+
         Yields:
             Chunks of the agent's response.
         """
@@ -80,7 +93,5 @@ class BaseAgent(ABC, Generic[ConfigType]):
         # For the ABC, we can't have a `yield` directly in the abstract method body.
         # The signature itself defines it as an async generator.
         # Example: async for chunk in agent.stream(message): ...
-        if (
-            False
-        ):  # pragma: no cover (This is just to make it a generator type for static analysis)
+        if False:  # pragma: no cover (This is just to make it a generator type for static analysis)
             yield

@@ -1,6 +1,5 @@
 import asyncio
 from langgraph.graph import StateGraph, MessagesState
-from langchain_core.messages import AIMessage, HumanMessage
 from langchain_google_vertexai import ChatVertexAI
 
 
@@ -9,6 +8,7 @@ async def sleep_node(state: MessagesState):
     """Sleep for 3 seconds."""
     await asyncio.sleep(3)
     return state
+
 
 llm = ChatVertexAI(
     model="gemini-2.0-flash-lite",
@@ -25,6 +25,7 @@ async def echo_node(state: MessagesState):
     """Takes the conversation history and invokes the Gemini model."""
     response = await llm.ainvoke(state["messages"])
     return {"messages": [response]}
+
 
 # Define the graph
 builder = StateGraph(MessagesState)

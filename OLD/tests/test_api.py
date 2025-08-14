@@ -1,8 +1,9 @@
 from fastapi.testclient import TestClient
-from idun_agent_manager.main import app # Assuming your FastAPI app instance is here
-from idun_agent_manager.models.agent_models import FrameworkType, ToolDefinition, ToolType
+from idun_agent_manager.main import app  # Assuming your FastAPI app instance is here
+from idun_agent_manager.models.agent_models import FrameworkType, ToolType
 
 client = TestClient(app)
+
 
 def test_create_and_get_agent():
     """Test creating an agent and then retrieving it."""
@@ -13,8 +14,8 @@ def test_create_and_get_agent():
     sample_tool = {
         "name": "test_search_tool",
         "description": "A test tool.",
-        "schema": {"type": "object", "properties": {"query": {"type": "string"}}},        
-        "type": ToolType.API.value
+        "schema": {"type": "object", "properties": {"query": {"type": "string"}}},
+        "type": ToolType.API.value,
     }
 
     agent_data = {
@@ -23,7 +24,7 @@ def test_create_and_get_agent():
         "framework_type": FrameworkType.LANGGRAPH.value,
         "config": {"some_key": "some_value"},
         "llm_config": {"model": "test_model"},
-        "tools": [sample_tool]
+        "tools": [sample_tool],
     }
 
     # 1. Create Agent
@@ -44,6 +45,7 @@ def test_create_and_get_agent():
     assert len(retrieved_agent_data["tools"]) == 1
     assert retrieved_agent_data["tools"][0]["name"] == "test_search_tool"
 
+
 def test_list_agents():
     """Test listing agents."""
     # This test assumes there's at least one agent from the previous test or a fresh DB state.
@@ -55,10 +57,12 @@ def test_list_agents():
     # If we know an agent was created in test_create_and_get_agent, we could check for its presence
     # This requires tests to run in order or to have a shared fixture/setup.
 
+
 def test_get_nonexistent_agent():
     """Test retrieving a non-existent agent."""
     response = client.get("/api/v1/agents/nonexistent-agent-id-123")
     assert response.status_code == 404
 
+
 # To run tests (from the project root directory):
-# poetry run pytest 
+# poetry run pytest

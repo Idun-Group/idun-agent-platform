@@ -1,5 +1,4 @@
-"""
-Minimal LangGraph Agent
+"""Minimal LangGraph Agent.
 
 The absolute simplest LangGraph agent possible.
 Perfect for understanding the basics or quick prototyping.

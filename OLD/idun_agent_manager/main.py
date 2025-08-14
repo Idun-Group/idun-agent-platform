@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from idun_agent_manager.api.api import api_router
 from idun_agent_manager.db import sqlite_db
 from fastapi.middleware.cors import CORSMiddleware
-import os
 from contextlib import asynccontextmanager
 
 
@@ -38,9 +37,11 @@ app.add_middleware(
 
 app.include_router(api_router, prefix="/api/v1")
 
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Idun Agent Manager API"}
 
+
 # To run this application (from the project root directory):
-# poetry run uvicorn idun_agent_manager.main:app --reload 
+# poetry run uvicorn idun_agent_manager.main:app --reload

@@ -19,17 +19,17 @@ agent:
       enabled: true
       options:
         # Langfuse options
-        # host: ${LANGFUSE_HOST}
-        # public_key: ${LANGFUSE_PUBLIC_KEY}
-        # secret_key: ${LANGFUSE_SECRET_KEY}
-        # run_name: "idun-langgraph-run"
-        # Phoenix options (if provider: phoenix)
-        api_key: ${PHOENIX_API_KEY}
-        collector_endpoint: ${PHOENIX_COLLECTOR_ENDPOINT}
-        project_name: "default"
+        host: ${LANGFUSE_HOST}
+        public_key: ${LANGFUSE_PUBLIC_KEY}
+        secret_key: ${LANGFUSE_SECRET_KEY}
         run_name: "idun-langgraph-run"
-    
+        # Phoenix options (if provider: phoenix)
+        # api_key: ${PHOENIX_API_KEY}
+        # collector_endpoint: ${PHOENIX_COLLECTOR_ENDPOINT}
+        # project_name: "default"
+        # run_name: "idun-langgraph-run"
+
     # Optional: Enable conversation persistence
     checkpointer:
       type: "sqlite"
-      db_url: "sqlite:///example_checkpoint.db" 
+      db_url: "sqlite:///example_checkpoint.db"

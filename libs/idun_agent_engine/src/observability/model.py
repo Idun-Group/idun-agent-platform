@@ -1,3 +1,5 @@
+"""Provider-agnostic observability configuration model."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -34,7 +36,7 @@ class ObservabilityConfig(BaseModel):
         return _resolve_env(value)
 
     def resolved(self) -> ObservabilityConfig:
-        """Return a copy of the config with env placeholders resolved in options."""
+        """Return a copy with env placeholders resolved in options."""
         resolved_options = self._resolve_value(self.options)
         return ObservabilityConfig(
             provider=self.provider,

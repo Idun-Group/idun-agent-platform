@@ -1,5 +1,4 @@
-"""
-Configuration Builder for Idun Agent Engine
+"""Configuration Builder for Idun Agent Engine.
 
 This module provides a fluent API for building configuration objects using Pydantic models.
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
@@ -10,7 +9,7 @@ from typing import Any
 
 import yaml
 
-from src.server.server_config import ServerAPIConfig
+from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
 from ..agent.langgraph.langgraph_model import (
@@ -21,8 +20,7 @@ from .engine_config import AgentConfig, EngineConfig, ServerConfig
 
 
 class ConfigBuilder:
-    """
-    A fluent builder for creating Idun Agent Engine configurations using Pydantic models.
+    """A fluent builder for creating Idun Agent Engine configurations using Pydantic models.
 
     This class provides a convenient way to build strongly-typed configuration objects
     that are validated at creation time, ensuring consistency and catching errors early.
@@ -46,8 +44,7 @@ class ConfigBuilder:
         self._agent_config: AgentConfig | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
-        """
-        Set the API port for the server.
+        """Set the API port for the server.
 
         Args:
             port: The port number to bind the server to
@@ -83,8 +80,7 @@ class ConfigBuilder:
     def with_server_config(
         self, api_port: int | None = None, telemetry_provider: str | None = None
     ) -> "ConfigBuilder":
-        """
-        Set server configuration options directly.
+        """Set server configuration options directly.
 
         Args:
             api_port: Optional API port
@@ -107,8 +103,7 @@ class ConfigBuilder:
         sqlite_checkpointer: str | None = None,
         **additional_config,
     ) -> "ConfigBuilder":
-        """
-        Configure a LangGraph agent using the LangGraphAgentConfig model.
+        """Configure a LangGraph agent using the LangGraphAgentConfig model.
 
         Args:
             name: Human-readable name for the agent
@@ -145,8 +140,7 @@ class ConfigBuilder:
     def with_custom_agent(
         self, agent_type: str, config: dict[str, Any]
     ) -> "ConfigBuilder":
-        """
-        Configure a custom agent type.
+        """Configure a custom agent type.
 
         This method allows for configuring agent types that don't have
         dedicated builder methods yet. The config will be validated
@@ -163,8 +157,7 @@ class ConfigBuilder:
         return self
 
     def build(self) -> EngineConfig:
-        """
-        Build and return the complete configuration as a validated Pydantic model.
+        """Build and return the complete configuration as a validated Pydantic model.
 
         Returns:
             EngineConfig: The complete, validated configuration object
@@ -181,8 +174,7 @@ class ConfigBuilder:
         return EngineConfig(server=self._server_config, agent=self._agent_config)
 
     def build_dict(self) -> dict[str, Any]:
-        """
-        Build and return the configuration as a dictionary.
+        """Build and return the configuration as a dictionary.
 
         This is a convenience method for backward compatibility.
 
@@ -193,8 +185,7 @@ class ConfigBuilder:
         return engine_config.model_dump()
 
     def save_to_file(self, file_path: str) -> None:
-        """
-        Save the configuration to a YAML file.
+        """Save the configuration to a YAML file.
 
         Args:
             file_path: Path where to save the configuration file
@@ -204,8 +195,7 @@ class ConfigBuilder:
             yaml.dump(config, f, default_flow_style=False, indent=2)
 
     async def build_and_initialize_agent(self) -> BaseAgent:
-        """
-        Build configuration and initialize the agent in one step.
+        """Build configuration and initialize the agent in one step.
 
         Returns:
             BaseAgent: Initialized agent instance
@@ -218,8 +208,7 @@ class ConfigBuilder:
 
     @staticmethod
     async def initialize_agent_from_config(engine_config: EngineConfig) -> BaseAgent:
-        """
-        Initialize an agent instance from a validated EngineConfig.
+        """Initialize an agent instance from a validated EngineConfig.
 
         Args:
             engine_config: Validated configuration object
@@ -237,11 +226,11 @@ class ConfigBuilder:
         # Initialize the appropriate agent
         agent_instance = None
         if agent_type == "langgraph":
-            from ..agent.langgraph.langgraph import LanggraphAgent
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             agent_instance = LanggraphAgent()
         elif agent_type == "CREWAI":
-            from ..agent.crewai.crewai import CrewAIAgent
+            from idun_agent_engine.agent.crewai.crewai import CrewAIAgent
 
             agent_instance = CrewAIAgent()
         # Future agent types can be added here:
@@ -260,8 +249,7 @@ class ConfigBuilder:
 
     @staticmethod
     def get_agent_class(agent_type: str) -> type[BaseAgent]:
-        """
-        Get the agent class for a given agent type without initializing it.
+        """Get the agent class for a given agent type without initializing it.
 
         Args:
             agent_type: The type of agent
@@ -291,8 +279,7 @@ class ConfigBuilder:
     def validate_agent_config(
         agent_type: str, config: dict[str, Any]
     ) -> dict[str, Any]:
-        """
-        Validate agent configuration against the appropriate Pydantic model.
+        """Validate agent configuration against the appropriate Pydantic model.
 
         Args:
             agent_type: The type of agent
@@ -316,8 +303,7 @@ class ConfigBuilder:
 
     @staticmethod
     def load_from_file(config_path: str = "config.yaml") -> EngineConfig:
-        """
-        Load configuration from a YAML file and return a validated EngineConfig.
+        """Load configuration from a YAML file and return a validated EngineConfig.
 
         Args:
             config_path: Path to the configuration YAML file
@@ -343,8 +329,7 @@ class ConfigBuilder:
     async def load_and_initialize_agent(
         config_path: str = "config.yaml",
     ) -> tuple[EngineConfig, BaseAgent]:
-        """
-        Load configuration and initialize agent in one step.
+        """Load configuration and initialize agent in one step.
 
         Args:
             config_path: Path to the configuration YAML file
@@ -362,8 +347,7 @@ class ConfigBuilder:
         config_dict: dict[str, Any] | None = None,
         engine_config: EngineConfig | None = None,
     ) -> EngineConfig:
-        """
-        Umbrella function to resolve configuration from various sources.
+        """Umbrella function to resolve configuration from various sources.
 
         This function handles all the different ways configuration can be provided
         and returns a validated EngineConfig. It follows a priority order:
@@ -403,8 +387,7 @@ class ConfigBuilder:
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> "ConfigBuilder":
-        """
-        Create a ConfigBuilder from an existing configuration dictionary.
+        """Create a ConfigBuilder from an existing configuration dictionary.
 
         This method validates the input dictionary against the Pydantic models.
 
@@ -429,8 +412,7 @@ class ConfigBuilder:
 
     @classmethod
     def from_file(cls, config_path: str = "config.yaml") -> "ConfigBuilder":
-        """
-        Create a ConfigBuilder from a YAML configuration file.
+        """Create a ConfigBuilder from a YAML configuration file.
 
         Args:
             config_path: Path to the configuration YAML file
@@ -443,8 +425,7 @@ class ConfigBuilder:
 
     @classmethod
     def from_engine_config(cls, engine_config: EngineConfig) -> "ConfigBuilder":
-        """
-        Create a ConfigBuilder from an existing EngineConfig instance.
+        """Create a ConfigBuilder from an existing EngineConfig instance.
 
         Args:
             engine_config: Existing EngineConfig instance

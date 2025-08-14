@@ -1,8 +1,10 @@
+"""Common agent model definitions."""
+
 from typing import Any
 
 from pydantic import BaseModel, Field
 
-from src.observability.base import ObservabilityConfig
+from idun_agent_engine.observability.base import ObservabilityConfig
 
 
 class BaseAgentConfig(BaseModel):

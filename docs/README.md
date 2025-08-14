@@ -33,7 +33,7 @@ The Idun Agent Manager currently supports:
 - **Strengths**: Flexible state management, extensive ecosystem
 - **Use cases**: Multi-step workflows, complex decision trees
 
-### ADK Agent  
+### ADK Agent
 - **Best for**: Google Cloud environments, Gemini model integration
 - **Strengths**: Native Google integration, built-in tools, enterprise features
 - **Use cases**: Google ecosystem applications, production deployments
@@ -102,4 +102,4 @@ For questions or issues:
 1. Check the relevant framework documentation
 2. Review the example implementations
 3. Run the test suites to verify setup
-4. Open an issue with specific details 
+4. Open an issue with specific details

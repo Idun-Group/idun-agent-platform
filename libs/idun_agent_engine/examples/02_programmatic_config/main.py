@@ -1,5 +1,4 @@
-"""
-Example 2: Programmatic Configuration
+"""Example 2: Programmatic Configuration.
 
 This example demonstrates how to configure your agent using the ConfigBuilder API
 instead of YAML files. This approach is great for dynamic configuration and
@@ -9,10 +8,6 @@ when you want type safety and IDE support.
 import os
 import sys
 from pathlib import Path
-
-# Add the project root to the Python path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
 
 from src import ConfigBuilder, create_app, run_server, run_server_from_builder
 
@@ -43,7 +38,7 @@ def environment_based_config():
     # Get configuration from environment variables
     port = int(os.getenv("PORT", 8001))
     environment = os.getenv("ENVIRONMENT", "dev")
-    telemetry_provider = os.getenv("TELEMETRY_PROVIDER", "langfuse")
+    os.getenv("TELEMETRY_PROVIDER", "langfuse")
 
     config = (
         ConfigBuilder()
@@ -248,7 +243,6 @@ async def demonstrate_agent_initialization():
 
 def main():
     """Main function that demonstrates different configuration approaches."""
-
     # Choose which example to run based on command line argument
     example = sys.argv[1] if len(sys.argv) > 1 else "basic"
 

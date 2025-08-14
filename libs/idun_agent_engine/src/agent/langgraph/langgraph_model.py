@@ -1,9 +1,11 @@
-from typing import Any, Literal, Union
+"""Configuration models for LangGraph agents."""
+
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, field_validator
 
-from src.agent.model import BaseAgentConfig
+from idun_agent_engine.agent.model import BaseAgentConfig
 
 
 class SqliteCheckpointConfig(BaseModel):
@@ -15,6 +17,7 @@ class SqliteCheckpointConfig(BaseModel):
     @field_validator("db_url")
     @classmethod
     def db_url_must_be_sqlite(cls, v: str) -> str:
+        """Validate that db_url uses sqlite scheme."""
         if not v.startswith("sqlite:///"):
             raise ValueError("SQLite DB URL must start with 'sqlite:///'")
         return v
@@ -31,13 +34,13 @@ class SqliteCheckpointConfig(BaseModel):
         return path
 
 
-# A discriminated union for different checkpointer types.
-CheckpointConfig = Union[SqliteCheckpointConfig]
+# A single checkpointer type for now (kept as alias for future extension).
+CheckpointConfig = SqliteCheckpointConfig
 
 
 class LangGraphAgentConfig(BaseAgentConfig):
-    """
-    Configuration model for LangGraph agents.
+    """Configuration model for LangGraph agents.
+
     This model validates the 'config' block for an agent of type 'langgraph'.
     """
 

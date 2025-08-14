@@ -26,11 +26,11 @@ python main.py
 Learn how to use YAML configuration files for declarative agent setup.
 
 ```bash
-cd 01_basic_config_file  
+cd 01_basic_config_file
 python main.py
 ```
 
-**What you'll learn**: 
+**What you'll learn**:
 - YAML configuration structure
 - Checkpointer setup
 - Environment-specific configs
@@ -66,7 +66,7 @@ curl -X POST "http://localhost:8000/agent/invoke" \
   -H "Content-Type: application/json" \
   -d '{"query": "Hello!", "session_id": "test-123"}'
 
-# Test the streaming endpoint  
+# Test the streaming endpoint
 curl -X POST "http://localhost:8000/agent/stream" \
   -H "Content-Type: application/json" \
   -d '{"query": "Tell me a story", "session_id": "test-123"}'
@@ -171,4 +171,4 @@ After completing these examples:
 - [Idun Agent Engine Documentation](../README_USER_API.md)
 - [LangGraph Documentation](https://python.langchain.com/docs/langgraph)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Agent Adapters](../src/agent/) 
+- [Agent Adapters](../src/agent/)

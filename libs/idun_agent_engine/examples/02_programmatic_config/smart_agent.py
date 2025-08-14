@@ -1,5 +1,4 @@
-"""
-Smart LangGraph Agent Example
+"""Smart LangGraph Agent Example.
 
 This is a more advanced LangGraph agent that demonstrates:
 - Multiple nodes and decision logic

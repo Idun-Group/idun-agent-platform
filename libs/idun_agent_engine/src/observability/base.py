@@ -1,3 +1,8 @@
+"""Observability base classes and factory functions.
+
+Defines the provider-agnostic interface and a factory to create handlers.
+"""
+
 from __future__ import annotations
 
 import os
@@ -17,6 +22,7 @@ class ObservabilityHandlerBase(ABC):
     provider: str
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
+        """Initialize handler with provider-specific options."""
         self.options: dict[str, Any] = options or {}
 
     @abstractmethod
@@ -31,7 +37,7 @@ class ObservabilityHandlerBase(ABC):
 
 
 def _normalize_config(
-    config: ObservabilityConfig | dict[str, Any] | None
+    config: ObservabilityConfig | dict[str, Any] | None,
 ) -> dict[str, Any]:
     if config is None:
         return {"enabled": False}
@@ -50,7 +56,7 @@ def _normalize_config(
 
 
 def create_observability_handler(
-    config: ObservabilityConfig | dict[str, Any] | None
+    config: ObservabilityConfig | dict[str, Any] | None,
 ) -> tuple[ObservabilityHandlerBase | None, dict[str, Any] | None]:
     """Factory to create an observability handler based on provider.
 

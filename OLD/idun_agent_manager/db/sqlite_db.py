@@ -1,9 +1,10 @@
 import sqlite3
 import json
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from idun_agent_manager.models.agent_models import Agent
 
 DATABASE_URL = "agents.db"
+
 
 def get_db_connection():
     """Establishes a connection to the SQLite database."""
@@ -11,11 +12,13 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def initialize_db():
     """Creates the agents table if it doesn't already exist."""
     conn = get_db_connection()
     with conn:
-        conn.execute("""
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS agents (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -25,20 +28,23 @@ def initialize_db():
                 llm_config TEXT,
                 tools TEXT
             )
-        """)
+        """
+        )
     conn.close()
+
 
 def _row_to_agent(row: sqlite3.Row) -> Agent:
     """Converts a database row into an Agent Pydantic model."""
     return Agent(
-        id=row['id'],
-        name=row['name'],
-        description=row['description'],
-        framework_type=row['framework_type'],
-        config=json.loads(row['config']) if row['config'] else {},
-        llm_config=json.loads(row['llm_config']) if row['llm_config'] else {},
-        tools=json.loads(row['tools']) if row['tools'] else [],
+        id=row["id"],
+        name=row["name"],
+        description=row["description"],
+        framework_type=row["framework_type"],
+        config=json.loads(row["config"]) if row["config"] else {},
+        llm_config=json.loads(row["llm_config"]) if row["llm_config"] else {},
+        tools=json.loads(row["tools"]) if row["tools"] else [],
     )
+
 
 def create_agent_in_db(agent: Agent) -> Agent:
     """Stores a new agent in the SQLite database."""
@@ -65,6 +71,7 @@ def create_agent_in_db(agent: Agent) -> Agent:
     conn.close()
     return agent
 
+
 def get_agent_from_db(agent_id: str) -> Optional[Agent]:
     """Retrieves a single agent from the database by its ID."""
     conn = get_db_connection()
@@ -72,6 +79,7 @@ def get_agent_from_db(agent_id: str) -> Optional[Agent]:
     row = cursor.execute("SELECT * FROM agents WHERE id = ?", (agent_id,)).fetchone()
     conn.close()
     return _row_to_agent(row) if row else None
+
 
 def list_agents_from_db() -> List[Agent]:
     """Lists all agents stored in the database."""
@@ -81,6 +89,7 @@ def list_agents_from_db() -> List[Agent]:
     conn.close()
     return [_row_to_agent(row) for row in rows]
 
+
 def delete_agent_from_db(agent_id: str) -> bool:
     """Deletes an agent from the database by its ID. Returns True if successful."""
     conn = get_db_connection()
@@ -89,4 +98,4 @@ def delete_agent_from_db(agent_id: str) -> bool:
         cursor.execute("DELETE FROM agents WHERE id = ?", (agent_id,))
         deleted = cursor.rowcount > 0
     conn.close()
-    return deleted 
+    return deleted

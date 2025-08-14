@@ -1,10 +1,9 @@
 import streamlit as st
 import httpx
-import json
-import os
 
 # --- Configuration ---
 API_BASE_URL = "http://127.0.0.1:8000/api/v1"
+
 
 # --- Helper Functions ---
 def get_agents():
@@ -20,6 +19,7 @@ def get_agents():
         st.error(f"API Error: {e.response.status_code} - {e.response.text}")
         return []
 
+
 def create_agent(agent_data):
     """Creates a new agent via the API."""
     try:
@@ -32,6 +32,7 @@ def create_agent(agent_data):
     except httpx.HTTPStatusError as e:
         st.error(f"API Error: {e.response.status_code} - {e.response.text}")
     return False
+
 
 def delete_agent(agent_id):
     """Deletes an agent via the API."""
@@ -46,11 +47,14 @@ def delete_agent(agent_id):
         st.error(f"API Error: {e.response.status_code} - {e.response.text}")
     return False
 
+
 def run_agent_no_stream(agent_id, session_id, query):
     """Sends a chat message to a specific agent."""
     request_body = {"session_id": session_id, "query": query}
     try:
-        response = httpx.post(f"{API_BASE_URL}/agents/{agent_id}/chat", json=request_body)
+        response = httpx.post(
+            f"{API_BASE_URL}/agents/{agent_id}/chat", json=request_body
+        )
         response.raise_for_status()
         return response.json().get("response", "No response content.")
     except httpx.RequestError as e:
@@ -58,6 +62,7 @@ def run_agent_no_stream(agent_id, session_id, query):
     except httpx.HTTPStatusError as e:
         st.error(f"API Error: {e.response.status_code} - {e.response.text}")
     return "Error: Could not get a response."
+
 
 # --- UI Sections ---
 def agent_management_section():
@@ -71,11 +76,14 @@ def agent_management_section():
             name = st.text_input("Agent Name*", help="A unique name for the agent.")
             description = st.text_area("Description")
             framework_type = st.selectbox("Framework*", ["LANGGRAPH", "ADK"])
-            
+
             # --- LangGraph Specific Config ---
             if framework_type == "LANGGRAPH":
-                agent_path = st.text_input("Agent Path*", "tests/example_agents/simple_graph.py:simple_test_graph")
-                
+                agent_path = st.text_input(
+                    "Agent Path*",
+                    "tests/example_agents/simple_graph.py:simple_test_graph",
+                )
+
                 # Checkpoint configuration
                 st.write("#### Checkpoint Configuration")
                 checkpoint_type = st.selectbox("Type", ["sqlite"], key="lg_checkpoint")
@@ -83,10 +91,10 @@ def agent_management_section():
 
                 config = {
                     "agent_path": agent_path,
-                    "checkpoint": {"type": checkpoint_type, "db_path": db_path}
+                    "checkpoint": {"type": checkpoint_type, "db_path": db_path},
                 }
             else:
-                config = {} # Placeholder for other agent types like ADK
+                config = {}  # Placeholder for other agent types like ADK
 
             submitted = st.form_submit_button("Create Agent")
             if submitted:
@@ -97,7 +105,7 @@ def agent_management_section():
                         "name": name,
                         "description": description,
                         "framework_type": framework_type,
-                        "config": config
+                        "config": config,
                     }
                     if create_agent(agent_data):
                         st.rerun()
@@ -114,12 +122,12 @@ def agent_management_section():
                 with col1:
                     st.subheader(f"{agent['name']} ({agent['framework_type']})")
                     st.caption(f"ID: {agent['id']}")
-                    st.write(agent.get('description', 'No description.'))
+                    st.write(agent.get("description", "No description."))
                     with st.expander("View Full Configuration"):
-                        st.json(agent['config'])
+                        st.json(agent["config"])
                 with col2:
                     if st.button("Delete", key=f"delete_{agent['id']}"):
-                        if delete_agent(agent['id']):
+                        if delete_agent(agent["id"]):
                             st.rerun()
 
 
@@ -127,7 +135,7 @@ def agent_chat_section():
     """UI for chatting with an agent."""
     st.header("Chat with an Agent")
     agents = get_agents()
-    agent_options = {agent['name']: agent['id'] for agent in agents}
+    agent_options = {agent["name"]: agent["id"] for agent in agents}
 
     if not agent_options:
         st.warning("No agents available. Please create an agent first.")
@@ -142,7 +150,7 @@ def agent_chat_section():
 
         if "messages" not in st.session_state:
             st.session_state.messages = {}
-        
+
         if session_id not in st.session_state.messages:
             st.session_state.messages[session_id] = []
 
@@ -153,13 +161,17 @@ def agent_chat_section():
 
         # Chat input
         if prompt := st.chat_input("What is up?"):
-            st.session_state.messages[session_id].append({"role": "user", "content": prompt})
+            st.session_state.messages[session_id].append(
+                {"role": "user", "content": prompt}
+            )
             with st.chat_message("user"):
                 st.markdown(prompt)
 
             with st.spinner("Agent is thinking..."):
                 response = run_agent_no_stream(selected_agent_id, session_id, prompt)
-                st.session_state.messages[session_id].append({"role": "assistant", "content": response})
+                st.session_state.messages[session_id].append(
+                    {"role": "assistant", "content": response}
+                )
                 with st.chat_message("assistant"):
                     st.markdown(response)
 
@@ -167,7 +179,9 @@ def agent_chat_section():
 # --- Main App ---
 st.set_page_config(page_title="Idun Agent Manager", layout="wide")
 st.title("Idun Agent Manager UI")
-st.write("A prototype UI to manage and interact with your AI agents via the Agent Manager API.")
+st.write(
+    "A prototype UI to manage and interact with your AI agents via the Agent Manager API."
+)
 
 # Use tabs for different sections
 tab1, tab2 = st.tabs(["Agent Management", "Chat"])
@@ -175,4 +189,4 @@ tab1, tab2 = st.tabs(["Agent Management", "Chat"])
 with tab1:
     agent_management_section()
 with tab2:
-    agent_chat_section() 
+    agent_chat_section()

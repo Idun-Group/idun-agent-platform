@@ -1,14 +1,10 @@
-"""
-Example 1: Basic Configuration File
+"""Example 1: Basic configuration file runner."""
 
-This example demonstrates how to run an agent using a YAML configuration file.
-This is the most common and recommended approach for production deployments.
-"""
-
-import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+from src import create_app, run_server
 
 load_dotenv()
 
@@ -20,9 +16,7 @@ load_dotenv()
 # sys.path.insert(0, str(project_root))
 
 # # Print current sys.path after adding project root
-print("Python path:", sys.path)
-
-from src import create_app, run_server
+# print("Python path:", sys.path)
 
 
 def main():

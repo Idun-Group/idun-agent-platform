@@ -1,3 +1,5 @@
+"""LangGraph agent adapter implementing the BaseAgent protocol."""
+
 import importlib.util
 import uuid
 from collections.abc import AsyncGenerator
@@ -9,17 +11,16 @@ from ag_ui.core import types as ag_types
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
 
-from src import observability
-from src.agent import base as agent_base
-from src.agent.langgraph import langgraph_model as lg_model
+from idun_agent_engine import observability
+from idun_agent_engine.agent import base as agent_base
+from idun_agent_engine.agent.langgraph import langgraph_model as lg_model
 
 
 class LanggraphAgent(agent_base.BaseAgent):
-    """Placeholder implementation for a LangGraph agent.
-    This class will wrap a LangGraph agent/graph and adapt it to the IAgent interface.
-    """
+    """LangGraph agent adapter implementing the BaseAgent protocol."""
 
     def __init__(self):
+        """Initialize an unconfigured LanggraphAgent with default state."""
         self._id = str(uuid.uuid4())
         self._agent_type = "LangGraph"
         self._input_schema: Any = None
@@ -41,45 +42,61 @@ class LanggraphAgent(agent_base.BaseAgent):
 
     @property
     def id(self) -> str:
+        """Return unique identifier for this agent instance."""
         return self._id
 
     @property
     def agent_type(self) -> str:
+        """Return agent type label."""
         return self._agent_type
 
     @property
     def name(self) -> str:
+        """Return configured human-readable agent name."""
         return self._name
 
     @property
     def input_schema(self) -> Any:
+        """Return input schema provided by underlying graph if available."""
         return self._input_schema
 
     @property
     def output_schema(self) -> Any:
+        """Return output schema provided by underlying graph if available."""
         return self._output_schema
 
     @property
     def agent_instance(self) -> Any:
+        """Return compiled graph instance.
+
+        Raises:
+            RuntimeError: If the agent is not yet initialized.
+        """
         if self._agent_instance is None:
             raise RuntimeError("Agent not initialized. Call initialize() first.")
         return self._agent_instance
 
     @property
     def configuration(self) -> lg_model.LangGraphAgentConfig:
+        """Return validated configuration.
+
+        Raises:
+            RuntimeError: If the agent has not been configured yet.
+        """
         if not self._configuration:
             raise RuntimeError("Agent not configured. Call initialize() first.")
         return self._configuration
 
     @property
     def infos(self) -> dict[str, Any]:
+        """Return diagnostic information about the agent instance."""
         self._infos["underlying_agent_type"] = (
             str(type(self._agent_instance)) if self._agent_instance else "N/A"
         )
         return self._infos
 
     async def initialize(self, config: lg_model.LangGraphAgentConfig) -> None:
-        """Initializes the LangGraph agent asynchronously."""
+        """Initialize the LangGraph agent asynchronously."""
         self._configuration = lg_model.LangGraphAgentConfig.model_validate(config)
 
         self._name = self._configuration.name or "Unnamed LangGraph Agent"
@@ -186,7 +203,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         except ValueError:
             raise ValueError(
                 "graph_definition must be in the format 'path/to/file.py:variable_name'"
-            )
+            ) from None
 
         try:
             spec = importlib.util.spec_from_file_location(
@@ -200,7 +217,9 @@ class LanggraphAgent(agent_base.BaseAgent):
 
             graph_builder = getattr(module, graph_variable_name)
         except (FileNotFoundError, ImportError, AttributeError) as e:
-            raise ValueError(f"Failed to load agent from {graph_definition}: {e}")
+            raise ValueError(
+                f"Failed to load agent from {graph_definition}: {e}"
+            ) from e
 
         if not isinstance(graph_builder, StateGraph):
             raise TypeError(
@@ -210,8 +229,8 @@ class LanggraphAgent(agent_base.BaseAgent):
         return graph_builder
 
     async def invoke(self, message: Any) -> Any:
-        """
-        Processes a single input message to chat with the agent.
+        """Process a single input to chat with the agent.
+
         The message should be a dictionary containing 'query' and 'session_id'.
         """
         if self._agent_instance is None:
@@ -246,11 +265,12 @@ class LanggraphAgent(agent_base.BaseAgent):
             elif isinstance(response_message, tuple):
                 return response_message[1]
             else:
-                response_message
+                # No usable content attribute; fall through to returning raw output
+                pass
 
         return output
 
-    async def stream(self, message: Any) -> AsyncGenerator[Any, None]:
+    async def stream(self, message: Any) -> AsyncGenerator[Any]:
         """Processes a single input message and returns a stream of ag-ui events."""
         if self._agent_instance is None:
             raise RuntimeError(

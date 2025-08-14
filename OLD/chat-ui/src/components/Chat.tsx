@@ -67,7 +67,7 @@ export default function Chat() {
 
       const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
       let buffer = '';
-      
+
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -207,4 +207,4 @@ export default function Chat() {
       </div>
     </div>
   );
-} 
+}
