@@ -89,9 +89,13 @@ def run_server_from_config(config_path: str = "config.yaml", **kwargs) -> None:
 
     # Show configuration info
     print(f"🔧 Loaded configuration from {config_path}")
-    print(
-        f"🤖 Agent: {engine_config.agent.config.get('name', 'Unknown')} ({engine_config.agent.type})"
+    # Best-effort: handle both dict-like and model access
+    agent_name = (
+        engine_config.agent.config.get("name")  # type: ignore[call-arg, index]
+        if hasattr(engine_config.agent.config, "get")
+        else getattr(engine_config.agent.config, "name", "Unknown")
     )
+    print(f"🤖 Agent: {agent_name} ({engine_config.agent.type})")
 
     run_server(app, **kwargs)
 
@@ -132,8 +136,11 @@ def run_server_from_builder(config_builder, **kwargs) -> None:
 
     # Show configuration info
     print("🔧 Using programmatic configuration")
-    print(
-        f"🤖 Agent: {engine_config.agent.config.get('name', 'Unknown')} ({engine_config.agent.type})"
+    agent_name = (
+        engine_config.agent.config.get("name")  # type: ignore[call-arg, index]
+        if hasattr(engine_config.agent.config, "get")
+        else getattr(engine_config.agent.config, "name", "Unknown")
     )
+    print(f"🤖 Agent: {agent_name} ({engine_config.agent.type})")
 
     run_server(app, **kwargs)

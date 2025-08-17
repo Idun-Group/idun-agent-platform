@@ -1,6 +1,6 @@
 """Tests for Langfuse and Phoenix observability handlers."""
 
-from idun_agent_engine.src.observability import create_observability_handler
+from idun_agent_engine.observability import create_observability_handler
 
 
 def test_langfuse_handler_creation(monkeypatch) -> None:

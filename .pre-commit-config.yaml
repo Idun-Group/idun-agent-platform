@@ -17,25 +17,25 @@ repos:
     -   id: trailing-whitespace
         name: "✂️ format · Trim trailing whitespace"
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.8
+    rev: v0.12.9
     hooks:
     -   id: ruff
         name: "⚡ lint · Ruff linter and formatter"
         args:
         - --fix
         - --no-cache
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.1
+        exclude: ^libs/idun_agent_engine/examples/
+-   repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.403
     hooks:
-    -   id: mypy
-        name: "🔍 types · MyPy static type checker"
-        additional_dependencies: []
+    -   id: pyright
+        name: "🔍 types · Pyright static type checker"
         args:
-        - --config-file
-        - mypy.ini
-        files: libs/idun_agent_engine/tests/
+        - --project
+        - pyrightconfig.json
+        exclude: ^libs/idun_agent_engine/examples/
 -   repo: https://github.com/gitleaks/gitleaks
-    rev: v8.22.1
+    rev: v8.28.0
     hooks:
     -   id: gitleaks
         name: "🔒 security · Detect hardcoded secrets"

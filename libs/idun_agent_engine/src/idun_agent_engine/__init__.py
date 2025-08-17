@@ -1,5 +1,24 @@
-"""Back-compat namespace package for `idun_agent_engine`.
+"""Idun Agent Engine public API.
 
-This file exists to keep historical import paths working. The public API
-is defined in the `idun_agent_engine` package under `src/idun_agent_engine/`.
+Exports top-level helpers for convenience imports in examples and user code.
 """
+
+from ._version import __version__
+from .agent.base import BaseAgent
+from .core.app_factory import create_app
+from .core.config_builder import ConfigBuilder
+from .core.server_runner import (
+    run_server,
+    run_server_from_builder,
+    run_server_from_config,
+)
+
+__all__ = [
+    "create_app",
+    "run_server",
+    "run_server_from_config",
+    "run_server_from_builder",
+    "ConfigBuilder",
+    "BaseAgent",
+    "__version__",
+]

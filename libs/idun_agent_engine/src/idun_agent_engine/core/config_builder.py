@@ -131,10 +131,8 @@ class ConfigBuilder:
         # Create and validate the LangGraph config
         langgraph_config = LangGraphAgentConfig.model_validate(agent_config_dict)
 
-        # Create the agent config
-        self._agent_config = AgentConfig(
-            type="langgraph", config=langgraph_config.model_dump()
-        )
+        # Create the agent config (store as strongly-typed model, not dict)
+        self._agent_config = AgentConfig(type="langgraph", config=langgraph_config)
         return self
 
     def with_custom_agent(
@@ -153,7 +151,21 @@ class ConfigBuilder:
         Returns:
             ConfigBuilder: This builder instance for method chaining
         """
-        self._agent_config = AgentConfig(type=agent_type, config=config)
+        if agent_type == "langgraph":
+            self._agent_config = AgentConfig(
+                type="langgraph",
+                config=LangGraphAgentConfig.model_validate(config)
+            )
+        # elif agent_type == "ADK":
+        #     self._agent_config = ADKAgentSpec(
+        #         type="ADK", config=BaseAgentConfig.model_validate(config)
+        #     )
+        # elif agent_type == "CREWAI":
+        #     self._agent_config = CrewAIAgentSpec(
+        #         type="CREWAI", config=BaseAgentConfig.model_validate(config)
+        #     )
+        else:
+            raise ValueError(f"Unsupported agent type: {agent_type}")
         return self
 
     def build(self) -> EngineConfig:
@@ -219,7 +231,7 @@ class ConfigBuilder:
         Raises:
             ValueError: If agent type is unsupported
         """
-        agent_config_dict = engine_config.agent.config
+        agent_config_obj = engine_config.agent.config
         print(engine_config)
         agent_type = engine_config.agent.type
 
@@ -244,7 +256,7 @@ class ConfigBuilder:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration
-        await agent_instance.initialize(agent_config_dict)
+        await agent_instance.initialize(agent_config_obj)  # type: ignore[arg-type]
         return agent_instance
 
     @staticmethod
