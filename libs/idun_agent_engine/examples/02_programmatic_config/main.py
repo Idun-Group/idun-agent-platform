@@ -9,7 +9,9 @@ import os
 import sys
 from pathlib import Path
 
-from src import ConfigBuilder, create_app, run_server, run_server_from_builder
+from idun_agent_engine.core.config_builder import ConfigBuilder
+from idun_agent_engine.core.app_factory import create_app
+from idun_agent_engine.core.server_runner import run_server, run_server_from_builder
 
 
 def basic_config_example():
@@ -27,7 +29,7 @@ def basic_config_example():
         .build()
     )
 
-    print(f"✅ Created validated config: {config.agent.config['name']}")
+    print(f"✅ Created validated config: {config.agent.config.name}")
     return config
 
 
@@ -54,7 +56,7 @@ def environment_based_config():
     print(
         f"📊 Configuration validated: Port={config.server.api.port}, Environment={environment}"
     )
-    print(f"🤖 Agent: {config.agent.config['name']}")
+    print(f"🤖 Agent: {config.agent.config.name}")
     return config
 
 
@@ -83,7 +85,7 @@ def load_and_modify_config():
         )
 
         print(f"✅ Loaded and modified config from {basic_config_path}")
-        print(f"🤖 Modified agent name: {modified_config.agent.config['name']}")
+        print(f"🤖 Modified agent name: {modified_config.agent.config.name}")
         print(f"🌐 Modified port: {modified_config.server.api.port}")
 
         return modified_config
@@ -129,7 +131,7 @@ def conditional_config():
 
     mode = "production" if is_production else "development"
     print(f"📊 Running in {mode} mode with validated config")
-    print(f"🤖 Agent: {config.agent.config['name']}")
+    print(f"🤖 Agent: {config.agent.config.name}")
     print(f"🌐 Port: {config.server.api.port}")
     return config
 
@@ -150,7 +152,7 @@ def save_and_load_config():
         .build()
     )
 
-    print(f"✅ Original configuration created: {original_config.agent.config['name']}")
+    print(f"✅ Original configuration created: {original_config.agent.config.name}")
 
     # Save to file using ConfigBuilder
     config_file = Path(__file__).parent / "generated_config.yaml"

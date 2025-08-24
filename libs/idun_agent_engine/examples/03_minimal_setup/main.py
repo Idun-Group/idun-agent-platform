@@ -15,7 +15,7 @@ sys.path.insert(0, str(project_root))
 
 """Minimal setup to run your agent server from a config file."""
 
-from src.core.server_runner import run_server_from_config
+from idun_agent_engine.core.server_runner import run_server_from_config
 
 if __name__ == "__main__":
     print("🚀 Starting minimal agent server...")

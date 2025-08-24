@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint:
-    name: Lint, format, and type-check
+    name: Lint, type-check, and secrets scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,16 +24,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
 
-      - name: Install dependencies (dev)
+      - name: Install dependencies
         run: |
-          poetry install --no-interaction --only dev
+          poetry install --no-interaction
 
       - name: Run pre-commit via Poetry
+        env:
+          RUFF_CACHE_DIR: ${{ github.workspace }}/.ruff_cache
+          PYRIGHT_PYTHON_FORCE_VERSION: latest
         run: |
           poetry run pre-commit run --all-files
 
   test-engine:
-    name: Test idun_agent_engine (Py3.13)
+    name: Build, install, and test idun_agent_engine (Py3.13)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -49,12 +52,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
 
-      - name: Install dependencies (root)
+      - name: Build engine wheel/sdist
+        working-directory: libs/idun_agent_engine
         run: |
-          poetry install --no-interaction
+          poetry build
 
-      - name: Run tests (engine)
-        env:
-          PYTHONPATH: libs/idun_agent_engine/src
+      - name: Install built engine package
         run: |
-          poetry run pytest -q
+          pip install libs/idun_agent_engine/dist/*.whl
+
+      - name: Install test tooling
+        run: |
+          pip install pytest pytest-cov
+
+      - name: Run tests (importing installed package)
+        env:
+          PYTHONPATH: ''
+        working-directory: libs/idun_agent_engine
+        run: |
+          pytest -q

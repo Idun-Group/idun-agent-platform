@@ -3,24 +3,41 @@ repos:
     rev: v6.0.0
     hooks:
     -   id: check-added-large-files
+        name: "📏 files · Check for large files"
     -   id: check-ast
+        name: "🐍 syntax · Check Python AST"
     -   id: check-json
+        name: "📋 format · Check JSON syntax"
     -   id: check-merge-conflict
+        name: "🔀 merge · Check for merge conflicts"
     -   id: check-yaml
+        name: "📄 format · Check YAML syntax"
     -   id: end-of-file-fixer
+        name: "📝 format · Fix end of files"
     -   id: trailing-whitespace
+        name: "✂️ format · Trim trailing whitespace"
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.8
+    rev: v0.12.9
     hooks:
     -   id: ruff
+        name: "⚡ lint · Ruff linter and formatter"
         args:
         - --fix
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.1
+        - --no-cache
+        exclude: ^libs/idun_agent_engine/examples/
+-   repo: local
     hooks:
-    -   id: mypy
-        additional_dependencies: []
+    -   id: pyright
+        name: "🔍 types · Pyright static type checker"
+        entry: pyright
+        language: system
+        types: [python]
         args:
-        - --config-file
-        - mypy.ini
-        files: libs/idun_agent_engine/tests/
+        - --project
+        - pyrightconfig.json
+        exclude: ^libs/idun_agent_engine/examples/
+-   repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+    -   id: gitleaks
+        name: "🔒 security · Detect hardcoded secrets"

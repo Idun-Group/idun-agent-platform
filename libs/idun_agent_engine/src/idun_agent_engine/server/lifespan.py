@@ -3,6 +3,7 @@
 Initializes the agent at startup and cleans up resources on shutdown.
 """
 
+import inspect
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -31,6 +32,11 @@ async def lifespan(app: FastAPI):
 
     # Clean up on shutdown
     print("🔄 Idun Agent Engine shutting down...")
-    if hasattr(app.state.agent, "close") and callable(app.state.agent.close):
-        await app.state.agent.close()
+    agent = getattr(app.state, "agent", None)
+    if agent is not None:
+        close_fn = getattr(agent, "close", None)
+        if callable(close_fn):
+            result = close_fn()
+            if inspect.isawaitable(result):
+                await result
     print("✅ Agent resources cleaned up successfully.")

@@ -4,7 +4,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from src import create_app, run_server
+from idun_agent_engine.core.app_factory import create_app
+from idun_agent_engine.core.server_runner import run_server
 
 load_dotenv()
 
