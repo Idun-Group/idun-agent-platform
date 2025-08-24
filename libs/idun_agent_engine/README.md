@@ -1,276 +1,236 @@
-# Idun Agent Engine - User Guide
+# Idun Agent Engine
 
-The Idun Agent Engine provides a simple, powerful way to turn your conversational AI agents into production-ready web services. With just a few lines of code, you can expose your LangGraph, CrewAI, or custom agents through a FastAPI server with built-in features like streaming, persistence, and monitoring.
+Turn any LangGraph-based agent into a production-grade API in minutes.
 
-## 🚀 Quick Start
+Idun Agent Engine is a lightweight runtime and SDK that wraps your agent with a FastAPI server, adds streaming, structured responses, config validation, and optional observability — with zero boilerplate. Use a YAML file or a fluent builder to configure and run.
 
-### Installation
+## Installation
+
 ```bash
 pip install idun-agent-engine
 ```
 
-### Basic Usage
+- Requires Python 3.13
+- Ships with FastAPI, Uvicorn, LangGraph, SQLite checkpointing, and optional observability hooks
+
+## Quickstart
+
+### 1) Minimal one-liner (from a YAML config)
 
 ```python
-from idun_agent_engine import create_app, run_server
+from idun_agent_engine.core.server_runner import run_server_from_config
 
-# Create your FastAPI app with your agent
-app = create_app(config_path="config.yaml")
-
-# Run the server
-run_server(app, port=8000)
+run_server_from_config("config.yaml")
 ```
 
-That's it! Your agent is now running at `http://localhost:8000` with full API documentation at `http://localhost:8000/docs`.
-
-## 📋 Configuration
-
-### Option 1: YAML Configuration File
-
-Create a `config.yaml` file:
+Example `config.yaml`:
 
 ```yaml
-engine:
+server:
   api:
     port: 8000
-  telemetry:
-    provider: "langfuse"
 
 agent:
   type: "langgraph"
   config:
-    name: "My Awesome Agent"
-    graph_definition: "my_agent.py:graph"
+    name: "My Example LangGraph Agent"
+    graph_definition: "./examples/01_basic_config_file/example_agent.py:app"
+    # Optional: conversation persistence
     checkpointer:
       type: "sqlite"
-      db_url: "sqlite:///agent.db"
+      db_url: "sqlite:///example_checkpoint.db"
+    # Optional: provider-agnostic observability
+    observability:
+      provider: langfuse   # or phoenix
+      enabled: true
+      options:
+        host: ${LANGFUSE_HOST}
+        public_key: ${LANGFUSE_PUBLIC_KEY}
+        secret_key: ${LANGFUSE_SECRET_KEY}
+        run_name: "idun-langgraph-run"
 ```
 
-### Option 2: Programmatic Configuration
+Run and open docs at `http://localhost:8000/docs`.
+
+### 2) Programmatic setup with the fluent builder
 
 ```python
+from pathlib import Path
 from idun_agent_engine import ConfigBuilder, create_app, run_server
 
-config = (ConfigBuilder()
-          .with_api_port(8080)
-          .with_langgraph_agent(
-              name="My Agent",
-              graph_definition="my_agent.py:graph",
-              sqlite_checkpointer="agent.db")
-          .build())
+config = (
+    ConfigBuilder()
+    .with_api_port(8000)
+    .with_langgraph_agent(
+        name="Programmatic Example Agent",
+        graph_definition=str(Path("./examples/02_programmatic_config/smart_agent.py:app")),
+        sqlite_checkpointer="programmatic_example.db",
+    )
+    .build()
+)
 
-app = create_app(config_dict=config)
-run_server(app)
+app = create_app(engine_config=config)
+run_server(app, reload=True)
 ```
 
-## 🤖 Supported Agent Types
+## Endpoints
 
-### LangGraph Agents
+All servers expose these by default:
 
-```python
-# Your LangGraph agent file (my_agent.py)
-from langgraph.graph import StateGraph, END
-from typing import TypedDict
+- POST `/agent/invoke`: single request/response
+- POST `/agent/stream`: server-sent events stream of `ag-ui` protocol events
+- GET `/health`: service health with engine version
+- GET `/`: root landing with links
 
-class AgentState(TypedDict):
-    messages: list
-
-def my_node(state):
-    # Your agent logic here
-    return {"messages": [("ai", "Hello from LangGraph!")]}
-
-graph = StateGraph(AgentState)
-graph.add_node("agent", my_node)
-graph.set_entry_point("agent")
-graph.add_edge("agent", END)
-```
-
-### Future Agent Types
-- CrewAI agents (coming soon)
-- AutoGen agents (coming soon)
-- Custom agent implementations
-
-## 🌐 API Endpoints
-
-Once your server is running, you get these endpoints automatically:
-
-### POST `/agent/invoke`
-Send a single message and get a complete response:
+Invoke example:
 
 ```bash
 curl -X POST "http://localhost:8000/agent/invoke" \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "Hello, how are you?",
-    "session_id": "user-123"
-  }'
+  -d '{"query": "Hello!", "session_id": "user-123"}'
 ```
 
-### POST `/agent/stream`
-Stream responses in real-time:
+Stream example:
 
 ```bash
-curl -X POST "http://localhost:8000/agent/stream" \
+curl -N -X POST "http://localhost:8000/agent/stream" \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "Tell me a story",
-    "session_id": "user-123"
-  }'
+  -d '{"query": "Tell me a story", "session_id": "user-123"}'
 ```
 
-### GET `/health`
-Health check for monitoring:
+## LangGraph integration
 
-```bash
-curl "http://localhost:8000/health"
-```
+Point the engine to a `StateGraph` variable in your file using `graph_definition`:
 
-## 🔧 Advanced Usage
-
-### Development Mode
 ```python
-# Enable auto-reload for development
-run_server(app, reload=True)
+# examples/01_basic_config_file/example_agent.py
+import operator
+from typing import Annotated, TypedDict
+from langgraph.graph import END, StateGraph
+
+class AgentState(TypedDict):
+    messages: Annotated[list, operator.add]
+
+def greeting_node(state):
+    user_message = state["messages"][-1] if state["messages"] else ""
+    return {"messages": [("ai", f"Hello! You said: '{user_message}'")]}
+
+graph = StateGraph(AgentState)
+graph.add_node("greet", greeting_node)
+graph.set_entry_point("greet")
+graph.add_edge("greet", END)
+
+# This variable name is referenced by graph_definition
+app = graph
 ```
 
-### Production Deployment
-```python
-# Run with multiple workers for production
-run_server(app, workers=4, host="0.0.0.0", port=8000)
-```
+Then reference it in config:
 
-### One-Line Server
-```python
-from idun_agent_engine.core.server_runner import run_server_from_config
-
-# Create and run server in one call
-run_server_from_config("config.yaml", port=8080, reload=True)
-```
-
-### Custom FastAPI Configuration
-```python
-from idun_agent_engine import create_app
-from fastapi.middleware.cors import CORSMiddleware
-
-app = create_app("config.yaml")
-
-# Add custom middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Add custom routes
-@app.get("/custom")
-def custom_endpoint():
-    return {"message": "Custom endpoint"}
-```
-
-## 🛠️ Configuration Reference
-
-### Engine Configuration
-```yaml
-engine:
-  api:
-    port: 8000                    # Server port
-  telemetry:
-    provider: "langfuse"          # Telemetry provider
-```
-
-### LangGraph Agent Configuration
 ```yaml
 agent:
   type: "langgraph"
   config:
-    name: "Agent Name"            # Human-readable name
-    graph_definition: "path.py:graph"  # Path to your graph
-    checkpointer:                 # Optional persistence
-      type: "sqlite"
-      db_url: "sqlite:///agent.db"
-    store:                        # Optional store (future)
-      type: "memory"
+    graph_definition: "./examples/01_basic_config_file/example_agent.py:app"
 ```
 
-## 📚 Examples
+Behind the scenes, the engine:
 
-Check out the `examples/` directory for complete working examples:
+- Validates config with Pydantic models
+- Loads your `StateGraph` from disk
+- Optionally wires a SQLite checkpointer via `langgraph.checkpoint.sqlite`
+- Exposes `invoke` and `stream` endpoints
+- Bridges LangGraph events to `ag-ui` stream events
 
-- **Basic LangGraph Agent**: Simple question-answering agent
-- **ConfigBuilder Usage**: Programmatic configuration
-- **Custom Middleware**: Adding authentication and CORS
-- **Production Setup**: Multi-worker deployment configuration
+## Observability (optional)
 
-## 🔍 Validation and Debugging
+Enable provider-agnostic observability via the `observability` block in your agent config. Today supports Langfuse and Arize Phoenix (OpenInference) patterns; more coming soon.
+
+```yaml
+agent:
+  type: "langgraph"
+  config:
+    observability:
+      provider: langfuse   # or phoenix
+      enabled: true
+      options:
+        host: ${LANGFUSE_HOST}
+        public_key: ${LANGFUSE_PUBLIC_KEY}
+        secret_key: ${LANGFUSE_SECRET_KEY}
+        run_name: "idun-langgraph-run"
+```
+
+## Configuration reference
+
+- `server.api.port` (int): HTTP port (default 8000)
+- `agent.type` (enum): currently `langgraph` (CrewAI placeholder exists but not implemented)
+- `agent.config.name` (str): human-readable name
+- `agent.config.graph_definition` (str): absolute or relative `path/to/file.py:variable`
+- `agent.config.checkpointer` (sqlite): `{ type: "sqlite", db_url: "sqlite:///file.db" }`
+- `agent.config.observability` (optional): provider options as shown above
+
+Config can be sourced by:
+
+- `engine_config` (preferred): pass a validated `EngineConfig` to `create_app`
+- `config_dict`: dict validated at runtime
+- `config_path`: path to YAML; defaults to `config.yaml`
+
+## Examples
+
+The `examples/` folder contains complete projects:
+
+- `01_basic_config_file`: YAML config + simple agent
+- `02_programmatic_config`: `ConfigBuilder` usage and advanced flows
+- `03_minimal_setup`: one-line server from config
+
+Run any example with Python 3.13 installed.
+
+## CLI and runtime helpers
+
+Top-level imports for convenience:
 
 ```python
-from idun_agent_engine.utils.validation import validate_config_dict, diagnose_setup
-
-# Validate your configuration
-config = {...}
-errors = validate_config_dict(config)
-if errors:
-    print("Configuration errors:", errors)
-
-# Diagnose your setup
-diagnosis = diagnose_setup()
-print("System diagnosis:", diagnosis)
+from idun_agent_engine import (
+  create_app,
+  run_server,
+  run_server_from_config,
+  run_server_from_builder,
+  ConfigBuilder,
+)
 ```
 
-## 🚀 Deployment
+- `create_app(...)` builds the FastAPI app and registers routes
+- `run_server(app, ...)` runs with Uvicorn
+- `run_server_from_config(path, ...)` loads config, builds app, and runs
+- `run_server_from_builder(builder, ...)` builds from a builder and runs
 
-### Docker
-```dockerfile
-FROM python:3.11-slim
+## Production notes
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+- Use a process manager (e.g., multiple Uvicorn workers behind a gateway). Note: `reload=True` is for development and incompatible with multi-worker mode.
+- Mount behind a reverse proxy and enable TLS where appropriate.
+- Persist conversations using the SQLite checkpointer in production or replace with a custom checkpointer when available.
 
-COPY . .
+## Roadmap
 
-CMD ["python", "-m", "idun_agent_engine", "run", "config.yaml"]
-```
+- CrewAI adapter (placeholder exists, not yet implemented)
+- Additional stores and checkpointers
+- First-class CLI for `idun` commands
 
-### Cloud Platforms
-- Heroku: `Procfile` with `web: python main.py`
-- Railway: Deploy with one click
-- AWS Lambda: Use with Mangum adapter
-- Google Cloud Run: Deploy Docker container
+## Contributing
 
-## 🤝 Contributing
+Issues and PRs are welcome. See the repository:
 
-The Idun Agent Engine is designed to be extensible. To add support for new agent frameworks:
+- Repo: `https://github.com/geoffreyharrazi/idun-agent-manager`
+- Package path: `libs/idun_agent_engine`
+- Open an issue: `https://github.com/geoffreyharrazi/idun-agent-manager/issues`
 
-1. Implement the `BaseAgent` interface
-2. Add configuration models for your agent type
-3. Register your agent in the factory
-4. Submit a pull request!
-
-## 📖 Documentation
-
-- [Full API Documentation](https://docs.idun-agent-engine.com)
-- [Agent Framework Guide](https://docs.idun-agent-engine.com/frameworks)
-- [Deployment Guide](https://docs.idun-agent-engine.com/deployment)
-- [Contributing Guide](https://docs.idun-agent-engine.com/contributing)
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
-
----
-
-### Release & Publishing
-
-This package is built with Poetry. To publish a new release to PyPI:
-
-1. Update version in `pyproject.toml`.
-2. Commit and tag with the pattern `idun-agent-engine-vX.Y.Z`.
-3. Push the tag to GitHub. The `Publish idun-agent-engine` workflow will build and publish to PyPI using `PYPI_API_TOKEN` secret.
-
-Manual build (optional):
+Run locally:
 
 ```bash
 cd libs/idun_agent_engine
-poetry build
+poetry install
+poetry run pytest -q
 ```
+
+## License
+
+MIT — see `LICENSE` in the repo root.
