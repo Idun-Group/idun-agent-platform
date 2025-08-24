@@ -24,9 +24,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
 
-      - name: Install dev dependencies (no root)
+      - name: Install dependencies
         run: |
-          poetry install --no-interaction --only dev --no-root
+          poetry install --no-interaction
 
       - name: Run pre-commit via Poetry
         env:
