@@ -25,11 +25,13 @@ repos:
         - --fix
         - --no-cache
         exclude: ^libs/idun_agent_engine/examples/
--   repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.403
+-   repo: local
     hooks:
     -   id: pyright
         name: "🔍 types · Pyright static type checker"
+        entry: pyright
+        language: system
+        types: [python]
         args:
         - --project
         - pyrightconfig.json
