@@ -31,6 +31,7 @@ jobs:
       - name: Run pre-commit via Poetry
         env:
           RUFF_CACHE_DIR: ${{ github.workspace }}/.ruff_cache
+          PYRIGHT_PYTHON_FORCE_VERSION: latest
         run: |
           poetry run pre-commit run --all-files
 
