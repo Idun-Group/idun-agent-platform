@@ -1,0 +1,47 @@
+name: Docs
+
+on:
+  push:
+    branches: [ main, docs-setup ]
+    paths:
+      - 'mkdocs.yml'
+      - 'docs/**'
+      - 'libs/idun_agent_engine/**'
+      - 'pyproject.toml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: '1.8.3'
+
+      - name: Install dependencies
+        run: |
+          poetry install --with dev
+
+      - name: Build docs
+        run: |
+          poetry run mkdocs build --clean
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          force_orphan: true

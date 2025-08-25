@@ -1,0 +1,89 @@
+site_name: Idun Agent Platform
+site_description: Unified platform for building, deploying, and operating AI agents
+site_url: https://idun-group.github.io/idun-agent-manager/
+repo_name: Idun-Group/idun-agent-manager
+repo_url: https://github.com/Idun-Group/idun-agent-manager
+edit_uri: edit/main/
+
+docs_dir: docs
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.highlight
+    - search.share
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+
+plugins:
+  - search
+  - autorefs
+  - redirects
+  - include-markdown
+  - section-index
+  - gen-files:
+      scripts:
+        - docs/gen_api_reference.py
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - libs/idun_agent_engine/src
+          options:
+            docstring_style: google
+            show_root_heading: true
+            show_source: true
+            show_signature_annotations: true
+            show_symbol_type_heading: true
+            merge_init_into_class: true
+            inherited_members: true
+  - git-revision-date-localized:
+      enable_creation_date: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+
+watch:
+  - libs/idun_agent_engine/src
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+  - Guides:
+    - ADK Agent Guide: adk_agent_guide.md
+    - SmolAgent Guide: smol_agent_guide.md
+    - Contributing to Docs: contributing-docs.md
+  - Examples: examples.md
+  - API Reference: reference/index.md

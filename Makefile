@@ -18,3 +18,15 @@ ci:
 	make lint
 	make mypy
 	make pytest
+
+docs-install:
+	poetry install --with dev
+
+docs-serve:
+	poetry run mkdocs serve -a localhost:8001
+
+docs-build:
+	poetry run mkdocs build --clean
+
+docs-deploy:
+	poetry run mkdocs gh-deploy --force
