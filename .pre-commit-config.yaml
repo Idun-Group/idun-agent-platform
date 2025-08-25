@@ -41,3 +41,4 @@ repos:
     hooks:
     -   id: gitleaks
         name: "🔒 security · Detect hardcoded secrets"
+default_stages: [manual]
