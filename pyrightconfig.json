@@ -13,7 +13,5 @@
   "typeCheckingMode": "basic",
   "reportMissingImports": true,
   "reportMissingTypeStubs": false,
-  "ignore": [
-    "OLD"
-  ]
+  "ignore": []
 }

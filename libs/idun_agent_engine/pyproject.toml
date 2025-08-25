@@ -86,7 +86,6 @@ extend-exclude = [
     "build",
     "dist",
     ".venv",
-    "OLD",
     "examples",
 ]
 
