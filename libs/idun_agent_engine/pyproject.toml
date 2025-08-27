@@ -1,12 +1,19 @@
-[tool.poetry]
+[project]
 name = "idun-agent-engine"
 version = "0.1.0"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
-authors = ["Geoffrey HARRAZI <geoffreyharrazi@gmail.com>"]
-license = "MIT"
+authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
+requires-python = ">=3.13,<3.14"
 readme = "README.md"
-packages = [{include = "idun_agent_engine", from = "src"}]
-keywords = ["agents", "langgraph", "fastapi", "sdk", "llm", "observability"]
+license = "MIT"
+keywords = [
+    "agents",
+    "langgraph",
+    "fastapi",
+    "sdk",
+    "llm",
+    "observability",
+]
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -17,54 +24,61 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Typing :: Typed",
 ]
+dependencies = [
+    "fastapi>=0.116.1,<0.117.0",
+    "uvicorn>=0.35.0,<0.36.0",
+    "langgraph>=0.6.3,<0.7.0",
+    "langgraph-checkpoint-sqlite>=2.0.11,<3.0.0",
+    "streamlit>=1.47.1,<2.0.0",
+    "httpx>=0.28.1,<0.29.0",
+    "pydantic>=2.11.7,<3.0.0",
+    "langchain-core>=0.3.72,<0.4.0",
+    "langchain-google-vertexai>=2.0.27,<3.0.0",
+    "google-adk>=1.9.0,<2.0.0",
+    "ag-ui-protocol>=0.1.8,<0.2.0",
+    "aiosqlite>=0.21.0,<0.22.0",
+    "langfuse>=3.2.2,<4",
+    "arize-phoenix-otel>=0.2.0,<1.0.0",
+    "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
+    "langchain>=0.3.27,<0.4",
+    "arize-phoenix>=11.22.0,<12",
+]
 
-# Include typing marker file in distribution
+[project.urls]
+Homepage = "https://github.com/geoffreyharrazi/idun-agent-platform"
+Repository = "https://github.com/geoffreyharrazi/idun-agent-platform"
+Documentation = "https://github.com/geoffreyharrazi/idun-agent-platform/tree/main/libs/idun_agent_engine"
+Issues = "https://github.com/geoffreyharrazi/idun-agent-platform/issues"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6.5,<0.13",
+    "black>=24.8.0,<26",
+    "pre-commit>=3.8.0,<5",
+    "mypy>=1.10.0,<2",
+    "pytest>=8.3.3,<9",
+    "pytest-cov>=5.0.0,<7",
+    "types-PyYAML>=6.0.12.20240808,<7",
+]
+
+[tool.hatch.build.targets.sdist]
 include = [
+    "src/idun_agent_engine",
     "src/idun_agent_engine/py.typed",
 ]
 
-[tool.poetry.urls]
-Homepage = "https://github.com/geoffreyharrazi/idun-agent-manager"
-Repository = "https://github.com/geoffreyharrazi/idun-agent-manager"
-Documentation = "https://github.com/geoffreyharrazi/idun-agent-manager/tree/main/libs/idun_agent_engine"
-Issues = "https://github.com/geoffreyharrazi/idun-agent-manager/issues"
+[tool.hatch.build.targets.wheel]
+include = [
+    "src/idun_agent_engine",
+    "src/idun_agent_engine/py.typed",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.13,<3.14"
-fastapi = ">=0.116.1,<0.117.0"
-uvicorn = ">=0.35.0,<0.36.0"
-langgraph = ">=0.6.3,<0.7.0"
-langgraph-checkpoint-sqlite = ">=2.0.11,<3.0.0"
-streamlit = ">=1.47.1,<2.0.0"
-httpx = ">=0.28.1,<0.29.0"
-pydantic = ">=2.11.7,<3.0.0"
-langchain-core = ">=0.3.72,<0.4.0"
-langchain-google-vertexai = ">=2.0.27,<3.0.0"
-google-adk = ">=1.9.0,<2.0.0"
-ag-ui-protocol = ">=0.1.8,<0.2.0"
-aiosqlite = ">=0.21.0,<0.22.0"
-langfuse = "^3.2.2"
-arize-phoenix-otel = ">=0.2.0,<1.0.0"
-openinference-instrumentation-langchain = ">=0.1.13,<1.0.0"
-langchain = "^0.3.27"
-arize-phoenix = "^11.22.0"
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.6.5"
-black = "^24.8.0"
-pre-commit = "^3.8.0"
-mypy = "^1.10.0"
-pytest = "^8.3.3"
-pytest-cov = "^5.0.0"
-types-PyYAML = "^6.0.12.20240808"
+[tool.hatch.build.targets.wheel.sources]
+"src/idun_agent_engine" = "idun_agent_engine"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-# -------------------------
-# Tooling configuration
-# -------------------------
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.black]
 line-length = 88

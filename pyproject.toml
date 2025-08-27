@@ -1,36 +1,40 @@
-[tool.poetry]
-name = "idun-agent-manager"
+[project]
+name = "idun-agent-platform"
 version = "0.1.0"
 description = "Monorepo for Idun Agent Platform"
-authors = ["Geoffrey HARRAZI <geoffreyharrazi@gmail.com>"]
-license = "MIT"
+authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
+requires-python = ">=3.13,<3.14"
 readme = "README.md"
-packages = []
-package-mode = false
+license = "MIT"
+dependencies = ["idun-agent-engine"]
 
-[tool.poetry.dependencies]
-python = ">=3.13,<3.14"
-idun-agent-engine = { path = "libs/idun_agent_engine", develop = true }
+[dependency-groups]
+dev = [
+    "ruff>=0.6.5,<0.7",
+    "black>=24.8.0,<25",
+    "pre-commit>=3.8.0,<4",
+    "mypy>=1.10.0,<2",
+    "pytest>=8.3.3,<9",
+    "pytest-cov>=5.0.0,<6",
+    "types-PyYAML>=6.0.12.20240808,<7",
+    "pyright>=1.1.404,<2",
+    "mkdocs>=1.6.1,<2",
+    "mkdocs-material>=9.5.39,<10",
+    "mkdocstrings[python]>=0.26.2,<0.27",
+    "mkdocs-gen-files>=0.5.0,<0.6",
+    "mkdocs-autorefs>=1.2.0,<2",
+    "mkdocs-include-markdown-plugin>=7.0.0,<8",
+    "mkdocs-redirects>=1.2.1,<2",
+    "mkdocs-section-index>=0.3.9,<0.4",
+    "mkdocs-git-revision-date-localized-plugin>=1.2.6,<2",
+]
 
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.6.5"
-black = "^24.8.0"
-pre-commit = "^3.8.0"
-mypy = "^1.10.0"
-pytest = "^8.3.3"
-pytest-cov = "^5.0.0"
-types-PyYAML = "^6.0.12.20240808"
-pyright = "^1.1.404"
-mkdocs = "^1.6.1"
-mkdocs-material = "^9.5.39"
-mkdocstrings = {extras = ["python"], version = "^0.26.2"}
-mkdocs-gen-files = "^0.5.0"
-mkdocs-autorefs = "^1.2.0"
-mkdocs-include-markdown-plugin = "^7.0.0"
-mkdocs-redirects = "^1.2.1"
-mkdocs-section-index = "^0.3.9"
-mkdocs-git-revision-date-localized-plugin = "^1.2.6"
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+idun-agent-engine = { path = "libs/idun_agent_engine", editable = true }
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

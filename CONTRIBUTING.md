@@ -1,10 +1,10 @@
-# Contributing to idun-agent-manager
+# Contributing to idun-agent-platform
 
-First off, thank you for considering contributing to idun-agent-manager! It's people like you that make open source such a great community.
+First off, thank you for considering contributing to idun-agent-platform! It's people like you that make open source such a great community.
 
 ## Where do I go from here?
 
-If you've noticed a bug or have a question, [search the issue tracker](https://github.com/geoffreyharrazi/idun-agent-manager/issues) to see if someone else has already reported the issue. If not, feel free to [open a new issue](https://github.com/geoffreyharrazi/idun-agent-manager/issues/new).
+If you've noticed a bug or have a question, [search the issue tracker](https://github.com/geoffreyharrazi/idun-agent-platform/issues) to see if someone else has already reported the issue. If not, feel free to [open a new issue](https://github.com/geoffreyharrazi/idun-agent-platform/issues/new).
 
 ## Fork & create a branch
 

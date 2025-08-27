@@ -219,9 +219,9 @@ from idun_agent_engine import (
 
 Issues and PRs are welcome. See the repository:
 
-- Repo: `https://github.com/geoffreyharrazi/idun-agent-manager`
+- Repo: `https://github.com/geoffreyharrazi/idun-agent-platform`
 - Package path: `libs/idun_agent_engine`
-- Open an issue: `https://github.com/geoffreyharrazi/idun-agent-manager/issues`
+- Open an issue: `https://github.com/geoffreyharrazi/idun-agent-platform/issues`
 
 Run locally:
 
