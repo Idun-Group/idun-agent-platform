@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "idun-agent-manager"
+name = "idun-agent-platform"
 version = "0.1.0"
 description = "Monorepo for Idun Agent Platform"
 authors = ["Geoffrey HARRAZI <geoffreyharrazi@gmail.com>"]

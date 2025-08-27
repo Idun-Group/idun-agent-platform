@@ -1,8 +1,8 @@
 site_name: Idun Agent Platform
 site_description: Unified platform for building, deploying, and operating AI agents
-site_url: https://idun-group.github.io/idun-agent-manager/
-repo_name: Idun-Group/idun-agent-manager
-repo_url: https://github.com/Idun-Group/idun-agent-manager
+site_url: https://idun-group.github.io/idun-agent-platform/
+repo_name: Idun-Group/idun-agent-platform
+repo_url: https://github.com/Idun-Group/idun-agent-platform
 edit_uri: edit/main/
 
 docs_dir: docs
