@@ -1,18 +1,18 @@
 lint:
-	poetry run ruff check . --no-cache
+	uv run ruff check . --no-cache
 
 format:
-	poetry run black .
-	poetry run ruff format . --no-cache
+	uv run black .
+	uv run ruff format . --no-cache
 
 mypy:
-	poetry run mypy src
+	uv run mypy libs/idun_agent_engine/src
 
 pytest:
-	poetry run pytest
+	uv run pytest
 
 precommit:
-	poetry run pre-commit run --all-files
+	uv run pre-commit run --all-files
 
 ci:
 	make lint
@@ -20,13 +20,13 @@ ci:
 	make pytest
 
 docs-install:
-	poetry install --with dev
+	uv sync --group dev
 
 docs-serve:
-	poetry run mkdocs serve -a localhost:8001
+	uv run mkdocs serve -a localhost:8001
 
 docs-build:
-	poetry run mkdocs build --clean
+	uv run mkdocs build --clean
 
 docs-deploy:
-	poetry run mkdocs gh-deploy --force
+	uv run mkdocs gh-deploy --force

@@ -52,12 +52,12 @@ Issues = "https://github.com/geoffreyharrazi/idun-agent-platform/issues"
 
 [dependency-groups]
 dev = [
-    "ruff>=0.6.5,<0.7",
-    "black>=24.8.0,<25",
-    "pre-commit>=3.8.0,<4",
+    "ruff>=0.6.5,<0.13",
+    "black>=24.8.0,<26",
+    "pre-commit>=3.8.0,<5",
     "mypy>=1.10.0,<2",
     "pytest>=8.3.3,<9",
-    "pytest-cov>=5.0.0,<6",
+    "pytest-cov>=5.0.0,<7",
     "types-PyYAML>=6.0.12.20240808,<7",
 ]
 
