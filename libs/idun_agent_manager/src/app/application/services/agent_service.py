@@ -8,8 +8,8 @@ from app.core.errors import ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
 from app.domain.agents.entities import AgentEntity, AgentFramework, AgentRunEntity, AgentStatus
 from app.domain.agents.ports import AgentRepositoryPort, AgentRunRepositoryPort
-from app.infrastructure.agents.engine_client import IdunEngineService, DeploymentError
-from app.infrastructure.gateway.traefik_client import TraefikGatewayService
+from app.infrastructure.http.engine_client import IdunEngineService, DeploymentError
+
 
 logger = get_logger(__name__)
 
@@ -22,12 +22,10 @@ class AgentService:
         agent_repository: AgentRepositoryPort,
         run_repository: AgentRunRepositoryPort,
         engine_service: Optional[IdunEngineService] = None,
-        gateway_service: Optional[TraefikGatewayService] = None,
     ) -> None:
         self.agent_repository = agent_repository
         self.run_repository = run_repository
         self.engine_service = engine_service or IdunEngineService()
-        self.gateway_service = gateway_service or TraefikGatewayService()
     
     async def create_agent(
         self,
@@ -160,22 +158,7 @@ class AgentService:
                        agent_id=agent_id, 
                        container_id=deployment_info.get("container_id"))
             
-            # Step 2: Register route with Traefik Gateway
-            route_registered = await self.gateway_service.register_agent_route(
-                agent_id=agent_id,
-                agent_endpoint=deployment_info["endpoint"],
-                agent_name=agent.name,
-                tenant_id=tenant_id
-            )
-            
-            if not route_registered:
-                logger.warning("Failed to register agent route with gateway", 
-                              agent_id=agent_id)
-                # Optionally, you might want to undeploy the agent here
-                # await self.engine_service.undeploy_agent(agent_id)
-                # raise ValidationError("Failed to register agent route")
-            
-            # Step 3: Update agent status in database
+            # Step 2: Update agent status in database
             agent.activate()
             agent.updated_at = datetime.utcnow()
             
@@ -202,19 +185,13 @@ class AgentService:
         agent = await self.get_agent(agent_id, tenant_id)
         
         try:
-            # Step 1: Remove route from Traefik Gateway
-            route_removed = await self.gateway_service.unregister_agent_route(agent_id)
-            if not route_removed:
-                logger.warning("Failed to remove agent route from gateway", 
-                              agent_id=agent_id)
-            
-            # Step 2: Undeploy agent using Idun Engine SDK
+            # Step 1: Undeploy agent using Idun Engine SDK
             undeployed = await self.engine_service.undeploy_agent(agent_id)
             if not undeployed:
                 logger.warning("Failed to undeploy agent container", 
                               agent_id=agent_id)
             
-            # Step 3: Update agent status in database
+            # Step 2: Update agent status in database
             agent.deactivate()
             agent.updated_at = datetime.utcnow()
             
@@ -397,10 +374,8 @@ class AgentService:
                     "last_activity": deployment_health.get("last_activity"),
                 })
                 
-                # Check if route is registered in gateway
-                routes = await self.gateway_service.get_agent_routes()
-                route_key = f"agent-{agent_id}-router"
-                health_info["route_registered"] = route_key in routes
+                # Agent is deployed and healthy
+                health_info["deployment_status"] = "deployed"
                 
             except Exception as e:
                 logger.warning("Failed to get deployment health", 

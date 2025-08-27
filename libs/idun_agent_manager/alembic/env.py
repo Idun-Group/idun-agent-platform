@@ -9,12 +9,36 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # Import your models here for autogenerate to work
-from app.infrastructure.db.models.agents import AgentModel, AgentRunModel
 from app.infrastructure.db.session import Base
+from app.infrastructure.db.models.users import UserModel  # noqa: F401
+from app.infrastructure.db.models.agent_config import AgentConfigModel  # noqa: F401
+from app.infrastructure.db.models.engine import EngineModel  # noqa: F401
+from app.infrastructure.db.models.managed_agent import ManagedAgentModel  # noqa: F401
+from app.infrastructure.db.models.deployment_config import (
+    DeploymentConfigModel,  # noqa: F401
+)
+from app.infrastructure.db.models.retriever_config import (
+    RetrieverConfigModel,  # noqa: F401
+)
+from app.infrastructure.db.models.deployments import DeploymentModel  # noqa: F401
+from app.infrastructure.db.models.gateway_routes import (
+    GatewayRouteModel,  # noqa: F401
+)
+from app.infrastructure.db.models.artifacts import ArtifactModel  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Override URL from application settings so migrations work in all envs
+try:
+    from app.core.settings import get_settings
+
+    settings = get_settings()
+    if settings and getattr(settings, "database", None):
+        config.set_main_option("sqlalchemy.url", settings.database.url)
+except Exception:  # pragma: no cover - fallback to alembic.ini if settings unavailable
+    pass
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

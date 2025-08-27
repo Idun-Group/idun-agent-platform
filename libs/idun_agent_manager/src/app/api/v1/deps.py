@@ -8,13 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.agent_service import AgentService
 from app.core.settings import Settings, get_settings_dependency
-from app.infrastructure.agents.engine_client import IdunEngineService
-from app.infrastructure.db.repositories.agents import (
-    SqlAlchemyAgentRepository,
-    SqlAlchemyAgentRunRepository,
-)
 from app.infrastructure.db.session import get_async_session
-from app.infrastructure.gateway.traefik_client import TraefikGatewayService
+
 
 
 # Database session dependency
@@ -33,38 +28,41 @@ def get_settings() -> Settings:
 # Repository dependencies
 def get_agent_repository(
     session: Annotated[AsyncSession, Depends(get_session)]
-) -> SqlAlchemyAgentRepository:
+):
     """Get agent repository."""
+    from app.infrastructure.db.repositories.agents import SqlAlchemyAgentRepository
+
     return SqlAlchemyAgentRepository(session)
 
 
 def get_agent_run_repository(
     session: Annotated[AsyncSession, Depends(get_session)]
-) -> SqlAlchemyAgentRunRepository:
+):
     """Get agent run repository."""
+    from app.infrastructure.db.repositories.agents import SqlAlchemyAgentRunRepository
+
     return SqlAlchemyAgentRunRepository(session)
 
 
 # Infrastructure service dependencies
-def get_engine_service() -> IdunEngineService:
+def get_engine_service():
     """Get Idun Engine service."""
+    from app.infrastructure.http.engine_client import IdunEngineService
+
     return IdunEngineService()
 
 
-def get_gateway_service() -> TraefikGatewayService:
-    """Get Traefik Gateway service."""
-    return TraefikGatewayService()
+
 
 
 # Service dependencies
 def get_agent_service(
-    agent_repo: Annotated[SqlAlchemyAgentRepository, Depends(get_agent_repository)],
-    run_repo: Annotated[SqlAlchemyAgentRunRepository, Depends(get_agent_run_repository)],
-    engine_service: Annotated[IdunEngineService, Depends(get_engine_service)],
-    gateway_service: Annotated[TraefikGatewayService, Depends(get_gateway_service)],
+    agent_repo = Depends(get_agent_repository),
+    run_repo = Depends(get_agent_run_repository),
+    engine_service = Depends(get_engine_service),
 ) -> AgentService:
     """Get agent service."""
-    return AgentService(agent_repo, run_repo, engine_service, gateway_service)
+    return AgentService(agent_repo, run_repo, engine_service)
 
 
 # Authentication and authorization dependencies

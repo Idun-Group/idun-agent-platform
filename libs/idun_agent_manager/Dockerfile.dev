@@ -38,8 +38,15 @@ FROM base as development
 COPY pyproject.toml ./
 COPY poetry.loc[k] ./
 
-# Install ALL dependencies (including dev dependencies)
-RUN poetry install --no-root && rm -rf $POETRY_CACHE_DIR
+# Generate lock file if it doesn't exist, then install dependencies
+RUN if [ ! -f poetry.lock ]; then \
+        echo "🔒 Generating poetry.lock file..." && \
+        poetry lock; \
+    fi && \
+    echo "📦 Installing dependencies..." && \
+    poetry install --no-root && \
+    echo "✅ Dependencies installed successfully" && \
+    rm -rf $POETRY_CACHE_DIR
 
 # Install additional development tools inside the container
 RUN poetry run pip install ipdb ipython

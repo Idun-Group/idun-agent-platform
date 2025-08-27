@@ -1,248 +1,500 @@
-"""Agent API endpoints."""
+"""Agent API endpoints - Core CRUD operations."""
 
-from typing import Annotated
-from uuid import UUID
+from typing import Any, Dict, List, Optional, Union, Annotated
+from uuid import UUID, uuid4
+from datetime import datetime
+from enum import Enum
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field, validator
+from pydantic.config import ConfigDict
+from typing import Literal
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import (
-    get_agent_service,
-    get_current_tenant_id,
-    get_pagination_params,
-)
-from app.api.v1.schemas.agents import (
-    AgentCreateRequest,
-    AgentResponse,
-    AgentRunRequest,
-    AgentRunResponse,
-    AgentSummaryResponse,
-    AgentUpdateRequest,
-    PaginatedAgentsResponse,
-    PaginatedRunsResponse,
-)
-from app.application.services.agent_service import AgentService
+from app.api.v1.deps import get_session
+from app.infrastructure.db.models.agent_config import AgentConfigModel
 
 router = APIRouter()
+
+# Simple in-memory storage
+agents_db: List[Dict] = []
+
+# Fields that are allowed to be used for sorting in list queries (id is excluded)
+SORTABLE_AGENT_FIELDS = {
+    "name",
+    "description",
+    "framework",
+    "status",
+    "created_at",
+    "updated_at",
+}
+
+
+# Enums for better validation
+class AgentFramework(str, Enum):
+    """Supported agent frameworks."""
+    LANGGRAPH = "langgraph"
+    LANGCHAIN = "langchain"
+    AUTOGEN = "autogen"
+    CREWAI = "crewai"
+    CUSTOM = "custom"
+
+
+class AgentStatus(str, Enum):
+    """Agent lifecycle status."""
+    DRAFT = "draft"
+    READY = "ready"
+    DEPLOYED = "deployed"
+    RUNNING = "running"
+    STOPPED = "stopped"
+    ERROR = "error"
+
+
+# Helper to normalize framework values to enum (defaults to CUSTOM)
+def map_framework(value: str) -> AgentFramework:
+    try:
+        return AgentFramework(value.lower())
+    except Exception:
+        return AgentFramework.CUSTOM
+
+
+# Improved Pydantic models
+class LangGraphConfig(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    name: Optional[str] = None
+    graph_definition: str
+
+
+class CrewAIConfig(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    name: Optional[str] = None
+    crew_definition: str
+
+
+class CustomConfig(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    name: Optional[str] = None
+    entrypoint: str
+
+
+class LangGraphAgentSection(BaseModel):
+    type: Literal["langgraph"]
+    config: LangGraphConfig
+
+
+class CrewAIAgentSection(BaseModel):
+    type: Literal["crewai"]
+    config: CrewAIConfig
+
+
+class CustomAgentSection(BaseModel):
+    type: Literal["custom"]
+    config: CustomConfig
+
+
+AgentSection = Annotated[
+    Union[LangGraphAgentSection, CrewAIAgentSection, CustomAgentSection],
+    Field(discriminator="type"),
+]
+
+
+class AgentPayload(BaseModel):
+    agent: AgentSection
+
+
+class AgentCreate(BaseModel):
+    """Schema for creating a new agent.
+
+    Framework is inferred from config (e.g., config.agent.type = "langgraph").
+    """
+    name: str = Field(..., min_length=1, max_length=100, description="Agent name")
+    description: Optional[str] = Field(None, max_length=500, description="Agent description")
+    # Framework-specific configuration payload (discriminated by agent.type)
+    config: AgentPayload = Field(..., description="Framework-specific agent configuration")
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if not v.strip():
+            raise ValueError('Name cannot be empty or whitespace only')
+        return v.strip()
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "My AI Assistant",
+                "description": "A helpful AI assistant for customer support",
+                "config": {
+                    "agent": {
+                        "type": "langgraph",
+                        "config": {
+                            "name": "My AI Assistant",
+                            "graph_definition": "./examples/01_basic_config_file/example_agent.py:app"
+                        }
+                    }
+                }
+            }
+        }
+
+
+class AgentUpdate(BaseModel):
+    """Schema for updating an existing agent."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100, description="Agent name")
+    description: Optional[str] = Field(None, max_length=500, description="Agent description")
+    framework: Optional[AgentFramework] = Field(None, description="Agent framework")
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if v is not None and not v.strip():
+            raise ValueError('Name cannot be empty or whitespace only')
+        return v.strip() if v else v
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "Updated Agent Name",
+                "description": "Updated description",
+                "framework": "langchain"
+            }
+        }
+
+
+class Agent(BaseModel):
+    """Complete agent model for responses."""
+    id: str = Field(..., description="Unique agent identifier")
+    name: str = Field(..., description="Agent name")
+    description: Optional[str] = Field(None, description="Agent description")
+    framework: AgentFramework = Field(..., description="Agent framework")
+    status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "name": "My AI Assistant",
+                "description": "A helpful AI assistant",
+                "framework": "langgraph",
+                "status": "draft",
+                "created_at": "2024-01-01T00:00:00",
+                "updated_at": "2024-01-01T00:00:00"
+            }
+        }
+
+
+class AgentReplace(BaseModel):
+    """Full replacement schema for PUT of an agent.
+
+    Represents the complete updatable representation of an agent.
+    Server-managed fields like id, status, and timestamps are excluded.
+    """
+    name: str = Field(..., min_length=1, max_length=100, description="Agent name")
+    description: Optional[str] = Field(None, max_length=500, description="Agent description")
+    config: AgentPayload = Field(..., description="Framework-specific agent configuration")
+
+    @validator('name')
+    def validate_name(cls, v):
+        if not v.strip():
+            raise ValueError('Name cannot be empty or whitespace only')
+        return v.strip()
+
+
+class AgentPatch(BaseModel):
+    """Partial update schema for PATCH of an agent.
+
+    Only provided fields will be updated. If config is provided, the
+    framework will be inferred from config.agent.type.
+    """
+    name: Optional[str] = Field(None, min_length=1, max_length=100, description="Agent name")
+    description: Optional[str] = Field(None, max_length=500, description="Agent description")
+    config: Optional[AgentPayload] = Field(None, description="Framework-specific agent configuration")
+
+    @validator('name')
+    def validate_name(cls, v):
+        if v is not None and not v.strip():
+            raise ValueError('Name cannot be empty or whitespace only')
+        return v.strip() if v else v
 
 
 @router.post(
     "/",
-    response_model=AgentResponse,
+    response_model=Agent,
     status_code=status.HTTP_201_CREATED,
     summary="Create agent",
-    description="Create a new agent for the current tenant",
+    description="Create a new agent with proper validation and framework support",
 )
 async def create_agent(
-    request: AgentCreateRequest,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-) -> AgentResponse:
-    """Create a new agent."""
-    agent = await agent_service.create_agent(
+    request: AgentCreate,
+    session: AsyncSession = Depends(get_session),
+) -> Agent:
+    """Create a new agent backed by PostgreSQL (table: agent_config).
+
+    - Accepts framework and raw config JSON
+    - Persists a row in agent_config
+    - Returns the created agent in the public API shape
+    """
+    # Infer framework from config
+    framework_value: Optional[str] = request.config.agent.type if request.config and request.config.agent else None
+    if not framework_value or not isinstance(framework_value, str):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing framework type in config.agent.type",
+        )
+
+    framework_enum = map_framework(framework_value)
+
+    # Create row
+    new_id = uuid4()
+    model = AgentConfigModel(
+        id=new_id,
         name=request.name,
-        framework=request.framework,
-        tenant_id=tenant_id,
         description=request.description,
-        config=request.config,
-        environment_variables=request.environment_variables,
-        tags=request.tags,
+        framework=framework_enum.value,
+        status=AgentStatus.DRAFT.value,
+        config=request.config.model_dump(),
     )
-    
-    return AgentResponse.model_validate(agent)
+
+    session.add(model)
+    await session.flush()
+    await session.refresh(model)
+
+    return Agent(
+        id=str(model.id),
+        name=model.name,
+        description=model.description,
+        framework=map_framework(model.framework),
+        status=AgentStatus(model.status),
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
 
 
 @router.get(
     "/",
-    response_model=PaginatedAgentsResponse,
+    response_model=List[Agent],
     summary="List agents",
-    description="List agents for the current tenant with pagination",
+    description=(
+        "List all agents with pagination and deterministic sorting. "
+        "Use 'sort_by' (one of: name, description, framework, status, created_at, updated_at) "
+        "and 'order' (asc|desc). Defaults: sort_by=created_at, order=asc."
+    ),
 )
 async def list_agents(
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-    pagination: Annotated[tuple[int, int], Depends(get_pagination_params)],
-) -> PaginatedAgentsResponse:
-    """List agents for tenant."""
-    limit, offset = pagination
-    
-    agents = await agent_service.list_agents(tenant_id, limit, offset)
-    total = await agent_service.agent_repository.count_by_tenant(tenant_id)
-    
-    return PaginatedAgentsResponse(
-        items=[AgentSummaryResponse.model_validate(agent) for agent in agents],
-        total=total,
-        limit=limit,
-        offset=offset,
-        has_more=offset + len(agents) < total,
+    limit: int = 100,
+    offset: int = 0,
+    sort_by: str = "created_at",
+    order: Literal["asc", "desc"] = "asc",
+    session: AsyncSession = Depends(get_session),
+) -> List[Agent]:
+    """List agents from PostgreSQL with limit/offset pagination."""
+    if limit < 1 or limit > 1000:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Limit must be between 1 and 1000")
+    if offset < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0")
+
+    # Validate sorting parameters
+    if sort_by not in SORTABLE_AGENT_FIELDS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid sort_by '{sort_by}'. Allowed: {sorted(SORTABLE_AGENT_FIELDS)}",
+        )
+
+    from sqlalchemy import select, asc, desc
+
+    # Build deterministic ordering: primary sort + stable tiebreaker by id ASC
+    sort_column = getattr(AgentConfigModel, sort_by)
+    primary_order = asc(sort_column) if order == "asc" else desc(sort_column)
+    stable_tiebreaker = asc(AgentConfigModel.id)
+
+    stmt = (
+        select(AgentConfigModel)
+        .order_by(primary_order, stable_tiebreaker)
+        .limit(limit)
+        .offset(offset)
     )
+    result = await session.execute(stmt)
+    rows = result.scalars().all()
+    return [
+        Agent(
+            id=str(r.id),
+            name=r.name,
+            description=r.description,
+            framework=map_framework(r.framework),
+            status=AgentStatus(r.status),
+            created_at=r.created_at,
+            updated_at=r.updated_at,
+        )
+        for r in rows
+    ]
 
 
 @router.get(
     "/{agent_id}",
-    response_model=AgentResponse,
+    response_model=Agent,
     summary="Get agent",
-    description="Get a specific agent by ID",
+    description="Get a specific agent by ID with detailed information",
 )
 async def get_agent(
-    agent_id: UUID,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-) -> AgentResponse:
-    """Get agent by ID."""
-    agent = await agent_service.get_agent(agent_id, tenant_id)
-    return AgentResponse.model_validate(agent)
+    agent_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> Agent:
+    """Get agent by ID from PostgreSQL with proper error handling."""
+    try:
+        agent_uuid = UUID(agent_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
+
+    model = await session.get(AgentConfigModel, agent_uuid)
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id '{agent_id}' not found",
+        )
+
+    return Agent(
+        id=str(model.id),
+        name=model.name,
+        description=model.description,
+        framework=map_framework(model.framework),
+        status=AgentStatus(model.status),
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
 
 
 @router.put(
     "/{agent_id}",
-    response_model=AgentResponse,
-    summary="Update agent",
-    description="Update an existing agent",
+    response_model=Agent,
+    summary="Replace agent (PUT)",
+    description=(
+        "Replace an agent's mutable fields with the provided representation. "
+        "Framework is inferred from config.agent.type."
+    ),
 )
 async def update_agent(
-    agent_id: UUID,
-    request: AgentUpdateRequest,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-) -> AgentResponse:
-    """Update an existing agent."""
-    agent = await agent_service.update_agent(
-        agent_id=agent_id,
-        tenant_id=tenant_id,
-        name=request.name,
-        description=request.description,
-        config=request.config,
-        environment_variables=request.environment_variables,
-        tags=request.tags,
+    agent_id: str,
+    request: AgentReplace,
+    session: AsyncSession = Depends(get_session),
+) -> Agent:
+    """Full replacement of an existing agent in PostgreSQL (PUT semantics)."""
+    try:
+        agent_uuid = UUID(agent_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
+
+    model = await session.get(AgentConfigModel, agent_uuid)
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id '{agent_id}' not found",
+        )
+
+    # Infer framework from config
+    framework_value: Optional[str] = request.config.agent.type if request.config and request.config.agent else None
+    if not framework_value or not isinstance(framework_value, str):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing framework type in config.agent.type",
+        )
+    framework_enum = map_framework(framework_value)
+
+    # Apply full replacement for mutable fields
+    model.name = request.name
+    model.description = request.description
+    model.framework = framework_enum.value
+    model.config = request.config.model_dump()
+
+    await session.flush()
+    await session.refresh(model)
+
+    return Agent(
+        id=str(model.id),
+        name=model.name,
+        description=model.description,
+        framework=map_framework(model.framework),
+        status=AgentStatus(model.status),
+        created_at=model.created_at,
+        updated_at=model.updated_at,
     )
-    
-    return AgentResponse.model_validate(agent)
 
 
 @router.delete(
     "/{agent_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete agent",
-    description="Delete an agent and all its runs",
+    description="Delete an agent permanently",
 )
 async def delete_agent(
-    agent_id: UUID,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
+    agent_id: str,
+    session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Delete an agent."""
-    await agent_service.delete_agent(agent_id, tenant_id)
+    """Delete an agent_config row by UUID."""
+    try:
+        agent_uuid = UUID(agent_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
+
+    model = await session.get(AgentConfigModel, agent_uuid)
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id '{agent_id}' not found",
+        )
+
+    await session.delete(model)
+    await session.flush()
+    return
 
 
-@router.post(
-    "/{agent_id}/activate",
-    response_model=AgentResponse,
-    summary="Activate agent",
-    description="Activate an agent for deployment",
+@router.patch(
+    "/{agent_id}",
+    response_model=Agent,
+    summary="Partially update agent (PATCH)",
+    description=(
+        "Partially update an agent. Only provided fields are modified. "
+        "If config is provided, framework is inferred from config.agent.type."
+    ),
 )
-async def activate_agent(
-    agent_id: UUID,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-) -> AgentResponse:
-    """Activate an agent."""
-    agent = await agent_service.activate_agent(agent_id, tenant_id)
-    return AgentResponse.model_validate(agent)
+async def patch_agent(
+    agent_id: str,
+    request: AgentPatch,
+    session: AsyncSession = Depends(get_session),
+) -> Agent:
+    try:
+        agent_uuid = UUID(agent_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
 
+    model = await session.get(AgentConfigModel, agent_uuid)
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id '{agent_id}' not found",
+        )
 
-@router.post(
-    "/{agent_id}/deactivate",
-    response_model=AgentResponse,
-    summary="Deactivate agent",
-    description="Deactivate an active agent",
-)
-async def deactivate_agent(
-    agent_id: UUID,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-) -> AgentResponse:
-    """Deactivate an agent."""
-    agent = await agent_service.deactivate_agent(agent_id, tenant_id)
-    return AgentResponse.model_validate(agent)
+    if request.name is not None:
+        model.name = request.name
+    if request.description is not None:
+        model.description = request.description
+    if request.config is not None:
+        framework_value: Optional[str] = request.config.agent.type if request.config and request.config.agent else None
+        if not framework_value or not isinstance(framework_value, str):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing framework type in config.agent.type",
+            )
+        model.framework = map_framework(framework_value).value
+        model.config = request.config.model_dump()
 
+    await session.flush()
+    await session.refresh(model)
 
-@router.post(
-    "/{agent_id}/run",
-    response_model=AgentRunResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Run agent",
-    description="Execute an agent with input data",
-)
-async def run_agent(
-    agent_id: UUID,
-    request: AgentRunRequest,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-) -> AgentRunResponse:
-    """Run an agent."""
-    run = await agent_service.run_agent(
-        agent_id=agent_id,
-        tenant_id=tenant_id,
-        input_data=request.input_data,
-        trace_id=request.trace_id,
+    return Agent(
+        id=str(model.id),
+        name=model.name,
+        description=model.description,
+        framework=map_framework(model.framework),
+        status=AgentStatus(model.status),
+        created_at=model.created_at,
+        updated_at=model.updated_at,
     )
-    
-    return AgentRunResponse.model_validate(run)
-
-
-@router.get(
-    "/{agent_id}/runs",
-    response_model=PaginatedRunsResponse,
-    summary="List agent runs",
-    description="List runs for a specific agent",
-)
-async def list_agent_runs(
-    agent_id: UUID,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-    pagination: Annotated[tuple[int, int], Depends(get_pagination_params)],
-) -> PaginatedRunsResponse:
-    """List runs for an agent."""
-    limit, offset = pagination
-    
-    runs = await agent_service.list_runs_by_agent(agent_id, tenant_id, limit, offset)
-    
-    return PaginatedRunsResponse(
-        items=[AgentRunResponse.model_validate(run) for run in runs],
-        total=len(runs),  # TODO: Implement proper count
-        limit=limit,
-        offset=offset,
-        has_more=len(runs) == limit,
-    )
-
-
-@router.get(
-    "/{agent_id}/runs/{run_id}",
-    response_model=AgentRunResponse,
-    summary="Get agent run",
-    description="Get a specific agent run by ID",
-)
-async def get_agent_run(
-    agent_id: UUID,
-    run_id: UUID,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-) -> AgentRunResponse:
-    """Get an agent run."""
-    run = await agent_service.get_run(run_id, tenant_id)
-    return AgentRunResponse.model_validate(run)
-
-
-@router.get(
-    "/{agent_id}/health",
-    summary="Get agent health",
-    description="Get health status of a deployed agent",
-)
-async def get_agent_health(
-    agent_id: UUID,
-    tenant_id: Annotated[UUID, Depends(get_current_tenant_id)],
-    agent_service: Annotated[AgentService, Depends(get_agent_service)],
-) -> dict:
-    """Get agent health status."""
-    health_info = await agent_service.get_agent_health(agent_id, tenant_id)
-    return health_info 

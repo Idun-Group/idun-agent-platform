@@ -68,11 +68,18 @@ logs: ## Show Docker logs
 logs-app: ## Show application logs only
 	$(COMPOSE) logs -f $(DEV_SERVICE)
 
-build: ## Build Docker images
+build: ## Build Docker images with Poetry lock file generation
+	@echo "🔧 Building Docker images..."
+	@if [ ! -f poetry.lock ]; then \
+		echo "⚠️  poetry.lock not found - it will be generated during build"; \
+	fi
 	$(COMPOSE) build
+	@echo "✅ Build completed successfully"
 
 rebuild: ## Rebuild Docker images without cache
+	@echo "🔧 Rebuilding Docker images from scratch..."
 	$(COMPOSE) build --no-cache
+	@echo "✅ Rebuild completed successfully"
 
 # Development server
 serve: ## Start development server (containerized with hot reload)
@@ -202,14 +209,13 @@ dev-reset: ## Complete reset: down, clean, rebuild, up
 	@echo "🔄 Environment completely reset and ready!"
 
 # Environment setup
-setup: build install precommit-install ## Setup development environment (containerized)
+setup: build up install precommit-install ## Setup development environment (containerized)
 	@echo "🐳 Containerized development environment setup complete!"
 	@echo "Run 'make serve' to start the development server"
 
-# Quick start for new developers
-quickstart: setup up migrate serve ## Complete setup and start everything
+# Quick start for new developers  
+quickstart: setup migrate serve ## Complete setup and start everything
 	@echo "🚀 Idun Agent Manager is ready!"
 	@echo "API: http://localhost:8000"
 	@echo "Docs: http://localhost:8000/docs"
-	@echo "Traefik Dashboard: http://localhost:8080"
 	@echo "Run 'make shell' to access the container shell" 

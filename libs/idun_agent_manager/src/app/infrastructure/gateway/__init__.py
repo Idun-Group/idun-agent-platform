@@ -1,1 +1,1 @@
-"""Infrastructure adapters for gateway communication.""" 
+"""Legacy directory - Gateway clients moved to infrastructure/http/.""" 

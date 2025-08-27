@@ -11,7 +11,7 @@ class DatabaseSettings(BaseSettings):
     """Database configuration settings."""
 
     url: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/idun_agents",
+        default="postgresql+asyncpg://postgres:postgres@localhost:55432/idun_agents",
         description="Database URL with async driver",
     )
     echo: bool = Field(default=False, description="Echo SQL queries")

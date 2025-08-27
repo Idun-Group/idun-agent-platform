@@ -1,1 +1,1 @@
-"""Infrastructure adapters for agent management.""" 
+"""Legacy directory - HTTP clients moved to infrastructure/http/.""" 
