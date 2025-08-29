@@ -28,12 +28,9 @@ jobs:
       - name: Build wheel and sdist (engine)
         working-directory: libs/idun_agent_engine
         run: |
-          uv build
+          uv build --no-sources
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: libs/idun_agent_engine/dist
-          skip-existing: true
-          verbose: true
-          password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Publish to PyPI via uv (trusted publisher)
+        working-directory: libs/idun_agent_engine
+        run: |
+          uv publish
