@@ -25,18 +25,18 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
-          poetry-version: '1.8.3'
+          enable-cache: true
 
       - name: Install dependencies
         run: |
-          poetry install --with dev
+          uv sync --group dev
 
       - name: Build docs
         run: |
-          poetry run mkdocs build --clean
+          uv run mkdocs build --clean
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main'

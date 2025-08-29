@@ -1,0 +1,57 @@
+name: Update uv.lock on Dependabot PRs
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-uv-lock:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Detect dependency file changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            root:
+              - 'pyproject.toml'
+            engine:
+              - 'libs/idun_agent_engine/pyproject.toml'
+
+      - name: Update root uv.lock
+        if: steps.changes.outputs.root == 'true'
+        run: |
+          uv lock
+
+      - name: Update engine uv.lock
+        if: steps.changes.outputs.engine == 'true'
+        working-directory: libs/idun_agent_engine
+        run: |
+          uv lock
+
+      - name: Commit and push lockfile updates
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore(deps): refresh uv.lock after Dependabot update'
+          branch: ${{ github.event.pull_request.head.ref }}
