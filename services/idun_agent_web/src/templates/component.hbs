@@ -15,7 +15,9 @@ export const {{pascalCase name}} = styled.div`
 
 {{else}}
 const {{pascalCase name}}{{#if (eq type 'page')}}Page{{/if}} = ({{#if withProps}}{}: {{pascalCase name}}Props{{else}}{{/if}}) => {
-    const { t } = useTranslation(); return (
+    const { t } = useTranslation();
+
+    return (
         <div>
             {/* Your component implementation here */}
             <h1>{{pascalCase name}} Component</h1>
