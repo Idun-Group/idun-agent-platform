@@ -42,7 +42,7 @@ const GlobalStyles = createGlobalStyle`
       --app-text: ${styleVariables.colors.dark.appText};
       --app-text-muted: ${styleVariables.colors.dark.appTextMuted};
       --app-purple: ${styleVariables.colors.dark.appPurple};
-      
+
       /* Variables Header */
       --header-bg: ${styleVariables.colors.dark.headerBg};
       --header-border: ${styleVariables.colors.dark.headerBorder};
