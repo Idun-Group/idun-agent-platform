@@ -170,6 +170,84 @@
         },
         "submit": "Create account"
     },
+    "user-form": {
+        "title": "User Form",
+        "description": "Please fill out the following information.",
+        "personal-information": {
+            "legend": "Personal Information",
+            "first-name": {
+                "label": "First Name",
+                "placeholder": "Enter your first name"
+            },
+            "last-name": {
+                "label": "Last Name",
+                "placeholder": "Enter your last name"
+            },
+            "email": {
+                "label": "Email Address",
+                "placeholder": "Enter your email address"
+            },
+            "phone": {
+                "label": "Phone",
+                "placeholder": "Enter your phone number"
+            }
+        },
+        "workspace": {
+            "legend": "Workspace Information",
+            "selection": "Select a workspace"
+        },
+        "professional-information": {
+            "legend": "Professional Information",
+            "role": {
+                "label": "Role",
+                "placeholder": "Enter your role",
+                "admin": "Administrator",
+                "user": "User",
+                "developer": "Developer",
+                "analyst": "Analyst",
+                "manager": "Manager"
+            },
+            "department": {
+                "label": "Department",
+                "placeholder": "Enter your department",
+                "it": "IT",
+                "hr": "Human Resources",
+                "finance": "Finance",
+                "marketing": "Marketing",
+                "sales": "Sales",
+                "operations": "Operations"
+            },
+            "bio": {
+                "label": "Biography",
+                "placeholder": "Enter your biography"
+            }
+        },
+        "permissions": {
+            "legend": "Permissions",
+            "agent-management": {
+                "title": "Agent Management",
+                "description": "Control agent access and permissions.",
+                "active": "Active"
+            },
+            "user-management": {
+                "title": "User Management",
+                "description": "Control user access and permissions.",
+                "active": "Active"
+            },
+            "analytics": {
+                "title": "Analytics",
+                "description": "Access reports and analytics.",
+                "active": "Active"
+            },
+            "system-configuration": {
+                "title": "System Configuration",
+                "description": "Manage system settings and configurations.",
+                "active": "Active"
+            }
+        },
+        "cancel": "Cancel",
+        "create-user": "Create user"
+    },
     "login": {
         "title": "Login",
         "description": "Login to your Idun Engine account.",
@@ -302,7 +380,7 @@
         "testQuestion": "What's the weather like in Paris?",
         "testResponse": "The current weather in Paris is 22°C with a partly cloudy sky. There is a light breeze from the southwest at 10 km/h. The humidity is 65% and visibility is good at 10km. No precipitation is expected for the next few hours.",
         "viewTraces": "View traces",
-        "createAgent": "Create agent",
+        "create-agent": "Create an agent",
         "creating": "Creating...",
         "button": {
             "create": "Create an agent",
