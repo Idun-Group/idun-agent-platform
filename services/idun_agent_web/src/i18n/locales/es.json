@@ -170,6 +170,84 @@
         },
         "submit": "Crear cuenta"
     },
+    "user-form": {
+        "title": "Formulario de usuario",
+        "description": "Por favor, rellene la siguiente información.",
+        "personal-information": {
+            "legend": "Información personal",
+            "first-name": {
+                "label": "Primer nombre",
+                "placeholder": "Introduzca su primer nombre"
+            },
+            "last-name": {
+                "label": "Sobrenome",
+                "placeholder": "Introduzca su sobrenome"
+            },
+            "email": {
+                "label": "Dirección de correo electrónico",
+                "placeholder": "Introduzca su dirección de correo electrónico"
+            },
+            "phone": {
+                "label": "Teléfono",
+                "placeholder": "Introduzca su número de teléfono"
+            }
+        },
+        "workspace": {
+            "legend": "Información del espacio de trabajo",
+            "selection": "Seleccionar un espacio de trabajo"
+        },
+        "professional-information": {
+            "legend": "Información profesional",
+            "role": {
+                "label": "Función",
+                "placeholder": "Introduzca su función",
+                "admin": "Administrador",
+                "user": "Usuario",
+                "developer": "Desarrollador",
+                "analyst": "Analista",
+                "manager": "Gerente"
+            },
+            "department": {
+                "label": "Departamento",
+                "placeholder": "Introduzca su departamento",
+                "it": "TI",
+                "hr": "Recursos humanos",
+                "finance": "Finanzas",
+                "marketing": "Marketing",
+                "sales": "Ventas",
+                "operations": "Operaciones"
+            },
+            "bio": {
+                "label": "Biografía",
+                "placeholder": "Introduzca su biografía"
+            }
+        },
+        "permissions": {
+            "legend": "Permisos",
+            "agent-management": {
+                "title": "Gestión de agentes",
+                "description": "Controle el acceso y las autorizaciones de los agentes.",
+                "active": "Activo"
+            },
+            "user-management": {
+                "title": "Gestión de usuarios",
+                "description": "Controle el acceso y las autorizaciones de los usuarios.",
+                "active": "Activo"
+            },
+            "analytics": {
+                "title": "Análisis",
+                "description": "Acceda a los informes y análisis.",
+                "active": "Activo"
+            },
+            "system-configuration": {
+                "title": "Configuración del sistema",
+                "description": "Gestione los parámetros y las configuraciones del sistema.",
+                "active": "Activo"
+            }
+        },
+        "cancel": "Cancelar",
+        "create-user": "Crear usuario"
+    },
     "login": {
         "title": "Login",
         "description": "Faça login em sua conta Idun Engine.",
@@ -302,7 +380,7 @@
         "testQuestion": "¿Qué tiempo hace en París?",
         "testResponse": "El tiempo actual en París es de 22°C con un cielo parcialmente nublado. Hay una ligera brisa del suroeste a 10 km/h. La humedad es del 65% y la visibilidad es buena a 10 km. No se esperan precipitaciones en las próximas horas.",
         "viewTraces": "Ver rastros",
-        "createAgent": "Crear agente",
+        "create-agent": "Crear un agente",
         "creating": "Creando...",
         "button": {
             "create": "Crear un agente",
@@ -681,7 +759,7 @@
         },
         "column": {
             "lastName": "Sobrenome",
-            "firstName": "Primeiro nome",
+            "firstName": "Primer nombre",
             "userName": "Nombre de usuario",
             "email": "Correo electrónico",
             "phone": "Teléfono",

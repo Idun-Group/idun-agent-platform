@@ -236,7 +236,7 @@ export default function AgentFormPage() {
                     </SourceCard>
                 </SourceSection>
                 <Label>
-                    {t('agent-form.framework')}
+                    {t('agent-form.framework.label')}
                     <SelectButtonContainer>
                         {availableFrameworks.map((framework) => (
                             <SelectButton

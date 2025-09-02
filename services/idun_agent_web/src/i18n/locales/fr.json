@@ -171,7 +171,82 @@
         "submit": "Créer le compte"
     },
     "user-form": {
-        
+        "title": "Formulaire utilisateur",
+        "description": "Veuillez remplir les informations suivantes.",
+        "personal-information": {
+            "legend": "Informations personnelles",
+            "first-name": {
+                "label": "Prénom",
+                "placeholder": "Entrez votre prénom"
+            },
+            "last-name": {
+                "label": "Nom de famille",
+                "placeholder": "Entrez votre nom de famille"
+            },
+            "email": {
+                "label": "Adresse e-mail",
+                "placeholder": "Entrez votre adresse e-mail"
+            },
+            "phone": {
+                "label": "Téléphone",
+                "placeholder": "Entrez votre numéro de téléphone"
+            }
+        },
+        "workspace": {
+            "legend": "Informations de l'espace de travail",
+            "selection": "Sélectionner un espace de travail"
+        },
+        "professional-information": {
+            "legend": "Informations professionnelles",
+            "role": {
+                "label": "Rôle",
+                "placeholder": "Entrez votre rôle",
+                "admin": "Administrateur",
+                "user": "Utilisateur",
+                "developer": "Développeur",
+                "analyst": "Analyste",
+                "manager": "Manager"
+            },
+            "department": {
+                "label": "Département",
+                "placeholder": "Entrez votre département",
+                "it": "Informatique",
+                "hr": "Ressources humaines",
+                "finance": "Finance",
+                "marketing": "Marketing",
+                "sales": "Ventes",
+                "operations": "Opérations"
+            },
+            "bio": {
+                "label": "Biographie",
+                "placeholder": "Entrez votre biographie"
+            }
+        },
+        "permissions": {
+            "legend": "Permissions",
+            "agent-management": {
+                "title": "Gestion des agents",
+                "description": "Contrôlez l'accès et les autorisations des agents.",
+                "active": "Actif"
+            },
+            "user-management": {
+                "title": "Gestion des utilisateurs",
+                "description": "Contrôlez l'accès et les autorisations des utilisateurs.",
+                "active": "Actif"
+            },
+            "analytics": {
+                "title": "Analytique",
+                "description": "Accédez aux rapports et aux analyses.",
+                "active": "Actif"
+            },
+            "system-configuration": {
+                "title": "Configuration du système",
+                "description": "Gérez les paramètres et les configurations du système.",
+                "active": "Actif"
+            }
+        },
+        "cancel": "Annuler",
+        "create-user": "Créer l'utilisateur"
     },
     "login": {
         "title": "Connexion",
@@ -305,7 +380,7 @@
         "testQuestion": "Quel temps fait-il à Paris ?",
         "testResponse": "Le temps actuel à Paris est de 22°C avec un ciel partiellement nuageux. Il y a une légère brise du sud-ouest à 10 km/h. L'humidité est à 65% et la visibilité est bonne à 10km. Aucune précipitation n'est attendue pour les prochaines heures.",
         "viewTraces": "Voir les traces",
-        "createAgent": "Créer un agent",
+        "create-agent": "Créer un agent",
         "creating": "Création en cours...",
         "button": {
             "create": "Créer un agent",
