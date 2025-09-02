@@ -1,0 +1,865 @@
+{
+    "navigation": {
+        "agent": "Agent",
+        "guard": "Wächter",
+        "api": "API",
+        "observation": "Beobachtung",
+        "tools": "Werkzeuge",
+        "users": "Benutzer",
+        "settings": "Einstellungen",
+        "disconnect": "Trennen"
+    },
+    "account": {
+        "info": {
+            "sub-title": "Ihr persönliches Konto"
+        }
+    },
+    "connected-app": {
+        "title": "Verbundene App",
+        "description": "Verwalten Sie Ihre verbundenen Anwendungen.",
+        "button-marketplace": "Zum App-Marktplatz gehen",
+        "navigation": {
+            "overview": "Übersicht",
+            "applications": "Anwendungen"
+        },
+        "apps": {
+            "title": "Verbinden Sie Ihre erste Anwendung.",
+            "description": "Besuchen Sie den App-Marktplatz, um Idun Engine und die Tools zu verbinden, die Ihr Geschäft voranbringen.",
+            "first-install": "Erste Anwendung installieren"
+        },
+        "marketplace": {
+            "title": "App-Marktplatz",
+            "subtitle": "Entdecken und verbinden Sie Apps mit Idun Engine.",
+            "all-apps": "Alle Anwendungen",
+            "by": "von",
+            "install": "Anwendung hinzufügen",
+            "description": "Beschreibung",
+            "search": {
+                "placeholder": "Anwendungen suchen..."
+            }
+        }
+    },
+    "header": {
+        "create": "Erstellen",
+        "settings": "Einstellungen",
+        "workspace": {
+            "select": "Arbeitsbereich auswählen"
+        },
+        "environment": {
+            "select": "Umgebung auswählen",
+            "development": "Entwicklung",
+            "staging": "Staging",
+            "production": "Produktion"
+        }
+    },
+    "workspace": {
+        "none_selected": "Kein Arbeitsbereich ausgewählt",
+        "loading": "Arbeitsbereich wird geladen...",
+        "error": "Fehler beim Laden des Arbeitsbereichs"
+    },
+    "dashboard": {
+        "searchPlaceholder": "Agentennamen oder Framework eingeben...",
+        "agent": {
+            "title": "Agenten-Dashboard",
+            "description": "Verwalten und überwachen Sie Ihre KI-Agenten",
+            "create": "Agenten erstellen",
+            "edit": "Agenten bearbeiten",
+            "delete": "Agenten löschen"
+        },
+        "search": {
+            "placeholder": "Agentennamen oder Framework eingeben..."
+        },
+        "recommendations": {
+            "leadEnrichment": "Lead-Anreicherung",
+            "coldMailing": "Kalt-E-Mail-Generator",
+            "autoAnswer": "Auto-Antwort LN",
+            "customerSearch": "Kundensuche",
+            "salesKpi": "Verkaufs-KPI",
+            "contentRewriter": "Inhalts-Umschreiber",
+            "leadQualification": "Lead-Qualifizierung",
+            "customerJourney": "Customer Journey"
+        },
+        "table": {
+            "name": "Name",
+            "status": "Status",
+            "controls": "Steuerung",
+            "avgTime": "Durchschnittliche Zeit",
+            "environment": "Umgebung",
+            "errorRate": "Fehlerquote",
+            "source": "Quelle",
+            "framework": "Framework",
+            "a2a": "A2A",
+            "runs": "Läufe",
+            "logs": "Protokolle",
+            "actions": "Aktionen"
+        },
+        "logs": {
+            "title": "Agenten-Protokolle",
+            "agentInfo": "Agenten-Informationen",
+            "performance": "Leistungsmetriken",
+            "recentLogs": "Aktuelle Protokolle",
+            "loaded": "geladen",
+            "loadingMore": "Weitere Protokolle werden geladen...",
+            "noMoreLogs": "Keine weiteren Protokolle zum Laden"
+        },
+        "status": {
+            "active": "Aktiv",
+            "pause": "Pause",
+            "disabled": "Deaktiviert"
+        },
+        "environment": {
+            "all": "Alle",
+            "development": "Entwicklung",
+            "staging": "Staging",
+            "production": "Produktion"
+        },
+        "pagination": {
+            "showing": "Anzeige von",
+            "to": "bis",
+            "of": "von",
+            "agents": "Agenten",
+            "previous": "Zurück",
+            "next": "Weiter"
+        },
+        "loading": "Agenten werden geladen...",
+        "error": "Fehler beim Laden",
+        "errorMessage": "Agenten können nicht geladen werden"
+    },
+    "categories": {
+        "selector": {
+            "placeholder": "Alle Kategorien",
+            "all": "Alle Kategorien",
+            "empty": "Keine Kategorien verfügbar"
+        }
+    },
+    "sidebar": {
+        "agents": "Agenten",
+        "guard": "Wächter",
+        "api": "API",
+        "observation": "Beobachtung",
+        "tools": "Werkzeuge",
+        "users": "Benutzer",
+        "apps": "Apps"
+    },
+    "signin": {
+        "title": "Konto erstellen",
+        "description": "Füllen Sie das Formular aus, um Ihr Idun Engine-Konto zu erstellen.",
+        "firstName": {
+            "label": "Vorname",
+            "placeholder": "Geben Sie Ihren Vornamen ein"
+        },
+        "lastName": {
+            "label": "Nachname",
+            "placeholder": "Geben Sie Ihren Nachnamen ein"
+        },
+        "name": {
+            "label": "Benutzername",
+            "placeholder": "Geben Sie Ihren Benutzernamen ein"
+        },
+        "email": {
+            "label": "E-Mail-Adresse",
+            "placeholder": "Geben Sie Ihre E-Mail-Adresse ein"
+        },
+        "phone": {
+            "label": "Telefon",
+            "placeholder": "Geben Sie Ihre Telefonnummer ein"
+        },
+        "password": {
+            "label": "Passwort",
+            "placeholder": "Geben Sie Ihr Passwort ein"
+        },
+        "submit": "Konto erstellen"
+    },
+    "login": {
+        "title": "Anmelden",
+        "description": "Melden Sie sich bei Ihrem Idun Engine-Konto an.",
+        "email": "E-Mail-Adresse",
+        "email.placeholder": "Geben Sie Ihre E-Mail-Adresse ein",
+        "password": "Passwort",
+        "rememberMe": "Angemeldet bleiben",
+        "password.placeholder": "Geben Sie Ihr Passwort ein",
+        "submit": "Anmelden"
+    },
+    "firstLogin": {
+        "title": "Passwort festlegen",
+        "subtitle": "Aus Sicherheitsgründen legen Sie bitte ein neues Passwort für Ihr Konto fest",
+        "userEmail": "Konto: {{email}}",
+        "form": {
+            "title": "Passwort-Einrichtung",
+            "newPassword": {
+                "label": "Neues Passwort",
+                "placeholder": "Geben Sie Ihr neues Passwort ein"
+            },
+            "confirmPassword": {
+                "label": "Passwort bestätigen",
+                "placeholder": "Bestätigen Sie Ihr neues Passwort"
+            },
+            "submit": "Passwort festlegen",
+            "updating": "Wird aktualisiert..."
+        },
+        "validation": {
+            "newPassword": {
+                "required": "Neues Passwort ist erforderlich",
+                "minLength": "Das Passwort muss mindestens 8 Zeichen lang sein",
+                "weak": "Das Passwort ist zu schwach"
+            },
+            "confirmPassword": {
+                "required": "Passwortbestätigung ist erforderlich",
+                "match": "Passwörter stimmen nicht überein"
+            }
+        },
+        "password": {
+            "strength": {
+                "label": "Passwortstärke",
+                "weak": "Schwach",
+                "medium": "Mittel",
+                "strong": "Stark"
+            },
+            "criteria": {
+                "length": "Mindestens 8 Zeichen",
+                "lowercase": "Enthält Kleinbuchstaben",
+                "uppercase": "Enthält Großbuchstaben",
+                "number": "Enthält Zahlen",
+                "special": "Enthält Sonderzeichen"
+            }
+        },
+        "help": {
+            "title": "Passwort-Anforderungen",
+            "requirement1": "Mindestens 8 Zeichen",
+            "requirement2": "Mischung aus Groß- und Kleinbuchstaben",
+            "requirement3": "Mindestens eine Zahl",
+            "requirement4": "Mindestens ein Sonderzeichen (!@#$%^&*)"
+        },
+        "success": {
+            "message": "Passwort erfolgreich aktualisiert. Sie können sich jetzt mit Ihrem neuen Passwort anmelden."
+        },
+        "error": {
+            "general": "Fehler bei der Passwortaktualisierung. Bitte versuchen Sie es erneut."
+        }
+    },
+    "changePassword": {
+        "title": "Passwort ändern",
+        "subtitle": "Aktualisieren Sie das Passwort Ihres Kontos"
+    },
+    "agent-form": {
+        "title": "Neuen Agenten erstellen",
+        "back": "Zurück",
+        "agentFormTitle": "Agenten-Formular",
+        "general-info": "Wählen Sie die Quelle für Ihren Agenten",
+        "tabs": {
+            "agent": "Agent",
+            "testing": "Test"
+        },
+        "header": {
+            "title": "Neuen Agenten erstellen",
+            "subtitle": "Konfigurieren Sie die Einstellungen und das Verhalten Ihres Agenten"
+        },
+        "generalInfo": "Allgemeine Informationen",
+        "name": {
+            "label": "Agentenname",
+            "placeholder": "Mein erster Agent"
+        },
+        "description": {
+            "label": "Beschreibung",
+            "placeholder": "Beschreiben Sie, was dieser Agent tut"
+        },
+        "framework": {
+            "label": "Framework",
+            "placeholder": "Framework auswählen",
+            "langgraph": "Langraph",
+            "smolagent": "SmolAgent",
+            "n8n": "N8N",
+            "adk": "ADK"
+        },
+        "source": {
+            "label": "Quelle",
+            "upload": "Hochladen",
+            "git": "Git",
+            "select-folder": "Ordner auswählen",
+            "select-git-repo": "Git-Repository auswählen",
+            "project": "Projekt",
+            "local": "Lokal",
+            "remote": "Entfernt",
+            "select-remote": "Entferntes Repository auswählen",
+            "select-project-template": "Projekt auswählen"
+        },
+        "agent-path": {
+            "label": "Agentenpfad",
+            "placeholder": "Agentenpfad eingeben"
+        },
+        "checkpointConfig": "Checkpoint-Konfiguration",
+        "availableAgents": "Verfügbare Agenten",
+        "database-type": "Datenbanktyp",
+        "database-url": {
+            "label": "Datenbank-URL",
+            "placeholder": "Datenbank-URL eingeben"
+        },
+        "status": "Status",
+        "run": "Ausführen",
+        "testAgent": "Mein erster Agent",
+        "testInput": "Eingabe",
+        "testOutput": "Ausgabe",
+        "testQuestion": "Wie ist das Wetter in Paris?",
+        "testResponse": "Das aktuelle Wetter in Paris beträgt 22°C bei teilweise bewölktem Himmel. Es weht eine leichte Brise aus Südwesten mit 10 km/h. Die Luftfeuchtigkeit beträgt 65 % und die Sicht ist gut bei 10 km. In den nächsten Stunden wird kein Niederschlag erwartet.",
+        "viewTraces": "Traces anzeigen",
+        "createAgent": "Agenten erstellen",
+        "creating": "Wird erstellt...",
+        "button": {
+            "create": "Agenten erstellen",
+            "creating": "Wird erstellt..."
+        },
+        "success": {
+            "title": "Erfolg",
+            "description": "Agent erfolgreich erstellt"
+        },
+        "error": {
+            "title": "Fehler",
+            "description": "Fehler beim Erstellen des Agenten"
+        },
+        "placeholders": {
+            "repositoryUrl": "https://github.com/username/repository",
+            "branch": "main",
+            "path": "/src/agent",
+            "remoteUrl": "https://api.example.com/agent",
+            "authToken": "Bearer-Token oder API-Schlüssel"
+        },
+        "sources": {
+            "selectType": "Wählen Sie den Quelltyp für Ihren Agenten-Code",
+            "configure": "Konfigurieren Sie Ihre {{sourceType}}-Quelle",
+            "import": {
+                "title": "Ein Agenten-Paket importieren",
+                "description": "Laden Sie Ihren Agenten als ZIP-Datei hoch, die den gesamten erforderlichen Code und die Konfiguration enthält",
+                "label": "Dateien importieren",
+                "uploadDescription": "ZIP-Paket hochladen",
+                "supportedFormat": "Unterstütztes Format: nur ZIP-Dateien",
+                "dropZone": "Legen Sie Ihre ZIP-Datei hier ab",
+                "orClickBrowse": "oder klicken Sie zum Durchsuchen",
+                "processing": "ZIP-Datei wird verarbeitet...",
+                "extracting": "Agenten-Dateien werden extrahiert...",
+                "invalidFormat": "Es werden nur ZIP-Dateien akzeptiert",
+                "uploadSuccess": "ZIP-Paket erfolgreich importiert",
+                "uploadError": "Fehler beim Verarbeiten der ZIP-Datei",
+                "ready": "Paket ist einsatzbereit",
+                "zipStructureHelp": "Empfohlene Struktur: agent.py, requirements.txt, config.yaml in Ihrer ZIP-Datei"
+            },
+            "github": {
+                "title": "Ein GitHub-Repository verbinden",
+                "description": "Agenten-Code aus Ihrem GitHub-Repository importieren",
+                "label": "GitHub",
+                "uploadDescription": "Ein Repository verbinden",
+                "repositoryUrl": "Repository-URL",
+                "branch": "Branch (optional)",
+                "path": "Pfad (optional)",
+                "connect": "Mit GitHub verbinden"
+            },
+            "remote": {
+                "title": "Entfernte Quelle",
+                "description": "Mit einer entfernten Agenten-Quelle verbinden",
+                "label": "Entfernt",
+                "uploadDescription": "Entfernte API-Quelle",
+                "remoteUrl": "Entfernte URL",
+                "authToken": "Authentifizierungs-Token (optional)",
+                "connect": "Entfernte Quelle verbinden"
+            },
+            "project": {
+                "title": "Projektvorlage",
+                "description": "Eine vorkonfigurierte Projektvorlage verwenden",
+                "label": "Projekt",
+                "uploadDescription": "Projektvorlage",
+                "templates": {
+                    "basicChat": {
+                        "name": "Einfacher Chat-Agent",
+                        "description": "Einfacher Konversations-Agent"
+                    },
+                    "documentProcessor": {
+                        "name": "Dokumentenprozessor",
+                        "description": "Agent für die Dokumentenanalyse"
+                    },
+                    "dataAnalyst": {
+                        "name": "Datenanalyst",
+                        "description": "Agent für die Datenverarbeitung"
+                    },
+                    "custom": {
+                        "name": "Benutzerdefinierte Vorlage",
+                        "description": "Von Grund auf neu erstellen"
+                    }
+                }
+            },
+            "selected": "ausgewählte Quelle",
+            "configCompleted": "Quellkonfiguration abgeschlossen"
+        },
+        "runTest": "Test ausführen",
+        "saveTestCase": "Testfall speichern"
+    },
+    "agentDetails": {
+        "backToAgents": "Zurück zu den Agenten",
+        "configure": "Konfigurieren",
+        "testAgent": "Agenten testen",
+        "pause": "Pause",
+        "tabs": {
+            "overview": "Übersicht",
+            "activity": "Aktivität",
+            "configuration": "Konfiguration",
+            "logs": "Protokolle",
+            "code": "Code"
+        },
+        "metrics": {
+            "totalRuns": "Gesamtlaufzeit",
+            "successRate": "Erfolgsrate",
+            "avgResponseTime": "Durchschnittliche Antwortzeit",
+            "uptime": "Verfügbarkeit",
+            "todayRuns": "heute",
+            "monthlyRuns": "diesen Monat",
+            "lastWeek": "im Vergleich zur letzten Woche",
+            "lastDays": "letzten 7 Tage"
+        },
+        "charts": {
+            "dailyUsage": "Täglicher Verbrauch (letzte 7 Tage)",
+            "success": "Erfolg",
+            "errors": "Fehler"
+        },
+        "info": {
+            "title": "Agenten-Informationen",
+            "framework": "Framework",
+            "source": "Quelle",
+            "tools": "Werkzeuge",
+            "lastRun": "Letzte Ausführung",
+            "observability": "Beobachtbarkeit"
+        },
+        "activity": {
+            "title": "Aktuelle Aktivitäten",
+            "execution": "Ausführung",
+            "deployment": "Bereitstellung"
+        },
+        "configuration": {
+            "general": "Allgemeine Konfiguration",
+            "langgraph": "LangGraph-Konfiguration",
+            "observability": "Beobachtbarkeit",
+            "agentToAgent": "Agent zu Agent",
+            "streaming": "Streaming",
+            "enabled": "Aktiviert",
+            "disabled": "Deaktiviert",
+            "inputSchema": "Eingabe-Schema",
+            "outputSchema": "Ausgabe-Schema",
+            "parameters": "Parameter",
+            "checkpointType": "Checkpoint-Typ",
+            "databasePath": "Datenbankpfad",
+            "provider": "Anbieter",
+            "configuration": "Konfiguration"
+        },
+        "logs": {
+            "title": "Agenten-Protokolle",
+            "export": "Exportieren",
+            "viewInLangfuse": "In Langfuse anzeigen"
+        },
+        "status": {
+            "success": "Erfolg",
+            "error": "Fehler",
+            "pending": "Ausstehend"
+        },
+        "timeAgo": {
+            "justNow": "Gerade eben",
+            "minutesAgo": "vor {{count}}m",
+            "hoursAgo": "vor {{count}}h",
+            "daysAgo": "vor {{count}}d"
+        },
+        "code": {
+            "title": "Agenten-Quellcode",
+            "saveChanges": "Änderungen speichern",
+            "reset": "Zurücksetzen",
+            "modified": "Geändert",
+            "file": "Datei",
+            "language": "Sprache",
+            "lines": "Zeilen"
+        },
+        "buttons": {
+            "testAgent": "Agenten testen",
+            "export": "Exportieren",
+            "clear": "Löschen",
+            "viewDetails": "Details anzeigen",
+            "retry": "Wiederholen"
+        },
+        "titles": {
+            "agentLogs": "Agenten-Protokolle"
+        }
+    },
+    "settings": {
+        "title": "Einstellungen",
+        "back_to_dashboard": "Zurück zum Dashboard",
+        "profile": {
+            "title": "Profil",
+            "description": "Verwalten Sie Ihre persönlichen Informationen und Präferenzen.",
+            "name": {
+                "label": "Name",
+                "placeholder": "Ihr Name"
+            },
+            "firstName": {
+                "label": "Vorname",
+                "placeholder": "Ihr Vorname"
+            },
+            "lastName": {
+                "label": "Nachname",
+                "placeholder": "Ihr Nachname"
+            },
+            "email": {
+                "label": "E-Mail",
+                "placeholder": "Ihre E-Mail-Adresse"
+            },
+            "phone": {
+                "label": "Telefon",
+                "placeholder": "Ihre Telefonnummer"
+            },
+            "save": "Speichern"
+        },
+        "language": {
+            "title": "Sprache",
+            "description": "Wählen Sie Ihre bevorzugte Sprache für die Benutzeroberfläche.",
+            "subtitle": "Wählen Sie Ihre Sprache"
+        },
+        "notifications": {
+            "title": "Benachrichtigungen",
+            "description": "Verwalten Sie Ihre Benachrichtigungspräferenzen.",
+            "agents-status-changes": {
+                "label": "Agenten-Statusänderungen",
+                "sub-label": "Benachrichtigt werden, wenn Agenten sich verbinden oder trennen"
+            },
+            "performance-alerts": {
+                "label": "Leistungsalarme",
+                "sub-label": "Alarme bei Überschreitung von Leistungsschwellenwerten erhalten"
+            },
+            "system-updates": {
+                "label": "System-Updates",
+                "sub-label": "Benachrichtigt werden über Plattform-Updates und Wartung"
+            },
+            "browser-notifications": {
+                "label": "Browser-Benachrichtigungen",
+                "sub-label": "Benachrichtigungen im Browser erhalten."
+            }
+        },
+        "security": {
+            "title": "Sicherheit",
+            "description": "Verwalten Sie Ihre Sicherheits- und Datenschutzeinstellungen.",
+            "submit": "Passwort aktualisieren",
+            "2FA": {
+                "label": "Zwei-Faktor-Authentifizierung",
+                "description": "Fügen Sie Ihrem Konto eine zusätzliche Sicherheitsebene hinzu."
+            },
+            "alert": {
+                "label": "Sicherheitsalarme",
+                "description": "Alarme bei verdächtigen Anmeldeversuchen erhalten."
+            },
+            "current-assword": {
+                "label": "Aktuelles Passwort",
+                "placeholder": "Geben Sie Ihr aktuelles Passwort ein"
+            },
+            "new-password": {
+                "label": "Neues Passwort",
+                "placeholder": "Geben Sie Ihr neues Passwort ein"
+            },
+            "confirm-password": {
+                "label": "Neues Passwort bestätigen",
+                "placeholder": "Bestätigen Sie Ihr neues Passwort"
+            }
+        },
+        "appearance": {
+            "title": "Aussehen",
+            "description": "Passen Sie das Erscheinungsbild Ihrer Benutzeroberfläche an.",
+            "subtitle": "Themenauswahl",
+            "theme": {
+                "system": "Systemstandard",
+                "light": "Helles Thema",
+                "dark": "Dunkles Thema"
+            },
+            "compact-mode": {
+                "label": "Kompaktmodus",
+                "subLabel": "Mehr Inhalt auf weniger Platz anzeigen."
+            },
+            "high-contrast-mode": {
+                "label": "Hoher-Kontrast-Modus",
+                "subLabel": "Kontrast für bessere Sichtbarkeit erhöhen."
+            }
+        },
+        "firstName": "Vorname",
+        "lastName": "Nachname",
+        "email": "E-Mail",
+        "phoneNumber": "Telefonnummer",
+        "country": "Land",
+        "changePassword": "Passwort ändern",
+        "currentPassword": "Aktuelles Passwort",
+        "newPassword": "Neues Passwort",
+        "confirmPassword": "Passwort bestätigen",
+        "saveChanges": "Änderungen speichern",
+        "deleteProfile": "Profil löschen",
+        "changePicture": "Ändern",
+        "edit": "Bearbeiten",
+        "twoFactor": "Zwei-Faktor-Authentifizierung",
+        "theme": "Thema",
+        "agentAlerts": "Agenten-Status-Alarme",
+        "systemUpdates": "System-Updates",
+        "weeklyReports": "Wöchentliche Berichte",
+        "languageDescription": "Wählen Sie Ihre bevorzugte Sprache für die Benutzeroberfläche.",
+        "interfaceLanguage": "Sprache der Benutzeroberfläche",
+        "languageNote": "Dies ändert die Sprache aller Texte in der Anwendungsoberfläche.",
+        "general": "Allgemein",
+        "displayName": "Anzeigename",
+        "profileDescription": "Verwalten Sie Ihre Kontoinformationen und Präferenzen.",
+        "securityDescription": "Verwalten Sie Ihr Passwort und Ihre Sicherheitseinstellungen.",
+        "appearanceDescription": "Passen Sie Ihr Benutzeroberflächenthema und Ihre Aussehenseinstellungen an.",
+        "notificationsDescription": "Wählen Sie, wie Sie über Aktivitäten benachrichtigt werden möchten.",
+        "themePreference": "Themenpräferenz",
+        "systemDefault": "Systemstandard",
+        "light": "Hell",
+        "dark": "Dunkel",
+        "compactModeDescription": "Mehr Inhalt auf weniger Platz anzeigen.",
+        "highContrastDescription": "Kontrast für bessere Sichtbarkeit erhöhen.",
+        "agentStatusChanges": "Agenten-Statusänderungen",
+        "agentStatusChangesDesc": "Benachrichtigt werden, wenn Agenten sich verbinden oder trennen",
+        "performanceAlerts": "Leistungsalarme",
+        "performanceAlertsDesc": "Alarme bei Überschreitung von Leistungsschwellenwerten erhalten",
+        "systemUpdatesDesc": "Benachrichtigt werden über Plattform-Updates und Wartung",
+        "browserNotifications": "Browser-Benachrichtigungen",
+        "browserNotificationsDesc": "Benachrichtigungen in Ihrem Browser anzeigen",
+        "switch-account": "Konto wechseln"
+    },
+    "guard": {
+        "title": "Wächter-System",
+        "description": "Überwachen und steuern Sie Agenten-Zugriff und Berechtigungen",
+        "activeGuards": "Aktive Wächter",
+        "securityPolicies": "Sicherheitsrichtlinien",
+        "accessLogs": "Zugriffsprotokolle",
+        "threatDetection": "Bedrohungserkennung"
+    },
+    "api": {
+        "title": "API-Verwaltung",
+        "description": "API-Endpunkte und Integrationen verwalten",
+        "endpoints": "Endpunkte",
+        "apiKeys": "API-Schlüssel",
+        "documentation": "Dokumentation",
+        "rateLimits": "Ratenbegrenzungen",
+        "usage": "Nutzungsstatistiken"
+    },
+    "observation": {
+        "title": "Beobachtungszentrum",
+        "description": "Agenten-Leistung und -Verhalten überwachen",
+        "metrics": "Metriken",
+        "logs": "Protokolle",
+        "performance": "Leistung",
+        "alerts": "Alarme",
+        "analytics": "Analytik"
+    },
+    "tools": {
+        "title": "Werkzeuge und Dienstprogramme",
+        "description": "Verfügbare Werkzeuge und Dienstprogramme für die Agenten-Entwicklung",
+        "developmentTools": "Entwicklungswerkzeuge",
+        "debugger": "Debugger",
+        "testingSuite": "Test-Suite",
+        "codeGenerator": "Code-Generator",
+        "utilities": "Dienstprogramme"
+    },
+    "users": {
+        "title": "Benutzerverwaltung",
+        "description": "Systembenutzer und Berechtigungen verwalten",
+        "allUsers": "Alle Benutzer",
+        "roles": "Rollen",
+        "role": {
+            "admin": "Administrator",
+            "user": "Benutzer",
+            "guest": "Gast",
+            "editor": "Editor",
+            "viewer": "Betrachter"
+        },
+        "permissions": "Berechtigungen",
+        "invitations": "Einladungen",
+        "activity": "Benutzeraktivität",
+        "totalResults": "Gesamt: {{count}} Benutzer",
+        "noUsers": "Keine Benutzer verfügbar.",
+        "noResultsFound": "Keine Benutzer gefunden, die Ihrer Suche entsprechen.",
+        "cta": "Benutzer hinzufügen",
+        "searchPlaceholder": "Benutzer nach Name, E-Mail oder Rolle suchen...",
+        "search": {
+            "placeholder": "Benutzer nach Name, E-Mail oder Rolle suchen..."
+        },
+        "column": {
+            "lastName": "Nachname",
+            "firstName": "Vorname",
+            "userName": "Benutzername",
+            "email": "E-Mail",
+            "phone": "Telefon",
+            "role": "Rolle",
+            "actions": "Aktionen"
+        },
+        "create": {
+            "title": "Benutzer erstellen",
+            "subtitle": "Füllen Sie die Details aus, um ein neues Benutzerkonto zu erstellen",
+            "subtitleWithCategory": "Füllen Sie die Details aus, um ein neues Benutzerkonto in der Kategorie {{category}} zu erstellen",
+            "form": {
+                "title": "Benutzerinformationen",
+                "firstName": {
+                    "label": "Vorname",
+                    "placeholder": "Geben Sie den Vornamen ein",
+                    "required": "Vorname ist erforderlich"
+                },
+                "lastName": {
+                    "label": "Nachname",
+                    "placeholder": "Geben Sie den Nachnamen ein",
+                    "required": "Nachname ist erforderlich"
+                },
+                "username": {
+                    "label": "Benutzername",
+                    "placeholder": "Geben Sie den Benutzernamen ein",
+                    "required": "Benutzername ist erforderlich",
+                    "minLength": "Benutzername muss mindestens 3 Zeichen lang sein"
+                },
+                "email": {
+                    "label": "Email",
+                    "placeholder": "Geben Sie die E-Mail ein",
+                    "required": "E-Mail ist erforderlich",
+                    "invalid": "Ungültiges E-Mail-Format"
+                },
+                "phone": {
+                    "label": "Telefon",
+                    "placeholder": "Geben Sie die Telefonnummer ein",
+                    "required": "Telefonnummer ist erforderlich",
+                    "invalid": "Ungültiges Telefonnummern-Format"
+                },
+                "role": {
+                    "label": "Rolle",
+                    "placeholder": "Rolle auswählen",
+                    "required": "Rolle ist erforderlich"
+                },
+                "workspaces": {
+                    "label": "Arbeitsbereiche",
+                    "placeholder": "Arbeitsbereiche auswählen",
+                    "required": "Bitte wählen Sie mindestens einen Arbeitsbereich aus",
+                    "noWorkspaces": "Keine Arbeitsbereiche verfügbar",
+                    "help": "Wählen Sie einen oder mehrere Arbeitsbereiche aus, auf die der Benutzer Zugriff haben wird"
+                },
+                "submit": "Benutzer erstellen",
+                "creating": "Benutzer wird erstellt..."
+            }
+        }
+    },
+    "agents": {
+        "title": "Agenten-Verwaltung",
+        "description": "Verwalten und überwachen Sie Ihre KI-Agenten",
+        "noAgentsAvailable": "Keine Agenten verfügbar.",
+        "noResultsFound": "Keine Agenten gefunden, die Ihrer Suche oder Ihren Filtern entsprechen.",
+        "noAgentsOnThisPage": "Keine Agenten auf dieser Seite anzuzeigen.",
+        "totalResults": "Gesamt: {{count}} Agenten",
+        "searchPlaceholder": "Nach Name, Framework oder Umgebung suchen..."
+    },
+    "pagination": {
+        "showing": "Anzeige von {{start}} bis {{end}} von {{total}} Elementen",
+        "total-per-page": "Gesamt pro Seite: {{count}}",
+        "previous": "Zurück",
+        "next": "Weiter",
+        "items-per-page": "Elemente pro Seite:",
+        "no-data": "Keine Daten verfügbar.",
+        "page": "Seite"
+    },
+    "auth": {
+        "signin": {
+            "title": "Anmelden",
+            "description": "Geben Sie Ihre Anmeldedaten ein, um auf Ihr Konto zuzugreifen",
+            "button": "Anmelden",
+            "link": "Anmelden"
+        },
+        "signup": {
+            "title": "Konto erstellen",
+            "description": "Erstellen Sie Ihr Konto, um zu starten",
+            "button": "Konto erstellen",
+            "link": "Registrieren"
+        },
+        "username": "Benutzername",
+        "firstName": "Vorname",
+        "lastName": "Nachname",
+        "profilePicture": "Profilbild",
+        "uploadPhoto": "Foto hochladen",
+        "password": "Passwort",
+        "confirmPassword": "Passwort bestätigen",
+        "usernamePlaceholder": "Geben Sie Ihren Benutzernamen ein",
+        "firstNamePlaceholder": "Geben Sie Ihren Vornamen ein",
+        "lastNamePlaceholder": "Geben Sie Ihren Nachnamen ein",
+        "passwordPlaceholder": "Geben Sie Ihr Passwort ein",
+        "confirmPasswordPlaceholder": "Bestätigen Sie Ihr Passwort",
+        "forgotPassword": "Passwort vergessen?",
+        "noAccount": "Sie haben kein Konto?",
+        "hasAccount": "Sie haben bereits ein Konto?",
+        "signingIn": "Anmeldung läuft...",
+        "signingUp": "Konto wird erstellt...",
+        "passwordsMatch": "Passwörter stimmen überein",
+        "passwordsDontMatch": "Passwörter stimmen nicht überein",
+        "requirements": {
+            "minLength": "Mindestens 8 Zeichen",
+            "uppercase": "Ein Großbuchstabe",
+            "lowercase": "Ein Kleinbuchstabe",
+            "number": "Eine Zahl"
+        },
+        "errors": {
+            "invalidCredentials": "Falscher Benutzername oder Passwort. Bitte versuchen Sie es erneut.",
+            "signupFailed": "Die Registrierung ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
+            "unauthorized": "Sie sind abgemeldet. Verbindung wird wiederhergestellt..."
+        },
+        "passwordRequirements": {
+            "title": "Passwort-Anforderungen",
+            "length": "Mindestens 8 Zeichen",
+            "uppercase": "Ein Großbuchstabe",
+            "lowercase": "Ein Kleinbuchstabe",
+            "number": "Eine Zahl"
+        }
+    },
+    "resetPassword": {
+        "title": "Passwort zurücksetzen",
+        "description": "Geben Sie Ihre E-Mail-Adresse ein, um Ihr Konto zu verifizieren",
+        "newPasswordTitle": "Neues Passwort festlegen",
+        "newPasswordDescription": "Geben Sie Ihr aktuelles Passwort ein und erstellen Sie ein neues",
+        "verifyEmail": "E-Mail verifizieren",
+        "verifying": "Wird verifiziert...",
+        "emailVerified": "E-Mail verifiziert",
+        "proceedToReset": "Sie können Ihr Passwort jetzt zurücksetzen",
+        "emailError": "Fehler bei der E-Mail-Verifizierung",
+        "emailNotFound": "E-Mail in unserem System nicht gefunden",
+        "resetPassword": "Passwort zurücksetzen",
+        "resetting": "Passwort wird zurückgesetzt...",
+        "success": "Passwort erfolgreich zurückgesetzt",
+        "successMessage": "Ihr Passwort wurde erfolgreich aktualisiert",
+        "error": "Fehler beim Zurücksetzen des Passworts",
+        "errorMessage": "Passwort konnte nicht zurückgesetzt werden",
+        "currentPasswordPlaceholder": "Geben Sie das aktuelle Passwort ein",
+        "newPasswordPlaceholder": "Geben Sie das neue Passwort ein",
+        "confirmPasswordPlaceholder": "Bestätigen Sie das neue Passwort",
+        "backToSignIn": "Zurück zur Anmeldung"
+    },
+    "dataBoard": {
+        "pagination": {
+            "total": "Gesamt: {{count}} Elemente",
+            "itemsPerPage": "Elemente pro Seite:",
+            "showing": "Anzeige von {{start}} bis {{end}} von {{total}} Elementen",
+            "previous": "← Zurück",
+            "next": "Weiter →"
+        },
+        "emptyState": "Keine Daten verfügbar.",
+        "table": {
+            "noResults": "Keine Ergebnisse gefunden"
+        }
+    },
+    "common": {
+        "loading": "Wird geladen...",
+        "pleaseWait": "Bitte warten...",
+        "search": "Suchen",
+        "submit": "Absenden",
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "delete": "Löschen",
+        "edit": "Bearbeiten",
+        "close": "Schließen",
+        "comingSoon": "Demnächst",
+        "underDevelopment": "Diese Funktion ist in Entwicklung",
+        "back": "Zurück"
+    },
+    "theme": {
+        "toggleToLight": "In den hellen Modus wechseln",
+        "toggleToDark": "In den dunklen Modus wechseln",
+        "theme": "Thema"
+    }
+}
