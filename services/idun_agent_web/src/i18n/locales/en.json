@@ -1,0 +1,865 @@
+{
+    "navigation": {
+        "agent": "Agent",
+        "guard": "Guard",
+        "api": "API",
+        "observation": "Observation",
+        "tools": "Tools",
+        "users": "Users",
+        "settings": "Settings",
+        "disconnect": "Disconnect"
+    },
+    "account": {
+        "info": {
+            "sub-title": "Your personal account"
+        }
+    },
+    "connected-app": {
+        "title": "Connected App",
+        "description": "Manage your connected apps.",
+        "button-marketplace": "Go to the app marketplace",
+        "navigation": {
+            "overview": "Overview",
+            "applications": "Applications"
+        },
+        "apps": {
+            "title": "Connect your first application.",
+            "description": "Visit the app marketplace to connect Idun Engine and the tools that grow your business.",
+            "first-install": "Install the first application"
+        },
+        "marketplace": {
+            "title": "App Marketplace",
+            "subtitle": "Discover and connect apps to Idun Engine.",
+            "all-apps": "All applications",
+            "by": "by",
+            "install": "Add application",
+            "description": "Description",
+            "search": {
+                "placeholder": "Search for applications..."
+            }
+        }
+    },
+    "header": {
+        "create": "Create",
+        "settings": "Settings",
+        "workspace": {
+            "select": "Select a workspace"
+        },
+        "environment": {
+            "select": "Select an environment",
+            "development": "Development",
+            "staging": "Staging",
+            "production": "Production"
+        }
+    },
+    "workspace": {
+        "none_selected": "No workspace selected",
+        "loading": "Loading workspace...",
+        "error": "Error while loading workspace"
+    },
+    "dashboard": {
+        "searchPlaceholder": "Type agent name or framework...",
+        "agent": {
+            "title": "Agent Dashboard",
+            "description": "Manage and monitor your AI agents",
+            "create": "Create an agent",
+            "edit": "Edit agent",
+            "delete": "Delete agent"
+        },
+        "search": {
+            "placeholder": "Type agent name or framework..."
+        },
+        "recommendations": {
+            "leadEnrichment": "Lead Enrichment",
+            "coldMailing": "Cold Email Generator",
+            "autoAnswer": "Auto Answer LN",
+            "customerSearch": "Customer Search",
+            "salesKpi": "Sales KPI",
+            "contentRewriter": "Content Rewriter",
+            "leadQualification": "Lead Qualification",
+            "customerJourney": "Customer Journey"
+        },
+        "table": {
+            "name": "Name",
+            "status": "Status",
+            "controls": "Controls",
+            "avgTime": "Average Time",
+            "environment": "Environment",
+            "errorRate": "Error Rate",
+            "source": "Source",
+            "framework": "Framework",
+            "a2a": "A2A",
+            "runs": "Runs",
+            "logs": "Logs",
+            "actions": "Actions"
+        },
+        "logs": {
+            "title": "Agent Logs",
+            "agentInfo": "Agent information",
+            "performance": "Performance metrics",
+            "recentLogs": "Recent logs",
+            "loaded": "loaded",
+            "loadingMore": "Loading more logs...",
+            "noMoreLogs": "No more logs to load"
+        },
+        "status": {
+            "active": "Active",
+            "pause": "Pause",
+            "disabled": "Disabled"
+        },
+        "environment": {
+            "all": "All",
+            "development": "Development",
+            "staging": "Staging",
+            "production": "Production"
+        },
+        "pagination": {
+            "showing": "Showing",
+            "to": "to",
+            "of": "of",
+            "agents": "agents",
+            "previous": "Previous",
+            "next": "Next"
+        },
+        "loading": "Loading agents...",
+        "error": "Error while loading",
+        "errorMessage": "Unable to load agents"
+    },
+    "categories": {
+        "selector": {
+            "placeholder": "All categories",
+            "all": "All categories",
+            "empty": "No categories available"
+        }
+    },
+    "sidebar": {
+        "agents": "Agents",
+        "guard": "Guard",
+        "api": "API",
+        "observation": "Observation",
+        "tools": "Tools",
+        "users": "Users",
+        "apps": "Apps"
+    },
+    "signin": {
+        "title": "Create an account",
+        "description": "Fill out the form to create your Idun Engine account.",
+        "firstName": {
+            "label": "First Name",
+            "placeholder": "Enter your first name"
+        },
+        "lastName": {
+            "label": "Last Name",
+            "placeholder": "Enter your last name"
+        },
+        "name": {
+            "label": "Username",
+            "placeholder": "Enter your username"
+        },
+        "email": {
+            "label": "Email address",
+            "placeholder": "Enter your email address"
+        },
+        "phone": {
+            "label": "Phone",
+            "placeholder": "Enter your phone number"
+        },
+        "password": {
+            "label": "Password",
+            "placeholder": "Enter your password"
+        },
+        "submit": "Create account"
+    },
+    "login": {
+        "title": "Login",
+        "description": "Login to your Idun Engine account.",
+        "email": "Email address",
+        "email.placeholder": "Enter your email address",
+        "password": "Password",
+        "rememberMe": "Remember me",
+        "password.placeholder": "Enter your password",
+        "submit": "Login"
+    },
+    "firstLogin": {
+        "title": "Set your password",
+        "subtitle": "For security reasons, please set a new password for your account",
+        "userEmail": "Account: {{email}}",
+        "form": {
+            "title": "Password setup",
+            "newPassword": {
+                "label": "New password",
+                "placeholder": "Enter your new password"
+            },
+            "confirmPassword": {
+                "label": "Confirm password",
+                "placeholder": "Confirm your new password"
+            },
+            "submit": "Set password",
+            "updating": "Updating..."
+        },
+        "validation": {
+            "newPassword": {
+                "required": "New password is required",
+                "minLength": "Password must be at least 8 characters long",
+                "weak": "Password is too weak"
+            },
+            "confirmPassword": {
+                "required": "Password confirmation is required",
+                "match": "Passwords do not match"
+            }
+        },
+        "password": {
+            "strength": {
+                "label": "Password strength",
+                "weak": "Weak",
+                "medium": "Medium",
+                "strong": "Strong"
+            },
+            "criteria": {
+                "length": "At least 8 characters",
+                "lowercase": "Contains lowercase letters",
+                "uppercase": "Contains uppercase letters",
+                "number": "Contains numbers",
+                "special": "Contains special characters"
+            }
+        },
+        "help": {
+            "title": "Password requirements",
+            "requirement1": "At least 8 characters",
+            "requirement2": "Mix of uppercase and lowercase letters",
+            "requirement3": "At least one number",
+            "requirement4": "At least one special character (!@#$%^&*)"
+        },
+        "success": {
+            "message": "Password updated successfully. You can now log in with your new password."
+        },
+        "error": {
+            "general": "Password update failed. Please try again."
+        }
+    },
+    "changePassword": {
+        "title": "Change password",
+        "subtitle": "Update your account's password"
+    },
+    "agent-form": {
+        "title": "Create a new agent",
+        "back": "Back",
+        "agentFormTitle": "Agent Form",
+        "general-info": "Select the source for your agent",
+        "tabs": {
+            "agent": "Agent",
+            "testing": "Testing"
+        },
+        "header": {
+            "title": "Create a new agent",
+            "subtitle": "Configure your agent's settings and behavior"
+        },
+        "generalInfo": "General Information",
+        "name": {
+            "label": "Agent Name",
+            "placeholder": "My first agent"
+        },
+        "description": {
+            "label": "Description",
+            "placeholder": "Describe what this agent does"
+        },
+        "framework": {
+            "label": "Framework",
+            "placeholder": "Select a framework",
+            "langgraph": "Langraph",
+            "smolagent": "SmolAgent",
+            "n8n": "N8N",
+            "adk": "ADK"
+        },
+        "source": {
+            "label": "Source",
+            "upload": "Upload",
+            "git": "Git",
+            "select-folder": "Select a folder",
+            "select-git-repo": "Select a Git repository",
+            "project": "Project",
+            "local": "Local",
+            "remote": "Remote",
+            "select-remote": "Select a remote repository",
+            "select-project-template": "Select a project"
+        },
+        "agent-path": {
+            "label": "Agent Path",
+            "placeholder": "Enter the agent path"
+        },
+        "checkpointConfig": "Checkpoint Configuration",
+        "availableAgents": "Available Agents",
+        "database-type": "Database Type",
+        "database-url": {
+            "label": "Database URL",
+            "placeholder": "Enter the database URL"
+        },
+        "status": "Status",
+        "run": "Run",
+        "testAgent": "My first agent",
+        "testInput": "Input",
+        "testOutput": "Output",
+        "testQuestion": "What's the weather like in Paris?",
+        "testResponse": "The current weather in Paris is 22°C with a partly cloudy sky. There is a light breeze from the southwest at 10 km/h. The humidity is 65% and visibility is good at 10km. No precipitation is expected for the next few hours.",
+        "viewTraces": "View traces",
+        "createAgent": "Create agent",
+        "creating": "Creating...",
+        "button": {
+            "create": "Create an agent",
+            "creating": "Creating..."
+        },
+        "success": {
+            "title": "Success",
+            "description": "Agent created successfully"
+        },
+        "error": {
+            "title": "Error",
+            "description": "Failed to create agent"
+        },
+        "placeholders": {
+            "repositoryUrl": "https://github.com/username/repository",
+            "branch": "main",
+            "path": "/src/agent",
+            "remoteUrl": "https://api.example.com/agent",
+            "authToken": "Bearer token or API key"
+        },
+        "sources": {
+            "selectType": "Select the source type for your agent code",
+            "configure": "Configure your {{sourceType}} source",
+            "import": {
+                "title": "Import an agent package",
+                "description": "Upload your agent as a ZIP file containing all the necessary code and configuration",
+                "label": "Import files",
+                "uploadDescription": "Upload a ZIP package",
+                "supportedFormat": "Supported format: ZIP files only",
+                "dropZone": "Drop your ZIP file here",
+                "orClickBrowse": "or click to browse",
+                "processing": "Processing ZIP file...",
+                "extracting": "Extracting agent files...",
+                "invalidFormat": "Only ZIP files are accepted",
+                "uploadSuccess": "ZIP package imported successfully",
+                "uploadError": "Error processing ZIP file",
+                "ready": "Package ready to use",
+                "zipStructureHelp": "Recommended structure: agent.py, requirements.txt, config.yaml inside your ZIP"
+            },
+            "github": {
+                "title": "Connect a GitHub repository",
+                "description": "Import agent code from your GitHub repository",
+                "label": "GitHub",
+                "uploadDescription": "Connect a repository",
+                "repositoryUrl": "Repository URL",
+                "branch": "Branch (optional)",
+                "path": "Path (optional)",
+                "connect": "Connect with GitHub"
+            },
+            "remote": {
+                "title": "Remote source",
+                "description": "Connect to a remote agent source",
+                "label": "Remote",
+                "uploadDescription": "Remote API source",
+                "remoteUrl": "Remote URL",
+                "authToken": "Authentication token (optional)",
+                "connect": "Connect remote source"
+            },
+            "project": {
+                "title": "Project template",
+                "description": "Use a pre-configured project template",
+                "label": "Project",
+                "uploadDescription": "Project template",
+                "templates": {
+                    "basicChat": {
+                        "name": "Basic chat agent",
+                        "description": "Simple conversational agent"
+                    },
+                    "documentProcessor": {
+                        "name": "Document processor",
+                        "description": "Agent for document analysis"
+                    },
+                    "dataAnalyst": {
+                        "name": "Data analyst",
+                        "description": "Agent for data processing"
+                    },
+                    "custom": {
+                        "name": "Custom template",
+                        "description": "Create from scratch"
+                    }
+                }
+            },
+            "selected": "selected source",
+            "configCompleted": "Source configuration completed"
+        },
+        "runTest": "Run test",
+        "saveTestCase": "Save test case"
+    },
+    "agentDetails": {
+        "backToAgents": "Back to agents",
+        "configure": "Configure",
+        "testAgent": "Test agent",
+        "pause": "Pause",
+        "tabs": {
+            "overview": "Overview",
+            "activity": "Activity",
+            "configuration": "Configuration",
+            "logs": "Logs",
+            "code": "Code"
+        },
+        "metrics": {
+            "totalRuns": "Total runs",
+            "successRate": "Success rate",
+            "avgResponseTime": "Average response time",
+            "uptime": "Uptime",
+            "todayRuns": "today",
+            "monthlyRuns": "this month",
+            "lastWeek": "compared to last week",
+            "lastDays": "last 7 days"
+        },
+        "charts": {
+            "dailyUsage": "Daily usage (last 7 days)",
+            "success": "Success",
+            "errors": "Errors"
+        },
+        "info": {
+            "title": "Agent information",
+            "framework": "Framework",
+            "source": "Source",
+            "tools": "Tools",
+            "lastRun": "Last run",
+            "observability": "Observability"
+        },
+        "activity": {
+            "title": "Recent activity",
+            "execution": "execution",
+            "deployment": "deployment"
+        },
+        "configuration": {
+            "general": "General configuration",
+            "langgraph": "LangGraph configuration",
+            "observability": "Observability",
+            "agentToAgent": "Agent to agent",
+            "streaming": "Streaming",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "inputSchema": "Input schema",
+            "outputSchema": "Output schema",
+            "parameters": "Parameters",
+            "checkpointType": "Checkpoint type",
+            "databasePath": "Database path",
+            "provider": "Provider",
+            "configuration": "Configuration"
+        },
+        "logs": {
+            "title": "Agent logs",
+            "export": "Export",
+            "viewInLangfuse": "View in Langfuse"
+        },
+        "status": {
+            "success": "success",
+            "error": "error",
+            "pending": "pending"
+        },
+        "timeAgo": {
+            "justNow": "Just now",
+            "minutesAgo": "{{count}}m ago",
+            "hoursAgo": "{{count}}h ago",
+            "daysAgo": "{{count}}d ago"
+        },
+        "code": {
+            "title": "Agent source code",
+            "saveChanges": "Save changes",
+            "reset": "Reset",
+            "modified": "Modified",
+            "file": "File",
+            "language": "Language",
+            "lines": "Lines"
+        },
+        "buttons": {
+            "testAgent": "Test agent",
+            "export": "Export",
+            "clear": "Clear",
+            "viewDetails": "View details",
+            "retry": "Retry"
+        },
+        "titles": {
+            "agentLogs": "Agent logs"
+        }
+    },
+    "settings": {
+        "title": "Settings",
+        "back_to_dashboard": "Back to dashboard",
+        "profile": {
+            "title": "Profile",
+            "description": "Manage your personal information and preferences.",
+            "name": {
+                "label": "Name",
+                "placeholder": "Your name"
+            },
+            "firstName": {
+                "label": "First Name",
+                "placeholder": "Your first name"
+            },
+            "lastName": {
+                "label": "Last Name",
+                "placeholder": "Your last name"
+            },
+            "email": {
+                "label": "Email",
+                "placeholder": "Your email address"
+            },
+            "phone": {
+                "label": "Phone",
+                "placeholder": "Your phone number"
+            },
+            "save": "Save"
+        },
+        "language": {
+            "title": "Language",
+            "description": "Choose your preferred language for the interface.",
+            "subtitle": "Select your language"
+        },
+        "notifications": {
+            "title": "Notifications",
+            "description": "Manage your notification preferences.",
+            "agents-status-changes": {
+                "label": "Agent status changes",
+                "sub-label": "Be notified when agents connect or disconnect"
+            },
+            "performance-alerts": {
+                "label": "Performance alerts",
+                "sub-label": "Receive alerts for performance threshold breaches"
+            },
+            "system-updates": {
+                "label": "System updates",
+                "sub-label": "Be notified of platform updates and maintenance"
+            },
+            "browser-notifications": {
+                "label": "Browser notifications",
+                "sub-label": "Receive notifications in the browser."
+            }
+        },
+        "security": {
+            "title": "Security",
+            "description": "Manage your security and privacy settings.",
+            "submit": "Update password",
+            "2FA": {
+                "label": "Two-factor authentication",
+                "description": "Add an extra layer of security to your account."
+            },
+            "alert": {
+                "label": "Security alerts",
+                "description": "Receive alerts for suspicious login attempts."
+            },
+            "current-assword": {
+                "label": "Current password",
+                "placeholder": "Enter your current password"
+            },
+            "new-password": {
+                "label": "New password",
+                "placeholder": "Enter your new password"
+            },
+            "confirm-password": {
+                "label": "Confirm new password",
+                "placeholder": "Confirm your new password"
+            }
+        },
+        "appearance": {
+            "title": "Appearance",
+            "description": "Customize the look and feel of your interface.",
+            "subtitle": "Theme selection",
+            "theme": {
+                "system": "System default",
+                "light": "Light theme",
+                "dark": "Dark theme"
+            },
+            "compact-mode": {
+                "label": "Compact mode",
+                "subLabel": "Display more content in less space."
+            },
+            "high-contrast-mode": {
+                "label": "High-contrast mode",
+                "subLabel": "Increase contrast for better visibility."
+            }
+        },
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email",
+        "phoneNumber": "Phone Number",
+        "country": "Country",
+        "changePassword": "Change password",
+        "currentPassword": "Current password",
+        "newPassword": "New password",
+        "confirmPassword": "Confirm password",
+        "saveChanges": "Save changes",
+        "deleteProfile": "Delete profile",
+        "changePicture": "Change",
+        "edit": "Edit",
+        "twoFactor": "Two-factor authentication",
+        "theme": "Theme",
+        "agentAlerts": "Agent status alerts",
+        "systemUpdates": "System updates",
+        "weeklyReports": "Weekly reports",
+        "languageDescription": "Choose your preferred language for the interface.",
+        "interfaceLanguage": "Interface language",
+        "languageNote": "This will change the language of all text in the application interface.",
+        "general": "General",
+        "displayName": "Display Name",
+        "profileDescription": "Manage your account information and preferences.",
+        "securityDescription": "Manage your password and security settings.",
+        "appearanceDescription": "Customize your interface theme and appearance preferences.",
+        "notificationsDescription": "Choose how you would like to be notified of activity.",
+        "themePreference": "Theme preference",
+        "systemDefault": "System default",
+        "light": "Light",
+        "dark": "Dark",
+        "compactModeDescription": "Display more content in less space.",
+        "highContrastDescription": "Increase contrast for better visibility.",
+        "agentStatusChanges": "Agent status changes",
+        "agentStatusChangesDesc": "Be notified when agents connect or disconnect",
+        "performanceAlerts": "Performance alerts",
+        "performanceAlertsDesc": "Receive alerts for performance threshold breaches",
+        "systemUpdatesDesc": "Be notified of platform updates and maintenance",
+        "browserNotifications": "Browser notifications",
+        "browserNotificationsDesc": "Display notifications in your browser",
+        "switch-account": "Switch account"
+    },
+    "guard": {
+        "title": "Guard System",
+        "description": "Monitor and control agent access and permissions",
+        "activeGuards": "Active guards",
+        "securityPolicies": "Security policies",
+        "accessLogs": "Access logs",
+        "threatDetection": "Threat detection"
+    },
+    "api": {
+        "title": "API Management",
+        "description": "Manage API endpoints and integrations",
+        "endpoints": "Endpoints",
+        "apiKeys": "API keys",
+        "documentation": "Documentation",
+        "rateLimits": "Rate limits",
+        "usage": "Usage statistics"
+    },
+    "observation": {
+        "title": "Observation Center",
+        "description": "Monitor agent performance and behavior",
+        "metrics": "Metrics",
+        "logs": "Logs",
+        "performance": "Performance",
+        "alerts": "Alerts",
+        "analytics": "Analytics"
+    },
+    "tools": {
+        "title": "Tools and Utilities",
+        "description": "Available tools and utilities for agent development",
+        "developmentTools": "Development tools",
+        "debugger": "Debugger",
+        "testingSuite": "Testing suite",
+        "codeGenerator": "Code generator",
+        "utilities": "Utilities"
+    },
+    "users": {
+        "title": "User Management",
+        "description": "Manage system users and permissions",
+        "allUsers": "All users",
+        "roles": "Roles",
+        "role": {
+            "admin": "Administrator",
+            "user": "User",
+            "guest": "Guest",
+            "editor": "Editor",
+            "viewer": "Viewer"
+        },
+        "permissions": "Permissions",
+        "invitations": "Invitations",
+        "activity": "User activity",
+        "totalResults": "Total: {{count}} users",
+        "noUsers": "No users available.",
+        "noResultsFound": "No users found matching your search.",
+        "cta": "Add user",
+        "searchPlaceholder": "Search users by name, email or role...",
+        "search": {
+            "placeholder": "Search users by name, email or role..."
+        },
+        "column": {
+            "lastName": "Last Name",
+            "firstName": "First Name",
+            "userName": "Username",
+            "email": "Email",
+            "phone": "Phone",
+            "role": "Role",
+            "actions": "Actions"
+        },
+        "create": {
+            "title": "Create user",
+            "subtitle": "Fill in the details to create a new user account",
+            "subtitleWithCategory": "Fill in the details to create a new user account in category {{category}}",
+            "form": {
+                "title": "User information",
+                "firstName": {
+                    "label": "First Name",
+                    "placeholder": "Enter first name",
+                    "required": "First name is required"
+                },
+                "lastName": {
+                    "label": "Last Name",
+                    "placeholder": "Enter last name",
+                    "required": "Last name is required"
+                },
+                "username": {
+                    "label": "Username",
+                    "placeholder": "Enter username",
+                    "required": "Username is required",
+                    "minLength": "Username must be at least 3 characters"
+                },
+                "email": {
+                    "label": "Email",
+                    "placeholder": "Enter email",
+                    "required": "Email is required",
+                    "invalid": "Invalid email format"
+                },
+                "phone": {
+                    "label": "Phone",
+                    "placeholder": "Enter phone number",
+                    "required": "Phone number is required",
+                    "invalid": "Invalid phone number format"
+                },
+                "role": {
+                    "label": "Role",
+                    "placeholder": "Select role",
+                    "required": "Role is required"
+                },
+                "workspaces": {
+                    "label": "Workspaces",
+                    "placeholder": "Select workspaces",
+                    "required": "Please select at least one workspace",
+                    "noWorkspaces": "No workspaces available",
+                    "help": "Select one or more workspaces the user will have access to"
+                },
+                "submit": "Create user",
+                "creating": "Creating user..."
+            }
+        }
+    },
+    "agents": {
+        "title": "Agent Management",
+        "description": "Manage and monitor your AI agents",
+        "noAgentsAvailable": "No agents available.",
+        "noResultsFound": "No agents found matching your search or filters.",
+        "noAgentsOnThisPage": "No agents to display on this page.",
+        "totalResults": "Total: {{count}} agents",
+        "searchPlaceholder": "Search by name, framework, or environment..."
+    },
+    "pagination": {
+        "showing": "Showing {{start}} to {{end}} of {{total}} items",
+        "total-per-page": "Total per page: {{count}}",
+        "previous": "Previous",
+        "next": "Next",
+        "items-per-page": "Items per page:",
+        "no-data": "No data available.",
+        "page": "Page"
+    },
+    "auth": {
+        "signin": {
+            "title": "Sign in",
+            "description": "Enter your credentials to access your account",
+            "button": "Sign in",
+            "link": "Sign in"
+        },
+        "signup": {
+            "title": "Create an account",
+            "description": "Create your account to get started",
+            "button": "Create account",
+            "link": "Sign up"
+        },
+        "username": "Username",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "profilePicture": "Profile Picture",
+        "uploadPhoto": "Upload photo",
+        "password": "Password",
+        "confirmPassword": "Confirm password",
+        "usernamePlaceholder": "Enter your username",
+        "firstNamePlaceholder": "Enter your first name",
+        "lastNamePlaceholder": "Enter your last name",
+        "passwordPlaceholder": "Enter your password",
+        "confirmPasswordPlaceholder": "Confirm your password",
+        "forgotPassword": "Forgot password?",
+        "noAccount": "Don't have an account?",
+        "hasAccount": "Already have an account?",
+        "signingIn": "Signing in...",
+        "signingUp": "Creating account...",
+        "passwordsMatch": "Passwords match",
+        "passwordsDontMatch": "Passwords don't match",
+        "requirements": {
+            "minLength": "At least 8 characters",
+            "uppercase": "One uppercase letter",
+            "lowercase": "One lowercase letter",
+            "number": "One number"
+        },
+        "errors": {
+            "invalidCredentials": "Incorrect username or password. Please try again.",
+            "signupFailed": "Signup failed. Please try again.",
+            "unauthorized": "You are logged out. Reconnecting..."
+        },
+        "passwordRequirements": {
+            "title": "Password requirements",
+            "length": "At least 8 characters",
+            "uppercase": "One uppercase letter",
+            "lowercase": "One lowercase letter",
+            "number": "One number"
+        }
+    },
+    "resetPassword": {
+        "title": "Reset password",
+        "description": "Enter your email address to verify your account",
+        "newPasswordTitle": "Set a new password",
+        "newPasswordDescription": "Enter your current password and create a new one",
+        "verifyEmail": "Verify email",
+        "verifying": "Verifying...",
+        "emailVerified": "Email verified",
+        "proceedToReset": "You can now reset your password",
+        "emailError": "Email verification failed",
+        "emailNotFound": "Email not found in our system",
+        "resetPassword": "Reset password",
+        "resetting": "Resetting password...",
+        "success": "Password reset successful",
+        "successMessage": "Your password has been successfully updated",
+        "error": "Password reset failed",
+        "errorMessage": "Unable to reset password",
+        "currentPasswordPlaceholder": "Enter current password",
+        "newPasswordPlaceholder": "Enter new password",
+        "confirmPasswordPlaceholder": "Confirm new password",
+        "backToSignIn": "Back to sign in"
+    },
+    "dataBoard": {
+        "pagination": {
+            "total": "Total: {{count}} items",
+            "itemsPerPage": "Items per page:",
+            "showing": "Showing {{start}} to {{end}} of {{total}} items",
+            "previous": "← Previous",
+            "next": "Next →"
+        },
+        "emptyState": "No data available.",
+        "table": {
+            "noResults": "No results found"
+        }
+    },
+    "common": {
+        "loading": "Loading...",
+        "pleaseWait": "Please wait...",
+        "search": "Search",
+        "submit": "Submit",
+        "cancel": "Cancel",
+        "save": "Save",
+        "delete": "Delete",
+        "edit": "Edit",
+        "close": "Close",
+        "comingSoon": "Coming soon",
+        "underDevelopment": "This feature is under development",
+        "back": "Back"
+    },
+    "theme": {
+        "toggleToLight": "Switch to light mode",
+        "toggleToDark": "Switch to dark mode",
+        "theme": "Theme"
+    }
+}
