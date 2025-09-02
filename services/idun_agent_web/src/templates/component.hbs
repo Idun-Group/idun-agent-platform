@@ -1,24 +1,27 @@
 import React from "react"; import { useTranslation } from "react-i18next";
 
 {{#if (eq withProps true)}}
-    type
-    {{pascalCase name}}Props = { // config your component props here };
+type {{pascalCase name}}Props = {
+    // config your component props here
+};
 {{/if}}
 
 {{#if (eq isStyled true)}}
-    import styled from "styled-components"; export const
-    {{pascalCase name}}
-    = styled.div` // Add your styled component styles here `;
+import styled from "styled-components";
+
+export const {{pascalCase name}} = styled.div`
+    // Add your styled component styles here
+`;
+
 {{else}}
-    const
-    {{pascalCase name}}{{#if (eq type 'page')}}Page{{/if}}
-    = (
-    {{#if withProps}}{}: {{pascalCase name}}Props{{else}}{{/if}}
-    ) => { const { t } = useTranslation(); return (
-    <div>
-        {/* Your component implementation here */}
-        <h1>{{pascalCase name}} Component</h1>
-    </div>
-    ); }; export default
-    {{pascalCase name}}{{#if (eq type 'page')}}Page{{/if}};
+const {{pascalCase name}}{{#if (eq type 'page')}}Page{{/if}} = ({{#if withProps}}{}: {{pascalCase name}}Props{{else}}{{/if}}) => {
+    const { t } = useTranslation(); return (
+        <div>
+            {/* Your component implementation here */}
+            <h1>{{pascalCase name}} Component</h1>
+        </div>
+    );
+};
+
+export default {{pascalCase name}}{{#if (eq type 'page')}}Page{{/if}};
 {{/if}}
