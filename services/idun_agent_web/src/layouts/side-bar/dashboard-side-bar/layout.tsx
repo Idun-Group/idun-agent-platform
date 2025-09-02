@@ -154,7 +154,7 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
         `
         background: #8C52FF14;
         border-left: 4px solid #8C52FF;
-    
+
     `}
 
     ${(props) =>
