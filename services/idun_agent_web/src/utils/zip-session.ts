@@ -1,5 +1,6 @@
 // zipUtils.ts
 import { unzipSync, zipSync, strFromU8, strToU8 } from 'fflate';
+import JSZip from 'jszip';
 
 export type FileEntry = { path: string; isDir: boolean };
 // ---- build a proper tree from flat paths ----
@@ -113,4 +114,24 @@ export function makeZipBlob(files: Map<string, Uint8Array>, dirs: Set<string>) {
     const copy = new Uint8Array(zipped.byteLength);
     copy.set(zipped);
     return new Blob([copy.buffer], { type: 'application/zip' });
+}
+
+export async function getAllFilePathFromZip(
+    file: File | Blob | ArrayBuffer,
+    extensions: string = ''
+): Promise<string[]> {
+    const zip = new JSZip();
+    // Convertir en ArrayBuffer si nécessaire
+    const buffer =
+        file instanceof File || file instanceof Blob
+            ? await file.arrayBuffer()
+            : file;
+    const contents = await zip.loadAsync(buffer);
+    return Object.keys(contents.files)
+        .filter(
+            (path) =>
+                !contents.files[path].dir &&
+                (!extensions || path.toLowerCase().endsWith(`.${extensions}`))
+        )
+        .map((p) => `./${p}`.replace(/\\/g, '/'));
 }

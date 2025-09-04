@@ -9,31 +9,48 @@ import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import {
     Form,
+    FormSelect,
     FormTextArea,
     TextInput,
 } from '../../components/general/form/component';
 
 export default function AgentFormPage() {
     const [name, setName] = useState<string>('');
-    const [description, setDescription] = useState<string>('');
     const [databaseUrl, setDatabaseUrl] = useState<string | null>(null);
     const [agentPath, setAgentPath] = useState<string>('');
     const [selectedFramework, setSelectedFramework] = useState<string | null>(
         null
     );
+    const [selectedObservabilityProvider, setSelectedObservabilityProvider] =
+        useState<string | null>(null);
     const { selectedAgentFile } = useAgentFile();
+
+    const [graphDefinitionPath, setGraphDefinitionPath] = useState<string>();
 
     const [availableFrameworks, setAvailableFrameworks] = useState<any[]>([]);
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [selectedSourceType, setSelectedSourceType] = useState<
         'upload' | 'Git' | 'remote' | 'project'
     >('upload');
+    const [pyFiles, setPyFiles] = useState<string[]>([]);
+
+    const handleChangesPyfiles = (files: string[]) => {
+        setPyFiles(files);
+
+        console.log('Python files in ZIP:', files);
+    };
+
     const handleSourceClick = (
         sourceType: 'upload' | 'Git' | 'remote' | 'project'
     ) => {
         setSelectedSourceType(sourceType);
         setIsPopupOpen(true);
     };
+
+    const [langfusePublicKey, setLangfusePublicKey] = useState<string>('');
+    const [langfuseHost, setLangfuseHost] = useState<string>('');
+    const [langfuseSecretKey, setLangfuseSecretKey] = useState<string>('');
+    const [langfuseRunName, setLangfuseRunName] = useState<string>('');
 
     const [dbUrlError, setDbUrlError] = useState<string | null>(null);
     const handleDatabaseUrlChange = (
@@ -114,7 +131,6 @@ export default function AgentFormPage() {
         const formData = new FormData();
         if (selectedAgentFile && selectedFramework) {
             formData.append('name', name);
-            formData.append('description', description);
             formData.append('databaseUrl', databaseUrl || '');
             formData.append('agentPath', agentPath);
             formData.append('selectedFramework', selectedFramework);
@@ -161,14 +177,16 @@ export default function AgentFormPage() {
                     onChange={(e) => setName(e.target.value)}
                 />
 
-                <FormTextArea
-                    label={t('agent-form.description.label')}
-                    placeholder={t('agent-form.description.placeholder')}
-                    rows={4}
-                    required
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                />
+                {/*
+                    <FormTextArea
+                        label={t('agent-form.description.label')}
+                        placeholder={t('agent-form.description.placeholder')}
+                        rows={4}
+                        required
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                    />
+                */}
 
                 <SourceLabel>{t('agent-form.source.label')}</SourceLabel>
                 <SourceSection>
@@ -235,6 +253,16 @@ export default function AgentFormPage() {
                         </p>
                     </SourceCard>
                 </SourceSection>
+
+                <FormSelect label={t('agent-form.graph-definition-path.label')}>
+                    <option value="">-- Select --</option>
+                    {pyFiles.map((file) => (
+                        <option key={file} value={file}>
+                            {file}
+                        </option>
+                    ))}
+                </FormSelect>
+
                 <Label>
                     {t('agent-form.framework.label')}
                     <SelectButtonContainer>
@@ -242,6 +270,7 @@ export default function AgentFormPage() {
                             <SelectButton
                                 $variants="base"
                                 $color="secondary"
+                                type="button"
                                 onClick={() =>
                                     setSelectedFramework(framework.id)
                                 }
@@ -253,6 +282,90 @@ export default function AgentFormPage() {
                         ))}
                     </SelectButtonContainer>
                 </Label>
+
+                <Label>
+                    {t('agent-form.observability.label')}
+                    <SelectButtonContainer>
+                        <SelectButton
+                            $variants="base"
+                            type="button"
+                            $color="secondary"
+                            onClick={() =>
+                                setSelectedObservabilityProvider(null)
+                            }
+                            selected={selectedObservabilityProvider === null}
+                        >
+                            {t('agent-form.observability.none')}
+                        </SelectButton>
+                        <SelectButton
+                            $variants="base"
+                            $color="secondary"
+                            type="button"
+                            onClick={() =>
+                                setSelectedObservabilityProvider('langfuse')
+                            }
+                            selected={
+                                selectedObservabilityProvider === 'langfuse'
+                            }
+                        >
+                            Langfuse
+                        </SelectButton>
+                        <SelectButton
+                            $variants="base"
+                            $color="secondary"
+                            type="button"
+                            onClick={() =>
+                                setSelectedObservabilityProvider('phoenix')
+                            }
+                            selected={
+                                selectedObservabilityProvider === 'phoenix'
+                            }
+                        >
+                            Phoenix
+                        </SelectButton>
+                    </SelectButtonContainer>
+                </Label>
+
+                {selectedObservabilityProvider === 'langfuse' && (
+                    <>
+                        <TextInput
+                            label={t('agent-form.langfuse.host.label')}
+                            placeholder={t(
+                                'agent-form.langfuse.host.placeholder'
+                            )}
+                            value={langfuseHost}
+                            onChange={(e) => setLangfuseHost(e.target.value)}
+                        />
+                        <TextInput
+                            label={t('agent-form.langfuse.public-key.label')}
+                            placeholder={t(
+                                'agent-form.langfuse.public-key.placeholder'
+                            )}
+                            value={langfusePublicKey}
+                            onChange={(e) =>
+                                setLangfusePublicKey(e.target.value)
+                            }
+                        />
+                        <TextInput
+                            label={t('agent-form.langfuse.secret-key.label')}
+                            placeholder={t(
+                                'agent-form.langfuse.secret-key.placeholder'
+                            )}
+                            value={langfuseSecretKey}
+                            onChange={(e) =>
+                                setLangfuseSecretKey(e.target.value)
+                            }
+                        />
+                        <TextInput
+                            label={t('agent-form.langfuse.run-name.label')}
+                            placeholder={t(
+                                'agent-form.langfuse.run-name.placeholder'
+                            )}
+                            value={langfuseRunName}
+                            onChange={(e) => setLangfuseRunName(e.target.value)}
+                        />
+                    </>
+                )}
 
                 <TextInput
                     label={t('agent-form.agent-path.label')}
@@ -268,6 +381,7 @@ export default function AgentFormPage() {
                             <SelectButton
                                 $variants="base"
                                 $color="secondary"
+                                type="button"
                                 onClick={() =>
                                     setSelectedDatabaseType(
                                         dbType.id as
@@ -302,6 +416,7 @@ export default function AgentFormPage() {
             <SourcePopup
                 isOpen={isPopupOpen}
                 onClose={handleClosePopup}
+                onChangeZip={handleChangesPyfiles}
                 sourceType={selectedSourceType}
             />
         </MainContainer>

@@ -222,6 +222,7 @@
                 "placeholder": "Entrez votre biographie"
             }
         },
+
         "permissions": {
             "legend": "Permissions",
             "agent-management": {
@@ -331,6 +332,10 @@
         "header": {
             "title": "Créer un nouvel agent",
             "subtitle": "Configurez les paramètres et le comportement de votre agent"
+        },
+        "graph-definition-path": {
+            "label": "Chemin de la définition du graphe",
+            "placeholder": "Sélectionnez le chemin du fichier de définition du graphe"
         },
         "generalInfo": "Informations générales",
         "name": {

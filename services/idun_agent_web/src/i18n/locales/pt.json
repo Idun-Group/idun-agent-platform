@@ -361,6 +361,10 @@
             "select-remote": "Selecionar um repositório remoto",
             "select-project-template": "Selecionar um projeto"
         },
+        "graph-definition-path": {
+            "label": "Caminho da definição do gráfico",
+            "placeholder": "SSelecione o caminho do arquivo de definição do gráfico"
+        },
         "agent-path": {
             "label": "Caminho do agente",
             "placeholder": "Digite o caminho do agente"

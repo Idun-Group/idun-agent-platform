@@ -328,6 +328,10 @@
             "agent": "Agent",
             "testing": "Test"
         },
+        "graph-definition-path": {
+            "label": "Pfad zur Graph-Definition",
+            "placeholder": "Wählen Sie den Pfad zur Graph-Definitionsdatei aus"
+        },
         "header": {
             "title": "Neuen Agenten erstellen",
             "subtitle": "Konfigurieren Sie die Einstellungen und das Verhalten Ihres Agenten"

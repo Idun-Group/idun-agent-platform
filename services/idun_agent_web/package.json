@@ -16,6 +16,7 @@
         "@monaco-editor/react": "^4.7.0",
         "fflate": "^0.8.2",
         "i18next": "^25.3.2",
+        "jszip": "^3.10.1",
         "lucide-react": "^0.525.0",
         "monaco-editor": "^0.52.2",
         "react": "^19.1.0",
