@@ -132,6 +132,13 @@ export default function AgentFormPage() {
     const handleSubmitForm = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
+        console.log('Submitting form with step:', step);
+
+        if (step < 1) {
+            setStep((s) => s + 1);
+            return;
+        }
+
         const formData = new FormData();
         if (selectedAgentFile && selectedFramework) {
             formData.append('name', name);
@@ -181,7 +188,24 @@ export default function AgentFormPage() {
                 <StepLabel>{t('agent-form.tabs.observability')}</StepLabel>
             </StepsWrapper>
 
-            <Form onSubmit={handleSubmitForm}>
+            <Form
+                onSubmit={handleSubmitForm}
+                onKeyDown={(e: React.KeyboardEvent<HTMLFormElement>) => {
+                    // Prevent Enter from submitting the whole form on intermediate steps.
+                    if (e.key === 'Enter') {
+                        const target = e.target as HTMLElement;
+                        const tag = (target.tagName || '').toLowerCase();
+
+                        // Only intercept Enter for inputs/selects (allow Enter in textareas)
+                        if (tag === 'input' || tag === 'select') {
+                            if (step < 1) {
+                                e.preventDefault();
+                                setStep((s) => s + 1);
+                            }
+                        }
+                    }
+                }}
+            >
                 {step === 0 && (
                     <>
                         <h2>{t('agent-form.general-info')}</h2>
@@ -492,40 +516,52 @@ export default function AgentFormPage() {
                 )}
 
                 <ButtonContainer>
-                    {step > 0 ? (
-                        <Button
-                            $variants="base"
-                            $color="secondary"
-                            type="button"
-                            onClick={() => setStep((s) => s - 1)}
-                        >
-                            {t('agent-form.previous') || 'Previous'}
-                        </Button>
-                    ) : (
-                        <Button
-                            $variants="base"
-                            $color="primary"
-                            type="button"
-                            onClick={() => setIsPopupOpen(true)}
-                        >
-                            {t('agent-form.open-source-popup') || 'Source'}
-                        </Button>
-                    )}
-
-                    {step < 1 ? (
-                        <Button
-                            $variants="base"
-                            $color="primary"
-                            type="button"
-                            onClick={() => setStep((s) => s + 1)}
-                        >
-                            {t('agent-form.next') || 'Next'}
-                        </Button>
-                    ) : (
-                        <Button $variants="base" $color="primary" type="submit">
-                            {t('agent-form.create-agent')}
-                        </Button>
-                    )}
+                    {
+                        {
+                            0: (
+                                <>
+                                    <Button
+                                        $variants="base"
+                                        $color="primary"
+                                        type="button"
+                                        onClick={() => setIsPopupOpen(true)}
+                                    >
+                                        {t('agent-form.open-source-popup') ||
+                                            'Source'}
+                                    </Button>
+                                    <Button
+                                        $variants="base"
+                                        $color="primary"
+                                        type="button"
+                                        onClick={() => setStep((s) => s + 1)}
+                                    >
+                                        {t('agent-form.next') || 'Next'}
+                                    </Button>
+                                </>
+                            ),
+                            1: (
+                                <>
+                                    <Button
+                                        $variants="base"
+                                        $color="primary"
+                                        type="button"
+                                        onClick={() => setStep((s) => s - 1)}
+                                    >
+                                        {t('agent-form.back') || 'Back'}
+                                    </Button>
+                                    <Button
+                                        $variants="base"
+                                        $color="primary"
+                                        type="submit"
+                                        disabled={!selectedAgentFile}
+                                    >
+                                        {t('agent-form.create-agent') ||
+                                            'Create Agent'}
+                                    </Button>
+                                </>
+                            ),
+                        }[step]
+                    }
                 </ButtonContainer>
             </Form>
 
@@ -666,6 +702,7 @@ const ButtonContainer = styled.div`
     justify-content: flex-end;
     margin-top: 32px;
     padding-top: 32px;
+    gap: 8px;
     border-top: 1px solid var(--color-border-primary, #2a3f5f);
 `;
 

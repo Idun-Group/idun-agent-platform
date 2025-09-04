@@ -325,6 +325,7 @@
         "back": "Retour",
         "agentFormTitle": "Formulaire d'agent",
         "description": "Configurez les paramètres et le comportement de votre agent",
+        "open-source-popup": "Ouvrir la fenêtre des sources",
         "general-info": "Sélectionnez la source de votre agent",
         "tabs": {
             "agent": "Agent",
