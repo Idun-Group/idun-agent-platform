@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: idun_agents
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "55432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - idun_network
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - idun_network
+
+
+  # Development container - runs the FastAPI server
+  agent-manager-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    environment:
+      - DATABASE__URL=postgresql+asyncpg://postgres:postgres@postgres:5432/idun_agents
+      - REDIS__URL=redis://redis:6379/0
+      - AUTH__SECRET_KEY=your-super-secret-key-at-least-32-characters-long-dev
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - PYTHONPATH=/app/src
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./pyproject.toml:/app/pyproject.toml
+      # Persist uv cache and the virtual environment
+      - uv_cache:/root/.cache/uv
+      - uv_venv:/app/.venv
+    working_dir: /app
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+    networks:
+      - idun_network
+
+  # CLI container for running commands (migrations, tests, etc.)
+  agent-manager-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    environment:
+      - DATABASE__URL=postgresql+asyncpg://postgres:postgres@postgres:5432/idun_agents
+      - REDIS__URL=redis://redis:6379/0
+      - AUTH__SECRET_KEY=your-super-secret-key-at-least-32-characters-long-dev
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - PYTHONPATH=/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Mount source code
+      - ./src:/app/src
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./tests:/app/tests
+      # Persist uv cache and the virtual environment
+      - uv_cache:/root/.cache/uv
+      - uv_venv:/app/.venv
+    working_dir: /app
+    # Keep container running for exec commands
+    command: tail -f /dev/null
+    profiles:
+      - cli
+    networks:
+      - idun_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  uv_cache:
+  uv_venv:
+
+networks:
+  idun_network:
+    driver: bridge 
