@@ -11,8 +11,10 @@ import {
     Form,
     FormSelect,
     FormTextArea,
+    LabeledToggleButton,
     TextInput,
 } from '../../components/general/form/component';
+import ToggleButton from '../../components/general/toggle-button/component';
 
 export default function AgentFormPage() {
     const [name, setName] = useState<string>('');
@@ -46,6 +48,8 @@ export default function AgentFormPage() {
         setSelectedSourceType(sourceType);
         setIsPopupOpen(true);
     };
+
+    const [isObservabilityEnabled, setIsObservabilityEnabled] = useState(false);
 
     const [langfusePublicKey, setLangfusePublicKey] = useState<string>('');
     const [langfuseHost, setLangfuseHost] = useState<string>('');
@@ -159,6 +163,8 @@ export default function AgentFormPage() {
         console.log('Form submitted:', formData);
     };
 
+    const [step, setStep] = useState(0);
+
     return (
         <MainContainer>
             <Header>
@@ -166,250 +172,360 @@ export default function AgentFormPage() {
                 <p>{t('agent-form.description')}</p>
             </Header>
 
+            {/* Steps indicator */}
+            <StepsWrapper>
+                <StepDot active={step === 0}>1</StepDot>
+                <StepLabel>{t('agent-form.tabs.agent')}</StepLabel>
+                <StepSeparator />
+                <StepDot active={step === 1}>2</StepDot>
+                <StepLabel>{t('agent-form.tabs.observability')}</StepLabel>
+            </StepsWrapper>
+
             <Form onSubmit={handleSubmitForm}>
-                <h2>{t('agent-form.general-info')}</h2>
-
-                <TextInput
-                    label={t('agent-form.name.label')}
-                    placeholder={t('agent-form.name.placeholder')}
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                />
-
-                {/*
-                    <FormTextArea
-                        label={t('agent-form.description.label')}
-                        placeholder={t('agent-form.description.placeholder')}
-                        rows={4}
-                        required
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                    />
-                */}
-
-                <SourceLabel>{t('agent-form.source.label')}</SourceLabel>
-                <SourceSection>
-                    <SourceCard onClick={() => handleSourceClick('upload')}>
-                        <UploadIcon />
-                        <p>
-                            {t('agent-form.source.upload')}
-                            <br />
-                            {selectedAgentFile &&
-                            selectedAgentFile.source == 'Folder' ? (
-                                <span>{selectedAgentFile.file.name}</span>
-                            ) : (
-                                <span>
-                                    {t('agent-form.source.select-folder')}
-                                </span>
-                            )}
-                        </p>
-                    </SourceCard>
-                    <SourceCard onClick={() => handleSourceClick('Git')}>
-                        <GithubIcon />
-                        <p>
-                            {t('agent-form.source.git')}
-                            <br />
-                            {selectedAgentFile &&
-                            selectedAgentFile.source == 'Git' ? (
-                                <span>{selectedAgentFile.file.name}</span>
-                            ) : (
-                                <span>
-                                    {t('agent-form.source.select-git-repo')}
-                                </span>
-                            )}
-                        </p>
-                    </SourceCard>
-                    <SourceCard onClick={() => handleSourceClick('remote')}>
-                        <NetworkIcon />
-                        <p>
-                            {t('agent-form.source.remote')}
-                            <br />
-                            {selectedAgentFile &&
-                            selectedAgentFile.source == 'Remote' ? (
-                                <span>{selectedAgentFile.file.name}</span>
-                            ) : (
-                                <span>
-                                    {t('agent-form.source.select-remote')}
-                                </span>
-                            )}
-                        </p>
-                    </SourceCard>
-                    <SourceCard onClick={() => handleSourceClick('project')}>
-                        <FolderIcon />
-                        <p>
-                            {t('agent-form.source.project')}
-                            <br />
-                            {selectedAgentFile &&
-                            selectedAgentFile.source == 'Project' ? (
-                                <span>{selectedAgentFile.file.name}</span>
-                            ) : (
-                                <span>
-                                    {t(
-                                        'agent-form.source.select-project-template'
-                                    )}
-                                </span>
-                            )}
-                        </p>
-                    </SourceCard>
-                </SourceSection>
-
-                <FormSelect label={t('agent-form.graph-definition-path.label')}>
-                    <option value="">-- Select --</option>
-                    {pyFiles.map((file) => (
-                        <option key={file} value={file}>
-                            {file}
-                        </option>
-                    ))}
-                </FormSelect>
-
-                <Label>
-                    {t('agent-form.framework.label')}
-                    <SelectButtonContainer>
-                        {availableFrameworks.map((framework) => (
-                            <SelectButton
-                                $variants="base"
-                                $color="secondary"
-                                type="button"
-                                onClick={() =>
-                                    setSelectedFramework(framework.id)
-                                }
-                                selected={selectedFramework === framework.id}
-                                key={framework.id}
-                            >
-                                {framework.name}
-                            </SelectButton>
-                        ))}
-                    </SelectButtonContainer>
-                </Label>
-
-                <Label>
-                    {t('agent-form.observability.label')}
-                    <SelectButtonContainer>
-                        <SelectButton
-                            $variants="base"
-                            type="button"
-                            $color="secondary"
-                            onClick={() =>
-                                setSelectedObservabilityProvider(null)
-                            }
-                            selected={selectedObservabilityProvider === null}
-                        >
-                            {t('agent-form.observability.none')}
-                        </SelectButton>
-                        <SelectButton
-                            $variants="base"
-                            $color="secondary"
-                            type="button"
-                            onClick={() =>
-                                setSelectedObservabilityProvider('langfuse')
-                            }
-                            selected={
-                                selectedObservabilityProvider === 'langfuse'
-                            }
-                        >
-                            Langfuse
-                        </SelectButton>
-                        <SelectButton
-                            $variants="base"
-                            $color="secondary"
-                            type="button"
-                            onClick={() =>
-                                setSelectedObservabilityProvider('phoenix')
-                            }
-                            selected={
-                                selectedObservabilityProvider === 'phoenix'
-                            }
-                        >
-                            Phoenix
-                        </SelectButton>
-                    </SelectButtonContainer>
-                </Label>
-
-                {selectedObservabilityProvider === 'langfuse' && (
+                {step === 0 && (
                     <>
+                        <h2>{t('agent-form.general-info')}</h2>
+
                         <TextInput
-                            label={t('agent-form.langfuse.host.label')}
-                            placeholder={t(
-                                'agent-form.langfuse.host.placeholder'
-                            )}
-                            value={langfuseHost}
-                            onChange={(e) => setLangfuseHost(e.target.value)}
+                            label={t('agent-form.name.label')}
+                            placeholder={t('agent-form.name.placeholder')}
+                            required
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
                         />
+
+                        <SourceLabel>
+                            {t('agent-form.source.label')}
+                        </SourceLabel>
+                        <SourceSection>
+                            <SourceCard
+                                onClick={() => handleSourceClick('upload')}
+                            >
+                                <UploadIcon />
+                                <p>
+                                    {t('agent-form.source.upload')}
+                                    <br />
+                                    {selectedAgentFile &&
+                                    selectedAgentFile.source == 'Folder' ? (
+                                        <span>
+                                            {selectedAgentFile.file.name}
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            {t(
+                                                'agent-form.source.select-folder'
+                                            )}
+                                        </span>
+                                    )}
+                                </p>
+                            </SourceCard>
+                            <SourceCard
+                                onClick={() => handleSourceClick('Git')}
+                            >
+                                <GithubIcon />
+                                <p>
+                                    {t('agent-form.source.git')}
+                                    <br />
+                                    {selectedAgentFile &&
+                                    selectedAgentFile.source == 'Git' ? (
+                                        <span>
+                                            {selectedAgentFile.file.name}
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            {t(
+                                                'agent-form.source.select-git-repo'
+                                            )}
+                                        </span>
+                                    )}
+                                </p>
+                            </SourceCard>
+                            <SourceCard
+                                onClick={() => handleSourceClick('remote')}
+                            >
+                                <NetworkIcon />
+                                <p>
+                                    {t('agent-form.source.remote')}
+                                    <br />
+                                    {selectedAgentFile &&
+                                    selectedAgentFile.source == 'Remote' ? (
+                                        <span>
+                                            {selectedAgentFile.file.name}
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            {t(
+                                                'agent-form.source.select-remote'
+                                            )}
+                                        </span>
+                                    )}
+                                </p>
+                            </SourceCard>
+                            <SourceCard
+                                onClick={() => handleSourceClick('project')}
+                            >
+                                <FolderIcon />
+                                <p>
+                                    {t('agent-form.source.project')}
+                                    <br />
+                                    {selectedAgentFile &&
+                                    selectedAgentFile.source == 'Project' ? (
+                                        <span>
+                                            {selectedAgentFile.file.name}
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            {t(
+                                                'agent-form.source.select-project-template'
+                                            )}
+                                        </span>
+                                    )}
+                                </p>
+                            </SourceCard>
+                        </SourceSection>
+
+                        <FormSelect
+                            label={t('agent-form.graph-definition-path.label')}
+                        >
+                            <option value="">
+                                --{' '}
+                                {t('agent-form.graph-definition-path.select')}{' '}
+                                --
+                            </option>
+                            {pyFiles.map((file) => (
+                                <option key={file} value={file}>
+                                    {file}
+                                </option>
+                            ))}
+                        </FormSelect>
+
+                        <Label>
+                            {t('agent-form.framework.label')}
+                            <SelectButtonContainer>
+                                {availableFrameworks.map((framework) => (
+                                    <SelectButton
+                                        $variants="base"
+                                        $color="secondary"
+                                        type="button"
+                                        onClick={() =>
+                                            setSelectedFramework(framework.id)
+                                        }
+                                        selected={
+                                            selectedFramework === framework.id
+                                        }
+                                        key={framework.id}
+                                    >
+                                        {framework.name}
+                                    </SelectButton>
+                                ))}
+                            </SelectButtonContainer>
+                        </Label>
+
                         <TextInput
-                            label={t('agent-form.langfuse.public-key.label')}
-                            placeholder={t(
-                                'agent-form.langfuse.public-key.placeholder'
-                            )}
-                            value={langfusePublicKey}
-                            onChange={(e) =>
-                                setLangfusePublicKey(e.target.value)
-                            }
-                        />
-                        <TextInput
-                            label={t('agent-form.langfuse.secret-key.label')}
-                            placeholder={t(
-                                'agent-form.langfuse.secret-key.placeholder'
-                            )}
-                            value={langfuseSecretKey}
-                            onChange={(e) =>
-                                setLangfuseSecretKey(e.target.value)
-                            }
-                        />
-                        <TextInput
-                            label={t('agent-form.langfuse.run-name.label')}
-                            placeholder={t(
-                                'agent-form.langfuse.run-name.placeholder'
-                            )}
-                            value={langfuseRunName}
-                            onChange={(e) => setLangfuseRunName(e.target.value)}
+                            label={t('agent-form.agent-path.label')}
+                            placeholder={t('agent-form.agent-path.placeholder')}
+                            value={agentPath}
+                            onChange={(e) => setAgentPath(e.target.value)}
                         />
                     </>
                 )}
 
-                <TextInput
-                    label={t('agent-form.agent-path.label')}
-                    placeholder={t('agent-form.agent-path.placeholder')}
-                    value={agentPath}
-                    onChange={(e) => setAgentPath(e.target.value)}
-                />
+                {step === 1 && (
+                    <>
+                        <h2>{t('agent-form.observability.title')}</h2>
 
-                <Label>
-                    {t('agent-form.database-type')}
-                    <SelectButtonContainer>
-                        {availableDatabaseTypes.map((dbType) => (
-                            <SelectButton
-                                $variants="base"
-                                $color="secondary"
-                                type="button"
-                                onClick={() =>
-                                    setSelectedDatabaseType(
-                                        dbType.id as
-                                            | 'postgres'
-                                            | 'mysql'
-                                            | 'mariadb'
+                        <Label>
+                            {t('agent-form.observability.enabled')}
+                            <ToggleButton
+                                isOn={isObservabilityEnabled}
+                                onToggle={() =>
+                                    setIsObservabilityEnabled(
+                                        !isObservabilityEnabled
                                     )
                                 }
-                                selected={selectedDatabaseType === dbType.id}
-                                key={dbType.id}
-                            >
-                                {dbType.name}
-                            </SelectButton>
-                        ))}
-                    </SelectButtonContainer>
-                </Label>
+                            />
+                        </Label>
+                        <Label>
+                            {t('agent-form.observability.label')}
+                            <sup>*</sup>
+                            <SelectButtonContainer>
+                                <SelectButton
+                                    $variants="base"
+                                    type="button"
+                                    $color="secondary"
+                                    onClick={() =>
+                                        setSelectedObservabilityProvider(null)
+                                    }
+                                    selected={
+                                        selectedObservabilityProvider === null
+                                    }
+                                >
+                                    {t('agent-form.observability.tools.none')}
+                                </SelectButton>
+                                <SelectButton
+                                    $variants="base"
+                                    $color="secondary"
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedObservabilityProvider(
+                                            'langfuse'
+                                        )
+                                    }
+                                    selected={
+                                        selectedObservabilityProvider ===
+                                        'langfuse'
+                                    }
+                                >
+                                    Langfuse
+                                </SelectButton>
+                                <SelectButton
+                                    $variants="base"
+                                    $color="secondary"
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedObservabilityProvider(
+                                            'phoenix'
+                                        )
+                                    }
+                                    selected={
+                                        selectedObservabilityProvider ===
+                                        'phoenix'
+                                    }
+                                >
+                                    Phoenix
+                                </SelectButton>
+                            </SelectButtonContainer>
+                        </Label>
 
-                <TextInput
-                    label={t('agent-form.database-url.label')}
-                    placeholder={t('agent-form.database-url.placeholder')}
-                    error={dbUrlError ?? undefined}
-                    onChange={handleDatabaseUrlChange}
-                />
+                        {selectedObservabilityProvider === 'langfuse' && (
+                            <>
+                                <TextInput
+                                    label={t(
+                                        'agent-form.observability.langfuse.host.label'
+                                    )}
+                                    placeholder={t(
+                                        'agent-form.observability.langfuse.host.placeholder'
+                                    )}
+                                    value={langfuseHost}
+                                    required
+                                    onChange={(e) =>
+                                        setLangfuseHost(e.target.value)
+                                    }
+                                />
+                                <TextInput
+                                    label={t(
+                                        'agent-form.observability.langfuse.public-key.label'
+                                    )}
+                                    placeholder={t(
+                                        'agent-form.observability.langfuse.public-key.placeholder'
+                                    )}
+                                    value={langfusePublicKey}
+                                    onChange={(e) =>
+                                        setLangfusePublicKey(e.target.value)
+                                    }
+                                    required
+                                />
+                                <TextInput
+                                    label={t(
+                                        'agent-form.observability.langfuse.secret-key.label'
+                                    )}
+                                    placeholder={t(
+                                        'agent-form.observability.langfuse.secret-key.placeholder'
+                                    )}
+                                    required
+                                    value={langfuseSecretKey}
+                                    onChange={(e) =>
+                                        setLangfuseSecretKey(e.target.value)
+                                    }
+                                />
+                                <TextInput
+                                    label={t(
+                                        'agent-form.observability.langfuse.run-name.label'
+                                    )}
+                                    placeholder={t(
+                                        'agent-form.observability.langfuse.run-name.placeholder'
+                                    )}
+                                    value={langfuseRunName}
+                                    onChange={(e) =>
+                                        setLangfuseRunName(e.target.value)
+                                    }
+                                />
+                            </>
+                        )}
+
+                        <Label>
+                            {t('agent-form.database-type')}
+                            <SelectButtonContainer>
+                                {availableDatabaseTypes.map((dbType) => (
+                                    <SelectButton
+                                        $variants="base"
+                                        $color="secondary"
+                                        type="button"
+                                        onClick={() =>
+                                            setSelectedDatabaseType(
+                                                dbType.id as
+                                                    | 'postgres'
+                                                    | 'mysql'
+                                                    | 'mariadb'
+                                            )
+                                        }
+                                        selected={
+                                            selectedDatabaseType === dbType.id
+                                        }
+                                        key={dbType.id}
+                                    >
+                                        {dbType.name}
+                                    </SelectButton>
+                                ))}
+                            </SelectButtonContainer>
+                        </Label>
+
+                        <TextInput
+                            label={t('agent-form.database-url.label')}
+                            placeholder={t(
+                                'agent-form.database-url.placeholder'
+                            )}
+                            error={dbUrlError ?? undefined}
+                            onChange={handleDatabaseUrlChange}
+                        />
+                    </>
+                )}
 
                 <ButtonContainer>
-                    <Button $variants="base" $color="primary">
-                        {t('agent-form.create-agent')}
-                    </Button>
+                    {step > 0 ? (
+                        <Button
+                            $variants="base"
+                            $color="secondary"
+                            type="button"
+                            onClick={() => setStep((s) => s - 1)}
+                        >
+                            {t('agent-form.previous') || 'Previous'}
+                        </Button>
+                    ) : (
+                        <Button
+                            $variants="base"
+                            $color="primary"
+                            type="button"
+                            onClick={() => setIsPopupOpen(true)}
+                        >
+                            {t('agent-form.open-source-popup') || 'Source'}
+                        </Button>
+                    )}
+
+                    {step < 1 ? (
+                        <Button
+                            $variants="base"
+                            $color="primary"
+                            type="button"
+                            onClick={() => setStep((s) => s + 1)}
+                        >
+                            {t('agent-form.next') || 'Next'}
+                        </Button>
+                    ) : (
+                        <Button $variants="base" $color="primary" type="submit">
+                            {t('agent-form.create-agent')}
+                        </Button>
+                    )}
                 </ButtonContainer>
             </Form>
 
@@ -447,6 +563,43 @@ const Header = styled.div`
         margin: 0;
         line-height: 1.5;
     }
+`;
+
+const StepsWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    justify-content: center;
+`;
+
+const StepDot = styled.div<{ active?: boolean }>`
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: ${({ active }) =>
+        active ? 'var(--color-primary, #8c52ff)' : 'transparent'};
+    color: ${({ active }) =>
+        active
+            ? 'var(--color-background-primary, #16213e)'
+            : 'var(--color-text-secondary, #8892b0)'};
+    border: 2px solid var(--color-primary, #8c52ff);
+    font-weight: 700;
+`;
+
+const StepLabel = styled.span`
+    color: var(--color-text-secondary, #8892b0);
+    font-size: 14px;
+    margin-right: 12px;
+`;
+
+const StepSeparator = styled.div`
+    width: 24px;
+    height: 2px;
+    background: var(--color-border-primary, #2a3f5f);
 `;
 
 const SourceLabel = styled.label`
