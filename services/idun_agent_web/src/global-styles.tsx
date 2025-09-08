@@ -1,6 +1,6 @@
 import { createGlobalStyle } from 'styled-components';
 // @ts-ignore
-import { styleVariables } from './lib/style-variables.js';
+import { styleVariables } from './utils/style-variables';
 
 const GlobalStyles = createGlobalStyle`
   /* Tailwind CSS Layers */
