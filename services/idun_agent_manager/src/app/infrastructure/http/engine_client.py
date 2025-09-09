@@ -5,6 +5,7 @@ from uuid import UUID
 
 from app.core.logging import get_logger
 from app.domain.agents.entities import AgentEntity, AgentFramework
+from app.domain.deployments.entities import DeploymentMode
 
 logger = get_logger(__name__)
 
@@ -17,8 +18,10 @@ class IdunEngineService:
         pass
     
     async def deploy_agent(
-        self, 
-        agent: AgentEntity
+        self,
+        agent: AgentEntity,
+        deployment_mode: DeploymentMode = DeploymentMode.LOCAL,
+        deployment_config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Deploy an agent using the Idun Engine SDK.
         
@@ -31,11 +34,15 @@ class IdunEngineService:
         Raises:
             DeploymentError: If deployment fails
         """
-        logger.info("Deploying agent with Idun Engine", agent_id=agent.id)
+        logger.info(
+            "Deploying agent with Idun Engine",
+            agent_id=agent.id,
+            mode=deployment_mode.value,
+        )
         
         try:
             # Import Idun Engine SDK
-            from libs.idun_agent_engine.src.core.config_builder import ConfigBuilder
+            from idun_agent_engine.core.config_builder import ConfigBuilder
             
             # Build configuration based on agent framework
             config_builder = ConfigBuilder()
@@ -68,8 +75,8 @@ class IdunEngineService:
             
             # Build the engine config
             engine_config = config_builder.build()
-            
-            # Initialize agent from config
+
+            # Initialize agent from config (validates and prepares agent)
             agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config)
             
             # TODO: Here we would typically:
@@ -78,15 +85,22 @@ class IdunEngineService:
             # 3. Deploy to the target environment (local Docker, K8s, cloud)
             # 4. Return deployment information
             
-            # For now, simulate successful deployment
-            deployment_info = {
-                "agent_id": str(agent.id),
-                "container_id": f"agent-{agent.id}",
-                "endpoint": f"http://agent-{agent.id}:8000",
-                "status": "deployed",
-                "framework": agent.framework.value,
-                "deployed_at": agent.deployed_at.isoformat() if agent.deployed_at else None,
-            }
+            # For now, implement only LOCAL deployment placeholder
+            if deployment_mode == DeploymentMode.LOCAL:
+                # TODO: create a local Docker container running the Engine server for this agent.
+                # This will: package config, run `uvicorn idun_agent_engine.core.app_factory:create_app(...)` in a container,
+                # map port from deployment_config if provided, and return endpoint info.
+                deployment_info = {
+                    "agent_id": str(agent.id),
+                    "container_id": f"agent-{agent.id}",
+                    "endpoint": f"http://localhost:{(deployment_config or {}).get('port', 8000)}",
+                    "status": "deployed",
+                    "framework": agent.framework.value,
+                    "mode": deployment_mode.value,
+                    "deployed_at": agent.deployed_at.isoformat() if agent.deployed_at else None,
+                }
+            else:
+                raise DeploymentError(f"Deployment mode '{deployment_mode.value}' not implemented yet")
             
             logger.info("Agent deployed successfully", 
                        agent_id=agent.id, 

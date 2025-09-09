@@ -34,8 +34,9 @@ class AgentModel(Base):
     version: Mapped[str] = mapped_column(String(50), nullable=False, default="1.0.0")
     tags: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     
-    # Tenant isolation
+    # Tenant/workspace isolation
     tenant_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    workspace_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
@@ -77,9 +78,8 @@ class AgentRunModel(Base):
     agent_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), nullable=False, index=True
     )
-    tenant_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
-    )
+    tenant_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    workspace_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     
     # Input/Output
     input_data: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)

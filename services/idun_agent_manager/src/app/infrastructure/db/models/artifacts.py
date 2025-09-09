@@ -23,6 +23,10 @@ class ArtifactModel(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
+    # Multi-tenancy scoping
+    tenant_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    workspace_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+
     # Relationships
     deployment: Mapped["DeploymentModel"] = relationship(
         "DeploymentModel", back_populates="artifacts"

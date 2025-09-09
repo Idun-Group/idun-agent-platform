@@ -24,6 +24,10 @@ class DeploymentConfigModel(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
+    # Multi-tenancy scoping
+    tenant_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    workspace_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+
     # Relationships
     managed_agent: Mapped["ManagedAgentModel"] = relationship(
         "ManagedAgentModel", back_populates="deployment_configs"

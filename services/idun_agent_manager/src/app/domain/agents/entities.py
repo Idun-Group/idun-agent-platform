@@ -1,6 +1,6 @@
 """Domain entities for agents - pure business logic, no framework dependencies."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
@@ -61,7 +61,7 @@ class AgentEntity(BaseModel):
         """Activate the agent."""
         if self.status == AgentStatus.DRAFT:
             self.status = AgentStatus.ACTIVE
-            self.deployed_at = datetime.utcnow()
+            self.deployed_at = datetime.now(timezone.utc)
         else:
             raise ValueError(f"Cannot activate agent in {self.status} status")
     
@@ -131,14 +131,14 @@ class AgentRunEntity(BaseModel):
         """Mark run as completed."""
         self.status = "completed"
         self.output_data = output_data
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now(timezone.utc)
         self.response_time_ms = response_time_ms
     
     def fail(self, error_message: str) -> None:
         """Mark run as failed."""
         self.status = "failed"
         self.error_message = error_message
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now(timezone.utc)
     
     @property
     def is_completed(self) -> bool:

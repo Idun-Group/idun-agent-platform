@@ -5,13 +5,15 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from enum import Enum
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, validator
 from pydantic.config import ConfigDict
 from typing import Literal
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_session
+from app.api.v1.deps import get_session, get_agent_service, get_current_tenant_id, get_principal, Principal
+from app.application.services.agent_service import AgentService
+from app.domain.deployments.entities import DeploymentMode
 from app.infrastructure.db.models.agent_config import AgentConfigModel
 
 router = APIRouter()
@@ -226,6 +228,8 @@ class AgentPatch(BaseModel):
 async def create_agent(
     request: AgentCreate,
     session: AsyncSession = Depends(get_session),
+    principal: Principal = Depends(get_principal),
+    workspace_id: str | None = None,
 ) -> Agent:
     """Create a new agent backed by PostgreSQL (table: agent_config).
 
@@ -245,6 +249,16 @@ async def create_agent(
 
     # Create row
     new_id = uuid4()
+    ws_uuid = None
+    if workspace_id:
+        try:
+            ws_uuid = UUID(workspace_id)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid workspace_id format")
+        # Enforce workspace access if principal has specific workspace scope
+        if principal.workspace_ids and ws_uuid not in set(principal.workspace_ids):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
+
     model = AgentConfigModel(
         id=new_id,
         name=request.name,
@@ -252,6 +266,8 @@ async def create_agent(
         framework=framework_enum.value,
         status=AgentStatus.DRAFT.value,
         config=request.config.model_dump(),
+        tenant_id=principal.tenant_id,
+        workspace_id=ws_uuid,
     )
 
     session.add(model)
@@ -267,6 +283,53 @@ async def create_agent(
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
+
+
+class DeployRequest(BaseModel):
+    """Request body for deploying an agent."""
+    mode: DeploymentMode = Field(DeploymentMode.LOCAL, description="Deployment mode")
+    config: Optional[Dict[str, Any]] = Field(None, description="Deployment configuration")
+
+
+@router.post(
+    "/{agent_id}/deploy",
+    summary="Deploy agent",
+    description="Deploy an agent using the specified mode and configuration (local only for now)",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def deploy_agent_endpoint(
+    agent_id: str,
+    request: DeployRequest,
+    agent_service: AgentService = Depends(get_agent_service),
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_session),
+) -> Dict[str, Any]:
+    try:
+        agent_uuid = UUID(agent_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
+
+    try:
+        # Ensure the agent belongs to the principal's tenant/workspace before deployment
+        model = await session.get(AgentConfigModel, agent_uuid)
+        if not model:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Agent with id '{agent_id}' not found")
+        if model.tenant_id != principal.tenant_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+        if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
+
+        result = await agent_service.deploy_agent(
+            agent_uuid,
+            principal.tenant_id,
+            deployment_mode=request.mode,
+            deployment_config=request.config or {},
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get(
@@ -285,6 +348,8 @@ async def list_agents(
     sort_by: str = "created_at",
     order: Literal["asc", "desc"] = "asc",
     session: AsyncSession = Depends(get_session),
+    principal: Principal = Depends(get_principal),
+    workspace_ids: list[str] | None = Depends(lambda: None),
 ) -> List[Agent]:
     """List agents from PostgreSQL with limit/offset pagination."""
     if limit < 1 or limit > 1000:
@@ -306,12 +371,28 @@ async def list_agents(
     primary_order = asc(sort_column) if order == "asc" else desc(sort_column)
     stable_tiebreaker = asc(AgentConfigModel.id)
 
-    stmt = (
-        select(AgentConfigModel)
-        .order_by(primary_order, stable_tiebreaker)
-        .limit(limit)
-        .offset(offset)
-    )
+    # Workspace scoping
+    ws_filter: list[UUID] = []
+    if workspace_ids:
+        parsed: list[UUID] = []
+        for ws in workspace_ids:
+            try:
+                parsed.append(UUID(ws))
+            except ValueError:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid workspace_ids format")
+        if principal.workspace_ids:
+            allowed = set(principal.workspace_ids)
+            ws_filter = [ws for ws in parsed if ws in allowed]
+            if parsed and not ws_filter:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspaces")
+        else:
+            ws_filter = parsed
+
+    stmt = select(AgentConfigModel).where(AgentConfigModel.tenant_id == principal.tenant_id)
+    if ws_filter:
+        from sqlalchemy import or_
+        stmt = stmt.where(AgentConfigModel.workspace_id.in_(ws_filter))
+    stmt = stmt.order_by(primary_order, stable_tiebreaker).limit(limit).offset(offset)
     result = await session.execute(stmt)
     rows = result.scalars().all()
     return [
@@ -337,6 +418,7 @@ async def list_agents(
 async def get_agent(
     agent_id: str,
     session: AsyncSession = Depends(get_session),
+    principal: Principal = Depends(get_principal),
 ) -> Agent:
     """Get agent by ID from PostgreSQL with proper error handling."""
     try:
@@ -350,6 +432,10 @@ async def get_agent(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id '{agent_id}' not found",
         )
+    if model.tenant_id != principal.tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
 
     return Agent(
         id=str(model.id),
@@ -375,6 +461,7 @@ async def update_agent(
     agent_id: str,
     request: AgentReplace,
     session: AsyncSession = Depends(get_session),
+    principal: Principal = Depends(get_principal),
 ) -> Agent:
     """Full replacement of an existing agent in PostgreSQL (PUT semantics)."""
     try:
@@ -388,6 +475,10 @@ async def update_agent(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id '{agent_id}' not found",
         )
+    if model.tenant_id != principal.tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
 
     # Infer framework from config
     framework_value: Optional[str] = request.config.agent.type if request.config and request.config.agent else None
@@ -427,6 +518,7 @@ async def update_agent(
 async def delete_agent(
     agent_id: str,
     session: AsyncSession = Depends(get_session),
+    principal: Principal = Depends(get_principal),
 ) -> None:
     """Delete an agent_config row by UUID."""
     try:
@@ -440,6 +532,10 @@ async def delete_agent(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id '{agent_id}' not found",
         )
+    if model.tenant_id != principal.tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
 
     await session.delete(model)
     await session.flush()
@@ -459,6 +555,7 @@ async def patch_agent(
     agent_id: str,
     request: AgentPatch,
     session: AsyncSession = Depends(get_session),
+    principal: Principal = Depends(get_principal),
 ) -> Agent:
     try:
         agent_uuid = UUID(agent_id)
@@ -471,6 +568,10 @@ async def patch_agent(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id '{agent_id}' not found",
         )
+    if model.tenant_id != principal.tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
 
     if request.name is not None:
         model.name = request.name

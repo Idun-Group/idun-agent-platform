@@ -20,6 +20,11 @@ class AgentConfigModel(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     config: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False)
 
+    # Multi-tenancy scoping
+    tenant_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    # Optional workspace scoping (single workspace association for now)
+    workspace_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

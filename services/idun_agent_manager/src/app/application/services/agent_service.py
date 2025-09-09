@@ -1,6 +1,6 @@
 """Application service for agent orchestration and business logic."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
@@ -9,6 +9,7 @@ from app.core.logging import get_logger
 from app.domain.agents.entities import AgentEntity, AgentFramework, AgentRunEntity, AgentStatus
 from app.domain.agents.ports import AgentRepositoryPort, AgentRunRepositoryPort
 from app.infrastructure.http.engine_client import IdunEngineService, DeploymentError
+from app.domain.deployments.entities import DeploymentMode
 
 
 logger = get_logger(__name__)
@@ -49,7 +50,7 @@ class AgentService:
         if config:
             self._validate_agent_config(framework, config)
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         agent = AgentEntity(
             id=uuid4(),
             name=name,
@@ -62,6 +63,8 @@ class AgentService:
             tenant_id=tenant_id,
             created_at=now,
             updated_at=now,
+            success_rate=None,
+            avg_response_time_ms=None,
         )
         
         created_agent = await self.agent_repository.create(agent)
@@ -160,7 +163,7 @@ class AgentService:
             
             # Step 2: Update agent status in database
             agent.activate()
-            agent.updated_at = datetime.utcnow()
+            agent.updated_at = datetime.now(timezone.utc)
             
             updated_agent = await self.agent_repository.update(agent)
             
@@ -177,6 +180,64 @@ class AgentService:
                         agent_id=agent_id, 
                         error=str(e))
             raise ValidationError(f"Agent activation failed: {e}")
+
+    async def deploy_agent(
+        self,
+        agent_id: UUID,
+        tenant_id: UUID,
+        deployment_mode: DeploymentMode = DeploymentMode.LOCAL,
+        deployment_config: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Deploy an agent using the specified mode and config.
+
+        For now, only LOCAL is implemented which will (placeholder) start a local container
+        running the Engine-wrapped agent and return endpoint info.
+        """
+        logger.info(
+            "Deploying agent",
+            agent_id=agent_id,
+            tenant_id=tenant_id,
+            mode=deployment_mode.value,
+        )
+
+        agent = await self.get_agent(agent_id, tenant_id)
+
+        if not agent.can_be_deployed():
+            raise ValidationError("Agent cannot be deployed in current state")
+
+        try:
+            deployment_info = await self.engine_service.deploy_agent(
+                agent,
+                deployment_mode=deployment_mode,
+                deployment_config=deployment_config or {},
+            )
+
+            # Update agent status and timestamps
+            agent.activate()
+            agent.updated_at = datetime.now(timezone.utc)
+            updated_agent = await self.agent_repository.update(agent)
+
+            logger.info(
+                "Agent deployed",
+                agent_id=agent_id,
+                endpoint=deployment_info.get("endpoint"),
+            )
+
+            # Return combined info
+            return {
+                **deployment_info,
+                "agent": {
+                    "id": str(updated_agent.id),
+                    "name": updated_agent.name,
+                    "status": updated_agent.status.value,
+                },
+            }
+        except DeploymentError as e:
+            logger.error("Deployment failed", agent_id=agent_id, error=str(e))
+            raise ValidationError(f"Agent deployment failed: {e}")
+        except Exception as e:
+            logger.error("Unexpected error during deployment", agent_id=agent_id, error=str(e))
+            raise ValidationError(f"Agent deployment failed: {e}")
     
     async def deactivate_agent(self, agent_id: UUID, tenant_id: UUID) -> AgentEntity:
         """Deactivate an agent."""
@@ -226,7 +287,7 @@ class AgentService:
             raise ValidationError("Agent must be active to run")
         
         # Create run entity
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         run = AgentRunEntity(
             id=uuid4(),
             agent_id=agent_id,
@@ -273,7 +334,7 @@ class AgentService:
         # Update agent metrics
         agent = await self.get_agent(run.agent_id, tenant_id)
         agent.update_metrics(True, response_time_ms)
-        agent.updated_at = datetime.utcnow()
+        agent.updated_at = datetime.now(timezone.utc)
         await self.agent_repository.update(agent)
         
         logger.info("Agent run completed", run_id=run_id)
@@ -305,7 +366,7 @@ class AgentService:
             if run.started_at else 0.0
         )
         agent.update_metrics(False, response_time)
-        agent.updated_at = datetime.utcnow()
+        agent.updated_at = datetime.now(timezone.utc)
         await self.agent_repository.update(agent)
         
         logger.info("Agent run failed", run_id=run_id)
@@ -353,7 +414,7 @@ class AgentService:
         # Check if agent exists and is owned by tenant
         agent = await self.get_agent(agent_id, tenant_id)
         
-        health_info = {
+        health_info: Dict[str, Any] = {
             "agent_id": str(agent_id),
             "agent_name": agent.name,
             "status": agent.status.value,
@@ -366,13 +427,11 @@ class AgentService:
         if agent.status == AgentStatus.ACTIVE:
             try:
                 deployment_health = await self.engine_service.get_agent_health(agent_id)
-                health_info.update({
-                    "deployment_status": deployment_health.get("status", "unknown"),
-                    "uptime": deployment_health.get("uptime"),
-                    "cpu_usage": deployment_health.get("cpu_usage"),
-                    "memory_usage": deployment_health.get("memory_usage"),
-                    "last_activity": deployment_health.get("last_activity"),
-                })
+                health_info["deployment_status"] = deployment_health.get("status", "unknown")
+                health_info["uptime"] = deployment_health.get("uptime")
+                health_info["cpu_usage"] = deployment_health.get("cpu_usage")
+                health_info["memory_usage"] = deployment_health.get("memory_usage")
+                health_info["last_activity"] = deployment_health.get("last_activity")
                 
                 # Agent is deployed and healthy
                 health_info["deployment_status"] = "deployed"

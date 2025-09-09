@@ -1,15 +1,97 @@
 """FastAPI dependencies for dependency injection."""
 
-from typing import Annotated, AsyncGenerator
+from typing import Annotated, AsyncGenerator, List
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
 
 from app.application.services.agent_service import AgentService
 from app.core.settings import Settings, get_settings_dependency
 from app.infrastructure.db.session import get_async_session
 
+# Authentication and authorization dependencies
+class Principal(BaseModel):
+    """Authenticated caller identity and authorization context."""
+    user_id: str
+    tenant_id: UUID
+    roles: List[str] = []
+    workspace_ids: List[UUID] = []
+
+
+async def get_principal(request: Request) -> Principal:
+    """Resolve the authenticated principal from the request.
+
+    Order of resolution:
+    - Authorization: Bearer <JWT> (claims: sub, tenant_id, roles, workspace_ids)
+    - Dev fallbacks via headers: X-Tenant-ID, X-Workspace-IDs (comma-separated), X-Roles
+    """
+    auth_header = request.headers.get("Authorization")
+    tenant_header = request.headers.get("X-Tenant-ID")
+    workspaces_header = request.headers.get("X-Workspace-IDs")
+    roles_header = request.headers.get("X-Roles")
+
+    user_id: str | None = None
+    tenant_id: UUID | None = None
+    roles: List[str] = []
+    workspace_ids: List[UUID] = []
+
+    # Try JWT first
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header[len("Bearer "):].strip()
+        try:
+            from app.infrastructure.auth.jwt_handler import get_jwt_handler
+            payload = get_jwt_handler().verify_token(token, token_type="access")
+            user_id = str(payload.get("sub")) if payload.get("sub") else None
+            if payload.get("tenant_id"):
+                try:
+                    tenant_id = UUID(str(payload["tenant_id"]))
+                except ValueError:
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid tenant_id claim")
+            # Optional claims
+            roles = list(payload.get("roles", []) or [])
+            ws_claims = payload.get("workspace_ids", []) or []
+            for ws in ws_claims:
+                try:
+                    workspace_ids.append(UUID(str(ws)))
+                except ValueError:
+                    # Skip invalid workspace UUIDs in claims
+                    continue
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    else:
+        # No JWT: require at least dev headers
+        user_id = request.headers.get("X-User-ID") or "dev-user"
+
+    # Fallbacks/overrides from headers (useful in dev/testing)
+    if tenant_id is None and tenant_header:
+        try:
+            tenant_id = UUID(tenant_header)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid X-Tenant-ID format")
+
+    if workspaces_header:
+        try:
+            workspace_ids = [UUID(x.strip()) for x in workspaces_header.split(",") if x.strip()]
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid X-Workspace-IDs format")
+
+    if roles_header:
+        roles = [r.strip() for r in roles_header.split(",") if r.strip()]
+
+    if not tenant_id:
+        # As a last resort, try existing helper
+        tenant_id = await get_current_tenant_id(request)
+
+    if not user_id or not tenant_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+
+    return Principal(user_id=user_id, tenant_id=tenant_id, roles=roles, workspace_ids=workspace_ids)
 
 
 # Database session dependency
@@ -65,7 +147,6 @@ def get_agent_service(
     return AgentService(agent_repo, run_repo, engine_service)
 
 
-# Authentication and authorization dependencies
 async def get_current_user(request: Request) -> str:
     """Get current authenticated user ID.
     

@@ -22,6 +22,10 @@ class ManagedAgentModel(Base):
     exposed_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     gateway_conf_json: Mapped[Dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
+    # Multi-tenancy scoping
+    tenant_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    workspace_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
