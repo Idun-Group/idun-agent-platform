@@ -23,6 +23,3 @@ def get_pipe():
 
 
 pipe = get_pipe()
-
-
-
