@@ -4,7 +4,7 @@ This module provides a fluent API for building configuration objects using Pydan
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
 """
 
-from pathlib import Path, PosixPath
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -229,13 +229,20 @@ class ConfigBuilder:
             ValueError: If agent type is unsupported
         """
         agent_config_obj = engine_config.agent.config
-        print(engine_config)
         agent_type = engine_config.agent.type
 
         # Initialize the appropriate agent
         agent_instance = None
         if agent_type == "langgraph":
             from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+
+            try:
+                validated_config = LangGraphAgentConfig.model_validate(agent_config_obj)
+
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot validate into a LangGraphAgentConfig model. Got {agent_config_obj}"
+                ) from e
 
             agent_instance = LanggraphAgent()
 
@@ -247,20 +254,19 @@ class ConfigBuilder:
         elif agent_type == "haystack":
             from idun_agent_engine.agent.haystack.haystack import HaystackAgent
 
+            try:
+                validated_config = HaystackAgentConfig.model_validate(agent_config_obj)
+
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot validate into a HaystackAgentConfig model. Got {agent_config_obj}"
+                ) from e
             agent_instance = HaystackAgent()
-        # Future agent types can be added here:
-        # elif agent_type == "crewai":
-        #     from ..agent.crewai.agent import CrewAIAgent
-        #     agent_instance = CrewAIAgent()
-        # elif agent_type == "autogen":
-        #     from ..agent.autogen.agent import AutoGenAgent
-        #     agent_instance = AutoGenAgent()
         else:
-            print("agent type", agent_type == "langgraph")
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration
-        await agent_instance.initialize(agent_config_obj)  # type: ignore[arg-type]
+        await agent_instance.initialize(validated_config)  # type: ignore[arg-type]
         return agent_instance
 
     @staticmethod
@@ -284,10 +290,6 @@ class ConfigBuilder:
             from ..agent.crewai.crewai import CrewAIAgent
 
             return CrewAIAgent
-        # Future agent types can be added here:
-        # elif agent_type == "crewai":
-        #     from ..agent.crewai.agent import CrewAIAgent
-        #     return CrewAIAgent
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 

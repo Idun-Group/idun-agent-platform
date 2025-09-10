@@ -11,6 +11,7 @@ from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.agent.haystack.haystack_model import HaystackAgentConfig
 
 logging.basicConfig(level=logging.DEBUG)
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,58 +76,65 @@ class HaystackAgent(BaseAgent):
         """Return diagnostic information about the agent instance."""
         return self._infos
 
-    async def initialize(self, config: HaystackAgentConfig) -> None:
+    async def initialize(self, config: HaystackAgentConfig | dict[str, Any]) -> None:
         # TODO: obs
-        logger.debug(f"Initializing haystack agent config: {config}...")
-        ...
-        """
-            Steps:
-                - load pipeline builder
-                - set graph definition in infos w/ load_graph_builder
-                - set agent_instance by compiling the model
-                - set input/output schemas in infos based on if agent instance if none or not
-                - set info : status, and config_used : dump configuration
-            """
-        print("got config from init: ", config)
-        self._configuration = HaystackAgentConfig.model_validate(
-            config
-        )  # ERROR: issue starts here
+        try:
+            logger.debug(f"Initializing haystack agent config: {config}...")
 
-        self._name = self._configuration.name or "Unnamed Haystack Agent"
-        self._infos["name"] = self._name
-        # TODO: await persistence haystack
-        # TODO OBS block
-        pipeline = self._load_pipeline(self._configuration.pipeline_definition)
-        self._infos["pipeline_definition"] = self._configuration.pipeline_definition
-        self._agent_instance = pipeline
-        # TODO: input output schema definition
-        self._infos["status"] = "initialized"
-        logger.info("Status initialized!")
-        self._infos["config_used"] = self._configuration.model_dump()
+            if isinstance(config, HaystackAgentConfig):
+                self._configuration = config
+                logger.debug("Validated HaystackAgentConfig")
+            else:
+                logger.warning(f"Validating a dict config: {config}")
+                self._configuration = HaystackAgentConfig.model_validate(config)
+                logger.debug("Validated dict config")
+            self._name = self._configuration.name or "Haystack Agent"
+            self._infos["name"] = self._name
+            # TODO: await persistence haystack
+            # TODO OBS block
+            pipeline = self._load_pipeline(self._configuration.pipeline_definition)
+            self._infos["pipeline_definition"] = self._configuration.pipeline_definition
+            self._agent_instance = pipeline
+            # TODO: input output schema definition
+            self._infos["status"] = "initialized"
+            logger.info("Status initialized!")
+            self._infos["config_used"] = self._configuration.model_dump()
+        except Exception as e:
+            raise e
 
     def _load_pipeline(self, pipeline_definition: str) -> Pipeline:
         """Loads a Haystack Pipeline from the path (pipeline definition)."""
         logger.debug(f"Loading pipeline from: {pipeline_definition}...")
         try:
+            if ":" not in pipeline_definition:
+                logger.error(
+                    f"Cannot parse pipeline definition. Pipeline definition in wrong format: {pipeline_definition}"
+                )
+                raise ValueError(
+                    f"pipeline_definition must be in format: 'path/to/my/module.py:pipeline_variable_name"
+                    f"got: {pipeline_definition}"
+                )
+            logger.debug("Pipeline definition format validated")
             module_path, pipeline_variable_name = pipeline_definition.rsplit(":", 1)
             logger.debug(
                 f"Extracted variable: {pipeline_variable_name} from module {module_path}"
             )
-        except ValueError:
-            logger.error("Error")
-            raise ValueError(
-                "pipeline_definition must be in the format 'path/to/file.py:variable_name'"
-            ) from None
+        except Exception as e:
+            logger.error(f"Error parsing pipeline definition: {e}")
 
         try:
+            logger.debug(f"Importing spec from file location: {module_path}")
             spec = importlib.util.spec_from_file_location(
                 pipeline_variable_name, module_path
             )
             if spec is None or spec.loader is None:
+                logger.error(f"Could not load spec for module at {module_path}")
                 raise ImportError(f"Could not load spec for module at {module_path}")
 
             module = importlib.util.module_from_spec(spec)
+            logger.debug("Execing module..")
             spec.loader.exec_module(module)
+            logger.debug("Module executed")
 
             pipeline = getattr(module, pipeline_variable_name)
         except (FileNotFoundError, ImportError, AttributeError) as e:
@@ -162,7 +170,9 @@ class HaystackAgent(BaseAgent):
             # TODO: support async
             result = self._agent_instance.run(data={"query": message["query"]})
             logger.info(f"Pipeline answer: {result}")
-            return result["generator"]["replies"][0]
+            return result["generator"]["replies"][
+                0
+            ]  # haystack pipelines with generators return the answer in this format.
         except Exception as e:
             raise RuntimeError(f"Pipeline execution failed: {e}") from e
 
