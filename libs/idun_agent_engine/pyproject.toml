@@ -42,6 +42,7 @@ dependencies = [
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
     "langchain>=0.3.27,<0.4",
     "arize-phoenix>=11.22.0,<12",
+    "haystack-ai>=2.17.1",
 ]
 
 [project.urls]

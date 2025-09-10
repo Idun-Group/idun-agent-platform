@@ -4,11 +4,12 @@ This module provides a fluent API for building configuration objects using Pydan
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
 """
 
-from pathlib import Path
+from pathlib import Path, PosixPath
 from typing import Any
 
 import yaml
 
+from idun_agent_engine.agent.haystack.haystack_model import HaystackAgentConfig
 from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
@@ -153,17 +154,13 @@ class ConfigBuilder:
         """
         if agent_type == "langgraph":
             self._agent_config = AgentConfig(
-                type="langgraph",
-                config=LangGraphAgentConfig.model_validate(config)
+                type="langgraph", config=LangGraphAgentConfig.model_validate(config)
             )
-        # elif agent_type == "ADK":
-        #     self._agent_config = ADKAgentSpec(
-        #         type="ADK", config=BaseAgentConfig.model_validate(config)
-        #     )
-        # elif agent_type == "CREWAI":
-        #     self._agent_config = CrewAIAgentSpec(
-        #         type="CREWAI", config=BaseAgentConfig.model_validate(config)
-        #     )
+
+        if agent_type == "haystack":
+            self._agent_config = AgentConfig(
+                type="haystack", config=HaystackAgentConfig.model_validate(config)
+            )
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
         return self
@@ -241,10 +238,16 @@ class ConfigBuilder:
             from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             agent_instance = LanggraphAgent()
+
         elif agent_type == "CREWAI":
             from idun_agent_engine.agent.crewai.crewai import CrewAIAgent
 
             agent_instance = CrewAIAgent()
+
+        elif agent_type == "haystack":
+            from idun_agent_engine.agent.haystack.haystack import HaystackAgent
+
+            agent_instance = HaystackAgent()
         # Future agent types can be added here:
         # elif agent_type == "crewai":
         #     from ..agent.crewai.agent import CrewAIAgent
@@ -253,6 +256,7 @@ class ConfigBuilder:
         #     from ..agent.autogen.agent import AutoGenAgent
         #     agent_instance = AutoGenAgent()
         else:
+            print("agent type", agent_type == "langgraph")
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration

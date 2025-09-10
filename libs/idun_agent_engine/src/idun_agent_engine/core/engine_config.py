@@ -4,11 +4,10 @@ This module contains the core configuration models for the entire Engine engine.
 These models define the overall structure and validation for the complete system.
 """
 
-from typing import Literal
+from typing import Literal, Any
 
 from pydantic import BaseModel, Field
 
-from idun_agent_engine.agent.langgraph.langgraph_model import LangGraphAgentConfig
 from idun_agent_engine.agent.model import BaseAgentConfig
 from idun_agent_engine.server.server_config import ServerConfig
 
@@ -16,10 +15,8 @@ from idun_agent_engine.server.server_config import ServerConfig
 class AgentConfig(BaseModel):
     """Configuration for agent specification and settings."""
 
-    type: Literal["langgraph", "ADK", "CREWAI"] = Field(default="langgraph")
-    config: BaseAgentConfig | LangGraphAgentConfig = Field(
-        default_factory=BaseAgentConfig
-    )
+    type: Literal["langgraph", "ADK", "CREWAI", "haystack"] = Field(default="langgraph")
+    config: Any = Field(default_factory=BaseAgentConfig)
 
 
 class EngineConfig(BaseModel):
