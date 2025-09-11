@@ -6,7 +6,10 @@ authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.13,<3.14"
 readme = "README.md"
 license = "MIT"
-dependencies = ["idun-agent-engine"]
+dependencies = [
+    "idun-agent-engine",
+    "langfuse-haystack>=2.0.1",
+]
 
 [dependency-groups]
 dev = [

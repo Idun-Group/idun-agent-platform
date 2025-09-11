@@ -1140,10 +1140,12 @@ dependencies = [
     { name = "langchain-core" },
     { name = "langchain-google-vertexai" },
     { name = "langfuse" },
+    { name = "langfuse-haystack" },
     { name = "langgraph" },
     { name = "langgraph-checkpoint-sqlite" },
     { name = "openinference-instrumentation-langchain" },
     { name = "pydantic" },
+    { name = "python-dotenv" },
     { name = "streamlit" },
     { name = "uvicorn" },
 ]
@@ -1172,11 +1174,13 @@ requires-dist = [
     { name = "langchain", specifier = ">=0.3.27,<0.4" },
     { name = "langchain-core", specifier = ">=0.3.72,<0.4.0" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<3.0.0" },
-    { name = "langfuse", specifier = ">=3.2.2,<4" },
+    { name = "langfuse", specifier = "==2.60.8" },
+    { name = "langfuse-haystack", specifier = ">=2.3.0" },
     { name = "langgraph", specifier = ">=0.6.3,<0.7.0" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0.11,<3.0.0" },
     { name = "openinference-instrumentation-langchain", specifier = ">=0.1.13,<1.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
+    { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "streamlit", specifier = ">=1.47.1,<2.0.0" },
     { name = "uvicorn", specifier = ">=0.35.0,<0.36.0" },
 ]
@@ -1376,22 +1380,34 @@ wheels = [
 
 [[package]]
 name = "langfuse"
-version = "3.2.4"
+version = "2.60.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "anyio" },
     { name = "backoff" },
     { name = "httpx" },
-    { name = "opentelemetry-api" },
-    { name = "opentelemetry-exporter-otlp" },
-    { name = "opentelemetry-sdk" },
+    { name = "idna" },
     { name = "packaging" },
     { name = "pydantic" },
     { name = "requests" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/ed/14bdfcedb34c817d1b1cb1420a6253eb8d1e7baa99c8077f82d1b2f4ee12/langfuse-3.2.4.tar.gz", hash = "sha256:4066ade6cff682dc727679a8bd70feaba316c92bb91bc971d0a504cb42e7cf3d", size = 153387 }
+sdist = { url = "https://files.pythonhosted.org/packages/66/b8/1928d39799370d8030f067af5010318b147753fa330c068b3958b233cdeb/langfuse-2.60.8.tar.gz", hash = "sha256:0125841e8503b9ce1f405ab95411a7af2c244106e70eba99726c1f1a743cd164", size = 152659 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4b/bf/cd7491a2ed33b4a6848487af4e60cdcef3ff132a993be68941de09642163/langfuse-3.2.4-py3-none-any.whl", hash = "sha256:4e65e856e4784939ac8d3e512d73aeb95472848b67a856c46a8301de48b97744", size = 299967 },
+    { url = "https://files.pythonhosted.org/packages/f1/a0/566955928c599cb78bccb72f76c5a7b6d56cff723bc841c4e4806b48d2d0/langfuse-2.60.8-py3-none-any.whl", hash = "sha256:072b050ae4c20f81556b9c4c751359bc76de70970636225b32760d1bd4b93042", size = 275496 },
+]
+
+[[package]]
+name = "langfuse-haystack"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "haystack-ai" },
+    { name = "langfuse" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4c/f4/dac0b2bca4f8262b6a9063f71ec85058133a09edb93ad1342c7d22e61ca0/langfuse_haystack-2.3.0.tar.gz", hash = "sha256:d870e6166ae5ad73c0f7990cfb3dc252795aa1d92f9e5924601a193297e2a305", size = 24909 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/ca/e3e8ed3b40b74ad4bba0f4cdd61543023173b20cd14aebad6dcc345d0dbf/langfuse_haystack-2.3.0-py3-none-any.whl", hash = "sha256:0fa8654642812ba8ee3dd85983d6cf2648c676976fc53c0c6f674d62d1fa991d", size = 15549 },
 ]
 
 [[package]]
@@ -1929,11 +1945,11 @@ wheels = [
 
 [[package]]
 name = "packaging"
-version = "25.0"
+version = "24.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a1/d4/1fc4078c65507b51b96ca8f8c3ba19e6a61c8253c72794544580a7b6c24d/packaging-25.0.tar.gz", hash = "sha256:d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f", size = 165727 }
+sdist = { url = "https://files.pythonhosted.org/packages/d0/63/68dbb6eb2de9cb10ee4c9c14a0148804425e13c4fb20d61cce69f53106da/packaging-24.2.tar.gz", hash = "sha256:c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f", size = 163950 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/12/38679034af332785aac8774540895e234f4d07f7545804097de4b666afd8/packaging-25.0-py3-none-any.whl", hash = "sha256:29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484", size = 66469 },
+    { url = "https://files.pythonhosted.org/packages/88/ef/eb23f262cca3c0c4eb7ab1933c3b1f03d021f2c48f54763065b6f0e321be/packaging-24.2-py3-none-any.whl", hash = "sha256:09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759", size = 65451 },
 ]
 
 [[package]]

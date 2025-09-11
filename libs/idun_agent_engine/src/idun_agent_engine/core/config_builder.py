@@ -229,6 +229,7 @@ class ConfigBuilder:
             ValueError: If agent type is unsupported
         """
         agent_config_obj = engine_config.agent.config
+        print("CONFIG:", agent_config_obj)
         agent_type = engine_config.agent.type
 
         # Initialize the appropriate agent

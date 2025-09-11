@@ -8,4 +8,5 @@ class HaystackAgentConfig(BaseAgentConfig):
     """Configuration model for Haystack Agents."""
 
     type: Literal["haystack"] = "haystack"
-    pipeline_definition: str
+    component_type: Literal["pipeline", "component", "agent"]
+    component_definition: str

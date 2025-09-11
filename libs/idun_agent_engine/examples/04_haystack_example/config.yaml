@@ -7,4 +7,5 @@ agent:
   type: "haystack"
   config:
     name: "haystack test agent"
-    pipeline_definition: "./examples/04_haystack_example/pipe.py:pipe"
+    component_type: "pipeline"
+    component_definition: "./examples/04_haystack_example/pipe.py:pipe"

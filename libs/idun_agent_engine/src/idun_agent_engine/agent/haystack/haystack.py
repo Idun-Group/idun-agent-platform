@@ -2,15 +2,23 @@
 
 import importlib.util
 import logging
+import os
 import uuid
 from typing import Any
 
+os.environ["HAYSTACK_CONTENT_TRACING_ENABLED"] = "true"
+
 from haystack import Pipeline
+from haystack_integrations.components.connectors.langfuse import LangfuseConnector
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.agent.haystack.haystack_model import HaystackAgentConfig
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +32,8 @@ class HaystackAgent(BaseAgent):
         self._agent_type: str = "haystack"
         self._agent_instance: Any = None  # make enum?
         self._configuration: HaystackAgentConfig | None = None
-        self._name: str = "Unnamed Haystack Agent"
+        self._name: str = "Haystack Agent"
+        self._langfuse_tracing: bool = False
         self._infos: dict[str, Any] = {
             "status": "Uninitialized",
             "name": self._name,
@@ -76,6 +85,15 @@ class HaystackAgent(BaseAgent):
         """Return diagnostic information about the agent instance."""
         return self._infos
 
+    def _has_langfuse_tracing(self, pipeline: Pipeline) -> bool:
+        """Check if any component of the pipeline is a LangfuseConnector."""
+        logger.debug("Searching LangfuseConnector in the pipeline..")
+        for name, component in pipeline.walk():
+            if isinstance(component, LangfuseConnector):
+                logger.info(f"Found LangfuseConnector component with name: {name}")
+                return True
+        return False
+
     async def initialize(self, config: HaystackAgentConfig | dict[str, Any]) -> None:
         # TODO: obs
         try:
@@ -92,15 +110,19 @@ class HaystackAgent(BaseAgent):
             self._infos["name"] = self._name
             # TODO: await persistence haystack
             # TODO OBS block
-            pipeline = self._load_pipeline(self._configuration.pipeline_definition)
-            self._infos["pipeline_definition"] = self._configuration.pipeline_definition
+            pipeline = self._load_pipeline(self._configuration.component_definition)
+            self._infos["component_type"] = self._configuration.component_type
+            self._infos["component_definition"] = (
+                self._configuration.component_definition
+            )
             self._agent_instance = pipeline
             # TODO: input output schema definition
             self._infos["status"] = "initialized"
             logger.info("Status initialized!")
             self._infos["config_used"] = self._configuration.model_dump()
         except Exception as e:
-            raise e
+            logger.error(f"Failed to initialize HaystackAgent: {e}")
+            raise
 
     def _load_pipeline(self, pipeline_definition: str) -> Pipeline:
         """Loads a Haystack Pipeline from the path (pipeline definition)."""
@@ -121,6 +143,9 @@ class HaystackAgent(BaseAgent):
             )
         except Exception as e:
             logger.error(f"Error parsing pipeline definition: {e}")
+            raise ValueError(
+                f"Invalid PIpeline Definition format: {pipeline_definition}"
+            ) from e
 
         try:
             logger.debug(f"Importing spec from file location: {module_path}")
@@ -137,6 +162,21 @@ class HaystackAgent(BaseAgent):
             logger.debug("Module executed")
 
             pipeline = getattr(module, pipeline_variable_name)
+            # Check if the pipeline has built in tracer component
+            # TODO: make provider agnostic
+            # TODO: do we want to force provider? if no provider specified in config/pipeline what to default to? langfuse/arize/otel/w&b...
+
+            if self._has_langfuse_tracing(pipeline):
+                logger.info("langfuse tracing already on")
+                self._langfuse_tracing = True
+
+            else:
+                logger.info(pipeline)
+                logger.info("Pipeline has no tracer included. Adding Langfuse tracer")
+                pipeline.add_component(
+                    "tracer", instance=LangfuseConnector(self._configuration.name)
+                )
+                logger.info("Added component tracer")
         except (FileNotFoundError, ImportError, AttributeError) as e:
             raise ValueError(
                 f"Failed to load agent from {pipeline_definition}: {e}"
@@ -150,6 +190,7 @@ class HaystackAgent(BaseAgent):
 
     async def invoke(self, message: Any) -> Any:
         """Process a single input to chat with the agent.The message should be a dictionary containing 'query' and 'session_id'."""
+        # TODO: validate actual message
         # TODO: validate input schema
         logger.debug(f"Invoking pipeline for message: {message}")
         if self._agent_instance is None:
@@ -168,11 +209,13 @@ class HaystackAgent(BaseAgent):
 
         try:
             # TODO: support async
-            result = self._agent_instance.run(data={"query": message["query"]})
+            result = self._agent_instance.run(
+                data={"query": message["query"]}
+            )  # TODO: from input schema
             logger.info(f"Pipeline answer: {result}")
             return result["generator"]["replies"][
                 0
-            ]  # haystack pipelines with generators return the answer in this format.
+            ]  # TODO: validates with output schema, and not hardcodded
         except Exception as e:
             raise RuntimeError(f"Pipeline execution failed: {e}") from e
 
