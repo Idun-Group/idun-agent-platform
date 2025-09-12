@@ -20,7 +20,7 @@ from haystack_integrations.components.connectors.langfuse import (
 def get_pipe():
     prompt_builder = PromptBuilder(template=template)
     generator = OpenAIGenerator(
-        api_key=Secret.from_token("key"),
+        api_key=Secret.from_token("KEY"),
         model="llama-3.3-70b-versatile",
         api_base_url="https://api.groq.com/openai/v1"
     )
@@ -30,6 +30,5 @@ def get_pipe():
     pipeline.add_component("generator", generator)
     pipeline.connect("prompt_builder", "generator")
     return pipeline
-
 
 pipe = get_pipe()

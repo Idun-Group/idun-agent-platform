@@ -10,16 +10,6 @@ from idun_agent_engine.core.server_runner import run_server
 
 load_dotenv()
 
-# # Print current sys.path before adding project root
-# print("Python path before:", sys.path)
-
-# # Add the project root to the Python path
-# project_root = Path(__file__).parent.parent.parent
-# sys.path.insert(0, str(project_root))
-
-# # Print current sys.path after adding project root
-# print("Python path:", sys.path)
-
 
 def main():
     """Run the agent server using YAML configuration."""

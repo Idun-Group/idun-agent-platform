@@ -1,5 +1,3 @@
-"""Haystack agent adapter implementing the BaseAgent protocol."""
-
 import importlib.util
 import logging
 import os
@@ -9,6 +7,8 @@ from typing import Any
 os.environ["HAYSTACK_CONTENT_TRACING_ENABLED"] = "true"
 
 from haystack import Pipeline
+from haystack.components.agents import Agent
+from haystack.dataclasses import ChatMessage
 from haystack_integrations.components.connectors.langfuse import LangfuseConnector
 
 from idun_agent_engine.agent.base import BaseAgent
@@ -39,7 +39,6 @@ class HaystackAgent(BaseAgent):
             "name": self._name,
             "id": self._id,
         }
-        # TODO: obs block
         # TODO: input/output schema
         # TODO: checkpointing/debugging
 
@@ -95,7 +94,6 @@ class HaystackAgent(BaseAgent):
         return False
 
     async def initialize(self, config: HaystackAgentConfig | dict[str, Any]) -> None:
-        # TODO: obs
         try:
             logger.debug(f"Initializing haystack agent config: {config}...")
 
@@ -110,7 +108,7 @@ class HaystackAgent(BaseAgent):
             self._infos["name"] = self._name
             # TODO: await persistence haystack
             # TODO OBS block
-            pipeline = self._load_pipeline(self._configuration.component_definition)
+            pipeline = self._load_component(self._configuration.component_definition)
             self._infos["component_type"] = self._configuration.component_type
             self._infos["component_definition"] = (
                 self._configuration.component_definition
@@ -124,33 +122,33 @@ class HaystackAgent(BaseAgent):
             logger.error(f"Failed to initialize HaystackAgent: {e}")
             raise
 
-    def _load_pipeline(self, pipeline_definition: str) -> Pipeline:
-        """Loads a Haystack Pipeline from the path (pipeline definition)."""
-        logger.debug(f"Loading pipeline from: {pipeline_definition}...")
+    def _load_component(self, component_definition: str) -> Agent | Pipeline:
+        """Loads a Haystack componet (Agent or Pipeline) from the path (component definition) and returns the agent_instance."""
+        logger.debug(f"Loading component from: {component_definition}...")
         try:
-            if ":" not in pipeline_definition:
+            if ":" not in component_definition:
                 logger.error(
-                    f"Cannot parse pipeline definition. Pipeline definition in wrong format: {pipeline_definition}"
+                    f"Cannot parse component definition. Component definition in wrong format: {component_definition}"
                 )
                 raise ValueError(
-                    f"pipeline_definition must be in format: 'path/to/my/module.py:pipeline_variable_name"
-                    f"got: {pipeline_definition}"
+                    f" component_definition must be in format: 'path/to/my/module.py:component_variable_name"
+                    f"got: {component_definition}"
                 )
-            logger.debug("Pipeline definition format validated")
-            module_path, pipeline_variable_name = pipeline_definition.rsplit(":", 1)
+            logger.debug("Component definition format validated")
+            module_path, component_variable_name = component_definition.rsplit(":", 1)
             logger.debug(
-                f"Extracted variable: {pipeline_variable_name} from module {module_path}"
+                f"Extracted variable: {component_variable_name} from module {module_path}"
             )
         except Exception as e:
-            logger.error(f"Error parsing pipeline definition: {e}")
+            logger.error(f"Error parsing component definition: {e}")
             raise ValueError(
-                f"Invalid PIpeline Definition format: {pipeline_definition}"
+                f"Invalid Component Definition format: {component_definition}"
             ) from e
 
         try:
             logger.debug(f"Importing spec from file location: {module_path}")
             spec = importlib.util.spec_from_file_location(
-                pipeline_variable_name, module_path
+                component_variable_name, module_path
             )
             if spec is None or spec.loader is None:
                 logger.error(f"Could not load spec for module at {module_path}")
@@ -161,32 +159,39 @@ class HaystackAgent(BaseAgent):
             spec.loader.exec_module(module)
             logger.debug("Module executed")
 
-            pipeline = getattr(module, pipeline_variable_name)
+            component = getattr(module, component_variable_name)
             # Check if the pipeline has built in tracer component
             # TODO: make provider agnostic
             # TODO: do we want to force provider? if no provider specified in config/pipeline what to default to? langfuse/arize/otel/w&b...
 
-            if self._has_langfuse_tracing(pipeline):
-                logger.info("langfuse tracing already on")
-                self._langfuse_tracing = True
-
-            else:
-                logger.info(pipeline)
-                logger.info("Pipeline has no tracer included. Adding Langfuse tracer")
-                pipeline.add_component(
-                    "tracer", instance=LangfuseConnector(self._configuration.name)
+            if not isinstance(component, (Pipeline, Agent)):
+                raise TypeError(
+                    f"The variable '{component_variable_name}' from {module_path} is not a Pipeline or Agent instance. Got {type(component)}"
                 )
-                logger.info("Added component tracer")
+
+            if isinstance(component, Pipeline):
+                logger.debug("Checking for Langfuse tracing...")
+                if self._has_langfuse_tracing(component):
+                    logger.info("langfuse tracing already on")
+                    self._langfuse_tracing = True
+
+                else:
+                    logger.info(
+                        "Pipeline has no tracer included. Adding Langfuse tracer"
+                    )
+                    component.add_component(
+                        f"{self._configuration.name} tracer",
+                        instance=LangfuseConnector(self._configuration.name),
+                    )  # TODO: component name bad, switch to smth else.
+                    logger.info("Added component tracer")
+            logger.info("Agent tracing not supported yet")
+
         except (FileNotFoundError, ImportError, AttributeError) as e:
             raise ValueError(
-                f"Failed to load agent from {pipeline_definition}: {e}"
+                f"Failed to load agent from {component_definition}: {e}"
             ) from e
 
-        if not isinstance(pipeline, Pipeline):
-            raise TypeError(
-                f"The variable '{pipeline_variable_name}' from {module_path} is not a pipeline instance."
-            )
-        return pipeline
+        return component
 
     async def invoke(self, message: Any) -> Any:
         """Process a single input to chat with the agent.The message should be a dictionary containing 'query' and 'session_id'."""
@@ -209,13 +214,26 @@ class HaystackAgent(BaseAgent):
 
         try:
             # TODO: support async
-            result = self._agent_instance.run(
-                data={"query": message["query"]}
-            )  # TODO: from input schema
-            logger.info(f"Pipeline answer: {result}")
-            return result["generator"]["replies"][
-                0
-            ]  # TODO: validates with output schema, and not hardcodded
+            # if pipeline
+            if isinstance(self._agent_instance, Pipeline):
+                logger.debug("Running Pipeline instance...")
+                raw_result = self._agent_instance.run(data={"query": message["query"]})
+                result = raw_result["generator"]["replies"][0]
+                logger.info(f"Pipeline answer: {result}")
+                return result
+
+            # if agent
+            elif isinstance(self._agent_instance, Agent):
+                logger.debug("Running Agent instance...")
+                raw_result = self._agent_instance.run(
+                    # TODO: make run method arguments based on component type
+                    messages=[ChatMessage.from_user(message["query"])]
+                )  # TODO: from input schema
+                logger.info(f"Pipeline answer: {raw_result['messages'][-1].text}")
+                result = raw_result["messages"][-1].text
+                return result
+
+        # TODO: validates with output schema, and not hardcodded
         except Exception as e:
             raise RuntimeError(f"Pipeline execution failed: {e}") from e
 
