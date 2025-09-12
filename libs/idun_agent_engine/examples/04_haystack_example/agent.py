@@ -10,10 +10,10 @@ def dice_roller(sides: int = 6, count: int = 1) -> Dict[str, Any]:
         return {"error": "Dice must have at least 2 sides"}
     if count < 1 or count > 20:
         return {"error": "Must roll between 1 and 20 dice"}
-    
+
     rolls = [random.randint(1, sides) for _ in range(count)]
     total = sum(rolls)
-    
+
     return {
         "rolls": rolls,
         "total": total,
@@ -22,7 +22,11 @@ def dice_roller(sides: int = 6, count: int = 1) -> Dict[str, Any]:
         "average": round(total / count, 2)
     }
 
+<<<<<<< HEAD
 SYSTEM_PROMPT = """You are a helpful assistant with access to a dice rolling tool. 
+=======
+SYSTEM_PROMPT = """You are a helpful assistant with access to a dice rolling tool.
+>>>>>>> 7a79cf9 (feat: Haystach agent/pipeline integration with config.yaml change)
 
 You should use the dice_roller tool when:
 - The user asks you to roll dice (any number of sides, any quantity)
@@ -50,27 +54,33 @@ def get_agent():
                 "default": 6
             },
             "count": {
-                "type": "integer", 
+                "type": "integer",
                 "description": "Number of dice to roll (minimum 1, maximum 20)",
                 "default": 1
             }
         }
     )
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 7a79cf9 (feat: Haystach agent/pipeline integration with config.yaml change)
     generator = OpenAIChatGenerator(
         api_key=Secret.from_token("KEY"),
         model="llama-3.3-70b-versatile",
         api_base_url="https://api.groq.com/openai/v1"
     )
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 7a79cf9 (feat: Haystach agent/pipeline integration with config.yaml change)
     agent = Agent(
         chat_generator=generator,
         system_prompt=SYSTEM_PROMPT,
         tools=[dice_tool],
     )
-    
+
     return agent
 
 agent = get_agent()
-
-

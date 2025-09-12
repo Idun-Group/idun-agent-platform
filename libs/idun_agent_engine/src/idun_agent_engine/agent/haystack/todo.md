@@ -1,7 +1,6 @@
 - Pipeline/Agent/Component:
   - telemetry
   - refactor HaystackAgent class to include components and agents (remove hardcodded pipeline) (sample code ready for agent)
-    - refactor load_pipeline -> load_component and handle types and tracing for each component 
-  - agent telemtry ? agent -> pipeline ?? 
+    - refactor load_pipeline -> load_component and handle types and tracing for each component
+  - agent telemtry ? agent -> pipeline ??
 - make the api (invoke) return usefull errors messages, and log them server side
-
