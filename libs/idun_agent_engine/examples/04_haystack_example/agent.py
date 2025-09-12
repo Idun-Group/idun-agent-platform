@@ -23,10 +23,17 @@ def dice_roller(sides: int = 6, count: int = 1) -> Dict[str, Any]:
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 SYSTEM_PROMPT = """You are a helpful assistant with access to a dice rolling tool. 
 =======
 SYSTEM_PROMPT = """You are a helpful assistant with access to a dice rolling tool.
 >>>>>>> 7a79cf9 (feat: Haystach agent/pipeline integration with config.yaml change)
+=======
+SYSTEM_PROMPT = """You are a helpful assistant with access to a dice rolling tool.
+=======
+SYSTEM_PROMPT = """You are a helpful assistant with access to a dice rolling tool. 
+>>>>>>> 0b096a2 (feat: haystack agent + pipeline integration with config.yaml change)
+>>>>>>> 6699ed0 (feat: haystack agent + pipeline integration with config.yaml change)
 
 You should use the dice_roller tool when:
 - The user asks you to roll dice (any number of sides, any quantity)
@@ -61,20 +68,34 @@ def get_agent():
         }
     )
 <<<<<<< HEAD
+<<<<<<< HEAD
     
 =======
 
 >>>>>>> 7a79cf9 (feat: Haystach agent/pipeline integration with config.yaml change)
+=======
+
+=======
+    
+>>>>>>> 0b096a2 (feat: haystack agent + pipeline integration with config.yaml change)
+>>>>>>> 6699ed0 (feat: haystack agent + pipeline integration with config.yaml change)
     generator = OpenAIChatGenerator(
         api_key=Secret.from_token("KEY"),
         model="llama-3.3-70b-versatile",
         api_base_url="https://api.groq.com/openai/v1"
     )
 <<<<<<< HEAD
+<<<<<<< HEAD
     
 =======
 
 >>>>>>> 7a79cf9 (feat: Haystach agent/pipeline integration with config.yaml change)
+=======
+
+=======
+    
+>>>>>>> 0b096a2 (feat: haystack agent + pipeline integration with config.yaml change)
+>>>>>>> 6699ed0 (feat: haystack agent + pipeline integration with config.yaml change)
     agent = Agent(
         chat_generator=generator,
         system_prompt=SYSTEM_PROMPT,

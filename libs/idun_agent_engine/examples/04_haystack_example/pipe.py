@@ -9,8 +9,8 @@ template = "Answer: {{query}}"
 
 import os
 
-os.environ["LANGFUSE_SECRET_KEY"] = "sk-lf-04f9f0ce-ac1d-4e5a-9fd8-17b88ed9085d"
-os.environ["LANGFUSE_PUBLIC_KEY"] = "pk-lf-56e5f358-5493-417c-993b-bdca2ac192bc"
+os.environ["LANGFUSE_SECRET_KEY"] = ""
+os.environ["LANGFUSE_PUBLIC_KEY"] = ""
 
 
 from haystack_integrations.components.connectors.langfuse import (
