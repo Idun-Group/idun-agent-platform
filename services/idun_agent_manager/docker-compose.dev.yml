@@ -24,7 +24,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -42,6 +42,8 @@ services:
       context: .
       dockerfile: Dockerfile.dev
       target: development
+    env_file:
+      - .env
     environment:
       - DATABASE__URL=postgresql+asyncpg://postgres:postgres@postgres:5432/idun_agents
       - REDIS__URL=redis://redis:6379/0
@@ -77,6 +79,8 @@ services:
       context: .
       dockerfile: Dockerfile.dev
       target: development
+    env_file:
+      - .env
     environment:
       - DATABASE__URL=postgresql+asyncpg://postgres:postgres@postgres:5432/idun_agents
       - REDIS__URL=redis://redis:6379/0
@@ -104,6 +108,17 @@ services:
     command: tail -f /dev/null
     profiles:
       - cli
+    networks:
+      - idun_network
+
+  # RedisInsight UI for inspecting Redis in the same network
+  redisinsight:
+    image: redislabs/redisinsight:latest
+    ports:
+      - "8001:8001"
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - idun_network
 

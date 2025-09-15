@@ -28,6 +28,61 @@ async def get_principal(request: Request) -> Principal:
     - Dev fallbacks via headers: X-Tenant-ID, X-Workspace-IDs (comma-separated), X-Roles
     """
     auth_header = request.headers.get("Authorization")
+    # Allow cookie session via opaque sid
+    if not auth_header:
+        sid = request.cookies.get("sid")
+        if sid:
+            # Resolve tokens from Redis and refresh if needed
+            from app.infrastructure.cache.redis_client import get_redis_client
+            from app.infrastructure.auth.oidc import get_provider
+            import json, time
+
+            redis = get_redis_client()
+            raw = await redis.get(f"sid:{sid}")
+            if not raw:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
+            data = json.loads(raw)
+            access_token = data.get("access_token")
+            refresh_token = data.get("refresh_token")
+            expires_at = int(data.get("expires_at") or 0)
+
+            # Refresh if expiring within 2 minutes
+            if time.time() > (expires_at - 120) and refresh_token:
+                provider = get_provider()
+                try:
+                    # token refresh
+                    import httpx
+                    meta = await provider._discover()
+                    token_endpoint = meta.get("token_endpoint")
+                    async with httpx.AsyncClient(timeout=15) as client:
+                        resp = await client.post(
+                            token_endpoint,
+                            data={
+                                "grant_type": "refresh_token",
+                                "refresh_token": refresh_token,
+                                "client_id": get_settings_dependency().auth.client_id,
+                                "client_secret": get_settings_dependency().auth.client_secret,
+                            },
+                            headers={"Content-Type": "application/x-www-form-urlencoded"},
+                        )
+                        resp.raise_for_status()
+                        tok = resp.json()
+                        access_token = tok.get("access_token") or access_token
+                        new_refresh = tok.get("refresh_token")
+                        if new_refresh:
+                            refresh_token = new_refresh
+                        expires_in = int(tok.get("expires_in") or 3600)
+                        data.update({
+                            "access_token": access_token,
+                            "refresh_token": refresh_token,
+                            "expires_at": int(time.time()) + expires_in,
+                        })
+                        await redis.set(f"sid:{sid}", json.dumps(data), ex=max(expires_in, 3600))
+                except Exception:
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session refresh failed")
+
+            if access_token:
+                auth_header = f"Bearer {access_token}"
     tenant_header = request.headers.get("X-Tenant-ID")
     workspaces_header = request.headers.get("X-Workspace-IDs")
     roles_header = request.headers.get("X-Roles")
@@ -41,22 +96,23 @@ async def get_principal(request: Request) -> Principal:
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header[len("Bearer "):].strip()
         try:
-            from app.infrastructure.auth.jwt_handler import get_jwt_handler
-            payload = get_jwt_handler().verify_token(token, token_type="access")
-            user_id = str(payload.get("sub")) if payload.get("sub") else None
-            if payload.get("tenant_id"):
+            # Verify via OIDC provider (JWKS) and normalize to principal-like data
+            from app.infrastructure.auth.oidc import get_provider
+            provider = get_provider()
+            claims = await provider.verify_jwt(token)
+            normalized = provider.normalize_claims(claims)
+            user_id = normalized.get("user_id")
+            tenant_claim = normalized.get("tenant_id") or claims.get("tenant_id")
+            if tenant_claim:
                 try:
-                    tenant_id = UUID(str(payload["tenant_id"]))
+                    tenant_id = UUID(str(tenant_claim))
                 except ValueError:
                     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid tenant_id claim")
-            # Optional claims
-            roles = list(payload.get("roles", []) or [])
-            ws_claims = payload.get("workspace_ids", []) or []
-            for ws in ws_claims:
+            roles = list(normalized.get("roles", []))
+            for ws in normalized.get("workspace_ids", []) or []:
                 try:
                     workspace_ids.append(UUID(str(ws)))
                 except ValueError:
-                    # Skip invalid workspace UUIDs in claims
                     continue
         except Exception:
             raise HTTPException(

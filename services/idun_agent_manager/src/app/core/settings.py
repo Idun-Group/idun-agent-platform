@@ -1,7 +1,7 @@
 """Application settings using Pydantic Settings v2."""
 
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -37,33 +37,59 @@ class RedisSettings(BaseSettings):
 class AuthSettings(BaseSettings):
     """Authentication and security settings."""
 
-    secret_key: str = Field(
-        ...,
-        description="Secret key for JWT tokens",
-        min_length=32,
+    # OIDC provider selection (single provider per deployment)
+    provider_type: Literal["okta", "auth0", "entra", "google"] = Field(
+        default="auth0",
+        description="OIDC provider type",
     )
-    algorithm: str = Field(default="HS256", description="JWT algorithm")
-    access_token_expire_minutes: int = Field(
-        default=30, description="Access token expiration"
+    issuer: str = Field(
+        default="",
+        description="OIDC issuer URL (e.g., https://<domain>/oauth2/default)",
     )
-    refresh_token_expire_days: int = Field(
-        default=7, description="Refresh token expiration"
-    )
+    client_id: str = Field(default="", description="OIDC client ID")
+    client_secret: str = Field(default="", description="OIDC client secret")
+    audience: Optional[str] = Field(default=None, description="Expected audience")
+    redirect_uri: Optional[str] = Field(default=None, description="Auth callback URI")
+    scopes: List[str] = Field(default_factory=lambda: ["openid", "profile", "email"]) 
 
-    # OAuth2/OIDC settings
-    oauth_client_id: Optional[str] = Field(default=None)
-    oauth_client_secret: Optional[str] = Field(default=None)
-    oauth_server_url: Optional[str] = Field(default=None)
-    oauth_redirect_uri: Optional[str] = Field(default=None)
+    # Token verification
+    allowed_algs: List[str] = Field(default_factory=lambda: ["RS256", "RS512", "ES256"]) 
+    jwks_cache_ttl: int = Field(default=300, description="JWKS cache TTL seconds")
+    clock_skew_seconds: int = Field(default=60, description="Clock skew tolerance")
+    expected_audiences: List[str] = Field(default_factory=list, description="Allowed audiences")
 
-    model_config = SettingsConfigDict(env_prefix="AUTH_", env_file=".env")
+    # Optional claim mapping overrides
+    # Accept JSON arrays; ignore comment strings gracefully via validators
+    claim_user_id_path: List[str] | None = Field(default=None)
+    claim_email_path: List[str] | None = Field(default=None)
+    claim_roles_paths: List[List[str]] | None = Field(default=None)
+    claim_groups_paths: List[List[str]] | None = Field(default=None)
+    claim_workspace_ids_paths: List[List[str]] | None = Field(default=None)
 
-    @field_validator("secret_key")
+    @field_validator("claim_user_id_path", "claim_email_path", mode="before")
     @classmethod
-    def validate_secret_key(cls, v: str) -> str:
-        """Validate secret key length."""
-        if len(v) < 32:
-            raise ValueError("Secret key must be at least 32 characters long")
+    def _string_to_list(cls, v):
+        if isinstance(v, str) and v.strip().startswith("#"):
+            return None
+        return v
+
+    @field_validator("claim_roles_paths", "claim_groups_paths", "claim_workspace_ids_paths", mode="before")
+    @classmethod
+    def _string_to_list_of_lists(cls, v):
+        if isinstance(v, str) and v.strip().startswith("#"):
+            return None
+        return v
+
+    model_config = SettingsConfigDict(env_prefix="AUTH_", env_file=".env", extra="ignore")
+
+    # Backwards compatibility no-op for old secret_key usage
+    @field_validator("issuer")
+    @classmethod
+    def validate_issuer(cls, v: str) -> str:
+        if not v:
+            return v
+        if not v.startswith("http"):
+            raise ValueError("issuer must be a URL")
         return v
 
 
@@ -126,7 +152,7 @@ class APISettings(BaseSettings):
     rate_limit_requests: int = Field(default=100)
     rate_limit_window: int = Field(default=60)
 
-    model_config = SettingsConfigDict(env_prefix="API_", env_file=".env")
+    model_config = SettingsConfigDict(env_prefix="API_", env_file=".env", extra="ignore")
 
 
 class Settings(BaseSettings):
