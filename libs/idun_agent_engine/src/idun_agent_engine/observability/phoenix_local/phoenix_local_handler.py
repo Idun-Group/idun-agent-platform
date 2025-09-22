@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shlex
-import socket
 import subprocess
-import time
 from typing import Any
-from urllib.parse import urlparse
 
 from ..base import ObservabilityHandlerBase
 from ..utils import _resolve_env
+
+logger = logging.getLogger(__name__)
 
 
 class PhoenixLocalHandler(ObservabilityHandlerBase):
@@ -19,79 +19,104 @@ class PhoenixLocalHandler(ObservabilityHandlerBase):
 
     provider = "phoenix-local"
 
-    def __init__(self, options: dict[str, Any] | None = None):
-        """Initialize handler, start Phoenix via CLI, and set up instrumentation."""
+    def __init__(
+        self,
+        options: dict[str, Any] | None = None,
+        default_endpoint: str = "http://127.0.0.1:6006",
+    ):
+        """Initialize handler, start Phoenix via CLI, and set up instrumentation.
+
+        Args:
+            options: Configuration options dictionary
+            default_endpoint: Default Phoenix collector endpoint URL
+        """
+        logger.info("Initializing PhoenixLocalHandler")
+
         super().__init__(options)
-        opts = self.options
+        opts = self.options or {}
 
-        # Configure defaults and ensure Phoenix server is running locally
+        # Initialize instance variables
         self._callbacks: list[Any] = []
-        self._proc: Any | None = None
+        self._proc: subprocess.Popen[bytes] | None = None
+        self.default_endpoint = default_endpoint
+        self.project_name: str = "default"
 
-        default_endpoint = "http://127.0.0.1:6006"
+        self._configure_collector_endpoint(opts)
+        self._start_phoenix_cli()
+
+        try:
+            from openinference.instrumentation.langchain import LangChainInstrumentor
+            from phoenix.otel import register
+
+            logger.debug("Successfully imported Phoenix dependencies")
+
+            self.project_name = opts.get("project_name") or "default"
+            logger.info(f"Using project name: {self.project_name}")
+
+            tracer_provider = register(
+                project_name=self.project_name, auto_instrument=True
+            )
+
+            LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
+
+        except ImportError as e:
+            logger.error(f"Missing required Phoenix dependencies: {e}")
+            raise ImportError(f"Phoenix dependencies not found: {e}. ") from e
+
+        except Exception as e:
+            logger.error(f"Failed to set up Phoenix instrumentation: {e}")
+            raise RuntimeError(f"Phoenix instrumentation setup failed: {e}") from e
+
+        logger.info("Phoenix local handler initialized...")
+
+    def _configure_collector_endpoint(self, opts: dict[str, Any]) -> None:
+        """Configure the Phoenix collector endpoint from various sources."""
+        logger.debug("Configuring collector endpoint")
+
         collector = (
             self._resolve_env(opts.get("collector"))
             or self._resolve_env(opts.get("collector_endpoint"))
             or os.getenv("PHOENIX_COLLECTOR_ENDPOINT")
-            or default_endpoint
+            or self.default_endpoint
         )
+
+        logger.info(f"Setting Phoenix collector endpoint to: {collector}")
         os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = collector
-
-        parsed = urlparse(collector)
-        host = parsed.hostname or "127.0.0.1"
-        port = int(parsed.port or 6006)
-        if host in ("127.0.0.1", "localhost") and not self._is_port_open(host, port):
-            self._start_phoenix_cli()
-            self._wait_for_port(host, port, timeout_seconds=10.0)
-
-        # Configure tracer provider using phoenix.otel.register
-        try:
-            from openinference.instrumentation.langchain import LangChainInstrumentor
-            from phoenix.otel import register  # type: ignore
-
-            project_name = opts.get("project_name") or "default"
-            tracer_provider = register(
-                project_name=project_name, auto_instrument=True
-            )
-            LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
-            self.project_name = project_name
-        except Exception:
-            # Silent failure; user may not have phoenix installed
-            pass
-
-    @staticmethod
-    def _resolve_env(value: str | None) -> str | None:
-        return _resolve_env(value)
-
-    def get_callbacks(self) -> list[Any]:
-        """Return callbacks (Phoenix instruments globally; this may be empty)."""
-        return self._callbacks
-
-    @staticmethod
-    def _is_port_open(host: str, port: int) -> bool:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(0.5)
-            try:
-                return sock.connect_ex((host, port)) == 0
-            except Exception:
-                return False
+        self.collector_endpoint = collector
 
     def _start_phoenix_cli(self) -> None:
+        """Start pheonix subprocess."""
         try:
             cmd = "phoenix serve"
+            logger.debug(f"Executing command: {cmd}")
+
             self._proc = subprocess.Popen(
                 shlex.split(cmd),
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 start_new_session=True,
             )
-        except Exception:
+
+            logger.info(f"Phoenix server started with PID: {self._proc.pid}")
+
+        except FileNotFoundError as e:
+            logger.error(f"Phoenix CLI not found. Make sure Phoenix is installed : {e}")
+            self._proc = None
+
+        except subprocess.SubprocessError as e:
+            logger.error(f"Failed to start Phoenix CLI subprocess: {e}")
+            self._proc = None
+
+        except Exception as e:
+            logger.error(f"Unexpected error starting Phoenix CLI: {e}")
             self._proc = None
 
     @staticmethod
-    def _wait_for_port(host: str, port: int, timeout_seconds: float) -> None:
-        deadline = time.time() + timeout_seconds
-        while time.time() < deadline:
-            if PhoenixLocalHandler._is_port_open(host, port):
-                return
-            time.sleep(0.2)
+    def _resolve_env(value: str | None) -> str | None:
+        """Resolve environment variable value."""
+        return _resolve_env(value)
+
+    def get_callbacks(self) -> list[Any]:
+        """Return callbacks (Phoenix instruments globally; this may be empty)."""
+        logger.debug("Getting callbacks (Phoenix uses global instrumentation)")
+        return self._callbacks
