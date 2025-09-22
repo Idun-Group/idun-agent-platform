@@ -51,3 +51,7 @@ class CrewAIAgent(BaseAgent[BaseAgentConfig]):
     ) -> AsyncGenerator[Any]:  # pragma: no cover - placeholder
         """Stream responses for a message (not implemented)."""
         raise NotImplementedError("CrewAIAgent is not implemented yet")
+
+
+def main():
+    cw = CrewAIAgent()

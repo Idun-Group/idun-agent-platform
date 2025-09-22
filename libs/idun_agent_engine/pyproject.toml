@@ -37,11 +37,14 @@ dependencies = [
     "google-adk>=1.9.0,<2.0.0",
     "ag-ui-protocol>=0.1.8,<0.2.0",
     "aiosqlite>=0.21.0,<0.22.0",
-    "langfuse>=3.2.2,<4",
+    "langfuse==2.60.8",
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
     "langchain>=0.3.27,<0.4",
     "arize-phoenix>=11.22.0,<12",
+    "haystack-ai>=2.17.1",
+    "langfuse-haystack>=2.3.0",
+    "python-dotenv>=1.1.1",
 ]
 
 [project.urls]

@@ -9,6 +9,7 @@ from typing import Any
 
 import yaml
 
+from idun_agent_engine.agent.haystack.haystack_model import HaystackAgentConfig
 from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
@@ -153,17 +154,13 @@ class ConfigBuilder:
         """
         if agent_type == "langgraph":
             self._agent_config = AgentConfig(
-                type="langgraph",
-                config=LangGraphAgentConfig.model_validate(config)
+                type="langgraph", config=LangGraphAgentConfig.model_validate(config)
             )
-        # elif agent_type == "ADK":
-        #     self._agent_config = ADKAgentSpec(
-        #         type="ADK", config=BaseAgentConfig.model_validate(config)
-        #     )
-        # elif agent_type == "CREWAI":
-        #     self._agent_config = CrewAIAgentSpec(
-        #         type="CREWAI", config=BaseAgentConfig.model_validate(config)
-        #     )
+
+        if agent_type == "haystack":
+            self._agent_config = AgentConfig(
+                type="haystack", config=HaystackAgentConfig.model_validate(config)
+            )
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
         return self
@@ -232,7 +229,7 @@ class ConfigBuilder:
             ValueError: If agent type is unsupported
         """
         agent_config_obj = engine_config.agent.config
-        print(engine_config)
+        print("CONFIG:", agent_config_obj)
         agent_type = engine_config.agent.type
 
         # Initialize the appropriate agent
@@ -240,23 +237,37 @@ class ConfigBuilder:
         if agent_type == "langgraph":
             from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
+            try:
+                validated_config = LangGraphAgentConfig.model_validate(agent_config_obj)
+
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot validate into a LangGraphAgentConfig model. Got {agent_config_obj}"
+                ) from e
+
             agent_instance = LanggraphAgent()
+
         elif agent_type == "CREWAI":
             from idun_agent_engine.agent.crewai.crewai import CrewAIAgent
 
             agent_instance = CrewAIAgent()
-        # Future agent types can be added here:
-        # elif agent_type == "crewai":
-        #     from ..agent.crewai.agent import CrewAIAgent
-        #     agent_instance = CrewAIAgent()
-        # elif agent_type == "autogen":
-        #     from ..agent.autogen.agent import AutoGenAgent
-        #     agent_instance = AutoGenAgent()
+
+        elif agent_type == "haystack":
+            from idun_agent_engine.agent.haystack.haystack import HaystackAgent
+
+            try:
+                validated_config = HaystackAgentConfig.model_validate(agent_config_obj)
+
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot validate into a HaystackAgentConfig model. Got {agent_config_obj}"
+                ) from e
+            agent_instance = HaystackAgent()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration
-        await agent_instance.initialize(agent_config_obj)  # type: ignore[arg-type]
+        await agent_instance.initialize(validated_config)  # type: ignore[arg-type]
         return agent_instance
 
     @staticmethod
@@ -280,10 +291,6 @@ class ConfigBuilder:
             from ..agent.crewai.crewai import CrewAIAgent
 
             return CrewAIAgent
-        # Future agent types can be added here:
-        # elif agent_type == "crewai":
-        #     from ..agent.crewai.agent import CrewAIAgent
-        #     return CrewAIAgent
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 

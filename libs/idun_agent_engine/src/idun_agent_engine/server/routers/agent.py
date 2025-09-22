@@ -1,5 +1,6 @@
 """Agent routes for invoking and streaming agent responses."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,14 +10,20 @@ from pydantic import BaseModel
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.dependencies import get_agent
 
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+logger = logging.getLogger(__name__)
+
 
 class ChatRequest(BaseModel):
     """Chat request payload for agent endpoints."""
 
     session_id: str
     query: str
-
-
 class ChatResponse(BaseModel):
     """Chat response payload containing session and response text."""
 
@@ -37,6 +44,7 @@ async def invoke(
         message = {"query": request.query, "session_id": request.session_id}
         response_content = await agent.invoke(message)
 
+        logger.info(f"Sent message:, {response_content}")  # TODO: remove
         return ChatResponse(session_id=request.session_id, response=response_content)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
