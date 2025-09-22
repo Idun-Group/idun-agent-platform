@@ -13,6 +13,7 @@ from haystack_integrations.components.connectors.langfuse import LangfuseConnect
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.agent.haystack.haystack_model import HaystackAgentConfig
+from idun_agent_engine.agent.haystack.utils import _parse_component_definition
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s",
@@ -30,7 +31,7 @@ class HaystackAgent(BaseAgent):
         """Initialize an unconfigured haystack agent with default state."""
         self._id: str = str(uuid.uuid4())
         self._agent_type: str = "haystack"
-        self._agent_instance: Any = None  # make enum?
+        self._agent_instance: Any = None
         self._configuration: HaystackAgentConfig | None = None
         self._name: str = "Haystack Agent"
         self._langfuse_tracing: bool = False
@@ -84,14 +85,28 @@ class HaystackAgent(BaseAgent):
         """Return diagnostic information about the agent instance."""
         return self._infos
 
-    def _has_langfuse_tracing(self, pipeline: Pipeline) -> bool:
-        """Check if any component of the pipeline is a LangfuseConnector."""
+    def _check_langfuse_tracing(self, pipeline: Pipeline) -> None:
+        """Check if the pipeline has a LangfuseConnector."""
         logger.debug("Searching LangfuseConnector in the pipeline..")
         for name, component in pipeline.walk():
             if isinstance(component, LangfuseConnector):
                 logger.info(f"Found LangfuseConnector component with name: {name}")
-                return True
-        return False
+                self._langfuse_tracing = True
+
+    def _add_langfuse_tracing(self, component: Agent | Pipeline):
+        logger.debug("Checking for Langfuse tracing...")
+        if isinstance(component, Pipeline):
+            if self._langfuse_tracing:
+                logger.info("langfuse tracing already on")
+            else:
+                logger.info("Pipeline has no tracer included. Adding Langfuse tracer")
+                component.add_component(
+                    f"{self._configuration.name} tracer",
+                    instance=LangfuseConnector(self._configuration.name),
+                )
+                logger.info("Added component tracer")
+                self._langfuse_tracing = True
+        logger.info("Agent tracing not supported yet")
 
     async def initialize(self, config: HaystackAgentConfig | dict[str, Any]) -> None:
         try:
@@ -108,12 +123,14 @@ class HaystackAgent(BaseAgent):
             self._infos["name"] = self._name
             # TODO: await persistence haystack
             # TODO OBS block
-            pipeline = self._load_component(self._configuration.component_definition)
+            component: Agent | Pipeline = self._load_component(
+                self._configuration.component_definition
+            )
             self._infos["component_type"] = self._configuration.component_type
             self._infos["component_definition"] = (
                 self._configuration.component_definition
             )
-            self._agent_instance = pipeline
+            self._agent_instance = component
             # TODO: input output schema definition
             self._infos["status"] = "initialized"
             logger.info("Status initialized!")
@@ -122,31 +139,18 @@ class HaystackAgent(BaseAgent):
             logger.error(f"Failed to initialize HaystackAgent: {e}")
             raise
 
-    def _load_component(self, component_definition: str) -> Agent | Pipeline:
-        """Loads a Haystack componet (Agent or Pipeline) from the path (component definition) and returns the agent_instance."""
-        logger.debug(f"Loading component from: {component_definition}...")
-        try:
-            if ":" not in component_definition:
-                logger.error(
-                    f"Cannot parse component definition. Component definition in wrong format: {component_definition}"
-                )
-                raise ValueError(
-                    f" component_definition must be in format: 'path/to/my/module.py:component_variable_name"
-                    f"got: {component_definition}"
-                )
-            logger.debug("Component definition format validated")
-            module_path, component_variable_name = component_definition.rsplit(":", 1)
-            logger.debug(
-                f"Extracted variable: {component_variable_name} from module {module_path}"
-            )
-        except Exception as e:
-            logger.error(f"Error parsing component definition: {e}")
-            raise ValueError(
-                f"Invalid Component Definition format: {component_definition}"
-            ) from e
+    def _fetch_component_from_module(self) -> Agent | Pipeline:
+        """Fetches the variable that holds the component of an Agent/Pipeline.
 
+        Returns: Agent | Pipeline.
+        """
+        module_path, component_variable_name = _parse_component_definition(
+            self._configuration.component_definition
+        )
+        logger.debug(
+            f"Importing spec from file location: {self._configuration.component_definition}"
+        )
         try:
-            logger.debug(f"Importing spec from file location: {module_path}")
             spec = importlib.util.spec_from_file_location(
                 component_variable_name, module_path
             )
@@ -159,33 +163,30 @@ class HaystackAgent(BaseAgent):
             spec.loader.exec_module(module)
             logger.debug("Module executed")
 
+            component_variable = getattr(module, component_variable_name)
+            logger.info(f"Found component variable: {component_variable}")
+
             component = getattr(module, component_variable_name)
-            # Check if the pipeline has built in tracer component
-            # TODO: make provider agnostic
-            # TODO: do we want to force provider? if no provider specified in config/pipeline what to default to? langfuse/arize/otel/w&b...
 
             if not isinstance(component, (Pipeline, Agent)):
                 raise TypeError(
                     f"The variable '{component_variable_name}' from {module_path} is not a Pipeline or Agent instance. Got {type(component)}"
                 )
+            return component
 
-            if isinstance(component, Pipeline):
-                logger.debug("Checking for Langfuse tracing...")
-                if self._has_langfuse_tracing(component):
-                    logger.info("langfuse tracing already on")
-                    self._langfuse_tracing = True
+        except Exception as e:
+            raise ValueError(
+                f"Invalid component definition string: {self._configuration.component_definition}"
+            ) from e
 
-                else:
-                    logger.info(
-                        "Pipeline has no tracer included. Adding Langfuse tracer"
-                    )
-                    component.add_component(
-                        f"{self._configuration.name} tracer",
-                        instance=LangfuseConnector(self._configuration.name),
-                    )  # TODO: component name bad, switch to smth else.
-                    logger.info("Added component tracer")
-            logger.info("Agent tracing not supported yet")
+    def _load_component(self, component_definition: str) -> Agent | Pipeline:
+        """Loads a Haystack component (Agent or Pipeline) from the path (component definition) and returns the agent_instance with langfuse tracing."""
+        logger.debug(f"Loading component from: {component_definition}...")
 
+        component = self._fetch_component_from_module()
+
+        try:
+            self._add_langfuse_tracing(component)
         except (FileNotFoundError, ImportError, AttributeError) as e:
             raise ValueError(
                 f"Failed to load agent from {component_definition}: {e}"

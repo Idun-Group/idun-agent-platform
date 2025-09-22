@@ -5,12 +5,11 @@ from haystack.utils import Secret
 from haystack.components.builders import PromptBuilder
 from haystack.components.generators import OpenAIGenerator
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
 template = "Answer: {{query}}"
-
-import os
-
-os.environ["LANGFUSE_SECRET_KEY"] = ""
-os.environ["LANGFUSE_PUBLIC_KEY"] = ""
 
 
 from haystack_integrations.components.connectors.langfuse import (
@@ -20,12 +19,12 @@ from haystack_integrations.components.connectors.langfuse import (
 def get_pipe():
     prompt_builder = PromptBuilder(template=template)
     generator = OpenAIGenerator(
-        api_key=Secret.from_token("KEY"),
+        api_key=Secret.from_env_var("GROQ_API_KEY"),
         model="llama-3.3-70b-versatile",
         api_base_url="https://api.groq.com/openai/v1"
     )
     pipeline = Pipeline()
-    pipeline.add_component("own tracer", LangfuseConnector("own tracer"))
+    # pipeline.add_component("own tracer", LangfuseConnector("own tracer"))
     pipeline.add_component("prompt_builder", prompt_builder)
     pipeline.add_component("generator", generator)
     pipeline.connect("prompt_builder", "generator")
