@@ -199,3 +199,6 @@ poetry.lock
 
 # Environment variables
 .env
+
+# Custom Gitignore for Idun
+*.db-wal
