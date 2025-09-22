@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "Idun Agent Platform",
+  "name": "idun_agent_engine",
   "type": "collection",
   "ignore": [
     "node_modules",
