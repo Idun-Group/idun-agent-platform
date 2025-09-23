@@ -35,6 +35,7 @@ class HaystackAgent(BaseAgent):
         self._configuration: HaystackAgentConfig | None = None
         self._name: str = "Haystack Agent"
         self._langfuse_tracing: bool = False
+        self._enable_tracing: bool = False
         self._infos: dict[str, Any] = {
             "status": "Uninitialized",
             "name": self._name,
@@ -123,6 +124,12 @@ class HaystackAgent(BaseAgent):
             self._infos["name"] = self._name
             # TODO: await persistence haystack
             # TODO OBS block
+
+            # check if config has observability `enabled` or `disabled`, so that we adjust our component to
+            # either add a tracer or not
+            if self._configuration.observability.enabled:
+                self._enable_tracing = True
+                logger.info("Enabling tracing...")
             component: Agent | Pipeline = self._load_component(
                 self._configuration.component_definition
             )
@@ -172,11 +179,12 @@ class HaystackAgent(BaseAgent):
                 raise TypeError(
                     f"The variable '{component_variable_name}' from {module_path} is not a Pipeline or Agent instance. Got {type(component)}"
                 )
+
             return component
 
         except Exception as e:
             raise ValueError(
-                f"Invalid component definition string: {self._configuration.component_definition}"
+                f"Invalid component definition string: {self._configuration.component_definition}. Error: {e}"
             ) from e
 
     def _load_component(self, component_definition: str) -> Agent | Pipeline:
@@ -184,15 +192,18 @@ class HaystackAgent(BaseAgent):
         logger.debug(f"Loading component from: {component_definition}...")
 
         component = self._fetch_component_from_module()
+        if self._enable_tracing:
+            try:
+                self._add_langfuse_tracing(component)
+            except (FileNotFoundError, ImportError, AttributeError) as e:
+                raise ValueError(
+                    f"Failed to load agent from {component_definition}: {e}"
+                ) from e
 
-        try:
-            self._add_langfuse_tracing(component)
-        except (FileNotFoundError, ImportError, AttributeError) as e:
-            raise ValueError(
-                f"Failed to load agent from {component_definition}: {e}"
-            ) from e
-
-        return component
+            return component
+        else:
+            logger.debug("User wants tracing disabled. Skipping..")
+            return component
 
     async def invoke(self, message: Any) -> Any:
         """Process a single input to chat with the agent.The message should be a dictionary containing 'query' and 'session_id'."""
