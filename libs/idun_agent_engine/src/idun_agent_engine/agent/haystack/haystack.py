@@ -99,8 +99,16 @@ class HaystackAgent(BaseAgent):
         if isinstance(component, Pipeline):
             if self._langfuse_tracing:
                 logger.info("langfuse tracing already on")
-            else:
+            elif not self._langfuse_tracing and self._enable_tracing:
                 logger.info("Pipeline has no tracer included. Adding Langfuse tracer")
+                if (
+                    not os.environ.get("LANGFUSE_API_KEY")
+                    or not os.environ.get("LANGFUSE_SECRET_KEY")
+                    or not os.environ.get("LANGFUSE_PUBLIC_KEY")
+                ):
+                    raise ValueError(
+                        "Langfuse keys not set! make sure you set Langfuse secret and public keys"
+                    )
                 component.add_component(
                     f"{self._configuration.name} tracer",
                     instance=LangfuseConnector(self._configuration.name),
