@@ -45,7 +45,7 @@ async def get_config(request: Request):
             status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not available"
         )
 
-    config = request.app.state.engine_config.agent.config
+    config = request.app.state.engine_config.agent
     return {"config": config.model_dump() if hasattr(config, "model_dump") else config}
 
 

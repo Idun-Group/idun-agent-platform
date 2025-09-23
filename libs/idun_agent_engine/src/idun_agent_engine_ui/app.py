@@ -68,8 +68,10 @@ def main() -> None:
 
         st.subheader("Agent Information")
         if config:
-            agent_name = config.get("config", {}).get("name", "Unnamed Agent")
+            agent_name = config.get("config", {}).get("config", "").get("name")
+            agent_type = config.get("config", {}).get("type", "Unnamed Agent")
 
+            st.text(f"Agent Type: {agent_type}")
             st.text(f"Name: {agent_name}")
 
             with st.expander("Full Config"):
