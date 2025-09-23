@@ -24,6 +24,8 @@ class ChatRequest(BaseModel):
 
     session_id: str
     query: str
+
+
 class ChatResponse(BaseModel):
     """Chat response payload containing session and response text."""
 
