@@ -170,6 +170,86 @@
         },
         "submit": "Crea account"
     },
+
+    "user-form": {
+        "title": "Modulo utente",
+        "description": "Si prega di compilare le seguenti informazioni.",
+        "personal-information": {
+            "legend": "Informazioni personali",
+            "first-name": {
+                "label": "Nome",
+                "placeholder": "Inserisci il tuo nome"
+            },
+            "last-name": {
+                "label": "Cognome",
+                "placeholder": "Inserisci il tuo cognome"
+            },
+            "email": {
+                "label": "Indirizzo e-mail",
+                "placeholder": "Inserisci il tuo indirizzo e-mail"
+            },
+            "phone": {
+                "label": "Telefono",
+                "placeholder": "Inserisci il tuo numero di telefono"
+            }
+        },
+        "workspace": {
+            "legend": "Informazioni sullo spazio di lavoro",
+            "selection": "Seleziona uno spazio di lavoro"
+        },
+        "professional-information": {
+            "legend": "Informazioni professionali",
+            "role": {
+                "label": "Ruolo",
+                "placeholder": "Inserisci il tuo ruolo",
+                "admin": "Amministratore",
+                "user": "Utente",
+                "developer": "Sviluppatore",
+                "analyst": "Analista",
+                "manager": "Manager"
+            },
+            "department": {
+                "label": "Dipartimento",
+                "placeholder": "Inserisci il tuo dipartimento",
+                "it": "IT",
+                "hr": "Risorse umane",
+                "finance": "Finanza",
+                "marketing": "Marketing",
+                "sales": "Vendite",
+                "operations": "Operazioni"
+            },
+            "bio": {
+                "label": "Biografia",
+                "placeholder": "Inserisci la tua biografia"
+            }
+        },
+        "permissions": {
+            "legend": "Autorizzazioni",
+            "agent-management": {
+                "title": "Gestione agenti",
+                "description": "Controlla l'accesso e le autorizzazioni degli agenti.",
+                "active": "Attivo"
+            },
+            "user-management": {
+                "title": "Gestione utenti",
+                "description": "Controlla l'accesso e le autorizzazioni degli utenti.",
+                "active": "Attivo"
+            },
+            "analytics": {
+                "title": "Analisi",
+                "description": "Accedi a report e analisi.",
+                "active": "Attivo"
+            },
+            "system-configuration": {
+                "title": "Configurazione di sistema",
+                "description": "Gestisci le impostazioni e le configurazioni di sistema.",
+                "active": "Attivo"
+            }
+        },
+        "cancel": "Annulla",
+        "create-user": "Crea utente"
+    },
+
     "login": {
         "title": "Accesso",
         "description": "Accedi al tuo account Idun Engine.",
@@ -271,6 +351,12 @@
             "n8n": "N8N",
             "adk": "ADK"
         },
+
+        "graph-definition-path": {
+            "label": "Percorso della definizione del grafo",
+            "placeholder": "Seleziona il percorso del file di definizione del grafo"
+        },
+
         "source": {
             "label": "Fonte",
             "upload": "Carica",
@@ -302,7 +388,9 @@
         "testQuestion": "Che tempo fa a Parigi?",
         "testResponse": "Il tempo attuale a Parigi è di 22°C con cielo parzialmente nuvoloso. C'è una leggera brezza da sud-ovest a 10 km/h. L'umidità è del 65% e la visibilità è buona a 10 km. Non sono previste precipitazioni per le prossime ore.",
         "viewTraces": "Visualizza le tracce",
-        "createAgent": "Crea agente",
+
+        "create-agent": "Crea un agente",
+
         "creating": "Creazione in corso...",
         "button": {
             "create": "Crea un agente",

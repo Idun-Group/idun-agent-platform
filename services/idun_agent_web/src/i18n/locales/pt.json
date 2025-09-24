@@ -170,6 +170,86 @@
         },
         "submit": "Criar conta"
     },
+
+    "user-form": {
+        "title": "Formulário de usuário",
+        "description": "Por favor, preencha as seguintes informações.",
+        "personal-information": {
+            "legend": "Informações pessoais",
+            "first-name": {
+                "label": "Primeiro nome",
+                "placeholder": "Digite seu primeiro nome"
+            },
+            "last-name": {
+                "label": "Sobrenome",
+                "placeholder": "Digite seu sobrenome"
+            },
+            "email": {
+                "label": "Endereço de e-mail",
+                "placeholder": "Digite seu endereço de e-mail"
+            },
+            "phone": {
+                "label": "Telefone",
+                "placeholder": "Digite seu número de telefone"
+            }
+        },
+        "workspace": {
+            "legend": "Informações do espaço de trabalho",
+            "selection": "Selecionar um espaço de trabalho"
+        },
+        "professional-information": {
+            "legend": "Informações profissionais",
+            "role": {
+                "label": "Função",
+                "placeholder": "Digite sua função",
+                "admin": "Administrador",
+                "user": "Usuário",
+                "developer": "Desenvolvedor",
+                "analyst": "Analista",
+                "manager": "Gerente"
+            },
+            "department": {
+                "label": "Departamento",
+                "placeholder": "Digite seu departamento",
+                "it": "TI",
+                "hr": "Recursos humanos",
+                "finance": "Finanças",
+                "marketing": "Marketing",
+                "sales": "Vendas",
+                "operations": "Operações"
+            },
+            "bio": {
+                "label": "Biografia",
+                "placeholder": "Digite sua biografia"
+            }
+        },
+        "permissions": {
+            "legend": "Permissões",
+            "agent-management": {
+                "title": "Gestão de agentes",
+                "description": "Controle o acesso e as permissões dos agentes.",
+                "active": "Ativo"
+            },
+            "user-management": {
+                "title": "Gestão de usuários",
+                "description": "Controle o acesso e as permissões dos usuários.",
+                "active": "Ativo"
+            },
+            "analytics": {
+                "title": "Análise",
+                "description": "Acesse os relatórios e análises.",
+                "active": "Ativo"
+            },
+            "system-configuration": {
+                "title": "Configuração do sistema",
+                "description": "Gerencie os parâmetros e as configurações do sistema.",
+                "active": "Ativo"
+            }
+        },
+        "cancel": "Cancelar",
+        "create-user": "Criar usuário"
+    },
+
     "login": {
         "title": "Login",
         "description": "Faça login em sua conta Idun Engine.",
@@ -283,6 +363,12 @@
             "select-remote": "Selecionar um repositório remoto",
             "select-project-template": "Selecionar um projeto"
         },
+
+        "graph-definition-path": {
+            "label": "Caminho da definição do gráfico",
+            "placeholder": "SSelecione o caminho do arquivo de definição do gráfico"
+        },
+
         "agent-path": {
             "label": "Caminho do agente",
             "placeholder": "Digite o caminho do agente"
@@ -302,7 +388,9 @@
         "testQuestion": "Como está o tempo em Paris?",
         "testResponse": "O tempo atual em Paris é de 22°C com céu parcialmente nublado. Há uma leve brisa do sudoeste a 10 km/h. A umidade é de 65% e a visibilidade é boa a 10 km. Nenhuma precipitação é esperada para as próximas horas.",
         "viewTraces": "Ver rastros",
-        "createAgent": "Criar agente",
+
+        "create-agent": "Criar um agente",
+
         "creating": "Criando...",
         "button": {
             "create": "Criar um agente",
@@ -774,7 +862,9 @@
         "firstName": "Primeiro nome",
         "lastName": "Sobrenome",
         "profilePicture": "Foto de perfil",
-        "uploadPhoto": "Carregar foto",
+
+        "uploadPhoto": "Subir uma foto",
+
         "password": "Senha",
         "confirmPassword": "Confirmar senha",
         "usernamePlaceholder": "Digite seu nome de usuário",

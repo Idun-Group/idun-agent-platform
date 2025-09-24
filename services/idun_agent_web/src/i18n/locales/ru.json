@@ -170,6 +170,86 @@
         },
         "submit": "Создать аккаунт"
     },
+
+    "user-form": {
+        "title": "Форма пользователя",
+        "description": "Пожалуйста, заполните следующую информацию.",
+        "personal-information": {
+            "legend": "Персональная информация",
+            "first-name": {
+                "label": "Имя",
+                "placeholder": "Введите ваше имя"
+            },
+            "last-name": {
+                "label": "Фамилия",
+                "placeholder": "Введите вашу фамилию"
+            },
+            "email": {
+                "label": "Адрес электронной почты",
+                "placeholder": "Введите ваш адрес электронной почты"
+            },
+            "phone": {
+                "label": "Телефон",
+                "placeholder": "Введите ваш номер телефона"
+            }
+        },
+        "workspace": {
+            "legend": "Информация о рабочей области",
+            "selection": "Выбрать рабочую область"
+        },
+        "professional-information": {
+            "legend": "Профессиональная информация",
+            "role": {
+                "label": "Роль",
+                "placeholder": "Введите вашу роль",
+                "admin": "Администратор",
+                "user": "Пользователь",
+                "developer": "Разработчик",
+                "analyst": "Аналитик",
+                "manager": "Менеджер"
+            },
+            "department": {
+                "label": "Отдел",
+                "placeholder": "Введите ваш отдел",
+                "it": "ИТ",
+                "hr": "Отдел кадров",
+                "finance": "Финансы",
+                "marketing": "Маркетинг",
+                "sales": "Продажи",
+                "operations": "Операции"
+            },
+            "bio": {
+                "label": "Биография",
+                "placeholder": "Введите вашу биографию"
+            }
+        },
+        "permissions": {
+            "legend": "Разрешения",
+            "agent-management": {
+                "title": "Управление агентами",
+                "description": "Контролируйте доступ и разрешения агентов.",
+                "active": "Активен"
+            },
+            "user-management": {
+                "title": "Управление пользователями",
+                "description": "Контролируйте доступ и разрешения пользователей.",
+                "active": "Активен"
+            },
+            "analytics": {
+                "title": "Аналитика",
+                "description": "Получите доступ к отчетам и аналитике.",
+                "active": "Активен"
+            },
+            "system-configuration": {
+                "title": "Конфигурация системы",
+                "description": "Управление системными настройками и конфигурациями.",
+                "active": "Активен"
+            }
+        },
+        "cancel": "Отмена",
+        "create-user": "Создать пользователя"
+    },
+
     "login": {
         "title": "Вход",
         "description": "Войдите в свой аккаунт Idun Engine.",
@@ -287,6 +367,12 @@
             "label": "Путь агента",
             "placeholder": "Введите путь агента"
         },
+
+        "graph-definition-path": {
+            "label": "Chemin de la définition du graphe",
+            "placeholder": "Sélectionnez le chemin du fichier de définition du graphe"
+        },
+
         "checkpointConfig": "Конфигурация контрольных точек",
         "availableAgents": "Доступные агенты",
         "database-type": "Тип базы данных",
@@ -302,7 +388,9 @@
         "testQuestion": "Какая погода в Париже?",
         "testResponse": "Текущая погода в Париже 22°C, переменная облачность. Дует легкий юго-западный ветерок со скоростью 10 км/ч. Влажность составляет 65%, видимость хорошая, 10 км. Осадков в ближайшие часы не ожидается.",
         "viewTraces": "Посмотреть трассировки",
-        "createAgent": "Создать агента",
+
+        "create-agent": "Создать агента",
+
         "creating": "Создание...",
         "button": {
             "create": "Создать агента",

@@ -24,4 +24,6 @@ createRoot(document.getElementById('root')!).render(
             </ToggleThemeModeProvider>
         </BrowserRouter>
     </StrictMode>
-);
+
+)
+
