@@ -349,6 +349,10 @@
             "n8n": "N8N",
             "adk": "ADK"
         },
+        "graph-definition-path": {
+            "label": "Ruta de definición del grafo",
+            "placeholder": "SSeleccione la ruta del archivo de definición del grafo"
+        },
         "source": {
             "label": "Fuente",
             "upload": "Subir",

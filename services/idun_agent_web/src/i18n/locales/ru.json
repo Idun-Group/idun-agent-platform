@@ -365,6 +365,10 @@
             "label": "Путь агента",
             "placeholder": "Введите путь агента"
         },
+        "graph-definition-path": {
+            "label": "Chemin de la définition du graphe",
+            "placeholder": "Sélectionnez le chemin du fichier de définition du graphe"
+        },
         "checkpointConfig": "Конфигурация контрольных точек",
         "availableAgents": "Доступные агенты",
         "database-type": "Тип базы данных",

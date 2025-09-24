@@ -89,7 +89,6 @@ function App() {
                     path="/agents/create"
                     element={
                         <AppLayout>
-                            <Header />
                             <ContentLayout>
                                 <SideBar />
                                 <MainContent>
