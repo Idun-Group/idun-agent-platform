@@ -39,6 +39,7 @@ agent_router = APIRouter()
 @agent_router.get("/config")
 async def get_config(request: Request):
     """Get the current agent configuration."""
+    logger.debug("Fetching agent config..")
     if not hasattr(request.app.state, "engine_config"):
         logger.error("Error retrieving the engine config from the api. ")
         raise HTTPException(
@@ -46,7 +47,8 @@ async def get_config(request: Request):
         )
 
     config = request.app.state.engine_config.agent
-    return {"config": config.model_dump() if hasattr(config, "model_dump") else config}
+    logger.info(f"Fetched config for agent: {config}")
+    return {"config": config}
 
 
 @agent_router.post("/invoke", response_model=ChatResponse)

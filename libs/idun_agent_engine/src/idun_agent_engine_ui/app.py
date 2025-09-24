@@ -1,9 +1,9 @@
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
+
 import requests
 import streamlit as st
-
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s",
@@ -16,8 +16,10 @@ logger = logging.getLogger(__name__)
 def get_agent_config() -> dict[str, Any]:
     """Get agent config."""
     try:
+        logger.debug("Fetching agent config...")
         response = requests.get("http://localhost:8000/agent/config")
         assert response.status_code == 200
+        logger.info("Agent config retrieved with success")
         return response.json()
     except Exception as e:
         logger.error(f"Error fetching agent config: {e}")
@@ -27,13 +29,15 @@ def get_agent_config() -> dict[str, Any]:
 def send_message(message: list[dict[str, Any]], session_id: str) -> dict[str, str]:
     """Sends the message to the API."""
     try:
-        logger.debug("Sending request to API")
+        logger.debug(
+            f"Sending request to API: message:{message}, session_id:{session_id}"
+        )
         response = requests.post(
             "http://localhost:8000/agent/invoke",
             json={"session_id": session_id, "query": json.dumps(message)},
         )
         assert response.status_code == 200
-        logger.info("Request sent with success")
+        logger.info(f"Message sent with success. Received: {response.json()}")
         if "response" not in response.json():
             logger.error("Error retrieving info from api: No response found from llm")
             raise ValueError("No response found from llm")
@@ -94,7 +98,9 @@ def main() -> None:
 
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                response = send_message(st.session_state.messages, session_id)
+                response = send_message(
+                    st.session_state.messages, st.session_state.session_id
+                )
             st.markdown(response)
 
         st.session_state.messages.append({"role": "assistant", "content": response})
