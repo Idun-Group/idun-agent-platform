@@ -1,0 +1,4 @@
+# Minimal dependencies for local API testing (compatible with Python 3.8)
+fastapi==0.100.0
+uvicorn==0.23.2
+pydantic==2.0.0
