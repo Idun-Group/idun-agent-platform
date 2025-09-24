@@ -170,6 +170,7 @@
         },
         "submit": "Criar conta"
     },
+
     "user-form": {
         "title": "Formulário de usuário",
         "description": "Por favor, preencha as seguintes informações.",
@@ -248,6 +249,7 @@
         "cancel": "Cancelar",
         "create-user": "Criar usuário"
     },
+
     "login": {
         "title": "Login",
         "description": "Faça login em sua conta Idun Engine.",
@@ -361,10 +363,12 @@
             "select-remote": "Selecionar um repositório remoto",
             "select-project-template": "Selecionar um projeto"
         },
+
         "graph-definition-path": {
             "label": "Caminho da definição do gráfico",
             "placeholder": "SSelecione o caminho do arquivo de definição do gráfico"
         },
+
         "agent-path": {
             "label": "Caminho do agente",
             "placeholder": "Digite o caminho do agente"
@@ -384,7 +388,9 @@
         "testQuestion": "Como está o tempo em Paris?",
         "testResponse": "O tempo atual em Paris é de 22°C com céu parcialmente nublado. Há uma leve brisa do sudoeste a 10 km/h. A umidade é de 65% e a visibilidade é boa a 10 km. Nenhuma precipitação é esperada para as próximas horas.",
         "viewTraces": "Ver rastros",
+
         "create-agent": "Criar um agente",
+
         "creating": "Criando...",
         "button": {
             "create": "Criar um agente",
@@ -856,7 +862,9 @@
         "firstName": "Primeiro nome",
         "lastName": "Sobrenome",
         "profilePicture": "Foto de perfil",
+
         "uploadPhoto": "Subir uma foto",
+
         "password": "Senha",
         "confirmPassword": "Confirmar senha",
         "usernamePlaceholder": "Digite seu nome de usuário",

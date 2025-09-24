@@ -12,13 +12,16 @@ type SourcePopupProps = {
     onClose: () => void;
     sourceType: 'upload' | 'Git' | 'remote' | 'project';
     onChangeZip: (pyFiles: string[]) => void;
+
 };
 
 export default function SourcePopup({
     isOpen,
     onClose,
     sourceType,
+
     onChangeZip,
+
 }: SourcePopupProps) {
     if (!isOpen) return null;
     const [selectedRepoType, setSelectedRepoType] = useState<
@@ -108,10 +111,12 @@ export default function SourcePopup({
 
                 <PopupContent>
                     {sourceType === 'upload' && (
+
                         <SourceSelectorUpload
                             onClose={onClose}
                             onChangeZip={onChangeZip}
                         />
+
                     )}
 
                     {sourceType === 'Git' && (

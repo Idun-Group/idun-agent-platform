@@ -170,6 +170,7 @@
         },
         "submit": "Создать аккаунт"
     },
+
     "user-form": {
         "title": "Форма пользователя",
         "description": "Пожалуйста, заполните следующую информацию.",
@@ -248,6 +249,7 @@
         "cancel": "Отмена",
         "create-user": "Создать пользователя"
     },
+
     "login": {
         "title": "Вход",
         "description": "Войдите в свой аккаунт Idun Engine.",
@@ -365,10 +367,12 @@
             "label": "Путь агента",
             "placeholder": "Введите путь агента"
         },
+
         "graph-definition-path": {
             "label": "Chemin de la définition du graphe",
             "placeholder": "Sélectionnez le chemin du fichier de définition du graphe"
         },
+
         "checkpointConfig": "Конфигурация контрольных точек",
         "availableAgents": "Доступные агенты",
         "database-type": "Тип базы данных",
@@ -384,7 +388,9 @@
         "testQuestion": "Какая погода в Париже?",
         "testResponse": "Текущая погода в Париже 22°C, переменная облачность. Дует легкий юго-западный ветерок со скоростью 10 км/ч. Влажность составляет 65%, видимость хорошая, 10 км. Осадков в ближайшие часы не ожидается.",
         "viewTraces": "Посмотреть трассировки",
+
         "create-agent": "Создать агента",
+
         "creating": "Создание...",
         "button": {
             "create": "Создать агента",

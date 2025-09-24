@@ -1,6 +1,7 @@
 import React from "react"; import { useTranslation } from "react-i18next";
 
 {{#if (eq withProps true)}}
+
 type {{pascalCase name}}Props = {
     // config your component props here
 };
@@ -26,4 +27,5 @@ const {{pascalCase name}}{{#if (eq type 'page')}}Page{{/if}} = ({{#if withProps}
 };
 
 export default {{pascalCase name}}{{#if (eq type 'page')}}Page{{/if}};
+
 {{/if}}

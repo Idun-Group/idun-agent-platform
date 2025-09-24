@@ -110,12 +110,11 @@ export function makeZipBlob(files: Map<string, Uint8Array>, dirs: Set<string>) {
     files.forEach((v, k) => (obj[k] = v));
     const zipped = zipSync(obj, { level: 6 });
 
-    // ⚠️ évite ArrayBuffer | SharedArrayBuffer
+    // évite ArrayBuffer | SharedArrayBuffer
     const copy = new Uint8Array(zipped.byteLength);
     copy.set(zipped);
     return new Blob([copy.buffer], { type: 'application/zip' });
 }
-
 export async function getAllFilePathFromZip(
     file: File | Blob | ArrayBuffer,
     extensions: string = ''

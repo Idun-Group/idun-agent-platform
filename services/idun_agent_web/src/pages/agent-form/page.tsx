@@ -42,12 +42,14 @@ export default function AgentFormPage() {
         console.log('Python files in ZIP:', files);
     };
 
+
     const handleSourceClick = (
         sourceType: 'upload' | 'Git' | 'remote' | 'project'
     ) => {
         setSelectedSourceType(sourceType);
         setIsPopupOpen(true);
     };
+
 
     const [isObservabilityEnabled, setIsObservabilityEnabled] = useState(false);
 
@@ -131,7 +133,6 @@ export default function AgentFormPage() {
 
     const handleSubmitForm = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
         console.log('Submitting form with step:', step);
 
         if (step < 1) {
@@ -169,7 +170,6 @@ export default function AgentFormPage() {
 
         console.log('Form submitted:', formData);
     };
-
     const [step, setStep] = useState(0);
 
     return (
@@ -178,7 +178,6 @@ export default function AgentFormPage() {
                 <h1>{t('agent-form.title')}</h1>
                 <p>{t('agent-form.description')}</p>
             </Header>
-
             {/* Steps indicator */}
             <StepsWrapper>
                 <StepDot active={step === 0}>1</StepDot>
@@ -562,6 +561,7 @@ export default function AgentFormPage() {
                             ),
                         }[step]
                     }
+
                 </ButtonContainer>
             </Form>
 
@@ -701,8 +701,7 @@ const ButtonContainer = styled.div`
     display: flex;
     justify-content: flex-end;
     margin-top: 32px;
-    padding-top: 32px;
-    gap: 8px;
+    padding-top: 32px;    gap: 8px;
     border-top: 1px solid var(--color-border-primary, #2a3f5f);
 `;
 

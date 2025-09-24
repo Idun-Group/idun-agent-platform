@@ -1,5 +1,7 @@
 import useAgentFile from '../../../hooks/use-agent-file';
+
 import { getAllFilePathFromZip } from '../../../utils/zip-session';
+
 import {
     ButtonGroup,
     FileInfo,
@@ -22,6 +24,7 @@ const SourceSelectorUpload = ({
     onClose: () => void;
     onChangeZip: (pyFiles: string[]) => void;
 }) => {
+
     const { selectedAgentFile, setSelectedAgentFile } = useAgentFile();
 
     // Handler for 'Fichier prêt' button
@@ -65,6 +68,7 @@ const SourceSelectorUpload = ({
                         top: 0,
                         cursor: 'pointer',
                     }}
+
                     onChange={async (e) => {
                         const selected = e.target.files && e.target.files[0];
                         if (selected) {
@@ -78,6 +82,7 @@ const SourceSelectorUpload = ({
                                     (path) => !path.endsWith('__init__.py')
                                 )
                             );
+
 
                             setSelectedAgentFile(selected, 'Folder');
                         }

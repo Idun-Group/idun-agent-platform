@@ -170,6 +170,7 @@
         },
         "submit": "Crea account"
     },
+
     "user-form": {
         "title": "Modulo utente",
         "description": "Si prega di compilare le seguenti informazioni.",
@@ -248,6 +249,7 @@
         "cancel": "Annulla",
         "create-user": "Crea utente"
     },
+
     "login": {
         "title": "Accesso",
         "description": "Accedi al tuo account Idun Engine.",
@@ -349,10 +351,12 @@
             "n8n": "N8N",
             "adk": "ADK"
         },
+
         "graph-definition-path": {
             "label": "Percorso della definizione del grafo",
             "placeholder": "Seleziona il percorso del file di definizione del grafo"
         },
+
         "source": {
             "label": "Fonte",
             "upload": "Carica",
@@ -384,7 +388,9 @@
         "testQuestion": "Che tempo fa a Parigi?",
         "testResponse": "Il tempo attuale a Parigi è di 22°C con cielo parzialmente nuvoloso. C'è una leggera brezza da sud-ovest a 10 km/h. L'umidità è del 65% e la visibilità è buona a 10 km. Non sono previste precipitazioni per le prossime ore.",
         "viewTraces": "Visualizza le tracce",
+
         "create-agent": "Crea un agente",
+
         "creating": "Creazione in corso...",
         "button": {
             "create": "Crea un agente",
