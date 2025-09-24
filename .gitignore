@@ -202,3 +202,5 @@ poetry.lock
 
 # Custom Gitignore for Idun
 *.db-wal
+.DS_Store
+*.DS_Store
