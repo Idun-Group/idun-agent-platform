@@ -14,6 +14,7 @@ DEV_SERVICE := agent-manager-dev
 # Commands that run inside containers (uv)
 UV := $(COMPOSE) exec $(CLI_SERVICE) uv
 ALEMBIC := $(COMPOSE) exec $(CLI_SERVICE) uv run alembic
+PYTHON := $(COMPOSE) exec $(CLI_SERVICE) uv run python
 PYTEST := $(COMPOSE) exec $(CLI_SERVICE) uv run pytest
 RUFF := $(COMPOSE) exec $(CLI_SERVICE) uv run ruff
 BLACK := $(COMPOSE) exec $(CLI_SERVICE) uv run black
@@ -54,6 +55,18 @@ migrate-down: ## Rollback last migration (inside container)
 migrate-history: ## Show migration history (inside container)
 	$(ENSURE_CLI)
 	$(ALEMBIC) history
+
+# Seeding
+seed: ## Seed the database with initial data (inside container)
+	$(ENSURE_CLI)
+	$(PYTHON) -m app.infrastructure.db.seed
+
+reseed: ## Re-apply seed safely (idempotent)
+	make seed
+
+db-init: ## Create DB schema and seed (migrate + seed)
+	make migrate
+	make seed
 
 # Docker commands
 up: ## Start development environment with Docker Compose
@@ -188,13 +201,13 @@ restart: ## Restart all services
 
 # Development workflows
 dev-full: ## Full development cycle: build, up, migrate, serve
-	make build
-	make up
-	@echo "Waiting for services to be ready..."
-	@sleep 10
-	make migrate
-	make serve
-	@echo "🎉 Full development environment is ready!"
+    make build
+    make up
+    @echo "Waiting for services to be ready..."
+    @sleep 10
+    make db-init
+    make serve
+    @echo "🎉 Full development environment is ready!"
 
 dev-reset: ## Complete reset: down, clean, rebuild, up
 	make down
@@ -202,7 +215,7 @@ dev-reset: ## Complete reset: down, clean, rebuild, up
 	make rebuild
 	make up
 	@sleep 10
-	make migrate
+    make db-init
 	@echo "🔄 Environment completely reset and ready!"
 
 # Environment setup
@@ -212,7 +225,7 @@ setup: build up install precommit-install ## Setup development environment (cont
 
 # Quick start for new developers  
 quickstart: setup migrate serve ## Complete setup and start everything
-	@echo "🚀 Idun Agent Manager is ready!"
+    @echo "🚀 Idun Agent Manager is ready!"
 	@echo "API: http://localhost:8000"
 	@echo "Docs: http://localhost:8000/docs"
 	@echo "Run 'make shell' to access the container shell" 
