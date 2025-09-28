@@ -8,14 +8,14 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from idun_agent_schema.engine.langgraph import (
+    LangGraphAgentConfig,
+    SqliteCheckpointConfig,
+)
 
 from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
-from ..agent.langgraph.langgraph_model import (
-    LangGraphAgentConfig,
-    SqliteCheckpointConfig,
-)
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
 
 
@@ -240,10 +240,8 @@ class ConfigBuilder:
             from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             agent_instance = LanggraphAgent()
-        elif agent_type == "CREWAI":
-            from idun_agent_engine.agent.crewai.crewai import CrewAIAgent
 
-            agent_instance = CrewAIAgent()
+
         # Future agent types can be added here:
         # elif agent_type == "crewai":
         #     from ..agent.crewai.agent import CrewAIAgent
@@ -275,10 +273,7 @@ class ConfigBuilder:
             from ..agent.langgraph.langgraph import LanggraphAgent
 
             return LanggraphAgent
-        elif agent_type == "CREWAI":
-            from ..agent.crewai.crewai import CrewAIAgent
 
-            return CrewAIAgent
         # Future agent types can be added here:
         # elif agent_type == "crewai":
         #     from ..agent.crewai.agent import CrewAIAgent

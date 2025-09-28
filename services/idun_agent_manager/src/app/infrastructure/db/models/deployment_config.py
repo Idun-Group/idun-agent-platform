@@ -1,4 +1,5 @@
 """SQLAlchemy model for DEPLOYMENT_CONFIG table."""
+
 from __future__ import annotations
 
 from datetime import datetime

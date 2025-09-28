@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = "==3.13.*"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -1395,6 +1395,7 @@ dependencies = [
     { name = "gunicorn" },
     { name = "httpx" },
     { name = "idun-agent-engine" },
+    { name = "idun-agent-schema" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp" },
     { name = "opentelemetry-instrumentation-fastapi" },
@@ -1442,6 +1443,7 @@ requires-dist = [
     { name = "gunicorn", specifier = ">=23.0.0,<24.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "idun-agent-engine", specifier = ">=0.1.0,<0.2.0" },
+    { name = "idun-agent-schema", specifier = ">=0.1.0,<0.2.0" },
     { name = "opentelemetry-api", specifier = ">=1.34.0,<2.0.0" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.34.0,<2.0.0" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = "==0.55b1" },
@@ -1477,6 +1479,19 @@ dev = [
     { name = "ruff", specifier = "==0.8.4" },
     { name = "types-passlib", specifier = "==1.7.7" },
     { name = "types-redis", specifier = "==4.6.0" },
+]
+
+[[package]]
+name = "idun-agent-schema"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8e/a7/446b1202b3a605ed311eb1025beff32087cbca55ee280bddb8e4735fab1b/idun_agent_schema-0.1.0.tar.gz", hash = "sha256:62243f0935ca9bfdc36d59e1eb5fb84c24189e9430f0c4174f0d431f9965d3e2", size = 9275, upload-time = "2025-09-28T18:58:45.344Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/dc/ac3077caf223fd2556c691a79ec63927eadfa627f9c9707a8ecc44b33201/idun_agent_schema-0.1.0-py3-none-any.whl", hash = "sha256:af942ab09cf305be47a8690872f23ddce487ca7a9e0eb81173de4f836a797c48", size = 13236, upload-time = "2025-09-28T18:58:44.335Z" },
 ]
 
 [[package]]
@@ -2387,7 +2402,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess" },
+    { name = "ptyprocess", marker = "sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [

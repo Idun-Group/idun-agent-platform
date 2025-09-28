@@ -8,12 +8,15 @@ from typing import Any
 import aiosqlite
 from ag_ui.core import events as ag_events
 from ag_ui.core import types as ag_types
+from idun_agent_schema.engine.langgraph import (
+    LangGraphAgentConfig,
+    SqliteCheckpointConfig,
+)
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
-from idun_agent_engine.agent.langgraph import langgraph_model as lg_model
 
 
 class LanggraphAgent(agent_base.BaseAgent):
@@ -29,7 +32,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         self._checkpointer: Any = None
         self._store: Any = None
         self._connection: Any = None
-        self._configuration: lg_model.LangGraphAgentConfig | None = None
+        self._configuration: LangGraphAgentConfig | None = None
         self._name: str = "Unnamed LangGraph Agent"
         self._infos: dict[str, Any] = {
             "status": "Uninitialized",
@@ -77,7 +80,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         return self._agent_instance
 
     @property
-    def configuration(self) -> lg_model.LangGraphAgentConfig:
+    def configuration(self) -> LangGraphAgentConfig:
         """Return validated configuration.
 
         Raises:
@@ -95,9 +98,9 @@ class LanggraphAgent(agent_base.BaseAgent):
         )
         return self._infos
 
-    async def initialize(self, config: lg_model.LangGraphAgentConfig) -> None:
+    async def initialize(self, config: LangGraphAgentConfig) -> None:
         """Initialize the LangGraph agent asynchronously."""
-        self._configuration = lg_model.LangGraphAgentConfig.model_validate(config)
+        self._configuration = LangGraphAgentConfig.model_validate(config)
 
         self._name = self._configuration.name or "Unnamed LangGraph Agent"
         self._infos["name"] = self._name
@@ -181,7 +184,7 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         if self._configuration.checkpointer:
             if isinstance(
-                self._configuration.checkpointer, lg_model.SqliteCheckpointConfig
+                self._configuration.checkpointer, SqliteCheckpointConfig
             ):
                 self._connection = await aiosqlite.connect(
                     self._configuration.checkpointer.db_path

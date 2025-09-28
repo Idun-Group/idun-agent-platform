@@ -1,14 +1,18 @@
 """SQLAlchemy model for ENGINE table."""
+
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.infrastructure.db.models.agent_config import AgentConfigModel
 from app.infrastructure.db.session import Base
+
+if TYPE_CHECKING:  # Avoid circular imports at runtime
+    from app.infrastructure.db.models.agent_config import AgentConfigModel
 
 
 class EngineModel(Base):

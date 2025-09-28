@@ -46,6 +46,8 @@ dependencies = [
   "tenacity>=8.0.0,<9.0.0",
   # Idun Agent Engine SDK (from PyPI)
   "idun-agent-engine>=0.1.0,<0.2.0",
+  # Centralized schema package
+  "idun-agent-schema>=0.1.0,<0.2.0",
 ]
 
 ## uv configuration

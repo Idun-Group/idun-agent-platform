@@ -5,22 +5,12 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from idun_agent_schema.manager.deps import Principal
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.agent_service import AgentService
 from app.core.settings import Settings, get_settings_dependency
 from app.infrastructure.db.session import get_async_session
-
-
-# Authentication and authorization dependencies
-class Principal(BaseModel):
-    """Authenticated caller identity and authorization context."""
-
-    user_id: str
-    tenant_id: UUID
-    roles: list[str] = []
-    workspace_ids: list[UUID] = []
 
 
 async def get_principal(request: Request) -> Principal:
@@ -63,6 +53,11 @@ async def get_principal(request: Request) -> Principal:
                     meta = await provider._discover()
                     token_endpoint = meta.get("token_endpoint")
                     async with httpx.AsyncClient(timeout=15) as client:
+                        if not token_endpoint or not isinstance(token_endpoint, str):
+                            raise HTTPException(
+                                status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Invalid OIDC token endpoint",
+                            )
                         resp = await client.post(
                             token_endpoint,
                             data={

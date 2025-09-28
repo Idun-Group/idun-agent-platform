@@ -4,25 +4,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from idun_agent_schema.engine.api import ChatRequest, ChatResponse
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.dependencies import get_agent
-
-
-class ChatRequest(BaseModel):
-    """Chat request payload for agent endpoints."""
-
-    session_id: str
-    query: str
-
-
-class ChatResponse(BaseModel):
-    """Chat response payload containing session and response text."""
-
-    session_id: str
-    response: str
-
 
 agent_router = APIRouter()
 

@@ -1,4 +1,5 @@
 """SQLAlchemy model for GATEWAY_ROUTES table."""
+
 from __future__ import annotations
 
 from datetime import datetime

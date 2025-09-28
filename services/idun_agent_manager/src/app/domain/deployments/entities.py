@@ -1,12 +1,5 @@
-"""Domain entities/enums for deployments."""
+"""Compatibility shim: re-export DeploymentMode from schema library."""
 
-from enum import Enum
+from idun_agent_schema.manager.deployments import DeploymentMode  # noqa: F401
 
-
-class DeploymentMode(str, Enum):
-    """Supported deployment modes."""
-
-    LOCAL = "local"
-    AWS = "aws"
-    AZURE = "azure"
-    GCP = "gcp"
+__all__ = ["DeploymentMode"]

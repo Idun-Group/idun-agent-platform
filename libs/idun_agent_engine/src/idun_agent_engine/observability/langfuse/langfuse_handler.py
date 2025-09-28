@@ -5,8 +5,9 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from idun_agent_schema.shared.observability import _resolve_env
+
 from ..base import ObservabilityHandlerBase
-from ..utils import _resolve_env
 
 
 class LangfuseHandler(ObservabilityHandlerBase):

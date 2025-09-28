@@ -6,32 +6,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import ORJSONResponse
-from pydantic import BaseModel, Field
-
-
-class ProblemDetail(BaseModel):
-    """RFC 9457 Problem Details model."""
-
-    type: str = Field(
-        default="about:blank",
-        description="A URI reference that identifies the problem type",
-    )
-    title: str = Field(description="A short, human-readable summary of the problem")
-    status: int = Field(description="The HTTP status code")
-    detail: str | None = Field(
-        default=None, description="A human-readable explanation of the problem"
-    )
-    instance: str | None = Field(
-        default=None,
-        description="A URI reference that identifies the specific occurrence",
-    )
-
-    # Extension members
-    timestamp: str | None = Field(default=None)
-    request_id: str | None = Field(default=None)
-    errors: dict[str, Any] | None = Field(default=None)
-
-    model_config = {"extra": "allow"}
+from idun_agent_schema.manager.errors import ProblemDetail
 
 
 class ProblemException(HTTPException):

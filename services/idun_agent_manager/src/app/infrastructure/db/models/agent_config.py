@@ -1,17 +1,20 @@
 """SQLAlchemy model for AGENT_CONFIG table."""
+
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import DateTime, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.infrastructure.db.models.deployments import DeploymentModel
-from app.infrastructure.db.models.engine import EngineModel
-from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.infrastructure.db.session import Base
+
+if TYPE_CHECKING:  # Avoid circular imports at runtime
+    from app.infrastructure.db.models.deployments import DeploymentModel
+    from app.infrastructure.db.models.engine import EngineModel
+    from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 
 
 class AgentConfigModel(Base):
@@ -44,10 +47,12 @@ class AgentConfigModel(Base):
     )
 
     # Relationships
-    engines: Mapped[list[EngineModel]] = relationship(back_populates="agent_config")
+    engines: Mapped[list[EngineModel]] = relationship(
+        "EngineModel", back_populates="agent_config"
+    )
     managed_agents: Mapped[list[ManagedAgentModel]] = relationship(
-        back_populates="agent_config"
+        "ManagedAgentModel", back_populates="agent_config"
     )
     deployments: Mapped[list[DeploymentModel]] = relationship(
-        back_populates="agent_config"
+        "DeploymentModel", back_populates="agent_config"
     )
