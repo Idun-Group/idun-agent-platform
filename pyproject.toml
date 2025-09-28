@@ -9,6 +9,7 @@ license = "MIT"
 dependencies = [
     "idun-agent-engine",
     "idun-agent-manager",
+    "idun-agent-schema",
 ]
 
 [dependency-groups]

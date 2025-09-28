@@ -1,0 +1,18 @@
+meta {
+  name: Invoke
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8000/agent/invoke
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "session_id": "test1",
+    "query": "hello, use your tools"
+  }
+}
