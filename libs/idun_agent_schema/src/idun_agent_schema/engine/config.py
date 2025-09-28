@@ -12,7 +12,7 @@ from .server import ServerConfig
 class AgentConfig(BaseModel):
     """Configuration for agent specification and settings."""
 
-    type: Literal["langgraph", "ADK", "CREWAI"] = Field(default="langgraph")
+    type: Literal["langgraph", "ADK", "CREWAI", "haystack"] = Field(default="langgraph")
     config: BaseAgentConfig | LangGraphAgentConfig = Field(
         default_factory=BaseAgentConfig
     )

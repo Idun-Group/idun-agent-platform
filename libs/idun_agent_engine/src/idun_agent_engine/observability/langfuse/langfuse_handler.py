@@ -40,10 +40,10 @@ class LangfuseHandler(ObservabilityHandlerBase):
         self._callbacks: list[Any] = []
         self._langfuse_client = None
         try:
-            from langfuse import get_client
-            from langfuse.langchain import CallbackHandler
+            from langfuse.client import Langfuse
+            from langfuse.callback import CallbackHandler
 
-            self._langfuse_client = get_client()
+            self._langfuse_client = Langfuse()
 
             try:
                 if self._langfuse_client.auth_check():

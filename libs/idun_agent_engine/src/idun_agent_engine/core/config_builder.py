@@ -247,11 +247,6 @@ class ConfigBuilder:
 
             agent_instance = LanggraphAgent()
 
-        elif agent_type == "CREWAI":
-            from idun_agent_engine.agent.crewai.crewai import CrewAIAgent
-
-            agent_instance = CrewAIAgent()
-
         elif agent_type == "haystack":
             from idun_agent_engine.agent.haystack.haystack import HaystackAgent
 
@@ -288,10 +283,6 @@ class ConfigBuilder:
 
             return LanggraphAgent
 
-        elif agent_type == "CREWAI":
-            from idun_agent_engine.agent.crewai.crewai import CrewAIAgent
-
-            return CrewAIAgent
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
