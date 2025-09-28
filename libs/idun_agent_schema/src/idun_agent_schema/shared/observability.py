@@ -1,12 +1,24 @@
-"""Provider-agnostic observability configuration model."""
+"""Provider-agnostic observability configuration model (shared)."""
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from pydantic import BaseModel, Field
 
-from .utils import _resolve_env
+
+def _resolve_env(value: Any) -> Any:
+    """Resolve environment placeholders in strings.
+
+    Supports patterns ${VAR} and $VAR. Non-strings are returned unchanged.
+    """
+    if isinstance(value, str):
+        if value.startswith("${") and value.endswith("}"):
+            return os.getenv(value[2:-1])
+        if value.startswith("$"):
+            return os.getenv(value[1:])
+    return value
 
 
 class ObservabilityConfig(BaseModel):
@@ -25,7 +37,6 @@ class ObservabilityConfig(BaseModel):
 
     provider: str | None = Field(default=None)
     enabled: bool = Field(default=False)
-    # Keep options generic to support different providers while remaining strongly-typed at the top level
     options: dict[str, Any] = Field(default_factory=dict)
 
     def _resolve_value(self, value: Any) -> Any:

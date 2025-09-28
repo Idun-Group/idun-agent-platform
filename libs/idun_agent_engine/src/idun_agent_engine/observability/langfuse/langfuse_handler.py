@@ -5,8 +5,9 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from idun_agent_schema.shared.observability import _resolve_env
+
 from ..base import ObservabilityHandlerBase
-from ..utils import _resolve_env
 
 
 class LangfuseHandler(ObservabilityHandlerBase):
@@ -39,10 +40,10 @@ class LangfuseHandler(ObservabilityHandlerBase):
         self._callbacks: list[Any] = []
         self._langfuse_client = None
         try:
-            from langfuse import get_client
-            from langfuse.langchain import CallbackHandler
+            from langfuse.client import Langfuse
+            from langfuse.callback import CallbackHandler
 
-            self._langfuse_client = get_client()
+            self._langfuse_client = Langfuse()
 
             try:
                 if self._langfuse_client.auth_check():

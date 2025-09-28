@@ -1,19 +1,8 @@
-"""Server configuration models."""
+"""Compatibility re-exports for server configuration models."""
 
-from pydantic import BaseModel, Field
+from idun_agent_schema.engine.server import (  # noqa: F401
+    ServerAPIConfig,
+    ServerConfig,
+)
 
-
-class ServerAPIConfig(BaseModel):
-    """API server configuration.
-
-    Attributes:
-        port: Port where the HTTP server will bind.
-    """
-
-    port: int = 8000
-
-
-class ServerConfig(BaseModel):
-    """Configuration for the Engine's universal settings."""
-
-    api: ServerAPIConfig = Field(default_factory=ServerAPIConfig)
+__all__ = ["ServerAPIConfig", "ServerConfig"]

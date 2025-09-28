@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Idun Agent Manager: FastAPI",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "cwd": "${workspaceFolder}/services/idun_agent_manager",
+      "envFile": "${workspaceFolder}/services/idun_agent_manager/.env",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/services/idun_agent_manager/src",
+        "ENVIRONMENT": "development"
+      },
+      "args": [
+        "app.main:app",
+        "--reload",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    }
+  ]
+}

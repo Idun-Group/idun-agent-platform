@@ -8,15 +8,15 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from idun_agent_schema.engine.langgraph import (
+    LangGraphAgentConfig,
+    SqliteCheckpointConfig,
+)
 
 from idun_agent_engine.agent.haystack.haystack_model import HaystackAgentConfig
 from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
-from ..agent.langgraph.langgraph_model import (
-    LangGraphAgentConfig,
-    SqliteCheckpointConfig,
-)
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
 
 
@@ -157,7 +157,7 @@ class ConfigBuilder:
                 type="langgraph", config=LangGraphAgentConfig.model_validate(config)
             )
 
-        if agent_type == "haystack":
+        elif agent_type == "haystack":
             self._agent_config = AgentConfig(
                 type="haystack", config=HaystackAgentConfig.model_validate(config)
             )
@@ -247,11 +247,6 @@ class ConfigBuilder:
 
             agent_instance = LanggraphAgent()
 
-        elif agent_type == "CREWAI":
-            from idun_agent_engine.agent.crewai.crewai import CrewAIAgent
-
-            agent_instance = CrewAIAgent()
-
         elif agent_type == "haystack":
             from idun_agent_engine.agent.haystack.haystack import HaystackAgent
 
@@ -287,10 +282,7 @@ class ConfigBuilder:
             from ..agent.langgraph.langgraph import LanggraphAgent
 
             return LanggraphAgent
-        elif agent_type == "CREWAI":
-            from ..agent.crewai.crewai import CrewAIAgent
 
-            return CrewAIAgent
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 

@@ -8,7 +8,8 @@ readme = "README.md"
 license = "MIT"
 dependencies = [
     "idun-agent-engine",
-    "langfuse-haystack>=2.0.1",
+    "idun-agent-manager",
+    "idun-agent-schema",
 ]
 
 [dependency-groups]
@@ -37,6 +38,7 @@ package = false
 
 [tool.uv.sources]
 idun-agent-engine = { path = "libs/idun_agent_engine", editable = true }
+idun-agent-manager = { path = "services/idun_agent_manager", editable = true }
 
 [build-system]
 requires = ["hatchling"]

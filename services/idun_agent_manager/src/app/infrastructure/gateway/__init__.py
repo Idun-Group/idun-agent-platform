@@ -1,0 +1,1 @@
+"""Legacy directory - Gateway clients moved to infrastructure/http/."""
