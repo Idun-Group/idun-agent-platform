@@ -1495,6 +1495,7 @@ dev = [
     { name = "mypy", specifier = ">=1.10.0,<2" },
     { name = "pre-commit", specifier = ">=3.8.0,<5" },
     { name = "pytest", specifier = ">=8.3.3,<9" },
+    { name = "pytest-asyncio", specifier = ">=1.2.0" },
     { name = "pytest-cov", specifier = ">=5.0.0,<7" },
     { name = "ruff", specifier = ">=0.6.5,<0.13" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20240808,<7" },
