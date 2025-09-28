@@ -3,7 +3,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
 
@@ -20,6 +20,21 @@ logger = logging.getLogger(__name__)
 agent_router = APIRouter()
 
 
+@agent_router.get("/config")
+async def get_config(request: Request):
+    """Get the current agent configuration."""
+    logger.debug("Fetching agent config..")
+    if not hasattr(request.app.state, "engine_config"):
+        logger.error("Error retrieving the engine config from the api. ")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not available"
+        )
+
+    config = request.app.state.engine_config.agent
+    logger.info(f"Fetched config for agent: {config}")
+    return {"config": config}
+
+
 @agent_router.post("/invoke", response_model=ChatResponse)
 async def invoke(
     request: ChatRequest,
@@ -30,7 +45,6 @@ async def invoke(
         message = {"query": request.query, "session_id": request.session_id}
         response_content = await agent.invoke(message)
 
-        logger.info(f"Sent message:, {response_content}")  # TODO: remove
         return ChatResponse(session_id=request.session_id, response=response_content)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e

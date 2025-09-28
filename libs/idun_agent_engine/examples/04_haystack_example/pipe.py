@@ -12,9 +12,9 @@ load_dotenv()
 template = "Answer the next message (return the answer to the last user query in normal text and not json, based on the conversation history), given the prior json holding the conversation: {{query}}"
 
 
-from haystack_integrations.components.connectors.langfuse import (
-    LangfuseConnector,
-)
+# from haystack_integrations.components.connectors.langfuse import (
+#     LangfuseConnector,
+# )
 
 def get_pipe():
     prompt_builder = PromptBuilder(template=template)
@@ -24,7 +24,7 @@ def get_pipe():
         api_base_url="https://api.groq.com/openai/v1"
     )
     pipeline = Pipeline()
-    pipeline.add_component("own tracer", LangfuseConnector("own tracer"))
+    # pipeline.add_component("own tracer", LangfuseConnector("own tracer"))
     pipeline.add_component("prompt_builder", prompt_builder)
     pipeline.add_component("generator", generator)
     pipeline.connect("prompt_builder", "generator")

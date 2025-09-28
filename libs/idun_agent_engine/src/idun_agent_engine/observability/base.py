@@ -95,6 +95,15 @@ def create_observability_handler(
             info["project_name"] = project_name
         return handler, info
 
+    if provider == "phoenix-local":
+        from .phoenix_local.phoenix_local_handler import PhoenixLocalHandler
+
+        handler = PhoenixLocalHandler(options)
+        return handler, {
+            "enabled": True,
+            "provider": "phoenix-local",
+        }
+
     return None, {
         "enabled": False,
         "provider": provider,
