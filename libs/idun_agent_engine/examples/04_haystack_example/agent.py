@@ -23,7 +23,7 @@ def dice_roller(sides: int = 6, count: int = 1) -> Dict[str, Any]:
     }
 
 SYSTEM_PROMPT = """You are a helpful assistant with access to a dice rolling tool.
-=======
+
 You should use the dice_roller tool when:
 - The user asks you to roll dice (any number of sides, any quantity)
 - The user wants to make a random choice between options (you can assign numbers to options and roll)
