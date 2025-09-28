@@ -1,6 +1,7 @@
 """RFC 9457 Problem Details for HTTP APIs implementation."""
 
-from typing import Any, Dict, Optional, Union
+from datetime import UTC
+from typing import Any
 from uuid import uuid4
 
 from fastapi import HTTPException, Request, status
@@ -17,18 +18,18 @@ class ProblemDetail(BaseModel):
     )
     title: str = Field(description="A short, human-readable summary of the problem")
     status: int = Field(description="The HTTP status code")
-    detail: Optional[str] = Field(
+    detail: str | None = Field(
         default=None, description="A human-readable explanation of the problem"
     )
-    instance: Optional[str] = Field(
+    instance: str | None = Field(
         default=None,
         description="A URI reference that identifies the specific occurrence",
     )
-    
+
     # Extension members
-    timestamp: Optional[str] = Field(default=None)
-    request_id: Optional[str] = Field(default=None)
-    errors: Optional[Dict[str, Any]] = Field(default=None)
+    timestamp: str | None = Field(default=None)
+    request_id: str | None = Field(default=None)
+    errors: dict[str, Any] | None = Field(default=None)
 
     model_config = {"extra": "allow"}
 
@@ -40,15 +41,15 @@ class ProblemException(HTTPException):
         self,
         status_code: int,
         title: str,
-        detail: Optional[str] = None,
+        detail: str | None = None,
         type_uri: str = "about:blank",
-        instance: Optional[str] = None,
-        errors: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        instance: str | None = None,
+        errors: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(status_code=status_code, detail=detail, headers=headers)
-        
+
         self.problem_detail = ProblemDetail(
             type=type_uri,
             title=title,
@@ -67,7 +68,7 @@ class AuthenticationError(ProblemException):
     def __init__(
         self,
         detail: str = "Authentication required",
-        instance: Optional[str] = None,
+        instance: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -86,7 +87,7 @@ class AuthorizationError(ProblemException):
     def __init__(
         self,
         detail: str = "Insufficient permissions",
-        instance: Optional[str] = None,
+        instance: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -105,8 +106,8 @@ class ValidationError(ProblemException):
     def __init__(
         self,
         detail: str = "Validation failed",
-        errors: Optional[Dict[str, Any]] = None,
-        instance: Optional[str] = None,
+        errors: dict[str, Any] | None = None,
+        instance: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -126,14 +127,14 @@ class NotFoundError(ProblemException):
     def __init__(
         self,
         resource_type: str = "Resource",
-        resource_id: Optional[str] = None,
-        instance: Optional[str] = None,
+        resource_id: str | None = None,
+        instance: str | None = None,
         **kwargs: Any,
     ) -> None:
         detail = f"{resource_type} not found"
         if resource_id:
             detail += f" with ID: {resource_id}"
-            
+
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             title="Not Found",
@@ -150,7 +151,7 @@ class ConflictError(ProblemException):
     def __init__(
         self,
         detail: str = "Resource conflict",
-        instance: Optional[str] = None,
+        instance: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -169,14 +170,14 @@ class RateLimitError(ProblemException):
     def __init__(
         self,
         detail: str = "Rate limit exceeded",
-        retry_after: Optional[int] = None,
-        instance: Optional[str] = None,
+        retry_after: int | None = None,
+        instance: str | None = None,
         **kwargs: Any,
     ) -> None:
         headers = {}
         if retry_after:
             headers["Retry-After"] = str(retry_after)
-            
+
         super().__init__(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             title="Too Many Requests",
@@ -194,7 +195,7 @@ class InternalServerError(ProblemException):
     def __init__(
         self,
         detail: str = "An internal server error occurred",
-        instance: Optional[str] = None,
+        instance: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -208,12 +209,12 @@ class InternalServerError(ProblemException):
 
 
 def create_problem_response(
-    problem: Union[ProblemDetail, ProblemException],
-    request: Optional[Request] = None,
+    problem: ProblemDetail | ProblemException,
+    request: Request | None = None,
 ) -> ORJSONResponse:
     """Create a Problem Details response."""
-    from datetime import datetime, timezone
-    
+    from datetime import datetime
+
     if isinstance(problem, ProblemException):
         problem_detail = problem.problem_detail
         status_code = problem.status_code
@@ -231,7 +232,7 @@ def create_problem_response(
 
     # Add timestamp
     if not problem_detail.timestamp:
-        problem_detail.timestamp = datetime.now(timezone.utc).isoformat()
+        problem_detail.timestamp = datetime.now(UTC).isoformat()
 
     return ORJSONResponse(
         status_code=status_code,
@@ -269,20 +270,20 @@ async def validation_exception_handler(
 ) -> ORJSONResponse:
     """Convert validation exceptions to Problem Details format."""
     from fastapi.exceptions import RequestValidationError
-    
+
     if isinstance(exc, RequestValidationError):
         errors = {}
         for error in exc.errors():
             field = ".".join(str(x) for x in error["loc"][1:])  # Skip 'body'
             errors[field] = error["msg"]
-            
+
         problem = ValidationError(
             detail="Request validation failed",
             errors=errors,
             instance=str(request.url),
         )
         return create_problem_response(problem, request)
-    
+
     # Fallback for other validation errors
     problem = ValidationError(
         detail=str(exc),
@@ -307,4 +308,4 @@ def _get_status_phrase(status_code: int) -> str:
         503: "Service Unavailable",
         504: "Gateway Timeout",
     }
-    return status_phrases.get(status_code, f"HTTP {status_code}") 
+    return status_phrases.get(status_code, f"HTTP {status_code}")

@@ -13,7 +13,9 @@ class UserModel(Base):
     __tablename__ = "users"
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    email: Mapped[str] = mapped_column(
+        String(255), nullable=False, unique=True, index=True
+    )
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -21,7 +23,8 @@ class UserModel(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
-
-

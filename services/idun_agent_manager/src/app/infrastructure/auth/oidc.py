@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 import jwt
@@ -36,7 +36,16 @@ _jwks_cache = JWKSCache()
 
 
 class GenericOIDCProvider:
-    def __init__(self, issuer: str, client_id: str, audience: Optional[str], allowed_algs: List[str], jwks_ttl: int, clock_skew_seconds: int, claim_mapping: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        issuer: str,
+        client_id: str,
+        audience: str | None,
+        allowed_algs: list[str],
+        jwks_ttl: int,
+        clock_skew_seconds: int,
+        claim_mapping: dict[str, Any],
+    ) -> None:
         self.issuer = issuer.rstrip("/")
         self.client_id = client_id
         self.audience = audience
@@ -63,7 +72,10 @@ class GenericOIDCProvider:
         meta = await self._discover()
         jwks_uri = meta.get("jwks_uri")
         if not jwks_uri:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="OIDC metadata missing jwks_uri")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="OIDC metadata missing jwks_uri",
+            )
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(jwks_uri)
             resp.raise_for_status()
@@ -71,12 +83,23 @@ class GenericOIDCProvider:
             await _jwks_cache.set(self.issuer, keys, self.jwks_ttl)
             return keys
 
-    async def get_authorization_url(self, state: str, redirect_uri: str, scopes: List[str], code_challenge: Optional[str] = None, code_challenge_method: str = "S256") -> str:
+    async def get_authorization_url(
+        self,
+        state: str,
+        redirect_uri: str,
+        scopes: list[str],
+        code_challenge: str | None = None,
+        code_challenge_method: str = "S256",
+    ) -> str:
         meta = await self._discover()
         auth_endpoint = meta.get("authorization_endpoint")
         if not auth_endpoint:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="OIDC metadata missing authorization_endpoint")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="OIDC metadata missing authorization_endpoint",
+            )
         from urllib.parse import urlencode
+
         query: dict[str, Any] = {
             "client_id": self.client_id,
             "response_type": "code",
@@ -89,11 +112,16 @@ class GenericOIDCProvider:
             query["code_challenge_method"] = code_challenge_method
         return f"{auth_endpoint}?{urlencode(query)}"
 
-    async def exchange_code_for_token(self, code: str, redirect_uri: str, code_verifier: Optional[str] = None) -> dict[str, Any]:
+    async def exchange_code_for_token(
+        self, code: str, redirect_uri: str, code_verifier: str | None = None
+    ) -> dict[str, Any]:
         meta = await self._discover()
         token_endpoint = meta.get("token_endpoint")
         if not token_endpoint:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="OIDC metadata missing token_endpoint")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="OIDC metadata missing token_endpoint",
+            )
         async with httpx.AsyncClient(timeout=15) as client:
             data: dict[str, Any] = {
                 "grant_type": "authorization_code",
@@ -116,11 +144,15 @@ class GenericOIDCProvider:
         jwks = await self._get_jwks()
         try:
             unverified = jwt.get_unverified_header(token)
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token header")
+        except Exception as err:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token header"
+            ) from err
         kid = unverified.get("kid")
         if not kid:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing kid in token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing kid in token"
+            )
         key = self._select_key(jwks, kid)
         if not key:
             # Refresh JWKS once on cache miss
@@ -128,7 +160,10 @@ class GenericOIDCProvider:
             jwks = await self._get_jwks()
             key = self._select_key(jwks, kid)
             if not key:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Signing key not found")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Signing key not found",
+                )
         try:
             claims = jwt.decode(
                 token,
@@ -139,17 +174,20 @@ class GenericOIDCProvider:
                 leeway=self.clock_skew,
             )
             return claims
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+        except Exception as err:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+            ) from err
 
-    def _select_key(self, jwks: dict[str, Any], kid: str) -> Optional[str]:
+    def _select_key(self, jwks: dict[str, Any], kid: str) -> str | None:
         for k in jwks.get("keys", []):
             if k.get("kid") == kid:
                 return jwt.api_jwk.dumps(k)
         return None
 
     def normalize_claims(self, claims: dict[str, Any]) -> dict[str, Any]:
-        def read_path(obj: dict[str, Any], path: List[str]) -> Any:
+        def read_path(obj: dict[str, Any], path: list[str]) -> Any:
             cur: Any = obj
             for p in path:
                 if not isinstance(cur, dict) or p not in cur:
@@ -160,9 +198,9 @@ class GenericOIDCProvider:
         mapping = self.claim_mapping
         user_id = None
         email = None
-        roles: List[str] = []
-        groups: List[str] = []
-        workspaces: List[str] = []
+        roles: list[str] = []
+        groups: list[str] = []
+        workspaces: list[str] = []
 
         for path in mapping.get("user_id_paths", [["sub"]]):
             val = read_path(claims, path)
@@ -204,7 +242,7 @@ class GenericOIDCProvider:
         return normalized
 
 
-_provider: Optional[GenericOIDCProvider] = None
+_provider: GenericOIDCProvider | None = None
 
 
 def _default_claim_mapping(provider_type: str) -> dict[str, Any]:
@@ -261,12 +299,11 @@ def get_provider() -> GenericOIDCProvider:
     _provider = GenericOIDCProvider(
         issuer=settings.issuer,
         client_id=settings.client_id,
-        audience=settings.audience or (settings.expected_audiences[0] if settings.expected_audiences else None),
+        audience=settings.audience
+        or (settings.expected_audiences[0] if settings.expected_audiences else None),
         allowed_algs=settings.allowed_algs,
         jwks_ttl=settings.jwks_cache_ttl,
         clock_skew_seconds=settings.clock_skew_seconds,
         claim_mapping=claim_mapping,
     )
     return _provider
-
-

@@ -1,1 +1,1 @@
-"""Integration tests for Idun Agent Manager.""" 
+"""Integration tests for Idun Agent Manager."""

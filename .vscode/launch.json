@@ -1,54 +1,58 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Debug FastAPI Server",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "uvicorn",
-            "args": [
-                "idun_agent_manager.main:app",
-                "--host", "127.0.0.1",
-                "--port", "8000",
-                "--reload"
-            ],
-            "jinja": true,
-            "justMyCode": true,
-            "console": "integratedTerminal",
-            "purpose": ["debug-in-terminal"]
-        },
-        {
-            "name": "Debug Streamlit UI",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "streamlit",
-            "args": [
-                "run",
-                "idun_agent_manager/ui/app.py"
-            ],
-            "justMyCode": true,
-            "console": "integratedTerminal",
-            "purpose": ["debug-in-terminal"]
-        },
-        {
-            "name": "Next.js: debug server-side",
-            "type": "node-terminal",
-            "request": "launch",
-            "command": "npm run dev",
-            "cwd": "${workspaceFolder}/chat-ui"
-        },
-        {
-            "name": "Next.js: debug client-side",
-            "type": "chrome",
-            "request": "launch",
-            "url": "http://localhost:3000",
-            "webRoot": "${workspaceFolder}/chat-ui"
-        }
-    ],
-    "compounds": [
-        {
-          "name": "Full-stack Debug (Next.js)",
-          "configurations": ["Debug FastAPI Server", "Next.js: debug server-side", "Next.js: debug client-side", "Debug Streamlit UI"]
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Idun Manager (FastAPI)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8500",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}/services/idun_agent_manager/src",
+      "envFile": "${workspaceFolder}/services/idun_agent_manager/.env",
+      "justMyCode": false,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Idun Engine (FastAPI)",
+      "type": "debugpy",
+      "request": "launch",
+      "console": "integratedTerminal",
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8100",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}/libs/idun_agent_engine/examples/01_basic_config_file",
+      "justMyCode": false,
+      "envFile": "${workspaceFolder}/libs/idun_agent_engine/examples/01_basic_config_file/.env"
+    },
+  ],
+  "compounds": [
+    {
+      "name": "Run Manager + Engine",
+      "configurations": [
+        "Idun Manager (FastAPI)",
+        "Idun Engine (FastAPI)"
+      ]
+    }
+    // {
+    //   "name": "Run Manager + Engine + Streamlit",
+    //   "configurations": [
+    //     "Idun Manager (FastAPI)",
+    //     "Idun Engine (FastAPI)",
+    //     "IdunEngine Streamlit (placeholder)"
+    //   ]
+    // }
+  ]
 }

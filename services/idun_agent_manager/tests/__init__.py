@@ -1,1 +1,1 @@
-"""Test suite for Idun Agent Manager.""" 
+"""Test suite for Idun Agent Manager."""

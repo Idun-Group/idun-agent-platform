@@ -6,7 +6,10 @@ authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.13,<3.14"
 readme = "README.md"
 license = "MIT"
-dependencies = ["idun-agent-engine"]
+dependencies = [
+    "idun-agent-engine",
+    "idun-agent-manager",
+]
 
 [dependency-groups]
 dev = [
@@ -34,6 +37,7 @@ package = false
 
 [tool.uv.sources]
 idun-agent-engine = { path = "libs/idun_agent_engine", editable = true }
+idun-agent-manager = { path = "services/idun_agent_manager", editable = true }
 
 [build-system]
 requires = ["hatchling"]

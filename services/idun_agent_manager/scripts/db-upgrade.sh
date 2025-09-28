@@ -7,5 +7,3 @@ SERVICE="agent-manager-dev"
 echo "Applying Alembic migrations to head..."
 docker compose -f "$COMPOSE_FILE" exec -T "$SERVICE" uv run alembic upgrade head
 echo "✅ Migration complete"
-
-

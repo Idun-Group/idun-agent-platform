@@ -1,1 +1,1 @@
-"""Unit tests for Idun Agent Manager.""" 
+"""Unit tests for Idun Agent Manager."""

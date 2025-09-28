@@ -1,10 +1,9 @@
 """Repository implementations for agents (adapters)."""
 
 from datetime import datetime, timedelta
-from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.agents.entities import AgentEntity, AgentRunEntity
@@ -14,10 +13,10 @@ from app.infrastructure.db.models.agents import AgentModel, AgentRunModel
 
 class SqlAlchemyAgentRepository(AgentRepositoryPort):
     """SQLAlchemy implementation of agent repository."""
-    
+
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-    
+
     async def create(self, agent: AgentEntity) -> AgentEntity:
         """Create a new agent."""
         model = AgentModel(
@@ -38,40 +37,35 @@ class SqlAlchemyAgentRepository(AgentRepositoryPort):
             success_rate=agent.success_rate,
             avg_response_time_ms=agent.avg_response_time_ms,
         )
-        
+
         self.session.add(model)
         await self.session.flush()
-        
+
         return self._model_to_entity(model)
-    
-    async def get_by_id(self, agent_id: UUID, tenant_id: UUID) -> Optional[AgentEntity]:
+
+    async def get_by_id(self, agent_id: UUID, tenant_id: UUID) -> AgentEntity | None:
         """Get agent by ID and tenant."""
         stmt = select(AgentModel).where(
-            AgentModel.id == agent_id,
-            AgentModel.tenant_id == tenant_id
+            AgentModel.id == agent_id, AgentModel.tenant_id == tenant_id
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._model_to_entity(model) if model else None
-    
-    async def get_by_name(self, name: str, tenant_id: UUID) -> Optional[AgentEntity]:
+
+    async def get_by_name(self, name: str, tenant_id: UUID) -> AgentEntity | None:
         """Get agent by name and tenant."""
         stmt = select(AgentModel).where(
-            AgentModel.name == name,
-            AgentModel.tenant_id == tenant_id
+            AgentModel.name == name, AgentModel.tenant_id == tenant_id
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._model_to_entity(model) if model else None
-    
+
     async def list_by_tenant(
-        self, 
-        tenant_id: UUID, 
-        limit: int = 100, 
-        offset: int = 0
-    ) -> List[AgentEntity]:
+        self, tenant_id: UUID, limit: int = 100, offset: int = 0
+    ) -> list[AgentEntity]:
         """List agents by tenant with pagination."""
         stmt = (
             select(AgentModel)
@@ -82,18 +76,17 @@ class SqlAlchemyAgentRepository(AgentRepositoryPort):
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        
+
         return [self._model_to_entity(model) for model in models]
-    
+
     async def update(self, agent: AgentEntity) -> AgentEntity:
         """Update an existing agent."""
         stmt = select(AgentModel).where(
-            AgentModel.id == agent.id,
-            AgentModel.tenant_id == agent.tenant_id
+            AgentModel.id == agent.id, AgentModel.tenant_id == agent.tenant_id
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one()
-        
+
         # Update fields
         model.name = agent.name
         model.description = agent.description
@@ -108,27 +101,26 @@ class SqlAlchemyAgentRepository(AgentRepositoryPort):
         model.total_runs = agent.total_runs
         model.success_rate = agent.success_rate
         model.avg_response_time_ms = agent.avg_response_time_ms
-        
+
         await self.session.flush()
-        
+
         return self._model_to_entity(model)
-    
+
     async def delete(self, agent_id: UUID, tenant_id: UUID) -> bool:
         """Delete an agent."""
         stmt = select(AgentModel).where(
-            AgentModel.id == agent_id,
-            AgentModel.tenant_id == tenant_id
+            AgentModel.id == agent_id, AgentModel.tenant_id == tenant_id
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         if model:
             await self.session.delete(model)
             await self.session.flush()
             return True
-        
+
         return False
-    
+
     async def count_by_tenant(self, tenant_id: UUID) -> int:
         """Count agents by tenant."""
         stmt = select(func.count(AgentModel.id)).where(
@@ -136,11 +128,11 @@ class SqlAlchemyAgentRepository(AgentRepositoryPort):
         )
         result = await self.session.execute(stmt)
         return result.scalar() or 0
-    
+
     def _model_to_entity(self, model: AgentModel) -> AgentEntity:
         """Convert SQLAlchemy model to domain entity."""
         from app.domain.agents.entities import AgentFramework, AgentStatus
-        
+
         return AgentEntity(
             id=model.id,
             name=model.name,
@@ -163,10 +155,10 @@ class SqlAlchemyAgentRepository(AgentRepositoryPort):
 
 class SqlAlchemyAgentRunRepository(AgentRunRepositoryPort):
     """SQLAlchemy implementation of agent run repository."""
-    
+
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-    
+
     async def create(self, run: AgentRunEntity) -> AgentRunEntity:
         """Create a new agent run."""
         model = AgentRunModel(
@@ -185,36 +177,30 @@ class SqlAlchemyAgentRunRepository(AgentRunRepositoryPort):
             trace_id=run.trace_id,
             span_id=run.span_id,
         )
-        
+
         self.session.add(model)
         await self.session.flush()
-        
+
         return self._model_to_entity(model)
-    
-    async def get_by_id(self, run_id: UUID, tenant_id: UUID) -> Optional[AgentRunEntity]:
+
+    async def get_by_id(self, run_id: UUID, tenant_id: UUID) -> AgentRunEntity | None:
         """Get run by ID and tenant."""
         stmt = select(AgentRunModel).where(
-            AgentRunModel.id == run_id,
-            AgentRunModel.tenant_id == tenant_id
+            AgentRunModel.id == run_id, AgentRunModel.tenant_id == tenant_id
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        
+
         return self._model_to_entity(model) if model else None
-    
+
     async def list_by_agent(
-        self, 
-        agent_id: UUID, 
-        tenant_id: UUID,
-        limit: int = 100, 
-        offset: int = 0
-    ) -> List[AgentRunEntity]:
+        self, agent_id: UUID, tenant_id: UUID, limit: int = 100, offset: int = 0
+    ) -> list[AgentRunEntity]:
         """List runs by agent with pagination."""
         stmt = (
             select(AgentRunModel)
             .where(
-                AgentRunModel.agent_id == agent_id,
-                AgentRunModel.tenant_id == tenant_id
+                AgentRunModel.agent_id == agent_id, AgentRunModel.tenant_id == tenant_id
             )
             .order_by(desc(AgentRunModel.started_at))
             .limit(limit)
@@ -222,15 +208,12 @@ class SqlAlchemyAgentRunRepository(AgentRunRepositoryPort):
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        
+
         return [self._model_to_entity(model) for model in models]
-    
+
     async def list_by_tenant(
-        self, 
-        tenant_id: UUID, 
-        limit: int = 100, 
-        offset: int = 0
-    ) -> List[AgentRunEntity]:
+        self, tenant_id: UUID, limit: int = 100, offset: int = 0
+    ) -> list[AgentRunEntity]:
         """List runs by tenant with pagination."""
         stmt = (
             select(AgentRunModel)
@@ -241,18 +224,17 @@ class SqlAlchemyAgentRunRepository(AgentRunRepositoryPort):
         )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        
+
         return [self._model_to_entity(model) for model in models]
-    
+
     async def update(self, run: AgentRunEntity) -> AgentRunEntity:
         """Update an existing run."""
         stmt = select(AgentRunModel).where(
-            AgentRunModel.id == run.id,
-            AgentRunModel.tenant_id == run.tenant_id
+            AgentRunModel.id == run.id, AgentRunModel.tenant_id == run.tenant_id
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one()
-        
+
         # Update fields
         model.output_data = run.output_data
         model.status = run.status
@@ -261,29 +243,27 @@ class SqlAlchemyAgentRunRepository(AgentRunRepositoryPort):
         model.response_time_ms = run.response_time_ms
         model.tokens_used = run.tokens_used
         model.cost_usd = run.cost_usd
-        
+
         await self.session.flush()
-        
+
         return self._model_to_entity(model)
-    
+
     async def delete_old_runs(self, older_than_days: int) -> int:
         """Delete runs older than specified days."""
         cutoff_date = datetime.utcnow() - timedelta(days=older_than_days)
-        
-        stmt = select(AgentRunModel).where(
-            AgentRunModel.started_at < cutoff_date
-        )
+
+        stmt = select(AgentRunModel).where(AgentRunModel.started_at < cutoff_date)
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        
+
         count = len(models)
         for model in models:
             await self.session.delete(model)
-        
+
         await self.session.flush()
-        
+
         return count
-    
+
     def _model_to_entity(self, model: AgentRunModel) -> AgentRunEntity:
         """Convert SQLAlchemy model to domain entity."""
         return AgentRunEntity(
@@ -301,4 +281,4 @@ class SqlAlchemyAgentRunRepository(AgentRunRepositoryPort):
             cost_usd=model.cost_usd,
             trace_id=model.trace_id,
             span_id=model.span_id,
-        ) 
+        )

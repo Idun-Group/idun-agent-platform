@@ -153,8 +153,7 @@ class ConfigBuilder:
         """
         if agent_type == "langgraph":
             self._agent_config = AgentConfig(
-                type="langgraph",
-                config=LangGraphAgentConfig.model_validate(config)
+                type="langgraph", config=LangGraphAgentConfig.model_validate(config)
             )
         # elif agent_type == "ADK":
         #     self._agent_config = ADKAgentSpec(

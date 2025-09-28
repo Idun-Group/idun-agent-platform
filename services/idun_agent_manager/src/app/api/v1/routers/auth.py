@@ -1,19 +1,17 @@
 """OIDC authentication routes: login and callback (PKCE)."""
 
 import base64
-import os
 import hashlib
-from typing import Any, Dict
+import json
+import os
+import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.core.settings import get_settings
 from app.infrastructure.auth.oidc import get_provider
 from app.infrastructure.cache.redis_client import get_redis_client
-import json
-import secrets
-
 
 router = APIRouter()
 
@@ -39,8 +37,20 @@ async def login(request: Request) -> RedirectResponse:
 
     # Persist ephemeral state in secure cookies (could be Redis in prod)
     response = RedirectResponse(url="/")
-    response.set_cookie("oidc_state", state, httponly=True, secure=not settings.is_development, samesite="lax")
-    response.set_cookie("oidc_code_verifier", code_verifier, httponly=True, secure=not settings.is_development, samesite="lax")
+    response.set_cookie(
+        "oidc_state",
+        state,
+        httponly=True,
+        secure=not settings.is_development,
+        samesite="lax",
+    )
+    response.set_cookie(
+        "oidc_code_verifier",
+        code_verifier,
+        httponly=True,
+        secure=not settings.is_development,
+        samesite="lax",
+    )
 
     redirect_uri = settings.auth.redirect_uri or str(request.url_for("callback"))
     auth_url = await provider.get_authorization_url(
@@ -63,12 +73,16 @@ async def callback(request: Request) -> Response:
     code = params.get("code")
     state = params.get("state")
     if not code or not state:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing code/state")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Missing code/state"
+        )
 
     cookie_state = request.cookies.get("oidc_state")
     code_verifier = request.cookies.get("oidc_code_verifier")
     if not cookie_state or cookie_state != state:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid state")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid state"
+        )
 
     token = await provider.exchange_code_for_token(
         code=code,
@@ -81,7 +95,9 @@ async def callback(request: Request) -> Response:
     refresh_token = token.get("refresh_token")
     expires_in = token.get("expires_in")  # seconds
     if not id_token and not access_token:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No token returned")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No token returned"
+        )
 
     # Create opaque session id and store tokens server-side
     sid = secrets.token_urlsafe(32)
@@ -101,7 +117,14 @@ async def callback(request: Request) -> Response:
     await client.set(f"sid:{sid}", json.dumps(data), ex=max(effective_expires, 60))
 
     resp = RedirectResponse(url="/")
-    resp.set_cookie("sid", sid, httponly=True, secure=not settings.is_development, samesite="lax", max_age=60*60*24*7)
+    resp.set_cookie(
+        "sid",
+        sid,
+        httponly=True,
+        secure=not settings.is_development,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 7,
+    )
     # clear temporary cookies
     resp.delete_cookie("oidc_state")
     resp.delete_cookie("oidc_code_verifier")
@@ -112,11 +135,13 @@ async def callback(request: Request) -> Response:
 async def me(request: Request) -> JSONResponse:
     sid = request.cookies.get("sid")
     if not sid:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
+        )
     redis = get_redis_client()
     raw = await redis.get(f"sid:{sid}")
     if not raw:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired"
+        )
     return JSONResponse(content={"session": json.loads(raw)})
-
-

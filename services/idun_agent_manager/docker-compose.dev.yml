@@ -130,4 +130,4 @@ volumes:
 
 networks:
   idun_network:
-    driver: bridge 
+    driver: bridge

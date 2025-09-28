@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from sqlalchemy import MetaData, Table, select
 from sqlalchemy.dialects.postgresql import insert
@@ -50,7 +51,15 @@ async def _get_or_create(
     create_values: Mapping[str, Any],
 ) -> Mapping[str, Any]:
     """Fetch a row by lookup; if missing, insert and return it."""
-    row = (await conn.execute(select(table).where(*[table.c[k] == v for k, v in lookup_where.items()]))).mappings().first()
+    row = (
+        (
+            await conn.execute(
+                select(table).where(*[table.c[k] == v for k, v in lookup_where.items()])
+            )
+        )
+        .mappings()
+        .first()
+    )
     if row:
         return row
 
@@ -162,7 +171,9 @@ async def seed() -> None:
 
         # --- Seed a sample agent_config in default workspace ---
         agent_name = "Acme Support Agent"
-        agent_id = _stable_uuid5(f"agent:{tenant_row['id']}:{ws_default['id']}:{agent_name}")
+        agent_id = _stable_uuid5(
+            f"agent:{tenant_row['id']}:{ws_default['id']}:{agent_name}"
+        )
         await _get_or_create(
             conn,
             agent_config,
@@ -182,10 +193,10 @@ async def seed() -> None:
         )
 
         # Commit is implicit via engine.begin() transaction
-        print("✅ Seed completed: tenant 'acme', workspaces ['default','dev'], user 'admin@acme.test', agent 'Acme Support Agent'.")
+        print(
+            "✅ Seed completed: tenant 'acme', workspaces ['default','dev'], user 'admin@acme.test', agent 'Acme Support Agent'."
+        )
 
 
 if __name__ == "__main__":
     asyncio.run(seed())
-
-

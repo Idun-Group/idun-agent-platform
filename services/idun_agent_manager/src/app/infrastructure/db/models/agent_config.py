@@ -1,12 +1,16 @@
 """SQLAlchemy model for AGENT_CONFIG table."""
+from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 from sqlalchemy import DateTime, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.infrastructure.db.models.deployments import DeploymentModel
+from app.infrastructure.db.models.engine import EngineModel
+from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.infrastructure.db.session import Base
 
 
@@ -18,23 +22,32 @@ class AgentConfigModel(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     framework: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
-    config: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
 
     # Multi-tenancy scoping
-    tenant_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    tenant_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False, index=True
+    )
     # Optional workspace scoping (single workspace association for now)
-    workspace_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
     # Relationships
-    engines: Mapped[list["EngineModel"]] = relationship(back_populates="agent_config")
-    managed_agents: Mapped[list["ManagedAgentModel"]] = relationship(back_populates="agent_config")
-    deployments: Mapped[list["DeploymentModel"]] = relationship(back_populates="agent_config")
-
-
+    engines: Mapped[list[EngineModel]] = relationship(back_populates="agent_config")
+    managed_agents: Mapped[list[ManagedAgentModel]] = relationship(
+        back_populates="agent_config"
+    )
+    deployments: Mapped[list[DeploymentModel]] = relationship(
+        back_populates="agent_config"
+    )

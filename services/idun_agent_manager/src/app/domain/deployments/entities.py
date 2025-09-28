@@ -10,5 +10,3 @@ class DeploymentMode(str, Enum):
     AWS = "aws"
     AZURE = "azure"
     GCP = "gcp"
-
-

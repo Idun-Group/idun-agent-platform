@@ -1,10 +1,8 @@
 import asyncio
 import random
 import string
-from typing import Dict
 
 import httpx
-
 
 API_BASE = "http://agent-manager-dev:8000"
 ENDPOINT = f"{API_BASE}/api/v1/agents/"  # trailing slash is required
@@ -14,7 +12,7 @@ def rand_suffix(n: int = 6) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
 
 
-def make_payload(i: int) -> Dict:
+def make_payload(i: int) -> dict:
     kind = ["langgraph", "crewai", "custom"][i % 3]
     base_name = {
         "langgraph": "LG",
@@ -73,5 +71,3 @@ async def seed(n: int = 50) -> None:
 
 if __name__ == "__main__":
     asyncio.run(seed(50))
-
-

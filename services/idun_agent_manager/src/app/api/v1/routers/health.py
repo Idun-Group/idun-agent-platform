@@ -17,7 +17,7 @@ async def health_check() -> dict[str, str]:
 
 @router.get("/readyz")
 async def readiness_check(
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ) -> dict[str, str]:
     """Readiness check including database connectivity."""
     try:
@@ -35,4 +35,4 @@ async def version() -> dict[str, str]:
     return {
         "version": settings.api.version,
         "name": settings.api.title,
-    } 
+    }

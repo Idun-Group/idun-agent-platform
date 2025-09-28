@@ -365,8 +365,15 @@ class LanggraphAgent(agent_base.BaseAgent):
                                     tool_call_id=current_tool_call_id,
                                 )
 
-                            current_tool_call_id = str(tc["id"]) if tc.get("id") is not None else None
-                            tool_call_name = str(tc["function"]["name"]) if tc.get("function") and tc["function"].get("name") is not None else None
+                            current_tool_call_id = (
+                                str(tc["id"]) if tc.get("id") is not None else None
+                            )
+                            tool_call_name = (
+                                str(tc["function"]["name"])
+                                if tc.get("function")
+                                and tc["function"].get("name") is not None
+                                else None
+                            )
                             yield ag_events.ToolCallStartEvent(
                                 type=ag_events.EventType.TOOL_CALL_START,
                                 tool_call_id=current_tool_call_id or "",
@@ -394,8 +401,8 @@ class LanggraphAgent(agent_base.BaseAgent):
                 # Tool end event from langgraph has the tool output, but ag-ui model doesn't have a place for it in ToolCallEndEvent
                 if current_tool_call_id:
                     yield ag_events.ToolCallEndEvent(
-                                type=ag_events.EventType.TOOL_CALL_END,
-                                tool_call_id=current_tool_call_id or "",
+                        type=ag_events.EventType.TOOL_CALL_END,
+                        tool_call_id=current_tool_call_id or "",
                     )
                     current_tool_call_id = None
 
@@ -412,7 +419,8 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         if current_message_id:
             yield ag_events.TextMessageEndEvent(
-                type=ag_events.EventType.TEXT_MESSAGE_END, message_id=current_message_id or ""
+                type=ag_events.EventType.TEXT_MESSAGE_END,
+                message_id=current_message_id or "",
             )
 
         yield ag_events.RunFinishedEvent(

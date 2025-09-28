@@ -9,7 +9,7 @@ agents_db = []
 
 def create_app() -> FastAPI:
     """Create a minimal FastAPI application."""
-    
+
     # Import all DB models early so SQLAlchemy resolves relationships
     import app.infrastructure.db.models  # noqa: F401
 
@@ -21,7 +21,7 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
-    
+
     # Setup CORS
     app.add_middleware(
         CORSMiddleware,
@@ -30,20 +30,20 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     # Setup routes
     setup_routes(app)
-    
+
     return app
 
 
 def setup_routes(app: FastAPI) -> None:
     """Setup application routes."""
-    # Import minimal routers 
+    # Import minimal routers
     from app.api.v1.routers.agents import router as agents_router
     from app.api.v1.routers.auth import router as auth_router
     from app.api.v1.routers.health import router as health_router
-    
+
     # API v1 routes
     app.include_router(
         agents_router,
@@ -74,4 +74,4 @@ async def root() -> dict[str, str]:
         "name": "Idun Agent Manager API",
         "version": "0.1.0",
         "status": "running",
-    } 
+    }

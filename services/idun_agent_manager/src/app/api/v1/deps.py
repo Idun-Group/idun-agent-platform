@@ -1,23 +1,26 @@
 """FastAPI dependencies for dependency injection."""
 
-from typing import Annotated, AsyncGenerator, List
+from collections.abc import AsyncIterator
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.agent_service import AgentService
 from app.core.settings import Settings, get_settings_dependency
 from app.infrastructure.db.session import get_async_session
 
+
 # Authentication and authorization dependencies
 class Principal(BaseModel):
     """Authenticated caller identity and authorization context."""
+
     user_id: str
     tenant_id: UUID
-    roles: List[str] = []
-    workspace_ids: List[UUID] = []
+    roles: list[str] = []
+    workspace_ids: list[UUID] = []
 
 
 async def get_principal(request: Request) -> Principal:
@@ -33,14 +36,18 @@ async def get_principal(request: Request) -> Principal:
         sid = request.cookies.get("sid")
         if sid:
             # Resolve tokens from Redis and refresh if needed
-            from app.infrastructure.cache.redis_client import get_redis_client
+            import json
+            import time
+
             from app.infrastructure.auth.oidc import get_provider
-            import json, time
+            from app.infrastructure.cache.redis_client import get_redis_client
 
             redis = get_redis_client()
             raw = await redis.get(f"sid:{sid}")
             if not raw:
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired"
+                )
             data = json.loads(raw)
             access_token = data.get("access_token")
             refresh_token = data.get("refresh_token")
@@ -52,6 +59,7 @@ async def get_principal(request: Request) -> Principal:
                 try:
                     # token refresh
                     import httpx
+
                     meta = await provider._discover()
                     token_endpoint = meta.get("token_endpoint")
                     async with httpx.AsyncClient(timeout=15) as client:
@@ -63,7 +71,9 @@ async def get_principal(request: Request) -> Principal:
                                 "client_id": get_settings_dependency().auth.client_id,
                                 "client_secret": get_settings_dependency().auth.client_secret,
                             },
-                            headers={"Content-Type": "application/x-www-form-urlencoded"},
+                            headers={
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            },
                         )
                         resp.raise_for_status()
                         tok = resp.json()
@@ -72,14 +82,21 @@ async def get_principal(request: Request) -> Principal:
                         if new_refresh:
                             refresh_token = new_refresh
                         expires_in = int(tok.get("expires_in") or 3600)
-                        data.update({
-                            "access_token": access_token,
-                            "refresh_token": refresh_token,
-                            "expires_at": int(time.time()) + expires_in,
-                        })
-                        await redis.set(f"sid:{sid}", json.dumps(data), ex=max(expires_in, 3600))
-                except Exception:
-                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session refresh failed")
+                        data.update(
+                            {
+                                "access_token": access_token,
+                                "refresh_token": refresh_token,
+                                "expires_at": int(time.time()) + expires_in,
+                            }
+                        )
+                        await redis.set(
+                            f"sid:{sid}", json.dumps(data), ex=max(expires_in, 3600)
+                        )
+                except Exception as err:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Session refresh failed",
+                    ) from err
 
             if access_token:
                 auth_header = f"Bearer {access_token}"
@@ -89,15 +106,16 @@ async def get_principal(request: Request) -> Principal:
 
     user_id: str | None = None
     tenant_id: UUID | None = None
-    roles: List[str] = []
-    workspace_ids: List[UUID] = []
+    roles: list[str] = []
+    workspace_ids: list[UUID] = []
 
     # Try JWT first
     if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header[len("Bearer "):].strip()
+        token = auth_header[len("Bearer ") :].strip()
         try:
             # Verify via OIDC provider (JWKS) and normalize to principal-like data
             from app.infrastructure.auth.oidc import get_provider
+
             provider = get_provider()
             claims = await provider.verify_jwt(token)
             normalized = provider.normalize_claims(claims)
@@ -106,20 +124,23 @@ async def get_principal(request: Request) -> Principal:
             if tenant_claim:
                 try:
                     tenant_id = UUID(str(tenant_claim))
-                except ValueError:
-                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid tenant_id claim")
+                except ValueError as err:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid tenant_id claim",
+                    ) from err
             roles = list(normalized.get("roles", []))
             for ws in normalized.get("workspace_ids", []) or []:
                 try:
                     workspace_ids.append(UUID(str(ws)))
                 except ValueError:
                     continue
-        except Exception:
+        except Exception as err:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
                 headers={"WWW-Authenticate": "Bearer"},
-            )
+            ) from err
     else:
         # No JWT: require at least dev headers
         user_id = request.headers.get("X-User-ID") or "dev-user"
@@ -128,14 +149,22 @@ async def get_principal(request: Request) -> Principal:
     if tenant_id is None and tenant_header:
         try:
             tenant_id = UUID(tenant_header)
-        except ValueError:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid X-Tenant-ID format")
+        except ValueError as err:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid X-Tenant-ID format",
+            ) from err
 
     if workspaces_header:
         try:
-            workspace_ids = [UUID(x.strip()) for x in workspaces_header.split(",") if x.strip()]
-        except ValueError:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid X-Workspace-IDs format")
+            workspace_ids = [
+                UUID(x.strip()) for x in workspaces_header.split(",") if x.strip()
+            ]
+        except ValueError as err:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid X-Workspace-IDs format",
+            ) from err
 
     if roles_header:
         roles = [r.strip() for r in roles_header.split(",") if r.strip()]
@@ -145,13 +174,17 @@ async def get_principal(request: Request) -> Principal:
         tenant_id = await get_current_tenant_id(request)
 
     if not user_id or not tenant_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized"
+        )
 
-    return Principal(user_id=user_id, tenant_id=tenant_id, roles=roles, workspace_ids=workspace_ids)
+    return Principal(
+        user_id=user_id, tenant_id=tenant_id, roles=roles, workspace_ids=workspace_ids
+    )
 
 
 # Database session dependency
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_session() -> AsyncIterator[AsyncSession]:
     """Get database session."""
     async for session in get_async_session():
         yield session
@@ -164,18 +197,14 @@ def get_settings() -> Settings:
 
 
 # Repository dependencies
-def get_agent_repository(
-    session: Annotated[AsyncSession, Depends(get_session)]
-):
+def get_agent_repository(session: Annotated[AsyncSession, Depends(get_session)]):
     """Get agent repository."""
     from app.infrastructure.db.repositories.agents import SqlAlchemyAgentRepository
 
     return SqlAlchemyAgentRepository(session)
 
 
-def get_agent_run_repository(
-    session: Annotated[AsyncSession, Depends(get_session)]
-):
+def get_agent_run_repository(session: Annotated[AsyncSession, Depends(get_session)]):
     """Get agent run repository."""
     from app.infrastructure.db.repositories.agents import SqlAlchemyAgentRunRepository
 
@@ -190,14 +219,11 @@ def get_engine_service():
     return IdunEngineService()
 
 
-
-
-
 # Service dependencies
 def get_agent_service(
-    agent_repo = Depends(get_agent_repository),
-    run_repo = Depends(get_agent_run_repository),
-    engine_service = Depends(get_engine_service),
+    agent_repo=Depends(get_agent_repository),
+    run_repo=Depends(get_agent_run_repository),
+    engine_service=Depends(get_engine_service),
 ) -> AgentService:
     """Get agent service."""
     return AgentService(agent_repo, run_repo, engine_service)
@@ -205,7 +231,7 @@ def get_agent_service(
 
 async def get_current_user(request: Request) -> str:
     """Get current authenticated user ID.
-    
+
     This is a placeholder implementation.
     In a real application, you would:
     1. Extract JWT token from Authorization header
@@ -221,14 +247,14 @@ async def get_current_user(request: Request) -> str:
             detail="Missing or invalid authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Mock user ID for development
     return "mock-user-123"
 
 
 async def get_current_tenant_id(request: Request) -> UUID:
     """Get current tenant ID.
-    
+
     This extracts tenant information from the request.
     Could be from:
     1. JWT token claims
@@ -242,12 +268,12 @@ async def get_current_tenant_id(request: Request) -> UUID:
     if tenant_header:
         try:
             return UUID(tenant_header)
-        except ValueError:
+        except ValueError as err:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid tenant ID format"
-            )
-    
+                detail="Invalid tenant ID format",
+            ) from err
+
     # Mock tenant ID for development
     return UUID("550e8400-e29b-41d4-a716-446655440000")
 
@@ -264,7 +290,7 @@ async def get_current_user_and_tenant(
 # Rate limiting dependency (placeholder)
 async def rate_limit_dependency(request: Request) -> None:
     """Rate limiting dependency.
-    
+
     This is a placeholder for rate limiting logic.
     In a real application, you would:
     1. Check request rate against limits
@@ -284,13 +310,13 @@ def get_pagination_params(
     if limit < 1 or limit > 1000:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit must be between 1 and 1000"
+            detail="Limit must be between 1 and 1000",
         )
-    
+
     if offset < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Offset must be non-negative"
+            detail="Offset must be non-negative",
         )
-    
-    return limit, offset 
+
+    return limit, offset

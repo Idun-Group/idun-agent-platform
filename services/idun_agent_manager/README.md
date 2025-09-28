@@ -85,7 +85,7 @@ app/
 
 1. **Clone and setup**:
 ```bash
-cd libs/idun_agent_manager
+cd services/idun_agent_manager
 cp env.example .env
 # Edit .env with your configuration (optional - defaults work for development)
 ```
@@ -257,7 +257,7 @@ make shell-dev      # Open shell in development container
 ```bash
 make migrate        # Run database migrations (upgrade to head)
 make migrate-auto   # Generate automatic migration (provide msg="description")
-make migrate-manual # Create manual migration (provide msg="description") 
+make migrate-manual # Create manual migration (provide msg="description")
 make migrate-down   # Rollback last migration
 make migrate-history # Show migration history
 make clean-db       # Reset database (WARNING: deletes all data)
@@ -330,7 +330,7 @@ Build and run with Docker:
 # Using Make commands (recommended for development)
 make build             # Build Docker images
 make up                # Start all services (PostgreSQL, Redis, Traefik, API)
-make down              # Stop all services  
+make down              # Stop all services
 make logs              # View service logs
 
 # Production Docker commands
@@ -504,4 +504,4 @@ make restart-serve     # Just restart app
 
 ## License
 
-MIT License - see LICENSE file for details. 
+MIT License - see LICENSE file for details.

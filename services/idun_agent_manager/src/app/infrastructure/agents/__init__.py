@@ -1,1 +1,1 @@
-"""Legacy directory - HTTP clients moved to infrastructure/http/.""" 
+"""Legacy directory - HTTP clients moved to infrastructure/http/."""

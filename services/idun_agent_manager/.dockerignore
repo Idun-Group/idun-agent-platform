@@ -108,4 +108,4 @@ node_modules/
 
 # Misc
 .ruff_cache/
-.mypy_cache/ 
+.mypy_cache/

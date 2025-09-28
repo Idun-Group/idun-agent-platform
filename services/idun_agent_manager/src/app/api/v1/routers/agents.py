@@ -1,17 +1,21 @@
 """Agent API endpoints - Core CRUD operations."""
 
-from typing import Any, Dict, List, Optional, Union, Annotated
-from uuid import UUID, uuid4
 from datetime import datetime
 from enum import Enum
+from typing import Annotated, Any, Literal
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field, validator
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field, field_validator
 from pydantic.config import ConfigDict
-from typing import Literal
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_session, get_agent_service, get_current_tenant_id, get_principal, Principal
+from app.api.v1.deps import (
+    Principal,
+    get_agent_service,
+    get_principal,
+    get_session,
+)
 from app.application.services.agent_service import AgentService
 from app.domain.deployments.entities import DeploymentMode
 from app.infrastructure.db.models.agent_config import AgentConfigModel
@@ -19,7 +23,7 @@ from app.infrastructure.db.models.agent_config import AgentConfigModel
 router = APIRouter()
 
 # Simple in-memory storage
-agents_db: List[Dict] = []
+agents_db: list[dict] = []
 
 # Fields that are allowed to be used for sorting in list queries (id is excluded)
 SORTABLE_AGENT_FIELDS = {
@@ -35,6 +39,7 @@ SORTABLE_AGENT_FIELDS = {
 # Enums for better validation
 class AgentFramework(str, Enum):
     """Supported agent frameworks."""
+
     LANGGRAPH = "langgraph"
     LANGCHAIN = "langchain"
     AUTOGEN = "autogen"
@@ -44,6 +49,7 @@ class AgentFramework(str, Enum):
 
 class AgentStatus(str, Enum):
     """Agent lifecycle status."""
+
     DRAFT = "draft"
     READY = "ready"
     DEPLOYED = "deployed"
@@ -63,19 +69,19 @@ def map_framework(value: str) -> AgentFramework:
 # Improved Pydantic models
 class LangGraphConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
-    name: Optional[str] = None
+    name: str | None = None
     graph_definition: str
 
 
 class CrewAIConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
-    name: Optional[str] = None
+    name: str | None = None
     crew_definition: str
 
 
 class CustomConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
-    name: Optional[str] = None
+    name: str | None = None
     entrypoint: str
 
 
@@ -95,7 +101,7 @@ class CustomAgentSection(BaseModel):
 
 
 AgentSection = Annotated[
-    Union[LangGraphAgentSection, CrewAIAgentSection, CustomAgentSection],
+    LangGraphAgentSection | CrewAIAgentSection | CustomAgentSection,
     Field(discriminator="type"),
 ]
 
@@ -109,15 +115,21 @@ class AgentCreate(BaseModel):
 
     Framework is inferred from config (e.g., config.agent.type = "langgraph").
     """
+
     name: str = Field(..., min_length=1, max_length=100, description="Agent name")
-    description: Optional[str] = Field(None, max_length=500, description="Agent description")
+    description: str | None = Field(
+        None, max_length=500, description="Agent description"
+    )
     # Framework-specific configuration payload (discriminated by agent.type)
-    config: AgentPayload = Field(..., description="Framework-specific agent configuration")
-    
-    @validator('name')
+    config: AgentPayload = Field(
+        ..., description="Framework-specific agent configuration"
+    )
+
+    @field_validator("name")  # noqa: N805 - Pydantic validator uses `cls` by convention
+    @classmethod
     def validate_name(cls, v):
         if not v.strip():
-            raise ValueError('Name cannot be empty or whitespace only')
+            raise ValueError("Name cannot be empty or whitespace only")
         return v.strip()
 
     class Config:
@@ -130,24 +142,30 @@ class AgentCreate(BaseModel):
                         "type": "langgraph",
                         "config": {
                             "name": "My AI Assistant",
-                            "graph_definition": "./examples/01_basic_config_file/example_agent.py:app"
-                        }
+                            "graph_definition": "./examples/01_basic_config_file/example_agent.py:app",
+                        },
                     }
-                }
+                },
             }
         }
 
 
 class AgentUpdate(BaseModel):
     """Schema for updating an existing agent."""
-    name: Optional[str] = Field(None, min_length=1, max_length=100, description="Agent name")
-    description: Optional[str] = Field(None, max_length=500, description="Agent description")
-    framework: Optional[AgentFramework] = Field(None, description="Agent framework")
-    
-    @validator('name')
+
+    name: str | None = Field(
+        None, min_length=1, max_length=100, description="Agent name"
+    )
+    description: str | None = Field(
+        None, max_length=500, description="Agent description"
+    )
+    framework: AgentFramework | None = Field(None, description="Agent framework")
+
+    @field_validator("name")  # noqa: N805
+    @classmethod
     def validate_name(cls, v):
         if v is not None and not v.strip():
-            raise ValueError('Name cannot be empty or whitespace only')
+            raise ValueError("Name cannot be empty or whitespace only")
         return v.strip() if v else v
 
     class Config:
@@ -155,16 +173,17 @@ class AgentUpdate(BaseModel):
             "example": {
                 "name": "Updated Agent Name",
                 "description": "Updated description",
-                "framework": "langchain"
+                "framework": "langchain",
             }
         }
 
 
 class Agent(BaseModel):
     """Complete agent model for responses."""
+
     id: str = Field(..., description="Unique agent identifier")
     name: str = Field(..., description="Agent name")
-    description: Optional[str] = Field(None, description="Agent description")
+    description: str | None = Field(None, description="Agent description")
     framework: AgentFramework = Field(..., description="Agent framework")
     status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
     created_at: datetime = Field(..., description="Creation timestamp")
@@ -179,7 +198,7 @@ class Agent(BaseModel):
                 "framework": "langgraph",
                 "status": "draft",
                 "created_at": "2024-01-01T00:00:00",
-                "updated_at": "2024-01-01T00:00:00"
+                "updated_at": "2024-01-01T00:00:00",
             }
         }
 
@@ -190,14 +209,20 @@ class AgentReplace(BaseModel):
     Represents the complete updatable representation of an agent.
     Server-managed fields like id, status, and timestamps are excluded.
     """
-    name: str = Field(..., min_length=1, max_length=100, description="Agent name")
-    description: Optional[str] = Field(None, max_length=500, description="Agent description")
-    config: AgentPayload = Field(..., description="Framework-specific agent configuration")
 
-    @validator('name')
+    name: str = Field(..., min_length=1, max_length=100, description="Agent name")
+    description: str | None = Field(
+        None, max_length=500, description="Agent description"
+    )
+    config: AgentPayload = Field(
+        ..., description="Framework-specific agent configuration"
+    )
+
+    @field_validator("name")  # noqa: N805
+    @classmethod
     def validate_name(cls, v):
         if not v.strip():
-            raise ValueError('Name cannot be empty or whitespace only')
+            raise ValueError("Name cannot be empty or whitespace only")
         return v.strip()
 
 
@@ -207,14 +232,22 @@ class AgentPatch(BaseModel):
     Only provided fields will be updated. If config is provided, the
     framework will be inferred from config.agent.type.
     """
-    name: Optional[str] = Field(None, min_length=1, max_length=100, description="Agent name")
-    description: Optional[str] = Field(None, max_length=500, description="Agent description")
-    config: Optional[AgentPayload] = Field(None, description="Framework-specific agent configuration")
 
-    @validator('name')
+    name: str | None = Field(
+        None, min_length=1, max_length=100, description="Agent name"
+    )
+    description: str | None = Field(
+        None, max_length=500, description="Agent description"
+    )
+    config: AgentPayload | None = Field(
+        None, description="Framework-specific agent configuration"
+    )
+
+    @field_validator("name")  # noqa: N805
+    @classmethod
     def validate_name(cls, v):
         if v is not None and not v.strip():
-            raise ValueError('Name cannot be empty or whitespace only')
+            raise ValueError("Name cannot be empty or whitespace only")
         return v.strip() if v else v
 
 
@@ -238,7 +271,9 @@ async def create_agent(
     - Returns the created agent in the public API shape
     """
     # Infer framework from config
-    framework_value: Optional[str] = request.config.agent.type if request.config and request.config.agent else None
+    framework_value: str | None = (
+        request.config.agent.type if request.config and request.config.agent else None
+    )
     if not framework_value or not isinstance(framework_value, str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -253,11 +288,16 @@ async def create_agent(
     if workspace_id:
         try:
             ws_uuid = UUID(workspace_id)
-        except ValueError:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid workspace_id format")
+        except ValueError as err:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid workspace_id format",
+            ) from err
         # Enforce workspace access if principal has specific workspace scope
         if principal.workspace_ids and ws_uuid not in set(principal.workspace_ids):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
+            )
 
     model = AgentConfigModel(
         id=new_id,
@@ -287,8 +327,9 @@ async def create_agent(
 
 class DeployRequest(BaseModel):
     """Request body for deploying an agent."""
+
     mode: DeploymentMode = Field(DeploymentMode.LOCAL, description="Deployment mode")
-    config: Optional[Dict[str, Any]] = Field(None, description="Deployment configuration")
+    config: dict[str, Any] | None = Field(None, description="Deployment configuration")
 
 
 @router.post(
@@ -303,21 +344,34 @@ async def deploy_agent_endpoint(
     agent_service: AgentService = Depends(get_agent_service),
     principal: Principal = Depends(get_principal),
     session: AsyncSession = Depends(get_session),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     try:
         agent_uuid = UUID(agent_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
+        ) from err
 
     try:
         # Ensure the agent belongs to the principal's tenant/workspace before deployment
         model = await session.get(AgentConfigModel, agent_uuid)
         if not model:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Agent with id '{agent_id}' not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Agent with id '{agent_id}' not found",
+            )
         if model.tenant_id != principal.tenant_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-        if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
+            )
+        if (
+            model.workspace_id
+            and principal.workspace_ids
+            and model.workspace_id not in set(principal.workspace_ids)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
+            )
 
         result = await agent_service.deploy_agent(
             agent_uuid,
@@ -329,12 +383,12 @@ async def deploy_agent_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.get(
     "/",
-    response_model=List[Agent],
+    response_model=list[Agent],
     summary="List agents",
     description=(
         "List all agents with pagination and deterministic sorting. "
@@ -350,12 +404,17 @@ async def list_agents(
     session: AsyncSession = Depends(get_session),
     principal: Principal = Depends(get_principal),
     workspace_ids: list[str] | None = Depends(lambda: None),
-) -> List[Agent]:
+) -> list[Agent]:
     """List agents from PostgreSQL with limit/offset pagination."""
     if limit < 1 or limit > 1000:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Limit must be between 1 and 1000")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Limit must be between 1 and 1000",
+        )
     if offset < 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
+        )
 
     # Validate sorting parameters
     if sort_by not in SORTABLE_AGENT_FIELDS:
@@ -364,7 +423,7 @@ async def list_agents(
             detail=f"Invalid sort_by '{sort_by}'. Allowed: {sorted(SORTABLE_AGENT_FIELDS)}",
         )
 
-    from sqlalchemy import select, asc, desc
+    from sqlalchemy import asc, desc, select
 
     # Build deterministic ordering: primary sort + stable tiebreaker by id ASC
     sort_column = getattr(AgentConfigModel, sort_by)
@@ -378,19 +437,25 @@ async def list_agents(
         for ws in workspace_ids:
             try:
                 parsed.append(UUID(ws))
-            except ValueError:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid workspace_ids format")
+            except ValueError as err:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid workspace_ids format",
+                ) from err
         if principal.workspace_ids:
             allowed = set(principal.workspace_ids)
             ws_filter = [ws for ws in parsed if ws in allowed]
             if parsed and not ws_filter:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspaces")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspaces"
+                )
         else:
             ws_filter = parsed
 
-    stmt = select(AgentConfigModel).where(AgentConfigModel.tenant_id == principal.tenant_id)
+    stmt = select(AgentConfigModel).where(
+        AgentConfigModel.tenant_id == principal.tenant_id
+    )
     if ws_filter:
-        from sqlalchemy import or_
         stmt = stmt.where(AgentConfigModel.workspace_id.in_(ws_filter))
     stmt = stmt.order_by(primary_order, stable_tiebreaker).limit(limit).offset(offset)
     result = await session.execute(stmt)
@@ -423,8 +488,10 @@ async def get_agent(
     """Get agent by ID from PostgreSQL with proper error handling."""
     try:
         agent_uuid = UUID(agent_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
+        ) from err
 
     model = await session.get(AgentConfigModel, agent_uuid)
     if not model:
@@ -434,8 +501,14 @@ async def get_agent(
         )
     if model.tenant_id != principal.tenant_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
+    if (
+        model.workspace_id
+        and principal.workspace_ids
+        and model.workspace_id not in set(principal.workspace_ids)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
+        )
 
     return Agent(
         id=str(model.id),
@@ -466,8 +539,10 @@ async def update_agent(
     """Full replacement of an existing agent in PostgreSQL (PUT semantics)."""
     try:
         agent_uuid = UUID(agent_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
+        ) from err
 
     model = await session.get(AgentConfigModel, agent_uuid)
     if not model:
@@ -477,11 +552,19 @@ async def update_agent(
         )
     if model.tenant_id != principal.tenant_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
+    if (
+        model.workspace_id
+        and principal.workspace_ids
+        and model.workspace_id not in set(principal.workspace_ids)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
+        )
 
     # Infer framework from config
-    framework_value: Optional[str] = request.config.agent.type if request.config and request.config.agent else None
+    framework_value: str | None = (
+        request.config.agent.type if request.config and request.config.agent else None
+    )
     if not framework_value or not isinstance(framework_value, str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -523,8 +606,10 @@ async def delete_agent(
     """Delete an agent_config row by UUID."""
     try:
         agent_uuid = UUID(agent_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
+        ) from err
 
     model = await session.get(AgentConfigModel, agent_uuid)
     if not model:
@@ -534,8 +619,14 @@ async def delete_agent(
         )
     if model.tenant_id != principal.tenant_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
+    if (
+        model.workspace_id
+        and principal.workspace_ids
+        and model.workspace_id not in set(principal.workspace_ids)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
+        )
 
     await session.delete(model)
     await session.flush()
@@ -559,8 +650,10 @@ async def patch_agent(
 ) -> Agent:
     try:
         agent_uuid = UUID(agent_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format")
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
+        ) from err
 
     model = await session.get(AgentConfigModel, agent_uuid)
     if not model:
@@ -570,15 +663,25 @@ async def patch_agent(
         )
     if model.tenant_id != principal.tenant_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    if model.workspace_id and principal.workspace_ids and model.workspace_id not in set(principal.workspace_ids):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace")
+    if (
+        model.workspace_id
+        and principal.workspace_ids
+        and model.workspace_id not in set(principal.workspace_ids)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
+        )
 
     if request.name is not None:
         model.name = request.name
     if request.description is not None:
         model.description = request.description
     if request.config is not None:
-        framework_value: Optional[str] = request.config.agent.type if request.config and request.config.agent else None
+        framework_value: str | None = (
+            request.config.agent.type
+            if request.config and request.config.agent
+            else None
+        )
         if not framework_value or not isinstance(framework_value, str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

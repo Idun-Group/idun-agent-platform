@@ -1,8 +1,9 @@
 """Structured logging configuration using structlog."""
 
+import contextvars
 import logging
 import sys
-from typing import Any, Dict
+from typing import Any
 
 import structlog
 from structlog.typing import EventDict
@@ -14,7 +15,6 @@ def add_request_id(logger: Any, method_name: str, event_dict: EventDict) -> Even
     """Add request ID to log events if available."""
     # Try to get request ID from context
     try:
-        import contextvars
         request_id = contextvars.ContextVar("request_id", default=None).get()
         if request_id:
             event_dict["request_id"] = request_id
@@ -26,10 +26,9 @@ def add_request_id(logger: Any, method_name: str, event_dict: EventDict) -> Even
 def add_user_context(logger: Any, method_name: str, event_dict: EventDict) -> EventDict:
     """Add user context to log events if available."""
     try:
-        import contextvars
         user_id = contextvars.ContextVar("user_id", default=None).get()
         tenant_id = contextvars.ContextVar("tenant_id", default=None).get()
-        
+
         if user_id:
             event_dict["user_id"] = user_id
         if tenant_id:
@@ -39,11 +38,13 @@ def add_user_context(logger: Any, method_name: str, event_dict: EventDict) -> Ev
     return event_dict
 
 
-def add_trace_context(logger: Any, method_name: str, event_dict: EventDict) -> EventDict:
+def add_trace_context(
+    logger: Any, method_name: str, event_dict: EventDict
+) -> EventDict:
     """Add OpenTelemetry trace context to log events."""
     try:
         from opentelemetry import trace
-        
+
         span = trace.get_current_span()
         if span and span.is_recording():
             span_context = span.get_span_context()
@@ -57,14 +58,14 @@ def add_trace_context(logger: Any, method_name: str, event_dict: EventDict) -> E
 def configure_logging() -> None:
     """Configure structured logging for the application."""
     settings = get_settings()
-    
+
     # Configure standard library logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, settings.observability.log_level.upper()),
     )
-    
+
     # Common processors
     processors = [
         structlog.contextvars.merge_contextvars,
@@ -75,18 +76,18 @@ def configure_logging() -> None:
         structlog.processors.add_log_level,
         structlog.processors.StackInfoRenderer(),
     ]
-    
+
     # Format-specific processors
     if settings.observability.log_format.lower() == "json":
-        processors.extend([
-            structlog.processors.JSONRenderer()
-        ])
+        processors.extend([structlog.processors.JSONRenderer()])
     else:
-        processors.extend([
-            structlog.processors.ExceptionPrettyPrinter(),
-            structlog.dev.ConsoleRenderer(colors=not settings.is_production),
-        ])
-    
+        processors.extend(
+            [
+                structlog.processors.ExceptionPrettyPrinter(),
+                structlog.dev.ConsoleRenderer(colors=not settings.is_production),
+            ]
+        )
+
     # Configure structlog
     structlog.configure(
         processors=processors,
@@ -104,7 +105,6 @@ def get_logger(name: str = __name__) -> structlog.BoundLogger:
 
 
 # Context variables for request tracking
-import contextvars
 
 request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id")
 user_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("user_id")
@@ -124,23 +124,23 @@ def set_request_context(
         tenant_id_var.set(tenant_id)
 
 
-def get_request_context() -> Dict[str, Any]:
+def get_request_context() -> dict[str, Any]:
     """Get current request context."""
     context = {}
-    
+
     try:
         context["request_id"] = request_id_var.get()
     except LookupError:
         pass
-        
+
     try:
         context["user_id"] = user_id_var.get()
     except LookupError:
         pass
-        
+
     try:
         context["tenant_id"] = tenant_id_var.get()
     except LookupError:
         pass
-        
-    return context 
+
+    return context

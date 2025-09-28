@@ -3,8 +3,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
 from app.api.v1.routers.agents import agents_db
+from app.main import app
 
 
 @pytest.fixture(autouse=True)
@@ -27,7 +27,7 @@ def sample_agent_data():
     return {
         "name": "Test Agent",
         "description": "A test agent for validation",
-        "framework": "langgraph"
+        "framework": "langgraph",
     }
 
 
@@ -38,16 +38,12 @@ def multiple_agents_data():
         {
             "name": "Agent 1",
             "description": "First test agent",
-            "framework": "langgraph"
+            "framework": "langgraph",
         },
         {
-            "name": "Agent 2", 
+            "name": "Agent 2",
             "description": "Second test agent",
-            "framework": "langchain"
+            "framework": "langchain",
         },
-        {
-            "name": "Agent 3",
-            "description": "Third test agent",
-            "framework": "crewai"
-        }
+        {"name": "Agent 3", "description": "Third test agent", "framework": "crewai"},
     ]

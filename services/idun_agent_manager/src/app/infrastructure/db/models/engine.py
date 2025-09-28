@@ -1,11 +1,13 @@
 """SQLAlchemy model for ENGINE table."""
+from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.infrastructure.db.models.agent_config import AgentConfigModel
 from app.infrastructure.db.session import Base
 
 
@@ -14,7 +16,10 @@ class EngineModel(Base):
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     agent_id: Mapped[UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("agent_config.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("agent_config.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     version: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -23,16 +28,21 @@ class EngineModel(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
     # Multi-tenancy scoping
-    tenant_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
-    workspace_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
-
-    # Relationships
-    agent_config: Mapped["AgentConfigModel"] = relationship(
-        "AgentConfigModel", back_populates="engines"
+    tenant_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False, index=True
+    )
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
     )
 
-
+    # Relationships
+    agent_config: Mapped[AgentConfigModel] = relationship(
+        "AgentConfigModel", back_populates="engines"
+    )

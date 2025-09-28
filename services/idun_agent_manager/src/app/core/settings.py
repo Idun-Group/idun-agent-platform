@@ -1,7 +1,7 @@
 """Application settings using Pydantic Settings v2."""
 
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Literal
+from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -48,23 +48,25 @@ class AuthSettings(BaseSettings):
     )
     client_id: str = Field(default="", description="OIDC client ID")
     client_secret: str = Field(default="", description="OIDC client secret")
-    audience: Optional[str] = Field(default=None, description="Expected audience")
-    redirect_uri: Optional[str] = Field(default=None, description="Auth callback URI")
-    scopes: List[str] = Field(default_factory=lambda: ["openid", "profile", "email"]) 
+    audience: str | None = Field(default=None, description="Expected audience")
+    redirect_uri: str | None = Field(default=None, description="Auth callback URI")
+    scopes: list[str] = Field(default_factory=lambda: ["openid", "profile", "email"])
 
     # Token verification
-    allowed_algs: List[str] = Field(default_factory=lambda: ["RS256", "RS512", "ES256"]) 
+    allowed_algs: list[str] = Field(default_factory=lambda: ["RS256", "RS512", "ES256"])
     jwks_cache_ttl: int = Field(default=300, description="JWKS cache TTL seconds")
     clock_skew_seconds: int = Field(default=60, description="Clock skew tolerance")
-    expected_audiences: List[str] = Field(default_factory=list, description="Allowed audiences")
+    expected_audiences: list[str] = Field(
+        default_factory=list, description="Allowed audiences"
+    )
 
     # Optional claim mapping overrides
     # Accept JSON arrays; ignore comment strings gracefully via validators
-    claim_user_id_path: List[str] | None = Field(default=None)
-    claim_email_path: List[str] | None = Field(default=None)
-    claim_roles_paths: List[List[str]] | None = Field(default=None)
-    claim_groups_paths: List[List[str]] | None = Field(default=None)
-    claim_workspace_ids_paths: List[List[str]] | None = Field(default=None)
+    claim_user_id_path: list[str] | None = Field(default=None)
+    claim_email_path: list[str] | None = Field(default=None)
+    claim_roles_paths: list[list[str]] | None = Field(default=None)
+    claim_groups_paths: list[list[str]] | None = Field(default=None)
+    claim_workspace_ids_paths: list[list[str]] | None = Field(default=None)
 
     @field_validator("claim_user_id_path", "claim_email_path", mode="before")
     @classmethod
@@ -73,14 +75,21 @@ class AuthSettings(BaseSettings):
             return None
         return v
 
-    @field_validator("claim_roles_paths", "claim_groups_paths", "claim_workspace_ids_paths", mode="before")
+    @field_validator(
+        "claim_roles_paths",
+        "claim_groups_paths",
+        "claim_workspace_ids_paths",
+        mode="before",
+    )
     @classmethod
     def _string_to_list_of_lists(cls, v):
         if isinstance(v, str) and v.strip().startswith("#"):
             return None
         return v
 
-    model_config = SettingsConfigDict(env_prefix="AUTH_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="AUTH_", env_file=".env", extra="ignore"
+    )
 
     # Backwards compatibility no-op for old secret_key usage
     @field_validator("issuer")
@@ -98,8 +107,8 @@ class ObservabilitySettings(BaseSettings):
 
     # OpenTelemetry
     otel_service_name: str = Field(default="idun-agent-manager")
-    otel_exporter_endpoint: Optional[str] = Field(default=None)
-    otel_exporter_headers: Optional[str] = Field(default=None)
+    otel_exporter_endpoint: str | None = Field(default=None)
+    otel_exporter_headers: str | None = Field(default=None)
 
     # Logging
     log_level: str = Field(default="INFO", description="Logging level")
@@ -121,7 +130,7 @@ class CelerySettings(BaseSettings):
     )
     task_serializer: str = Field(default="json")
     result_serializer: str = Field(default="json")
-    accept_content: List[str] = Field(default=["json"])
+    accept_content: list[str] = Field(default=["json"])
     timezone: str = Field(default="UTC")
 
     model_config = SettingsConfigDict(env_prefix="CELERY_", env_file=".env")
@@ -131,28 +140,28 @@ class APISettings(BaseSettings):
     """API-specific settings."""
 
     title: str = Field(default="Idun Agent Manager API")
-    description: str = Field(
-        default="Modern FastAPI backend for managing AI agents"
-    )
+    description: str = Field(default="Modern FastAPI backend for managing AI agents")
     version: str = Field(default="0.1.0")
     docs_url: str = Field(default="/docs")
     redoc_url: str = Field(default="/redoc")
     openapi_url: str = Field(default="/openapi.json")
 
     # CORS
-    cors_origins: List[str] = Field(
+    cors_origins: list[str] = Field(
         default=["http://localhost:3000", "http://localhost:8080"],
         description="Allowed CORS origins",
     )
-    cors_methods: List[str] = Field(default=["*"])
-    cors_headers: List[str] = Field(default=["*"])
+    cors_methods: list[str] = Field(default=["*"])
+    cors_headers: list[str] = Field(default=["*"])
 
     # Rate limiting
     rate_limit_enabled: bool = Field(default=True)
     rate_limit_requests: int = Field(default=100)
     rate_limit_window: int = Field(default=60)
 
-    model_config = SettingsConfigDict(env_prefix="API_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="API_", env_file=".env", extra="ignore"
+    )
 
 
 class Settings(BaseSettings):
@@ -201,7 +210,7 @@ class Settings(BaseSettings):
         return self.testing or self.environment.lower() == "testing"
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()

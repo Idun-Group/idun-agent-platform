@@ -31,7 +31,7 @@ install: ## Install dependencies with uv (inside container)
 	$(ENSURE_CLI)
 	$(UV) sync --all-groups
 
-dev: ## Install development dependencies (inside container) 
+dev: ## Install development dependencies (inside container)
 	$(ENSURE_CLI)
 	$(UV) sync --all-groups
 
@@ -180,7 +180,7 @@ shell: ## Open a shell in the CLI container
 	$(ENSURE_CLI)
 	$(COMPOSE) exec $(CLI_SERVICE) /bin/bash
 
-shell-dev: ## Open a shell in the development container  
+shell-dev: ## Open a shell in the development container
 	$(COMPOSE) exec $(DEV_SERVICE) /bin/bash
 
 # Container inspection and debugging
@@ -190,7 +190,7 @@ ps: ## Show running containers
 top: ## Show container resource usage
 	$(COMPOSE) top
 
-stats: ## Show live container resource statistics  
+stats: ## Show live container resource statistics
 	docker stats $$($(COMPOSE) ps -q)
 
 inspect-logs: ## Inspect logs from all services
@@ -223,9 +223,9 @@ setup: build up install precommit-install ## Setup development environment (cont
 	@echo "🐳 Containerized development environment setup complete!"
 	@echo "Run 'make serve' to start the development server"
 
-# Quick start for new developers  
+# Quick start for new developers
 quickstart: setup migrate serve ## Complete setup and start everything
     @echo "🚀 Idun Agent Manager is ready!"
 	@echo "API: http://localhost:8000"
 	@echo "Docs: http://localhost:8000/docs"
-	@echo "Run 'make shell' to access the container shell" 
+	@echo "Run 'make shell' to access the container shell"
