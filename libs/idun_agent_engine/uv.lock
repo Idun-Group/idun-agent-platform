@@ -1136,6 +1136,7 @@ dependencies = [
     { name = "google-adk" },
     { name = "haystack-ai" },
     { name = "httpx" },
+    { name = "idun-agent-schema" },
     { name = "langchain" },
     { name = "langchain-core" },
     { name = "langchain-google-vertexai" },
@@ -1145,7 +1146,6 @@ dependencies = [
     { name = "langgraph-checkpoint-sqlite" },
     { name = "openinference-instrumentation-langchain" },
     { name = "pydantic" },
-    { name = "pytest-asyncio" },
     { name = "python-dotenv" },
     { name = "streamlit" },
     { name = "uvicorn" },
@@ -1157,6 +1157,7 @@ dev = [
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "pytest" },
+    { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "types-pyyaml" },
@@ -1172,6 +1173,7 @@ requires-dist = [
     { name = "google-adk", specifier = ">=1.9.0,<2.0.0" },
     { name = "haystack-ai", specifier = ">=2.17.1" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
+    { name = "idun-agent-schema", specifier = ">=0.1.0,<0.2.0" },
     { name = "langchain", specifier = ">=0.3.27,<0.4" },
     { name = "langchain-core", specifier = ">=0.3.72,<0.4.0" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<3.0.0" },
@@ -1181,7 +1183,6 @@ requires-dist = [
     { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0.11,<3.0.0" },
     { name = "openinference-instrumentation-langchain", specifier = ">=0.1.13,<1.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
-    { name = "pytest-asyncio", specifier = ">=1.2.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "streamlit", specifier = ">=1.47.1,<2.0.0" },
     { name = "uvicorn", specifier = ">=0.35.0,<0.36.0" },
@@ -1193,9 +1194,23 @@ dev = [
     { name = "mypy", specifier = ">=1.10.0,<2" },
     { name = "pre-commit", specifier = ">=3.8.0,<5" },
     { name = "pytest", specifier = ">=8.3.3,<9" },
+    { name = "pytest-asyncio", specifier = ">=1.2.0" },
     { name = "pytest-cov", specifier = ">=5.0.0,<7" },
     { name = "ruff", specifier = ">=0.6.5,<0.13" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20240808,<7" },
+]
+
+[[package]]
+name = "idun-agent-schema"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8e/a7/446b1202b3a605ed311eb1025beff32087cbca55ee280bddb8e4735fab1b/idun_agent_schema-0.1.0.tar.gz", hash = "sha256:62243f0935ca9bfdc36d59e1eb5fb84c24189e9430f0c4174f0d431f9965d3e2", size = 9275 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/dc/ac3077caf223fd2556c691a79ec63927eadfa627f9c9707a8ecc44b33201/idun_agent_schema-0.1.0-py3-none-any.whl", hash = "sha256:af942ab09cf305be47a8690872f23ddce487ca7a9e0eb81173de4f836a797c48", size = 13236 },
 ]
 
 [[package]]

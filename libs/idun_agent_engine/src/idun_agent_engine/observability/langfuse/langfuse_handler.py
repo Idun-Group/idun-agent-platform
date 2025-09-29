@@ -40,8 +40,8 @@ class LangfuseHandler(ObservabilityHandlerBase):
         self._callbacks: list[Any] = []
         self._langfuse_client = None
         try:
-            from langfuse.client import Langfuse
             from langfuse.callback import CallbackHandler
+            from langfuse.client import Langfuse
 
             self._langfuse_client = Langfuse()
 

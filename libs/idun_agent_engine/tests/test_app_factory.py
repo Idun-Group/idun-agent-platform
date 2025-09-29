@@ -29,7 +29,7 @@ def test_create_app_with_yaml_config(tmp_path):
     assert response.json()["status"] == "healthy"
 
     assert app.state.engine_config.server.api.port == 8888
-    assert app.state.engine_config.agent.config["name"] == "YAML Test Agent"
+    assert app.state.engine_config.agent.config.name == "YAML Test Agent"
 
 
 def test_create_app_config_priority_order(tmp_path):
@@ -72,7 +72,7 @@ def test_create_app_config_priority_order(tmp_path):
     )
 
     assert app.state.engine_config.server.api.port == 9999
-    assert app.state.engine_config.agent.config["name"] == "Engine Agent"
+    assert app.state.engine_config.agent.config.name == "Engine Agent"
 
 
 def test_create_app_with_checkpointer_config(tmp_path):
@@ -95,5 +95,5 @@ def test_create_app_with_checkpointer_config(tmp_path):
 
     agent_config = app.state.engine_config.agent.config
 
-    assert agent_config["checkpointer"]["type"] == "sqlite"
-    assert "test_checkpoint.db" in agent_config["checkpointer"]["db_url"]
+    assert agent_config.checkpointer.type == "sqlite"
+    assert "test_checkpoint.db" in agent_config.checkpointer.db_url

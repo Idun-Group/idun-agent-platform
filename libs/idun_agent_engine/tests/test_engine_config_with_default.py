@@ -1,4 +1,5 @@
-from idun_agent_engine.agent.langgraph.langgraph_model import LangGraphAgentConfig
+from idun_agent_schema.engine.langgraph import LangGraphAgentConfig
+
 from idun_agent_engine.core.engine_config import AgentConfig, EngineConfig
 from idun_agent_engine.server.server_config import ServerConfig
 
@@ -26,13 +27,13 @@ def test_agent_config_default_type():
 def test_engine_config_from_dict():
     config_dict = {
         "server": {"api": {"port": 9000}},
-        "agent": {"type": "haystack", "config": {"name": "HaystackAgent"}},
+        "agent": {"type": "langgraph", "config": {"name": "LangGraphAgent"}},
     }
 
     config = EngineConfig.model_validate(config_dict)
 
     assert config.server.api.port == 9000
-    assert config.agent.type == "haystack"
+    assert config.agent.type == "langgraph"
 
 
 def test_engine_config_model_dump():
