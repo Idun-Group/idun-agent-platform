@@ -13,7 +13,7 @@ from idun_agent_schema.engine.langgraph import (
     SqliteCheckpointConfig,
 )
 
-from idun_agent_engine.agent.haystack.haystack_model import HaystackAgentConfig
+from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
