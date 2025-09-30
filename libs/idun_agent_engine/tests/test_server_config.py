@@ -2,7 +2,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from idun_agent_engine.server.server_config import ServerAPIConfig, ServerConfig
+from idun_agent_schema.engine.server import ServerConfig, ServerAPIConfig
 
 
 def test_server_config_from_yaml_string():

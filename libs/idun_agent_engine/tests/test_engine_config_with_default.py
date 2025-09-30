@@ -1,7 +1,7 @@
 from idun_agent_schema.engine.langgraph import LangGraphAgentConfig
 
-from idun_agent_engine.core.engine_config import AgentConfig, EngineConfig
-from idun_agent_engine.server.server_config import ServerConfig
+from idun_agent_schema.engine.config import AgentConfig, EngineConfig
+from idun_agent_schema.engine.server import ServerConfig
 
 
 def test_engine_config_with_defaults():

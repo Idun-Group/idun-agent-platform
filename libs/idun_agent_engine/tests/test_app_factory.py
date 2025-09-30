@@ -2,7 +2,7 @@ import yaml
 from fastapi.testclient import TestClient
 
 from idun_agent_engine.core.app_factory import create_app
-from idun_agent_engine.core.engine_config import EngineConfig
+from idun_agent_schema.engine.config import EngineConfig
 
 
 def test_create_app_with_yaml_config(tmp_path):
