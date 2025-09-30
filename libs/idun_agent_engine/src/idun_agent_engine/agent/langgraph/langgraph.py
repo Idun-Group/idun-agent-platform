@@ -183,9 +183,7 @@ class LanggraphAgent(agent_base.BaseAgent):
             return
 
         if self._configuration.checkpointer:
-            if isinstance(
-                self._configuration.checkpointer, SqliteCheckpointConfig
-            ):
+            if isinstance(self._configuration.checkpointer, SqliteCheckpointConfig):
                 self._connection = await aiosqlite.connect(
                     self._configuration.checkpointer.db_path
                 )

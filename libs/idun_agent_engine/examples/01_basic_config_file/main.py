@@ -28,3 +28,4 @@ config_path = str(Path(__file__).parent / "config.yaml")
 
 # Create the FastAPI app with our configuration
 app = create_app(config_path=config_path)
+run_server(app)
