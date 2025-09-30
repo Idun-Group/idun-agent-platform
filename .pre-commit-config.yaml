@@ -24,7 +24,7 @@ repos:
         args:
         - --fix
         - --no-cache
-        exclude: ^libs/idun_agent_engine/examples/
+        exclude: ^libs/idun_agent_engine/examples/|^bruno/
 -   repo: local
     hooks:
     -   id: pyright

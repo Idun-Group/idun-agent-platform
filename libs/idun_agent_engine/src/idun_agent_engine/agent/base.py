@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from .model import BaseAgentConfig
+from idun_agent_schema.engine.agent import BaseAgentConfig
 
 
 class BaseAgent[ConfigType: BaseAgentConfig](ABC):

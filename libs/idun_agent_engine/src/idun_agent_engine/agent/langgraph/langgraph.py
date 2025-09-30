@@ -8,12 +8,15 @@ from typing import Any
 import aiosqlite
 from ag_ui.core import events as ag_events
 from ag_ui.core import types as ag_types
+from idun_agent_schema.engine.langgraph import (
+    LangGraphAgentConfig,
+    SqliteCheckpointConfig,
+)
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
-from idun_agent_engine.agent.langgraph import langgraph_model as lg_model
 
 
 class LanggraphAgent(agent_base.BaseAgent):
@@ -29,7 +32,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         self._checkpointer: Any = None
         self._store: Any = None
         self._connection: Any = None
-        self._configuration: lg_model.LangGraphAgentConfig | None = None
+        self._configuration: LangGraphAgentConfig | None = None
         self._name: str = "Unnamed LangGraph Agent"
         self._infos: dict[str, Any] = {
             "status": "Uninitialized",
@@ -77,7 +80,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         return self._agent_instance
 
     @property
-    def configuration(self) -> lg_model.LangGraphAgentConfig:
+    def configuration(self) -> LangGraphAgentConfig:
         """Return validated configuration.
 
         Raises:
@@ -95,9 +98,9 @@ class LanggraphAgent(agent_base.BaseAgent):
         )
         return self._infos
 
-    async def initialize(self, config: lg_model.LangGraphAgentConfig) -> None:
+    async def initialize(self, config: LangGraphAgentConfig) -> None:
         """Initialize the LangGraph agent asynchronously."""
-        self._configuration = lg_model.LangGraphAgentConfig.model_validate(config)
+        self._configuration = LangGraphAgentConfig.model_validate(config)
 
         self._name = self._configuration.name or "Unnamed LangGraph Agent"
         self._infos["name"] = self._name
@@ -180,9 +183,7 @@ class LanggraphAgent(agent_base.BaseAgent):
             return
 
         if self._configuration.checkpointer:
-            if isinstance(
-                self._configuration.checkpointer, lg_model.SqliteCheckpointConfig
-            ):
+            if isinstance(self._configuration.checkpointer, SqliteCheckpointConfig):
                 self._connection = await aiosqlite.connect(
                     self._configuration.checkpointer.db_path
                 )
@@ -365,8 +366,15 @@ class LanggraphAgent(agent_base.BaseAgent):
                                     tool_call_id=current_tool_call_id,
                                 )
 
-                            current_tool_call_id = str(tc["id"]) if tc.get("id") is not None else None
-                            tool_call_name = str(tc["function"]["name"]) if tc.get("function") and tc["function"].get("name") is not None else None
+                            current_tool_call_id = (
+                                str(tc["id"]) if tc.get("id") is not None else None
+                            )
+                            tool_call_name = (
+                                str(tc["function"]["name"])
+                                if tc.get("function")
+                                and tc["function"].get("name") is not None
+                                else None
+                            )
                             yield ag_events.ToolCallStartEvent(
                                 type=ag_events.EventType.TOOL_CALL_START,
                                 tool_call_id=current_tool_call_id or "",
@@ -394,8 +402,8 @@ class LanggraphAgent(agent_base.BaseAgent):
                 # Tool end event from langgraph has the tool output, but ag-ui model doesn't have a place for it in ToolCallEndEvent
                 if current_tool_call_id:
                     yield ag_events.ToolCallEndEvent(
-                                type=ag_events.EventType.TOOL_CALL_END,
-                                tool_call_id=current_tool_call_id or "",
+                        type=ag_events.EventType.TOOL_CALL_END,
+                        tool_call_id=current_tool_call_id or "",
                     )
                     current_tool_call_id = None
 
@@ -412,7 +420,8 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         if current_message_id:
             yield ag_events.TextMessageEndEvent(
-                type=ag_events.EventType.TEXT_MESSAGE_END, message_id=current_message_id or ""
+                type=ag_events.EventType.TEXT_MESSAGE_END,
+                message_id=current_message_id or "",
             )
 
         yield ag_events.RunFinishedEvent(

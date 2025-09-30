@@ -15,7 +15,7 @@ agent:
     graph_definition: "./examples/01_basic_config_file/example_agent.py:app"  # Path to your graph definition
     # Observability (provider-agnostic). Example with Langfuse or Phoenix
     observability:
-      provider: langfuse #langfuse # or phoenix
+      provider: phoenix-local #langfuse # or phoenix
       enabled: true
       options:
         # Langfuse options
@@ -28,6 +28,8 @@ agent:
         # collector_endpoint: ${PHOENIX_COLLECTOR_ENDPOINT}
         # project_name: "default"
         # run_name: "idun-langgraph-run"
+        # Phoenix local options (if provider: phoenix-local)
+        # No configuration required for Phoenix local
 
     # Optional: Enable conversation persistence
     checkpointer:

@@ -9,8 +9,7 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any
 
-# Re-export config for backward compatibility
-from .model import ObservabilityConfig
+from idun_agent_schema.shared.observability import ObservabilityConfig
 
 
 class ObservabilityHandlerBase(ABC):
@@ -95,6 +94,15 @@ def create_observability_handler(
         if project_name:
             info["project_name"] = project_name
         return handler, info
+
+    if provider == "phoenix-local":
+        from .phoenix_local.phoenix_local_handler import PhoenixLocalHandler
+
+        handler = PhoenixLocalHandler(options)
+        return handler, {
+            "enabled": True,
+            "provider": "phoenix-local",
+        }
 
     return None, {
         "enabled": False,

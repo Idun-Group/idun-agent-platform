@@ -1,30 +1,38 @@
 """Agent routes for invoking and streaming agent responses."""
 
+import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from idun_agent_schema.engine.api import ChatRequest, ChatResponse
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.dependencies import get_agent
 
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
-class ChatRequest(BaseModel):
-    """Chat request payload for agent endpoints."""
-
-    session_id: str
-    query: str
-
-
-class ChatResponse(BaseModel):
-    """Chat response payload containing session and response text."""
-
-    session_id: str
-    response: str
-
-
+logger = logging.getLogger(__name__)
 agent_router = APIRouter()
+
+
+@agent_router.get("/config")
+async def get_config(request: Request):
+    """Get the current agent configuration."""
+    logger.debug("Fetching agent config..")
+    if not hasattr(request.app.state, "engine_config"):
+        logger.error("Error retrieving the engine config from the api. ")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not available"
+        )
+
+    config = request.app.state.engine_config.agent
+    logger.info(f"Fetched config for agent: {config}")
+    return {"config": config}
 
 
 @agent_router.post("/invoke", response_model=ChatResponse)

@@ -1,22 +1,21 @@
-"""
-Generate API reference pages for mkdocstrings by creating a stub md file per module.
+"""Generate API reference pages for mkdocstrings by creating a stub md file per module.
 
 This script is executed by the mkdocs-gen-files plugin during the build.
 """
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import mkdocs_gen_files  # type: ignore[reportMissingImports]
 
 
 def iter_python_modules(package_root: Path) -> list[tuple[str, bool]]:
-    """Return list of (module_dotted_path, is_package).
+    """Enumerate Python modules under a package root.
 
-    - Packages are directories containing __init__.py
-    - Modules are .py files (excluding __init__.py)
+    Returns a list of tuples ``(module_dotted_path, is_package)`` where:
+    - ``is_package`` is True for directories containing ``__init__.py``
+    - regular ``.py`` files (excluding ``__init__.py``) are marked as modules
     """
     modules: list[tuple[str, bool]] = []
     for file_path in package_root.rglob("*.py"):
@@ -30,11 +29,13 @@ def iter_python_modules(package_root: Path) -> list[tuple[str, bool]]:
 
 
 def module_path_to_dotted(root: Path, package_path: Path) -> str:
+    """Convert a package directory path to dotted import path relative to root."""
     rel = package_path.relative_to(root)
     return ".".join(rel.parts)
 
 
 def file_path_to_dotted(root: Path, file_path: Path) -> str:
+    """Convert a file path to dotted import path (without suffix) relative to root."""
     rel = file_path.relative_to(root)
     return ".".join(rel.with_suffix("").parts)
 

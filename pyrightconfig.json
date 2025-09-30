@@ -2,10 +2,14 @@
   "$schema": "https://raw.githubusercontent.com/microsoft/pyright/main/packages/vscode-pyright/schemas/pyrightconfig.schema.json",
   "include": [
     "libs/idun_agent_engine/src",
-    "libs/idun_agent_engine/tests"
+    "libs/idun_agent_engine/tests",
+    "libs/idun_agent_schema/src",
+    "services/idun_agent_manager/src"
   ],
   "extraPaths": [
-    "libs/idun_agent_engine/src"
+    "libs/idun_agent_engine/src",
+    "libs/idun_agent_schema/src",
+    "services/idun_agent_manager/src"
   ],
   "venvPath": ".",
   "venv": ".venv",

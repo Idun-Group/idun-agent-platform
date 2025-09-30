@@ -1,0 +1,74 @@
+[project]
+name = "idun-agent-schema"
+version = "0.1.0"
+description = "Centralized Pydantic schema library for Idun Agent Engine and Manager"
+authors = [{ name = "Idun Team", email = "team@idun.com" }]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13,<3.14"
+keywords = ["pydantic", "schemas", "fastapi", "langgraph", "idun"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
+dependencies = [
+  "pydantic>=2.11.7,<3.0.0",
+  "pydantic-settings>=2.7.0,<3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/geoffreyharrazi/idun-agent-platform"
+Repository = "https://github.com/geoffreyharrazi/idun-agent-platform"
+Issues = "https://github.com/geoffreyharrazi/idun-agent-platform/issues"
+
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/idun_agent_schema",
+  "src/idun_agent_schema/py.typed",
+]
+
+[tool.hatch.build.targets.wheel]
+include = [
+  "src/idun_agent_schema",
+  "src/idun_agent_schema/py.typed",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/idun_agent_schema" = "idun_agent_schema"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "W", "I", "B", "UP", "N", "SIM", "D"
+]
+extend-ignore = ["E501"]
+
+[tool.black]
+line-length = 88
+target-version = ["py313"]
+include = "\\.pyi?$"
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+strict_optional = true
+no_implicit_optional = true
+check_untyped_defs = true
+pretty = true
+show_error_codes = true
+
+[tool.pytest.ini_options]
+addopts = "-ra -q --strict-markers --disable-warnings"
+testpaths = ["tests"]

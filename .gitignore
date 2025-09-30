@@ -5,7 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+.DS_Store
 # Distribution / packaging
 .Python
 build/
@@ -199,3 +199,8 @@ poetry.lock
 
 # Environment variables
 .env
+
+# Custom Gitignore for Idun
+*.db-wal
+.DS_Store
+*.DS_Store

@@ -30,3 +30,13 @@ docs-build:
 
 docs-deploy:
 	uv run mkdocs gh-deploy --force
+
+# Workspace installs using the root environment
+sync:
+	uv sync --all-groups
+
+sync-manager:
+	cd services/idun_agent_manager && uv sync --active --all-groups
+
+sync-engine:
+	cd libs/idun_agent_engine && uv sync --active --all-groups

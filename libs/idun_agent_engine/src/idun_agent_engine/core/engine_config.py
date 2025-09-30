@@ -1,34 +1,19 @@
-"""Engine Configuration for Idun Agent Engine.
+"""Compatibility re-exports for Engine configuration models."""
 
-This module contains the core configuration models for the entire Engine engine.
-These models define the overall structure and validation for the complete system.
-"""
+from idun_agent_schema.engine.agent import BaseAgentConfig  # noqa: F401
+from idun_agent_schema.engine.config import (  # noqa: F401
+    AgentConfig,
+    EngineConfig,
+)
+from idun_agent_schema.engine.langgraph import (  # noqa: F401
+    LangGraphAgentConfig,
+)
+from idun_agent_schema.engine.server import ServerConfig  # noqa: F401
 
-from typing import Literal
-
-from pydantic import BaseModel, Field
-
-from idun_agent_engine.agent.langgraph.langgraph_model import LangGraphAgentConfig
-from idun_agent_engine.agent.model import BaseAgentConfig
-from idun_agent_engine.server.server_config import ServerConfig
-
-
-class AgentConfig(BaseModel):
-    """Configuration for agent specification and settings."""
-
-    type: Literal["langgraph", "ADK", "CREWAI"] = Field(default="langgraph")
-    config: BaseAgentConfig | LangGraphAgentConfig = Field(
-        default_factory=BaseAgentConfig
-    )
-
-
-class EngineConfig(BaseModel):
-    """Main engine configuration model for the entire Idun Agent Engine.
-
-    This is the top-level configuration that encompasses both server settings
-    and agent configuration. It represents the complete system configuration
-    loaded from config.yaml files or built programmatically.
-    """
-
-    server: ServerConfig = Field(default_factory=ServerConfig)
-    agent: AgentConfig
+__all__ = [
+    "AgentConfig",
+    "EngineConfig",
+    "LangGraphAgentConfig",
+    "BaseAgentConfig",
+    "ServerConfig",
+]
