@@ -206,22 +206,13 @@ def get_agent_run_repository(session: Annotated[AsyncSession, Depends(get_sessio
     return SqlAlchemyAgentRunRepository(session)
 
 
-# Infrastructure service dependencies
-def get_engine_service():
-    """Get Idun Engine service."""
-    from app.infrastructure.http.engine_client import IdunEngineService
-
-    return IdunEngineService()
-
-
 # Service dependencies
 def get_agent_service(
     agent_repo=Depends(get_agent_repository),
     run_repo=Depends(get_agent_run_repository),
-    engine_service=Depends(get_engine_service),
 ) -> AgentService:
     """Get agent service."""
-    return AgentService(agent_repo, run_repo, engine_service)
+    return AgentService(agent_repo, run_repo)
 
 
 async def get_current_user(request: Request) -> str:

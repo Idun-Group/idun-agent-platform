@@ -17,7 +17,6 @@ from app.api.v1.deps import (
     get_session,
 )
 from app.application.services.agent_service import AgentService
-from app.domain.deployments.entities import DeploymentMode
 from app.infrastructure.db.models.agent_config import AgentConfigModel
 
 router = APIRouter()
@@ -325,67 +324,7 @@ async def create_agent(
     )
 
 
-class DeployRequest(BaseModel):
-    """Request body for deploying an agent."""
-
-    mode: DeploymentMode = Field(DeploymentMode.LOCAL, description="Deployment mode")
-    config: dict[str, Any] | None = Field(None, description="Deployment configuration")
-
-
-@router.post(
-    "/{agent_id}/deploy",
-    summary="Deploy agent",
-    description="Deploy an agent using the specified mode and configuration (local only for now)",
-    status_code=status.HTTP_202_ACCEPTED,
-)
-async def deploy_agent_endpoint(
-    agent_id: str,
-    request: DeployRequest,
-    agent_service: AgentService = Depends(get_agent_service),
-    principal: Principal = Depends(get_principal),
-    session: AsyncSession = Depends(get_session),
-) -> dict[str, Any]:
-    try:
-        agent_uuid = UUID(agent_id)
-    except ValueError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
-        ) from err
-
-    try:
-        # Ensure the agent belongs to the principal's tenant/workspace before deployment
-        model = await session.get(AgentConfigModel, agent_uuid)
-        if not model:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Agent with id '{agent_id}' not found",
-            )
-        if model.tenant_id != principal.tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
-            )
-        if (
-            model.workspace_id
-            and principal.workspace_ids
-            and model.workspace_id not in set(principal.workspace_ids)
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
-            )
-
-        result = await agent_service.deploy_agent(
-            agent_uuid,
-            principal.tenant_id,
-            deployment_mode=request.mode,
-            deployment_config=request.config or {},
-        )
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
+## Note: Deployment endpoints have been removed; deployments are managed outside the agent manager.
 
 
 @router.get(
