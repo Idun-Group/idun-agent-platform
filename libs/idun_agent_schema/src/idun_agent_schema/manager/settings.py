@@ -9,7 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class DatabaseSettings(BaseSettings):
     """Database configuration settings for the Manager service."""
 
-    url: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:55432/idun_agents")
+    url: str = Field(
+        default="postgresql+asyncpg://postgres:postgres@localhost:55432/idun_agents"
+    )
     echo: bool = Field(default=False)
     pool_size: int = Field(default=10)
     max_overflow: int = Field(default=20)
@@ -68,7 +70,9 @@ class AuthSettings(BaseSettings):
             return None
         return v
 
-    model_config = SettingsConfigDict(env_prefix="AUTH_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="AUTH_", env_file=".env", extra="ignore"
+    )
 
     @field_validator("issuer")
     @classmethod
@@ -115,14 +119,18 @@ class APISettings(BaseSettings):
     docs_url: str = Field(default="/docs")
     redoc_url: str = Field(default="/redoc")
     openapi_url: str = Field(default="/openapi.json")
-    cors_origins: list[str] = Field(default=["http://localhost:3000", "http://localhost:8080"])
+    cors_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8080"]
+    )
     cors_methods: list[str] = Field(default=["*"])
     cors_headers: list[str] = Field(default=["*"])
     rate_limit_enabled: bool = Field(default=True)
     rate_limit_requests: int = Field(default=100)
     rate_limit_window: int = Field(default=60)
 
-    model_config = SettingsConfigDict(env_prefix="API_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="API_", env_file=".env", extra="ignore"
+    )
 
 
 class Settings(BaseSettings):
@@ -135,6 +143,7 @@ class Settings(BaseSettings):
     port: int = Field(default=8000)
     workers: int = Field(default=1)
     reload: bool = Field(default=False)
+    is_development: bool = Field(default=True)
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)

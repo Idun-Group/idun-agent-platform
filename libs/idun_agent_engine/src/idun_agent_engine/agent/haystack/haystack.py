@@ -12,7 +12,7 @@ from haystack.dataclasses import ChatMessage
 from haystack_integrations.components.connectors.langfuse import LangfuseConnector
 
 from idun_agent_engine.agent.base import BaseAgent
-from idun_agent_engine.agent.haystack.haystack_model import HaystackAgentConfig
+from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_engine.agent.haystack.utils import _parse_component_definition
 
 logging.basicConfig(

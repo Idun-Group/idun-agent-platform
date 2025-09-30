@@ -200,14 +200,16 @@ restart: ## Restart all services
 	$(COMPOSE) restart
 
 # Development workflows
-dev-full: ## Full development cycle: build, up, migrate, serve
-    make build
-    make up
-    @echo "Waiting for services to be ready..."
-    @sleep 10
-    make db-init
-    make serve
-    @echo "🎉 Full development environment is ready!"
+ ## Full development cycle: build, up, migrate, serve
+
+dev-full:
+	make build
+	make up
+	@echo "Waiting for services to be ready..."
+	@sleep 10
+	make db-init
+	make serve
+	@echo "🎉 Full development environment is ready!"
 
 dev-reset: ## Complete reset: down, clean, rebuild, up
 	make down
@@ -215,17 +217,19 @@ dev-reset: ## Complete reset: down, clean, rebuild, up
 	make rebuild
 	make up
 	@sleep 10
-    make db-init
+	make db-init
 	@echo "🔄 Environment completely reset and ready!"
 
 # Environment setup
-setup: build up install precommit-install ## Setup development environment (containerized)
+setup: build up install #precommit-install ## Setup development environment (containerized)
 	@echo "🐳 Containerized development environment setup complete!"
 	@echo "Run 'make serve' to start the development server"
 
 # Quick start for new developers
-quickstart: setup migrate serve ## Complete setup and start everything
-    @echo "🚀 Idun Agent Manager is ready!"
+quickstart: setup migrate serve precommit-install ## Complete setup and start everything
+	@echo "🚀 Idun Agent Manager is ready!"
 	@echo "API: http://localhost:8000"
 	@echo "Docs: http://localhost:8000/docs"
 	@echo "Run 'make shell' to access the container shell"
+
+
