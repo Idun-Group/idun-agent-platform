@@ -43,7 +43,7 @@ dependencies = [
     "langchain>=0.3.27,<0.4",
     "arize-phoenix>=11.22.0,<12",
     # Centralized schema package
-    "idun-agent-schema>=0.1.0,<0.2.0",
+    "idun-agent-schema>=0.1.42",
     "haystack-ai>=2.17.1",
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
@@ -66,6 +66,10 @@ dev = [
     "types-PyYAML>=6.0.12.20240808,<7",
     "pytest-asyncio>=1.2.0",
 ]
+
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
 include = [

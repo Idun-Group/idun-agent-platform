@@ -13,7 +13,7 @@ from ..server.lifespan import lifespan
 from ..server.routers.agent import agent_router
 from ..server.routers.base import base_router
 from .config_builder import ConfigBuilder
-from .engine_config import EngineConfig
+from idun_agent_schema.engine.config import EngineConfig
 
 
 def create_app(
