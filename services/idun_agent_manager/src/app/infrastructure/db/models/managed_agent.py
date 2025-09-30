@@ -13,10 +13,7 @@ from app.infrastructure.db.session import Base
 
 if TYPE_CHECKING:  # Avoid circular imports at runtime
     from app.infrastructure.db.models.agent_config import AgentConfigModel
-    from app.infrastructure.db.models.deployment_config import DeploymentConfigModel
-    from app.infrastructure.db.models.deployments import DeploymentModel
     from app.infrastructure.db.models.gateway_routes import GatewayRouteModel
-    from app.infrastructure.db.models.retriever_config import RetrieverConfigModel
 
 
 class ManagedAgentModel(Base):
@@ -58,15 +55,8 @@ class ManagedAgentModel(Base):
     agent_config: Mapped[AgentConfigModel] = relationship(
         "AgentConfigModel", back_populates="managed_agents"
     )
-    deployment_configs: Mapped[list[DeploymentConfigModel]] = relationship(
-        back_populates="managed_agent", cascade="all, delete-orphan"
-    )
-    retriever_configs: Mapped[list[RetrieverConfigModel]] = relationship(
-        back_populates="managed_agent", cascade="all, delete-orphan"
-    )
-    deployments: Mapped[list[DeploymentModel]] = relationship(
-        back_populates="managed_agent", cascade="all, delete-orphan"
-    )
     gateway_routes: Mapped[list[GatewayRouteModel]] = relationship(
         back_populates="managed_agent", cascade="all, delete-orphan"
     )
+
+

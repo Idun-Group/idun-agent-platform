@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 import httpx
-import jwt
+from authlib.jose import JsonWebKey, jwt as jose_jwt
 from fastapi import HTTPException, status
 
 from app.core.settings import get_settings
@@ -142,48 +142,64 @@ class GenericOIDCProvider:
 
     async def verify_jwt(self, token: str) -> dict[str, Any]:
         jwks = await self._get_jwks()
+        # Parse unverified header to get kid without relying on PyJWT
         try:
-            unverified = jwt.get_unverified_header(token)
+            import base64, json
+
+            header_b64 = token.split(".")[0]
+            padded = header_b64 + "=" * (-len(header_b64) % 4)
+            header = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")))
         except Exception as err:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token header"
             ) from err
-        kid = unverified.get("kid")
+
+        kid = header.get("kid")
         if not kid:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing kid in token"
             )
-        key = self._select_key(jwks, kid)
-        if not key:
+
+        jwk = self._select_key(jwks, kid)
+        if not jwk:
             # Refresh JWKS once on cache miss
             await _jwks_cache.set(self.issuer, {}, 0)
             jwks = await self._get_jwks()
-            key = self._select_key(jwks, kid)
-            if not key:
+            jwk = self._select_key(jwks, kid)
+            if not jwk:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Signing key not found",
                 )
+
+        key = JsonWebKey.import_key(jwk)
+
         try:
-            claims = jwt.decode(
+            claims = jose_jwt.decode(
                 token,
-                key=jwt.algorithms.RSAAlgorithm.from_jwk(key),
-                algorithms=self.allowed_algs,
-                audience=(self.audience or self.client_id or None),
-                issuer=self.issuer,
-                leeway=self.clock_skew,
+                key,
+                claims_options={
+                    "iss": {"essential": True, "values": [self.issuer]},
+                    "aud": (
+                        {"essential": True, "values": [self.audience or self.client_id]}
+                        if (self.audience or self.client_id)
+                        else {"essential": False}
+                    ),
+                },
             )
-            return claims
+            # Validate exp/nbf with allowed clock skew
+            claims.validate(leeway=self.clock_skew)
+            return dict(claims)
         except Exception as err:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
             ) from err
 
-    def _select_key(self, jwks: dict[str, Any], kid: str) -> str | None:
+    def _select_key(self, jwks: dict[str, Any], kid: str) -> dict[str, Any] | None:
         for k in jwks.get("keys", []):
             if k.get("kid") == kid:
-                return jwt.api_jwk.dumps(k)
+                return k
         return None
 
     def normalize_claims(self, claims: dict[str, Any]) -> dict[str, Any]:

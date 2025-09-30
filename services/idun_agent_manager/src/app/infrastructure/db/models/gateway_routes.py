@@ -42,3 +42,5 @@ class GatewayRouteModel(Base):
     managed_agent: Mapped[ManagedAgentModel] = relationship(
         "ManagedAgentModel", back_populates="gateway_routes"
     )
+
+

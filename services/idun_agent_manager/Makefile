@@ -68,6 +68,10 @@ db-init: ## Create DB schema and seed (migrate + seed)
 	make migrate
 	make seed
 
+db-prune-orphans: ## Drop orphan FKs/indexes after manual table drops
+	$(ENSURE_CLI)
+	$(PYTHON) -m app.scripts.db_prune_orphans
+
 # Docker commands
 up: ## Start development environment with Docker Compose
 	$(COMPOSE) up -d

@@ -10,6 +10,8 @@ import asyncio
 import uuid
 from collections.abc import Mapping
 from typing import Any
+import os
+import sys
 
 from sqlalchemy import MetaData, Table, select
 from sqlalchemy.dialects.postgresql import insert
@@ -129,7 +131,20 @@ async def seed() -> None:
         )
 
         # --- Seed user ---
-        admin_email = "admin@acme.test"
+        # Prefer env var for non-interactive runs; otherwise prompt
+        admin_email = os.environ.get("SEED_USER_EMAIL")
+        if not admin_email:
+            default_email = "admin@acme.test"
+            if sys.stdin and sys.stdin.isatty():
+                try:
+                    entered = input(
+                        f"Enter seed user email [{default_email}]: "
+                    ).strip()
+                    admin_email = entered or default_email
+                except Exception:
+                    admin_email = default_email
+            else:
+                admin_email = default_email
         user_id = _stable_uuid5(f"user:{admin_email}")
         user_row = await _get_or_create(
             conn,
@@ -194,7 +209,7 @@ async def seed() -> None:
 
         # Commit is implicit via engine.begin() transaction
         print(
-            "✅ Seed completed: tenant 'acme', workspaces ['default','dev'], user 'admin@acme.test', agent 'Acme Support Agent'."
+            f"✅ Seed completed: tenant 'acme', workspaces ['default','dev'], user '{admin_email}', agent 'Acme Support Agent'."
         )
 
 

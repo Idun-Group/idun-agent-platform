@@ -12,7 +12,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.db.session import Base
 
 if TYPE_CHECKING:  # Avoid circular imports at runtime
-    from app.infrastructure.db.models.deployments import DeploymentModel
     from app.infrastructure.db.models.engine import EngineModel
     from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 
@@ -52,7 +51,4 @@ class AgentConfigModel(Base):
     )
     managed_agents: Mapped[list[ManagedAgentModel]] = relationship(
         "ManagedAgentModel", back_populates="agent_config"
-    )
-    deployments: Mapped[list[DeploymentModel]] = relationship(
-        "DeploymentModel", back_populates="agent_config"
     )

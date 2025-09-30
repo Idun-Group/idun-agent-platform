@@ -101,10 +101,10 @@ async def callback(request: Request) -> Response:
 
     # Create opaque session id and store tokens server-side
     sid = secrets.token_urlsafe(32)
-    # Optional dev override
-    override_ttl = settings.auth.test_access_ttl_seconds
+    # Optional dev override (may not exist)
+    override_ttl = getattr(settings.auth, "test_access_ttl_seconds", None)
     effective_expires = int(override_ttl) if override_ttl else int(expires_in or 3600)
-
+    print(f"effective_expires: {effective_expires}")
     data = {
         "id_token": id_token,
         "access_token": access_token,
@@ -112,6 +112,19 @@ async def callback(request: Request) -> Response:
         "expires_at": (int(__import__("time").time()) + effective_expires),
         "provider": "oidc",
     }
+    # Store normalized principal so API requests don't need to re-verify JWTs
+    try:
+        claims = None
+        if id_token:
+            claims = await provider.verify_jwt(id_token)
+        elif access_token:
+            claims = await provider.verify_jwt(access_token)
+        if claims:
+            normalized = provider.normalize_claims(claims)
+            data["principal"] = normalized
+    except Exception:
+        # If verification fails here, we still create session; API will refresh/verify later
+        pass
     redis = get_redis_client()
     client = await redis.get_client()
     await client.set(f"sid:{sid}", json.dumps(data), ex=max(effective_expires, 60))
