@@ -39,6 +39,7 @@ package = false
 [tool.uv.sources]
 idun-agent-engine = { path = "libs/idun_agent_engine", editable = true }
 idun-agent-manager = { path = "services/idun_agent_manager", editable = true }
+idun-agent-schema = { path = "libs/idun_agent_schema", editable = true }
 
 [build-system]
 requires = ["hatchling"]

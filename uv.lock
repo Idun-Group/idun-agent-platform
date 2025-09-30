@@ -1619,7 +1619,7 @@ dev = [
 requires-dist = [
     { name = "idun-agent-engine", editable = "libs/idun_agent_engine" },
     { name = "idun-agent-manager", editable = "services/idun_agent_manager" },
-    { name = "idun-agent-schema" },
+    { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },
 ]
 
 [package.metadata.requires-dev]
@@ -1646,14 +1646,16 @@ dev = [
 [[package]]
 name = "idun-agent-schema"
 version = "0.1.0"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "libs/idun_agent_schema" }
 dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8e/a7/446b1202b3a605ed311eb1025beff32087cbca55ee280bddb8e4735fab1b/idun_agent_schema-0.1.0.tar.gz", hash = "sha256:62243f0935ca9bfdc36d59e1eb5fb84c24189e9430f0c4174f0d431f9965d3e2", size = 9275, upload-time = "2025-09-28T18:58:45.344Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/dc/ac3077caf223fd2556c691a79ec63927eadfa627f9c9707a8ecc44b33201/idun_agent_schema-0.1.0-py3-none-any.whl", hash = "sha256:af942ab09cf305be47a8690872f23ddce487ca7a9e0eb81173de4f836a797c48", size = 13236, upload-time = "2025-09-28T18:58:44.335Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
+    { name = "pydantic-settings", specifier = ">=2.7.0,<3.0.0" },
 ]
 
 [[package]]
