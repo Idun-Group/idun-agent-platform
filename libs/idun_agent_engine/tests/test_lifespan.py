@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from idun_agent_engine.core.engine_config import EngineConfig
+from idun_agent_schema.engine.config import EngineConfig
 from idun_agent_engine.server.lifespan import lifespan
 
 
