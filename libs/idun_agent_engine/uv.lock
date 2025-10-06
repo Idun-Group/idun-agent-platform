@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.13.*"
 
 [[package]]
@@ -1293,22 +1293,22 @@ wheels = [
 
 [[package]]
 name = "langfuse"
-version = "3.2.4"
+version = "3.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
     { name = "httpx" },
     { name = "opentelemetry-api" },
-    { name = "opentelemetry-exporter-otlp" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-sdk" },
     { name = "packaging" },
     { name = "pydantic" },
     { name = "requests" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/ed/14bdfcedb34c817d1b1cb1420a6253eb8d1e7baa99c8077f82d1b2f4ee12/langfuse-3.2.4.tar.gz", hash = "sha256:4066ade6cff682dc727679a8bd70feaba316c92bb91bc971d0a504cb42e7cf3d", size = 153387, upload-time = "2025-08-12T12:44:47.362Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/ea/b1abad97af5e4dba0ea3135387efa139f11ac34e57da5a8b2ea14354bd95/langfuse-3.6.1.tar.gz", hash = "sha256:eac27ee5bbd8d05e7d665e822e0efb36766b20fe281930ff040f47eb22cc1b69", size = 189456, upload-time = "2025-10-02T08:33:17.363Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4b/bf/cd7491a2ed33b4a6848487af4e60cdcef3ff132a993be68941de09642163/langfuse-3.2.4-py3-none-any.whl", hash = "sha256:4e65e856e4784939ac8d3e512d73aeb95472848b67a856c46a8301de48b97744", size = 299967, upload-time = "2025-08-12T12:44:45.943Z" },
+    { url = "https://files.pythonhosted.org/packages/af/49/4eae7cd4a1005c77808b3d8e3174412c4e198c8fb776b8847b0223a5f504/langfuse-3.6.1-py3-none-any.whl", hash = "sha256:134e0007fcfdd9fb70b491c882bb431c8095b3f5cc5e865756f46a2abd3675a2", size = 350756, upload-time = "2025-10-02T08:33:15.607Z" },
 ]
 
 [[package]]
