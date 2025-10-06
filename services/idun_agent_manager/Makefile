@@ -226,7 +226,7 @@ setup: build up install #precommit-install ## Setup development environment (con
 	@echo "Run 'make serve' to start the development server"
 
 # Quick start for new developers
-quickstart: setup migrate serve precommit-install ## Complete setup and start everything
+quickstart: setup migrate serve #precommit-install ## Complete setup and start everything
 	@echo "🚀 Idun Agent Manager is ready!"
 	@echo "API: http://localhost:8000"
 	@echo "Docs: http://localhost:8000/docs"
