@@ -13,18 +13,9 @@ from app.infrastructure.db.session import Base
 from app.infrastructure.db.models.users import UserModel  # noqa: F401
 from app.infrastructure.db.models.agent_config import AgentConfigModel  # noqa: F401
 from app.infrastructure.db.models.engine import EngineModel  # noqa: F401
-from app.infrastructure.db.models.managed_agent import ManagedAgentModel  # noqa: F401
-from app.infrastructure.db.models.deployment_config import (
-    DeploymentConfigModel,  # noqa: F401
-)
-from app.infrastructure.db.models.retriever_config import (
-    RetrieverConfigModel,  # noqa: F401
-)
-from app.infrastructure.db.models.deployments import DeploymentModel  # noqa: F401
 from app.infrastructure.db.models.gateway_routes import (
     GatewayRouteModel,  # noqa: F401
 )
-from app.infrastructure.db.models.artifacts import ArtifactModel  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

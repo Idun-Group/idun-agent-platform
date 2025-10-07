@@ -21,7 +21,7 @@ class EngineModel(Base):
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     agent_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("agent_config.id", ondelete="CASCADE"),
+        ForeignKey("managed_agents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

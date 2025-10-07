@@ -12,20 +12,22 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.infrastructure.db.session import Base
 
 if TYPE_CHECKING:  # Avoid circular imports at runtime
-    from app.infrastructure.db.models.deployments import DeploymentModel
     from app.infrastructure.db.models.engine import EngineModel
-    from app.infrastructure.db.models.managed_agent import ManagedAgentModel
+    from app.infrastructure.db.models.gateway_routes import GatewayRouteModel
 
 
-class AgentConfigModel(Base):
-    __tablename__ = "agent_config"
+class AgentConfigModel(Base):  # table renamed from agent_config → managed_agents
+    __tablename__ = "managed_agents"
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    framework: Mapped[str] = mapped_column(String(50), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True) # dans engine schema, à supprimer
+    description: Mapped[str | None] = mapped_column(Text, nullable=True) # dans engine schema, à supprimer
+    framework: Mapped[str] = mapped_column(String(50), nullable=False) # dans engine schema, à supprimer
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    # New configs
+    engine_config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    run_config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     # Multi-tenancy scoping
     tenant_id: Mapped[UUID] = mapped_column(
@@ -50,9 +52,6 @@ class AgentConfigModel(Base):
     engines: Mapped[list[EngineModel]] = relationship(
         "EngineModel", back_populates="agent_config"
     )
-    managed_agents: Mapped[list[ManagedAgentModel]] = relationship(
-        "ManagedAgentModel", back_populates="agent_config"
-    )
-    deployments: Mapped[list[DeploymentModel]] = relationship(
-        "DeploymentModel", back_populates="agent_config"
+    gateway_routes: Mapped[list["GatewayRouteModel"]] = relationship(
+        "GatewayRouteModel", back_populates="managed_agent", cascade="all, delete-orphan"
     )

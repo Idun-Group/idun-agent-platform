@@ -8,7 +8,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.infrastructure.db.models.managed_agent import ManagedAgentModel
+from app.infrastructure.db.models.agent_config import AgentConfigModel
 from app.infrastructure.db.session import Base
 
 
@@ -18,7 +18,7 @@ class GatewayRouteModel(Base):
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     managed_engine_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("managed_agent.id", ondelete="CASCADE"),
+        ForeignKey("managed_agents.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -39,6 +39,6 @@ class GatewayRouteModel(Base):
     )
 
     # Relationships
-    managed_agent: Mapped[ManagedAgentModel] = relationship(
-        "ManagedAgentModel", back_populates="gateway_routes"
+    managed_agent: Mapped[AgentConfigModel] = relationship(
+        "AgentConfigModel", back_populates="gateway_routes"
     )
