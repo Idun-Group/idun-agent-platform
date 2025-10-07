@@ -1,14 +1,17 @@
 """Manager-related schemas."""
 
 from .api import (  # noqa: F401
-    AgentCreateRequest,
+    Agent,
+    AgentCreate,
+    AgentPatch,
+    AgentReplace,
     AgentResponse,
     AgentRunRequest,
     AgentRunResponse,
     AgentRunSummaryResponse,
     AgentStatsResponse,
     AgentSummaryResponse,
-    AgentUpdateRequest,
+    AgentUpdate,
     PaginatedAgentsResponse,
     PaginatedResponse,
     PaginatedRunsResponse,
