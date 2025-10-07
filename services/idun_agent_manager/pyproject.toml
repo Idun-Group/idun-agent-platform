@@ -3,7 +3,7 @@
 name = "idun-agent-manager"
 version = "0.1.0"
 description = "Modern FastAPI backend for managing AI agents with PostgreSQL, SQLAlchemy, and observability"
-readme = "README.md"
+# readme = "README.md"  # Commented out for Docker build
 license = { text = "MIT" }
 authors = [ { name = "Idun Team", email = "team@idun.com" } ]
 requires-python = ">=3.13,<3.14"
@@ -46,8 +46,8 @@ dependencies = [
   "tenacity>=8.0.0,<9.0.0",
   # Idun Agent Engine SDK (from PyPI)
   "idun-agent-engine>=0.1.0,<0.2.0",
-  # Centralized schema package
-  "idun-agent-schema>=0.1.0,<0.2.0",
+  # Centralized schema package (mounted via Docker volume)
+  "idun-agent-schema @ file:///app/libs/idun_agent_schema",
 ]
 
 ## uv configuration
@@ -149,3 +149,7 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+

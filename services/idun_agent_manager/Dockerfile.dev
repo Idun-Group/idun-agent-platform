@@ -33,8 +33,7 @@ FROM base as development
 # Copy project metadata for better caching
 COPY pyproject.toml ./
 
-# Install all dependencies (including dev group) into a local .venv
-RUN uv sync --all-groups
+# Don't install dependencies here - they'll be installed at runtime when volumes are available
 
 # Copy application code
 COPY src/ ./src/
