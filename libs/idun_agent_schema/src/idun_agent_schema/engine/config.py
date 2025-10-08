@@ -1,7 +1,6 @@
 """Top-level engine configuration models."""
 
-from typing import Literal
-
+from enum import Enum
 from pydantic import BaseModel, Field
 
 from .agent import BaseAgentConfig
@@ -9,10 +8,20 @@ from .langgraph import LangGraphAgentConfig
 from .server import ServerConfig
 
 
+class AgentFramework(str, Enum):
+    """Supported agent frameworks for engine."""
+
+    LANGGRAPH = "langgraph"
+    ADK = "ADK"
+    CREWAI = "CREWAI"
+    HAYSTACK = "haystack"
+    CUSTOM = "custom"
+
+
 class AgentConfig(BaseModel):
     """Configuration for agent specification and settings."""
 
-    type: Literal["langgraph", "ADK", "CREWAI", "haystack"] = Field(default="langgraph")
+    type: AgentFramework = Field(default=AgentFramework.LANGGRAPH)
     config: BaseAgentConfig | LangGraphAgentConfig = Field(
         default_factory=BaseAgentConfig
     )

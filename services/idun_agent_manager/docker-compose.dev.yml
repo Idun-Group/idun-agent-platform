@@ -64,11 +64,13 @@ services:
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
       - ./pyproject.toml:/app/pyproject.toml
+      # Mount libs directory for local schema development
+      - ../../libs:/app/libs
       # Persist uv cache and the virtual environment
       - uv_cache:/root/.cache/uv
       - uv_venv:/app/.venv
     working_dir: /app
-    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: sh -c "uv sync --all-groups && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
     networks:
       - idun_network
@@ -100,6 +102,8 @@ services:
       - ./alembic.ini:/app/alembic.ini
       - ./pyproject.toml:/app/pyproject.toml
       - ./tests:/app/tests
+      # Mount libs directory for local schema development
+      - ../../libs:/app/libs
       # Persist uv cache and the virtual environment
       - uv_cache:/root/.cache/uv
       - uv_venv:/app/.venv

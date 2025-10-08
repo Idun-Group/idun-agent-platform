@@ -1,29 +1,30 @@
 """Agent API endpoints - Core CRUD operations."""
 
-from datetime import datetime
-from enum import Enum
-from typing import Annotated, Any, Literal
+from typing import Literal
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field, field_validator
-from pydantic.config import ConfigDict
+from fastapi import APIRouter, Depends, Header, HTTPException, status
+from idun_agent_schema.engine.config import AgentFramework
+from idun_agent_schema.manager.api import (
+    Agent,
+    AgentCreate,
+    AgentPatch,
+    AgentReplace,
+)
+from idun_agent_schema.manager.domain import AgentStatus
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     Principal,
-    get_agent_service,
     get_principal,
     get_session,
 )
-from app.application.services.agent_service import AgentService
-from app.domain.deployments.entities import DeploymentMode
 from app.infrastructure.db.models.agent_config import AgentConfigModel
+from src.app.api.v1.routers.auth import encrypt_payload
 
 router = APIRouter()
 
-# Simple in-memory storage
-agents_db: list[dict] = []
 
 # Fields that are allowed to be used for sorting in list queries (id is excluded)
 SORTABLE_AGENT_FIELDS = {
@@ -36,219 +37,12 @@ SORTABLE_AGENT_FIELDS = {
 }
 
 
-# Enums for better validation
-class AgentFramework(str, Enum):
-    """Supported agent frameworks."""
-
-    LANGGRAPH = "langgraph"
-    LANGCHAIN = "langchain"
-    AUTOGEN = "autogen"
-    CREWAI = "crewai"
-    CUSTOM = "custom"
-
-
-class AgentStatus(str, Enum):
-    """Agent lifecycle status."""
-
-    DRAFT = "draft"
-    READY = "ready"
-    DEPLOYED = "deployed"
-    RUNNING = "running"
-    STOPPED = "stopped"
-    ERROR = "error"
-
-
 # Helper to normalize framework values to enum (defaults to CUSTOM)
 def map_framework(value: str) -> AgentFramework:
     try:
         return AgentFramework(value.lower())
     except Exception:
         return AgentFramework.CUSTOM
-
-
-# Improved Pydantic models
-class LangGraphConfig(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    name: str | None = None
-    graph_definition: str
-
-
-class CrewAIConfig(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    name: str | None = None
-    crew_definition: str
-
-
-class CustomConfig(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    name: str | None = None
-    entrypoint: str
-
-
-class LangGraphAgentSection(BaseModel):
-    type: Literal["langgraph"]
-    config: LangGraphConfig
-
-
-class CrewAIAgentSection(BaseModel):
-    type: Literal["crewai"]
-    config: CrewAIConfig
-
-
-class CustomAgentSection(BaseModel):
-    type: Literal["custom"]
-    config: CustomConfig
-
-
-AgentSection = Annotated[
-    LangGraphAgentSection | CrewAIAgentSection | CustomAgentSection,
-    Field(discriminator="type"),
-]
-
-
-class AgentPayload(BaseModel):
-    agent: AgentSection
-
-
-class AgentCreate(BaseModel):
-    """Schema for creating a new agent.
-
-    Framework is inferred from config (e.g., config.agent.type = "langgraph").
-    """
-
-    name: str = Field(..., min_length=1, max_length=100, description="Agent name")
-    description: str | None = Field(
-        None, max_length=500, description="Agent description"
-    )
-    # Framework-specific configuration payload (discriminated by agent.type)
-    config: AgentPayload = Field(
-        ..., description="Framework-specific agent configuration"
-    )
-
-    @field_validator("name")  # noqa: N805 - Pydantic validator uses `cls` by convention
-    @classmethod
-    def validate_name(cls, v):
-        if not v.strip():
-            raise ValueError("Name cannot be empty or whitespace only")
-        return v.strip()
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "name": "My AI Assistant",
-                "description": "A helpful AI assistant for customer support",
-                "config": {
-                    "agent": {
-                        "type": "langgraph",
-                        "config": {
-                            "name": "My AI Assistant",
-                            "graph_definition": "./examples/01_basic_config_file/example_agent.py:app",
-                        },
-                    }
-                },
-            }
-        }
-
-
-class AgentUpdate(BaseModel):
-    """Schema for updating an existing agent."""
-
-    name: str | None = Field(
-        None, min_length=1, max_length=100, description="Agent name"
-    )
-    description: str | None = Field(
-        None, max_length=500, description="Agent description"
-    )
-    framework: AgentFramework | None = Field(None, description="Agent framework")
-
-    @field_validator("name")  # noqa: N805
-    @classmethod
-    def validate_name(cls, v):
-        if v is not None and not v.strip():
-            raise ValueError("Name cannot be empty or whitespace only")
-        return v.strip() if v else v
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "Updated Agent Name",
-                "description": "Updated description",
-                "framework": "langchain",
-            }
-        }
-
-
-class Agent(BaseModel):
-    """Complete agent model for responses."""
-
-    id: str = Field(..., description="Unique agent identifier")
-    name: str = Field(..., description="Agent name")
-    description: str | None = Field(None, description="Agent description")
-    framework: AgentFramework = Field(..., description="Agent framework")
-    status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
-    created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "name": "My AI Assistant",
-                "description": "A helpful AI assistant",
-                "framework": "langgraph",
-                "status": "draft",
-                "created_at": "2024-01-01T00:00:00",
-                "updated_at": "2024-01-01T00:00:00",
-            }
-        }
-
-
-class AgentReplace(BaseModel):
-    """Full replacement schema for PUT of an agent.
-
-    Represents the complete updatable representation of an agent.
-    Server-managed fields like id, status, and timestamps are excluded.
-    """
-
-    name: str = Field(..., min_length=1, max_length=100, description="Agent name")
-    description: str | None = Field(
-        None, max_length=500, description="Agent description"
-    )
-    config: AgentPayload = Field(
-        ..., description="Framework-specific agent configuration"
-    )
-
-    @field_validator("name")  # noqa: N805
-    @classmethod
-    def validate_name(cls, v):
-        if not v.strip():
-            raise ValueError("Name cannot be empty or whitespace only")
-        return v.strip()
-
-
-class AgentPatch(BaseModel):
-    """Partial update schema for PATCH of an agent.
-
-    Only provided fields will be updated. If config is provided, the
-    framework will be inferred from config.agent.type.
-    """
-
-    name: str | None = Field(
-        None, min_length=1, max_length=100, description="Agent name"
-    )
-    description: str | None = Field(
-        None, max_length=500, description="Agent description"
-    )
-    config: AgentPayload | None = Field(
-        None, description="Framework-specific agent configuration"
-    )
-
-    @field_validator("name")  # noqa: N805
-    @classmethod
-    def validate_name(cls, v):
-        if v is not None and not v.strip():
-            raise ValueError("Name cannot be empty or whitespace only")
-        return v.strip() if v else v
 
 
 @router.post(
@@ -271,13 +65,11 @@ async def create_agent(
     - Returns the created agent in the public API shape
     """
     # Infer framework from config
-    framework_value: str | None = (
-        request.config.agent.type if request.config and request.config.agent else None
-    )
+    framework_value: str | None = request.config.type if request.config else None
     if not framework_value or not isinstance(framework_value, str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing framework type in config.agent.type",
+            detail="Missing framework type in config.type",
         )
 
     framework_enum = map_framework(framework_value)
@@ -325,67 +117,63 @@ async def create_agent(
     )
 
 
-class DeployRequest(BaseModel):
-    """Request body for deploying an agent."""
-
-    mode: DeploymentMode = Field(DeploymentMode.LOCAL, description="Deployment mode")
-    config: dict[str, Any] | None = Field(None, description="Deployment configuration")
-
-
-@router.post(
-    "/{agent_id}/deploy",
-    summary="Deploy agent",
-    description="Deploy an agent using the specified mode and configuration (local only for now)",
-    status_code=status.HTTP_202_ACCEPTED,
+@router.get(
+    "/key",
+    summary="Generate Agent API Key",
 )
-async def deploy_agent_endpoint(
+async def generate_key(
     agent_id: str,
-    request: DeployRequest,
-    agent_service: AgentService = Depends(get_agent_service),
-    principal: Principal = Depends(get_principal),
     session: AsyncSession = Depends(get_session),
-) -> dict[str, Any]:
+    principal: Principal = Depends(get_principal),
+):
     try:
-        agent_uuid = UUID(agent_id)
+        uuid = UUID(agent_id)
     except ValueError as err:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
+            status=status.HTTP_400_BAD_REQUEST, detail="Invalid agent format"
         ) from err
 
-    try:
-        # Ensure the agent belongs to the principal's tenant/workspace before deployment
-        model = await session.get(AgentConfigModel, agent_uuid)
-        if not model:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Agent with id '{agent_id}' not found",
-            )
-        if model.tenant_id != principal.tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
-            )
-        if (
-            model.workspace_id
-            and principal.workspace_ids
-            and model.workspace_id not in set(principal.workspace_ids)
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
-            )
-
-        result = await agent_service.deploy_agent(
-            agent_uuid,
-            principal.tenant_id,
-            deployment_mode=request.mode,
-            deployment_config=request.config or {},
+    model = await session.get(AgentConfigModel, uuid)
+    if not model:
+        raise HTTPException(
+            status=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id: {agent_id} not found",
         )
-        return result
-    except HTTPException:
-        raise
+
+    if model.tenant_id != principal.tenant_id:
+        raise HTTPException(status=status.HTTP_403_FORBIDDEN, detail="Forbidden agent")
+
+    agent_data = f"{model.id}:{model.name}:{model.tenant_id}"
+    new_agent_hash = encrypt_payload(agent_data).hex()
+    model.agent_hash = new_agent_hash
+    await session.flush()
+    return {"api_key": new_agent_hash}
+
+
+@router.get("/config", summary="Get the config of an agent")
+async def config(session: AsyncSession = Depends(get_session), auth: str = Header(...)):
+    # sends the hash from the auth headers to verify
+    if not auth.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header",
+        )
+    agent_hash = auth[7:]
+    try:
+        stmt = select(AgentConfigModel).where(AgentConfigModel.agent_hash == agent_hash)
+        result = await session.execute(stmt)
+        agent_model = result.scalar_one_or_none()
+        if not agent_model:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Invalid API Key"
+            )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error retrieving info from db: {e}",
         ) from e
+
+    return agent_model
 
 
 @router.get(
@@ -529,7 +317,7 @@ async def get_agent(
     summary="Replace agent (PUT)",
     description=(
         "Replace an agent's mutable fields with the provided representation. "
-        "Framework is inferred from config.agent.type."
+        "Framework is inferred from config.type."
     ),
 )
 async def update_agent(
@@ -564,13 +352,11 @@ async def update_agent(
         )
 
     # Infer framework from config
-    framework_value: str | None = (
-        request.config.agent.type if request.config and request.config.agent else None
-    )
+    framework_value: str | None = request.config.type if request.config else None
     if not framework_value or not isinstance(framework_value, str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing framework type in config.agent.type",
+            detail="Missing framework type in config.type",
         )
     framework_enum = map_framework(framework_value)
 
@@ -641,7 +427,7 @@ async def delete_agent(
     summary="Partially update agent (PATCH)",
     description=(
         "Partially update an agent. Only provided fields are modified. "
-        "If config is provided, framework is inferred from config.agent.type."
+        "If config is provided, framework is inferred from config.type."
     ),
 )
 async def patch_agent(
@@ -679,15 +465,11 @@ async def patch_agent(
     if request.description is not None:
         model.description = request.description
     if request.config is not None:
-        framework_value: str | None = (
-            request.config.agent.type
-            if request.config and request.config.agent
-            else None
-        )
+        framework_value: str | None = request.config.type if request.config else None
         if not framework_value or not isinstance(framework_value, str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Missing framework type in config.agent.type",
+                detail="Missing framework type in config.type",
             )
         model.framework = map_framework(framework_value).value
         model.config = request.config.model_dump()

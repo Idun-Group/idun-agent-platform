@@ -29,6 +29,9 @@ class AgentConfigModel(Base):  # table renamed from agent_config → managed_age
     engine_config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     run_config: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
+    # Agent hash for identification/verification
+    agent_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+
     # Multi-tenancy scoping
     tenant_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), nullable=False, index=True
