@@ -25,9 +25,6 @@ from src.app.api.v1.routers.auth import encrypt_payload
 
 router = APIRouter()
 
-# TODO: handle public/private keys (check langfuse repo)
-# on agent create -> crypt -> return config
-
 
 # Fields that are allowed to be used for sorting in list queries (id is excluded)
 SORTABLE_AGENT_FIELDS = {
