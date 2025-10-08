@@ -1546,7 +1546,7 @@ requires-dist = [
     { name = "gunicorn", specifier = ">=23.0.0,<24.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "idun-agent-engine", specifier = ">=0.1.0,<0.2.0" },
-    { name = "idun-agent-schema", specifier = ">=0.1.0,<0.2.0" },
+    { name = "idun-agent-schema", specifier = "==0.1.0" },
     { name = "opentelemetry-api", specifier = ">=1.34.0,<2.0.0" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.34.0,<2.0.0" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = "==0.55b1" },

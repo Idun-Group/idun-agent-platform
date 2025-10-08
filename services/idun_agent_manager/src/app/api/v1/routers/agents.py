@@ -21,7 +21,7 @@ from app.api.v1.deps import (
     get_session,
 )
 from app.infrastructure.db.models.agent_config import AgentConfigModel
-from src.app.api.v1.routers.auth import encrypt_payload
+from app.api.v1.routers.auth import encrypt_payload
 
 router = APIRouter()
 
