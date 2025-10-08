@@ -27,6 +27,14 @@ def generate_pkce_pair() -> tuple[str, str]:
     return code_verifier, code_challenge
 
 
+def encrypt_payload(payload: str) -> bytes:
+    salt = os.environ["AUTH__SECRET_KEY"].encode()
+    hashed = hashlib.scrypt(
+        password=payload.encode(), salt=salt, n=16384, r=8, p=1, dklen=32
+    )
+    return hashed
+
+
 @router.get("/login", summary="Start OIDC login")
 async def login(request: Request) -> RedirectResponse:
     settings = get_settings()
@@ -102,7 +110,7 @@ async def callback(request: Request) -> Response:
     # Create opaque session id and store tokens server-side
     sid = secrets.token_urlsafe(32)
     # Optional dev override
-    override_ttl = settings.auth.test_access_ttl_seconds
+    override_ttl = 3600
     effective_expires = int(override_ttl) if override_ttl else int(expires_in or 3600)
 
     data = {

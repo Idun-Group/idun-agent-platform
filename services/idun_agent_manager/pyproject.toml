@@ -47,7 +47,8 @@ dependencies = [
   # Idun Agent Engine SDK (from PyPI)
   "idun-agent-engine>=0.1.0,<0.2.0",
   # Centralized schema package (mounted via Docker volume)
-  "idun-agent-schema @ file:///app/libs/idun_agent_schema",
+  "idun_agent_schema==0.1.41"
+  #"idun-agent-schema @ file:///app/libs/idun_agent_schema",
 ]
 
 ## uv configuration

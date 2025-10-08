@@ -1,40 +1,33 @@
 """Agent API endpoints - Core CRUD operations."""
 
-from typing import Any, Literal
+from typing import Literal
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from idun_agent_schema.manager.domain import AgentStatus
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from idun_agent_schema.engine.config import AgentFramework
 from idun_agent_schema.manager.api import (
-    AgentCreate,
     Agent,
-    AgentReplace,
+    AgentCreate,
     AgentPatch,
+    AgentReplace,
 )
+from idun_agent_schema.manager.domain import AgentStatus
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     Principal,
-    get_agent_service,
     get_principal,
     get_session,
 )
-from app.application.services.agent_service import AgentService
-from app.domain.deployments.entities import DeploymentMode
 from app.infrastructure.db.models.agent_config import AgentConfigModel
+from src.app.api.v1.routers.auth import encrypt_payload
 
 router = APIRouter()
 
-# TODO: test endpoints
 # TODO: handle public/private keys (check langfuse repo)
-# TODO: export/import  schema
+# on agent create -> crypt -> return config
 
-
-# Simple in-memory storage
-agents_db: list[dict] = []
 
 # Fields that are allowed to be used for sorting in list queries (id is excluded)
 SORTABLE_AGENT_FIELDS = {
@@ -127,67 +120,63 @@ async def create_agent(
     )
 
 
-class DeployRequest(BaseModel):
-    """Request body for deploying an agent."""
-
-    mode: DeploymentMode = Field(DeploymentMode.LOCAL, description="Deployment mode")
-    config: dict[str, Any] | None = Field(None, description="Deployment configuration")
-
-
-@router.post(
-    "/{agent_id}/deploy",
-    summary="Deploy agent",
-    description="Deploy an agent using the specified mode and configuration (local only for now)",
-    status_code=status.HTTP_202_ACCEPTED,
+@router.get(
+    "/key",
+    summary="Generate Agent API Key",
 )
-async def deploy_agent_endpoint(
+async def generate_key(
     agent_id: str,
-    request: DeployRequest,
-    agent_service: AgentService = Depends(get_agent_service),
-    principal: Principal = Depends(get_principal),
     session: AsyncSession = Depends(get_session),
-) -> dict[str, Any]:
+    principal: Principal = Depends(get_principal),
+):
     try:
-        agent_uuid = UUID(agent_id)
+        uuid = UUID(agent_id)
     except ValueError as err:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
+            status=status.HTTP_400_BAD_REQUEST, detail="Invalid agent format"
         ) from err
 
-    try:
-        # Ensure the agent belongs to the principal's tenant/workspace before deployment
-        model = await session.get(AgentConfigModel, agent_uuid)
-        if not model:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Agent with id '{agent_id}' not found",
-            )
-        if model.tenant_id != principal.tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
-            )
-        if (
-            model.workspace_id
-            and principal.workspace_ids
-            and model.workspace_id not in set(principal.workspace_ids)
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
-            )
-
-        result = await agent_service.deploy_agent(
-            agent_uuid,
-            principal.tenant_id,
-            deployment_mode=request.mode,
-            deployment_config=request.config or {},
+    model = await session.get(AgentConfigModel, uuid)
+    if not model:
+        raise HTTPException(
+            status=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id: {agent_id} not found",
         )
-        return result
-    except HTTPException:
-        raise
+
+    if model.tenant_id != principal.tenant_id:
+        raise HTTPException(status=status.HTTP_403_FORBIDDEN, detail="Forbidden agent")
+
+    agent_data = f"{model.id}:{model.name}:{model.tenant_id}"
+    new_agent_hash = encrypt_payload(agent_data).hex()
+    model.agent_hash = new_agent_hash
+    await session.flush()
+    return {"api_key": new_agent_hash}
+
+
+@router.get("/config", summary="Get the config of an agent")
+async def config(session: AsyncSession = Depends(get_session), auth: str = Header(...)):
+    # sends the hash from the auth headers to verify
+    if not auth.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header",
+        )
+    agent_hash = auth[7:]
+    try:
+        stmt = select(AgentConfigModel).where(AgentConfigModel.agent_hash == agent_hash)
+        result = await session.execute(stmt)
+        agent_model = result.scalar_one_or_none()
+        if not agent_model:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Invalid API Key"
+            )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error retrieving info from db: {e}",
         ) from e
+
+    return agent_model
 
 
 @router.get(
