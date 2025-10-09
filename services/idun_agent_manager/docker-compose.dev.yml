@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL database
   postgres:
@@ -70,7 +68,7 @@ services:
       - uv_cache:/root/.cache/uv
       - uv_venv:/app/.venv
     working_dir: /app
-    command: sh -c "uv sync --all-groups && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: sh -c "uv sync --all-groups && uv pip install -e /app/libs/idun_agent_engine -e /app/libs/idun_agent_schema && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/libs/idun_agent_engine/src --reload-dir /app/libs/idun_agent_schema/src"
 
     networks:
       - idun_network
@@ -108,8 +106,8 @@ services:
       - uv_cache:/root/.cache/uv
       - uv_venv:/app/.venv
     working_dir: /app
-    # Keep container running for exec commands
-    command: tail -f /dev/null
+    # Prepare environment with local libs, then keep container running for exec commands
+    command: sh -c "uv sync --all-groups && uv pip install -e /app/libs/idun_agent_engine -e /app/libs/idun_agent_schema && tail -f /dev/null"
     profiles:
       - cli
     networks:
