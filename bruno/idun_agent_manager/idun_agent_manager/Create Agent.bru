@@ -1,0 +1,27 @@
+meta {
+  name: Create Agent
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://0.0.0.0:8500/api/v1/agents/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "config": {
+      "config": {
+        "graph_definition": "./examples/01_basic_config_file/example_agent.py:app",
+        "input_schema_definition": {},
+        "name": "My AI Assistant",
+        "output_schema_definition": {}
+      },
+      "type": "langgraph"
+    },
+    "description": "A helpful AI assistant for customer support",
+    "name": "My AI Assistant"
+  }
+}

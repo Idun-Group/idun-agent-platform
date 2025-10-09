@@ -202,7 +202,7 @@ class AgentUpdate(BaseModel):
         return v.strip() if v else v
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "Updated Agent Name",
                 "description": "Updated description",
@@ -223,7 +223,7 @@ class Agent(BaseModel):
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "name": "My AI Assistant",
@@ -282,5 +282,3 @@ class AgentPatch(BaseModel):
         if v is not None and not v.strip():
             raise ValueError("Name cannot be empty or whitespace only")
         return v.strip() if v else v
-
-
