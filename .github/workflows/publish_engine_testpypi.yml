@@ -1,10 +1,9 @@
 name: Publish idun-agent-engine to TestPyPI
 
 on:
-  workflow_run:
-    workflows: ["Publish idun-agent-schema to TestPyPI"]
-    types:
-      - completed
+  push:
+    branches:
+      - '**'  # Trigger on all branches and all commits
 
 jobs:
   build-and-publish:
