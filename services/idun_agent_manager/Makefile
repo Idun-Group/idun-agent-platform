@@ -231,5 +231,3 @@ quickstart: setup migrate serve #precommit-install ## Complete setup and start e
 	@echo "API: http://localhost:8000"
 	@echo "Docs: http://localhost:8000/docs"
 	@echo "Run 'make shell' to access the container shell"
-
-

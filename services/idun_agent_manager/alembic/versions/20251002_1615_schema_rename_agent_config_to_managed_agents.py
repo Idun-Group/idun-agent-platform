@@ -86,4 +86,3 @@ def downgrade() -> None:
     op.execute("ALTER TABLE IF EXISTS managed_agents RENAME TO agent_config;")
 
     # Recreate legacy managed_agent table is intentionally omitted
-
