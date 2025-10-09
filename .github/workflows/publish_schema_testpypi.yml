@@ -58,7 +58,5 @@ jobs:
 
       - name: Publish to TestPyPI
         working-directory: libs/idun_agent_schema
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
-          uv publish --publish-url https://test.pypi.org/legacy/
+          uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }}
