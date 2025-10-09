@@ -19,24 +19,24 @@ The following GitHub Actions workflows automatically publish to TestPyPI:
 
 Test versions follow this pattern:
 ```
-<base_version>.dev<timestamp>+<branch_name>.<commit_hash>
+<base_version>.dev<timestamp>
 ```
 
 For example:
 - Base version: `0.2.0`
-- Branch: `feature/my-new-feature`
-- Published as: `0.2.0.dev20251009143025+feature-my-new-feature.a1b2c3d`
+- Published as: `0.2.0.dev20251009143025`
 
-Branch names are sanitized for PEP 440 compliance:
-- `/` and `_` are replaced with `-`
-- Converted to lowercase
-- Invalid characters are replaced with `-`
+**Note on Branch and Commit Information:**
+- PyPI/TestPyPI don't allow local version identifiers (the `+branch.commit` suffix)
+- The version itself only contains the timestamp for uniqueness
+- Branch name and commit SHA are displayed in the GitHub Actions logs
+- You can find this information by checking the workflow run details
 
 This ensures:
-- Each commit gets a unique version
-- You can easily identify which branch the version came from
-- Versions are sortable chronologically
-- You can trace back to the specific commit
+- Each commit gets a unique, chronologically sortable version
+- Full PEP 440 compliance for PyPI/TestPyPI
+- Versions are clean and easy to use
+- Branch and commit info are available in CI logs for traceability
 
 ## Installing from TestPyPI
 
@@ -47,7 +47,7 @@ This ensures:
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-schema
 
 # Install a specific test version
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-schema==0.2.0.dev20251009143025+feature-my-feature.a1b2c3d
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-schema==0.2.0.dev20251009143025
 ```
 
 ### Install idun-agent-engine from TestPyPI
@@ -57,7 +57,7 @@ pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-engine
 
 # Install a specific test version
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-engine==0.1.0.dev20251009143025+feature-my-feature.a1b2c3d
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-engine==0.1.0.dev20251009143025
 ```
 
 ### Using uv
@@ -79,7 +79,7 @@ uv pip install --index-url https://test.pypi.org/simple/ --extra-index-url https
 2. Or check the GitHub Actions runs:
    - Go to the Actions tab in the repository
    - Look for successful "Publish to TestPyPI" workflow runs
-   - Check the logs for the published version number
+   - Check the logs for the published version number, branch name, and commit SHA
 
 ## Important Notes
 
@@ -137,9 +137,9 @@ git push origin feature/my-new-feature
 
 # 4. Wait for GitHub Actions to complete (check Actions tab)
 
-# 5. Install the test version (check logs for exact version)
+# 5. Install the test version (check Actions logs for exact version, branch, and commit)
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ \
-  idun-agent-schema==0.2.0.dev20251009143025+feature-my-new-feature.a1b2c3d
+  idun-agent-schema==0.2.0.dev20251009143025
 
 # 6. Test your changes
 python -c "from idun_agent_schema import ..."
