@@ -7,15 +7,24 @@ on:
     paths:
       - 'libs/idun_agent_engine/**'
       - '.github/workflows/publish_engine_testpypi.yml'
+  workflow_run:
+    workflows: ["Publish idun-agent-schema to TestPyPI"]
+    types:
+      - completed
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    # Only run if triggered by push OR if schema workflow completed successfully
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # If triggered by workflow_run, use the same ref that triggered the schema workflow
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -46,17 +55,86 @@ jobs:
           echo "From branch: ${BRANCH_NAME}"
           echo "Commit: ${SHORT_SHA}"
 
-      - name: Update version in pyproject.toml
+      - name: Check if schema was modified and get its test version
+        id: schema_version
+        run: |
+          # Check if schema directory was modified in this commit
+          if git diff --name-only HEAD~1 HEAD | grep -q "^libs/idun_agent_schema/"; then
+            echo "schema_modified=true" >> $GITHUB_OUTPUT
+
+            # Get schema version
+            SCHEMA_BASE_VERSION=$(grep -m 1 'version = ' libs/idun_agent_schema/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
+            SCHEMA_DEV_VERSION="${SCHEMA_BASE_VERSION}.dev${TIMESTAMP}"
+            echo "schema_dev_version=${SCHEMA_DEV_VERSION}" >> $GITHUB_OUTPUT
+            echo "Schema was modified. Will use test version: ${SCHEMA_DEV_VERSION}"
+          else
+            echo "schema_modified=false" >> $GITHUB_OUTPUT
+            echo "Schema was not modified in this commit"
+          fi
+
+      - name: Update engine version and schema dependency
         working-directory: libs/idun_agent_engine
         run: |
+          # Update engine version
           sed -i 's/version = ".*"/version = "${{ steps.version.outputs.dev_version }}"/' pyproject.toml
+
+          # If schema was modified, update to use the test version from TestPyPI
+          if [ "${{ steps.schema_version.outputs.schema_modified }}" == "true" ]; then
+            echo "Updating schema dependency to test version: ${{ steps.schema_version.outputs.schema_dev_version }}"
+            sed -i 's|"idun-agent-schema>=.*"|"idun-agent-schema==${{ steps.schema_version.outputs.schema_dev_version }}"|' pyproject.toml
+          fi
+
           echo "Updated pyproject.toml:"
           grep -m 1 'version = ' pyproject.toml
+          grep 'idun-agent-schema' pyproject.toml
+
+      - name: Wait for schema to be available on TestPyPI
+        if: steps.schema_version.outputs.schema_modified == 'true'
+        run: |
+          echo "Waiting for schema ${{ steps.schema_version.outputs.schema_dev_version }} to be available on TestPyPI..."
+
+          # Wait up to 2 minutes for the package to be available
+          MAX_ATTEMPTS=24
+          ATTEMPT=1
+          SLEEP_DURATION=5
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking if package is available..."
+
+            if pip index versions idun-agent-schema --index-url https://test.pypi.org/simple/ 2>/dev/null | grep -q "${{ steps.schema_version.outputs.schema_dev_version }}"; then
+              echo "✓ Package found on TestPyPI!"
+              exit 0
+            fi
+
+            echo "Package not yet available. Waiting ${SLEEP_DURATION}s..."
+            sleep $SLEEP_DURATION
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+
+          echo "⚠️  Package not found after waiting. Continuing anyway..."
+          exit 0
+
+      - name: Install schema from TestPyPI if needed
+        if: steps.schema_version.outputs.schema_modified == 'true'
+        working-directory: libs/idun_agent_engine
+        run: |
+          echo "Installing schema test version from TestPyPI..."
+          uv pip install "idun-agent-schema==${{ steps.schema_version.outputs.schema_dev_version }}" \
+            --index-url https://test.pypi.org/simple/ \
+            --extra-index-url https://pypi.org/simple/
 
       - name: Build wheel and sdist (engine)
         working-directory: libs/idun_agent_engine
         run: |
-          uv build --no-sources
+          # Use TestPyPI for schema if it was modified, otherwise use PyPI
+          if [ "${{ steps.schema_version.outputs.schema_modified }}" == "true" ]; then
+            echo "Building with schema from TestPyPI..."
+            UV_INDEX_URL=https://test.pypi.org/simple/ UV_EXTRA_INDEX_URL=https://pypi.org/simple/ uv build --no-sources
+          else
+            echo "Building with schema from PyPI..."
+            uv build --no-sources
+          fi
 
       - name: Publish to TestPyPI
         working-directory: libs/idun_agent_engine

@@ -2,6 +2,8 @@
 
 This document explains how to use the test versions of the Idun Agent libraries published to TestPyPI.
 
+> **🔗 Related**: See [TestPyPI Dependency Handling](testpypi-dependency-handling.md) for details on how dependencies between schema and engine are managed automatically.
+
 ## Overview
 
 We automatically publish test versions of both libraries to TestPyPI for every commit that modifies the library code. This allows you to test features before they're released to production PyPI.
@@ -92,22 +94,28 @@ The `--extra-index-url https://pypi.org/simple/` flag is **required** because:
 
 ### Dependencies Between Libraries
 
-If `idun-agent-engine` depends on `idun-agent-schema`, you may need to:
+The engine depends on the schema package. **This is handled automatically!**
 
-1. Install both from TestPyPI if testing changes in both:
+When you modify both libraries in the same commit:
+1. Schema is published to TestPyPI first
+2. Engine workflow automatically detects the schema change
+3. Engine updates its dependency to use the test schema version
+4. Engine is built with the correct test schema
+
+**Result:** The engine test package will automatically require the matching schema test version!
+
 ```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ \
-  idun-agent-schema==<test-version> \
-  idun-agent-engine==<test-version>
+# Just install the engine - it will pull the correct schema version
+pip install idun-agent-engine==0.1.0.dev20251009143025 \
+  --index-url https://test.pypi.org/simple/ \
+  --extra-index-url https://pypi.org/simple/
+
+# This automatically installs:
+# - idun-agent-engine==0.1.0.dev20251009143025
+# - idun-agent-schema==0.2.0.dev20251009143025 (same timestamp!)
 ```
 
-2. Or install one from TestPyPI and one from PyPI:
-```bash
-# Test schema with stable engine
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ \
-  idun-agent-schema==<test-version>
-pip install idun-agent-engine
-```
+For details, see [TestPyPI Dependency Handling](testpypi-dependency-handling.md).
 
 ### Limitations
 
