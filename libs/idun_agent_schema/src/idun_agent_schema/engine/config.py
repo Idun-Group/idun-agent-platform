@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from .agent import BaseAgentConfig
 from .langgraph import LangGraphAgentConfig
+from .haystack import HaystackAgentConfig
 from .server import ServerConfig
 
 
@@ -22,7 +23,7 @@ class AgentConfig(BaseModel):
     """Configuration for agent specification and settings."""
 
     type: AgentFramework = Field(default=AgentFramework.LANGGRAPH)
-    config: BaseAgentConfig | LangGraphAgentConfig = Field(
+    config: BaseAgentConfig | LangGraphAgentConfig | HaystackAgentConfig = Field(
         default_factory=BaseAgentConfig
     )
 
