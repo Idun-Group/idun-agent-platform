@@ -35,9 +35,10 @@ The engine workflow automatically:
    git diff --name-only HEAD~1 HEAD | grep "^libs/idun_agent_schema/"
    ```
 
-2. **Calculates Test Version**
-   - Uses same timestamp logic as schema workflow
-   - Generates: `0.2.0.dev<TIMESTAMP>`
+2. **Finds the Actual Schema Version**
+   - Queries TestPyPI for the latest dev version just published
+   - Uses the exact version that was published (matching timestamp!)
+   - Fallback: Calculates with current timestamp if query fails
 
 3. **Updates pyproject.toml**
    ```toml
@@ -220,7 +221,10 @@ Commit: a1b2c3d
 
 **Engine workflow logs:**
 ```
-Schema was modified. Will use test version: 0.2.0.dev20251009143025
+Schema workflow triggered this run, so schema was modified
+Looking for latest schema dev version on TestPyPI...
+Found schema version on TestPyPI: 0.2.0.dev20251009143025
+Will use test schema version: 0.2.0.dev20251009143025
 Updating schema dependency to test version: 0.2.0.dev20251009143025
 ✓ Package found on TestPyPI!
 Installing schema test version from TestPyPI...
