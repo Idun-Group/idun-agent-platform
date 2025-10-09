@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..engine.config import AgentConfig
+from ..engine.config import AgentConfig, EngineConfig
 from .domain import AgentFramework, AgentStatus
 
 
@@ -151,8 +151,8 @@ class AgentCreate(BaseModel):
         None, max_length=500, description="Agent description"
     )
     # Use schema's AgentConfig instead of AgentPayload
-    config: AgentConfig = Field(
-        ..., description="Framework-specific agent configuration"
+    config: EngineConfig = Field(
+        ..., description="Idun Agent Engine configuration"
     )
 
     @field_validator("name")  # noqa: N805 - Pydantic validator uses `cls` by convention
