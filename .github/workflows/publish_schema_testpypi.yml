@@ -3,10 +3,7 @@ name: Publish idun-agent-schema to TestPyPI
 on:
   push:
     branches:
-      - '**'  # Trigger on all branches
-    paths:
-      - 'libs/idun_agent_schema/**'
-      - '.github/workflows/publish_schema_testpypi.yml'
+      - '**'  # Trigger on all branches and all commits
 
 jobs:
   build-and-publish:

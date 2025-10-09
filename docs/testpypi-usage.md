@@ -6,16 +6,20 @@ This document explains how to use the test versions of the Idun Agent libraries 
 
 ## Overview
 
-We automatically publish test versions of both libraries to TestPyPI for every commit that modifies the library code. This allows you to test features before they're released to production PyPI.
+We automatically publish test versions of **both libraries** to TestPyPI for **every commit** to any branch. This ensures both packages are always in sync and allows you to test features before they're released to production PyPI.
+
+**Key Point:** Every commit triggers both workflows, so you always get fresh, synchronized versions of both packages!
 
 ## How It Works
 
 ### Automatic Publishing
 
-The following GitHub Actions workflows automatically publish to TestPyPI:
+The following GitHub Actions workflows automatically publish to TestPyPI on **EVERY commit**:
 
-- **`publish_schema_testpypi.yml`**: Publishes `idun-agent-schema` when changes are made to `libs/idun_agent_schema/`
-- **`publish_engine_testpypi.yml`**: Publishes `idun-agent-engine` when changes are made to `libs/idun_agent_engine/`
+- **`publish_schema_testpypi.yml`**: ALWAYS publishes `idun-agent-schema` (runs first)
+- **`publish_engine_testpypi.yml`**: ALWAYS publishes `idun-agent-engine` (runs after schema completes)
+
+Both workflows trigger on every push to any branch, ensuring both packages are always synchronized.
 
 ### Version Naming
 
@@ -96,13 +100,14 @@ The `--extra-index-url https://pypi.org/simple/` flag is **required** because:
 
 The engine depends on the schema package. **This is handled automatically!**
 
-When you modify both libraries in the same commit:
+On EVERY commit (regardless of what changed):
 1. Schema is published to TestPyPI first
-2. Engine workflow automatically detects the schema change
-3. Engine updates its dependency to use the test schema version
-4. Engine is built with the correct test schema
+2. Engine workflow automatically triggers
+3. Engine queries TestPyPI for the latest schema version
+4. Engine updates its dependency to use that exact version
+5. Engine is built with the latest test schema
 
-**Result:** The engine test package will automatically require the matching schema test version!
+**Result:** The engine test package will ALWAYS require the latest test schema version!
 
 ```bash
 # Just install the engine - it will pull the correct schema version

@@ -4,103 +4,86 @@ This document explains how the TestPyPI publishing workflows handle dependencies
 
 ## The Challenge
 
-`idun-agent-engine` depends on `idun-agent-schema`. When testing changes across both libraries in the same commit, we need to ensure:
+`idun-agent-engine` depends on `idun-agent-schema`. To ensure both libraries are always in sync for testing, we need:
 
 1. The test version of `idun-agent-schema` is published to TestPyPI FIRST
-2. The test version of `idun-agent-engine` uses the SAME test version of the schema
-3. Both packages are built from the same commit
+2. The test version of `idun-agent-engine` uses the LATEST test version of the schema
+3. Both packages are published from the same commit
+
+## The Simple Solution
+
+**Every commit triggers BOTH workflows:**
+1. Schema always publishes first
+2. Engine always queries TestPyPI for the latest schema version
+3. Engine always uses that latest test version
+
+This ensures perfect synchronization without complex change detection logic.
 
 ## How It Works
 
 ### Workflow Execution Order
 
+**On EVERY commit to ANY branch:**
+
 1. **Schema Workflow Runs First** (`publish_schema_testpypi.yml`)
-   - Triggers when `libs/idun_agent_schema/` is modified
+   - Triggers on every push
    - Publishes `idun-agent-schema==0.2.0.devTIMESTAMP` to TestPyPI
 
 2. **Engine Workflow Runs After** (`publish_engine_testpypi.yml`)
-   - Has TWO triggers:
-     - Direct: When `libs/idun_agent_engine/` is modified
-     - Indirect: When schema workflow completes successfully
-   - Checks if schema was modified in the same commit
-   - If yes: Updates dependency to use the test version from TestPyPI
-   - If no: Uses stable schema from PyPI
+   - Automatically triggered when schema workflow completes successfully
+   - Queries TestPyPI for the latest schema version
+   - Updates dependency to use that latest test version
+   - Publishes `idun-agent-engine==0.1.0.devTIMESTAMP` to TestPyPI
 
 ### Automatic Dependency Resolution
 
 The engine workflow automatically:
 
-1. **Detects Schema Changes**
-   ```bash
-   git diff --name-only HEAD~1 HEAD | grep "^libs/idun_agent_schema/"
-   ```
+1. **Queries TestPyPI for Latest Schema**
+   - Waits for up to 2 minutes for schema to be available
+   - Polls every 5 seconds
+   - Finds the latest dev version: `0.2.0.dev<TIMESTAMP>`
 
-2. **Finds the Actual Schema Version**
-   - Queries TestPyPI for the latest dev version just published
-   - Uses the exact version that was published (matching timestamp!)
-   - Fallback: Calculates with current timestamp if query fails
-
-3. **Updates pyproject.toml**
+2. **Updates pyproject.toml**
    ```toml
    # Before:
    "idun-agent-schema>=0.2.0,<0.3.0"
 
-   # After (if schema modified):
-   "idun-agent-schema==0.2.0.dev20251009143025"
+   # After:
+   "idun-agent-schema==0.2.0.dev20251009143025"  # Latest from TestPyPI
    ```
 
-4. **Waits for TestPyPI Availability**
-   - Polls TestPyPI for up to 2 minutes
-   - Ensures package is available before building
-
-5. **Builds with Correct Dependencies**
-   - Uses TestPyPI index if schema was modified
-   - Uses PyPI index otherwise
+3. **Builds with Test Schema**
+   - Always uses TestPyPI index for schema dependency
+   - Uses PyPI for all other dependencies
+   - Ensures engine is built with the latest test schema
 
 ## Usage Scenarios
 
-### Scenario 1: Only Schema Changed
+### ANY Commit to ANY Branch
+
 ```bash
-# Modify only schema
-vim libs/idun_agent_schema/src/...
-git commit -am "Update schema"
-git push
-```
-
-**Result:**
-- ✅ Schema workflow publishes `idun-agent-schema==0.2.0.devTIMESTAMP`
-- ✅ Engine workflow also runs (via workflow_run trigger)
-- ✅ Engine uses the NEW test schema version
-- ✅ Both are synchronized
-
-### Scenario 2: Only Engine Changed
-```bash
-# Modify only engine
-vim libs/idun_agent_engine/src/...
-git commit -am "Update engine"
-git push
-```
-
-**Result:**
-- ✅ Engine workflow publishes using stable schema from PyPI
-- ℹ️ Schema workflow doesn't run
-
-### Scenario 3: Both Changed (Most Common)
-```bash
-# Modify both libs
+# Make any changes (schema, engine, docs, anything)
 vim libs/idun_agent_schema/src/...
 vim libs/idun_agent_engine/src/...
-git commit -am "Update both schema and engine"
+vim README.md
+git commit -am "Any changes"
 git push
 ```
 
-**Result:**
-- ✅ Schema workflow runs and publishes test version
-- ✅ Engine workflow waits and then runs
-- ✅ Engine detects schema change
-- ✅ Engine updates dependency to use test schema version
-- ✅ Engine builds with the correct test schema
-- ✅ Both published with matching versions
+**Result - ALWAYS:**
+1. ✅ Schema workflow publishes `idun-agent-schema==0.2.0.devTIMESTAMP1`
+2. ✅ Engine workflow automatically triggers
+3. ✅ Engine queries TestPyPI for latest schema version
+4. ✅ Engine finds `0.2.0.devTIMESTAMP1` and uses it
+5. ✅ Engine publishes `idun-agent-engine==0.1.0.devTIMESTAMP2`
+6. ✅ Both packages always in sync on TestPyPI
+
+**Why this is simple:**
+- No need to track what changed
+- Always get fresh versions of both packages
+- Engine always uses the latest test schema
+- Guaranteed synchronization
 
 ## Installation Examples
 
@@ -139,30 +122,23 @@ pip show idun-agent-schema
 on:
   push:
     branches:
-      - '**'
-    paths:
-      - 'libs/idun_agent_schema/**'
+      - '**'  # ALL branches, ALL commits
 ```
-- Runs when schema code changes
+- Runs on EVERY commit to ANY branch
 - Publishes to TestPyPI
 - Triggers engine workflow upon completion
 
 ### Engine Workflow (`publish_engine_testpypi.yml`)
 ```yaml
 on:
-  push:
-    branches:
-      - '**'
-    paths:
-      - 'libs/idun_agent_engine/**'
   workflow_run:
     workflows: ["Publish idun-agent-schema to TestPyPI"]
     types:
       - completed
 ```
-- Runs when engine code changes (direct trigger)
-- Runs when schema workflow completes (indirect trigger)
-- Automatically handles dependencies
+- ONLY runs when schema workflow completes successfully
+- No direct push trigger
+- Always queries TestPyPI for latest schema version
 
 ## Troubleshooting
 
@@ -221,60 +197,47 @@ Commit: a1b2c3d
 
 **Engine workflow logs:**
 ```
-Schema workflow triggered this run, so schema was modified
-Looking for latest schema dev version on TestPyPI...
-Found schema version on TestPyPI: 0.2.0.dev20251009143025
-Will use test schema version: 0.2.0.dev20251009143025
+Waiting for latest schema version to be available on TestPyPI...
+Attempt 1/24: Looking for latest schema dev version...
+✓ Found schema version on TestPyPI: 0.2.0.dev20251009143025
 Updating schema dependency to test version: 0.2.0.dev20251009143025
-✓ Package found on TestPyPI!
-Installing schema test version from TestPyPI...
-Building with schema from TestPyPI...
+Updated pyproject.toml:
+  "idun-agent-schema==0.2.0.dev20251009143025",
+Building engine with test schema from TestPyPI...
 ```
 
 ## Architecture Diagram
 
 ```
-Commit to feature branch
-        │
-        ├─── Changes to schema? ────────┐
-        │                               │
-        │                               ▼
-        │                    Schema Workflow Runs
-        │                               │
-        │                               ▼
-        │                    Publish schema to TestPyPI
-        │                               │
-        │                               ▼
-        │                    Trigger Engine Workflow ──┐
-        │                                              │
-        ├─── Changes to engine? ───────────────────────┤
-        │                                              │
-        └──────────────────────────────────────────────┤
-                                                       ▼
-                                            Engine Workflow Runs
-                                                       │
-                                                       ▼
-                                            Check: Schema modified?
-                                                       │
-                                    ┌──────────────────┴───────────────────┐
-                                    │                                      │
-                                    ▼                                      ▼
-                              YES: Update dep                        NO: Use stable
-                              to test version                        schema from PyPI
-                                    │                                      │
-                                    ▼                                      │
-                              Wait for TestPyPI                            │
-                                    │                                      │
-                                    ▼                                      │
-                              Install test schema                          │
-                                    │                                      │
-                                    └──────────────────┬───────────────────┘
-                                                       │
-                                                       ▼
-                                              Build engine package
-                                                       │
-                                                       ▼
-                                            Publish engine to TestPyPI
+        ANY Commit to ANY Branch
+                │
+                ▼
+    ┌───────────────────────┐
+    │ Schema Workflow Runs  │
+    │                       │
+    │ - Build schema        │
+    │ - Publish to TestPyPI │
+    └───────────┬───────────┘
+                │
+                ▼ (triggers on completion)
+    ┌─────────────────────────────────┐
+    │ Engine Workflow Runs            │
+    │                                 │
+    │ 1. Query TestPyPI for latest    │
+    │    schema dev version           │
+    │                                 │
+    │ 2. Update engine dependency:    │
+    │    "idun-agent-schema==X.Y.Z"   │
+    │                                 │
+    │ 3. Build engine with test       │
+    │    schema from TestPyPI         │
+    │                                 │
+    │ 4. Publish to TestPyPI          │
+    └─────────────────────────────────┘
+                │
+                ▼
+    Both packages on TestPyPI,
+    perfectly synchronized!
 ```
 
 ## Summary

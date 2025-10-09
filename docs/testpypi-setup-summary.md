@@ -36,30 +36,36 @@ A complete automated system for publishing test versions of both libraries to Te
 
 ### Automatic Dependency Resolution
 
-When you commit changes to **both** libraries:
+**EVERY commit to ANY branch triggers BOTH workflows:**
 
 ```bash
-# Make changes to both
+# Make ANY changes (even just docs or README)
 vim libs/idun_agent_schema/src/...
 vim libs/idun_agent_engine/src/...
+vim README.md
 
 # Commit and push
 git add .
-git commit -m "Update both schema and engine"
+git commit -m "Any changes"
 git push
 ```
 
 **What happens automatically:**
 
-1. ✅ Schema workflow runs and publishes `0.2.0.dev20251009143025` to TestPyPI
+1. ✅ Schema workflow ALWAYS runs and publishes `0.2.0.dev20251009143025` to TestPyPI
 2. ✅ Schema workflow completes and triggers engine workflow
-3. ✅ Engine workflow detects schema was modified in the same commit
-4. ✅ Engine updates its dependency: `idun-agent-schema==0.2.0.dev20251009143025`
-5. ✅ Engine waits for schema to be available on TestPyPI (up to 2 min)
-6. ✅ Engine builds using the test schema version
-7. ✅ Engine publishes to TestPyPI
+3. ✅ Engine workflow queries TestPyPI for latest schema version
+4. ✅ Engine finds `0.2.0.dev20251009143025` and updates its dependency
+5. ✅ Engine builds using the test schema version from TestPyPI
+6. ✅ Engine publishes to TestPyPI
 
-**Result:** Both packages on TestPyPI with matching versions!
+**Result:** Both packages ALWAYS synchronized on TestPyPI!
+
+**Why this is better:**
+- No complex change detection logic
+- Always fresh versions of both packages
+- Engine always uses latest test schema
+- Guaranteed synchronization on every commit
 
 ### Installing Test Versions
 
@@ -76,68 +82,47 @@ pip install idun-agent-engine==0.1.0.dev20251009143025 \
 
 ## Key Features
 
-### 1. Smart Dependency Detection
-- Engine workflow checks if schema was modified in the same commit
-- Uses `git diff --name-only HEAD~1 HEAD` to detect changes
-- Only updates dependency if schema was actually modified
+### 1. Always Publish Both
+- **Schema workflow:** Triggers on EVERY commit to ANY branch
+- **Engine workflow:** Triggers when schema completes successfully
+- No path-based filtering - always build fresh versions
 
-### 2. Workflow Orchestration
-- Engine workflow has TWO triggers:
-  - Direct: Push to `libs/idun_agent_engine/`
-  - Indirect: Schema workflow completion
-- Ensures correct execution order
-- Uses same commit SHA for both workflows
+### 2. Automatic Schema Version Discovery
+- Engine queries TestPyPI for latest schema version
+- Uses exact version just published
+- No timestamp synchronization needed
 
 ### 3. TestPyPI Availability Wait
-- Waits up to 2 minutes for packages to be available
+- Waits up to 2 minutes for schema to be available
 - Polls TestPyPI every 5 seconds
 - Prevents race conditions
 
-### 4. Version Synchronization
-- Both libraries use same timestamp format: `X.Y.Z.dev<TIMESTAMP>`
-- Calculated once, ensuring matching versions
-- Timestamp ensures uniqueness and chronological ordering
+### 4. Simple & Reliable
+- No complex change detection logic
+- No git history requirements
+- Just works on every commit
+- Guaranteed synchronization
 
 ## Testing Scenarios
 
-### Scenario 1: Only Schema Changed ✅
+### Every Commit - Same Behavior ✅
 ```bash
-# Modify only schema
-vim libs/idun_agent_schema/src/...
-git commit -am "Update schema"
+# ANY changes to ANYTHING
+vim libs/idun_agent_schema/src/...   # schema changes
+vim libs/idun_agent_engine/src/...   # engine changes
+vim README.md                        # or just docs
+git commit -am "Any commit message"
 git push
 ```
 
-**Result:**
-- Schema workflow publishes to TestPyPI
-- Engine workflow ALSO runs (via workflow_run trigger)
-- Engine detects schema change and publishes with new schema dependency
+**Result - ALWAYS the same:**
+1. ✅ Schema publishes to TestPyPI
+2. ✅ Engine workflow automatically triggered
+3. ✅ Engine queries for latest schema version
+4. ✅ Engine publishes with that schema dependency
+5. ✅ Perfect synchronization!
 
-### Scenario 2: Only Engine Changed ✅
-```bash
-# Modify only engine
-vim libs/idun_agent_engine/src/...
-git commit -am "Update engine"
-git push
-```
-
-**Result:**
-- Engine workflow publishes to TestPyPI
-- Uses stable schema from PyPI (not test version)
-
-### Scenario 3: Both Changed ✅
-```bash
-# Modify both
-vim libs/idun_agent_schema/src/...
-vim libs/idun_agent_engine/src/...
-git commit -am "Update both"
-git push
-```
-
-**Result:**
-- Schema publishes first
-- Engine waits, then publishes with test schema dependency
-- Perfect synchronization!
+**No matter what you change, both packages are always published with the latest versions.**
 
 ## Version Format
 
