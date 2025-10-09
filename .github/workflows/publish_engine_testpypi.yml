@@ -33,12 +33,16 @@ jobs:
         run: |
           # Extract version from pyproject.toml
           BASE_VERSION=$(grep -m 1 'version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-          # Create dev version with timestamp and short commit hash
+          # Get branch name and sanitize it for PEP 440 compliance
+          BRANCH_NAME="${{ github.ref_name }}"
+          # Replace invalid characters with hyphens and convert to lowercase
+          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | tr '/_' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9.-]/-/g')
+          # Create dev version with timestamp, branch name, and short commit hash
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          DEV_VERSION="${BASE_VERSION}.dev${TIMESTAMP}+${SHORT_SHA}"
+          DEV_VERSION="${BASE_VERSION}.dev${TIMESTAMP}+${SANITIZED_BRANCH}.${SHORT_SHA}"
           echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
-          echo "Publishing version: ${DEV_VERSION}"
+          echo "Publishing version: ${DEV_VERSION} (from branch: ${BRANCH_NAME})"
 
       - name: Update version in pyproject.toml
         working-directory: libs/idun_agent_engine

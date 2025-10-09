@@ -19,15 +19,22 @@ The following GitHub Actions workflows automatically publish to TestPyPI:
 
 Test versions follow this pattern:
 ```
-<base_version>.dev<timestamp>+<commit_hash>
+<base_version>.dev<timestamp>+<branch_name>.<commit_hash>
 ```
 
 For example:
 - Base version: `0.2.0`
-- Published as: `0.2.0.dev20251009143025+a1b2c3d`
+- Branch: `feature/my-new-feature`
+- Published as: `0.2.0.dev20251009143025+feature-my-new-feature.a1b2c3d`
+
+Branch names are sanitized for PEP 440 compliance:
+- `/` and `_` are replaced with `-`
+- Converted to lowercase
+- Invalid characters are replaced with `-`
 
 This ensures:
 - Each commit gets a unique version
+- You can easily identify which branch the version came from
 - Versions are sortable chronologically
 - You can trace back to the specific commit
 
@@ -40,7 +47,7 @@ This ensures:
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-schema
 
 # Install a specific test version
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-schema==0.2.0.dev20251009143025+a1b2c3d
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-schema==0.2.0.dev20251009143025+feature-my-feature.a1b2c3d
 ```
 
 ### Install idun-agent-engine from TestPyPI
@@ -50,7 +57,7 @@ pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-engine
 
 # Install a specific test version
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-engine==0.1.0.dev20251009143025+a1b2c3d
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ idun-agent-engine==0.1.0.dev20251009143025+feature-my-feature.a1b2c3d
 ```
 
 ### Using uv
@@ -132,7 +139,7 @@ git push origin feature/my-new-feature
 
 # 5. Install the test version (check logs for exact version)
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ \
-  idun-agent-schema==0.2.0.dev20251009143025+a1b2c3d
+  idun-agent-schema==0.2.0.dev20251009143025+feature-my-new-feature.a1b2c3d
 
 # 6. Test your changes
 python -c "from idun_agent_schema import ..."
