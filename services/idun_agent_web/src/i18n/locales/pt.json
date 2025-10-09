@@ -1,0 +1,955 @@
+{
+    "navigation": {
+        "agent": "Agente",
+        "guard": "Guarda",
+        "api": "API",
+        "observation": "Observação",
+        "tools": "Ferramentas",
+        "users": "Usuários",
+        "settings": "Configurações",
+        "disconnect": "Desconectar"
+    },
+    "account": {
+        "info": {
+            "sub-title": "Sua conta pessoal"
+        }
+    },
+    "connected-app": {
+        "title": "Aplicação conectada",
+        "description": "Gerencie suas aplicações conectadas.",
+        "button-marketplace": "Acessar o marketplace de aplicativos",
+        "navigation": {
+            "overview": "Visão geral",
+            "applications": "Aplicações"
+        },
+        "apps": {
+            "title": "Conecte sua primeira aplicação.",
+            "description": "Visite o marketplace de aplicativos para conectar Idun Engine e as ferramentas que impulsionam seu negócio.",
+            "first-install": "Instalar a primeira aplicação"
+        },
+        "marketplace": {
+            "title": "Marketplace de aplicativos",
+            "subtitle": "Descubra e conecte aplicativos ao Idun Engine.",
+            "all-apps": "Todas as aplicações",
+            "by": "por",
+            "install": "Adicionar aplicação",
+            "description": "Descrição",
+            "search": {
+                "placeholder": "Buscar aplicativos..."
+            }
+        }
+    },
+    "header": {
+        "create": "Criar",
+        "settings": "Configurações",
+        "workspace": {
+            "select": "Selecionar um espaço de trabalho"
+        },
+        "environment": {
+            "select": "Selecionar um ambiente",
+            "development": "Desenvolvimento",
+            "staging": "Homologação",
+            "production": "Produção"
+        }
+    },
+    "workspace": {
+        "none_selected": "Nenhum espaço de trabalho selecionado",
+        "loading": "Carregando espaço de trabalho...",
+        "error": "Erro ao carregar o espaço de trabalho"
+    },
+    "dashboard": {
+        "searchPlaceholder": "Digite o nome do agente ou o framework...",
+        "agent": {
+            "title": "Painel de controle de agentes",
+            "description": "Gerencie e monitore seus agentes de IA",
+            "create": "Criar um agente",
+            "edit": "Editar o agente",
+            "delete": "Excluir o agente"
+        },
+        "search": {
+            "placeholder": "Digite o nome do agente ou o framework..."
+        },
+        "recommendations": {
+            "leadEnrichment": "Enriquecimento de leads",
+            "coldMailing": "Gerador de e-mails frios",
+            "autoAnswer": "Resposta automática LN",
+            "customerSearch": "Busca de clientes",
+            "salesKpi": "KPI de vendas",
+            "contentRewriter": "Reescritor de conteúdo",
+            "leadQualification": "Qualificação de leads",
+            "customerJourney": "Jornada do cliente"
+        },
+        "table": {
+            "name": "Nome",
+            "status": "Status",
+            "controls": "Controles",
+            "avgTime": "Tempo médio",
+            "environment": "Ambiente",
+            "errorRate": "Taxa de erro",
+            "source": "Fonte",
+            "framework": "Framework",
+            "a2a": "A2A",
+            "runs": "Execuções",
+            "logs": "Registros",
+            "actions": "Ações"
+        },
+        "logs": {
+            "title": "Registros do agente",
+            "agentInfo": "Informações do agente",
+            "performance": "Métricas de desempenho",
+            "recentLogs": "Registros recentes",
+            "loaded": "carregados",
+            "loadingMore": "Carregando mais registros...",
+            "noMoreLogs": "Não há mais registros para carregar"
+        },
+        "status": {
+            "active": "Ativo",
+            "pause": "Pausa",
+            "disabled": "Desativado"
+        },
+        "environment": {
+            "all": "Todos",
+            "development": "Desenvolvimento",
+            "staging": "Homologação",
+            "production": "Produção"
+        },
+        "pagination": {
+            "showing": "Mostrando",
+            "to": "a",
+            "of": "de",
+            "agents": "agentes",
+            "previous": "Anterior",
+            "next": "Próximo"
+        },
+        "loading": "Carregando agentes...",
+        "error": "Erro ao carregar",
+        "errorMessage": "Não foi possível carregar os agentes"
+    },
+    "categories": {
+        "selector": {
+            "placeholder": "Todas as categorias",
+            "all": "Todas as categorias",
+            "empty": "Nenhuma categoria disponível"
+        }
+    },
+    "sidebar": {
+        "agents": "Agentes",
+        "guard": "Guarda",
+        "api": "API",
+        "observation": "Observação",
+        "tools": "Ferramentas",
+        "users": "Usuários",
+        "apps": "Aplicativos"
+    },
+    "signin": {
+        "title": "Criar uma conta",
+        "description": "Preencha o formulário para criar sua conta Idun Engine.",
+        "firstName": {
+            "label": "Primeiro nome",
+            "placeholder": "Digite seu primeiro nome"
+        },
+        "lastName": {
+            "label": "Sobrenome",
+            "placeholder": "Digite seu sobrenome"
+        },
+        "name": {
+            "label": "Nome de usuário",
+            "placeholder": "Digite seu nome de usuário"
+        },
+        "email": {
+            "label": "Endereço de e-mail",
+            "placeholder": "Digite seu endereço de e-mail"
+        },
+        "phone": {
+            "label": "Telefone",
+            "placeholder": "Digite seu número de telefone"
+        },
+        "password": {
+            "label": "Senha",
+            "placeholder": "Digite sua senha"
+        },
+        "submit": "Criar conta"
+    },
+
+    "user-form": {
+        "title": "Formulário de usuário",
+        "description": "Por favor, preencha as seguintes informações.",
+        "personal-information": {
+            "legend": "Informações pessoais",
+            "first-name": {
+                "label": "Primeiro nome",
+                "placeholder": "Digite seu primeiro nome"
+            },
+            "last-name": {
+                "label": "Sobrenome",
+                "placeholder": "Digite seu sobrenome"
+            },
+            "email": {
+                "label": "Endereço de e-mail",
+                "placeholder": "Digite seu endereço de e-mail"
+            },
+            "phone": {
+                "label": "Telefone",
+                "placeholder": "Digite seu número de telefone"
+            }
+        },
+        "workspace": {
+            "legend": "Informações do espaço de trabalho",
+            "selection": "Selecionar um espaço de trabalho"
+        },
+        "professional-information": {
+            "legend": "Informações profissionais",
+            "role": {
+                "label": "Função",
+                "placeholder": "Digite sua função",
+                "admin": "Administrador",
+                "user": "Usuário",
+                "developer": "Desenvolvedor",
+                "analyst": "Analista",
+                "manager": "Gerente"
+            },
+            "department": {
+                "label": "Departamento",
+                "placeholder": "Digite seu departamento",
+                "it": "TI",
+                "hr": "Recursos humanos",
+                "finance": "Finanças",
+                "marketing": "Marketing",
+                "sales": "Vendas",
+                "operations": "Operações"
+            },
+            "bio": {
+                "label": "Biografia",
+                "placeholder": "Digite sua biografia"
+            }
+        },
+        "permissions": {
+            "legend": "Permissões",
+            "agent-management": {
+                "title": "Gestão de agentes",
+                "description": "Controle o acesso e as permissões dos agentes.",
+                "active": "Ativo"
+            },
+            "user-management": {
+                "title": "Gestão de usuários",
+                "description": "Controle o acesso e as permissões dos usuários.",
+                "active": "Ativo"
+            },
+            "analytics": {
+                "title": "Análise",
+                "description": "Acesse os relatórios e análises.",
+                "active": "Ativo"
+            },
+            "system-configuration": {
+                "title": "Configuração do sistema",
+                "description": "Gerencie os parâmetros e as configurações do sistema.",
+                "active": "Ativo"
+            }
+        },
+        "cancel": "Cancelar",
+        "create-user": "Criar usuário"
+    },
+
+    "login": {
+        "title": "Login",
+        "description": "Faça login em sua conta Idun Engine.",
+        "email": "Endereço de e-mail",
+        "email.placeholder": "Digite seu endereço de e-mail",
+        "password": "Senha",
+        "rememberMe": "Lembrar de mim",
+        "password.placeholder": "Digite sua senha",
+        "submit": "Entrar"
+    },
+    "firstLogin": {
+        "title": "Definir sua senha",
+        "subtitle": "Por motivos de segurança, por favor, defina uma nova senha para sua conta",
+        "userEmail": "Conta: {{email}}",
+        "form": {
+            "title": "Configuração da senha",
+            "newPassword": {
+                "label": "Nova senha",
+                "placeholder": "Digite sua nova senha"
+            },
+            "confirmPassword": {
+                "label": "Confirmar senha",
+                "placeholder": "Confirme sua nova senha"
+            },
+            "submit": "Definir senha",
+            "updating": "Atualizando..."
+        },
+        "validation": {
+            "newPassword": {
+                "required": "A nova senha é obrigatória",
+                "minLength": "A senha deve ter pelo menos 8 caracteres",
+                "weak": "A senha é muito fraca"
+            },
+            "confirmPassword": {
+                "required": "A confirmação da senha é obrigatória",
+                "match": "As senhas não correspondem"
+            }
+        },
+        "password": {
+            "strength": {
+                "label": "Força da senha",
+                "weak": "Fraca",
+                "medium": "Média",
+                "strong": "Forte"
+            },
+            "criteria": {
+                "length": "Pelo menos 8 caracteres",
+                "lowercase": "Contém letras minúsculas",
+                "uppercase": "Contém letras maiúsculas",
+                "number": "Contém números",
+                "special": "Contém caracteres especiais"
+            }
+        },
+        "help": {
+            "title": "Requisitos da senha",
+            "requirement1": "Pelo menos 8 caracteres",
+            "requirement2": "Mistura de letras maiúsculas e minúsculas",
+            "requirement3": "Pelo menos um número",
+            "requirement4": "Pelo menos um caractere especial (!@#$%^&*)"
+        },
+        "success": {
+            "message": "Senha atualizada com sucesso. Agora você pode fazer login com sua nova senha."
+        },
+        "error": {
+            "general": "Falha ao atualizar a senha. Por favor, tente novamente."
+        }
+    },
+    "changePassword": {
+        "title": "Mudar senha",
+        "subtitle": "Atualize a senha da sua conta"
+    },
+    "agent-form": {
+        "title": "Criar um novo agente",
+        "back": "Voltar",
+        "agentFormTitle": "Formulário do agente",
+        "general-info": "Selecione a fonte para o seu agente",
+        "tabs": {
+            "agent": "Agente",
+            "testing": "Testes"
+        },
+        "header": {
+            "title": "Criar um novo agente",
+            "subtitle": "Configure as configurações e o comportamento do seu agente"
+        },
+        "generalInfo": "Informações gerais",
+        "name": {
+            "label": "Nome do agente",
+            "placeholder": "Meu primeiro agente"
+        },
+        "description": {
+            "label": "Descrição",
+            "placeholder": "Descreva o que este agente faz"
+        },
+        "framework": {
+            "label": "Framework",
+            "placeholder": "Selecionar um framework",
+            "langgraph": "Langraph",
+            "smolagent": "SmolAgent",
+            "n8n": "N8N",
+            "adk": "ADK"
+        },
+        "source": {
+            "label": "Fonte",
+            "upload": "Carregar",
+            "git": "Git",
+            "select-folder": "Selecionar uma pasta",
+            "select-git-repo": "Selecionar um repositório Git",
+            "project": "Projeto",
+            "local": "Local",
+            "remote": "Remoto",
+            "select-remote": "Selecionar um repositório remoto",
+            "select-project-template": "Selecionar um projeto"
+        },
+
+        "graph-definition-path": {
+            "label": "Caminho da definição do gráfico",
+            "placeholder": "SSelecione o caminho do arquivo de definição do gráfico"
+        },
+
+        "agent-path": {
+            "label": "Caminho do agente",
+            "placeholder": "Digite o caminho do agente"
+        },
+        "checkpointConfig": "Configuração do ponto de controle",
+        "availableAgents": "Agentes disponíveis",
+        "database-type": "Tipo de banco de dados",
+        "database-url": {
+            "label": "URL do banco de dados",
+            "placeholder": "Digite a URL do banco de dados"
+        },
+        "status": "Status",
+        "run": "Execução",
+        "testAgent": "Meu primeiro agente",
+        "testInput": "Entrada",
+        "testOutput": "Saída",
+        "testQuestion": "Como está o tempo em Paris?",
+        "testResponse": "O tempo atual em Paris é de 22°C com céu parcialmente nublado. Há uma leve brisa do sudoeste a 10 km/h. A umidade é de 65% e a visibilidade é boa a 10 km. Nenhuma precipitação é esperada para as próximas horas.",
+        "viewTraces": "Ver rastros",
+
+        "create-agent": "Criar um agente",
+
+        "creating": "Criando...",
+        "button": {
+            "create": "Criar um agente",
+            "creating": "Criando..."
+        },
+        "success": {
+            "title": "Sucesso",
+            "description": "Agente criado com sucesso"
+        },
+        "error": {
+            "title": "Erro",
+            "description": "Falha ao criar o agente"
+        },
+        "placeholders": {
+            "repositoryUrl": "https://github.com/username/repository",
+            "branch": "main",
+            "path": "/src/agent",
+            "remoteUrl": "https://api.example.com/agent",
+            "authToken": "Token Bearer ou chave de API"
+        },
+        "sources": {
+            "selectType": "Selecione o tipo de fonte para o código do seu agente",
+            "configure": "Configure sua fonte {{sourceType}}",
+            "import": {
+                "title": "Importar um pacote de agente",
+                "description": "Carregue seu agente como um arquivo ZIP contendo todo o código e a configuração necessários",
+                "label": "Importar arquivos",
+                "uploadDescription": "Carregar um pacote ZIP",
+                "supportedFormat": "Formato suportado: apenas arquivos ZIP",
+                "dropZone": "Solte seu arquivo ZIP aqui",
+                "orClickBrowse": "ou clique para procurar",
+                "processing": "Processando arquivo ZIP...",
+                "extracting": "Extraindo arquivos do agente...",
+                "invalidFormat": "Apenas arquivos ZIP são aceitos",
+                "uploadSuccess": "Pacote ZIP importado com sucesso",
+                "uploadError": "Erro ao processar o arquivo ZIP",
+                "ready": "Pacote pronto para ser usado",
+                "zipStructureHelp": "Estrutura recomendada: agent.py, requirements.txt, config.yaml dentro do seu ZIP"
+            },
+            "github": {
+                "title": "Conectar um repositório GitHub",
+                "description": "Importar código de agente do seu repositório GitHub",
+                "label": "GitHub",
+                "uploadDescription": "Conectar um repositório",
+                "repositoryUrl": "URL do repositório",
+                "branch": "Ramificação (opcional)",
+                "path": "Caminho (opcional)",
+                "connect": "Conectar com o GitHub"
+            },
+            "remote": {
+                "title": "Fonte remota",
+                "description": "Conectar a uma fonte de agente remota",
+                "label": "Remoto",
+                "uploadDescription": "Fonte de API remota",
+                "remoteUrl": "URL remota",
+                "authToken": "Token de autenticação (opcional)",
+                "connect": "Conectar a fonte remota"
+            },
+            "project": {
+                "title": "Modelo de projeto",
+                "description": "Use um modelo de projeto pré-configurado",
+                "label": "Projeto",
+                "uploadDescription": "Modelo de projeto",
+                "templates": {
+                    "basicChat": {
+                        "name": "Agente de chat básico",
+                        "description": "Agente conversacional simples"
+                    },
+                    "documentProcessor": {
+                        "name": "Processador de documentos",
+                        "description": "Agente para análise de documentos"
+                    },
+                    "dataAnalyst": {
+                        "name": "Analista de dados",
+                        "description": "Agente para processamento de dados"
+                    },
+                    "custom": {
+                        "name": "Modelo personalizado",
+                        "description": "Criar do zero"
+                    }
+                }
+            },
+            "selected": "fonte selecionada",
+            "configCompleted": "Configuração da fonte concluída"
+        },
+        "runTest": "Executar teste",
+        "saveTestCase": "Salvar caso de teste"
+    },
+    "agentDetails": {
+        "backToAgents": "Voltar aos agentes",
+        "configure": "Configurar",
+        "testAgent": "Testar agente",
+        "pause": "Pausa",
+        "tabs": {
+            "overview": "Visão geral",
+            "activity": "Atividade",
+            "configuration": "Configuração",
+            "logs": "Registros",
+            "code": "Código"
+        },
+        "metrics": {
+            "totalRuns": "Total de execuções",
+            "successRate": "Taxa de sucesso",
+            "avgResponseTime": "Tempo médio de resposta",
+            "uptime": "Tempo de atividade",
+            "todayRuns": "hoje",
+            "monthlyRuns": "este mês",
+            "lastWeek": "em comparação com a semana passada",
+            "lastDays": "últimos 7 dias"
+        },
+        "charts": {
+            "dailyUsage": "Uso diário (últimos 7 dias)",
+            "success": "Sucesso",
+            "errors": "Erros"
+        },
+        "info": {
+            "title": "Informações do agente",
+            "framework": "Framework",
+            "source": "Fonte",
+            "tools": "Ferramentas",
+            "lastRun": "Última execução",
+            "observability": "Observabilidade"
+        },
+        "activity": {
+            "title": "Atividade recente",
+            "execution": "execução",
+            "deployment": "implantação"
+        },
+        "configuration": {
+            "general": "Configuração geral",
+            "langgraph": "Configuração LangGraph",
+            "observability": "Observabilidade",
+            "agentToAgent": "Agente para agente",
+            "streaming": "Streaming",
+            "enabled": "Ativado",
+            "disabled": "Desativado",
+            "inputSchema": "Esquema de entrada",
+            "outputSchema": "Esquema de saída",
+            "parameters": "Parâmetros",
+            "checkpointType": "Tipo de ponto de controle",
+            "databasePath": "Caminho do banco de dados",
+            "provider": "Provedor",
+            "configuration": "Configuração"
+        },
+        "logs": {
+            "title": "Registros do agente",
+            "export": "Exportar",
+            "viewInLangfuse": "Ver em Langfuse"
+        },
+        "status": {
+            "success": "sucesso",
+            "error": "erro",
+            "pending": "pendente"
+        },
+        "timeAgo": {
+            "justNow": "Agora mesmo",
+            "minutesAgo": "há {{count}}m",
+            "hoursAgo": "há {{count}}h",
+            "daysAgo": "há {{count}}d"
+        },
+        "code": {
+            "title": "Código-fonte do agente",
+            "saveChanges": "Salvar alterações",
+            "reset": "Redefinir",
+            "modified": "Modificado",
+            "file": "Arquivo",
+            "language": "Idioma",
+            "lines": "Linhas"
+        },
+        "buttons": {
+            "testAgent": "Testar agente",
+            "export": "Exportar",
+            "clear": "Limpar",
+            "viewDetails": "Ver detalhes",
+            "retry": "Tentar novamente"
+        },
+        "titles": {
+            "agentLogs": "Registros do agente"
+        }
+    },
+    "settings": {
+        "title": "Configurações",
+        "back_to_dashboard": "Voltar ao painel de controle",
+        "profile": {
+            "title": "Perfil",
+            "description": "Gerencie suas informações pessoais e preferências.",
+            "name": {
+                "label": "Nome",
+                "placeholder": "Seu nome"
+            },
+            "firstName": {
+                "label": "Primeiro nome",
+                "placeholder": "Seu primeiro nome"
+            },
+            "lastName": {
+                "label": "Sobrenome",
+                "placeholder": "Seu sobrenome"
+            },
+            "email": {
+                "label": "E-mail",
+                "placeholder": "Seu endereço de e-mail"
+            },
+            "phone": {
+                "label": "Telefone",
+                "placeholder": "Seu número de telefone"
+            },
+            "save": "Salvar"
+        },
+        "language": {
+            "title": "Idioma",
+            "description": "Escolha seu idioma preferido para a interface.",
+            "subtitle": "Selecione seu idioma"
+        },
+        "notifications": {
+            "title": "Notificações",
+            "description": "Gerencie suas preferências de notificação.",
+            "agents-status-changes": {
+                "label": "Alterações de status do agente",
+                "sub-label": "Ser notificado quando os agentes se conectarem ou desconectarem"
+            },
+            "performance-alerts": {
+                "label": "Alertas de desempenho",
+                "sub-label": "Receber alertas para violações de limites de desempenho"
+            },
+            "system-updates": {
+                "label": "Atualizações do sistema",
+                "sub-label": "Ser notificado sobre atualizações da plataforma e manutenção"
+            },
+            "browser-notifications": {
+                "label": "Notificações do navegador",
+                "sub-label": "Receber notificações no navegador."
+            }
+        },
+        "security": {
+            "title": "Segurança",
+            "description": "Gerencie suas configurações de segurança e privacidade.",
+            "submit": "Atualizar senha",
+            "2FA": {
+                "label": "Autenticação de dois fatores",
+                "description": "Adicione uma camada extra de segurança à sua conta."
+            },
+            "alert": {
+                "label": "Alertas de segurança",
+                "description": "Receba alertas para tentativas de login suspeitas."
+            },
+            "current-assword": {
+                "label": "Senha atual",
+                "placeholder": "Digite sua senha atual"
+            },
+            "new-password": {
+                "label": "Nova senha",
+                "placeholder": "Digite sua nova senha"
+            },
+            "confirm-password": {
+                "label": "Confirmar a nova senha",
+                "placeholder": "Confirme sua nova senha"
+            }
+        },
+        "appearance": {
+            "title": "Aparência",
+            "description": "Personalize a aparência da sua interface.",
+            "subtitle": "Seleção de tema",
+            "theme": {
+                "system": "Padrão do sistema",
+                "light": "Tema claro",
+                "dark": "Tema escuro"
+            },
+            "compact-mode": {
+                "label": "Modo compacto",
+                "subLabel": "Exibir mais conteúdo em menos espaço."
+            },
+            "high-contrast-mode": {
+                "label": "Modo de alto contraste",
+                "subLabel": "Aumentar o contraste para melhor visibilidade."
+            }
+        },
+        "firstName": "Primeiro nome",
+        "lastName": "Sobrenome",
+        "email": "E-mail",
+        "phoneNumber": "Número de telefone",
+        "country": "País",
+        "changePassword": "Mudar senha",
+        "currentPassword": "Senha atual",
+        "newPassword": "Nova senha",
+        "confirmPassword": "Confirmar senha",
+        "saveChanges": "Salvar alterações",
+        "deleteProfile": "Excluir perfil",
+        "changePicture": "Mudar",
+        "edit": "Editar",
+        "twoFactor": "Autenticação de dois fatores",
+        "theme": "Tema",
+        "agentAlerts": "Alertas de status do agente",
+        "systemUpdates": "Atualizações do sistema",
+        "weeklyReports": "Relatórios semanais",
+        "languageDescription": "Escolha seu idioma preferido para a interface.",
+        "interfaceLanguage": "Idioma da interface",
+        "languageNote": "Isso mudará o idioma de todo o texto na interface do aplicativo.",
+        "general": "Geral",
+        "displayName": "Nome de exibição",
+        "profileDescription": "Gerencie as informações da sua conta e suas preferências.",
+        "securityDescription": "Gerencie sua senha e configurações de segurança.",
+        "appearanceDescription": "Personalize o tema da sua interface e suas preferências de aparência.",
+        "notificationsDescription": "Escolha como você gostaria de ser notificado sobre a atividade.",
+        "themePreference": "Preferência de tema",
+        "systemDefault": "Padrão do sistema",
+        "light": "Claro",
+        "dark": "Escuro",
+        "compactModeDescription": "Exibir mais conteúdo em menos espaço.",
+        "highContrastDescription": "Aumentar o contraste para melhor visibilidade.",
+        "agentStatusChanges": "Alterações de status do agente",
+        "agentStatusChangesDesc": "Ser notificado quando os agentes se conectarem ou desconectarem",
+        "performanceAlerts": "Alertas de desempenho",
+        "performanceAlertsDesc": "Receber alertas para violações de limites de desempenho",
+        "systemUpdatesDesc": "Ser notificado sobre atualizações da plataforma e manutenção",
+        "browserNotifications": "Notificações do navegador",
+        "browserNotificationsDesc": "Exibir notificações no seu navegador",
+        "switch-account": "Mudar de conta"
+    },
+    "guard": {
+        "title": "Sistema de guarda",
+        "description": "Monitorar e controlar o acesso e as permissões dos agentes",
+        "activeGuards": "Guardas ativos",
+        "securityPolicies": "Políticas de segurança",
+        "accessLogs": "Registros de acesso",
+        "threatDetection": "Detecção de ameaças"
+    },
+    "api": {
+        "title": "Gestão de API",
+        "description": "Gerenciar pontos de extremidade de API e integrações",
+        "endpoints": "Pontos de extremidade",
+        "apiKeys": "Chaves de API",
+        "documentation": "Documentação",
+        "rateLimits": "Limites de taxa",
+        "usage": "Estatísticas de uso"
+    },
+    "observation": {
+        "title": "Centro de observação",
+        "description": "Monitorar o desempenho e o comportamento dos agentes",
+        "metrics": "Métricas",
+        "logs": "Registros",
+        "performance": "Desempenho",
+        "alerts": "Alertas",
+        "analytics": "Análise"
+    },
+    "tools": {
+        "title": "Ferramentas e utilitários",
+        "description": "Ferramentas e utilitários disponíveis para o desenvolvimento de agentes",
+        "developmentTools": "Ferramentas de desenvolvimento",
+        "debugger": "Depurador",
+        "testingSuite": "Suíte de testes",
+        "codeGenerator": "Gerador de código",
+        "utilities": "Utilitários"
+    },
+    "users": {
+        "title": "Gestão de usuários",
+        "description": "Gerenciar os usuários do sistema e as permissões",
+        "allUsers": "Todos os usuários",
+        "roles": "Funções",
+        "role": {
+            "admin": "Administrador",
+            "user": "Usuário",
+            "guest": "Convidado",
+            "editor": "Editor",
+            "viewer": "Visualizador"
+        },
+        "permissions": "Permissões",
+        "invitations": "Convites",
+        "activity": "Atividade do usuário",
+        "totalResults": "Total: {{count}} usuários",
+        "noUsers": "Nenhum usuário disponível.",
+        "noResultsFound": "Nenhum usuário encontrado que corresponda à sua busca.",
+        "cta": "Adicionar usuário",
+        "searchPlaceholder": "Buscar usuários por nome, e-mail ou função...",
+        "search": {
+            "placeholder": "Buscar usuários por nome, e-mail ou função..."
+        },
+        "column": {
+            "lastName": "Sobrenome",
+            "firstName": "Primeiro nome",
+            "userName": "Nome de usuário",
+            "email": "E-mail",
+            "phone": "Telefone",
+            "role": "Função",
+            "actions": "Ações"
+        },
+        "create": {
+            "title": "Criar usuário",
+            "subtitle": "Preencha os detalhes para criar uma nova conta de usuário",
+            "subtitleWithCategory": "Preencha os detalhes para criar uma nova conta de usuário na categoria {{category}}",
+            "form": {
+                "title": "Informações do usuário",
+                "firstName": {
+                    "label": "Primeiro nome",
+                    "placeholder": "Digite o primeiro nome",
+                    "required": "O primeiro nome é obrigatório"
+                },
+                "lastName": {
+                    "label": "Sobrenome",
+                    "placeholder": "Digite o sobrenome",
+                    "required": "O sobrenome é obrigatório"
+                },
+                "username": {
+                    "label": "Nome de usuário",
+                    "placeholder": "Digite o nome de usuário",
+                    "required": "O nome de usuário é obrigatório",
+                    "minLength": "O nome de usuário deve ter pelo menos 3 caracteres"
+                },
+                "email": {
+                    "label": "E-mail",
+                    "placeholder": "Digite o e-mail",
+                    "required": "O e-mail é obrigatório",
+                    "invalid": "Formato de e-mail inválido"
+                },
+                "phone": {
+                    "label": "Telefone",
+                    "placeholder": "Digite o número de telefone",
+                    "required": "O número de telefone é obrigatório",
+                    "invalid": "Formato de número de telefone inválido"
+                },
+                "role": {
+                    "label": "Função",
+                    "placeholder": "Selecione a função",
+                    "required": "A função é obrigatória"
+                },
+                "workspaces": {
+                    "label": "Espaços de trabalho",
+                    "placeholder": "Selecionar espaços de trabalho",
+                    "required": "Por favor, selecione pelo menos um espaço de trabalho",
+                    "noWorkspaces": "Nenhum espaço de trabalho disponível",
+                    "help": "Selecione um ou mais espaços de trabalho aos quais o usuário terá acesso"
+                },
+                "submit": "Criar usuário",
+                "creating": "Criando usuário..."
+            }
+        }
+    },
+    "agents": {
+        "title": "Gestão de agentes",
+        "description": "Gerencie e monitore seus agentes de IA",
+        "noAgentsAvailable": "Nenhum agente disponível.",
+        "noResultsFound": "Nenhum agente encontrado que corresponda à sua busca ou filtros.",
+        "noAgentsOnThisPage": "Nenhum agente para exibir nesta página.",
+        "totalResults": "Total: {{count}} agentes",
+        "searchPlaceholder": "Buscar por nome, framework ou ambiente..."
+    },
+    "pagination": {
+        "showing": "Mostrando de {{start}} a {{end}} de {{total}} itens",
+        "total-per-page": "Total por página: {{count}}",
+        "previous": "Anterior",
+        "next": "Próximo",
+        "items-per-page": "Itens por página:",
+        "no-data": "Nenhum dado disponível.",
+        "page": "Página"
+    },
+    "auth": {
+        "signin": {
+            "title": "Entrar",
+            "description": "Digite suas credenciais para acessar sua conta",
+            "button": "Entrar",
+            "link": "Entrar"
+        },
+        "signup": {
+            "title": "Criar uma conta",
+            "description": "Crie sua conta para começar",
+            "button": "Criar conta",
+            "link": "Registrar-se"
+        },
+        "username": "Nome de usuário",
+        "firstName": "Primeiro nome",
+        "lastName": "Sobrenome",
+        "profilePicture": "Foto de perfil",
+
+        "uploadPhoto": "Subir uma foto",
+
+        "password": "Senha",
+        "confirmPassword": "Confirmar senha",
+        "usernamePlaceholder": "Digite seu nome de usuário",
+        "firstNamePlaceholder": "Digite seu primeiro nome",
+        "lastNamePlaceholder": "Digite seu sobrenome",
+        "passwordPlaceholder": "Digite sua senha",
+        "confirmPasswordPlaceholder": "Confirme sua senha",
+        "forgotPassword": "Esqueceu a senha?",
+        "noAccount": "Não tem uma conta?",
+        "hasAccount": "Já tem uma conta?",
+        "signingIn": "Entrando...",
+        "signingUp": "Criando conta...",
+        "passwordsMatch": "As senhas correspondem",
+        "passwordsDontMatch": "As senhas não correspondem",
+        "requirements": {
+            "minLength": "Pelo menos 8 caracteres",
+            "uppercase": "Uma letra maiúscula",
+            "lowercase": "Uma letra minúscula",
+            "number": "Um número"
+        },
+        "errors": {
+            "invalidCredentials": "Nome de usuário ou senha incorretos. Por favor, tente novamente.",
+            "signupFailed": "O registro falhou. Por favor, tente novamente.",
+            "unauthorized": "Você está desconectado. Reconectando..."
+        },
+        "passwordRequirements": {
+            "title": "Requisitos da senha",
+            "length": "Pelo menos 8 caracteres",
+            "uppercase": "Uma letra maiúscula",
+            "lowercase": "Uma letra minúscula",
+            "number": "Um número"
+        }
+    },
+    "resetPassword": {
+        "title": "Redefinir senha",
+        "description": "Digite seu endereço de e-mail para verificar sua conta",
+        "newPasswordTitle": "Definir uma nova senha",
+        "newPasswordDescription": "Digite sua senha atual e crie uma nova",
+        "verifyEmail": "Verificar e-mail",
+        "verifying": "Verificando...",
+        "emailVerified": "E-mail verificado",
+        "proceedToReset": "Agora você pode redefinir sua senha",
+        "emailError": "Falha na verificação do e-mail",
+        "emailNotFound": "E-mail não encontrado em nosso sistema",
+        "resetPassword": "Redefinir senha",
+        "resetting": "Redefinindo a senha...",
+        "success": "Senha redefinida com sucesso",
+        "successMessage": "Sua senha foi atualizada com sucesso",
+        "error": "Falha ao redefinir a senha",
+        "errorMessage": "Não foi possível redefinir a senha",
+        "currentPasswordPlaceholder": "Digite a senha atual",
+        "newPasswordPlaceholder": "Digite a nova senha",
+        "confirmPasswordPlaceholder": "Confirme a nova senha",
+        "backToSignIn": "Voltar para o login"
+    },
+    "dataBoard": {
+        "pagination": {
+            "total": "Total: {{count}} itens",
+            "itemsPerPage": "Itens por página:",
+            "showing": "Mostrando de {{start}} a {{end}} de {{total}} itens",
+            "previous": "← Anterior",
+            "next": "Próximo →"
+        },
+        "emptyState": "Nenhum dado disponível.",
+        "table": {
+            "noResults": "Nenhum resultado encontrado"
+        }
+    },
+    "common": {
+        "loading": "Carregando...",
+        "pleaseWait": "Por favor, aguarde...",
+        "search": "Buscar",
+        "submit": "Enviar",
+        "cancel": "Cancelar",
+        "save": "Salvar",
+        "delete": "Excluir",
+        "edit": "Editar",
+        "close": "Fechar",
+        "comingSoon": "Em breve",
+        "underDevelopment": "Esta funcionalidade está em desenvolvimento",
+        "back": "Voltar"
+    },
+    "theme": {
+        "toggleToLight": "Mudar para o modo claro",
+        "toggleToDark": "Mudar para o modo escuro",
+        "theme": "Tema"
+    }
+}
