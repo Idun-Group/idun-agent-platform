@@ -6,21 +6,31 @@ import { Button } from '../../components/general/button/component';
 import type { User } from '../../types/user.types';
 import { UserDashboardLine } from '../../components/dashboard/users/user-dashboard-line/component';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/use-auth';
+import { toast } from 'react-toastify';
+import { listUsers } from '../../utils/auth';
 type UserDashboardProps = {
     // config your component props here
 };
 
 const UserDashboardPage = ({}: UserDashboardProps) => {
     const { t } = useTranslation();
+    const { session, isLoading: isAuthLoading } = useAuth();
 
     const [users, setUsers] = useState<User[]>([]);
     const navigate = useNavigate();
 
+    const fetchUsers = async () => {
+        try {
+            const data = await listUsers();
+            setUsers(data);
+        } catch (e) {
+            console.error('Error fetching users:', e);
+        }
+    };
+
     useEffect(() => {
-        fetch('http://localhost:4001/api/v1/users')
-            .then((response) => response.json())
-            .then((data) => setUsers(data))
-            .catch((error) => console.error('Error fetching users:', error));
+        void fetchUsers();
     }, []);
 
     const handleCreateUser = () => {
@@ -28,49 +38,54 @@ const UserDashboardPage = ({}: UserDashboardProps) => {
     };
     const columns = [
         {
-            id: 'firstName',
-            label: t('users.column.firstName'),
+            id: 'name',
+            label: t('users.column.name', 'Name'),
             width: 200,
             sortable: true,
         },
-        {
-            id: 'lastName',
-            label: t('users.column.lastName'),
-            width: 200,
-            sortable: true,
-        },
-        {
-            id: 'username',
-            label: t('users.column.userName'),
-            width: 200,
-            sortable: true,
-        },
+        // {
+        //     id: 'lastName',
+        //     label: t('users.column.lastName'),
+        //     width: 200,
+        //     sortable: true,
+        // },
         {
             id: 'email',
-            label: t('users.column.email'),
+            label: t('users.column.email', 'Email'),
             width: 250,
             sortable: true,
         },
+        // {
+        //     id: 'phone',
+        //     label: t('users.column.phone'),
+        //     width: 200,
+        //     sortable: true,
+        // },
         {
-            id: 'phone',
-            label: t('users.column.phone'),
-            width: 200,
-            sortable: true,
-        },
-        {
-            id: 'role',
-            label: t('users.column.role'),
+            id: 'roles',
+            label: t('users.column.role', 'Role'),
             width: 150,
             sortable: true,
         },
         {
             id: 'actions',
-            label: t('users.column.actions'),
+            label: t('users.column.actions', 'Actions'),
             width: 150,
             sortable: false,
             alignment: 'center' as const,
         },
     ];
+
+    const isAdmin = !!session?.principal?.roles?.includes('admin');
+
+    useEffect(() => {
+        if (!isAuthLoading && !isAdmin) {
+            toast.error(t('errors.admin_required', { defaultValue: 'Admin required' }));
+        }
+    }, [isAuthLoading, isAdmin, t]);
+
+    if (isAuthLoading) return null;
+    if (!isAdmin) return null;
 
     return (
         <UserDashboardContainer>
@@ -96,12 +111,11 @@ const UserDashboardPage = ({}: UserDashboardProps) => {
                     data={users}
                     searchPlaceholder={t('users.search.placeholder')}
                     searchFields={[
-                        'firstName',
-                        'lastName',
-                        'username',
+                        'name',
+                        // 'lastName',
                         'email',
-                        'phone',
-                        'role',
+                        // 'phone',
+                        'roles',
                     ]}
                     showSearch={true}
                 >

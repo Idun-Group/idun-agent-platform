@@ -8,8 +8,6 @@ type Workspace = {
     description: string;
 };
 
-const WORKSPACES_ENABLED = (import.meta.env.VITE_FEATURE_WORKSPACES as string) === 'true';
-
 const WorkspaceContext = createContext<
     | {
           workspaceId: string | null;
@@ -34,15 +32,22 @@ const useWorkspace = () => {
         throw new Error('useWorkspace must be used within a WorkspaceProvider');
     }
 
-    const getAllWorkspace = useCallback(async (): Promise<Workspace[]> => {
-        if (!WORKSPACES_ENABLED) return [] as Workspace[];
-        try {
-            return await getJson<Workspace[]>('/api/v1/workspaces');
-        } catch (error) {
-            console.error('Error fetching workspaces:', error);
-            return [] as Workspace[];
-        }
-    }, []);
+    const getAllWorkspace = useCallback(
+        async (params?: { limit?: number; offset?: number }): Promise<Workspace[]> => {
+            try {
+                const query = new URLSearchParams();
+                if (params?.limit != null) query.set('limit', String(params.limit));
+                if (params?.offset != null) query.set('offset', String(params.offset));
+                const qs = query.toString();
+                const path = `/api/v1/workspaces${qs ? `?${qs}` : ''}`;
+                return await getJson<Workspace[]>(path);
+            } catch (error) {
+                console.error('Error fetching workspaces:', error);
+                return [] as Workspace[];
+            }
+        },
+        []
+    );
 
     return {
         selectedWorkspaceId: context.workspaceId,

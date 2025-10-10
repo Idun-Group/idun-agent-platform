@@ -123,6 +123,7 @@ const SectionLabel = styled.div`
 const Badge = styled.span<{ $color: 'blue' | 'purple' | 'green' }>`
     display: inline-flex;
     align-items: center;
+    align-self: flex-start; /* prevent stretching to full width in column layout */
     padding: 4px 12px;
     border-radius: 16px;
     font-size: 12px;

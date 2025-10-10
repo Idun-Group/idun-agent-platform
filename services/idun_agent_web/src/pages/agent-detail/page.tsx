@@ -168,11 +168,28 @@ export default function AgentDetailPage() {
     const tabs = [
         { id: 'overview', label: "Vue d'ensemble" },
         { id: 'gateway', label: 'API Gateway' },
-        { id: 'activity', label: 'Activité' },
+        // Activity temporarily hidden
         { id: 'configuration', label: 'Configuration' },
         { id: 'logs', label: 'Logs' },
         // { id: 'code', label: 'Code' },
     ];
+
+    const getLangfuseUrl = (): string => {
+        const maybe = (agent as any)?.run_config?.env?.LANGFUSE_HOST as string | undefined;
+        if (maybe && typeof maybe === 'string' && !maybe.includes('${')) return maybe;
+        return 'https://cloud.langfuse.com';
+    };
+
+    const handleTabClick = (id: string) => {
+        if (id === 'logs') {
+            if (typeof window !== 'undefined') {
+                const url = getLangfuseUrl();
+                window.open(url, '_blank');
+            }
+            return;
+        }
+        setActiveTab(id);
+    };
 
     const renderTabContent = () => (
         <Suspense fallback={<Loader />}>
@@ -248,7 +265,7 @@ export default function AgentDetailPage() {
                         <Tab
                             key={tab.id}
                             active={activeTab === tab.id}
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => handleTabClick(tab.id)}
                         >
                             {tab.label}
                         </Tab>

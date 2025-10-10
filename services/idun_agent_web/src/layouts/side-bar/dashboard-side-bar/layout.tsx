@@ -37,27 +37,27 @@ const SideBar = ({}: SideBarProps) => {
             path: '/agents',
             onClick: () => navigate('/agents'),
         },
-        {
-            icon: ShieldIcon,
-            label: t('sidebar.guard'),
-            key: 'guard',
-            path: '/guard',
-            onClick: () => toast.error('This feature is not implemented yet'),
-        },
-        {
-            icon: EyeIcon,
-            label: t('sidebar.observation'),
-            key: 'observation',
-            path: '/observation',
-            onClick: () => navigate('/observation'),
-        },
-        {
-            icon: HammerIcon,
-            label: t('sidebar.tools'),
-            key: 'tools',
-            path: '/tools',
-            onClick: () => toast.error('This feature is not implemented yet'),
-        },
+        // {
+        //     icon: ShieldIcon,
+        //     label: t('sidebar.guard'),
+        //     key: 'guard',
+        //     path: '/guard',
+        //     onClick: () => toast.error('This feature is not implemented yet'),
+        // },
+        // {
+        //     icon: EyeIcon,
+        //     label: t('sidebar.observation'),
+        //     key: 'observation',
+        //     path: '/observation',
+        //     onClick: () => navigate('/observation'),
+        // },
+        // {
+        //     icon: HammerIcon,
+        //     label: t('sidebar.tools'),
+        //     key: 'tools',
+        //     path: '/tools',
+        //     onClick: () => toast.error('This feature is not implemented yet'),
+        // },
         {
             icon: UserIcon,
             label: t('sidebar.users'),
@@ -65,13 +65,13 @@ const SideBar = ({}: SideBarProps) => {
             path: '/users',
             onClick: () => navigate('/users'),
         },
-        {
-            icon: Grid2x2PlusIcon,
-            label: t('sidebar.apps'),
-            key: 'apps',
-            path: '/apps',
-            onClick: () => navigate('/apps'),
-        },
+        // {
+        //     icon: Grid2x2PlusIcon,
+        //     label: t('sidebar.apps'),
+        //     key: 'apps',
+        //     path: '/apps',
+        //     onClick: () => navigate('/apps'),
+        // },
     ];
 
     return (

@@ -1,15 +1,13 @@
-import { User, Building, Calendar } from 'lucide-react';
+import { User, Building } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Button } from '../../components/general/button/component';
+import { toast } from 'react-toastify';
+import { signupBasic, getRoles } from '../../utils/auth';
 
 import useWorkspace from '../../hooks/use-workspace';
-import {
-    Form,
-    FormSelect,
-    FormTextArea,
-    TextInput,
-} from '../../components/general/form/component';
+import { Form, FormSelect, TextInput } from '../../components/general/form/component';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 interface Workspace {
@@ -19,17 +17,18 @@ interface Workspace {
 
 export default function UserFormPage() {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
+        password: '',
+        
         role: '',
-        department: '',
-        bio: '',
         workspaces: [] as string[],
     });
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+    const [availableRoles, setAvailableRoles] = useState<string[]>(['admin','user']);
     const { getAllWorkspace } = useWorkspace();
 
     useEffect(() => {
@@ -37,7 +36,12 @@ export default function UserFormPage() {
             const data = await getAllWorkspace();
             setWorkspaces(data);
         };
+        const fetchRoles = async () => {
+            const roles = await getRoles();
+            setAvailableRoles(roles);
+        };
         fetchWorkspaces();
+        fetchRoles();
     }, [getAllWorkspace]);
 
     const handleInputChange =
@@ -62,10 +66,29 @@ export default function UserFormPage() {
         });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('User form data:', formData);
-        // Ici vous pourriez envoyer les données à votre API
+        try {
+            const selectedWorkspaces = formData.workspaces;
+            const selectedRoles = formData.role ? [formData.role] : undefined;
+            await signupBasic({
+                email: formData.email,
+                password: formData.password || 'ChangeMe123!',
+                name: `${formData.firstName} ${formData.lastName}`,
+                roles: selectedRoles,
+                workspaces: selectedWorkspaces,
+            });
+            toast.success(t('user-form.create.success', { defaultValue: 'User created' }));
+            // Redirect back to users list; the dashboard will refetch on mount
+            window.location.assign('/users');
+        } catch (err: any) {
+            const msg = err?.message === 'forbidden'
+                ? t('errors.admin_required', { defaultValue: 'Admin required' })
+                : err?.message === 'conflict_email'
+                ? t('errors.email_conflict', { defaultValue: 'Email already registered' })
+                : t('errors.create_failed', { defaultValue: 'Failed to create user' });
+            toast.error(msg as string);
+        }
     };
 
     return (
@@ -119,13 +142,12 @@ export default function UserFormPage() {
                 />
 
                 <TextInput
-                    label={t('user-form.personal-information.phone.label')}
-                    type="text"
-                    placeholder={t(
-                        'user-form.personal-information.phone.placeholder'
-                    )}
-                    value={formData.phone}
-                    onChange={handleInputChange('phone')}
+                    label={t('user-form.personal-information.password.label', { defaultValue: 'Password' })}
+                    type="password"
+                    placeholder={t('user-form.personal-information.password.placeholder', { defaultValue: 'Enter a temporary password' })}
+                    required
+                    value={formData.password}
+                    onChange={handleInputChange('password')}
                 />
 
                 <SectionTitle>
@@ -168,165 +190,20 @@ export default function UserFormPage() {
                                 'user-form.professional-information.role.placeholder'
                             )}
                         </option>
-                        <option value="admin">
-                            {t('user-form.professional-information.role.admin')}
-                        </option>
-                        <option value="manager">
-                            {t(
-                                'user-form.professional-information.role.manager'
-                            )}
-                        </option>
-                        <option value="developer">
-                            {t(
-                                'user-form.professional-information.role.developer'
-                            )}
-                        </option>
-                        <option value="analyst">
-                            {t(
-                                'user-form.professional-information.role.analyst'
-                            )}
-                        </option>
-                        <option value="user">
-                            {t('user-form.professional-information.role.user')}
-                        </option>
+                        {availableRoles.map((r) => (
+                            <option key={r} value={r}>{r}</option>
+                        ))}
                     </FormSelect>
 
-                    <FormSelect
-                        label={t(
-                            'user-form.professional-information.department.label'
-                        )}
-                        value={formData.department}
-                        onChange={handleInputChange('department')}
-                    >
-                        <option value="">
-                            {t(
-                                'user-form.professional-information.department.placeholder'
-                            )}
-                        </option>
-                        <option value="it">
-                            {t(
-                                'user-form.professional-information.department.it'
-                            )}
-                        </option>
-                        <option value="marketing">
-                            {t(
-                                'user-form.professional-information.department.marketing'
-                            )}
-                        </option>
-                        <option value="sales">
-                            {t(
-                                'user-form.professional-information.department.sales'
-                            )}
-                        </option>
-                        <option value="hr">
-                            {t(
-                                'user-form.professional-information.department.hr'
-                            )}
-                        </option>
-                        <option value="finance">
-                            {t(
-                                'user-form.professional-information.department.finance'
-                            )}
-                        </option>
-                        <option value="operations">
-                            {t(
-                                'user-form.professional-information.department.operations'
-                            )}
-                        </option>
-                    </FormSelect>
+                    
                 </FormRow>
 
-                <FormTextArea
-                    label={t('user-form.professional-information.bio.label')}
-                    placeholder={t(
-                        'user-form.professional-information.bio.placeholder'
-                    )}
-                    rows={4}
-                    value={formData.bio}
-                    onChange={handleInputChange('bio')}
-                />
+                
 
-                <SectionTitle>
-                    <Calendar size={20} />
-                    {t('user-form.permissions.legend')}
-                </SectionTitle>
-
-                <PermissionGrid>
-                    <PermissionCard>
-                        <h4>
-                            {t('user-form.permissions.agent-management.title')}
-                        </h4>
-                        <p>
-                            {t(
-                                'user-form.permissions.agent-management.description'
-                            )}
-                        </p>
-                        <CheckboxContainer>
-                            <input type="checkbox" id="agent-management" />
-                            <label htmlFor="agent-management">
-                                {t(
-                                    'user-form.permissions.agent-management.active'
-                                )}
-                            </label>
-                        </CheckboxContainer>
-                    </PermissionCard>
-
-                    <PermissionCard>
-                        <h4>
-                            {t('user-form.permissions.user-management.title')}
-                        </h4>
-                        <p>
-                            {t(
-                                'user-form.permissions.user-management.description'
-                            )}
-                        </p>
-                        <CheckboxContainer>
-                            <input type="checkbox" id="user-management" />
-                            <label htmlFor="user-management">
-                                {t(
-                                    'user-form.permissions.user-management.active'
-                                )}
-                            </label>
-                        </CheckboxContainer>
-                    </PermissionCard>
-
-                    <PermissionCard>
-                        <h4>{t('user-form.permissions.analytics.title')}</h4>
-                        <p>
-                            {t('user-form.permissions.analytics.description')}
-                        </p>
-                        <CheckboxContainer>
-                            <input type="checkbox" id="analytics" />
-                            <label htmlFor="analytics">
-                                {t('user-form.permissions.analytics.active')}
-                            </label>
-                        </CheckboxContainer>
-                    </PermissionCard>
-
-                    <PermissionCard>
-                        <h4>
-                            {t(
-                                'user-form.permissions.system-configuration.title'
-                            )}
-                        </h4>
-                        <p>
-                            {t(
-                                'user-form.permissions.system-configuration.description'
-                            )}
-                        </p>
-                        <CheckboxContainer>
-                            <input type="checkbox" id="system-config" />
-                            <label htmlFor="system-config">
-                                {t(
-                                    'user-form.permissions.system-configuration.active'
-                                )}
-                            </label>
-                        </CheckboxContainer>
-                    </PermissionCard>
-                </PermissionGrid>
+                
 
                 <ButtonContainer>
-                    <CancelButton type="button">
+                    <CancelButton type="button" onClick={() => navigate('/users')}>
                         {t('user-form.cancel')}
                     </CancelButton>
                     <Button $variants="base" $color="primary">
