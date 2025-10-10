@@ -3,9 +3,11 @@ import { Button } from '../../general/button/component';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../../hooks/use-auth';
 const AccountInfo = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { logout, session } = useAuth();
     return (
         <AccountInfoContainer>
             <ProfileImage
@@ -13,14 +15,13 @@ const AccountInfo = () => {
                 alt="Profile Photo"
             />
             <div>
-                <h3>Prénom Nom</h3>
+                <h3>{session?.principal?.email ?? 'User'}</h3>
                 <h4> {t('account.info.sub-title')} </h4>
             </div>
             <Button
                 $variants="transparent"
                 onClick={() => {
-                    localStorage.removeItem('token');
-                    navigate('/login');
+                    void logout().then(() => navigate('/login'));
                 }}
             >
                 <LogOut />

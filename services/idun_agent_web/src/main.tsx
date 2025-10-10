@@ -9,6 +9,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { WorkspaceProvider } from './hooks/use-workspace.tsx';
 import { ToggleThemeModeProvider } from './hooks/use-toggle-theme-mode.tsx';
 import { LoaderProvider } from './hooks/use-loader.tsx';
+import { AuthProvider } from './hooks/use-auth.tsx';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -16,9 +17,11 @@ createRoot(document.getElementById('root')!).render(
             <ToggleThemeModeProvider>
                 <WorkspaceProvider>
                     <LoaderProvider>
-                        <GlobalStyles />
-                        <App />
-                        <ToastContainer />
+                        <AuthProvider>
+                            <GlobalStyles />
+                            <App />
+                            <ToastContainer />
+                        </AuthProvider>
                     </LoaderProvider>
                 </WorkspaceProvider>
             </ToggleThemeModeProvider>

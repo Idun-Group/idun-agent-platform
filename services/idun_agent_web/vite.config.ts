@@ -14,6 +14,17 @@ const dirname =
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
     plugins: [react()],
+    server: {
+        proxy: {
+            '/api': {
+                // In docker-compose, backend service is agent-manager-dev
+                target: process.env.VITE_API_PROXY_TARGET || 'http://agent-manager-dev:8000',
+                changeOrigin: true,
+                secure: false,
+                // rewrite: (path) => path.replace(/^\/api/, ''),
+            },
+        },
+    },
     test: {
         projects: [
             {

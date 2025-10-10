@@ -1,5 +1,7 @@
 import styled from 'styled-components';
-import type { Agent, TableColumn } from '../../../../types/agent.types';
+import type { TableColumn } from '../../../../types/agent.types';
+import type { BackendAgent } from '../../../../services/agents';
+import { deleteAgent } from '../../../../services/agents';
 import { Button } from '../../../general/button/component';
 import {
     CloudIcon,
@@ -19,8 +21,9 @@ import {
 } from '../../table-components/component';
 
 interface AgentLineProps {
-    agent: Agent;
+    agent: BackendAgent;
     columns: TableColumn[];
+    onDeleted?: (agentId: string) => void;
 }
 
 // const ActionButton = styled.button`
@@ -93,7 +96,7 @@ interface AgentLineProps {
 //     border: 1px solid var(--color-border-primary);
 // `;
 
-export default function AgentLine({ agent, columns }: AgentLineProps) {
+export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps) {
     const navigate = useNavigate();
     const selectStatus = (status: string) => {
         switch (status) {
@@ -103,12 +106,12 @@ export default function AgentLine({ agent, columns }: AgentLineProps) {
                 return 'red';
             case 'error':
                 return 'red';
-            case 'failed':
-                return 'red';
-            case 'disabled':
-                return 'gray';
-            case 'pending_deployment':
+            case 'deployed':
+                return 'green';
+            case 'ready':
                 return 'orange';
+            case 'draft':
+                return 'gray';
             default:
                 return 'gray';
         }
@@ -139,10 +142,9 @@ export default function AgentLine({ agent, columns }: AgentLineProps) {
                             running: <StopCircleIcon />,
                             stopped: <PlayIcon />,
                             deployed: <CloudIcon />,
-                            disabled: <PlayIcon />,
+                            ready: <PlayIcon />,
+                            draft: <ListRestartIcon />,
                             error: <ListRestartIcon />,
-                            failed: <ListRestartIcon />,
-                            pending_deployment: <PlayIcon />,
                         }[agent.status]
                     }
                 </Button>
@@ -167,7 +169,7 @@ export default function AgentLine({ agent, columns }: AgentLineProps) {
                 Error Rate
             </TableCell>
             <TableCell style={{ textAlign: getColumnAlignment('framework') }}>
-                {agent.framework_type}
+                {agent.framework}
             </TableCell>
             <ActionsContainer
                 style={{
@@ -191,9 +193,18 @@ export default function AgentLine({ agent, columns }: AgentLineProps) {
                 <Button $variants="transparent">
                     <Trash2
                         size={24}
-                        onClick={() =>
-                            toast('Delete functionality not implemented yet')
-                        }
+                        onClick={async () => {
+                            try {
+                                const confirmed = window.confirm('Delete this agent?');
+                                if (!confirmed) return;
+                                await deleteAgent(agent.id);
+                                toast.success('Agent deleted');
+                                onDeleted?.(agent.id);
+                            } catch (e) {
+                                const message = e instanceof Error ? e.message : 'Failed to delete agent';
+                                toast.error(message);
+                            }
+                        }}
                     />
                 </Button>
             </ActionsContainer>

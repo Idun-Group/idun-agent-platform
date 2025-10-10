@@ -16,6 +16,7 @@ import SettingSideBar from './layouts/side-bar/setting-side-bar/layout';
 import { SettingPageProvider } from './hooks/use-settings-page';
 import SigninPage from './pages/signin/page';
 import { useEffect } from 'react';
+import { useAuth } from './hooks/use-auth';
 import AppMarketplacePage from './pages/app-marketplace-page/page';
 import ConnectedApp from './pages/connected-app/page';
 import Loader from './components/general/loader/component';
@@ -27,18 +28,16 @@ function App() {
     const navigate = useNavigate();
     const location = useLocation();
     const { isLoading } = useLoader();
+    const { session, isLoading: isAuthLoading } = useAuth();
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-
-        if (
-            !token &&
-            location.pathname !== '/login' &&
-            location.pathname !== '/signin'
-        ) {
-            navigate('/login');
+        const isAuthFreeRoute = location.pathname === '/login' || location.pathname === '/signin' || location.pathname === '/';
+        if (!isAuthLoading) {
+            if (!session && !isAuthFreeRoute) {
+                navigate('/login');
+            }
         }
-    }, [navigate]);
+    }, [navigate, location.pathname, session, isAuthLoading]);
 
     return (
         <>
@@ -179,7 +178,7 @@ function App() {
                 />
                 {/* PLOP_ROUTE */}
             </Routes>
-            {isLoading && <Loader />}
+            {(isLoading || isAuthLoading) && <Loader />}
         </>
     );
 }

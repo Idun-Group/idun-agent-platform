@@ -1,5 +1,14 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { getJson } from '../utils/api';
+
+type Workspace = {
+    id: string;
+    name: string;
+    icon: string;
+    description: string;
+};
+
+const WORKSPACES_ENABLED = (import.meta.env.VITE_FEATURE_WORKSPACES as string) === 'true';
 
 const WorkspaceContext = createContext<
     | {
@@ -25,14 +34,15 @@ const useWorkspace = () => {
         throw new Error('useWorkspace must be used within a WorkspaceProvider');
     }
 
-    const getAllWorkspace = async () => {
+    const getAllWorkspace = useCallback(async (): Promise<Workspace[]> => {
+        if (!WORKSPACES_ENABLED) return [] as Workspace[];
         try {
-            return await getJson('/api/v1/workspaces');
+            return await getJson<Workspace[]>('/api/v1/workspaces');
         } catch (error) {
             console.error('Error fetching workspaces:', error);
-            return [] as unknown[];
+            return [] as Workspace[];
         }
-    };
+    }, []);
 
     return {
         selectedWorkspaceId: context.workspaceId,

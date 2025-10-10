@@ -1,8 +1,9 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { useAuth } from '../../hooks/use-auth';
 import { Button } from '../../components/general/button/component';
-import { agentData } from '../../data/agent-mock-data';
+import { getAgent, type BackendAgent } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
 // const CodeTab = lazy(
 //     () => import('../../components/agent-detail/tabs/code-tab/component')
@@ -141,9 +142,18 @@ export default function AgentDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
+    const [agent, setAgent] = useState<BackendAgent | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    // Récupération des données de l'agent depuis le fichier de données
-    console.log('Agent ID:', id);
+    const { session, isLoading: isAuthLoading } = useAuth();
+    const hasTenant = typeof window !== 'undefined' && !!localStorage.getItem('activeTenantId');
+
+    useEffect(() => {
+        if (!id || isAuthLoading || !session || !hasTenant) return;
+        getAgent(id)
+            .then(setAgent)
+            .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load agent'));
+    }, [id, isAuthLoading, session, hasTenant]);
 
     const tabs = [
         { id: 'overview', label: "Vue d'ensemble" },
@@ -186,11 +196,11 @@ export default function AgentDetailPage() {
                     <AgentInfo>
                         <Avatar>CS</Avatar>
                         <AgentDetails>
-                            <h1>{agentData.name}</h1>
-                            <p>{agentData.description}</p>
+                            <h1>{agent?.name ?? '...'}</h1>
+                            <p>{agent?.description ?? ''}</p>
                         </AgentDetails>
-                        <StatusBadge status={agentData.status.toLowerCase()}>
-                            {agentData.status}
+                        <StatusBadge status={(agent?.status || 'draft').toLowerCase()}>
+                            {agent?.status ?? 'draft'}
                         </StatusBadge>
                     </AgentInfo>
                     <Controls>

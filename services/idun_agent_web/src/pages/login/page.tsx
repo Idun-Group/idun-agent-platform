@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { Form, TextInput } from '../../components/general/form/component';
+import { useAuth } from '../../hooks/use-auth';
 
 const LoginPage = () => {
     const { t } = useTranslation();
@@ -13,26 +14,31 @@ const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
+    const { login, session, loginOIDC } = useAuth();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!email || !password) {
             toast.error(t('login.error'));
             return;
-        } else {
-            toast.success(t('login.success'));
-            localStorage.setItem('token', 'your_token_here');
-            navigate('/agents');
+        }
+        try {
+            const ok = await login(email, password);
+            if (ok) {
+                toast.success(t('login.success'));
+                navigate('/agents');
+            } else {
+                toast.error(t('login.error'));
+            }
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : t('login.error');
+            toast.error(message);
         }
     };
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            navigate('/agents');
-        }
-    }, [navigate]);
+        if (session) navigate('/agents');
+    }, [navigate, session]);
 
     return (
         <main>
@@ -70,6 +76,9 @@ const LoginPage = () => {
 
                 <Button type="submit" $variants="base">
                     {t('login.submit')}
+                </Button>
+                <Button type="button" $variants="transparent" onClick={loginOIDC} style={{ marginTop: 12 }}>
+                    {t('login.sso', { defaultValue: 'Login with SSO' })}
                 </Button>
             </StyledForm>
         </main>

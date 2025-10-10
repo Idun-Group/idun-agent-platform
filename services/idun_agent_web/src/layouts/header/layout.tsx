@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Button } from '../../components/general/button/component';
 import { useNavigate } from 'react-router-dom';
 import useWorkspace from '../../hooks/use-workspace';
+import { useAuth } from '../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
 const Header = () => {
@@ -12,12 +13,14 @@ const Header = () => {
     const navigate = useNavigate();
 
     const { setSelectedWorkspaceId, getAllWorkspace } = useWorkspace();
+    const { session, isLoading: isAuthLoading } = useAuth();
 
     const { t } = useTranslation();
 
     useEffect(() => {
+        if (isAuthLoading || !session) return;
         getAllWorkspace().then((data) => setWorkspaces(data));
-    }, []);
+    }, [isAuthLoading, session, getAllWorkspace]);
 
     // Local state for selected environment in the header
     const [environment, setEnvironment] = useState<string>('');
@@ -39,6 +42,12 @@ const Header = () => {
                     <option value="" disabled>
                         {t('header.workspace.select')}
                     </option>
+                    {workspaces.length === 0 ? (
+                        <option value="" disabled>
+                            {/* Avoid i18n missingKey spam until translation is added */}
+                            No workspaces
+                        </option>
+                    ) : null}
                     {workspaces.map((workspace) => (
                         <option key={workspace.id} value={workspace.id}>
                             {workspace.icon} {workspace.name}

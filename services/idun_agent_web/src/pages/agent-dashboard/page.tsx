@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import DataBoard from '../../layouts/data-board/layout';
 import { useTranslation } from 'react-i18next';
-import type { Agent } from '../../types/agent.types';
+import type { BackendAgent } from '../../services/agents';
+import { listAgents } from '../../services/agents';
 import AgentLine from '../../components/dashboard/agents/agent-line/component';
 import { Button } from '../../components/general/button/component';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { useAuth } from '../../hooks/use-auth';
 
 const AgentDashboardPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const [agents, setAgents] = useState<Agent[]>([]);
+    const [agents, setAgents] = useState<BackendAgent[]>([]);
     const columns = [
         {
             id: 'controls',
@@ -79,18 +82,17 @@ const AgentDashboardPage = () => {
         },
     ];
 
+    const { session, isLoading: isAuthLoading } = useAuth();
+
     useEffect(() => {
-        fetch('http://localhost:4001/api/V1/agents')
-            .then((response) => {
-                return response.json();
-            })
-            .then((data) => {
-                setAgents(data);
-            })
+        if (isAuthLoading || !session) return;
+        listAgents({ limit: 20, offset: 0, sort_by: 'created_at', order: 'desc' })
+            .then((rows) => setAgents(rows))
             .catch((error) => {
-                alert(error);
+                const message = error instanceof Error ? error.message : String(error);
+                toast.error(message);
             });
-    }, []);
+    }, [isAuthLoading, session]);
 
     return (
         <AgentDashboardContainer>
@@ -117,15 +119,16 @@ const AgentDashboardPage = () => {
                     columns={columns}
                     data={agents}
                     searchPlaceholder={t('dashboard.search.placeholder')}
-                    searchFields={['name', 'description', 'framework_type']}
+                    searchFields={['name', 'description', 'framework']}
                     showSearch={true}
                 >
                     {({ paginatedData, startIndex, columns: boardColumns }) => (
                         <>
                             {paginatedData.map((agent, rowIndex) => (
-                                <AgentLine
+                                    <AgentLine
                                     key={startIndex + rowIndex}
-                                    agent={agent}
+                                        agent={agent}
+                                        onDeleted={(id) => setAgents((prev) => prev.filter((a) => a.id !== id))}
                                     columns={boardColumns}
                                 />
                             ))}
