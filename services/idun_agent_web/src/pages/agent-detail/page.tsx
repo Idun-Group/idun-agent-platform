@@ -97,6 +97,17 @@ const AgentDetails = styled.div`
     }
 `;
 
+const MetaRow = styled.div`
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+`;
+
+const MetaItem = styled.span`
+    font-size: 12px;
+    color: #9ca3af;
+`;
+
 const StatusBadge = styled.span<{ status: string }>`
     padding: 4px 12px;
     border-radius: 20px;
@@ -146,14 +157,13 @@ export default function AgentDetailPage() {
     const [error, setError] = useState<string | null>(null);
 
     const { session, isLoading: isAuthLoading } = useAuth();
-    const hasTenant = typeof window !== 'undefined' && !!localStorage.getItem('activeTenantId');
 
     useEffect(() => {
-        if (!id || isAuthLoading || !session || !hasTenant) return;
+        if (!id || isAuthLoading || !session) return;
         getAgent(id)
             .then(setAgent)
             .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load agent'));
-    }, [id, isAuthLoading, session, hasTenant]);
+    }, [id, isAuthLoading, session]);
 
     const tabs = [
         { id: 'overview', label: "Vue d'ensemble" },
@@ -168,10 +178,10 @@ export default function AgentDetailPage() {
         <Suspense fallback={<Loader />}>
             {
                 {
-                    overview: <OverviewTab />,
-                    gateway: <GatewayTab />,
+                    overview: <OverviewTab agent={agent} />,
+                    gateway: <GatewayTab agent={agent} />,
                     activity: <ActivityTab />,
-                    configuration: <ConfigurationTab />,
+                    configuration: <ConfigurationTab agent={agent} />,
                     logs: <LogsTab />,
                     // code: <CodeTab />,
                 }[activeTab]
@@ -197,7 +207,24 @@ export default function AgentDetailPage() {
                         <Avatar>CS</Avatar>
                         <AgentDetails>
                             <h1>{agent?.name ?? '...'}</h1>
-                            <p>{agent?.description ?? ''}</p>
+                            {agent?.description ? <p>{agent.description}</p> : null}
+                            {agent?.framework ? (
+                                <MetaRow>
+                                    <MetaItem>
+                                        Framework: {agent.framework}
+                                    </MetaItem>
+                                    {agent?.created_at ? (
+                                        <MetaItem>
+                                            Created: {new Date(agent.created_at).toLocaleString()}
+                                        </MetaItem>
+                                    ) : null}
+                                    {agent?.updated_at ? (
+                                        <MetaItem>
+                                            Updated: {new Date(agent.updated_at).toLocaleString()}
+                                        </MetaItem>
+                                    ) : null}
+                                </MetaRow>
+                            ) : null}
                         </AgentDetails>
                         <StatusBadge status={(agent?.status || 'draft').toLowerCase()}>
                             {agent?.status ?? 'draft'}

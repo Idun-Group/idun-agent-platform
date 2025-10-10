@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import type { BackendAgent } from '../../../../services/agents';
 import {
     Server,
     Link as LinkIcon,
@@ -50,7 +51,7 @@ const mockRoutes: RouteItem[] = [
     },
 ];
 
-const GatewayTab: React.FC = () => {
+const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
     const [routes, setRoutes] = useState<RouteItem[]>(mockRoutes);
     const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -113,6 +114,15 @@ const GatewayTab: React.FC = () => {
                     </ActionButton>
                 </Controls>
             </Toolbar>
+
+            {agent?.run_config ? (
+                <ConfigBlock>
+                    <h3>Run Configuration</h3>
+                    <pre>
+{JSON.stringify(agent.run_config, null, 2)}
+                    </pre>
+                </ConfigBlock>
+            ) : null}
 
             <List>
                 {routes.map((route) => (
@@ -201,6 +211,15 @@ export default GatewayTab;
 const Container = styled.div`
     flex: 1;
     padding: 0 40px;
+`;
+
+const ConfigBlock = styled.div`
+    margin-bottom: 16px;
+    background: var(--color-background-secondary, #0f1724);
+    border: 1px solid var(--color-border-primary, #213047);
+    border-radius: 8px;
+    padding: 12px 16px;
+    pre { color: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; }
 `;
 
 const Header = styled.div`

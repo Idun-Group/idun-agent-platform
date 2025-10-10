@@ -9,6 +9,9 @@ export interface BackendAgent {
     description?: string | null;
     framework: AgentFramework;
     status: AgentStatus;
+    config?: Record<string, unknown> | null;
+    engine_config?: Record<string, unknown> | null;
+    run_config?: Record<string, unknown> | null;
     created_at: string;
     updated_at: string;
 }

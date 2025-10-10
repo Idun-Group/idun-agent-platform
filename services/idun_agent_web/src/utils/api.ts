@@ -23,35 +23,10 @@ export function removeUnauthorizedHandler(handler: () => void): void {
 
 let hasNotifiedOn401 = false;
 
-function getActiveTenantId(): string | undefined {
-    try {
-        const v = localStorage.getItem('activeTenantId') || '';
-        // Basic UUID v4-ish check
-        return /[0-9a-fA-F-]{36}/.test(v) ? v : undefined;
-    } catch {
-        return undefined;
-    }
-}
-
-function shouldAttachTenant(path: string): boolean {
-    // Only include tenant header on business endpoints that require it (e.g., agents),
-    // and never on auth endpoints.
-    const pathname = path.startsWith('http')
-        ? (() => {
-              try {
-                  return new URL(path).pathname;
-              } catch {
-                  return path;
-              }
-          })()
-        : path;
-    if (pathname.startsWith('/api/v1/auth/')) return false;
-    return pathname.startsWith('/api/v1/agents');
-}
+// Tenant now derived from sid on backend; no tenant header logic needed
 
 export async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
     const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
-    const tenantId = getActiveTenantId();
     const response = await fetch(url, {
         credentials: 'include',
         ...options,
@@ -60,7 +35,6 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
             ...(options.body && !(options.headers && options.headers['Content-Type'])
                 ? { 'Content-Type': 'application/json' }
                 : {}),
-            ...(tenantId && shouldAttachTenant(path) ? { 'X-Tenant-ID': tenantId } : {}),
             ...(options.headers ?? {}),
         },
     });

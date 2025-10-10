@@ -1,159 +1,37 @@
 import styled from 'styled-components';
-import { configurationData } from '../../../../data/agent-mock-data';
+import type { BackendAgent } from '../../../../services/agents';
 
-interface ConfigurationTabProps {}
+interface ConfigurationTabProps { agent: BackendAgent | null }
 
-const ConfigurationTab = ({}: ConfigurationTabProps) => {
+const ConfigurationTab = ({ agent }: ConfigurationTabProps) => {
     return (
         <ConfigurationSection>
             <ConfigurationGrid>
-                <ConfigCard>
-                    <ConfigCardHeader>
-                        <ConfigCardTitle>General Configuration</ConfigCardTitle>
-                    </ConfigCardHeader>
-                    <ConfigCardContent>
-                        <ConfigRow>
-                            <ConfigLabel>Agent to Agent</ConfigLabel>
-                            <ConfigValue>
-                                <EnabledBadge
-                                    $enabled={
-                                        configurationData.general.agentToAgent
-                                            .enabled
-                                    }
-                                >
-                                    {
-                                        configurationData.general.agentToAgent
-                                            .label
-                                    }
-                                </EnabledBadge>
-                            </ConfigValue>
-                        </ConfigRow>
-                        <ConfigRow>
-                            <ConfigLabel>Streaming</ConfigLabel>
-                            <ConfigValue>
-                                <EnabledBadge
-                                    $enabled={
-                                        configurationData.general.streaming
-                                            .enabled
-                                    }
-                                >
-                                    {configurationData.general.streaming.label}
-                                </EnabledBadge>
-                            </ConfigValue>
-                        </ConfigRow>
-                        <ConfigRow>
-                            <ConfigLabel>Input Schema</ConfigLabel>
-                            <ConfigValue>
-                                {configurationData.general.inputSchema}
-                            </ConfigValue>
-                        </ConfigRow>
-                        <ConfigRow>
-                            <ConfigLabel>Output Schema</ConfigLabel>
-                            <ConfigValue>
-                                {configurationData.general.outputSchema}
-                            </ConfigValue>
-                        </ConfigRow>
-                        <ConfigSection>
-                            <ConfigSectionTitle>Parameters</ConfigSectionTitle>
-                            <ConfigRow>
-                                <ConfigLabel>max_retries</ConfigLabel>
-                                <ConfigValue>
-                                    {
-                                        configurationData.general.parameters
-                                            .max_retries
-                                    }
-                                </ConfigValue>
-                            </ConfigRow>
-                            <ConfigRow>
-                                <ConfigLabel>language</ConfigLabel>
-                                <ConfigValue>
-                                    {
-                                        configurationData.general.parameters
-                                            .language
-                                    }
-                                </ConfigValue>
-                            </ConfigRow>
-                        </ConfigSection>
-                    </ConfigCardContent>
-                </ConfigCard>
+                {agent?.config ? (
+                    <ConfigCard>
+                        <ConfigCardHeader>
+                            <ConfigCardTitle>Agent Configuration</ConfigCardTitle>
+                        </ConfigCardHeader>
+                        <ConfigCardContent>
+                            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+{JSON.stringify(agent.config, null, 2)}
+                            </pre>
+                        </ConfigCardContent>
+                    </ConfigCard>
+                ) : null}
 
-                <ConfigCard>
-                    <ConfigCardHeader>
-                        <ConfigCardTitle>
-                            📄 LangGraph Configuration
-                        </ConfigCardTitle>
-                    </ConfigCardHeader>
-                    <ConfigCardContent>
-                        <ConfigRow>
-                            <ConfigLabel>Checkpoint Type</ConfigLabel>
-                            <ConfigValue>
-                                <CheckpointBadge>
-                                    {configurationData.langGraph.checkpointType}
-                                </CheckpointBadge>
-                            </ConfigValue>
-                        </ConfigRow>
-                        <ConfigRow>
-                            <ConfigLabel>Database Path</ConfigLabel>
-                            <ConfigValue
-                                style={{
-                                    fontFamily: 'monospace',
-                                    fontSize: '13px',
-                                }}
-                            >
-                                {configurationData.langGraph.databasePath}
-                            </ConfigValue>
-                        </ConfigRow>
-                    </ConfigCardContent>
-                </ConfigCard>
-
-                <ConfigCard>
-                    <ConfigCardHeader>
-                        <ConfigCardTitle>👁️ Observability</ConfigCardTitle>
-                    </ConfigCardHeader>
-                    <ConfigCardContent>
-                        <ConfigRow>
-                            <ConfigLabel>Provider</ConfigLabel>
-                            <ConfigValue>
-                                <ProviderBadge>
-                                    {configurationData.observability.provider}
-                                </ProviderBadge>
-                            </ConfigValue>
-                        </ConfigRow>
-                        <ConfigSection>
-                            <ConfigSectionTitle>
-                                Configuration
-                            </ConfigSectionTitle>
-                            <ConfigRow>
-                                <ConfigLabel>langfuse_api_key</ConfigLabel>
-                                <ConfigValue
-                                    style={{
-                                        fontFamily: 'monospace',
-                                        fontSize: '13px',
-                                    }}
-                                >
-                                    {
-                                        configurationData.observability
-                                            .configuration.langfuse_api_key
-                                    }
-                                </ConfigValue>
-                            </ConfigRow>
-                            <ConfigRow>
-                                <ConfigLabel>langfuse_host</ConfigLabel>
-                                <ConfigValue
-                                    style={{
-                                        fontFamily: 'monospace',
-                                        fontSize: '13px',
-                                    }}
-                                >
-                                    {
-                                        configurationData.observability
-                                            .configuration.langfuse_host
-                                    }
-                                </ConfigValue>
-                            </ConfigRow>
-                        </ConfigSection>
-                    </ConfigCardContent>
-                </ConfigCard>
+                {agent?.engine_config ? (
+                    <ConfigCard>
+                        <ConfigCardHeader>
+                            <ConfigCardTitle>Engine Configuration</ConfigCardTitle>
+                        </ConfigCardHeader>
+                        <ConfigCardContent>
+                            <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+{JSON.stringify(agent.engine_config, null, 2)}
+                            </pre>
+                        </ConfigCardContent>
+                    </ConfigCard>
+                ) : null}
             </ConfigurationGrid>
         </ConfigurationSection>
     );
@@ -182,10 +60,7 @@ const ConfigCard = styled.div`
     border-radius: 12px;
     overflow: hidden;
 
-    &:nth-child(3) {
-        grid-column: 1 / -1;
-        max-width: 400px;
-    }
+    pre { color: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; }
 `;
 
 const ConfigCardHeader = styled.div`
@@ -264,22 +139,4 @@ const EnabledBadge = styled.span<{ $enabled: boolean }>`
     `}
 `;
 
-const CheckpointBadge = styled.span`
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.3);
-`;
-
-const ProviderBadge = styled.span`
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    background: rgba(140, 82, 255, 0.2);
-    color: #a78bfa;
-    border: 1px solid rgba(140, 82, 255, 0.3);
-`;
+// Removed unused badges and mock-only styles

@@ -8,10 +8,11 @@ import {
 import MetricCard from '../../metric-card/component';
 import UsageChart from '../usage-chart/component';
 import AgentInfo from '../agent-info/component';
+import type { BackendAgent } from '../../../../services/agents';
 
-interface OverviewTabProps {}
+interface OverviewTabProps { agent: BackendAgent | null }
 
-const OverviewTab = ({}: OverviewTabProps) => {
+const OverviewTab = ({ agent }: OverviewTabProps) => {
     const { t } = useTranslation();
     return (
         <Container>
@@ -44,8 +45,8 @@ const OverviewTab = ({}: OverviewTabProps) => {
             <Sidebar>
                 <AgentInfo
                     framework={t(
-                        `frameworks.${agentInfo.framework}`,
-                        agentInfo.framework
+                        `frameworks.${agent?.framework ?? 'unknown'}`,
+                        agent?.framework ?? 'unknown'
                     )}
                     source={agentInfo.source}
                     tools={agentInfo.tools.map((tool: string) =>

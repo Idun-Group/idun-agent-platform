@@ -135,7 +135,7 @@ export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps)
                 <Button
                     $variants="transparent"
                     $color="primary"
-                    onClick={() => toast('Controls not implemented yet')}
+                    onClick={() => navigate(`/agents/${agent.id}`)}
                 >
                     {
                         {
@@ -184,9 +184,7 @@ export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps)
                 </Button>
                 <Button
                     $variants="transparent"
-                    onClick={() =>
-                        toast('Edit functionality not implemented yet')
-                    }
+                    onClick={() => navigate(`/agents/${agent.id}`)}
                 >
                     <EditIcon size={24} />
                 </Button>
