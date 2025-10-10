@@ -27,6 +27,7 @@ let hasNotifiedOn401 = false;
 
 export async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
     const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
+    const tenantId = getActiveTenantId();
     const response = await fetch(url, {
         credentials: 'include',
         ...options,
@@ -35,6 +36,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
             ...(options.body && !(options.headers && options.headers['Content-Type'])
                 ? { 'Content-Type': 'application/json' }
                 : {}),
+            ...(tenantId && shouldAttachTenant(path) ? { 'X-Tenant-ID': tenantId } : {}),
             ...(options.headers ?? {}),
         },
     });
