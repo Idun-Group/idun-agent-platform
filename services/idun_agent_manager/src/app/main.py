@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.settings import get_settings
 
 # Simple in-memory storage for development
 agents_db = []
@@ -22,10 +23,15 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    # Setup CORS
+    # Setup CORS (must NOT use '*' when allow_credentials=True)
+    settings = get_settings()
+    cors_origins = getattr(getattr(settings, "api", {}), "cors_origins", None)
+    if not cors_origins:
+        cors_origins = ["http://localhost:3000"]
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # For development only
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

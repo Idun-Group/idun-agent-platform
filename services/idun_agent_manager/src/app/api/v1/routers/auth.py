@@ -6,12 +6,22 @@ import json
 import os
 import secrets
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status, Depends
 from fastapi.responses import JSONResponse, RedirectResponse
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import uuid4
 
 from app.core.settings import get_settings
 from app.infrastructure.auth.oidc import get_provider
 from app.infrastructure.cache.redis_client import get_redis_client
+from app.infrastructure.auth.passwords import verify_password, hash_password
+from app.infrastructure.db.session import get_async_session
+from app.api.v1.deps import get_principal
+from idun_agent_schema.manager.deps import Principal
+from app.infrastructure.db.models.roles import RoleModel, UserRoleModel
+from app.infrastructure.db.models.users import UserModel
 
 router = APIRouter()
 
@@ -145,3 +155,164 @@ async def me(request: Request) -> JSONResponse:
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired"
         )
     return JSONResponse(content={"session": json.loads(raw)})
+
+
+# ==== Basic auth endpoints ====
+
+
+class BasicLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+@router.post("/basic/login", summary="Basic email/password login")
+async def basic_login(request: BasicLoginRequest) -> JSONResponse:
+    async for session in get_async_session():
+        stmt = select(UserModel).where(UserModel.email == str(request.email))
+        result = await session.execute(stmt)
+        user: UserModel | None = result.scalar_one_or_none()
+        if not user or not user.is_active or not user.password_hash:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        if not verify_password(request.password, user.password_hash):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+        # Update last_login_at
+        from datetime import datetime, timezone
+
+        user.last_login_at = datetime.now(timezone.utc)
+        await session.flush()
+
+        # Create basic session in Redis
+        import json as _json
+        import secrets as _secrets
+        from app.core.settings import get_settings
+
+        sid = _secrets.token_urlsafe(32)
+        # Default 24h
+        expires_in = 60 * 60 * 24
+        # Load roles for session
+        stmt_roles = (
+            select(RoleModel.name)
+            .join(UserRoleModel, UserRoleModel.role_id == RoleModel.id)
+            .where(UserRoleModel.user_id == user.id)
+        )
+        rres = await session.execute(stmt_roles)
+        role_names = [r for (r,) in rres.all()]
+        data = {
+            "provider": "basic",
+            "principal": {
+                "user_id": str(user.id),
+                "email": user.email,
+                "roles": role_names,
+                "workspace_ids": [],
+            },
+            "expires_at": int(__import__("time").time()) + expires_in,
+        }
+        redis = get_redis_client()
+        await redis.set(f"sid:{sid}", _json.dumps(data), ex=expires_in)
+
+        resp = JSONResponse(content={"ok": True})
+        settings = get_settings()
+        resp.set_cookie(
+            "sid",
+            sid,
+            httponly=True,
+            secure=not settings.is_development,
+            samesite="lax",
+            max_age=expires_in,
+        )
+        return resp
+
+
+@router.post("/basic/logout", summary="Basic logout")
+async def basic_logout(request: Request) -> JSONResponse:
+    sid = request.cookies.get("sid")
+    if sid:
+        redis = get_redis_client()
+        await redis.delete(f"sid:{sid}")
+    resp = JSONResponse(content={"ok": True})
+    resp.delete_cookie("sid")
+    return resp
+
+
+class BasicSignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: str | None = None
+
+
+@router.post("/basic/signup", summary="Basic signup (admin only in dev)", status_code=status.HTTP_201_CREATED)
+async def basic_signup(
+    request: BasicSignupRequest,
+    principal: Principal = Depends(get_principal),
+) -> JSONResponse:
+    settings = get_settings()
+    if not settings.is_development:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Signup disabled")
+    # Require admin role
+    if "admin" not in (principal.roles or []):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin required")
+
+    async for session in get_async_session():
+        # Uniqueness check
+        exists = await session.execute(select(UserModel).where(UserModel.email == str(request.email)))
+        if exists.scalar_one_or_none():
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+        user = UserModel(
+            id=uuid4(),
+            email=str(request.email),
+            name=request.name,
+            avatar_url=None,
+            password_hash=hash_password(request.password),
+            is_active=True,
+        )
+        session.add(user)
+        await session.flush()
+        await session.refresh(user)
+
+        return JSONResponse(content={"id": str(user.id), "email": user.email, "name": user.name})
+
+
+# Admin-only RBAC endpoints
+
+
+class AssignRoleRequest(BaseModel):
+    user_id: str
+    role: str
+
+
+@router.get("/roles", summary="List available roles")
+async def list_roles(principal: Principal = Depends(get_principal)) -> JSONResponse:
+    if "admin" not in (principal.roles or []):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin required")
+    async for session in get_async_session():
+        rows = (await session.execute(select(RoleModel.name))).scalars().all()
+        return JSONResponse(content={"roles": rows})
+
+
+@router.post("/roles/assign", summary="Assign role to user")
+async def assign_role(req: AssignRoleRequest, principal: Principal = Depends(get_principal)) -> JSONResponse:
+    if "admin" not in (principal.roles or []):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin required")
+    async for session in get_async_session():
+        role_row = (await session.execute(select(RoleModel).where(RoleModel.name == req.role))).scalar_one_or_none()
+        if not role_row:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+        # insert if not exists
+        from uuid import UUID
+        try:
+            uid = UUID(req.user_id)
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user_id")
+        exists = (
+            await session.execute(
+                select(UserRoleModel).where(
+                    UserRoleModel.user_id == uid, UserRoleModel.role_id == role_row.id
+                )
+            )
+        ).scalar_one_or_none()
+        if not exists:
+            session.add(UserRoleModel(id=uuid4(), user_id=uid, role_id=role_row.id))
+            await session.flush()
+        return JSONResponse(content={"ok": True})

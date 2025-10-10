@@ -93,6 +93,95 @@ async def get_principal(request: Request) -> Principal:
                         detail="Session refresh failed",
                     ) from err
 
+            provider_name = data.get("provider")
+            if provider_name == "basic":
+                # Principal stored directly in session by basic auth
+                normalized = data.get("principal") or {}
+                user_id = normalized.get("user_id")
+                roles = list(normalized.get("roles", []))
+                workspace_ids = []
+                for ws in normalized.get("workspace_ids", []) or []:
+                    try:
+                        workspace_ids.append(UUID(str(ws)))
+                    except ValueError:
+                        continue
+
+                # Tenant: prefer header, else try DB lookup from memberships
+                tenant_id = None
+                tenant_header = request.headers.get("X-Tenant-ID")
+                if tenant_header:
+                    try:
+                        tenant_id = UUID(tenant_header)
+                    except ValueError as err:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Invalid X-Tenant-ID format",
+                        ) from err
+                else:
+                    # Try deriving tenant from membership if user has exactly one
+                    try:
+                        from sqlalchemy import select, text
+                        from app.infrastructure.db.session import get_async_session
+                        async for dbs in get_async_session():
+                            # Prefer exact one membership
+                            res = await dbs.execute(
+                                text(
+                                    "SELECT tenant_id FROM tenant_users WHERE user_id = :uid"
+                                ),
+                                {"uid": str(user_id)},
+                            )
+                            rows = [r[0] for r in res.fetchall()]
+                            if len(rows) == 1:
+                                tenant_id = rows[0]
+                            # Optionally load workspace ids as well
+                            if not workspace_ids:
+                                wres = await dbs.execute(
+                                    text(
+                                        "SELECT workspace_id FROM workspace_users WHERE user_id = :uid"
+                                    ),
+                                    {"uid": str(user_id)},
+                                )
+                                workspace_ids = []
+                                for (wid,) in wres.fetchall():
+                                    try:
+                                        workspace_ids.append(UUID(str(wid)))
+                                    except Exception:
+                                        continue
+                            break
+                    except Exception:
+                        # ignore lookup errors; will fallback to 401 below if missing
+                        pass
+
+                # Load DB roles for user if not present in session
+                if user_id and not roles:
+                    try:
+                        from sqlalchemy import select
+                        from app.infrastructure.db.session import get_async_session
+                        from app.infrastructure.db.models.roles import RoleModel, UserRoleModel
+                        async for dbs in get_async_session():
+                            stmt = (
+                                select(RoleModel.name)
+                                .join(UserRoleModel, UserRoleModel.role_id == RoleModel.id)
+                                .where(UserRoleModel.user_id == UUID(str(user_id)))
+                            )
+                            res = await dbs.execute(stmt)
+                            roles = [r for (r,) in res.all()]
+                            break
+                    except Exception:
+                        roles = roles
+
+                if not user_id or not tenant_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized"
+                    )
+
+                return Principal(
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                    roles=roles,
+                    workspace_ids=workspace_ids,
+                )
+
             if access_token:
                 auth_header = f"Bearer {access_token}"
     tenant_header = request.headers.get("X-Tenant-ID")

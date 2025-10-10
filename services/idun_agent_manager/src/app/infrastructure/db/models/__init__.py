@@ -5,3 +5,4 @@ from .agent_config import AgentConfigModel  # noqa: F401
 from .engine import EngineModel  # noqa: F401
 from .gateway_routes import GatewayRouteModel  # noqa: F401
 from .users import UserModel  # noqa: F401
+from .roles import RoleModel, UserRoleModel  # noqa: F401
