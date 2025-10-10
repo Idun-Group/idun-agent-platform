@@ -18,7 +18,7 @@ from app.infrastructure.auth.oidc import get_provider
 from app.infrastructure.cache.redis_client import get_redis_client
 from app.infrastructure.auth.passwords import verify_password, hash_password
 from app.infrastructure.db.session import get_async_session
-from app.api.v1.deps import get_principal
+from app.api.v1.deps import get_principal, get_session
 from idun_agent_schema.manager.deps import Principal
 from app.infrastructure.db.models.roles import RoleModel, UserRoleModel
 from app.infrastructure.db.models.users import UserModel
@@ -239,39 +239,110 @@ class BasicSignupRequest(BaseModel):
     email: EmailStr
     password: str
     name: str | None = None
+    roles: list[str] = []
+    workspaces: list[str] = []  # list of workspace UUIDs to grant membership
 
 
-@router.post("/basic/signup", summary="Basic signup (admin only in dev)", status_code=status.HTTP_201_CREATED)
+@router.post("/basic/signup", summary="Create user (admin only)", status_code=status.HTTP_201_CREATED)
 async def basic_signup(
     request: BasicSignupRequest,
     principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_session),
 ) -> JSONResponse:
-    settings = get_settings()
-    if not settings.is_development:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Signup disabled")
     # Require admin role
     if "admin" not in (principal.roles or []):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin required")
 
-    async for session in get_async_session():
-        # Uniqueness check
-        exists = await session.execute(select(UserModel).where(UserModel.email == str(request.email)))
-        if exists.scalar_one_or_none():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+    # Uniqueness check
+    exists = await session.execute(select(UserModel).where(UserModel.email == str(request.email)))
+    if exists.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
-        user = UserModel(
-            id=uuid4(),
-            email=str(request.email),
-            name=request.name,
-            avatar_url=None,
-            password_hash=hash_password(request.password),
-            is_active=True,
-        )
-        session.add(user)
+    user = UserModel(
+        id=uuid4(),
+        email=str(request.email),
+        name=request.name,
+        avatar_url=None,
+        password_hash=hash_password(request.password),
+        is_active=True,
+    )
+    session.add(user)
+    await session.flush()
+    await session.refresh(user)
+
+    # Assign tenant membership to the caller's tenant
+    from sqlalchemy import text as _sql_text
+    await session.execute(
+        _sql_text(
+            """
+            INSERT INTO tenant_users (id, tenant_id, user_id)
+            VALUES (:id, :tenant_id, :user_id)
+            ON CONFLICT (tenant_id, user_id) DO NOTHING
+            """
+        ),
+        {"id": str(uuid4()), "tenant_id": str(principal.tenant_id), "user_id": str(user.id)},
+    )
+
+    # Assign roles if provided
+    assigned_roles: list[str] = []
+    if request.roles:
+        # Fetch roles by name
+        db_roles = (
+            await session.execute(select(RoleModel).where(RoleModel.name.in_(request.roles)))
+        ).scalars().all()
+        found = {r.name: r for r in db_roles}
+        missing = [r for r in request.roles if r not in found]
+        if missing:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Roles not found: {', '.join(missing)}")
+        for role in db_roles:
+            # Upsert user_roles
+            existing = (
+                await session.execute(
+                    select(UserRoleModel).where(
+                        UserRoleModel.user_id == user.id, UserRoleModel.role_id == role.id
+                    )
+                )
+            ).scalar_one_or_none()
+            if not existing:
+                session.add(UserRoleModel(id=uuid4(), user_id=user.id, role_id=role.id))
+            assigned_roles.append(role.name)
         await session.flush()
-        await session.refresh(user)
 
-        return JSONResponse(content={"id": str(user.id), "email": user.email, "name": user.name})
+    # Assign workspace memberships if provided (validate tenant)
+    assigned_workspaces: list[str] = []
+    if request.workspaces:
+        from sqlalchemy import text as _t
+        # Validate workspaces belong to caller's tenant
+        rows = await session.execute(
+            _t(
+                "SELECT id FROM workspaces WHERE tenant_id = :tid AND id = ANY(:ids)"
+            ),
+            {"tid": str(principal.tenant_id), "ids": request.workspaces},
+        )
+        valid_ids = {str(r[0]) for r in rows.fetchall()}
+        invalid = [w for w in request.workspaces if w not in valid_ids]
+        if invalid:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid workspaces: {', '.join(invalid)}")
+        for wid in valid_ids:
+            await session.execute(
+                _t(
+                    """
+                    INSERT INTO workspace_users (id, workspace_id, user_id)
+                    VALUES (:id, :wid, :uid)
+                    ON CONFLICT (workspace_id, user_id) DO NOTHING
+                    """
+                ),
+                {"id": str(uuid4()), "wid": wid, "uid": str(user.id)},
+            )
+        assigned_workspaces = list(valid_ids)
+
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content={
+        "id": str(user.id),
+        "email": user.email,
+        "name": user.name,
+        "roles": assigned_roles,
+        "workspace_ids": assigned_workspaces,
+    })
 
 
 # Admin-only RBAC endpoints

@@ -186,6 +186,8 @@ class Agent(BaseModel):
     description: str | None = Field(None, description="Agent description")
     framework: AgentFramework = Field(..., description="Agent framework")
     status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
+    # Legacy/raw config payload (as created), still stored in DB
+    config: dict[str, Any] | None = Field(None, description="Original agent config payload")
     # New fields from managed_agents
     engine_config: dict[str, Any] | None = Field(None, description="Engine configuration payload")
     run_config: dict[str, Any] | None = Field(None, description="Run configuration payload")
@@ -323,6 +325,7 @@ async def create_agent(
         description=model.description,
         framework=map_framework(model.framework),
         status=AgentStatus(model.status),
+        config=model.config,
         engine_config=model.engine_config,
         run_config=model.run_config,
         created_at=model.created_at,
@@ -474,6 +477,7 @@ async def list_agents(
             description=r.description,
             framework=map_framework(r.framework),
             status=AgentStatus(r.status),
+            config=r.config,
             engine_config=r.engine_config,
             run_config=r.run_config,
             created_at=r.created_at,
@@ -525,6 +529,7 @@ async def get_agent(
         description=model.description,
         framework=map_framework(model.framework),
         status=AgentStatus(model.status),
+        config=model.config,
         engine_config=model.engine_config,
         run_config=model.run_config,
         created_at=model.created_at,
@@ -598,6 +603,7 @@ async def update_agent(
         description=model.description,
         framework=map_framework(model.framework),
         status=AgentStatus(model.status),
+        config=model.config,
         engine_config=model.engine_config,
         run_config=model.run_config,
         created_at=model.created_at,

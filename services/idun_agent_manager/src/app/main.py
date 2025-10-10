@@ -49,6 +49,7 @@ def setup_routes(app: FastAPI) -> None:
     from app.api.v1.routers.agents import router as agents_router
     from app.api.v1.routers.auth import router as auth_router
     from app.api.v1.routers.health import router as health_router
+    from app.api.v1.routers.workspaces import router as workspaces_router
 
     # API v1 routes
     app.include_router(
@@ -65,6 +66,11 @@ def setup_routes(app: FastAPI) -> None:
         health_router,
         prefix="/api/v1",
         tags=["Health"],
+    )
+    app.include_router(
+        workspaces_router,
+        prefix="/api/v1",
+        tags=["Workspaces"],
     )
 
 
