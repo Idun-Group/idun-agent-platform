@@ -89,7 +89,11 @@ export default SettingSideBar;
 const SideBarContainer = styled.div<{ $collapsed?: boolean }>`
     width: ${({ $collapsed }) => ($collapsed ? '72px' : '250px')};
     border-right: 1px solid #25325a;
+<<<<<<< HEAD
     background: #030711;
+=======
+    background: #121122;
+>>>>>>> 9af1c19 (Working on front design)
     color: #ffffff;
     transition: width 300ms ease, padding 300ms ease, background-color 300ms ease, color 300ms ease;
 `;
@@ -102,7 +106,11 @@ const NavButton = styled.button`
     cursor: pointer;
     color: #ffffff;
     font-size: 15px;
+<<<<<<< HEAD
     font-weight: 400;
+=======
+    font-weight: 500;
+>>>>>>> 9af1c19 (Working on front design)
     font-family: inherit;
 `;
 
@@ -119,7 +127,11 @@ const NavPoint = styled.li<{ $selected: boolean }>`
     height: 47px;
     padding: 0 16px 0 30px;
     &:hover {
+<<<<<<< HEAD
         background: #030711;
+=======
+        background: #040210;
+>>>>>>> 9af1c19 (Working on front design)
     }
 
     ${({ $selected: selected }) => {

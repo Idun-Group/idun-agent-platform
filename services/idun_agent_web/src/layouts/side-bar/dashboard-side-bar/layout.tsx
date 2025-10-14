@@ -142,7 +142,11 @@ const SideBar = ({}: SideBarProps) => {
 const SideBarContainer = styled.aside<{ $collapsed?: boolean }>`
     width: ${({ $collapsed }) => ($collapsed ? '72px' : '250px')};
     min-height: 100%;
+<<<<<<< HEAD
     background: #030711; /* unified sidebar background */
+=======
+    background: #121122; /* from Figma frame fill */
+>>>>>>> 9af1c19 (Working on front design)
     color: hsl(var(--sidebar-foreground));
     border-right: 1px solid #25325a; /* from Figma stroke */
     display: flex;
@@ -168,31 +172,49 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
     padding: 0 16px 0 30px; /* left 30px per Figma */
     border: none;
     border-radius: 0; /* no radius in figma */
+<<<<<<< HEAD
     background: #030711;
+=======
+    background: ${(props) => (props.$isActive ? '#040210' : '#252B45')};
+>>>>>>> 9af1c19 (Working on front design)
     color: #ffffff; /* text always white */
     cursor: pointer;
     transition: background-color 200ms ease, color 200ms ease;
     text-align: left;
     width: 100%;
     font-size: 15px; /* 15px text box height */
+<<<<<<< HEAD
     font-weight: 400;
+=======
+    font-weight: 500;
+>>>>>>> 9af1c19 (Working on front design)
     font-family: inherit;
     position: relative;
     justify-content: ${({ $collapsed }) =>
         $collapsed ? 'center' : 'flex-start'};
 
     &:hover {
+<<<<<<< HEAD
         background: #121122;
         color: #ffffff;
         border-right: 3px solid #8C52FF;
+=======
+        background: #040210;
+        color: #ffffff;
+>>>>>>> 9af1c19 (Working on front design)
     }
 
     ${({ $isActive }) =>
         $isActive &&
         `
+<<<<<<< HEAD
         background: #121122;
         font-weight: 700;
         border-right: 3px solid #8C52FF;
+=======
+        background: #040210;
+        font-weight: 600;
+>>>>>>> 9af1c19 (Working on front design)
 
     `}
 `;
