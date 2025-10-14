@@ -67,8 +67,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         // Attempt to hydrate session on mount
+        let isRefreshingFrom401 = false;
         const onUnauthorized = () => {
-            // Do not clear session automatically; allow pages to decide
+            // When a 401 occurs, opportunistically re-validate the session once.
+            if (isRefreshingFrom401) return;
+            isRefreshingFrom401 = true;
+            void (async () => {
+                try {
+                    const s = await getSession();
+                    setSession(s);
+                } finally {
+                    isRefreshingFrom401 = false;
+                }
+            })();
         };
         addUnauthorizedHandler(onUnauthorized);
         void refresh();

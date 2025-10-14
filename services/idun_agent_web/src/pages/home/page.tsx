@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/use-auth';
 
 type HomeProps = {
     // config your component props here
@@ -7,14 +8,12 @@ type HomeProps = {
 
 const HomePage = ({}: HomeProps) => {
     const navigate = useNavigate();
+    const { session, isLoading } = useAuth();
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            navigate('/agents');
-        } else {
-            navigate('/login');
-        }
-    }, []);
+        if (isLoading) return;
+        if (session) navigate('/agents');
+        else navigate('/login');
+    }, [session, isLoading, navigate]);
     return (
         <div>
             {/* Your component implementation here */}

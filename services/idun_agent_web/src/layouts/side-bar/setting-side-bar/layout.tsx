@@ -74,7 +74,7 @@ const SettingSideBar = () => {
                                 title={collapsed ? section.label : undefined}
                                 aria-label={section.label}
                             >
-                                <section.icon size={30} />
+                                <section.icon size={20} />
                                 {!collapsed && section.label}
                             </NavButton>
                         </NavPoint>
@@ -88,8 +88,10 @@ export default SettingSideBar;
 
 const SideBarContainer = styled.div<{ $collapsed?: boolean }>`
     width: ${({ $collapsed }) => ($collapsed ? '72px' : '250px')};
-    border-right: 1px solid hsl(var(--border));
-    transition: width 300ms ease, padding 300ms ease;
+    border-right: 1px solid #25325a;
+    background: #121122;
+    color: #ffffff;
+    transition: width 300ms ease, padding 300ms ease, background-color 300ms ease, color 300ms ease;
 `;
 
 const NavButton = styled.button`
@@ -98,10 +100,10 @@ const NavButton = styled.button`
     text-align: left;
     width: 100%;
     cursor: pointer;
-
-    color: white;
-
-    font-size: 20px;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 500;
+    font-family: inherit;
 `;
 
 const NavList = styled.ul`
@@ -109,21 +111,22 @@ const NavList = styled.ul`
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
 `;
 
 const NavPoint = styled.li<{ $selected: boolean }>`
-    border-radius: 8px;
-    padding: 12px 20px;
+    border-radius: 0;
+    height: 47px;
+    padding: 0 16px 0 30px;
     &:hover {
-        background: #8c52ff14;
+        background: #040210;
     }
 
     ${({ $selected: selected }) => {
         return selected
             ? `
-            background: #8C52FF14;
-            border-left: 3px solid #8c52ff;
+            background: #040210;
+            font-weight: 600;
         `
             : '';
     }}
@@ -131,7 +134,7 @@ const NavPoint = styled.li<{ $selected: boolean }>`
 
 const UserInfo = styled.div`
     margin: auto;
-    border-bottom: 1px solid hsl(var(--border));
+    border-bottom: 1px solid hsl(var(--sidebar-border));
 `;
 
 const ButtonSwitchAccount = styled(Button)`

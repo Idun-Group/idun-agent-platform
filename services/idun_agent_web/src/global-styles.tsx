@@ -60,6 +60,15 @@ const GlobalStyles = createGlobalStyle`
       --sidebar-accent-foreground: ${styleVariables.colors.dark.sidebarAccentForeground};
       --sidebar-border: ${styleVariables.colors.dark.sidebarBorder};
       --sidebar-ring: ${styleVariables.colors.dark.sidebarRing};
+
+      /* Sidebar layout tokens (sizes/spacing/weights) */
+      --sidebar-item-font-size: 14px;
+      --sidebar-item-font-weight: 500;
+      --sidebar-item-font-weight-active: 600;
+      --sidebar-item-padding-y: 10px;
+      --sidebar-item-padding-x: 16px;
+      --sidebar-gap: 8px;
+      --sidebar-icon-size: 20px;
     }
 
     .light {
@@ -153,7 +162,7 @@ const GlobalStyles = createGlobalStyle`
 
     body {
       margin: 0;
-      font-family: 'Roboto', sans-serif;
+      font-family: 'Inter', 'SF Pro Display', -apple-system, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
       background-color: hsl(var(--background));
       color: hsl(var(--foreground));
       font-feature-settings: 'rlig' 1, 'calt' 1;

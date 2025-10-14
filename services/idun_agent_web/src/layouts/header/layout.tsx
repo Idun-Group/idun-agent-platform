@@ -57,12 +57,11 @@ const Header = () => {
             </SideContainer>
 
             <SideContainer>
-                <Select
+                <EnvSelect
                     defaultValue=""
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                         setEnvironment(e.target.value)
                     }
-                    style={{ background: '#FD00044D' }}
                 >
                     <option value="" disabled>
                         {t('header.environment.select')}
@@ -76,7 +75,7 @@ const Header = () => {
                     <option value="production">
                         {t('header.environment.production')}
                     </option>
-                </Select>
+                </EnvSelect>
                 <Button
                     $variants="base"
                     $color="primary"
@@ -98,28 +97,35 @@ export default Header;
 
 const HeaderContainer = styled.header`
     background-color: hsl(var(--header-bg));
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     border-bottom: 1px solid hsl(var(--header-border));
     transition: background-color 0.3s ease, border-color 0.3s ease;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     flex-shrink: 0;
     width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: saturate(180%) blur(8px);
+    background-color: hsl(var(--header-bg) / 0.9);
 `;
 
 const Logo = styled.img`
-    height: 40px;
+    height: 28px;
     margin-right: 0.5rem;
     filter: brightness(0) invert(1); /* Rend le logo blanc pour le thème sombre */
 `;
 
 const Title = styled.h1`
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: hsl(var(--header-text));
     display: flex;
     align-items: center;
     margin: 0;
     font-weight: 600;
+    letter-spacing: 0.01em;
 `;
 
 const Select = styled.select`
@@ -152,15 +158,25 @@ const Select = styled.select`
     }
 `;
 
+const EnvSelect = styled(Select)`
+    background: hsl(var(--accent));
+    color: hsl(var(--header-text));
+    border-color: hsl(var(--header-border));
+
+    &:hover {
+        background: hsl(var(--accent));
+        border-color: hsl(var(--app-purple));
+    }
+`;
+
 const SideContainer = styled.div`
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
 `;
 
 const EnvLabel = styled.span`
     font-size: 0.875rem;
-    color: hsl(var(--header-text));
-    opacity: 0.85;
-    margin-left: 0.5rem;
+    color: hsl(var(--header-muted));
+    margin-left: 0.25rem;
 `;

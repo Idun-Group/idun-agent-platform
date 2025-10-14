@@ -124,73 +124,60 @@ export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps)
 
     return (
         <TableRow>
-            <TableCell
-                style={{
-                    textAlign: getColumnAlignment('controls'),
-                    display: 'flex',
-                    justifyContent: 'center',
-                    gap: '8px',
-                }}
-            >
-                <Button
-                    $variants="transparent"
-                    $color="primary"
-                    onClick={() => navigate(`/agents/${agent.id}`)}
-                >
-                    {
-                        {
-                            running: <StopCircleIcon />,
-                            stopped: <PlayIcon />,
-                            deployed: <CloudIcon />,
-                            ready: <PlayIcon />,
-                            draft: <ListRestartIcon />,
-                            error: <ListRestartIcon />,
-                        }[agent.status]
-                    }
-                </Button>
-            </TableCell>
-            <TableCell
+            {/* removed left controls to match design */}
+            <TableCell data-column="status"
                 style={{
                     textAlign: getColumnAlignment('status'),
                 }}
             >
                 <AgentStatusPoint color={selectStatus(agent.status)} />
             </TableCell>
-            <TableCell style={{ textAlign: getColumnAlignment('name') }}>
+            <TableCell data-column="name" style={{ textAlign: getColumnAlignment('name') }}>
                 <Link to={`/agents/${agent.id}`}>{agent.name}</Link>
             </TableCell>
-            <TableCell style={{ textAlign: getColumnAlignment('run') }}>
+            <TableCell data-column="run" style={{ textAlign: getColumnAlignment('run') }}>
                 Agent Runs
             </TableCell>
-            <TableCell style={{ textAlign: getColumnAlignment('avgTime') }}>
+            <TableCell data-column="avgTime" style={{ textAlign: getColumnAlignment('avgTime') }}>
                 Avg Time
             </TableCell>
-            <TableCell style={{ textAlign: getColumnAlignment('errorRate') }}>
+            <TableCell data-column="errorRate" style={{ textAlign: getColumnAlignment('errorRate') }}>
                 Error Rate
             </TableCell>
-            <TableCell style={{ textAlign: getColumnAlignment('framework') }}>
-                {agent.framework}
+            <TableCell data-column="framework" style={{ textAlign: getColumnAlignment('framework') }}>
+                <FrameworkBadge>{agent.framework}</FrameworkBadge>
+            </TableCell>
+            <TableCell data-column="a2a" style={{ textAlign: getColumnAlignment('a2a') }}>
+                <A2ABadge>Activé</A2ABadge>
             </TableCell>
             <ActionsContainer
+                data-column="actions"
                 style={{
                     textAlign: getColumnAlignment('actions'),
                 }}
             >
                 <Button
                     $variants="transparent"
-                    onClick={() => navigate(`/agents/${agent.id}`)}
+                    title="Logs"
+                    onClick={() => {
+                        const host = (agent as any)?.run_config?.env?.LANGFUSE_HOST as string | undefined;
+                        const url = host && !host.includes('${') ? host : 'https://cloud.langfuse.com';
+                        if (typeof window !== 'undefined') window.open(url, '_blank');
+                    }}
                 >
-                    <EyeIcon size={24} />
+                    <CloudIcon size={18} />
                 </Button>
+                {/* View button removed to match design; edit button remains */}
                 <Button
                     $variants="transparent"
+                    title="Edit"
                     onClick={() => navigate(`/agents/${agent.id}`)}
                 >
-                    <EditIcon size={24} />
+                    <EditIcon size={18} />
                 </Button>
-                <Button $variants="transparent">
+                <Button $variants="transparent" title="Delete">
                     <Trash2
-                        size={24}
+                        size={18}
                         onClick={async () => {
                             try {
                                 const confirmed = window.confirm('Delete this agent?');
@@ -211,9 +198,39 @@ export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps)
 }
 
 const AgentStatusPoint = styled.div<{ color: string }>`
-    width: 20px;
-    height: 20px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background-color: ${(props) => props.color || 'grey'};
     display: inline-block;
+`;
+
+const FrameworkBadge = styled.span`
+    background: rgba(140, 82, 255, 0.2);
+    color: #a78bfa;
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(140, 82, 255, 0.3);
+`;
+
+const A2ABadge = styled.span`
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 `;

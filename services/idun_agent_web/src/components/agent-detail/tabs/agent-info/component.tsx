@@ -3,14 +3,14 @@ import styled from 'styled-components';
 
 export interface AgentInfoProps {
     framework: string;
-    source: {
+    source?: {
         type: 'github' | 'upload' | 'remote' | 'project';
         url?: string;
         name?: string;
     };
-    tools: string[];
-    lastRun: string;
-    observability: string[];
+    tools?: string[];
+    lastRun?: string;
+    observability?: string[];
 }
 
 export default function AgentInfo({
@@ -32,53 +32,61 @@ export default function AgentInfo({
                     <Badge $color="blue">{framework}</Badge>
                 </InfoSection>
 
-                <InfoSection>
-                    <SectionLabel>Source</SectionLabel>
-                    <SourceInfo>
-                        {source.type === 'github' && <Github size={16} />}
-                        <span>{source.type}</span>
-                    </SourceInfo>
-                    {source.url && (
-                        <SourceUrl
-                            href={source.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            {source.url}
-                        </SourceUrl>
-                    )}
-                </InfoSection>
+                {source && (
+                    <InfoSection>
+                        <SectionLabel>Source</SectionLabel>
+                        <SourceInfo>
+                            {source.type === 'github' && <Github size={16} />}
+                            <span>{source.type}</span>
+                        </SourceInfo>
+                        {source.url && (
+                            <SourceUrl
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                {source.url}
+                            </SourceUrl>
+                        )}
+                    </InfoSection>
+                )}
 
-                <InfoSection>
-                    <SectionLabel>Tools</SectionLabel>
-                    <ToolsList>
-                        {tools.map((tool, index) => (
-                            <ToolItem key={index}>
-                                <Wrench size={14} />
-                                {tool}
-                            </ToolItem>
-                        ))}
-                    </ToolsList>
-                </InfoSection>
+                {!!tools?.length && (
+                    <InfoSection>
+                        <SectionLabel>Tools</SectionLabel>
+                        <ToolsList>
+                            {tools.map((tool, index) => (
+                                <ToolItem key={index}>
+                                    <Wrench size={14} />
+                                    {tool}
+                                </ToolItem>
+                            ))}
+                        </ToolsList>
+                    </InfoSection>
+                )}
 
-                <InfoSection>
-                    <SectionLabel>Last Run</SectionLabel>
-                    <LastRunInfo>
-                        <Clock size={16} />
-                        <span>{lastRun}</span>
-                    </LastRunInfo>
-                </InfoSection>
+                {lastRun && (
+                    <InfoSection>
+                        <SectionLabel>Last Run</SectionLabel>
+                        <LastRunInfo>
+                            <Clock size={16} />
+                            <span>{lastRun}</span>
+                        </LastRunInfo>
+                    </InfoSection>
+                )}
 
-                <InfoSection>
-                    <SectionLabel>Observability</SectionLabel>
-                    <ObservabilityList>
-                        {observability.map((item, index) => (
-                            <Badge key={index} $color="purple">
-                                {item}
-                            </Badge>
-                        ))}
-                    </ObservabilityList>
-                </InfoSection>
+                {!!observability?.length && (
+                    <InfoSection>
+                        <SectionLabel>Observability</SectionLabel>
+                        <ObservabilityList>
+                            {observability.map((item, index) => (
+                                <Badge key={index} $color="purple">
+                                    {item}
+                                </Badge>
+                            ))}
+                        </ObservabilityList>
+                    </InfoSection>
+                )}
             </InfoContent>
         </InfoContainer>
     );

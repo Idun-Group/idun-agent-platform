@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import styled from 'styled-components';
 import type { DataBoardProps } from '../../types/agent.types';
 import { useTranslation } from 'react-i18next';
+import { Search as SearchIcon } from 'lucide-react';
 
 interface DataBoardPropsWithChildren<T = any>
     extends Omit<DataBoardProps<T>, 'children'> {
@@ -111,7 +112,9 @@ const DataBoard = <T = any,>({
                             setSearchTerm(e.target.value)
                         }
                     />
-                    <SearchIcon>🔍</SearchIcon>
+                    <SearchIconWrapper>
+                        <SearchIcon size={16} />
+                    </SearchIconWrapper>
                 </SearchContainer>
             )}
 
@@ -150,9 +153,12 @@ const DataBoard = <T = any,>({
                                 {columns.map((column) => (
                                     <th
                                         key={column.id}
+                                        data-column={column.id}
                                         style={{
                                             textAlign:
                                                 column.alignment || 'left',
+                                            width: column.width,
+                                            minWidth: column.width,
                                         }}
                                     >
                                         {column.label}
@@ -257,6 +263,8 @@ const TableWrapper = styled.div`
     display: flex;
     flex-direction: column;
     min-height: 0; /* Important pour le flex shrinking */
+    overflow-x: auto; /* horizontal scroll when needed */
+    -webkit-overflow-scrolling: touch;
 `;
 
 const TableScrollContainer = styled.div`
@@ -285,7 +293,7 @@ const TableScrollContainer = styled.div`
 
 const Table = styled.table`
     width: 100%;
-    table-layout: auto;
+    table-layout: fixed; /* helps enforce column widths */
     border-collapse: collapse;
     background: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -323,6 +331,21 @@ const TableHeader = styled.thead`
     position: sticky;
     top: 0;
     z-index: 10;
+
+    /* Responsive column visibility based on data-column */
+    @media (max-width: 1024px) {
+        th[data-column='errorRate'],
+        th[data-column='avgTime'] {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+        th[data-column='framework'],
+        th[data-column='a2a'] {
+            display: none;
+        }
+    }
 `;
 
 const TableRow = styled.tr`
@@ -333,12 +356,14 @@ const TableRow = styled.tr`
     }
 
     th {
-        padding: 15px 25px;
+        padding: 14px 24px;
         text-align: left;
-        font-weight: 500;
-        font-size: 0.75rem;
-        color: hsl(var(--foreground));
-        height: 47px;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: hsl(var(--muted-foreground));
+        height: 44px;
         border-bottom: 1px solid hsl(var(--border));
         white-space: nowrap; /* Empêche le texte de se couper */
         overflow: visible; /* Permet au contenu de déborder */
@@ -512,9 +537,9 @@ const SearchInput = styled.input`
     }
 `;
 
-const SearchIcon = styled.div`
+const SearchIconWrapper = styled.div`
     position: absolute;
-    left: 2rem;
+    left: 1.5rem;
     color: hsl(var(--muted-foreground));
     font-size: 1rem;
     pointer-events: none;
