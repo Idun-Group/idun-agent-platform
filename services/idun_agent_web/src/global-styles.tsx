@@ -67,7 +67,7 @@ const GlobalStyles = createGlobalStyle`
       --sidebar-item-font-weight-active: 600;
       --sidebar-item-padding-y: 10px;
       --sidebar-item-padding-x: 16px;
-      --sidebar-gap: 8px;
+    //   --sidebar-gap: 8px;
       --sidebar-icon-size: 20px;
     }
 
