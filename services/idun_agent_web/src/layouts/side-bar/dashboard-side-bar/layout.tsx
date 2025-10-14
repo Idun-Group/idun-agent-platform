@@ -3,14 +3,7 @@ import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
 import { useState } from 'react';
-import {
-    BotIcon,
-    EyeIcon,
-    Grid2x2PlusIcon,
-    HammerIcon,
-    ShieldIcon,
-    UserIcon,
-} from 'lucide-react';
+import { UserIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 type SideBarProps = {
@@ -31,47 +24,34 @@ const SideBar = ({}: SideBarProps) => {
 
     const menuItems = [
         {
-            icon: BotIcon,
+            iconSrc: '/img/agent-icon.svg',
             label: t('sidebar.agents'),
             key: 'agent',
             path: '/agents',
             onClick: () => navigate('/agents'),
         },
-        // {
-        //     icon: ShieldIcon,
-        //     label: t('sidebar.guard'),
-        //     key: 'guard',
-        //     path: '/guard',
-        //     onClick: () => toast.error('This feature is not implemented yet'),
-        // },
-        // {
-        //     icon: EyeIcon,
-        //     label: t('sidebar.observation'),
-        //     key: 'observation',
-        //     path: '/observation',
-        //     onClick: () => navigate('/observation'),
-        // },
-        // {
-        //     icon: HammerIcon,
-        //     label: t('sidebar.tools'),
-        //     key: 'tools',
-        //     path: '/tools',
-        //     onClick: () => toast.error('This feature is not implemented yet'),
-        // },
         {
+            // leave users icon as-is per request
             icon: UserIcon,
             label: t('sidebar.users'),
             key: 'users',
             path: '/users',
             onClick: () => navigate('/users'),
         },
-        // {
-        //     icon: Grid2x2PlusIcon,
-        //     label: t('sidebar.apps'),
-        //     key: 'apps',
-        //     path: '/apps',
-        //     onClick: () => navigate('/apps'),
-        // },
+        {
+            iconSrc: '/img/tools.svg',
+            label: t('sidebar.tools'),
+            key: 'tools',
+            path: '/tools',
+            onClick: () => navigate('/tools'),
+        },
+        {
+            iconSrc: '/img/guardrail.svg',
+            label: t('sidebar.guard'),
+            key: 'guard',
+            path: '/guard',
+            onClick: () => navigate('/guard'),
+        },
     ];
 
     return (
@@ -88,7 +68,23 @@ const SideBar = ({}: SideBarProps) => {
                         $collapsed={collapsed}
                         onClick={item.onClick}
                     >
-                        <item.icon size={17} />
+                        {item.iconSrc ? (
+                            <IconMask
+                                $src={item.iconSrc}
+                                $active={!!location.pathname.startsWith(
+                                    item.path
+                                )}
+                            />
+                        ) : item.icon ? (
+                            <item.icon
+                                size={17}
+                                color={
+                                    location.pathname.startsWith(item.path)
+                                        ? '#8C52FF'
+                                        : '#826F95'
+                                }
+                            />
+                        ) : null}
                         {!collapsed && <MenuLabel>{item.label}</MenuLabel>}
                     </MenuItem>
                 ))}
@@ -103,7 +99,7 @@ const SideBar = ({}: SideBarProps) => {
 const SideBarContainer = styled.aside<{ $collapsed?: boolean }>`
     width: ${({ $collapsed }) => ($collapsed ? '72px' : '250px')};
     min-height: 100%;
-    background: #121122; /* from Figma frame fill */
+    background: #030711; /* unified sidebar background */
     color: hsl(var(--sidebar-foreground));
     border-right: 1px solid #25325a; /* from Figma stroke */
     display: flex;
@@ -119,7 +115,6 @@ const SideBarNav = styled.nav`
     padding: 0 0 0 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
 `;
 
 const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
@@ -130,35 +125,57 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
     padding: 0 16px 0 30px; /* left 30px per Figma */
     border: none;
     border-radius: 0; /* no radius in figma */
-    background: ${(props) => (props.$isActive ? '#040210' : '#252B45')};
+    background: #030711;
     color: #ffffff; /* text always white */
     cursor: pointer;
     transition: background-color 200ms ease, color 200ms ease;
     text-align: left;
     width: 100%;
     font-size: 15px; /* 15px text box height */
-    font-weight: 500;
+    font-weight: 400;
     font-family: inherit;
     position: relative;
     justify-content: ${({ $collapsed }) =>
         $collapsed ? 'center' : 'flex-start'};
 
     &:hover {
-        background: #040210;
+        background: #121122;
         color: #ffffff;
+        border-right: 3px solid #8C52FF;
     }
 
     ${({ $isActive }) =>
         $isActive &&
         `
-        background: #040210;
-        font-weight: 600;
+        background: #121122;
+        font-weight: 700;
+        border-right: 3px solid #8C52FF;
 
     `}
 `;
 
 const MenuLabel = styled.span`
     flex: 1;
+`;
+
+const IconMask = styled.span<{ $src: string; $active?: boolean }>`
+    width: 17px;
+    height: 17px;
+    display: inline-block;
+    background-color: ${(props) => (props.$active ? '#8C52FF' : '#826F95')};
+    -webkit-mask: url(${(props) => props.$src}) no-repeat center / contain;
+    mask: url(${(props) => props.$src}) no-repeat center / contain;
+`;
+
+// Ensure icons turn purple on hover (for both masked images and lucide SVGs)
+const MenuItemWithHover = styled(MenuItem)`
+    &:hover ${IconMask} {
+        background-color: #8C52FF;
+    }
+    &:hover svg {
+        stroke: #8C52FF;
+        color: #8C52FF;
+    }
 `;
 
 export default SideBar;

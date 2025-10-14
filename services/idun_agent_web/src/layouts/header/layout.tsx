@@ -115,7 +115,6 @@ const HeaderContainer = styled.header`
 const Logo = styled.img`
     height: 28px;
     margin-right: 0.5rem;
-    filter: brightness(0) invert(1); /* Rend le logo blanc pour le thème sombre */
 `;
 
 const Title = styled.h1`
