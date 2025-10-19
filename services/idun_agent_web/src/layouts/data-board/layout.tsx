@@ -539,11 +539,7 @@ const SearchInput = styled.input`
 
 const SearchIconWrapper = styled.div`
     position: absolute;
-<<<<<<< HEAD
     left: 2.5rem;
-=======
-    left: 1.5rem;
->>>>>>> 9af1c19 (Working on front design)
     color: hsl(var(--muted-foreground));
     font-size: 1rem;
     pointer-events: none;
