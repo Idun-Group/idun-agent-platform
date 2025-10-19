@@ -33,29 +33,32 @@ const Header = () => {
                     Engine
                 </Title>
 
-                <Select
-                    value={workspaceId}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                        const value = e.target.value;
-                        setWorkspaceId(value);
-                        setSelectedWorkspaceId(value || null);
-                    }}
-                >
-                    <option value="">
-                        {t('header.workspace.select')}
-                    </option>
-                    {workspaces.length === 0 ? (
-                        <option value="" disabled>
-                            {/* Avoid i18n missingKey spam until translation is added */}
-                            No workspaces
+                {/** Workspace selector temporarily disabled */}
+                {false && (
+                    <Select
+                        value={workspaceId}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const value = e.target.value;
+                            setWorkspaceId(value);
+                            setSelectedWorkspaceId(value || null);
+                        }}
+                    >
+                        <option value="">
+                            {t('header.workspace.select')}
                         </option>
-                    ) : null}
-                    {workspaces.map((workspace) => (
-                        <option key={workspace.id} value={workspace.id}>
-                            {workspace.icon} {workspace.name}
-                        </option>
-                    ))}
-                </Select>
+                        {workspaces.length === 0 ? (
+                            <option value="" disabled>
+                                {/* Avoid i18n missingKey spam until translation is added */}
+                                No workspaces
+                            </option>
+                        ) : null}
+                        {workspaces.map((workspace) => (
+                            <option key={workspace.id} value={workspace.id}>
+                                {workspace.icon} {workspace.name}
+                            </option>
+                        ))}
+                    </Select>
+                )}
             </SideContainer>
 
             <SideContainer>

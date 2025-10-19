@@ -48,7 +48,7 @@
         "environment": {
             "select": "Sélectionner un environnement",
             "development": "Développement",
-            "staging": "Mise en scène",
+            "staging": "Intégration",
             "production": "Production"
         }
     },

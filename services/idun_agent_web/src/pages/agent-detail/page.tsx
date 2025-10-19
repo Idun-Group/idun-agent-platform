@@ -52,10 +52,12 @@ const Content = styled.div`
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+    padding: 0 24px; /* add left/right breathing room */
 `;
 
 const AgentHeader = styled.div`
     padding: 24px 32px;
+    margin: 0 24px; /* align with content padding */
     border-bottom: 1px solid #1e1e1e;
     display: flex;
     align-items: center;
@@ -129,7 +131,7 @@ const TabContainer = styled.div`
     background-color: #0f1016;
     border-bottom: 1px solid #1e1e1e;
     padding: 0 32px;
-    margin-bottom: 16px;
+    margin: 0 24px 16px; /* horizontal margin to match content */
 `;
 
 const Tab = styled.button<{ active: boolean }>`
