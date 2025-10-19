@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { Button } from '../../components/general/button/component';
 import { useNavigate } from 'react-router-dom';
 import useWorkspace from '../../hooks/use-workspace';
 import { useAuth } from '../../hooks/use-auth';
@@ -22,8 +21,9 @@ const Header = () => {
         getAllWorkspace().then((data) => setWorkspaces(data));
     }, [isAuthLoading, session, getAllWorkspace]);
 
-    // Local state for selected environment in the header
+    // Local state for selected environment and workspace in the header
     const [environment, setEnvironment] = useState<string>('');
+    const [workspaceId, setWorkspaceId] = useState<string>('');
 
     return (
         <HeaderContainer>
@@ -34,12 +34,14 @@ const Header = () => {
                 </Title>
 
                 <Select
-                    defaultValue=""
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                        setSelectedWorkspaceId(e.target.value || null)
-                    }
+                    value={workspaceId}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                        const value = e.target.value;
+                        setWorkspaceId(value);
+                        setSelectedWorkspaceId(value || null);
+                    }}
                 >
-                    <option value="" disabled>
+                    <option value="">
                         {t('header.workspace.select')}
                     </option>
                     {workspaces.length === 0 ? (
@@ -58,12 +60,12 @@ const Header = () => {
 
             <SideContainer>
                 <EnvSelect
-                    defaultValue=""
+                    value={environment}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                         setEnvironment(e.target.value)
                     }
                 >
-                    <option value="" disabled>
+                    <option value="">
                         {t('header.environment.select')}
                     </option>
                     <option value="development">
@@ -76,13 +78,6 @@ const Header = () => {
                         {t('header.environment.production')}
                     </option>
                 </EnvSelect>
-                <Button
-                    $variants="base"
-                    $color="primary"
-                    onClick={() => navigate('/settings')}
-                >
-                    {t('header.settings')}
-                </Button>
                 <EnvLabel>
                     {environment
                         ? t(`header.environment.${environment}`)

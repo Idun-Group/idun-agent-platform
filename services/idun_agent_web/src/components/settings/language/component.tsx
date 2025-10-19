@@ -116,13 +116,13 @@ const LanguageButton = styled.button<{ $selected: boolean }>`
     align-items: center;
     border: 1px solid grey;
     &:hover {
-        border: 1px solid #8c52ff;
+        border: 3px solid #8c52ff;
     }
 
     ${(props) =>
         props.$selected &&
         `
-        border: 1px solid #8c52ff;
+        border: 3px solid #8c52ff;
         background: rgba(140, 82, 255, 0.1);
     `}
 

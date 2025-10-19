@@ -2,8 +2,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
-import { useState } from 'react';
-import { UserIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { UserIcon, Settings } from 'lucide-react';
+import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
 type SideBarProps = {
@@ -13,6 +14,11 @@ type SideBarProps = {
 const SideBar = ({}: SideBarProps) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { session } = useAuth();
+    const [avatarError, setAvatarError] = useState(false);
+    useEffect(() => {
+        setAvatarError(false);
+    }, [session]);
     // by default the sidebar should be collapsed; hovering will expand it
     const [isCollapsed] = useState(true);
     const [isHovered, setIsHovered] = useState(false);
@@ -89,6 +95,43 @@ const SideBar = ({}: SideBarProps) => {
                     </MenuItem>
                 ))}
             </SideBarNav>
+            <MenuItem
+                $collapsed={collapsed}
+                $isActive={location.pathname.startsWith('/settings')}
+                onClick={() => navigate('/settings')}
+            >
+                <Settings
+                    size={17}
+                    color={
+                        location.pathname.startsWith('/settings')
+                            ? '#8C52FF'
+                            : '#826F95'
+                    }
+                />
+                {!collapsed && <MenuLabel>{t('header.settings')}</MenuLabel>}
+            </MenuItem>
+
+            {collapsed && (
+                <AvatarRow>
+                    {(() => {
+                        const avatarUrl =
+                            (session as any)?.principal?.avatarUrl ||
+                            (session as any)?.principal?.picture ||
+                            (session as any)?.user?.avatarUrl ||
+                            (session as any)?.user?.picture ||
+                            '';
+                        return avatarUrl && !avatarError ? (
+                            <AvatarImg
+                                src={avatarUrl}
+                                alt=""
+                                onError={() => setAvatarError(true)}
+                            />
+                        ) : (
+                            <UserIcon size={17} color="#826F95" />
+                        );
+                    })()}
+                </AvatarRow>
+            )}
 
             {!collapsed && <AccountInfo />}
         </SideBarContainer>
@@ -179,3 +222,23 @@ const MenuItemWithHover = styled(MenuItem)`
 `;
 
 export default SideBar;
+
+const AvatarRow = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 47px;
+    width: 100%;
+    padding: 0 16px 0 30px; /* match MenuItem padding for consistent centering */
+    background: #030711;
+`;
+
+const AvatarImg = styled.img`
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+`;

@@ -89,12 +89,12 @@ const ThemeCard = styled.div<{ $isSelected: boolean }>`
     }
 
     &:hover {
-        border: 1px solid #8c52ff;
+        border: 3px solid #8c52ff;
     }
 
     ${({ $isSelected: isSelected }) =>
         isSelected &&
         `
-        border: 1px solid #8c52ff;
+        border: 3px solid #8c52ff;
     `}
 `;
