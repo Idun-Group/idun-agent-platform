@@ -9,7 +9,7 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any
 
-from idun_agent_schema.shared.observability import ObservabilityConfig
+from idun_agent_schema.engine.observability import ObservabilityConfig
 
 
 class ObservabilityHandlerBase(ABC):

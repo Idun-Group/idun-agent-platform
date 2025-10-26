@@ -10,18 +10,28 @@ post {
   auth: none
 }
 
+headers {
+  accept: application/json
+  Content-Type: application/json
+}
+
 body:json {
   {
-    "config": {
-      "config": {
-        "graph_definition": "./examples/01_basic_config_file/example_agent.py:app",
-        "input_schema_definition": {},
-        "name": "My AI Assistant",
-        "output_schema_definition": {}
-      },
-      "type": "langgraph"
-    },
-    "description": "A helpful AI assistant for customer support",
-    "name": "My AI Assistant"
+    "name": "2example-managed-agent",
+    "version": "0.1.0",
+    "engine_config": {
+      "server": { "api": { "port": 8000 } },
+      "agent": {
+        "type": "LANGGRAPH",
+        "config": {
+          "name": "2example-langgraph-agent",
+          "graph_definition": "/test/test:graph",
+          "checkpointer": {
+            "type": "sqlite",
+            "db_url": "sqlite:///example_checkpoint.db"
+          }
+        }
+      }
+    }
   }
 }

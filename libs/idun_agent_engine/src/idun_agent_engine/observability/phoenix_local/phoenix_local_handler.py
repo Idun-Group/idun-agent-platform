@@ -8,7 +8,7 @@ import shlex
 import subprocess
 from typing import Any
 
-from idun_agent_schema.shared.observability import _resolve_env
+from idun_agent_schema.engine.observability import _resolve_env
 
 from ..base import ObservabilityHandlerBase
 

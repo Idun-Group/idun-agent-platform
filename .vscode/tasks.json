@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "uv sync (manager)",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}/services/idun_agent_manager"
+      },
+      "command": "uv sync",
+      "problemMatcher": []
+    }
+  ]
+}

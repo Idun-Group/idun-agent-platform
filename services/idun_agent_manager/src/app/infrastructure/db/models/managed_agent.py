@@ -1,3 +1,30 @@
-"""Deprecated: managed_agent model removed in favor of managed_agents table (renamed)."""
+"""SQLAlchemy model for managed_agents table."""
 
-# File kept intentionally empty to avoid import errors during refactor.
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
+
+from sqlalchemy import DateTime, String, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.infrastructure.db.session import Base
+
+
+class ManagedAgentModel(Base):
+    __tablename__ = "managed_agents"
+
+    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    version: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    engine_config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    agent_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)

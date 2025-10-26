@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, field_validator
 
-from .agent import BaseAgentConfig
+from .base_agent import BaseAgentConfig
 
 
 class SqliteCheckpointConfig(BaseModel):
