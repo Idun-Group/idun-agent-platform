@@ -10,14 +10,15 @@ class DatabaseSettings(BaseSettings):
     """Database configuration settings for the Manager service."""
 
     url: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:55432/idun_agents"
+        default="",
     )
     echo: bool = Field(default=False)
     pool_size: int = Field(default=10)
     max_overflow: int = Field(default=20)
     pool_pre_ping: bool = Field(default=True)
 
-    model_config = SettingsConfigDict(env_prefix="DATABASE_", env_file=".env")
+    model_config = SettingsConfigDict(env_prefix="DATABASE__", env_file=".env")
+
 
 class Settings(BaseSettings):
     """Top-level application settings composed of sub-settings."""

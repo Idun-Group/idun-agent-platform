@@ -75,7 +75,7 @@ dev = [
   "types-passlib==1.7.7",
 ]
 [tool.uv.sources]
-idun-agent-schema = { path = "../../libs/idun_agent_schema", editable = true }
+idun-agent-schema = { path = "libs/idun_agent_schema", editable = true }
 
 [build-system]
 requires = ["hatchling>=1.25.0"]

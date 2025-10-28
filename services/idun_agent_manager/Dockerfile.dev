@@ -40,6 +40,7 @@ COPY src/ ./src/
 COPY alembic.ini ./
 COPY alembic/ ./alembic/
 COPY tests/ ./tests/
+COPY Makefile .
 
 # Create directories for development
 RUN mkdir -p /app/logs /app/tmp
