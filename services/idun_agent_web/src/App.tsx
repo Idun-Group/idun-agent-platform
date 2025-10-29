@@ -30,13 +30,9 @@ function App() {
     const { isLoading } = useLoader();
     const { session, isLoading: isAuthLoading } = useAuth();
 
+    // Auth guard temporarily disabled to allow navigation without session
     useEffect(() => {
-        const isAuthFreeRoute = location.pathname === '/login' || location.pathname === '/signin' || location.pathname === '/';
-        if (!isAuthLoading) {
-            if (!session && !isAuthFreeRoute) {
-                navigate('/login');
-            }
-        }
+        return;
     }, [navigate, location.pathname, session, isAuthLoading]);
 
     return (
