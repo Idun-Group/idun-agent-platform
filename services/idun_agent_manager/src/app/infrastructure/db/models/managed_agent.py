@@ -27,4 +27,4 @@ class ManagedAgentModel(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
-    agent_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    agent_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
