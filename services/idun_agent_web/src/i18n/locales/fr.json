@@ -247,7 +247,8 @@
             }
         },
         "cancel": "Annuler",
-        "create-user": "Créer l'utilisateur"
+        "create-user": "Créer l'utilisateur",
+        "back-to-users": "Retour aux utilisateurs"
     },
     "login": {
         "title": "Connexion",
