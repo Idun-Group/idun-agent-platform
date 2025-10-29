@@ -166,11 +166,11 @@ async def generate_key(
 
     if not model:
         raise HTTPException(
-            status=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id: {agent_id} not found",
         )
 
-    agent_data = f"{model.id}:{model.name}:{model.tenant_id}"
+    agent_data = f"{model.id}:{model.name}"
     try:
         new_agent_hash = encrypt_payload(agent_data).hex()
         model.agent_hash = new_agent_hash
