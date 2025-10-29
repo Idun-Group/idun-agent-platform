@@ -22,25 +22,25 @@ Endpoints:
 """
 
 from datetime import UTC, datetime
-from secrets import token_urlsafe
 from uuid import UUID, uuid4
+from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.manager import (
+    AgentStatus,
+    ApiKeyResponse,
     ManagedAgentCreate,
     ManagedAgentPatch,
     ManagedAgentRead,
-    AgentStatus,
 )
-from idun_agent_schema.manager import ApiKeyResponse
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_session
-from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.api.v1.routers.auth import encrypt_payload
+from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 
 router = APIRouter()
 
@@ -138,6 +138,7 @@ async def create_agent(
     # Return Pydantic model for response
     return _model_to_schema(model)
 
+
 @router.get(
     "/key",
     response_model=ApiKeyResponse,
@@ -145,42 +146,41 @@ async def create_agent(
     description="Generate a unique API key (hash) for an agent to authenticate API requests.",
 )
 async def generate_key(
-    id: str,
+    agent_id: str,
     session: AsyncSession = Depends(get_session),
-) -> ApiKeyResponse:
-    """Generate a secure API key for an agent.
+) -> dict[str, Any]:
+    try:
+        uuid = UUID(agent_id)
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
+        ) from err
 
-    The generated API key:
-    - Is prefixed with ``idun-`` for easy identification
-    - Is derived using a per-call random entropy and agent identifiers
-    - Is stored on the agent record as ``agent_hash``
-    - Must be presented as a Bearer token to access ``GET /config``
+    try:
+        model = await session.get(ManagedAgentModel, uuid)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error occured. Please try again later",
+        ) from e
 
-    Args:
-        id: Agent UUID
-        session: Database session (injected)
+    if not model:
+        raise HTTPException(
+            status=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id: {agent_id} not found",
+        )
 
-    Returns:
-        ApiKeyResponse: Object containing the generated API key
-
-    Raises:
-        HTTPException 400: Invalid agent ID format
-        HTTPException 404: Agent not found
-        HTTPException 403: Forbidden access to agent
-    """
-    # Get agent (MVP)
-    model = await _get_agent(id, session)
-
-    # Generate secure hash with additional entropy
-    agent_data = f"{model.id}:{token_urlsafe(32)}"
-    new_agent_hash = encrypt_payload(agent_data).hex()
-
-    # Store API key with prefix
-    api_key = f"{API_KEY_PREFIX}{new_agent_hash}"
-    model.agent_hash = api_key
-    await session.flush()
-
-    return ApiKeyResponse(api_key=api_key)
+    agent_data = f"{model.id}:{model.name}:{model.tenant_id}"
+    try:
+        new_agent_hash = encrypt_payload(agent_data).hex()
+        model.agent_hash = new_agent_hash
+        await session.flush()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error occured. please try again later",
+        ) from e
+    return {"api_key": new_agent_hash}
 
 
 @router.get(
@@ -232,8 +232,7 @@ async def config(session: AsyncSession = Depends(get_session), auth: str = Heade
 
     if not agent_model:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invalid API Key"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid API Key"
         )
 
     return agent_model
@@ -312,6 +311,7 @@ async def get_agent(
     """
     model = await _get_agent(id, session)
     return _model_to_schema(model)
+
 
 @router.delete(
     "/{id}",
