@@ -83,7 +83,7 @@ class ConfigBuilder:
     def with_config_from_api(self, agent_api_key: str, url: str) -> "ConfigBuilder":
         """Fetches the yaml config file, from idun agent manager api.
 
-        Requires the agent id to pass in the headers.
+        Requires the agent api key to pass in the headers.
         """
         import requests
         import yaml

@@ -12,7 +12,7 @@ curl -X 'GET' \
 
 def main():
     agent_api_key="4490747fa736ff9f799d79eede27d4039200eb93d40094ce95cecea5e62ab0e6"
-    url = "http://localhost:8000/api/v1/agents/config"
+    url = "http://localhost:8000/api/v1/agents/config" # todo: rename host, add url to create_app
     config = (
         ConfigBuilder()
         .with_config_from_api(agent_api_key=agent_api_key, url=url)
