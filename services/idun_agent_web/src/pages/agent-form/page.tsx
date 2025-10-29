@@ -53,6 +53,9 @@ export default function AgentFormPage() {
 
     const [isObservabilityEnabled, setIsObservabilityEnabled] = useState(false);
 
+    // Environment selector (DEV, STAGING, PRODUCTION)
+    const [environment, setEnvironment] = useState<'development' | 'staging' | 'production' | null>(null);
+
     const [langfusePublicKey, setLangfusePublicKey] = useState<string>('');
     const [langfuseHost, setLangfuseHost] = useState<string>('');
     const [langfuseSecretKey, setLangfuseSecretKey] = useState<string>('');
@@ -146,6 +149,7 @@ export default function AgentFormPage() {
             formData.append('databaseUrl', databaseUrl || '');
             formData.append('agentPath', agentPath);
             formData.append('selectedFramework', selectedFramework);
+            if (environment) formData.append('environment', environment);
             formData.append('sourceFile', selectedAgentFile?.file);
         }
 
@@ -321,6 +325,39 @@ export default function AgentFormPage() {
                                 </option>
                             ))}
                         </FormSelect>
+
+                        <Label>
+                            Environnement
+                            <SelectButtonContainer>
+                                <SelectButton
+                                    $variants="base"
+                                    $color="secondary"
+                                    type="button"
+                                    onClick={() => setEnvironment('development')}
+                                    selected={environment === 'development'}
+                                >
+                                    DEV
+                                </SelectButton>
+                                <SelectButton
+                                    $variants="base"
+                                    $color="secondary"
+                                    type="button"
+                                    onClick={() => setEnvironment('staging')}
+                                    selected={environment === 'staging'}
+                                >
+                                    STAGING
+                                </SelectButton>
+                                <SelectButton
+                                    $variants="base"
+                                    $color="secondary"
+                                    type="button"
+                                    onClick={() => setEnvironment('production')}
+                                    selected={environment === 'production'}
+                                >
+                                    PRODUCTION
+                                </SelectButton>
+                            </SelectButtonContainer>
+                        </Label>
 
                         <Label>
                             {t('agent-form.framework.label')}
