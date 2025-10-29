@@ -1,10 +1,10 @@
 """Health check endpoints."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_session
-from app.core.settings import get_settings
+from sqlalchemy import text
 
 router = APIRouter()
 
@@ -22,17 +22,17 @@ async def readiness_check(
     """Readiness check including database connectivity."""
     try:
         # Test database connection
-        await session.execute("SELECT 1")
+        await session.execute(text("SELECT 1"))
         return {"status": "ready"}
     except Exception as e:
         return {"status": "not ready", "error": str(e)}
 
 
 @router.get("/version")
-async def version() -> dict[str, str]:
-    """Get application version."""
-    settings = get_settings()
+async def version(request: Request) -> dict[str, str]:
+    """Get application version and name from FastAPI app metadata."""
+    app = request.app
     return {
-        "version": settings.api.version,
-        "name": settings.api.title,
+        "version": getattr(app, "version", "unknown"),
+        "name": getattr(app, "title", "Idun Agent Manager API"),
     }

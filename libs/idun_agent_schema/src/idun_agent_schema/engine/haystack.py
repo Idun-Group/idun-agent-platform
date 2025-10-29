@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from idun_agent_engine.core.engine_config import BaseAgentConfig
+from .base_agent import BaseAgentConfig
 
 
 class HaystackAgentConfig(BaseAgentConfig):

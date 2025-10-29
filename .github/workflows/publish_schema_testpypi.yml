@@ -1,0 +1,61 @@
+name: Publish idun-agent-schema to TestPyPI
+
+on:
+  push:
+    branches:
+      - '**'  # Trigger on all branches and all commits
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Get current version and create dev version
+        id: version
+        working-directory: libs/idun_agent_schema
+        run: |
+          # Extract version from pyproject.toml
+          BASE_VERSION=$(grep -m 1 'version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          # Get branch name for display
+          BRANCH_NAME="${{ github.ref_name }}"
+          # Create dev version with timestamp (PyPI doesn't allow local version identifiers with +)
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          DEV_VERSION="${BASE_VERSION}.dev${TIMESTAMP}"
+          echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          echo "commit_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "Publishing version: ${DEV_VERSION}"
+          echo "From branch: ${BRANCH_NAME}"
+          echo "Commit: ${SHORT_SHA}"
+
+      - name: Update version in pyproject.toml
+        working-directory: libs/idun_agent_schema
+        run: |
+          sed -i 's/version = ".*"/version = "${{ steps.version.outputs.dev_version }}"/' pyproject.toml
+          echo "Updated pyproject.toml:"
+          grep -m 1 'version = ' pyproject.toml
+
+      - name: Build wheel and sdist (schema)
+        working-directory: libs/idun_agent_schema
+        run: |
+          uv build --no-sources
+
+      - name: Publish to TestPyPI
+        working-directory: libs/idun_agent_schema
+        run: |
+          uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }}

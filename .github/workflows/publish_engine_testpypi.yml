@@ -1,0 +1,104 @@
+name: Publish idun-agent-engine to TestPyPI
+
+on:
+  push:
+    branches:
+      - '**'  # Trigger on all branches and all commits
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Use the same ref that triggered the schema workflow
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Get current version and create dev version
+        id: version
+        working-directory: libs/idun_agent_engine
+        run: |
+          # Extract version from pyproject.toml
+          BASE_VERSION=$(grep -m 1 'version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          # Get branch name for display
+          BRANCH_NAME="${{ github.ref_name }}"
+          # Create dev version with timestamp (PyPI doesn't allow local version identifiers with +)
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          DEV_VERSION="${BASE_VERSION}.dev${TIMESTAMP}"
+          echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          echo "commit_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "Publishing version: ${DEV_VERSION}"
+          echo "From branch: ${BRANCH_NAME}"
+          echo "Commit: ${SHORT_SHA}"
+
+      - name: Get latest schema test version from TestPyPI
+        id: schema_version
+        run: |
+          SCHEMA_BASE_VERSION=$(grep -m 1 'version = ' libs/idun_agent_schema/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+
+          echo "Waiting for latest schema version to be available on TestPyPI..."
+          # Wait up to 2 minutes for the package to be available
+          MAX_ATTEMPTS=24
+          ATTEMPT=1
+          SLEEP_DURATION=5
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Looking for latest schema dev version..."
+
+            # Get the latest dev version from TestPyPI
+            LATEST_DEV=$(pip index versions idun-agent-schema --index-url https://test.pypi.org/simple/ --pre 2>/dev/null | grep "Available versions:" -A 50 | grep -o "${SCHEMA_BASE_VERSION}\.dev[0-9]*" | head -1 || echo "")
+
+            if [ -n "$LATEST_DEV" ]; then
+              SCHEMA_DEV_VERSION="$LATEST_DEV"
+              echo "✓ Found schema version on TestPyPI: ${SCHEMA_DEV_VERSION}"
+              echo "schema_dev_version=${SCHEMA_DEV_VERSION}" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            echo "Package not yet available. Waiting ${SLEEP_DURATION}s..."
+            sleep $SLEEP_DURATION
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+
+          echo "❌ Could not find schema version on TestPyPI after waiting"
+          exit 1
+
+      - name: Update engine version and schema dependency
+        working-directory: libs/idun_agent_engine
+        run: |
+          # Update engine version
+          sed -i 's/version = ".*"/version = "${{ steps.version.outputs.dev_version }}"/' pyproject.toml
+
+          # Always update to use the latest test schema version from TestPyPI
+          echo "Updating schema dependency to test version: ${{ steps.schema_version.outputs.schema_dev_version }}"
+          sed -i 's|"idun-agent-schema>=.*"|"idun-agent-schema==${{ steps.schema_version.outputs.schema_dev_version }}"|' pyproject.toml
+
+          echo "Updated pyproject.toml:"
+          grep -m 1 'version = ' pyproject.toml
+          grep 'idun-agent-schema' pyproject.toml
+
+      - name: Build wheel and sdist (engine)
+        working-directory: libs/idun_agent_engine
+        run: |
+          echo "Building engine with test schema from TestPyPI..."
+          UV_INDEX_URL=https://test.pypi.org/simple/ UV_EXTRA_INDEX_URL=https://pypi.org/simple/ uv build --no-sources
+
+      - name: Publish to TestPyPI
+        working-directory: libs/idun_agent_engine
+        run: |
+          uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }}

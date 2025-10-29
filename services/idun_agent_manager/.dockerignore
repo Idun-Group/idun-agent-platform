@@ -83,7 +83,6 @@ docs/
 
 # Development tools
 .pre-commit-config.yaml
-Makefile
 
 # Docker
 Dockerfile*

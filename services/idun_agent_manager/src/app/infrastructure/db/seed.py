@@ -36,7 +36,7 @@ async def _reflect_tables(conn: AsyncConnection) -> dict[str, Table]:
                 "users",
                 "tenant_users",
                 "workspace_users",
-                "agent_config",
+                "managed_agents",
             ],
         )
 
@@ -78,7 +78,7 @@ async def seed() -> None:
         users = tables["users"]
         tenant_users = tables["tenant_users"]
         workspace_users = tables["workspace_users"]
-        agent_config = tables["agent_config"]
+        managed_agents = tables["managed_agents"]
 
         # --- Seed tenant ---
         tenant_slug = "acme"
@@ -169,14 +169,14 @@ async def seed() -> None:
                 },
             )
 
-        # --- Seed a sample agent_config in default workspace ---
+        # --- Seed a sample managed_agent in default workspace ---
         agent_name = "Acme Support Agent"
         agent_id = _stable_uuid5(
             f"agent:{tenant_row['id']}:{ws_default['id']}:{agent_name}"
         )
         await _get_or_create(
             conn,
-            agent_config,
+            managed_agents,
             {"id": agent_id},
             {
                 "id": agent_id,
@@ -187,6 +187,14 @@ async def seed() -> None:
                 "config": {
                     "agent": {"type": "langgraph", "graph": {"nodes": [], "edges": []}},
                 },
+                "engine_config": {
+                    "runtime": "langgraph",
+                    "graph": {"nodes": [], "edges": []},
+                },
+                "run_config": {
+                    "max_steps": 20,
+                    "temperature": 0.2,
+                },
                 "tenant_id": tenant_row["id"],
                 "workspace_id": ws_default["id"],
             },
@@ -194,7 +202,7 @@ async def seed() -> None:
 
         # Commit is implicit via engine.begin() transaction
         print(
-            "✅ Seed completed: tenant 'acme', workspaces ['default','dev'], user 'admin@acme.test', agent 'Acme Support Agent'."
+            "✅ Seed completed: tenant 'acme', workspaces ['default','dev'], user 'admin@acme.test', managed_agent 'Acme Support Agent'."
         )
 
 

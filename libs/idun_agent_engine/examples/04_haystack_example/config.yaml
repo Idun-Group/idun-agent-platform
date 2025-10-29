@@ -13,6 +13,3 @@ agent:
     # component_definition: "./examples/04_haystack_example/agent.py:agent"
     observability:
       enabled: false
-
-
-

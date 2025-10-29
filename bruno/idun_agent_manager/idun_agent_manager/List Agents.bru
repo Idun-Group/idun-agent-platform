@@ -1,0 +1,16 @@
+meta {
+  name: List Agents
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://0.0.0.0:8500/api/v1/agents/
+  body: none
+  auth: none
+}
+
+headers {
+  accept: application/json
+  Content-Type: application/json
+}

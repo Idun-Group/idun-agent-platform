@@ -1,706 +1,393 @@
-"""Agent API endpoints - Core CRUD operations."""
+"""Managed Agent API (MVP).
 
-from datetime import datetime
-from enum import Enum
-from typing import Annotated, Any, Literal
+This router exposes a minimal set of endpoints to create, read, list, update,
+delete, and fetch configuration for managed agents. Each managed agent stores a
+complete `EngineConfig`.
+
+MVP assumptions and behavior:
+- API keys are generated per agent via `/key` and stored on the agent record as
+  `agent_hash`. The API key includes a static prefix and must be sent as a
+  Bearer token to access `/config`.
+- Database access uses SQLAlchemy async sessions. Errors are surfaced as simple
+  HTTP problem responses with relevant status codes.
+
+Endpoints:
+    POST   /          - Create a new managed agent
+    GET    /          - List agents (pagination)
+    GET    /{id}      - Get a specific agent by ID
+    PATCH  /{id}      - Partially update an agent's engine configuration
+    DELETE /{id}      - Delete an agent
+    GET    /key       - Generate an API key for agent authentication
+    GET    /config    - Retrieve agent config using API key (Bearer token)
+"""
+
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field, field_validator
-from pydantic.config import ConfigDict
+from fastapi import APIRouter, Depends, Header, HTTPException, status
+from idun_agent_schema.engine import EngineConfig
+from idun_agent_schema.manager import (
+    AgentStatus,
+    ApiKeyResponse,
+    ManagedAgentCreate,
+    ManagedAgentPatch,
+    ManagedAgentRead,
+)
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import (
-    Principal,
-    get_agent_service,
-    get_principal,
-    get_session,
-)
-from app.application.services.agent_service import AgentService
-from app.domain.deployments.entities import DeploymentMode
-from app.infrastructure.db.models.agent_config import AgentConfigModel
+from app.api.v1.deps import get_session
+from app.api.v1.routers.auth import encrypt_payload
+from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 
 router = APIRouter()
 
-# Simple in-memory storage
-agents_db: list[dict] = []
-
-# Fields that are allowed to be used for sorting in list queries (id is excluded)
-SORTABLE_AGENT_FIELDS = {
-    "name",
-    "description",
-    "framework",
-    "status",
-    "created_at",
-    "updated_at",
-}
+# Constants
+PAGINATION_MAX_LIMIT = 1000
+PAGINATION_DEFAULT_LIMIT = 100
+API_KEY_PREFIX = "idun-"
 
 
-# Enums for better validation
-class AgentFramework(str, Enum):
-    """Supported agent frameworks."""
-
-    LANGGRAPH = "langgraph"
-    LANGCHAIN = "langchain"
-    AUTOGEN = "autogen"
-    CREWAI = "crewai"
-    CUSTOM = "custom"
-
-
-class AgentStatus(str, Enum):
-    """Agent lifecycle status."""
-
-    DRAFT = "draft"
-    READY = "ready"
-    DEPLOYED = "deployed"
-    RUNNING = "running"
-    STOPPED = "stopped"
-    ERROR = "error"
-
-
-# Helper to normalize framework values to enum (defaults to CUSTOM)
-def map_framework(value: str) -> AgentFramework:
+async def _get_agent(agent_id: str, session: AsyncSession) -> ManagedAgentModel:
+    """Get agent by ID."""
     try:
-        return AgentFramework(value.lower())
-    except Exception:
-        return AgentFramework.CUSTOM
+        agent_uuid = UUID(agent_id)
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid agent id format",
+        ) from err
+
+    model = await session.get(ManagedAgentModel, agent_uuid)
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id '{agent_id}' not found",
+        )
+    return model
 
 
-# Improved Pydantic models
-class LangGraphConfig(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    name: str | None = None
-    graph_definition: str
+def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
+    """Transform database model to response schema.
 
+    Args:
+        model: Database model instance
 
-class CrewAIConfig(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    name: str | None = None
-    crew_definition: str
-
-
-class CustomConfig(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    name: str | None = None
-    entrypoint: str
-
-
-class LangGraphAgentSection(BaseModel):
-    type: Literal["langgraph"]
-    config: LangGraphConfig
-
-
-class CrewAIAgentSection(BaseModel):
-    type: Literal["crewai"]
-    config: CrewAIConfig
-
-
-class CustomAgentSection(BaseModel):
-    type: Literal["custom"]
-    config: CustomConfig
-
-
-AgentSection = Annotated[
-    LangGraphAgentSection | CrewAIAgentSection | CustomAgentSection,
-    Field(discriminator="type"),
-]
-
-
-class AgentPayload(BaseModel):
-    agent: AgentSection
-
-
-class AgentCreate(BaseModel):
-    """Schema for creating a new agent.
-
-    Framework is inferred from config (e.g., config.agent.type = "langgraph").
+    Returns:
+        ManagedAgentRead: Pydantic response model
     """
-
-    name: str = Field(..., min_length=1, max_length=100, description="Agent name")
-    description: str | None = Field(
-        None, max_length=500, description="Agent description"
+    engine_config = EngineConfig(**model.engine_config)
+    return ManagedAgentRead(
+        id=model.id,  # type: ignore
+        name=model.name,
+        status=AgentStatus(model.status),
+        version=model.version,
+        engine_config=engine_config.model_dump(),  # type: ignore
+        created_at=model.created_at,
+        updated_at=model.updated_at,
     )
-    # Framework-specific configuration payload (discriminated by agent.type)
-    config: AgentPayload = Field(
-        ..., description="Framework-specific agent configuration"
-    )
-
-    @field_validator("name")  # noqa: N805 - Pydantic validator uses `cls` by convention
-    @classmethod
-    def validate_name(cls, v):
-        if not v.strip():
-            raise ValueError("Name cannot be empty or whitespace only")
-        return v.strip()
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "name": "My AI Assistant",
-                "description": "A helpful AI assistant for customer support",
-                "config": {
-                    "agent": {
-                        "type": "langgraph",
-                        "config": {
-                            "name": "My AI Assistant",
-                            "graph_definition": "./examples/01_basic_config_file/example_agent.py:app",
-                        },
-                    }
-                },
-            }
-        }
-
-
-class AgentUpdate(BaseModel):
-    """Schema for updating an existing agent."""
-
-    name: str | None = Field(
-        None, min_length=1, max_length=100, description="Agent name"
-    )
-    description: str | None = Field(
-        None, max_length=500, description="Agent description"
-    )
-    framework: AgentFramework | None = Field(None, description="Agent framework")
-
-    @field_validator("name")  # noqa: N805
-    @classmethod
-    def validate_name(cls, v):
-        if v is not None and not v.strip():
-            raise ValueError("Name cannot be empty or whitespace only")
-        return v.strip() if v else v
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "Updated Agent Name",
-                "description": "Updated description",
-                "framework": "langchain",
-            }
-        }
-
-
-class Agent(BaseModel):
-    """Complete agent model for responses."""
-
-    id: str = Field(..., description="Unique agent identifier")
-    name: str = Field(..., description="Agent name")
-    description: str | None = Field(None, description="Agent description")
-    framework: AgentFramework = Field(..., description="Agent framework")
-    status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
-    created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "name": "My AI Assistant",
-                "description": "A helpful AI assistant",
-                "framework": "langgraph",
-                "status": "draft",
-                "created_at": "2024-01-01T00:00:00",
-                "updated_at": "2024-01-01T00:00:00",
-            }
-        }
-
-
-class AgentReplace(BaseModel):
-    """Full replacement schema for PUT of an agent.
-
-    Represents the complete updatable representation of an agent.
-    Server-managed fields like id, status, and timestamps are excluded.
-    """
-
-    name: str = Field(..., min_length=1, max_length=100, description="Agent name")
-    description: str | None = Field(
-        None, max_length=500, description="Agent description"
-    )
-    config: AgentPayload = Field(
-        ..., description="Framework-specific agent configuration"
-    )
-
-    @field_validator("name")  # noqa: N805
-    @classmethod
-    def validate_name(cls, v):
-        if not v.strip():
-            raise ValueError("Name cannot be empty or whitespace only")
-        return v.strip()
-
-
-class AgentPatch(BaseModel):
-    """Partial update schema for PATCH of an agent.
-
-    Only provided fields will be updated. If config is provided, the
-    framework will be inferred from config.agent.type.
-    """
-
-    name: str | None = Field(
-        None, min_length=1, max_length=100, description="Agent name"
-    )
-    description: str | None = Field(
-        None, max_length=500, description="Agent description"
-    )
-    config: AgentPayload | None = Field(
-        None, description="Framework-specific agent configuration"
-    )
-
-    @field_validator("name")  # noqa: N805
-    @classmethod
-    def validate_name(cls, v):
-        if v is not None and not v.strip():
-            raise ValueError("Name cannot be empty or whitespace only")
-        return v.strip() if v else v
 
 
 @router.post(
     "/",
-    response_model=Agent,
+    response_model=ManagedAgentCreate,
     status_code=status.HTTP_201_CREATED,
-    summary="Create agent",
-    description="Create a new agent with proper validation and framework support",
+    summary="Create managed agent",
+    description="Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
 )
 async def create_agent(
-    request: AgentCreate,
+    request: ManagedAgentCreate,
     session: AsyncSession = Depends(get_session),
-    principal: Principal = Depends(get_principal),
-    workspace_id: str | None = None,
-) -> Agent:
-    """Create a new agent backed by PostgreSQL (table: agent_config).
+) -> ManagedAgentRead:
+    """Create a new managed agent.
 
-    - Accepts framework and raw config JSON
-    - Persists a row in agent_config
-    - Returns the created agent in the public API shape
+    Args:
+        request: Complete `EngineConfig` containing server and agent configuration
+        session: Database session (injected)
+
+    Returns:
+        ManagedAgentCreate: The created agent with all metadata
+
+    Raises:
+        HTTPException 400: Invalid agent id format
     """
-    # Infer framework from config
-    framework_value: str | None = (
-        request.config.agent.type if request.config and request.config.agent else None
-    )
-    if not framework_value or not isinstance(framework_value, str):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing framework type in config.agent.type",
-        )
 
-    framework_enum = map_framework(framework_value)
+    # Set timestamps
+    now = datetime.now(UTC)
 
-    # Create row
-    new_id = uuid4()
-    ws_uuid = None
-    if workspace_id:
-        try:
-            ws_uuid = UUID(workspace_id)
-        except ValueError as err:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid workspace_id format",
-            ) from err
-        # Enforce workspace access if principal has specific workspace scope
-        if principal.workspace_ids and ws_uuid not in set(principal.workspace_ids):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
-            )
+    # Validate engine config
+    engine_config = EngineConfig(**request.engine_config.model_dump())
 
-    model = AgentConfigModel(
-        id=new_id,
+    # Create database model instance (status persisted as string)
+    model = ManagedAgentModel(
+        id=uuid4(),
         name=request.name,
-        description=request.description,
-        framework=framework_enum.value,
         status=AgentStatus.DRAFT.value,
-        config=request.config.model_dump(),
-        tenant_id=principal.tenant_id,
-        workspace_id=ws_uuid,
+        version=request.version,
+        engine_config=engine_config.model_dump(),  # Store as dict (JSONB)
+        created_at=now,
+        updated_at=now,
     )
 
     session.add(model)
     await session.flush()
     await session.refresh(model)
 
-    return Agent(
-        id=str(model.id),
-        name=model.name,
-        description=model.description,
-        framework=map_framework(model.framework),
-        status=AgentStatus(model.status),
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-    )
+    # Return Pydantic model for response
+    return _model_to_schema(model)
 
 
-class DeployRequest(BaseModel):
-    """Request body for deploying an agent."""
-
-    mode: DeploymentMode = Field(DeploymentMode.LOCAL, description="Deployment mode")
-    config: dict[str, Any] | None = Field(None, description="Deployment configuration")
-
-
-@router.post(
-    "/{agent_id}/deploy",
-    summary="Deploy agent",
-    description="Deploy an agent using the specified mode and configuration (local only for now)",
-    status_code=status.HTTP_202_ACCEPTED,
+@router.get(
+    "/key",
+    response_model=ApiKeyResponse,
+    summary="Generate agent API key",
+    description="Generate a unique API key (hash) for an agent to authenticate API requests.",
 )
-async def deploy_agent_endpoint(
+async def generate_key(
     agent_id: str,
-    request: DeployRequest,
-    agent_service: AgentService = Depends(get_agent_service),
-    principal: Principal = Depends(get_principal),
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, Any]:
     try:
-        agent_uuid = UUID(agent_id)
+        uuid = UUID(agent_id)
     except ValueError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
         ) from err
 
     try:
-        # Ensure the agent belongs to the principal's tenant/workspace before deployment
-        model = await session.get(AgentConfigModel, agent_uuid)
-        if not model:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Agent with id '{agent_id}' not found",
-            )
-        if model.tenant_id != principal.tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
-            )
-        if (
-            model.workspace_id
-            and principal.workspace_ids
-            and model.workspace_id not in set(principal.workspace_ids)
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
-            )
-
-        result = await agent_service.deploy_agent(
-            agent_uuid,
-            principal.tenant_id,
-            deployment_mode=request.mode,
-            deployment_config=request.config or {},
-        )
-        return result
-    except HTTPException:
-        raise
+        model = await session.get(ManagedAgentModel, uuid)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error occured. Please try again later",
         ) from e
+
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id: {agent_id} not found",
+        )
+
+    agent_data = f"{model.id}:{model.name}"
+    try:
+        new_agent_hash = encrypt_payload(agent_data).hex()
+        model.agent_hash = new_agent_hash
+        await session.flush()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error occured. please try again later",
+        ) from e
+    return {"api_key": new_agent_hash}
+
+
+@router.get(
+    "/config",
+    summary="Get agent config by API key",
+    description="Retrieve agent configuration using API key authentication (Bearer token).",
+)
+async def config(session: AsyncSession = Depends(get_session), auth: str = Header(...)):
+    """Get agent configuration using API key authentication.
+
+    Expects the full API key (including prefix) as the Bearer token. If the key
+    matches an agent's ``agent_hash``, the agent configuration is returned.
+
+    Args:
+        session: Database session (injected)
+        auth: Authorization header containing Bearer token
+
+    Returns:
+        ManagedAgentModel: The agent database model (SQLAlchemy model)
+
+    Raises:
+        HTTPException 401: Invalid authorization header format
+        HTTPException 404: Invalid or expired API key
+        HTTPException 500: Database error
+    """
+    # Validate Bearer token format
+    if not auth.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header",
+        )
+
+    # Extract API key from Bearer token
+    agent_hash = auth[7:]
+
+    # Query agent by API key
+    try:
+        stmt = select(ManagedAgentModel).where(
+            ManagedAgentModel.agent_hash == agent_hash
+        )
+        result = await session.execute(stmt)
+        agent_model = result.scalar_one_or_none()
+    except SQLAlchemyError as e:
+        # Loggers can be added later via app.core.logging
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred",
+        ) from e
+
+    if not agent_model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid API Key"
+        )
+
+    return agent_model
 
 
 @router.get(
     "/",
-    response_model=list[Agent],
-    summary="List agents",
-    description=(
-        "List all agents with pagination and deterministic sorting. "
-        "Use 'sort_by' (one of: name, description, framework, status, created_at, updated_at) "
-        "and 'order' (asc|desc). Defaults: sort_by=created_at, order=asc."
-    ),
+    response_model=list[ManagedAgentRead],
+    summary="List managed agents",
+    description="List all managed agents with pagination.",
 )
 async def list_agents(
-    limit: int = 100,
+    limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
-    sort_by: str = "created_at",
-    order: Literal["asc", "desc"] = "asc",
     session: AsyncSession = Depends(get_session),
-    principal: Principal = Depends(get_principal),
-    workspace_ids: list[str] | None = Depends(lambda: None),
-) -> list[Agent]:
-    """List agents from PostgreSQL with limit/offset pagination."""
-    if limit < 1 or limit > 1000:
+) -> list[ManagedAgentRead]:
+    """List managed agents with pagination.
+
+    Args:
+        limit: Maximum number of agents to return (1-1000, default: 100)
+        offset: Number of agents to skip (default: 0)
+        session: Database session (injected)
+
+    Returns:
+        list[ManagedAgentCreate]: List of managed agents
+
+    Raises:
+        HTTPException 400: Invalid limit, offset format
+    """
+    # Validate pagination parameters
+    if not (1 <= limit <= PAGINATION_MAX_LIMIT):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit must be between 1 and 1000",
+            detail=f"Limit must be between 1 and {PAGINATION_MAX_LIMIT}",
         )
     if offset < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    # Validate sorting parameters
-    if sort_by not in SORTABLE_AGENT_FIELDS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid sort_by '{sort_by}'. Allowed: {sorted(SORTABLE_AGENT_FIELDS)}",
-        )
+    # Build query
+    stmt = select(ManagedAgentModel)
 
-    from sqlalchemy import asc, desc, select
+    # Apply pagination
+    stmt = stmt.limit(limit).offset(offset)
 
-    # Build deterministic ordering: primary sort + stable tiebreaker by id ASC
-    sort_column = getattr(AgentConfigModel, sort_by)
-    primary_order = asc(sort_column) if order == "asc" else desc(sort_column)
-    stable_tiebreaker = asc(AgentConfigModel.id)
-
-    # Workspace scoping
-    ws_filter: list[UUID] = []
-    if workspace_ids:
-        parsed: list[UUID] = []
-        for ws in workspace_ids:
-            try:
-                parsed.append(UUID(ws))
-            except ValueError as err:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid workspace_ids format",
-                ) from err
-        if principal.workspace_ids:
-            allowed = set(principal.workspace_ids)
-            ws_filter = [ws for ws in parsed if ws in allowed]
-            if parsed and not ws_filter:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspaces"
-                )
-        else:
-            ws_filter = parsed
-
-    stmt = select(AgentConfigModel).where(
-        AgentConfigModel.tenant_id == principal.tenant_id
-    )
-    if ws_filter:
-        stmt = stmt.where(AgentConfigModel.workspace_id.in_(ws_filter))
-    stmt = stmt.order_by(primary_order, stable_tiebreaker).limit(limit).offset(offset)
+    # Execute query and transform results
     result = await session.execute(stmt)
     rows = result.scalars().all()
-    return [
-        Agent(
-            id=str(r.id),
-            name=r.name,
-            description=r.description,
-            framework=map_framework(r.framework),
-            status=AgentStatus(r.status),
-            created_at=r.created_at,
-            updated_at=r.updated_at,
-        )
-        for r in rows
-    ]
+
+    return [_model_to_schema(r) for r in rows]
 
 
 @router.get(
-    "/{agent_id}",
-    response_model=Agent,
-    summary="Get agent",
-    description="Get a specific agent by ID with detailed information",
+    "/{id}",
+    response_model=ManagedAgentRead,
+    summary="Get managed agent by ID",
+    description="Retrieve a specific managed agent by its UUID with complete configuration details.",
 )
 async def get_agent(
-    agent_id: str,
+    id: str,
     session: AsyncSession = Depends(get_session),
-    principal: Principal = Depends(get_principal),
-) -> Agent:
-    """Get agent by ID from PostgreSQL with proper error handling."""
-    try:
-        agent_uuid = UUID(agent_id)
-    except ValueError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
-        ) from err
+) -> ManagedAgentRead:
+    """Get a managed agent by ID.
 
-    model = await session.get(AgentConfigModel, agent_uuid)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Agent with id '{agent_id}' not found",
-        )
-    if model.tenant_id != principal.tenant_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    if (
-        model.workspace_id
-        and principal.workspace_ids
-        and model.workspace_id not in set(principal.workspace_ids)
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
-        )
+    Args:
+        id: Agent UUID
+        session: Database session (injected)
 
-    return Agent(
-        id=str(model.id),
-        name=model.name,
-        description=model.description,
-        framework=map_framework(model.framework),
-        status=AgentStatus(model.status),
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-    )
+    Returns:
+        ManagedAgentCreate: The requested agent with full configuration
 
-
-@router.put(
-    "/{agent_id}",
-    response_model=Agent,
-    summary="Replace agent (PUT)",
-    description=(
-        "Replace an agent's mutable fields with the provided representation. "
-        "Framework is inferred from config.agent.type."
-    ),
-)
-async def update_agent(
-    agent_id: str,
-    request: AgentReplace,
-    session: AsyncSession = Depends(get_session),
-    principal: Principal = Depends(get_principal),
-) -> Agent:
-    """Full replacement of an existing agent in PostgreSQL (PUT semantics)."""
-    try:
-        agent_uuid = UUID(agent_id)
-    except ValueError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
-        ) from err
-
-    model = await session.get(AgentConfigModel, agent_uuid)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Agent with id '{agent_id}' not found",
-        )
-    if model.tenant_id != principal.tenant_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    if (
-        model.workspace_id
-        and principal.workspace_ids
-        and model.workspace_id not in set(principal.workspace_ids)
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
-        )
-
-    # Infer framework from config
-    framework_value: str | None = (
-        request.config.agent.type if request.config and request.config.agent else None
-    )
-    if not framework_value or not isinstance(framework_value, str):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing framework type in config.agent.type",
-        )
-    framework_enum = map_framework(framework_value)
-
-    # Apply full replacement for mutable fields
-    model.name = request.name
-    model.description = request.description
-    model.framework = framework_enum.value
-    model.config = request.config.model_dump()
-
-    await session.flush()
-    await session.refresh(model)
-
-    return Agent(
-        id=str(model.id),
-        name=model.name,
-        description=model.description,
-        framework=map_framework(model.framework),
-        status=AgentStatus(model.status),
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-    )
+    Raises:
+        HTTPException 400: Invalid agent ID format
+        HTTPException 404: Agent not found
+    """
+    model = await _get_agent(id, session)
+    return _model_to_schema(model)
 
 
 @router.delete(
-    "/{agent_id}",
+    "/{id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete agent",
-    description="Delete an agent permanently",
+    summary="Delete managed agent",
+    description="Permanently delete a managed agent and all its configuration data.",
 )
 async def delete_agent(
-    agent_id: str,
+    id: str,
     session: AsyncSession = Depends(get_session),
-    principal: Principal = Depends(get_principal),
 ) -> None:
-    """Delete an agent_config row by UUID."""
-    try:
-        agent_uuid = UUID(agent_id)
-    except ValueError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
-        ) from err
+    """Delete a managed agent permanently.
 
-    model = await session.get(AgentConfigModel, agent_uuid)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Agent with id '{agent_id}' not found",
-        )
-    if model.tenant_id != principal.tenant_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    if (
-        model.workspace_id
-        and principal.workspace_ids
-        and model.workspace_id not in set(principal.workspace_ids)
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
-        )
+    This operation cannot be undone. The agent and its configuration will be
+    permanently removed from the database.
 
+    Args:
+        id: Agent UUID
+        session: Database session (injected)
+
+    Returns:
+        None (204 No Content)
+
+    Raises:
+        HTTPException 400: Invalid agent ID format
+        HTTPException 404: Agent not found
+    """
+    model = await _get_agent(id, session)
+
+    # Delete agent from database
     await session.delete(model)
     await session.flush()
-    return
 
 
 @router.patch(
-    "/{agent_id}",
-    response_model=Agent,
+    "/{id}",
+    response_model=ManagedAgentRead,
     summary="Partially update agent (PATCH)",
-    description=(
-        "Partially update an agent. Only provided fields are modified. "
-        "If config is provided, framework is inferred from config.agent.type."
-    ),
+    description="Partially update an agent's configuration. Only the name andengine_config field can be updated if provided.",
 )
 async def patch_agent(
-    agent_id: str,
-    request: AgentPatch,
+    id: str,
+    request: ManagedAgentPatch,
     session: AsyncSession = Depends(get_session),
-    principal: Principal = Depends(get_principal),
-) -> Agent:
-    try:
-        agent_uuid = UUID(agent_id)
-    except ValueError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid agent id format"
-        ) from err
+) -> ManagedAgentRead:
+    """Partially update an agent's configuration.
 
-    model = await session.get(AgentConfigModel, agent_uuid)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Agent with id '{agent_id}' not found",
-        )
-    if model.tenant_id != principal.tenant_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    if (
-        model.workspace_id
-        and principal.workspace_ids
-        and model.workspace_id not in set(principal.workspace_ids)
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden workspace"
-        )
+    Only updates fields that are explicitly provided in the request.
+    Currently supports updating engine_config. If engine_config is provided,
+    it replaces the existing configuration and updates the updated_at timestamp.
 
-    if request.name is not None:
-        model.name = request.name
-    if request.description is not None:
-        model.description = request.description
-    if request.config is not None:
-        framework_value: str | None = (
-            request.config.agent.type
-            if request.config and request.config.agent
-            else None
-        )
-        if not framework_value or not isinstance(framework_value, str):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Missing framework type in config.agent.type",
-            )
-        model.framework = map_framework(framework_value).value
-        model.config = request.config.model_dump()
+    Args:
+        id: Agent UUID
+        request: Partial update containing optional engine_config
+        session: Database session (injected)
 
+    Returns:
+        ManagedAgentCreate: The updated agent
+
+    Raises:
+        HTTPException 400: Invalid agent ID format
+        HTTPException 404: Agent not found
+    """
+    model = await _get_agent(id, session)
+
+    # Update name
+    model.name = request.name
+    # Validate engine config
+    engine_config = EngineConfig(**request.engine_config.model_dump())
+    # Update engine config
+    model.engine_config = engine_config.model_dump()
+    # Update updated_at timestamp
+    model.updated_at = datetime.now(UTC)
+
+    # Persist changes
     await session.flush()
     await session.refresh(model)
 
-    return Agent(
-        id=str(model.id),
-        name=model.name,
-        description=model.description,
-        framework=map_framework(model.framework),
-        status=AgentStatus(model.status),
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-    )
+    return _model_to_schema(model)

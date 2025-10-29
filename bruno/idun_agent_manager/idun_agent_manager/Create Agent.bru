@@ -1,0 +1,37 @@
+meta {
+  name: Create Agent
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://0.0.0.0:8500/api/v1/agents/
+  body: json
+  auth: none
+}
+
+headers {
+  accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "2example-managed-agent",
+    "version": "0.1.0",
+    "engine_config": {
+      "server": { "api": { "port": 8000 } },
+      "agent": {
+        "type": "LANGGRAPH",
+        "config": {
+          "name": "2example-langgraph-agent",
+          "graph_definition": "/test/test:graph",
+          "checkpointer": {
+            "type": "sqlite",
+            "db_url": "sqlite:///example_checkpoint.db"
+          }
+        }
+      }
+    }
+  }
+}

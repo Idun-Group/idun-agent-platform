@@ -44,16 +44,16 @@ dependencies = [
   # Utilities
   "python-dotenv>=1.0.1,<2.0.0",
   "tenacity>=8.0.0,<9.0.0",
-  # Idun Agent Engine SDK (from PyPI)
-  "idun-agent-engine>=0.1.0,<0.2.0",
-  # Centralized schema package
-  "idun-agent-schema>=0.1.0,<0.2.0",
+  # Centralized schema package (local override in dev)
+  "idun-agent-schema"
+
 ]
 
 ## uv configuration
 [tool.uv]
 # Avoid installing the current project as a package during sync
 package = false
+
 
 [dependency-groups]
 dev = [
@@ -70,11 +70,12 @@ dev = [
   "pre-commit==4.0.1",
   "ipdb",
   "ipython",
-
   # Type stubs
   "types-redis==4.6.0",
   "types-passlib==1.7.7",
 ]
+[tool.uv.sources]
+idun-agent-schema = { path = "../../libs/idun_agent_schema", editable = true }
 
 [build-system]
 requires = ["hatchling>=1.25.0"]
@@ -149,3 +150,6 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true

@@ -6,6 +6,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
+      "preLaunchTask": "uv sync (manager)",
       "args": [
         "app.main:app",
         "--host",

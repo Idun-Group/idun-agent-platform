@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "idun_agent_manager",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
