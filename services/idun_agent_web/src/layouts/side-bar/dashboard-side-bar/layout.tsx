@@ -66,7 +66,7 @@ const SideBar = ({}: SideBarProps) => {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <SideBarNav>
+            <SideBarNav $collapsed={collapsed}>
                 {menuItems.map((item) => (
                     <MenuItem
                         key={item.key}
@@ -111,8 +111,8 @@ const SideBar = ({}: SideBarProps) => {
                 {!collapsed && <MenuLabel>{t('header.settings')}</MenuLabel>}
             </MenuItem>
 
-            {collapsed && (
-                <AvatarRow>
+            <UserArea $collapsed={collapsed}>
+                <AvatarRowOverlay $visible={collapsed}>
                     {(() => {
                         const avatarUrl =
                             (session as any)?.principal?.avatarUrl ||
@@ -130,10 +130,11 @@ const SideBar = ({}: SideBarProps) => {
                             <UserIcon size={17} color="#826F95" />
                         );
                     })()}
-                </AvatarRow>
-            )}
-
-            {!collapsed && <AccountInfo />}
+                </AvatarRowOverlay>
+                <AccountInfoWrapper $visible={!collapsed}>
+                    <AccountInfo />
+                </AccountInfoWrapper>
+            </UserArea>
         </SideBarContainer>
     );
 };
@@ -151,13 +152,28 @@ const SideBarContainer = styled.aside<{ $collapsed?: boolean }>`
     transition: width 300ms ease, background-color 300ms ease, color 300ms ease;
     position: relative;
     z-index: 10;
+    padding-bottom: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')}; /* reserve space for fixed user area */
 `;
 
-const SideBarNav = styled.nav`
+const SideBarNav = styled.nav<{ $collapsed?: boolean }>`
     flex: 1;
     padding: 0 0 0 0;
     display: flex;
     flex-direction: column;
+    ${({ $collapsed }) =>
+        !$collapsed && `
+        /* Separator only for the top 4 items, only when expanded */
+        > button:nth-child(-n + 4) { position: relative; }
+        > button:nth-child(-n + 4)::after {
+            content: '';
+            position: absolute;
+            left: 30px;   /* match left padding */
+            right: 16px;  /* match right padding */
+            bottom: 0;
+            height: 1px;
+            background: rgb(130, 111, 149);
+        }
+    `}
 `;
 
 const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
@@ -168,7 +184,7 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
     padding: 0 16px 0 30px; /* left 30px per Figma */
     border: none;
     border-radius: 0; /* no radius in figma */
-    background: #030711;
+    background: #040210;
     color: #ffffff; /* text always white */
     cursor: pointer;
     transition: background-color 200ms ease, color 200ms ease;
@@ -182,15 +198,14 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
         $collapsed ? 'center' : 'flex-start'};
 
     &:hover {
-        background: #121122;
+        background: #040210;
         color: #ffffff;
-        border-right: 3px solid #8C52FF;
     }
 
     ${({ $isActive }) =>
         $isActive &&
         `
-        background: #121122;
+        background: #040210;
         font-weight: 700;
         border-right: 3px solid #8C52FF;
 
@@ -223,6 +238,14 @@ const MenuItemWithHover = styled(MenuItem)`
 
 export default SideBar;
 
+const UserArea = styled.div<{ $collapsed?: boolean }>`
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')}; /* reserve space to avoid jumping */
+`;
+
 const AvatarRow = styled.div`
     display: flex;
     justify-content: center;
@@ -233,6 +256,15 @@ const AvatarRow = styled.div`
     background: #030711;
 `;
 
+const AvatarRowOverlay = styled(AvatarRow)<{ $visible?: boolean }>`
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: ${(p) => (p.$visible ? 'flex' : 'none')};
+`;
+
 const AvatarImg = styled.img`
     width: 24px;
     height: 24px;
@@ -241,4 +273,16 @@ const AvatarImg = styled.img`
     display: block;
     aspect-ratio: 1 / 1;
     overflow: hidden;
+`;
+
+const AccountInfoWrapper = styled.div<{ $visible?: boolean }>`
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding: 8px 12px;
+    display: ${(p) => (p.$visible ? 'flex' : 'none')};
+    align-items: center;
+    justify-content: center;
 `;

@@ -51,16 +51,16 @@ const SettingSideBar = () => {
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Your component implementation here */}
-            <UserInfo>
-                {!collapsed && <AccountInfo />}
-                {!collapsed && (
+            <UserInfo $collapsed={collapsed}>
+                <VisibilityWrap $visible={!collapsed}>
+                    <AccountInfo />
                     <ButtonSwitchAccount
                         $variants="transparent"
                         onClick={() => toast.warning('Switch account clicked')}
                     >
                         {t('settings.switch-account')}
                     </ButtonSwitchAccount>
-                )}
+                </VisibilityWrap>
             </UserInfo>
             <nav>
                 <NavList>
@@ -92,6 +92,8 @@ const SideBarContainer = styled.div<{ $collapsed?: boolean }>`
     background: #030711;
     color: #ffffff;
     transition: width 300ms ease, padding 300ms ease, background-color 300ms ease, color 300ms ease;
+    position: relative;
+    padding-bottom: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')}; /* reserve space for fixed user info */
 `;
 
 const NavButton = styled.button`
@@ -118,24 +120,44 @@ const NavPoint = styled.li<{ $selected: boolean }>`
     border-radius: 0;
     height: 47px;
     padding: 0 16px 0 30px;
+    background: #040210;
     &:hover {
-        background: #030711;
+        background: #040210;
     }
 
     ${({ $selected: selected }) => {
         return selected
             ? `
-            background: #121122;
-            font-weight: 700;
-            border-right: 3px solid #8C52FF;
+            background: #040210;
+            font-weight: 400;
+            border-right: none;
         `
             : '';
     }}
+
+    /* Separator only for the top 4 items with 15% side margins */
+    position: relative;
+    &:nth-child(-n + 4)::after {
+        content: '';
+        position: absolute;
+        left: 15%;
+        right: 15%;
+        bottom: 0;
+        height: 1px;
+        background: rgb(130, 111, 149);
+    }
 `;
 
-const UserInfo = styled.div`
-    margin: auto;
-    border-bottom: 1px solid hsl(var(--sidebar-border));
+const UserInfo = styled.div<{ $collapsed?: boolean }>`
+    border-top: 1px solid hsl(var(--sidebar-border));
+    height: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')}; /* reserve space so it doesn't jump */
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
 
 const ButtonSwitchAccount = styled(Button)`
@@ -147,4 +169,14 @@ const ButtonSwitchAccount = styled(Button)`
         color: white;
     }
     padding: 8px 0;
+`;
+
+const VisibilityWrap = styled.div<{ $visible: boolean }>`
+    width: 100%;
+    opacity: ${(p) => (p.$visible ? 1 : 0)};
+    pointer-events: ${(p) => (p.$visible ? 'auto' : 'none')};
+    transition: opacity 200ms ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 `;

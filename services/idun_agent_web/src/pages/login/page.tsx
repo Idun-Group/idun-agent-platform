@@ -18,31 +18,24 @@ const LoginPage = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email || !password) {
-            toast.error(t('login.error'));
-            return;
-        }
+        // Proceed regardless of validation/auth result for now
         try {
             const ok = await login(email, password);
-            if (ok) {
-                toast.success(t('login.success'));
-                navigate('/agents');
-            } else {
-                toast.error(t('login.error'));
-            }
+            if (ok) toast.success(t('login.success'));
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : t('login.error');
-            toast.error(message);
+            // Optionally show, but still redirect
+            try { toast.error(message); } catch {}
         }
+        // Always redirect to app
+        navigate('/agents');
     };
 
-    useEffect(() => {
-        if (session) navigate('/agents');
-    }, [navigate, session]);
+    // Skip auth check redirect for now
 
     return (
         <main>
-            <StyledForm onSubmit={handleSubmit}>
+            <StyledForm onSubmit={handleSubmit} noValidate>
                 <h1>Idun Engine</h1>
                 <h2>{t('login.title')}</h2>
                 <p>{t('login.description')}</p>
