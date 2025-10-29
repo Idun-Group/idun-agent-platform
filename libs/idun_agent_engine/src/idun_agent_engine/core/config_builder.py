@@ -8,12 +8,13 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from idun_agent_schema.engine.agent_framework import AgentFramework
+from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_schema.engine.langgraph import (
     LangGraphAgentConfig,
     SqliteCheckpointConfig,
 )
 
-from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
@@ -60,24 +61,6 @@ class ConfigBuilder:
         )
         return self
 
-    # def with_telemetry(self, provider: str) -> "ConfigBuilder":
-    #     """
-    #     Set the telemetry provider.
-
-    #     Args:
-    #         provider: The telemetry provider name (e.g., "langfuse", "wandb")
-
-    #     Returns:
-    #         ConfigBuilder: This builder instance for method chaining
-    #     """
-    #     # Create new telemetry config with updated provider
-    #     telemetry_config = ServerTelemetryConfig(provider=provider)
-    #     self._server_config = ServerConfig(
-    #         api=self._server_config.api,
-    #         telemetry=telemetry_config
-    #     )
-    #     return self
-
     def with_server_config(
         self, api_port: int | None = None, telemetry_provider: str | None = None
     ) -> "ConfigBuilder":
@@ -96,6 +79,29 @@ class ConfigBuilder:
 
         self._server_config = ServerConfig(api=api_config)
         return self
+
+    def with_config_from_api(self, agent_api_key: str, url: str) -> "ConfigBuilder":
+        """Fetches the yaml config file, from idun agent manager api.
+
+        Requires the agent id to pass in the headers.
+        """
+        import requests
+        import yaml
+
+        headers = {"auth": f"Bearer {agent_api_key}"}
+        try:
+            response = requests.get(url=url, headers=headers)
+            if response.status_code != 200:
+                raise ValueError(
+                    f"Error sending retrieving config from url. response : {response.json()}"
+                )
+            yaml_config = yaml.safe_load(response.text)
+            self._server_config = yaml_config["engine_config"]["server"]
+            self._agent_config = yaml_config["engine_config"]["agent"]
+            return self
+
+        except Exception as e:
+            raise ValueError(f"Error occured while getting config from api: {e}") from e
 
     def with_langgraph_agent(
         self,
@@ -152,12 +158,12 @@ class ConfigBuilder:
         Returns:
             ConfigBuilder: This builder instance for method chaining
         """
-        if agent_type == "langgraph":
+        if agent_type == AgentFramework.LANGGRAPH:
             self._agent_config = AgentConfig(
                 type="langgraph", config=LangGraphAgentConfig.model_validate(config)
             )
 
-        elif agent_type == "haystack":
+        elif agent_type == AgentFramework.HAYSTACK:
             self._agent_config = AgentConfig(
                 type="haystack", config=HaystackAgentConfig.model_validate(config)
             )
@@ -234,7 +240,7 @@ class ConfigBuilder:
 
         # Initialize the appropriate agent
         agent_instance = None
-        if agent_type == "langgraph":
+        if agent_type == AgentFramework.LANGGRAPH:
             from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
@@ -247,7 +253,7 @@ class ConfigBuilder:
 
             agent_instance = LanggraphAgent()
 
-        elif agent_type == "haystack":
+        elif agent_type == AgentFramework.HAYSTACK:
             from idun_agent_engine.agent.haystack.haystack import HaystackAgent
 
             try:
@@ -388,7 +394,7 @@ class ConfigBuilder:
             print("✅ Validated dictionary configuration")
             return EngineConfig.model_validate(config_dict)
         elif config_path:
-            # Load from file using ConfigBuilder
+            # Load from file using ConfigB/uilder
             print(f"✅ Loaded configuration from {config_path}")
             return ConfigBuilder.load_from_file(config_path)
         else:
