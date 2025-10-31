@@ -21,6 +21,7 @@ Endpoints:
     GET    /config    - Retrieve agent config using API key (Bearer token)
 """
 
+import logging
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 from typing import Any
@@ -38,11 +39,15 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_session
+from app.api.v1.deps import get_session, allow_user
 from app.api.v1.routers.auth import encrypt_payload
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 
 router = APIRouter()
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__file__)
+
 
 # Constants
 PAGINATION_MAX_LIMIT = 1000
@@ -99,6 +104,8 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
 )
 async def create_agent(
     request: ManagedAgentCreate,
+    client_key: str,
+    _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> ManagedAgentRead:
     """Create a new managed agent.
@@ -146,7 +153,9 @@ async def create_agent(
     description="Generate a unique API key (hash) for an agent to authenticate API requests.",
 )
 async def generate_key(
+    client_key: str,
     agent_id: str,
+    _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, Any]:
     try:
@@ -175,12 +184,14 @@ async def generate_key(
         new_agent_hash = encrypt_payload(agent_data).hex()
         model.agent_hash = new_agent_hash
         await session.flush()
+        return {"api_key": new_agent_hash}
+
     except Exception as e:
+        logger.error(f"Error setting the agent hash: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unexpected error occured. please try again later",
         ) from e
-    return {"api_key": new_agent_hash}
 
 
 @router.get(
@@ -245,6 +256,8 @@ async def config(session: AsyncSession = Depends(get_session), auth: str = Heade
     description="List all managed agents with pagination.",
 )
 async def list_agents(
+    client_key: str,
+    _: None = Depends(allow_user),
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
@@ -293,7 +306,9 @@ async def list_agents(
     description="Retrieve a specific managed agent by its UUID with complete configuration details.",
 )
 async def get_agent(
+    client_key: str,
     id: str,
+    _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> ManagedAgentRead:
     """Get a managed agent by ID.
@@ -320,7 +335,9 @@ async def get_agent(
     description="Permanently delete a managed agent and all its configuration data.",
 )
 async def delete_agent(
+    client_key: str,
     id: str,
+    _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
     """Delete a managed agent permanently.
@@ -353,8 +370,10 @@ async def delete_agent(
     description="Partially update an agent's configuration. Only the name andengine_config field can be updated if provided.",
 )
 async def patch_agent(
+    client_key: str,
     id: str,
     request: ManagedAgentPatch,
+    _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> ManagedAgentRead:
     """Partially update an agent's configuration.

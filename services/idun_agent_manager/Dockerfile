@@ -1,73 +1,55 @@
-# Multi-stage build for production-ready FastAPI application
 FROM python:3.13-slim AS base
-
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv (fast Python package manager)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
 
-# Set work directory
-WORKDIR /app
+WORKDIR /repo/services/idun_agent_manager
 
-# Copy project metadata
-COPY pyproject.toml ./
+COPY libs/idun_agent_schema /repo/libs/idun_agent_schema
+COPY services/idun_agent_manager/pyproject.toml ./
+COPY services/idun_agent_manager/uv.lock* ./
 
-# Install runtime dependencies only
 RUN uv sync --no-dev
 
-# Production stage
-FROM python:3.13-slim as production
-
-# Set environment variables
+FROM python:3.13-slim AS production
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:$PATH"
+    PYTHONPATH=/repo/services/idun_agent_manager/src
 
-# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Set work directory
-WORKDIR /app
+WORKDIR /repo/services/idun_agent_manager
 
-# Copy virtual environment from base stage
-COPY --from=base /app/.venv /app/.venv
+COPY --from=base /repo/services/idun_agent_manager/.venv ./.venv
+COPY --from=base /repo/libs/idun_agent_schema /repo/libs/idun_agent_schema
 
-# Copy application code
-COPY src/ ./src/
-COPY alembic.ini ./
-COPY alembic/ ./alembic/
-COPY Makefile /app
+COPY services/idun_agent_manager/src/ ./src/
+COPY services/idun_agent_manager/alembic.ini ./
+COPY services/idun_agent_manager/alembic/ ./alembic/
 
-# Change ownership to non-root user
-RUN chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /repo
 
-# Switch to non-root user
 USER appuser
 
-# Expose port
 EXPOSE 8000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
