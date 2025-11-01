@@ -35,8 +35,7 @@ dependencies = [
   "structlog>=23.2.0,<24.0.0",
   "python-dotenv>=1.0.1,<2.0.0",
   "tenacity>=8.0.0,<9.0.0",
-  "idun-agent-schema"
-]
+  "idun-agent-schema>=0.2.0,<0.3.0",]
 
 ## uv configuration
 [tool.uv]
@@ -63,8 +62,8 @@ dev = [
   "types-redis==4.6.0",
   "types-passlib==1.7.7",
 ]
-[tool.uv.sources]
-idun-agent-schema = { path = "../../libs/idun_agent_schema", editable = true }
+# [tool.uv.sources]
+# idun-agent-schema = { path = "../../libs/idun_agent_schema", editable = true }
 
 [build-system]
 requires = ["hatchling>=1.25.0"]
