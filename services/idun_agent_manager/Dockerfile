@@ -1,55 +1,80 @@
-FROM python:3.13-slim AS base
+# Production-grade Dockerfile for Idun Agent Manager (FastAPI)
+# - Multi-stage build using uv (https://docs.astral.sh/uv/)
+# - Reproducible installs from uv.lock
+# - Non-root runtime, minimal base
+# - Cloud Run ready (listens on $PORT, default 8080)
+
+FROM python:3.13-slim AS builder
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# System deps for building wheels for some libs (e.g., psycopg)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv (fast Python package manager)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
 
-WORKDIR /repo/services/idun_agent_manager
+WORKDIR /app
 
-COPY libs/idun_agent_schema /repo/libs/idun_agent_schema
-COPY services/idun_agent_manager/pyproject.toml ./
-COPY services/idun_agent_manager/uv.lock* ./
+# Copy lock and manifest first for better caching
+COPY pyproject.toml /app/pyproject.toml
+# Copy uv.lock if present for reproducible builds
+COPY uv.lock /app/uv.lock
 
-RUN uv sync --no-dev
+# Bring in the local schema package used via [tool.uv.sources]
+# NOTE: Build with repository root as context:
+#   docker build -f services/idun_agent_manager/Dockerfile .
+# This copies libs into /libs so the pyproject path ../../libs/... resolves.
+COPY libs/idun_agent_schema /libs/idun_agent_schema
 
-FROM python:3.13-slim AS production
+# Create virtualenv and install only runtime deps
+RUN uv sync --frozen --no-dev
+
+
+FROM python:3.13-slim AS runtime
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/repo/services/idun_agent_manager/src
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH=/app/src
 
+# Install minimal runtime libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+WORKDIR /app
 
-WORKDIR /repo/services/idun_agent_manager
+# Copy virtual environment from builder
+COPY --from=builder /app/.venv /app/.venv
 
-COPY --from=base /repo/services/idun_agent_manager/.venv ./.venv
-COPY --from=base /repo/libs/idun_agent_schema /repo/libs/idun_agent_schema
+# Copy application code
+COPY src/ /app/src/
+COPY alembic.ini /app/alembic.ini
+COPY alembic/ /app/alembic/
 
-COPY services/idun_agent_manager/src/ ./src/
-COPY services/idun_agent_manager/alembic.ini ./
-COPY services/idun_agent_manager/alembic/ ./alembic/
-
-RUN chown -R appuser:appuser /repo
-
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser && \
+    chown -R appuser:appuser /app
 USER appuser
 
-EXPOSE 8000
+# Default Cloud Run port
+EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/healthz || exit 1
+# Optional container-level health check (Cloud Run also manages health)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:${PORT:-8080}/api/v1/healthz" || exit 1
 
-CMD ["./.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start with Gunicorn + Uvicorn workers; respect Cloud Run $PORT and configurable workers
+CMD ["sh", "-lc", "gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w ${WORKERS:-2} -b 0.0.0.0:${PORT:-8080} --access-logfile - --error-logfile -"]

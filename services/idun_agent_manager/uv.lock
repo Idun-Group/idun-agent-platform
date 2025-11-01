@@ -678,7 +678,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.116.1,<0.117.0" },
     { name = "gunicorn", specifier = ">=23.0.0,<24.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
-    { name = "idun-agent-schema", editable = "../../libs/idun_agent_schema" },
+    { name = "idun-agent-schema", specifier = ">=0.2.0,<0.3.0" },
     { name = "opentelemetry-api", specifier = ">=1.34.0,<2.0.0" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.34.0,<2.0.0" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = "==0.55b1" },
@@ -719,16 +719,14 @@ dev = [
 [[package]]
 name = "idun-agent-schema"
 version = "0.2.0"
-source = { editable = "../../libs/idun_agent_schema" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
-    { name = "pydantic-settings", specifier = ">=2.7.0,<3.0.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/22/72/c24abc9f2574e810e3b6f008faf59758f16af2a5cfe51d7dac4f0d42d0f2/idun_agent_schema-0.2.0.tar.gz", hash = "sha256:003c0caf8cf4656537bc7e01d52512062d852b592fe4697c9af85156a7efdba2", size = 11259, upload-time = "2025-10-08T18:29:23.858Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/33/05/3a361bdfe497c8b9f4ef86f58a6a2e319b0840b44aae5aaaa87fa8aaeffc/idun_agent_schema-0.2.0-py3-none-any.whl", hash = "sha256:7a78e2f7bfd16edd864287f0e18a976f2abdaec791fc48d0f065a287c17b772b", size = 15782, upload-time = "2025-10-08T18:29:22.906Z" },
 ]
 
 [[package]]
