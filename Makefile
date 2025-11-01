@@ -40,3 +40,9 @@ sync-manager:
 
 sync-engine:
 	cd libs/idun_agent_engine && uv sync --active --all-groups
+
+
+install-dev:
+	uv pip install -e libs/idun_agent_schema
+	uv pip install -e libs/idun_agent_engine
+	uv pip install -e services/idun_agent_manager
