@@ -1,0 +1,237 @@
+name: Release Idun Agent Platform
+
+on:
+  release:
+    types: [published]
+
+env:
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  # ============================================================================
+  # Job 1: Publish Schema to PyPI
+  # ============================================================================
+  publish-schema:
+    name: Publish Schema to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # For trusted publishing
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION"
+
+      - name: Update version in pyproject.toml
+        working-directory: libs/idun_agent_schema
+        run: |
+          sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
+          cat pyproject.toml | grep version
+
+      - name: Build schema package
+        working-directory: libs/idun_agent_schema
+        run: |
+          uv build --wheel --sdist
+          ls -lh dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: libs/idun_agent_schema/dist/
+          verbose: true
+
+  # ============================================================================
+  # Job 2: Publish Engine to PyPI (depends on schema)
+  # ============================================================================
+  publish-engine:
+    name: Publish Engine to PyPI
+    runs-on: ubuntu-latest
+    needs: publish-schema
+    permissions:
+      contents: read
+      id-token: write  # For trusted publishing
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION"
+
+    #   - name: Update version in pyproject.toml
+    #     working-directory: libs/idun_agent_engine
+    #     run: |
+    #       sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
+    #       cat pyproject.toml | grep version
+
+    #   - name: Update schema dependency version
+    #     working-directory: libs/idun_agent_engine
+    #     run: |
+    #       # Update schema dependency to use the exact version we just published
+    #       sed -i 's|idun-agent-schema>=.*,<.*"|idun-agent-schema==${{ steps.version.outputs.VERSION }}"|' pyproject.toml
+    #       cat pyproject.toml | grep idun-agent-schema
+
+      - name: Wait for schema to be available on PyPI
+        run: |
+          echo "Waiting 60 seconds for schema to propagate on PyPI..."
+          sleep 60
+
+      - name: Build engine package
+        working-directory: libs/idun_agent_engine
+        run: |
+          uv build --wheel --sdist
+          ls -lh dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: libs/idun_agent_engine/dist/
+          verbose: true
+
+  # ============================================================================
+  # Job 3: Build and Publish Manager Docker Image (depends on engine)
+  # ============================================================================
+  publish-manager-docker:
+    name: Build & Publish Manager Docker Image
+    runs-on: ubuntu-latest
+    needs: publish-engine
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building Docker image version: $VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    #   - name: Update version in pyproject.toml
+    #     working-directory: services/idun_agent_manager
+    #     run: |
+    #       sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
+    #       cat pyproject.toml | grep version
+
+    #   - name: Update schema dependency version
+    #     working-directory: services/idun_agent_manager
+    #     run: |
+    #       # Update schema dependency to use the exact version we just published
+    #       sed -i 's|idun-agent-schema>=.*,<.*"|idun-agent-schema==${{ steps.version.outputs.VERSION }}"|' pyproject.toml
+    #       cat pyproject.toml | grep idun-agent-schema
+
+      - name: Wait for engine to be available on PyPI
+        run: |
+          echo "Waiting 60 seconds for engine to propagate on PyPI..."
+          sleep 60
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/idun_agent_manager
+          file: ./services/idun_agent_manager/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            freezaa9/idun-ai:${{ steps.version.outputs.VERSION }}
+            freezaa9/idun-ai:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ steps.version.outputs.VERSION }}
+
+      - name: Docker image summary
+        run: |
+          echo "## 🐳 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`freezaa9/idun-ai:${{ steps.version.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull freezaa9/idun-ai:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # Job 4: Create Release Summary
+  # ============================================================================
+  release-summary:
+    name: Create Release Summary
+    runs-on: ubuntu-latest
+    needs: [publish-schema, publish-engine, publish-manager-docker]
+    if: always()
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create summary
+        run: |
+          echo "# 🚀 Idun Agent Platform Release ${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Published Packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 1. Schema (PyPI)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "pip install idun-agent-schema==${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 2. Engine (PyPI)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "pip install idun-agent-engine==${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 3. Manager (Docker Hub)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull freezaa9/idun-ai:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [Schema on PyPI](https://pypi.org/project/idun-agent-schema/${{ steps.version.outputs.VERSION }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Engine on PyPI](https://pypi.org/project/idun-agent-engine/${{ steps.version.outputs.VERSION }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Manager on Docker Hub](https://hub.docker.com/r/freezaa9/idun-ai/tags)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "All components have been successfully published." >> $GITHUB_STEP_SUMMARY
