@@ -135,8 +135,10 @@ jobs:
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION_FIXED="0.2.1" # TODO
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Building Docker image version: $VERSION"
+          echo "VERSION_FIXED=$VERSION_FIXED" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -173,12 +175,12 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            freezaa9/idun-ai:${{ steps.version.outputs.VERSION }}
+            freezaa9/idun-ai:${{ steps.version.outputs.VERSION_FIXED }} # TODO
             freezaa9/idun-ai:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VERSION=${{ steps.version.outputs.VERSION }}
+            VERSION=${{ steps.version.outputs.VERSION_FIXED }} # TODO
 
       - name: Docker image summary
         run: |
