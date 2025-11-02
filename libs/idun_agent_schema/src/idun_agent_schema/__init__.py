@@ -5,3 +5,5 @@ Public namespaces:
 - idun_agent_schema.manager: Manager-related schemas
 - idun_agent_schema.shared: Shared cross-cutting schemas
 """
+
+__version__ = "0.2.1"
