@@ -28,13 +28,16 @@ ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app
 
-# Copy dependency files for reproducible builds
-COPY pyproject.toml uv.lock* ./
+# Copy dependency files for fresh install
+COPY pyproject.toml ./
+# Reproducible build (commented out for fresh installs):
+# COPY uv.lock* ./
 
 # Install runtime dependencies into virtual environment
-# --frozen: use exact versions from lockfile
 # --no-dev: skip development dependencies
-RUN uv sync --frozen --no-dev
+# Reproducible build flag (commented out for fresh installs):
+# --frozen: use exact versions from lockfile
+RUN uv sync --no-dev
 
 # ============================================================================
 # Stage 2: Runtime - Minimal production image
