@@ -30,14 +30,9 @@ COPY pyproject.toml /app/pyproject.toml
 # Copy uv.lock if present for reproducible builds
 COPY uv.lock /app/uv.lock
 
-# Bring in the local schema package used via [tool.uv.sources]
-# NOTE: Build with repository root as context:
-#   docker build -f services/idun_agent_manager/Dockerfile .
-# This copies libs into /libs so the pyproject path ../../libs/... resolves.
-COPY libs/idun_agent_schema /libs/idun_agent_schema
-
 # Create virtualenv and install only runtime deps
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev \
+    && uv pip install --python /app/.venv/bin/python "idun-agent-schema==0.2.1"
 
 
 FROM python:3.13-slim AS runtime
