@@ -1,0 +1,63 @@
+# Production-like Docker Compose for local testing
+# Tests the production Dockerfile with all features
+
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    container_name: idun-db-prod
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: idun_agents
+    ports:
+      - "55433:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - idun_prod_network
+
+  manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: idun-manager-prod
+    ports:
+      - "8080:8080"
+    environment:
+      # Database connection
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
+
+      # Server configuration
+      PORT: 8080
+      WORKERS: 2
+
+      # Database tuning
+      DATABASE__ECHO: "false"
+      DATABASE__POOL_SIZE: 10
+      DATABASE__MAX_OVERFLOW: 20
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - idun_prod_network
+    restart: unless-stopped
+
+volumes:
+  postgres_prod_data:
+
+networks:
+  idun_prod_network:
+    driver: bridge
