@@ -1,3 +1,22 @@
+.PHONY: dev dev-manager test build-schema build-engine
+
+dev:
+	uv pip install -e libs/idun_agent_schema
+	uv pip install -e libs/idun_agent_engine
+	uv pip install -e services/idun_agent_manager
+
+dev-manager:
+	uv run --project services/idun_agent_manager uvicorn app.main:app --reload --port 8000
+
+test:
+	uv run pytest -q
+
+build-schema:
+	cd libs/idun_agent_schema && uv build --wheel
+
+build-engine:
+	cd libs/idun_agent_engine && uv build --wheel
+
 lint:
 	uv run ruff check . --no-cache
 

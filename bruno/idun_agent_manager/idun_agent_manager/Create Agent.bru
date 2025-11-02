@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: http://0.0.0.0:8500/api/v1/agents/
+  url: http://0.0.0.0:8000/api/v1/agents/
   body: json
   auth: none
 }
@@ -17,14 +17,14 @@ headers {
 
 body:json {
   {
-    "name": "2example-managed-agent",
+    "name": "6example-managed-agent",
     "version": "0.1.0",
     "engine_config": {
       "server": { "api": { "port": 8000 } },
       "agent": {
         "type": "LANGGRAPH",
         "config": {
-          "name": "2example-langgraph-agent",
+          "name": "6example-langgraph-agent",
           "graph_definition": "/test/test:graph",
           "checkpointer": {
             "type": "sqlite",
