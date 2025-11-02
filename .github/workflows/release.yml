@@ -39,11 +39,11 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
 
-      - name: Update version in pyproject.toml
-        working-directory: libs/idun_agent_schema
-        run: |
-          sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
-          cat pyproject.toml | grep version
+      # - name: Update version in pyproject.toml
+      #   working-directory: libs/idun_agent_schema
+      #   run: |
+      #     sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
+      #     cat pyproject.toml | grep version
 
       - name: Build schema package
         working-directory: libs/idun_agent_schema
