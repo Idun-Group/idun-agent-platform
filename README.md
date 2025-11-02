@@ -272,3 +272,30 @@ poetry run pytest -q
 - Documentation: `docs/` folder and `libs/idun_agent_engine/README.md`
 - Issues: open on GitHub
 - License: MIT (see `LICENSE`)
+
+---
+
+## Dev (local)
+
+```bash
+make dev
+make dev-manager   # serves Manager on :8000
+```
+
+## Docker (dev)
+
+```bash
+docker compose -f compose.dev.yaml up --build
+```
+
+## Prod image (Manager)
+
+```bash
+docker build -f services/idun_agent_manager/Dockerfile -t idun/manager:0.2.1 services/idun_agent_manager
+```
+
+## Install Engine (users)
+
+```bash
+uv pip install idun-agent-engine
+```

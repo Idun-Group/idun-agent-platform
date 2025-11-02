@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 def _sync_url(async_url: str) -> str:
     """Convert async DB URL to sync URL for Alembic/SQLAlchemy sync tools."""
-    return async_url.replace("+asyncpg", "").replace("+asyncio", "")
+    return async_url.replace("+asyncpg", "+psycopg").replace("+asyncio", "")
 
 
 def _run_alembic_upgrade_head(db_url: str, project_root: Path) -> None:

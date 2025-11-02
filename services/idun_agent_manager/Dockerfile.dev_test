@@ -1,0 +1,26 @@
+FROM python:3.13-slim AS base
+
+ENV UV_SYSTEM_PYTHON=1
+RUN pip install --no-cache-dir uv
+
+# Create non-root user
+# RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+WORKDIR /app
+
+# Copy application code
+COPY src/ ./src/
+COPY alembic.ini ./
+COPY alembic/ ./alembic/
+COPY Makefile /app
+
+# # Change ownership to non-root user
+# RUN chown -R appuser:appuser /app
+
+# # Switch to non-root user
+# USER appuser
+
+# Expose port
+EXPOSE 8000
+
+CMD ["bash", "-lc", "uv pip install -e /schema && uv run --project /app uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]

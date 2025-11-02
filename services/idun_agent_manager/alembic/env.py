@@ -26,7 +26,8 @@ try:
     settings = get_settings()
     if settings and getattr(settings, "database", None):
         # Convert async URL to sync URL for migrations
-        sync_url = settings.database.url.replace("+asyncpg", "").replace("+asyncio", "")
+        # Replace asyncpg with psycopg (v3) dialect
+        sync_url = settings.database.url.replace("+asyncpg", "+psycopg").replace("+asyncio", "")
         config.set_main_option("sqlalchemy.url", sync_url)
 except Exception:  # pragma: no cover - fallback to alembic.ini if settings unavailable
     pass
