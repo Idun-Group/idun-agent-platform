@@ -1,51 +1,21 @@
-# Git
-.git
-.gitignore
-
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Testing and coverage
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-.nox/
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-
-# Environments
-.env.local
-.env.production
-.venv
+dist/
+build/
+.venv/
 venv/
 ENV/
-env.bak/
-venv.bak/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
 
 # IDEs
 .vscode/
@@ -54,57 +24,28 @@ venv.bak/
 *.swo
 *~
 
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-*.log
-logs/
-
-# Temporary files
-tmp/
-temp/
-.tmp/
+# Git
+.git/
+.gitignore
+.gitattributes
 
 # Documentation
-README.md
-docs/
 *.md
+docs/
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.log
+Dockerfile.dev
+docker-compose*.yml
+Makefile
 
 # CI/CD
 .github/
 .gitlab-ci.yml
 
-# Development tools
-.pre-commit-config.yaml
-
-# Docker
-Dockerfile*
-docker-compose*.yml
-.dockerignore
-
-# Poetry
-poetry.lock
-
-# Database files
-*.db
-*.db-shm
-*.db-wal
-*.sqlite
-*.sqlite3
-
-# Alembic
-alembic/versions/
-
-# Node modules (if any)
-node_modules/
-
-# Misc
-.ruff_cache/
-.mypy_cache/
+# OS
+.DS_Store
+Thumbs.db
