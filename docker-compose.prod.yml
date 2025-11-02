@@ -25,15 +25,17 @@ services:
 
   manager:
     build:
-      context: .
+      context: ./services/idun_agent_manager
       dockerfile: Dockerfile
     container_name: idun-manager-prod
     ports:
       - "8080:8080"
     environment:
       # Database connection
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
-
+      DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
+      DATABASEAUTO_MIGRATE: true
+      AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
+      ENVIRONMENT: production
       # Server configuration
       PORT: 8080
       WORKERS: 2
