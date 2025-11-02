@@ -104,8 +104,8 @@ jobs:
 
       - name: Wait for schema to be available on PyPI
         run: |
-          echo "Waiting 60 seconds for schema to propagate on PyPI..."
-          sleep 60
+          echo "Waiting 10 seconds for schema to propagate on PyPI..."
+          sleep 10
 
       - name: Build engine package
         working-directory: libs/idun_agent_engine
@@ -135,10 +135,8 @@ jobs:
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-          VERSION_FIXED="0.2.1" # TODO
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Building Docker image version: $VERSION"
-          echo "VERSION_FIXED=$VERSION_FIXED" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -164,8 +162,8 @@ jobs:
 
       - name: Wait for engine to be available on PyPI
         run: |
-          echo "Waiting 60 seconds for engine to propagate on PyPI..."
-          sleep 60
+          echo "Waiting 10 seconds for engine to propagate on PyPI..."
+          sleep 10
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -175,12 +173,11 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            freezaa9/idun-ai:${{ steps.version.outputs.VERSION_FIXED }} # TODO
             freezaa9/idun-ai:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VERSION=${{ steps.version.outputs.VERSION_FIXED }} # TODO
+            VERSION=${{ steps.version.outputs.VERSION }}
 
       - name: Docker image summary
         run: |
