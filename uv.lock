@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.13.*"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -2056,15 +2056,15 @@ wheels = [
 
 [[package]]
 name = "mkdocs-include-markdown-plugin"
-version = "7.1.8"
+version = "7.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mkdocs" },
     { name = "wcmatch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/b8/47913765aa5e765d48d1bc33385cc02d23da4aeba42b7cba9a8e6af58cc0/mkdocs_include_markdown_plugin-7.1.8.tar.gz", hash = "sha256:9cc79f60c452e4db885c32b4cd63feea1f96012b6720be49a2ce6a1fbad77458", size = 23567, upload-time = "2025-09-26T09:22:56.685Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/90/10/b0b75ac42f4613556a808eee2dad3efe7a7d5079349aa5b9229d863e829f/mkdocs_include_markdown_plugin-7.2.0.tar.gz", hash = "sha256:4a67a91ade680dc0e15f608e5b6343bec03372ffa112c40a4254c1bfb10f42f3", size = 25509, upload-time = "2025-09-28T21:50:50.41Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/3f/c7b2a7934aa9ff70d2f2f2eca44806e6e02219a55123842b17040e48385c/mkdocs_include_markdown_plugin-7.1.8-py3-none-any.whl", hash = "sha256:eed91cdb22c9035c8d8421523c97bee3796e2df626afefae11e97dd0c6854573", size = 27645, upload-time = "2025-09-26T09:22:55.742Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/f9/783338d1d7fd548c7635728b67a0f8f96d9e6c265aa61c51356c03597767/mkdocs_include_markdown_plugin-7.2.0-py3-none-any.whl", hash = "sha256:d56cdaeb2d113fb66ed0fe4fb7af1da889926b0b9872032be24e19bbb09c9f5b", size = 29548, upload-time = "2025-09-28T21:50:49.373Z" },
 ]
 
 [[package]]
