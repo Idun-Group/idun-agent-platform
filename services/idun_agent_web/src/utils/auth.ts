@@ -1,4 +1,7 @@
 import { getJson, postJson } from './api';
+import type { User } from '../types/user.types';
+
+const USE_MOCKS = (import.meta as any)?.env?.VITE_USE_MOCKS === 'true';
 
 export interface SessionPrincipal {
     user_id?: string;
@@ -49,8 +52,40 @@ export async function getRoles(): Promise<string[]> {
     }
 }
 
-export async function listUsers(): Promise<import('../types/user.types').User[]> {
-    return getJson('/api/v1/users');
+export async function listUsers(): Promise<User[]> {
+    if (USE_MOCKS) {
+        const roles: Array<User['roles']> = [
+            ['admin'],
+            ['user'],
+            ['user', 'developer'],
+            ['analyst'],
+        ];
+        const users: User[] = Array.from({ length: 12 }).map((_, i) => ({
+            id: `mock-user-${i + 1}`,
+            email: `user${i + 1}@example.com`,
+            name: i % 3 === 0 ? `User ${i + 1}` : null,
+            roles: roles[i % roles.length] ?? ['user'],
+            workspace_ids: [],
+        }));
+        return Promise.resolve(users);
+    }
+    try {
+        return await getJson('/api/v1/users');
+    } catch {
+        const roles: Array<User['roles']> = [
+            ['admin'],
+            ['user'],
+            ['user', 'developer'],
+            ['analyst'],
+        ];
+        return Array.from({ length: 12 }).map((_, i) => ({
+            id: `mock-user-${i + 1}`,
+            email: `user${i + 1}@example.com`,
+            name: i % 3 === 0 ? `User ${i + 1}` : null,
+            roles: roles[i % roles.length] ?? ['user'],
+            workspace_ids: [],
+        }));
+    }
 }
 
 

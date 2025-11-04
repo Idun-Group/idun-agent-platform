@@ -8,7 +8,7 @@ import { Button } from '../../components/general/button/component';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useAuth } from '../../hooks/use-auth';
+ 
 
 const AgentDashboardPage = () => {
     const navigate = useNavigate();
@@ -70,17 +70,14 @@ const AgentDashboardPage = () => {
         },
     ];
 
-    const { session, isLoading: isAuthLoading } = useAuth();
-
     useEffect(() => {
-        if (isAuthLoading || !session) return;
         listAgents({ limit: 20, offset: 0, sort_by: 'created_at', order: 'desc' })
             .then((rows) => setAgents(rows))
             .catch((error) => {
                 const message = error instanceof Error ? error.message : String(error);
                 toast.error(message);
             });
-    }, [isAuthLoading, session]);
+    }, []);
 
     return (
         <AgentDashboardContainer>

@@ -198,14 +198,14 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
         $collapsed ? 'center' : 'flex-start'};
 
     &:hover {
-        background: #040210;
+        background: #000000; /* maximum contrast vs default */
         color: #ffffff;
     }
 
     ${({ $isActive }) =>
         $isActive &&
         `
-        background: #040210;
+        background: #000000; /* maximum contrast */
         font-weight: 700;
         border-right: 3px solid #8C52FF;
 
