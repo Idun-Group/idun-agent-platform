@@ -1,0 +1,15 @@
+[project]
+name = "idun-platform-cli"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.13.*"
+dependencies = [
+    "click>=8.2.1",
+    "idun-agent-engine>=0.2.1",
+]
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+idun = "main:cli"
