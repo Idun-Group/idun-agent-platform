@@ -71,7 +71,7 @@ const AgentDashboardPage = () => {
     ];
 
     useEffect(() => {
-        listAgents({ limit: 20, offset: 0, sort_by: 'created_at', order: 'desc' })
+        listAgents({ limit: 20, offset: 0 })
             .then((rows) => setAgents(rows))
             .catch((error) => {
                 const message = error instanceof Error ? error.message : String(error);

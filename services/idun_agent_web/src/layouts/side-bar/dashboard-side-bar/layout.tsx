@@ -2,13 +2,22 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ComponentType } from 'react';
 import { UserIcon, Settings } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
 type SideBarProps = {
     // config your component props here
+};
+
+type MenuItemConfig = {
+    iconSrc?: string;
+    icon?: ComponentType<{ size?: number; color?: string }>;
+    label: string;
+    key: string;
+    path: string;
+    onClick: () => void | Promise<void>;
 };
 
 const SideBar = ({}: SideBarProps) => {
@@ -28,7 +37,7 @@ const SideBar = ({}: SideBarProps) => {
     // Hovering temporarily expands the sidebar
     const collapsed = isCollapsed && !isHovered;
 
-    const menuItems = [
+    const menuItems: MenuItemConfig[] = [
         {
             iconSrc: '/img/agent-icon.svg',
             label: t('sidebar.agents'),
@@ -36,14 +45,14 @@ const SideBar = ({}: SideBarProps) => {
             path: '/agents',
             onClick: () => navigate('/agents'),
         },
-        {
-            // leave users icon as-is per request
-            icon: UserIcon,
-            label: t('sidebar.users'),
-            key: 'users',
-            path: '/users',
-            onClick: () => navigate('/users'),
-        },
+        // {
+        //     // leave users icon as-is per request
+        //     icon: UserIcon,
+        //     label: t('sidebar.users'),
+        //     key: 'users',
+        //     path: '/users',
+        //     onClick: () => navigate('/users'),
+        // },
         {
             iconSrc: '/img/tools.svg',
             label: t('sidebar.tools'),

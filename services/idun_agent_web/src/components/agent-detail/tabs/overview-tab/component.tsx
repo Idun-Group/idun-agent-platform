@@ -12,8 +12,8 @@ const OverviewTab = ({ agent }: OverviewTabProps) => {
             <Sidebar>
                 <AgentInfo
                     framework={t(
-                        `frameworks.${agent?.framework ?? 'unknown'}`,
-                        agent?.framework ?? 'unknown'
+                        `frameworks.${agent?.framework?.toLowerCase() ?? 'unknown'}`,
+                        agent?.framework ?? 'UNKNOWN'
                     )}
                 />
             </Sidebar>
