@@ -74,3 +74,20 @@ docker compose -f compose.dev.yaml ps
 docker compose -f compose.dev.yaml down -v
 docker compose -f compose.dev.yaml up --build
 ```
+
+## Generating Agent Manager API types for the frontend
+
+When you change any Pydantic schema in `libs/idun_agent_schema`, regenerate the
+OpenAPI payload and TypeScript models used by the web app:
+
+```bash
+# From repo root
+uv run python scripts/export_manager_openapi.py
+uv run python scripts/generate_manager_types.py
+```
+
+The first command writes `services/idun_agent_web/schema/manager-openapi.json`
+directly from the local FastAPI app. The second command shells into the web app
+and runs `openapi-typescript` to refresh
+`services/idun_agent_web/src/generated/agent-manager.ts`. Commit both outputs so
+other environments (including Docker images) stay in sync.
