@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # For trusted publishing
+      id-token: write # For trusted publishing
 
     steps:
       - name: Checkout code
@@ -66,7 +66,7 @@ jobs:
     needs: publish-schema
     permissions:
       contents: read
-      id-token: write  # For trusted publishing
+      id-token: write # For trusted publishing
 
     steps:
       - name: Checkout code
@@ -89,18 +89,18 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
 
-    #   - name: Update version in pyproject.toml
-    #     working-directory: libs/idun_agent_engine
-    #     run: |
-    #       sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
-    #       cat pyproject.toml | grep version
+      #   - name: Update version in pyproject.toml
+      #     working-directory: libs/idun_agent_engine
+      #     run: |
+      #       sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
+      #       cat pyproject.toml | grep version
 
-    #   - name: Update schema dependency version
-    #     working-directory: libs/idun_agent_engine
-    #     run: |
-    #       # Update schema dependency to use the exact version we just published
-    #       sed -i 's|idun-agent-schema>=.*,<.*"|idun-agent-schema==${{ steps.version.outputs.VERSION }}"|' pyproject.toml
-    #       cat pyproject.toml | grep idun-agent-schema
+      #   - name: Update schema dependency version
+      #     working-directory: libs/idun_agent_engine
+      #     run: |
+      #       # Update schema dependency to use the exact version we just published
+      #       sed -i 's|idun-agent-schema>=.*,<.*"|idun-agent-schema==${{ steps.version.outputs.VERSION }}"|' pyproject.toml
+      #       cat pyproject.toml | grep idun-agent-schema
 
       - name: Wait for schema to be available on PyPI
         run: |
@@ -135,6 +135,8 @@ jobs:
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
+
+          VERSION=${{github.ref_name}}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Building Docker image version: $VERSION"
 
@@ -147,18 +149,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    #   - name: Update version in pyproject.toml
-    #     working-directory: services/idun_agent_manager
-    #     run: |
-    #       sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
-    #       cat pyproject.toml | grep version
+      #   - name: Update version in pyproject.toml
+      #     working-directory: services/idun_agent_manager
+      #     run: |
+      #       sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
+      #       cat pyproject.toml | grep version
 
-    #   - name: Update schema dependency version
-    #     working-directory: services/idun_agent_manager
-    #     run: |
-    #       # Update schema dependency to use the exact version we just published
-    #       sed -i 's|idun-agent-schema>=.*,<.*"|idun-agent-schema==${{ steps.version.outputs.VERSION }}"|' pyproject.toml
-    #       cat pyproject.toml | grep idun-agent-schema
+      #   - name: Update schema dependency version
+      #     working-directory: services/idun_agent_manager
+      #     run: |
+      #       # Update schema dependency to use the exact version we just published
+      #       sed -i 's|idun-agent-schema>=.*,<.*"|idun-agent-schema==${{ steps.version.outputs.VERSION }}"|' pyproject.toml
+      #       cat pyproject.toml | grep idun-agent-schema
 
       - name: Wait for engine to be available on PyPI
         run: |
@@ -173,6 +175,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
+            freezaa9/idun-ai:${{ steps.version.outputs.VERSION }}
             freezaa9/idun-ai:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
