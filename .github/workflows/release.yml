@@ -176,6 +176,7 @@ jobs:
           push: true
           tags: |
             freezaa9/idun-ai:${{ steps.version.outputs.VERSION }}
+            freezaa9/idun-ai:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
