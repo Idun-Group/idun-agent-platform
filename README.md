@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/images/banner.png" alt="Idun Agent Platform Banner"/>
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT) [![Python 3.13+](https://img.shields.io/badge/python-3.13+-purple.svg)](https://www.python.org/downloads/) [![PyPI](https://img.shields.io/pypi/v/idun-agent-engine?color=purple)](https://pypi.org/project/idun-agent-engine/) [![Documentation](https://img.shields.io/badge/docs-mkdocs-purple.svg)](https://idun-group.github.io/idun-agent-platform/)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT) [![Python 3.13+](https://img.shields.io/badge/python-3.13+-purple.svg)](https://www.python.org/downloads/) [![PyPI](https://img.shields.io/pypi/v/idun-agent-engine?color=purple)](https://pypi.org/project/idun-agent-engine/) [![Documentation](https://img.shields.io/badge/docs-mkdocs-purple.svg)](https://idun-group.github.io/idun-agent-platform/) [![Discord](https://img.shields.io/badge/Discord-Join%20Us-purple?logo=discord&logoColor=white)](https://discord.gg/tcwH4z7R)
 
 </div>
 
@@ -65,9 +65,17 @@ agent:
   config:
     name: "My Agent"
     graph_definition: ".path/to/my_agent.py:app"
+    checkpointer:
+      type: "sqlite"
+      db_url: "sqlite:///example_checkpoint.db"
     observability:
       provider: langfuse
       enabled: true
+      options:
+        host: ${LANGFUSE_HOST}
+        public_key: ${LANGFUSE_PUBLIC_KEY}
+        secret_key: ${LANGFUSE_SECRET_KEY}
+        run_name: "idun-langgraph-run"
 ```
 
 ### Running Your Agent
@@ -78,7 +86,7 @@ agent:
 idun serve .
 ```
 
-**Option 2: Config from Manager**
+**Option 2: Getting the config from the Manager (if already added)**
 
 ```bash
 export IDUN_AGENT_API_KEY=<your-api-key-from-manager>
@@ -176,108 +184,6 @@ API gateway powered by Traefik that routes traffic to specific agent instances b
 ### Idun Agent UI
 
 Next.js web interface to manage agents and interact with deployed agents via the unified API.
-
----
-
-## Quickstart
-
-Prerequisites:
-
-- Docker and Docker Compose
-- Python 3.13 if running the Engine locally
-
-### Run a local Engine example
-
-1. Install the engine
-
-```bash
-pip install idun-agent-engine
-```
-
-1. Create a minimal `config.yaml`
-
-```yaml
-server:
-  api:
-    port: 8000
-
-agent:
-  type: "langgraph"
-  config:
-    name: "My Example LangGraph Agent"
-    graph_definition: "./examples/01_basic_config_file/example_agent.py:app"
-    checkpointer:
-      type: "sqlite"
-      db_url: "sqlite:///example_checkpoint.db"
-    observability:
-      provider: langfuse
-      enabled: true
-      options:
-        host: ${LANGFUSE_HOST}
-        public_key: ${LANGFUSE_PUBLIC_KEY}
-        secret_key: ${LANGFUSE_SECRET_KEY}
-        run_name: "idun-langgraph-run"
-```
-
-1. Run the server
-
-```python
-from idun_agent_engine.core.server_runner import run_server_from_config
-
-run_server_from_config("config.yaml")
-```
-
-1. Try the API
-
-```bash
-curl -X POST "http://localhost:8000/agent/invoke" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Hello!", "session_id": "user-123"}'
-```
-
-### Docker Compose (dev preview)
-
-Example `docker-compose.yml` to run the Gateway and a single Engine container. Replace image names and env values for your environment.
-
-```yaml
-version: "3.9"
-services:
-  gateway:
-    image: traefik:v3.1
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
-      - "8080:8080" # Traefik dashboard
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
-  example-agent:
-    image: ghcr.io/your-org/idun-agent-engine-example:latest
-    environment:
-      - LANGFUSE_HOST=${LANGFUSE_HOST}
-      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
-      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.example.rule=PathPrefix(`/agents/example`)"
-      - "traefik.http.services.example.loadbalancer.server.port=8000"
-```
-
-### Deploy via Manager (conceptual)
-
-The Manager exposes CRUD endpoints to register an agent config, retrieve code, build and push an image, and deploy.
-
-High-level steps:
-
-1. POST agent spec to the Manager (engine, retriever, deploy configs)
-1. Manager clones or unpacks the agent source
-1. Manager generates Dockerfile via the Engine
-1. Manager builds and pushes image to registry
-1. Manager deploys (Docker/Cloud Run/Kubernetes)
-1. Gateway routes traffic based on Agent ID
 
 ---
 
