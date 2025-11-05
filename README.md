@@ -94,7 +94,8 @@ curl -X POST "http://localhost:8000/agent/invoke" \
   -d '{"query": "Hello!", "session_id": "user-123"}'
 ```
 
-📖 See the [full documentation](https://idun-group.github.io/idun-agent-platform/) for detailed guides and examples.
+> [!TIP]
+> 📖 See the [full documentation](https://idun-group.github.io/idun-agent-platform/) for detailed guides and examples.
 
 ---
 
@@ -149,7 +150,8 @@ Python library that encapsulates your agent into a production-grade FastAPI serv
 - Observability via Langfuse or Arize Phoenix
 - Unified API using the AG-UI protocol
 
-→ See `libs/idun_agent_engine/README.md` for full details
+> [!TIP]
+> See `libs/idun_agent_engine/README.md` for full details
 
 ---
 
