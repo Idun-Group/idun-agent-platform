@@ -1,0 +1,20 @@
+meta {
+  name: agui-engine
+  type: http
+  seq: 9
+}
+
+post {
+  url: http://0.0.0.0:8100/agui
+  body: json
+  auth: none
+}
+
+headers {
+  accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {"threadId":"string","runId":"string","state":null,"messages":[{"id":"1","role":"user","content":"OUAIIII","name":"name1"}],"tools":[],"context":[],"forwardedProps":null}
+}

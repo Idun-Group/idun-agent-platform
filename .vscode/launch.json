@@ -21,7 +21,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Idun Engine (FastAPI)",
+      "name": "Idun Engine (Exemple 1)",
       "type": "debugpy",
       "request": "launch",
       "console": "integratedTerminal",
