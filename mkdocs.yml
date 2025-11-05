@@ -9,27 +9,44 @@ docs_dir: docs
 theme:
   name: material
   language: en
+  logo: images/logo.png
+  favicon: images/logo.png
   features:
     - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tracking
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
-    - content.code.copy
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - toc.integrate
+    - search.suggest
     - search.highlight
     - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
   palette:
     - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to dark mode
-    - scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: deep purple
+      accent: purple
       toggle:
         icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-4
         name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
 
 plugins:
   - search
@@ -56,6 +73,9 @@ plugins:
   - git-revision-date-localized:
       enable_creation_date: true
 
+extra_css:
+  - stylesheets/extra.css
+
 markdown_extensions:
   - admonition
   - attr_list
@@ -78,12 +98,44 @@ watch:
   - libs/idun_agent_engine/src
 
 nav:
-  - Home: index.md
-  - Getting Started: getting-started.md
-  - Architecture: architecture.md
+  - Home:
+      - Home: index.md
+      - Getting Started: quickstart.md
+      - Concepts:
+          - Overview: concepts/overview.md
+          - Architecture: concepts/architecture.md
+          - Agent Frameworks: concepts/agent-frameworks.md
+          - Configuration: concepts/configuration.md
+          - Engine: concepts/engine.md
+          - Manager: concepts/manager.md
+          - Observability: concepts/observability.md
+          - Guardrails: concepts/guardrails.md
+          - Deployment: concepts/deployment.md
+  - Deployment:
+      - Self-Hosted: deployment/self-hosted.md
+      - Idun Cloud: deployment/idun-cloud.md
   - Guides:
-    - ADK Agent Guide: adk_agent_guide.md
-    - SmolAgent Guide: smol_agent_guide.md
-    - Contributing to Docs: contributing-docs.md
-  - Examples: examples.md
-  - API Reference: reference/index.md
+      - Basic Configuration: guides/01-basic-configuration.md
+      - Observability & Checkpointing: guides/02-observability-checkpointing.md
+      - CLI Setup: guides/03-cli-setup.md
+      - Manager Walkthrough: guides/04-manager-walkthrough.md
+  - Reference:
+      - API: reference/api.md
+      - REST API: reference/rest-api.md
+      - Configuration: reference/configuration.md
+      - CLI: reference/cli.md
+      - Environment Variables: reference/environment.md
+      - Observability: reference/observability.md
+  - Idun Agent Manager:
+      - Overview: agent-manager/overview.md
+      - Quickstart: agent-manager/quickstart.md
+      - API: agent-manager/api.md
+      - Authentication: agent-manager/authentication.md
+  - Idun Agent Schema: idun-schema/index.md
+  - More:
+      - Roadmap: more/roadmap.md
+      - Contributing: more/contributing.md
+      - Changelog: more/changelog.md
+      - FAQ: more/faq.md
+      - Support: more/support.md
+      - Known Bugs: more/known-bugs.md
