@@ -7,6 +7,10 @@
 
 ---
 
+> [!WARNING]
+> **Under Active Development** - This repository is currently under active development. APIs and features may change. Check the [Documentation](https://idun-group.github.io/idun-agent-platform/) for more info.
+
+
 ## Overview
 
 Idun Agent Platform is an **open-source, production-ready platform** for building and operating AI agents. It provides a unified API layer over multiple agent frameworks (LangGraph, Haystack, CrewAI), built-in observability, and flexible deployment options.
