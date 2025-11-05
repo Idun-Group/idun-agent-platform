@@ -56,7 +56,7 @@ pip install idun-agent-engine
     <img src="images/langgraph.png" class="logo-item" alt="LangGraph"/>
     <img src="images/crew.png" class="logo-item" alt="CrewAI"/>
     <img src="images/langfuse.jpg" class="logo-item" alt="Langfuse"/>
-    <img src="images/pheonix.jpg" class="logo-item" alt="Phoenix"/>
+    <img src="images/phoenix.jpg" class="logo-item" alt="Phoenix"/>
     <img src="images/aws.png" class="logo-item" alt="AWS"/>
     <img src="images/gcp.png" class="logo-item" alt="GCP"/>
     <img src="images/azure.jpg" class="logo-item" alt="Azure"/>
@@ -64,7 +64,6 @@ pip install idun-agent-engine
     <img src="images/langgraph.png" class="logo-item" alt="LangGraph"/>
     <img src="images/crew.png" class="logo-item" alt="CrewAI"/>
     <img src="images/langfuse.jpg" class="logo-item" alt="Langfuse"/>
-    <img src="images/pheonix.jpg" class="logo-item" alt="Phoenix"/>
     <img src="images/aws.png" class="logo-item" alt="AWS"/>
     <img src="images/gcp.png" class="logo-item" alt="GCP"/>
     <img src="images/azure.jpg" class="logo-item" alt="Azure"/>
@@ -131,4 +130,3 @@ The AI agent ecosystem is fragmented. Each framework has its own deployment patt
     <p class="feature-desc">Define agents using straightforward YAML files with no complexity</p>
   </div>
 </div>
-

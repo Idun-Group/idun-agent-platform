@@ -14,16 +14,17 @@ Idun Agent Platform is an **open-source, production-ready platform** for buildin
 The platform solves the fragmentation problem in the AI agent ecosystem—each framework has different APIs, deployment patterns, and monitoring solutions. With Idun, you configure once and deploy anywhere, while we handle the infrastructure, observability, and scaling.
 
 <div align="center">
-  <div style="overflow: hidden; padding: 1.5em 0; background: white; margin: 1.5em 0;">
+  <div style="overflow: hidden; padding: 1.5em 0; margin: 1.5em 0;">
     <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 2em; max-width: 800px; margin: 0 auto;">
-      <img src="docs/images/haystack.png" height="40" alt="Haystack" style="opacity: 0.7; filter: grayscale(60%);"/>
-      <img src="docs/images/langgraph.png" height="40" alt="LangGraph" style="opacity: 0.7; filter: grayscale(60%);"/>
-      <img src="docs/images/crew.png" height="40" alt="CrewAI" style="opacity: 0.7; filter: grayscale(60%);"/>
-      <img src="docs/images/langfuse.jpg" height="40" alt="Langfuse" style="opacity: 0.7; filter: grayscale(60%);"/>
-      <img src="docs/images/pheonix.jpg" height="40" alt="Phoenix" style="opacity: 0.7; filter: grayscale(60%);"/>
-      <img src="docs/images/aws.png" height="40" alt="AWS" style="opacity: 0.7; filter: grayscale(60%);"/>
-      <img src="docs/images/gcp.png" height="40" alt="GCP" style="opacity: 0.7; filter: grayscale(60%);"/>
-      <img src="docs/images/azure.jpg" height="40" alt="Azure" style="opacity: 0.7; filter: grayscale(60%);"/>
+      <img src="docs/images/haystack.png" height="45" alt="Haystack" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/langgraph.png" height="45" alt="LangGraph" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/crew.png" height="45" alt="CrewAI" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/adk.png" height="45" alt="ADK" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/langfuse.jpg" height="45" alt="Langfuse" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/phoenix.jpg" height="45" alt="Phoenix" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/aws.png" height="45" alt="AWS" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/gcp.png" height="45" alt="GCP" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/azure.jpg" height="45" alt="Azure" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
     </div>
   </div>
 </div>
