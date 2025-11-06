@@ -1,8 +1,3 @@
-# Production-like Docker Compose for local testing
-# Tests the production Dockerfile with all features
-
-version: '3.9'
-
 services:
   db:
     image: postgres:16
@@ -12,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: idun_agents
     ports:
-      - "55433:5432"
+      - "5432:5432"
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
     healthcheck:
@@ -53,6 +48,33 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+    networks:
+      - idun_prod_network
+    restart: unless-stopped
+
+  agent:
+    image: python:3.13-slim
+    container_name: idun-agent-prod
+    ports:
+      - "8000:8000"
+    environment:
+      IDUN_AGENT_API_KEY: f21c8e8cfcef08c82bf6e68be9c9c2e9472285e76861c527abf80f813f5d175b
+      IDUN_MANAGER_HOST: http://manager:8080/api/v1/agents/config
+    volumes:
+      - ./libs/idun_agent_engine:/app/libs/idun_agent_engine
+      - ./libs/idun_agent_schema:/app/libs/idun_agent_schema
+      - ./libs/idun_platform_cli:/app/libs/idun_platform_cli
+    working_dir: /app
+    command: >
+      sh -c "
+      apt-get update && apt-get install -y curl &&
+      pip install -e libs/idun_agent_engine &&
+      pip install -e libs/idun_platform_cli &&
+      idun serve --source=manager
+      "
+    depends_on:
+      manager:
+        condition: service_healthy
     networks:
       - idun_prod_network
     restart: unless-stopped
