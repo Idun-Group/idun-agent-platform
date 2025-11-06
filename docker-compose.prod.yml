@@ -67,9 +67,10 @@ services:
     working_dir: /app
     command: >
       sh -c "
-      apt-get update && apt-get install -y curl &&
-      pip install -e libs/idun_agent_engine &&
-      pip install -e libs/idun_platform_cli &&
+      apt-get update && apt-get install &&
+      pip install uv && \
+      uv pip install --system -e libs/idun_agent_engine && \
+      uv pip install --system -e libs/idun_platform_cli && \
       idun serve --source=manager
       "
     depends_on:
