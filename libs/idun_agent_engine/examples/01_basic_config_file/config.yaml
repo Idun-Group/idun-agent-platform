@@ -8,7 +8,7 @@ server:
 
 # Agent Configuration - Defines which agent to load and how
 agent:
-  type: "langgraph"               # Agent framework type
+  type: "LANGGRAPH"               # Agent framework type
   # Agent-specific configuration (passed to the LangGraph adapter)
   config:
     name: "My Example LangGraph Agent"

@@ -7,9 +7,11 @@ requires-python = ">=3.13,<3.14"
 readme = "README.md"
 license = "MIT"
 dependencies = [
+    "click>=8.2.1",
     "idun-agent-engine",
     "idun-agent-manager",
     "idun-agent-schema",
+    "idun-platform-cli"
 ]
 
 [dependency-groups]
@@ -40,6 +42,7 @@ package = false
 idun-agent-engine = { path = "libs/idun_agent_engine", editable = true }
 idun-agent-manager = { path = "services/idun_agent_manager", editable = true }
 idun-agent-schema = { path = "libs/idun_agent_schema", editable = true }
+idun-platform-cli = { path = "libs/idun_platform_cli", editable = true }
 
 [build-system]
 requires = ["hatchling"]
