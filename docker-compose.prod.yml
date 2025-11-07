@@ -67,7 +67,11 @@ services:
     working_dir: /app
     command: >
       sh -c "
+<<<<<<< HEAD
       apt-get update && \
+=======
+      apt-get update && apt-get install &&
+>>>>>>> e52b6d7 (chore: pip to uv)
       pip install uv && \
       uv pip install --system -e libs/idun_agent_engine && \
       uv pip install --system -e libs/idun_platform_cli && \
