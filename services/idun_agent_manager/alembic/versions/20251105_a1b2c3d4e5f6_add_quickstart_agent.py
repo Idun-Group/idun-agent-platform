@@ -30,7 +30,8 @@ def upgrade() -> None:
     count = result.scalar()
 
     if count == 0:
-        agent_id = uuid.uuid4()
+        agent_id = "56bd3780-24f2-4f38-bdf8-7bf89a92567e"
+        agent_hash = "5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733"
         now = datetime.now(timezone.utc)
 
         engine_config = {
@@ -73,7 +74,7 @@ def upgrade() -> None:
                 engine_config=engine_config,
                 created_at=now,
                 updated_at=now,
-                agent_hash=None
+                agent_hash=agent_hash
             )
         )
         print(f"Created Quickstart Agent with ID: {agent_id}")
