@@ -51,7 +51,7 @@ The platform solves the fragmentation problem in the AI agent ecosystem—each f
 git clone https://github.com/Idun-Group/idun-agent-platform.git
 ```
 
-### 2. Start The Services
+### 2. Start The Services 
 For conveniance, you can run the docker-compose file, which will spin-up the `idun-agent-manager`, and an example agent from `libs/idun_agent_engine/examples/01_basic_config_file` configured with the `idun-agent-engine`. It will load a saved config from the manager:
 
 ```bash

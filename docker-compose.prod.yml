@@ -73,13 +73,12 @@ services:
       uv pip install --system -e libs/idun_platform_cli && \
       idun serve --source=manager
       "
-
-    networks:
-      - idun_prod_network
-
     depends_on:
       manager:
         condition: service_healthy
+    networks:
+      - idun_prod_network
+    restart: unless-stopped
 
 volumes:
   postgres_prod_data:
