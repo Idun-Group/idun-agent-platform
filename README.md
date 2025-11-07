@@ -45,62 +45,30 @@ The platform solves the fragmentation problem in the AI agent ecosystem—each f
 
 ## Quick Start
 
-### Installation
+### 1. Clone The Repo
 
 ```bash
-pip install idun-agent-engine
+git clone https://github.com/Idun-Group/idun-agent-platform.git
 ```
 
-### Configuration
-
-Create a `config.yaml`:
-
-```yaml
-server:
-  api:
-    port: 8000
-
-agent:
-  type: "langgraph"
-  config:
-    name: "My Agent"
-    graph_definition: ".path/to/my_agent.py:app"
-    checkpointer:
-      type: "sqlite"
-      db_url: "sqlite:///example_checkpoint.db"
-    observability:
-      provider: langfuse
-      enabled: true
-      options:
-        host: ${LANGFUSE_HOST}
-        public_key: ${LANGFUSE_PUBLIC_KEY}
-        secret_key: ${LANGFUSE_SECRET_KEY}
-        run_name: "idun-langgraph-run"
-```
-
-### Running Your Agent
-
-**Option 1: Local config**
+### 2. Start The Services 
+For conveniance, you can run the docker-compose file, which will spin-up the `idun-agent-manager`, and an example agent from `libs/idun_agent_engine/examples/01_basic_config_file` configured with the `idun-agent-engine`. It will load a saved config from the manager:
 
 ```bash
-idun serve .
+docker compose -f docker-compose.prod.yml up --build
 ```
 
-**Option 2: Getting the config from the Manager (if already added)**
-
-```bash
-export IDUN_AGENT_API_KEY=<your-api-key-from-manager>
-export IDUN_MANAGER_HOST=<manager-endpoint>
-idun serve --source=manager
-```
-
-### Testing
-
+### 3. Chat With Your Agent
+You can now either use the `swagger-ui` by going to: ```http://localhost:8000/docs``` and using the `invoke` or `stream` endpoints, or via `curl`: 
 ```bash
 curl -X POST "http://localhost:8000/agent/invoke" \
   -H "Content-Type: application/json" \
   -d '{"query": "Hello!", "session_id": "user-123"}'
 ```
+
+### 4. Manage your agents: 
+Now, head to the manager at `localhost:8080/docs` and start managing your agent! 
+
 
 > [!TIP]
 > 📖 See the [full documentation](https://idun-group.github.io/idun-agent-platform/) for detailed guides and examples.
