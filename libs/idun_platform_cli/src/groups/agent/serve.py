@@ -87,9 +87,8 @@ def serve_command(source: str, path: str | None):
     match source:
         case ServerSource.MANAGER:
             s = Serve(source=source)
-            s.serve()
         case ServerSource.FILE:
             s = Serve(source=source, path=path)
-            s.serve()
         case _:
             print(f"Argument {source} not recognized.")
+    s.serve()
