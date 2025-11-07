@@ -58,7 +58,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      IDUN_AGENT_API_KEY: f21c8e8cfcef08c82bf6e68be9c9c2e9472285e76861c527abf80f813f5d175b
+      IDUN_AGENT_API_KEY: 5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733
       IDUN_MANAGER_HOST: http://manager:8080/api/v1/agents/config
     volumes:
       - ./libs/idun_agent_engine:/app/libs/idun_agent_engine
@@ -67,7 +67,7 @@ services:
     working_dir: /app
     command: >
       sh -c "
-      apt-get update && apt-get install &&
+      apt-get update && \
       pip install uv && \
       uv pip install --system -e libs/idun_agent_engine && \
       uv pip install --system -e libs/idun_platform_cli && \
