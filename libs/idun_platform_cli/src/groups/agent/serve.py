@@ -19,9 +19,9 @@ class ServerSource(StrEnum):
 class Serve:
     """Helper class to run the server."""
 
-    def __init__(self, source: ServerSource, path: str | None = "") -> None:
+    def __init__(self, source: ServerSource, path: str | None = None) -> None:
         self._source: ServerSource = source
-        self._path: str | None = path if path else None
+        self._path: str | None = path or None
 
         if self._source == ServerSource.MANAGER and (
             not os.getenv("IDUN_AGENT_API_KEY") or not os.getenv("IDUN_MANAGER_HOST")
@@ -90,8 +90,14 @@ def serve_command(source: str, path: str | None):
     match source:
         case ServerSource.MANAGER:
             s = Serve(source=source)
+
         case ServerSource.FILE:
+            if not path:
+                print(
+                    "[ERROR]: No config path provided. You need to specify the path of your config.yaml"
+                )
+                sys.exit(1)
             s = Serve(source=source, path=path)
         case _:
-            print(f"Argument {source} not recognized.")
+            print(f"[ERROR]: Argument {source} not recognized.")
     s.serve()

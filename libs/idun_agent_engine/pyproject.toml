@@ -47,7 +47,11 @@ dependencies = [
     # "haystack-ai>=2.17.1",
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
+    "idun-platform-cli>=0.1.0",
 ]
+
+[project.scripts]
+idun = "main:cli"
 
 [project.urls]
 Homepage = "https://github.com/geoffreyharrazi/idun-agent-platform"
