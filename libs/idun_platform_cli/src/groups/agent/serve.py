@@ -80,10 +80,13 @@ class Serve:
 
 
 @click.command("serve")
-@click.option("--source")
+@click.option("--source", required=True)
 @click.option("--path")
 def serve_command(source: str, path: str | None):
-    """Exposes an agent as an API. Requires env vars: IDUN_AGENT_API_KEY and IDUN_MANAGER_HOST."""
+    """Reads a config and exposes it's agent as an API. Config is either fetched from the manager, or from a path.
+
+    Note: Fetching from the manager requires env vars: IDUN_AGENT_API_KEY and IDUN_MANAGER_HOST.
+    """
     match source:
         case ServerSource.MANAGER:
             s = Serve(source=source)
