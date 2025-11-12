@@ -57,6 +57,7 @@ function App() {
                     path="/agents/:id"
                     element={
                         <AppLayout>
+                            <Header />
                             <ContentLayout>
                                 <SideBar />
                                 <MainContent>

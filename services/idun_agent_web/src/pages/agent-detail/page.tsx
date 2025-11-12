@@ -30,7 +30,7 @@ const GatewayTab = lazy(
 const PageContainer = styled.div`
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    min-height: calc(100vh - 80px); /* Account for navbar height */
     background-color: #0f1016;
     color: white;
     font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -43,7 +43,6 @@ const Header = styled.header`
     align-items: center;
     gap: 16px;
     background-color: #0f1016;
-    z-index: 10;
 `;
 
 const Content = styled.div`
@@ -51,7 +50,6 @@ const Content = styled.div`
     display: flex;
     flex-direction: column;
     min-height: 0;
-    overflow: hidden;
     padding: 0 24px; /* add left/right breathing room */
 `;
 
@@ -151,6 +149,33 @@ const Tab = styled.button<{ active: boolean }>`
     }
 `;
 
+const ErrorContainer = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 48px 24px;
+`;
+
+const ErrorMessage = styled.div`
+    text-align: center;
+    max-width: 500px;
+    
+    h2 {
+        font-size: 24px;
+        font-weight: 600;
+        color: #ef4444;
+        margin: 0 0 16px 0;
+    }
+    
+    p {
+        font-size: 16px;
+        color: var(--color-text-secondary, #8892b0);
+        margin: 0 0 24px 0;
+        line-height: 1.6;
+    }
+`;
+
 export default function AgentDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -161,11 +186,16 @@ export default function AgentDetailPage() {
     const { session, isLoading: isAuthLoading } = useAuth();
 
     useEffect(() => {
-        if (!id || isAuthLoading || !session) return;
+        if (!id || isAuthLoading) return;
+        // Auth guard temporarily disabled, fetch agent regardless of session
         getAgent(id)
             .then(setAgent)
-            .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load agent'));
-    }, [id, isAuthLoading, session]);
+            .catch((e) => {
+                const errorMsg = e instanceof Error ? e.message : 'Failed to load agent';
+                setError(errorMsg);
+                console.error('Error loading agent:', e);
+            });
+    }, [id, isAuthLoading]);
 
     const tabs = [
         { id: 'overview', label: "Vue d'ensemble" },
@@ -192,6 +222,22 @@ export default function AgentDetailPage() {
         }
         setActiveTab(id);
     };
+    
+    const getAgentInitials = (): string => {
+        if (!agent?.name) return '...';
+        
+        const words = agent.name.trim().split(/\s+/);
+        if (words.length === 1) {
+            // Single word: take first two letters
+            return words[0].substring(0, 2).toUpperCase();
+        }
+        
+        // Multiple words: take first letter of each word (max 2)
+        return words
+            .slice(0, 2)
+            .map(word => word.charAt(0).toUpperCase())
+            .join('');
+    };
 
     const renderTabContent = () => (
         <Suspense fallback={<Loader />}>
@@ -208,6 +254,37 @@ export default function AgentDetailPage() {
         </Suspense>
     );
 
+    if (error) {
+        return (
+            <PageContainer>
+                <Header>
+                    <Button
+                        $variants="transparent"
+                        $color="secondary"
+                        onClick={() => navigate('/agents')}
+                    >
+                        Retour
+                    </Button>
+                </Header>
+                <Content>
+                    <ErrorContainer>
+                        <ErrorMessage>
+                            <h2>Failed to load agent</h2>
+                            <p>{error}</p>
+                            <Button 
+                                $variants="base" 
+                                $color="primary"
+                                onClick={() => window.location.reload()}
+                            >
+                                Retry
+                            </Button>
+                        </ErrorMessage>
+                    </ErrorContainer>
+                </Content>
+            </PageContainer>
+        );
+    }
+
     return (
         <PageContainer>
             <Header>
@@ -223,7 +300,7 @@ export default function AgentDetailPage() {
             <Content>
                 <AgentHeader>
                     <AgentInfo>
-                        <Avatar>CS</Avatar>
+                        <Avatar>{getAgentInitials()}</Avatar>
                         <AgentDetails>
                             <h1>{agent?.name ?? '...'}</h1>
                             {agent?.description ? <p>{agent.description}</p> : null}

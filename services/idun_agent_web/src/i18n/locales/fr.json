@@ -407,6 +407,10 @@
                 "secret-key": {
                     "label": "Clé secrète de Langfuse",
                     "placeholder": "Entrez votre clé secrète Langfuse"
+                },
+                "run-name": {
+                    "label": "Nom d'exécution",
+                    "placeholder": "mon-agent-execution"
                 }
             },
             "enabled": "Activé",

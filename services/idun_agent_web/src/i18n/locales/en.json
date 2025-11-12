@@ -391,6 +391,31 @@
             "create": "Create an agent",
             "creating": "Creating..."
         },
+        "observability": {
+            "title": "Observability & Database",
+            "label": "Enable observability and database",
+            "tools": {
+                "none": "None"
+            },
+            "langfuse": {
+                "host": {
+                    "label": "Langfuse Host",
+                    "placeholder": "https://cloud.langfuse.com"
+                },
+                "public-key": {
+                    "label": "Langfuse Public Key",
+                    "placeholder": "pk-lf-..."
+                },
+                "secret-key": {
+                    "label": "Langfuse Secret Key",
+                    "placeholder": "sk-lf-..."
+                },
+                "run-name": {
+                    "label": "Run Name",
+                    "placeholder": "my-agent-run"
+                }
+            }
+        },
         "success": {
             "title": "Success",
             "description": "Agent created successfully"

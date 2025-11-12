@@ -1,3 +1,5 @@
+import Editor from '@monaco-editor/react';
+import type { editor as MonacoEditor } from 'monaco-editor';
 import { FolderIcon, GithubIcon, NetworkIcon, UploadIcon } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState } from 'react';
 import styled from 'styled-components';
@@ -10,7 +12,6 @@ import { useTranslation } from 'react-i18next';
 import {
     Form,
     FormSelect,
-    FormTextArea,
     LabeledToggleButton,
     TextInput,
 } from '../../components/general/form/component';
@@ -39,11 +40,14 @@ export default function AgentFormPage() {
     const [baseInputSchema, setBaseInputSchema] = useState<string>('');
     const [baseOutputSchema, setBaseOutputSchema] = useState<string>('');
     const [langGraphStore, setLangGraphStore] = useState<string>('');
-    const jsonSchemaPlaceholder = '{\n  "type": "object"\n}';
+    const [baseInputSchemaError, setBaseInputSchemaError] = useState<string | null>(null);
+    const [baseOutputSchemaError, setBaseOutputSchemaError] = useState<string | null>(null);
+    const [langGraphStoreError, setLangGraphStoreError] = useState<string | null>(null);
     const [selectedObservabilityProvider, setSelectedObservabilityProvider] =
         useState<string | null>(null);
     const { selectedAgentFile } = useAgentFile();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     const [availableFrameworks, setAvailableFrameworks] = useState<
         Array<{ id: string; name: string }>
@@ -56,6 +60,97 @@ export default function AgentFormPage() {
     const [selectedConfigFile, setSelectedConfigFile] = useState<string>('');
     const [detectedFramework, setDetectedFramework] = useState<string | null>(null);
     const [frameworkError, setFrameworkError] = useState<string | null>(null);
+
+    const formatJsonField = (
+        value: string,
+        setter: (formatted: string) => void,
+        errorSetter: (error: string | null) => void
+    ) => {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            setter('');
+            errorSetter(null);
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(trimmed);
+            setter(JSON.stringify(parsed, null, 2));
+            errorSetter(null);
+        } catch (error) {
+            errorSetter('Invalid JSON');
+        }
+    };
+
+    const handleLangGraphStoreChange = (value: string | undefined) => {
+        setLangGraphStore(value ?? '');
+        if (langGraphStoreError) {
+            setLangGraphStoreError(null);
+        }
+    };
+
+    const handleBaseInputSchemaChange = (value: string | undefined) => {
+        setBaseInputSchema(value ?? '');
+        if (baseInputSchemaError) {
+            setBaseInputSchemaError(null);
+        }
+    };
+
+    const handleBaseOutputSchemaChange = (value: string | undefined) => {
+        setBaseOutputSchema(value ?? '');
+        if (baseOutputSchemaError) {
+            setBaseOutputSchemaError(null);
+        }
+    };
+
+    const handleLangGraphStoreEditorMount = (
+        editorInstance: MonacoEditor.IStandaloneCodeEditor
+    ) => {
+        editorInstance.onDidBlurEditorText(() => {
+            const currentValue = editorInstance.getValue();
+            formatJsonField(
+                currentValue,
+                setLangGraphStore,
+                setLangGraphStoreError
+            );
+        });
+    };
+
+    const handleBaseInputSchemaEditorMount = (
+        editorInstance: MonacoEditor.IStandaloneCodeEditor
+    ) => {
+        editorInstance.onDidBlurEditorText(() => {
+            const currentValue = editorInstance.getValue();
+            formatJsonField(
+                currentValue,
+                setBaseInputSchema,
+                setBaseInputSchemaError
+            );
+        });
+    };
+
+    const handleBaseOutputSchemaEditorMount = (
+        editorInstance: MonacoEditor.IStandaloneCodeEditor
+    ) => {
+        editorInstance.onDidBlurEditorText(() => {
+            const currentValue = editorInstance.getValue();
+            formatJsonField(
+                currentValue,
+                setBaseOutputSchema,
+                setBaseOutputSchemaError
+            );
+        });
+    };
+
+    const jsonEditorOptions = {
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        formatOnPaste: true,
+        formatOnType: true,
+        automaticLayout: true,
+        wordWrap: 'on' as const,
+        lineNumbers: 'off' as const,
+    };
 
     const handleChangesYamlFiles = (files: string[]) => {
         setYamlFiles(files);
@@ -72,6 +167,9 @@ export default function AgentFormPage() {
         setBaseInputSchema('');
         setBaseOutputSchema('');
         setLangGraphStore('');
+        setBaseInputSchemaError(null);
+        setBaseOutputSchemaError(null);
+        setLangGraphStoreError(null);
         console.log('YAML files in ZIP:', files);
     };
 
@@ -163,6 +261,7 @@ export default function AgentFormPage() {
                         setLangGraphStore(
                             JSON.stringify(parsedAgentConfig.store, null, 2)
                         );
+                        setLangGraphStoreError(null);
                     } catch (error) {
                         console.warn('Unable to parse store from config', error);
                     }
@@ -177,11 +276,13 @@ export default function AgentFormPage() {
                     setBaseInputSchema(
                         JSON.stringify(parsedAgentConfig.input_schema_definition, null, 2)
                     );
+                    setBaseInputSchemaError(null);
                 }
                 if (parsedAgentConfig.output_schema_definition) {
                     setBaseOutputSchema(
                         JSON.stringify(parsedAgentConfig.output_schema_definition, null, 2)
                     );
+                    setBaseOutputSchemaError(null);
                 }
             }
 
@@ -259,7 +360,7 @@ export default function AgentFormPage() {
             if (url && !url.startsWith('sqlite:///')) {
                 setDbUrlError('SQLite URLs must start with "sqlite:///"');
             } else {
-                setDbUrlError(null);
+        setDbUrlError(null);
             }
             return;
         }
@@ -403,6 +504,11 @@ export default function AgentFormPage() {
             return;
         }
 
+        if (baseInputSchemaError || baseOutputSchemaError || langGraphStoreError) {
+            toast.error('Please fix invalid JSON fields before submitting');
+            return;
+        }
+
         if (dbUrlError) {
             toast.error(dbUrlError);
             return;
@@ -433,13 +539,14 @@ export default function AgentFormPage() {
         if (langGraphStore.trim()) {
             try {
                 parsedStore = JSON.parse(langGraphStore);
-            } catch (error) {
+        } catch (error) {
                 toast.error('Store must be valid JSON');
                 return;
             }
         }
 
         setIsSubmitting(true);
+        setSubmitError(null); // Clear any previous errors
 
         try {
             const agentConfig: Record<string, any> = {
@@ -526,9 +633,32 @@ export default function AgentFormPage() {
             }, 1000);
         } catch (error) {
             console.error('Error creating agent:', error);
-            const errorMessage =
-                error instanceof Error ? error.message : 'Failed to create agent';
-            toast.error(errorMessage);
+            
+            // Extract error message from the backend response
+            let errorMessage = 'Failed to create agent';
+            
+            if (error instanceof Error) {
+                try {
+                    // Try to parse JSON error response from backend
+                    const parsedError = JSON.parse(error.message);
+                    if (parsedError.detail) {
+                        // Handle FastAPI validation errors
+                        if (Array.isArray(parsedError.detail)) {
+                            errorMessage = parsedError.detail
+                                .map((err: any) => `${err.loc.join('.')}: ${err.msg}`)
+                                .join(', ');
+                        } else if (typeof parsedError.detail === 'string') {
+                            errorMessage = parsedError.detail;
+                        }
+                    }
+                } catch {
+                    // If not JSON, use the error message as-is
+                    errorMessage = error.message;
+                }
+            }
+            
+            setSubmitError(errorMessage);
+            // Don't use toast for errors, display inline instead
         } finally {
             setIsSubmitting(false);
         }
@@ -548,21 +678,21 @@ export default function AgentFormPage() {
                         const tag = (target.tagName || '').toLowerCase();
 
                         if (tag === 'input' || tag === 'select') {
-                            e.preventDefault();
+                                e.preventDefault();
                         }
                     }
                 }}
             >
-                <>
-                    <h2>{t('agent-form.general-info')}</h2>
+                    <>
+                        <h2>{t('agent-form.general-info')}</h2>
 
-                    <TextInput
-                        label={t('agent-form.name.label')}
-                        placeholder={t('agent-form.name.placeholder')}
-                        required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                    />
+                        <TextInput
+                            label={t('agent-form.name.label')}
+                            placeholder={t('agent-form.name.placeholder')}
+                            required
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                        />
 
                     <TextInput
                         label="Agent Version"
@@ -579,8 +709,8 @@ export default function AgentFormPage() {
                         onChange={(e) => setServerPort(e.target.value)}
                     />
 
-                    <Label>
-                        Agent Type
+                    <LabelWithButtons>
+                        <ButtonLabel>Agent Type</ButtonLabel>
                         <SelectButtonContainer>
                             {frameworkOptions.map((framework) => (
                                 <SelectButton
@@ -597,7 +727,7 @@ export default function AgentFormPage() {
                                 </SelectButton>
                             ))}
                         </SelectButtonContainer>
-                    </Label>
+                    </LabelWithButtons>
 
                     <TextInput
                         label="Agent Config Name"
@@ -616,21 +746,30 @@ export default function AgentFormPage() {
                                 value={graphDefinition}
                                 onChange={(e) => setGraphDefinition(e.target.value)}
                             />
-                            <FormTextArea
-                                label="Store (JSON)"
-                                placeholder={jsonSchemaPlaceholder}
-                                value={langGraphStore}
-                                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                                    setLangGraphStore(event.target.value)
-                                }
-                            />
+                            <JsonEditorContainer>
+                                <JsonEditorLabel>Store (JSON)</JsonEditorLabel>
+                                <JsonEditorWrapper>
+                                    <Editor
+                                        height="220px"
+                                        language="json"
+                                        theme="vs-dark"
+                                        value={langGraphStore}
+                                        onChange={handleLangGraphStoreChange}
+                                        onMount={handleLangGraphStoreEditorMount}
+                                        options={jsonEditorOptions}
+                                    />
+                                </JsonEditorWrapper>
+                                {langGraphStoreError && (
+                                    <ErrorMessage>{langGraphStoreError}</ErrorMessage>
+                                )}
+                            </JsonEditorContainer>
                         </>
                     )}
 
                     {agentType === 'HAYSTACK' && (
                         <>
-                            <Label>
-                                Haystack Component Type
+                            <LabelWithButtons>
+                                <ButtonLabel>Haystack Component Type</ButtonLabel>
                                 <SelectButtonContainer>
                                     {(['pipeline', 'agent'] as const).map((type) => (
                                         <SelectButton
@@ -643,7 +782,7 @@ export default function AgentFormPage() {
                                         </SelectButton>
                                     ))}
                                 </SelectButtonContainer>
-                            </Label>
+                            </LabelWithButtons>
                             <TextInput
                                 label="Haystack Component Definition"
                                 placeholder="path.to.module:component"
@@ -658,117 +797,139 @@ export default function AgentFormPage() {
 
                     {['LANGGRAPH', 'HAYSTACK'].includes(agentType ?? '') && (
                         <>
-                            <FormTextArea
-                                label="Input Schema Definition (JSON)"
-                                placeholder={jsonSchemaPlaceholder}
-                                value={baseInputSchema}
-                                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                                    setBaseInputSchema(event.target.value)
-                                }
-                            />
-                            <FormTextArea
-                                label="Output Schema Definition (JSON)"
-                                placeholder={jsonSchemaPlaceholder}
-                                value={baseOutputSchema}
-                                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                                    setBaseOutputSchema(event.target.value)
-                                }
-                            />
+                            <JsonEditorContainer>
+                                <JsonEditorLabel>
+                                    Input Schema Definition (JSON)
+                                </JsonEditorLabel>
+                                <JsonEditorWrapper>
+                                    <Editor
+                                        height="220px"
+                                        language="json"
+                                        theme="vs-dark"
+                                        value={baseInputSchema}
+                                        onChange={handleBaseInputSchemaChange}
+                                        onMount={handleBaseInputSchemaEditorMount}
+                                        options={jsonEditorOptions}
+                                    />
+                                </JsonEditorWrapper>
+                                {baseInputSchemaError && (
+                                    <ErrorMessage>{baseInputSchemaError}</ErrorMessage>
+                                )}
+                            </JsonEditorContainer>
+                            <JsonEditorContainer>
+                                <JsonEditorLabel>
+                                    Output Schema Definition (JSON)
+                                </JsonEditorLabel>
+                                <JsonEditorWrapper>
+                                    <Editor
+                                        height="220px"
+                                        language="json"
+                                        theme="vs-dark"
+                                        value={baseOutputSchema}
+                                        onChange={handleBaseOutputSchemaChange}
+                                        onMount={handleBaseOutputSchemaEditorMount}
+                                        options={jsonEditorOptions}
+                                    />
+                                </JsonEditorWrapper>
+                                {baseOutputSchemaError && (
+                                    <ErrorMessage>{baseOutputSchemaError}</ErrorMessage>
+                                )}
+                            </JsonEditorContainer>
                         </>
                     )}
 
                     <SourceLabel style={{ display: 'none' }}>
-                        {t('agent-form.source.label')}
-                    </SourceLabel>
+                            {t('agent-form.source.label')}
+                        </SourceLabel>
                     <SourceSection style={{ display: 'none' }}>
-                        <SourceCard
-                            onClick={() => handleSourceClick('upload')}
-                        >
-                            <UploadIcon />
-                            <p>
-                                {t('agent-form.source.upload')}
-                                <br />
-                                {selectedAgentFile &&
-                                selectedAgentFile.source == 'Folder' ? (
-                                    <span>
-                                        {selectedAgentFile.file.name}
-                                    </span>
-                                ) : (
-                                    <span>
-                                        {t(
-                                            'agent-form.source.select-folder'
-                                        )}
-                                    </span>
-                                )}
-                            </p>
-                        </SourceCard>
-                        <SourceCard
-                            onClick={() => handleSourceClick('Git')}
+                            <SourceCard
+                                onClick={() => handleSourceClick('upload')}
+                            >
+                                <UploadIcon />
+                                <p>
+                                    {t('agent-form.source.upload')}
+                                    <br />
+                                    {selectedAgentFile &&
+                                    selectedAgentFile.source == 'Folder' ? (
+                                        <span>
+                                            {selectedAgentFile.file.name}
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            {t(
+                                                'agent-form.source.select-folder'
+                                            )}
+                                        </span>
+                                    )}
+                                </p>
+                            </SourceCard>
+                            <SourceCard
+                                onClick={() => handleSourceClick('Git')}
                             style={{ display: 'none' }}
-                        >
-                            <GithubIcon />
-                            <p>
-                                {t('agent-form.source.git')}
-                                <br />
-                                {selectedAgentFile &&
-                                selectedAgentFile.source == 'Git' ? (
-                                    <span>
-                                        {selectedAgentFile.file.name}
-                                    </span>
-                                ) : (
-                                    <span>
-                                        {t(
-                                            'agent-form.source.select-git-repo'
-                                        )}
-                                    </span>
-                                )}
-                            </p>
-                        </SourceCard>
-                        <SourceCard
-                            onClick={() => handleSourceClick('remote')}
+                            >
+                                <GithubIcon />
+                                <p>
+                                    {t('agent-form.source.git')}
+                                    <br />
+                                    {selectedAgentFile &&
+                                    selectedAgentFile.source == 'Git' ? (
+                                        <span>
+                                            {selectedAgentFile.file.name}
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            {t(
+                                                'agent-form.source.select-git-repo'
+                                            )}
+                                        </span>
+                                    )}
+                                </p>
+                            </SourceCard>
+                            <SourceCard
+                                onClick={() => handleSourceClick('remote')}
                             style={{ display: 'none' }}
-                        >
-                            <NetworkIcon />
-                            <p>
-                                {t('agent-form.source.remote')}
-                                <br />
-                                {selectedAgentFile &&
-                                selectedAgentFile.source == 'Remote' ? (
-                                    <span>
-                                        {selectedAgentFile.file.name}
-                                    </span>
-                                ) : (
-                                    <span>
-                                        {t(
-                                            'agent-form.source.select-remote'
-                                        )}
-                                    </span>
-                                )}
-                            </p>
-                        </SourceCard>
-                        <SourceCard
-                            onClick={() => handleSourceClick('project')}
+                            >
+                                <NetworkIcon />
+                                <p>
+                                    {t('agent-form.source.remote')}
+                                    <br />
+                                    {selectedAgentFile &&
+                                    selectedAgentFile.source == 'Remote' ? (
+                                        <span>
+                                            {selectedAgentFile.file.name}
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            {t(
+                                                'agent-form.source.select-remote'
+                                            )}
+                                        </span>
+                                    )}
+                                </p>
+                            </SourceCard>
+                            <SourceCard
+                                onClick={() => handleSourceClick('project')}
                             style={{ display: 'none' }}
-                        >
-                            <FolderIcon />
-                            <p>
-                                {t('agent-form.source.project')}
-                                <br />
-                                {selectedAgentFile &&
-                                selectedAgentFile.source == 'Project' ? (
-                                    <span>
-                                        {selectedAgentFile.file.name}
-                                    </span>
-                                ) : (
-                                    <span>
-                                        {t(
-                                            'agent-form.source.select-project-template'
-                                        )}
-                                    </span>
-                                )}
-                            </p>
-                        </SourceCard>
-                    </SourceSection>
+                            >
+                                <FolderIcon />
+                                <p>
+                                    {t('agent-form.source.project')}
+                                    <br />
+                                    {selectedAgentFile &&
+                                    selectedAgentFile.source == 'Project' ? (
+                                        <span>
+                                            {selectedAgentFile.file.name}
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            {t(
+                                                'agent-form.source.select-project-template'
+                                            )}
+                                        </span>
+                                    )}
+                                </p>
+                            </SourceCard>
+                        </SourceSection>
 
                     <div style={{ display: 'none' }}>
                         <FormSelect
@@ -809,185 +970,187 @@ export default function AgentFormPage() {
                         </FrameworkDetectionBox>
                     )}
 
-                    <Label>
-                        Environnement
-                        <SelectButtonContainer>
-                            <SelectButton
-                                type="button"
-                                onClick={() => setEnvironment('development')}
-                                $selected={environment === 'development'}
-                            >
-                                DEV
-                            </SelectButton>
-                            <SelectButton
-                                type="button"
-                                onClick={() => setEnvironment('staging')}
-                                $selected={environment === 'staging'}
-                            >
-                                STAGING
-                            </SelectButton>
-                            <SelectButton
-                                type="button"
-                                onClick={() => setEnvironment('production')}
-                                $selected={environment === 'production'}
-                            >
-                                PRODUCTION
-                            </SelectButton>
-                        </SelectButtonContainer>
-                    </Label>
+                        <LabelWithButtons>
+                            <ButtonLabel>Environnement</ButtonLabel>
+                            <SelectButtonContainer>
+                                <SelectButton
+                                    type="button"
+                                    onClick={() => setEnvironment('development')}
+                                    $selected={environment === 'development'}
+                                >
+                                    DEV
+                                </SelectButton>
+                                <SelectButton
+                                    type="button"
+                                    onClick={() => setEnvironment('staging')}
+                                    $selected={environment === 'staging'}
+                                >
+                                    STAGING
+                                </SelectButton>
+                                <SelectButton
+                                    type="button"
+                                    onClick={() => setEnvironment('production')}
+                                    $selected={environment === 'production'}
+                                >
+                                    PRODUCTION
+                                </SelectButton>
+                            </SelectButtonContainer>
+                        </LabelWithButtons>
 
                     {/* Framework is now auto-detected from the config file */}
                     {/* <Label>
-                        {t('agent-form.framework.label')}
-                        <SelectButtonContainer>
-                            {availableFrameworks.map((framework) => (
-                                <SelectButton
-                                    $variants="base"
-                                    $color="secondary"
-                                    type="button"
-                                    onClick={() =>
-                                        setSelectedFramework(framework.id)
-                                    }
-                                    selected={
-                                        selectedFramework === framework.id
-                                    }
-                                    key={framework.id}
-                                >
-                                    {framework.name}
-                                </SelectButton>
-                            ))}
-                        </SelectButtonContainer>
+                            {t('agent-form.framework.label')}
+                            <SelectButtonContainer>
+                                {availableFrameworks.map((framework) => (
+                                    <SelectButton
+                                        $variants="base"
+                                        $color="secondary"
+                                        type="button"
+                                        onClick={() =>
+                                            setSelectedFramework(framework.id)
+                                        }
+                                        selected={
+                                            selectedFramework === framework.id
+                                        }
+                                        key={framework.id}
+                                    >
+                                        {framework.name}
+                                    </SelectButton>
+                                ))}
+                            </SelectButtonContainer>
                     </Label> */}
 
                     {/* Agent path is now in the YAML config file */}
                     {/* <TextInput
-                        label={t('agent-form.agent-path.label')}
-                        placeholder={t('agent-form.agent-path.placeholder')}
-                        value={agentPath}
-                        onChange={(e) => setAgentPath(e.target.value)}
+                            label={t('agent-form.agent-path.label')}
+                            placeholder={t('agent-form.agent-path.placeholder')}
+                            value={agentPath}
+                            onChange={(e) => setAgentPath(e.target.value)}
                     /> */}
-                    <h2>{t('agent-form.observability.title')}</h2>
+                        <h2>{t('agent-form.observability.title')}</h2>
 
-                    <Label>
-                        {t('agent-form.observability.label')}
-                        <sup>*</sup>
-                        <SelectButtonContainer>
-                            <SelectButton
-                                type="button"
-                                onClick={() =>
-                                    setSelectedObservabilityProvider(null)
-                                }
-                                $selected={
-                                    selectedObservabilityProvider === null
-                                }
-                            >
-                                {t('agent-form.observability.tools.none')}
-                            </SelectButton>
-                            <SelectButton
-                                type="button"
-                                onClick={() =>
-                                    setSelectedObservabilityProvider(
+                        <LabelWithButtons>
+                            <ButtonLabel>
+                            {t('agent-form.observability.label')}
+                            <sup>*</sup>
+                            </ButtonLabel>
+                            <SelectButtonContainer>
+                                <SelectButton
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedObservabilityProvider(null)
+                                    }
+                                    $selected={
+                                        selectedObservabilityProvider === null
+                                    }
+                                >
+                                    {t('agent-form.observability.tools.none')}
+                                </SelectButton>
+                                <SelectButton
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedObservabilityProvider(
+                                            'langfuse'
+                                        )
+                                    }
+                                    $selected={
+                                        selectedObservabilityProvider ===
                                         'langfuse'
-                                    )
-                                }
-                                $selected={
-                                    selectedObservabilityProvider ===
-                                    'langfuse'
-                                }
-                            >
-                                Langfuse
-                            </SelectButton>
-                            <SelectButton
-                                type="button"
-                                onClick={() =>
-                                    setSelectedObservabilityProvider(
+                                    }
+                                >
+                                    Langfuse
+                                </SelectButton>
+                                <SelectButton
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedObservabilityProvider(
+                                            'phoenix'
+                                        )
+                                    }
+                                    $selected={
+                                        selectedObservabilityProvider ===
                                         'phoenix'
-                                    )
-                                }
-                                $selected={
-                                    selectedObservabilityProvider ===
-                                    'phoenix'
-                                }
-                            >
-                                Phoenix
-                            </SelectButton>
-                        </SelectButtonContainer>
-                    </Label>
+                                    }
+                                >
+                                    Phoenix
+                                </SelectButton>
+                            </SelectButtonContainer>
+                        </LabelWithButtons>
 
-                    {selectedObservabilityProvider === 'langfuse' && (
-                        <>
-                            <TextInput
-                                label={t(
-                                    'agent-form.observability.langfuse.host.label'
-                                )}
-                                placeholder={t(
-                                    'agent-form.observability.langfuse.host.placeholder'
-                                )}
-                                value={langfuseHost}
-                                required
-                                onChange={(e) =>
-                                    setLangfuseHost(e.target.value)
-                                }
-                            />
-                            <TextInput
-                                label={t(
-                                    'agent-form.observability.langfuse.public-key.label'
-                                )}
-                                placeholder={t(
-                                    'agent-form.observability.langfuse.public-key.placeholder'
-                                )}
-                                value={langfusePublicKey}
-                                onChange={(e) =>
-                                    setLangfusePublicKey(e.target.value)
-                                }
-                                required
-                            />
-                            <TextInput
-                                label={t(
-                                    'agent-form.observability.langfuse.secret-key.label'
-                                )}
-                                placeholder={t(
-                                    'agent-form.observability.langfuse.secret-key.placeholder'
-                                )}
-                                required
-                                value={langfuseSecretKey}
-                                onChange={(e) =>
-                                    setLangfuseSecretKey(e.target.value)
-                                }
-                            />
-                            <TextInput
-                                label={t(
-                                    'agent-form.observability.langfuse.run-name.label'
-                                )}
-                                placeholder={t(
-                                    'agent-form.observability.langfuse.run-name.placeholder'
-                                )}
-                                value={langfuseRunName}
-                                onChange={(e) =>
-                                    setLangfuseRunName(e.target.value)
-                                }
-                            />
-                        </>
-                    )}
+                        {selectedObservabilityProvider === 'langfuse' && (
+                            <>
+                                <TextInput
+                                    label={t(
+                                        'agent-form.observability.langfuse.host.label'
+                                    )}
+                                    placeholder={t(
+                                        'agent-form.observability.langfuse.host.placeholder'
+                                    )}
+                                    value={langfuseHost}
+                                    required
+                                    onChange={(e) =>
+                                        setLangfuseHost(e.target.value)
+                                    }
+                                />
+                                <TextInput
+                                    label={t(
+                                        'agent-form.observability.langfuse.public-key.label'
+                                    )}
+                                    placeholder={t(
+                                        'agent-form.observability.langfuse.public-key.placeholder'
+                                    )}
+                                    value={langfusePublicKey}
+                                    onChange={(e) =>
+                                        setLangfusePublicKey(e.target.value)
+                                    }
+                                    required
+                                />
+                                <TextInput
+                                    label={t(
+                                        'agent-form.observability.langfuse.secret-key.label'
+                                    )}
+                                    placeholder={t(
+                                        'agent-form.observability.langfuse.secret-key.placeholder'
+                                    )}
+                                    required
+                                    value={langfuseSecretKey}
+                                    onChange={(e) =>
+                                        setLangfuseSecretKey(e.target.value)
+                                    }
+                                />
+                                <TextInput
+                                    label={t(
+                                        'agent-form.observability.langfuse.run-name.label'
+                                    )}
+                                    placeholder={t(
+                                        'agent-form.observability.langfuse.run-name.placeholder'
+                                    )}
+                                    value={langfuseRunName}
+                                    onChange={(e) =>
+                                        setLangfuseRunName(e.target.value)
+                                    }
+                                />
+                            </>
+                        )}
 
                     {agentType === 'LANGGRAPH' && (
                         <>
-                            <Label>
-                                Checkpointer Type
-                                <SelectButtonContainer>
-                                    {(['sqlite', 'postgres'] as const).map((type) => (
-                                        <SelectButton
-                                            type="button"
-                                            key={type}
-                                            onClick={() => handleManualCheckpointerTypeChange(type)}
-                                            $selected={checkpointerType === type}
-                                        >
-                                            {type.toUpperCase()}
-                                        </SelectButton>
-                                    ))}
-                                </SelectButtonContainer>
-                            </Label>
-                            <TextInput
+                        <LabelWithButtons>
+                            <ButtonLabel>Checkpointer Type</ButtonLabel>
+                            <SelectButtonContainer>
+                                {(['sqlite', 'postgres'] as const).map((type) => (
+                                    <SelectButton
+                                        type="button"
+                                        key={type}
+                                        onClick={() => handleManualCheckpointerTypeChange(type)}
+                                        $selected={checkpointerType === type}
+                                    >
+                                        {type.toUpperCase()}
+                                    </SelectButton>
+                                ))}
+                            </SelectButtonContainer>
+                        </LabelWithButtons>
+                        <TextInput
                                 label="Checkpointer Database URL"
                                 placeholder={
                                     checkpointerType === 'sqlite'
@@ -995,32 +1158,28 @@ export default function AgentFormPage() {
                                         : 'postgres://user:password@host:5432/database'
                                 }
                                 value={databaseUrl}
-                                error={dbUrlError ?? undefined}
-                                onChange={handleDatabaseUrlChange}
-                            />
-                        </>
-                    )}
+                            error={dbUrlError ?? undefined}
+                            onChange={handleDatabaseUrlChange}
+                        />
+                    </>
+                )}
 
-                    <ButtonContainer>
-                        <Button
-                            $variants="base"
-                            $color="primary"
-                            type="button"
-                            onClick={() => setIsPopupOpen(true)}
-                        >
-                            {t('agent-form.open-source-popup') || 'Source'}
-                        </Button>
-                        <Button
-                            $variants="base"
-                            $color="primary"
-                            type="submit"
+                <ButtonContainer>
+                                    <Button
+                                        $variants="base"
+                                        $color="primary"
+                                        type="submit"
                             disabled={isSubmitting}
-                        >
+                                    >
                             {isSubmitting
                                 ? 'Creating Agent...'
                                 : t('agent-form.create-agent') || 'Create Agent'}
-                        </Button>
-                    </ButtonContainer>
+                                    </Button>
+                </ButtonContainer>
+                
+                {submitError && (
+                    <SubmitErrorMessage>{submitError}</SubmitErrorMessage>
+                )}
                 </>
             </Form>
 
@@ -1169,6 +1328,7 @@ const SelectButton = styled.button<{ $selected: boolean }>`
     align-items: center;
     justify-content: center;
     padding: 12px 16px;
+    flex: 0 0 auto;
     font: inherit;
     border-radius: 8px;
     border: 2px solid var(--color-primary, #8c52ff);
@@ -1201,10 +1361,43 @@ const SelectButton = styled.button<{ $selected: boolean }>`
 `;
 
 const SelectButtonContainer = styled.div`
-    display: flex;
-    flex-wrap: wrap;
+    display: inline-flex;
     gap: 8px;
-    margin: 8px 0;
+    vertical-align: middle;
+    flex-wrap: wrap;
+`;
+
+const LabelWithButtons = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+`;
+
+const ButtonLabel = styled.div`
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary, #ffffff);
+`;
+
+const JsonEditorContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+`;
+
+const JsonEditorLabel = styled.span`
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary, #ffffff);
+`;
+
+const JsonEditorWrapper = styled.div`
+    border: 1px solid var(--color-border-primary, #2a3f5f);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--color-background-primary, #0f1016);
 `;
 
 const FrameworkDetectionBox = styled.div<{ $isError: boolean }>`
@@ -1254,4 +1447,17 @@ const ErrorMessage = styled.p`
     font-weight: 400;
     color: #ff4757;
     line-height: 1.5;
+`;
+
+const SubmitErrorMessage = styled.div`
+    margin-top: 16px;
+    padding: 16px 20px;
+    background: rgba(255, 71, 87, 0.1);
+    border: 1px solid #ff4757;
+    border-radius: 8px;
+    color: #ff4757;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    word-break: break-word;
 `;
