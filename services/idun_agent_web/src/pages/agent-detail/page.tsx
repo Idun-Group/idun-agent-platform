@@ -327,13 +327,13 @@ export default function AgentDetailPage() {
                         </StatusBadge>
                     </AgentInfo>
                     <Controls>
-                        <Button $variants="transparent" $color="secondary">
-                            Paramètres
+                        <Button $variants="transparent" $color="secondary" disabled>
+                            Modifier
                         </Button>
-                        <Button $variants="transparent" $color="secondary">
+                        <Button $variants="transparent" $color="secondary" disabled>
                             Pause
                         </Button>
-                        <Button $variants="base" $color="primary">
+                        <Button $variants="base" $color="primary" disabled>
                             Exécuter
                         </Button>
                     </Controls>

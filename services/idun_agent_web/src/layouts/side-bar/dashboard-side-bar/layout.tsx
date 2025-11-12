@@ -176,8 +176,8 @@ const SideBarNav = styled.nav<{ $collapsed?: boolean }>`
         > button:nth-child(-n + 4)::after {
             content: '';
             position: absolute;
-            left: 30px;   /* match left padding */
-            right: 16px;  /* match right padding */
+            left: 0;
+            right: 0;
             bottom: 0;
             height: 1px;
             background: rgb(130, 111, 149);
