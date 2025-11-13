@@ -24,12 +24,12 @@
         },
         "apps": {
             "title": "Connecter votre première application.",
-            "description": "Visitez le marketplace des applications pour connecter Idun Engine et les outils qui développent votre entreprise.",
+            "description": "Visitez la marketplace des applications pour connecter l'Idun Agent Platform et les outils que développent votre entreprise.",
             "first-install": "Installer la première application"
         },
         "marketplace": {
             "title": "Marketplace des applications",
-            "subtitle": "Découvrez et connectez des applications à Idun Engine.",
+            "subtitle": "Découvrez et connectez des applications sur l'Idun Agent Platform.",
             "all-apps": "Toutes les applications",
             "by": "par",
             "install": "Ajouter l'application",
@@ -143,7 +143,7 @@
     },
     "signin": {
         "title": "Créer un compte",
-        "description": "Remplissez le formulaire pour créer votre compte Idun Engine.",
+        "description": "Remplissez le formulaire pour créer votre compte sur l'Idun Agent Platform.",
         "firstName": {
             "label": "Prénom",
             "placeholder": "Entrez votre prénom"
@@ -252,7 +252,7 @@
     },
     "login": {
         "title": "Connexion",
-        "description": "Connectez-vous à votre compte Idun Engine.",
+        "description": "Connectez-vous à votre compte sur l'Idun Agent Platform.",
         "email": "Adresse e-mail",
         "email.placeholder": "Entrez votre adresse e-mail",
         "password": "Mot de passe",
