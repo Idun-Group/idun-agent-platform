@@ -12,6 +12,7 @@ import {
 } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
 import { TextInput } from '../../components/general/form/component';
+import { useLocation } from 'react-router-dom';
 import type { components } from '../../generated/agent-manager';
 import managerOpenApi from '../../../schema/manager-openapi.json';
 // const CodeTab = lazy(
@@ -233,6 +234,8 @@ export default function AgentDetailPage() {
     const [agentConfigError, setAgentConfigError] = useState<string | null>(
         null
     );
+    const [inputSchemaJson, setInputSchemaJson] = useState('');
+    const [outputSchemaJson, setOutputSchemaJson] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -240,6 +243,7 @@ export default function AgentDetailPage() {
         useState<ManagedAgentPatch | null>(null);
 
     const { session, isLoading: isAuthLoading } = useAuth();
+    const location = useLocation();
 
     useEffect(() => {
         if (!id || isAuthLoading) return;
@@ -308,6 +312,23 @@ export default function AgentDetailPage() {
         folding: false,
     };
 
+    const updateSchemaPreviewFromConfig = (config: unknown) => {
+        if (config && typeof config === 'object' && !Array.isArray(config)) {
+            const cfg = config as Record<string, unknown>;
+            const input = cfg.input_schema_definition ?? null;
+            const output = cfg.output_schema_definition ?? null;
+            setInputSchemaJson(
+                input ? JSON.stringify(input, null, 2) : ''
+            );
+            setOutputSchemaJson(
+                output ? JSON.stringify(output, null, 2) : ''
+            );
+        } else {
+            setInputSchemaJson('');
+            setOutputSchemaJson('');
+        }
+    };
+
     const initializeDraftFromAgent = (current: BackendAgent) => {
         setDraftName(current.name ?? '');
         const framework =
@@ -327,6 +348,18 @@ export default function AgentDetailPage() {
         setAgentConfigJson(JSON.stringify(config, null, 2));
         setAgentConfigError(null);
         setSaveError(null);
+        updateSchemaPreviewFromConfig(config);
+    };
+
+    const handleAgentConfigChange = (value: string | undefined) => {
+        const nextValue = value ?? '';
+        setAgentConfigJson(nextValue);
+        try {
+            const parsed = nextValue.trim() ? JSON.parse(nextValue) : {};
+            updateSchemaPreviewFromConfig(parsed);
+        } catch {
+            // Ignore parse errors while user is typing; previews will update when JSON is valid.
+        }
     };
 
     const handleStartEditing = () => {
@@ -337,6 +370,9 @@ export default function AgentDetailPage() {
 
     const handleCancelEditing = () => {
         if (isSaving) return;
+        if (agent) {
+            initializeDraftFromAgent(agent);
+        }
         setIsEditing(false);
         setAgentConfigError(null);
         setSaveError(null);
@@ -462,6 +498,7 @@ export default function AgentDetailPage() {
         try {
             const updatedAgent = await patchAgent(agent.id, pendingPayload);
             setAgent(updatedAgent);
+            initializeDraftFromAgent(updatedAgent);
             setIsEditing(false);
             setAgentConfigError(null);
             setSaveError(null);
@@ -658,7 +695,7 @@ export default function AgentDetailPage() {
                                 language="json"
                                 theme="vs-dark"
                                 value={agentConfigJson}
-                                onChange={(value) => setAgentConfigJson(value ?? '')}
+                                onChange={handleAgentConfigChange}
                                 options={jsonEditorOptions}
                                 onValidate={(markers) => {
                                     if (!markers.length) {
@@ -675,6 +712,34 @@ export default function AgentDetailPage() {
                                 <FieldError>{agentConfigError}</FieldError>
                             ) : null}
                         </EditorSection>
+                        <JsonDisplaySection>
+                            <SectionLabel>
+                                Input Schema Definition (JSON)
+                            </SectionLabel>
+                            <JsonDisplay>
+                                {inputSchemaJson ? (
+                                    <pre>{inputSchemaJson}</pre>
+                                ) : (
+                                    <PlaceholderText>
+                                        Aucune définition fournie
+                                    </PlaceholderText>
+                                )}
+                            </JsonDisplay>
+                        </JsonDisplaySection>
+                        <JsonDisplaySection>
+                            <SectionLabel>
+                                Output Schema Definition (JSON)
+                            </SectionLabel>
+                            <JsonDisplay>
+                                {outputSchemaJson ? (
+                                    <pre>{outputSchemaJson}</pre>
+                                ) : (
+                                    <PlaceholderText>
+                                        Aucune définition fournie
+                                    </PlaceholderText>
+                                )}
+                            </JsonDisplay>
+                        </JsonDisplaySection>
                     </EditFormContainer>
                     {isConfirmModalOpen && (
                         <ConfirmOverlay>
@@ -776,6 +841,38 @@ const SectionLabel = styled.span`
 const HelperText = styled.span`
     font-size: 13px;
     color: var(--color-text-secondary, #8892b0);
+`;
+
+const JsonDisplaySection = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+`;
+
+const JsonDisplay = styled.div`
+    max-height: 240px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-primary, #2a3f5f);
+    background: rgba(24, 26, 36, 0.8);
+    overflow: auto;
+
+    pre {
+        margin: 0;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
+            monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--color-text-primary, #ffffff);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+`;
+
+const PlaceholderText = styled.span`
+    color: var(--color-text-secondary, #8892b0);
+    font-style: italic;
+    font-size: 14px;
 `;
 
 const FieldError = styled.span`

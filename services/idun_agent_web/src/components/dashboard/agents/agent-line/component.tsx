@@ -168,7 +168,7 @@ export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps)
                 <Button
                     $variants="transparent"
                     title="Edit"
-                    onClick={() => navigate(`/agents/${agent.id}`)}
+                    onClick={() => navigate(`/agents/${agent.id}?edit=true`)}
                 >
                     <EditIcon size={18} />
                 </Button>

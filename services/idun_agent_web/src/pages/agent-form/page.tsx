@@ -546,7 +546,7 @@ export default function AgentFormPage() {
         }
 
         setIsSubmitting(true);
-        setSubmitError(null); // Clear any previous errors
+            setSubmitError(null); // Clear any previous errors
 
         try {
             const agentConfig: Record<string, any> = {
@@ -629,7 +629,7 @@ export default function AgentFormPage() {
             toast.success(`Agent "${createdAgent.name}" created successfully!`);
 
             setTimeout(() => {
-                navigate(`/agents/${createdAgent.id}`);
+                navigate('/agents');
             }, 1000);
         } catch (error) {
             console.error('Error creating agent:', error);

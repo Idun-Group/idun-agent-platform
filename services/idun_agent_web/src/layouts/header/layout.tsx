@@ -97,38 +97,48 @@ const Header = () => {
                 )}
             </SideContainer>
 
-            <SideContainer>
-                <EnvSelect
-                    ref={envSelectRef}
-                    value={environment}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                        const value = e.target.value;
-                        setEnvironment(value);
-                        const params = new URLSearchParams(location.search);
-                        if (!value) {
-                            params.delete('env');
-                        } else {
-                            params.set('env', value);
-                        }
-                        navigate({ pathname: location.pathname, search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
-                        // update width after change
-                        requestAnimationFrame(updateEnvWidth);
-                    }}
-                >
-                    <option value="">
-                        {t('header.environment.select')}
-                    </option>
-                    <option value="development">
-                        {t('header.environment.development')}
-                    </option>
-                    <option value="staging">
-                        {t('header.environment.staging')}
-                    </option>
-                    <option value="production">
-                        {t('header.environment.production')}
-                    </option>
-                </EnvSelect>
-            </SideContainer>
+            {location.pathname !== '/agents/create' && (
+                <SideContainer>
+                    <EnvSelect
+                        ref={envSelectRef}
+                        value={environment}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const value = e.target.value;
+                            setEnvironment(value);
+                            const params = new URLSearchParams(location.search);
+                            if (!value) {
+                                params.delete('env');
+                            } else {
+                                params.set('env', value);
+                            }
+                            navigate(
+                                {
+                                    pathname: location.pathname,
+                                    search: params.toString()
+                                        ? `?${params.toString()}`
+                                        : '',
+                                },
+                                { replace: true }
+                            );
+                            // update width after change
+                            requestAnimationFrame(updateEnvWidth);
+                        }}
+                    >
+                        <option value="">
+                            {t('header.environment.select')}
+                        </option>
+                        <option value="development">
+                            {t('header.environment.development')}
+                        </option>
+                        <option value="staging">
+                            {t('header.environment.staging')}
+                        </option>
+                        <option value="production">
+                            {t('header.environment.production')}
+                        </option>
+                    </EnvSelect>
+                </SideContainer>
+            )}
         </HeaderContainer>
     );
 };
