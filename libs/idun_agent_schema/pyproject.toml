@@ -2,7 +2,7 @@
 name = "idun-agent-schema"
 version = "0.2.1"
 description = "Centralized Pydantic schema library for Idun Agent Engine and Manager"
-authors = [{ name = "Idun Team", email = "team@idun.com" }]
+authors = [{ name = "Idun Group", email = "contact@idun-group.com" }]
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12,<3.14"
