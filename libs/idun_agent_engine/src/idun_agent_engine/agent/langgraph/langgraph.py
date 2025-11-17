@@ -207,8 +207,10 @@ class LanggraphAgent(agent_base.BaseAgent):
             ) from None
 
         try:
+            from pathlib import Path
+            resolved_path = Path(module_path).resolve()
             spec = importlib.util.spec_from_file_location(
-                graph_variable_name, module_path
+                graph_variable_name, str(resolved_path)
             )
             if spec is None or spec.loader is None:
                 raise ImportError(f"Could not load spec for module at {module_path}")
