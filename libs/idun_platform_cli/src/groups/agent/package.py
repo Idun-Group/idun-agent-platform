@@ -4,12 +4,6 @@ from pathlib import Path
 
 import click
 
-"""
-1 - Scan folder ; if no requirements.txt or no pyproject.toml -> error.
-2 - Generate Dockerfile based on requirement or pyproject.
-3 - Put that into the destination
-"""
-
 
 class Dependency(StrEnum):
     """Dependency Enum."""
@@ -22,7 +16,7 @@ class Dependency(StrEnum):
 def get_dependencies(path: str) -> Dependency:
     """Verifies if the path folder contains a `requirements.txt` or `pyproject.toml`, and returns which."""
     """:param path: Path pointing to the agent's folder."""
-    agent_path = Path(path)
+    agent_path = Path(path).resolve()
     if (agent_path / "requirements.txt").exists():
         return Dependency.REQUIREMENT
     elif (agent_path / "pyproject.toml").exists():
@@ -58,12 +52,11 @@ def generate_dockerfile(dependency: Dependency) -> str:
 
 
 @click.command("package")
-@click.argument("path")
-@click.option("--target", required=False)
-def package_command(path: str, target: str | None):
+@click.argument("path", default=".")
+@click.option("--target", required=False, default=".")
+def package_command(path: str, target: str):
     """Packages the agent and it's dependencies into a Dockerfile. You can specifiy the input path and the destination. Defaults to current directory."""
     dependency = get_dependencies(path)
-    print(dependency)
     dockerfile = generate_dockerfile(dependency)
     target_path = Path(target)
     dockerfile_path = target_path / "Dockerfile"

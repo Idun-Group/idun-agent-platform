@@ -75,19 +75,11 @@ dev = [
 include = [
     "src/idun_agent_engine",
     "src/idun_agent_engine/py.typed",
-    "src/idun_platform_cli",
 ]
 
 [tool.hatch.build.targets.wheel]
-include = [
-    "src/idun_agent_engine",
-    "src/idun_agent_engine/py.typed",
-    "src/idun_platform_cli",
-]
-
-[tool.hatch.build.targets.wheel.sources]
-"src/idun_agent_engine" = "idun_agent_engine"
-"src/idun_platform_cli" = "idun_platform_cli"
+packages = ["src/idun_agent_engine"]
+force-include = { "../idun_platform_cli/src" = "idun_platform_cli" }
 
 [build-system]
 requires = ["hatchling"]
