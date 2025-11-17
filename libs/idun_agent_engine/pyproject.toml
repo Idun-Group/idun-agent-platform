@@ -42,7 +42,7 @@ dependencies = [
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
     "langchain>=0.3.27,<0.4",
     "arize-phoenix>=11.22.0,<12",
-    "idun-agent-schema>=0.2.0,<0.3.0",
+    "idun-agent-schema>=0.2.1,<0.3.0",
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
     "click>=8.2.1",
@@ -75,10 +75,11 @@ dev = [
 include = [
     "src/idun_agent_engine",
     "src/idun_agent_engine/py.typed",
+    "src/idun_platform_cli",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/idun_agent_engine"]
+packages = ["src/idun_agent_engine", "src/idun_platform_cli"]
 
 [build-system]
 requires = ["hatchling"]

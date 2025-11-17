@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 
 
+class Dependency(StrEnum):
     """Dependency Enum."""
 
     REQUIREMENT = "requirements.txt"
@@ -28,39 +29,36 @@ def generate_dockerfile(dependency: Dependency) -> str:
     # TODO: add envs vars based on source
     """Generates Dockerfile based on given params."""
     if dependency == Dependency.NONE:
-        click.echo(
+        print(
             "[ERROR]: No pyproject.toml or requirements.txt found. Please make sure to include them."
         )
         sys.exit(1)
     if dependency == Dependency.REQUIREMENT:
-        requirements_dockerfile = f"""
-        FROM python:3.13-slim
-        RUN apt-get update
-        RUN pip install uv
-        WORKDIR /app
+        requirements_dockerfile = f"""FROM python:3.13-slim
+RUN apt-get update && pip install uv
+WORKDIR /app
 
+RUN uv pip install --system --no-cache-dir --index-url https://test.pypi.org/simple/ \\
+    --extra-index-url https://pypi.org/simple idun-agent-schema==0.2.1.dev20251117151420 \\
+    --index-strategy unsafe-best-match --prerelease=allow
 
-        RUN uv pip install --system --no-cache-dir --index-url https://test.pypi.org/simple/ \\
-            --extra-index-url https://pypi.org/simple idun-agent-engine==0.2.1.dev20251117114240 \\
-            --index-strategy unsafe-best-match --prerelease=allow
+RUN uv pip install --system --no-cache-dir --index-url https://test.pypi.org/simple/ \\
+    --extra-index-url https://pypi.org/simple idun-agent-engine==0.2.1.dev20251117151427 \\
+    --index-strategy unsafe-best-match --prerelease=allow
 
-        RUN uv  pip install --system --no-cache-dir --index-url https://test.pypi.org/simple/ \\
-            --extra-index-url https://pypi.org/simple idun-agent-engine \\
-            --index-strategy unsafe-best-match --prerelease=allow
+COPY {dependency} ./
+COPY config.yaml ./
+RUN uv pip install -r {dependency} --system
 
-        COPY {dependency} ./
-        RUN uv pip install -r {dependency} --system
-        RUN echo 'Agent finished packaging'
-
-        CMD ["idun", "agent", "serve", "--source=file --path config.yaml"]
-        """
+CMD ["idun", "agent", "serve", "--source=file", "--path", "config.yaml"]
+"""
         return requirements_dockerfile
 
 
 @click.command("package")
 @click.argument("path", default=".")
 @click.option("--target", required=False, default=".")
-def package_command(path: str, target: str | None):
+def package_command(path: str, target: str):
     """Packages the agent and it's dependencies into a Dockerfile. You can specifiy the input path and the destination. Defaults to current directory."""
     dependency = get_dependencies(path)
     dockerfile = generate_dockerfile(dependency)

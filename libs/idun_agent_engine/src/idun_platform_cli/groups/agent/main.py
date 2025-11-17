@@ -2,8 +2,8 @@
 
 import click
 
-from idun_platform_cli.groups.agent.package import package_command
-from idun_platform_cli.groups.agent.serve import serve_command
+from .package import package_command
+from .serve import serve_command
 
 
 @click.group()

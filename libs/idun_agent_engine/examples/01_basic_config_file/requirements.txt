@@ -1,1 +1,2 @@
 qdrant-haystack
+langgraph

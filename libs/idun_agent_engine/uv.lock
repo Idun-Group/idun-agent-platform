@@ -1176,7 +1176,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.116.1,<0.117.0" },
     { name = "google-adk", specifier = ">=1.9.0,<2.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
-    { name = "idun-agent-schema", specifier = ">=0.2.0,<0.3.0" },
+    { name = "idun-agent-schema", specifier = ">=0.2.1,<0.3.0" },
     { name = "langchain", specifier = ">=0.3.27,<0.4" },
     { name = "langchain-core", specifier = ">=0.3.72,<0.4.0" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<3.0.0" },
@@ -1205,15 +1205,15 @@ dev = [
 
 [[package]]
 name = "idun-agent-schema"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/22/72/c24abc9f2574e810e3b6f008faf59758f16af2a5cfe51d7dac4f0d42d0f2/idun_agent_schema-0.2.0.tar.gz", hash = "sha256:003c0caf8cf4656537bc7e01d52512062d852b592fe4697c9af85156a7efdba2", size = 11259, upload-time = "2025-10-08T18:29:23.858Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7e/c2/11dcb61f92d9cf0b2cfd48502489ce05cb8f9d9781d2d51327adfdfa89bc/idun_agent_schema-0.2.1.tar.gz", hash = "sha256:6742878fd3b798aa1f148a99ce369f9584d8174e0e068e9c5746eb041718aa95", size = 6234, upload-time = "2025-11-02T21:21:39.851Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/05/3a361bdfe497c8b9f4ef86f58a6a2e319b0840b44aae5aaaa87fa8aaeffc/idun_agent_schema-0.2.0-py3-none-any.whl", hash = "sha256:7a78e2f7bfd16edd864287f0e18a976f2abdaec791fc48d0f065a287c17b772b", size = 15782, upload-time = "2025-10-08T18:29:22.906Z" },
+    { url = "https://files.pythonhosted.org/packages/85/30/5e3eb1b28635e125b3e6560b712d27864535c0eb73e8965baee227e5c0ad/idun_agent_schema-0.2.1-py3-none-any.whl", hash = "sha256:91c2f2dc0786998103bd90132973007d716ca81481888afbb6c4319a03b53a78", size = 8895, upload-time = "2025-11-02T21:21:38.372Z" },
 ]
 
 [[package]]
