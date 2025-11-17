@@ -54,8 +54,8 @@ services:
 
   agent:
     build:
-      context: .
-      dockerfile: libs/idun_agent_engine/examples/01_basic_config_file/Dockerfile
+      context: ./libs/idun_agent_engine/examples/01_basic_config_file
+      dockerfile: Dockerfile
     container_name: idun-agent-prod
     ports:
       - "8000:8000"

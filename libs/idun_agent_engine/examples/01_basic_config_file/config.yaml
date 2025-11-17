@@ -16,7 +16,7 @@ agent:
     # Observability (provider-agnostic). Example with Langfuse or Phoenix
     observability:
       provider: langfuse #langfuse # or phoenix
-      enabled: true
+      enabled: false
       options:
         # Langfuse options
         host: ${LANGFUSE_HOST}
