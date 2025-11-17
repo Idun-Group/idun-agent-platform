@@ -33,7 +33,9 @@ def generate_dockerfile(dependency: Dependency) -> str:
             "[ERROR]: No pyproject.toml or requirements.txt found. Please make sure to include them."
         )
         sys.exit(1)
+        return ""  # Unreachable, but satisfies type checker
     if dependency == Dependency.REQUIREMENT:
+        # TODO: use from file
         requirements_dockerfile = f"""FROM python:3.13-slim
 RUN apt-get update && pip install uv
 WORKDIR /app
@@ -54,6 +56,10 @@ RUN uv pip install -r requirements.txt --system
 CMD ["idun", "agent", "serve", "--source=file", "--path", "config.yaml"]
 """
         return requirements_dockerfile
+    if dependency == Dependency.PYPROJECT:
+        # TODO: implement pyproject.toml support
+        raise NotImplementedError("pyproject.toml support is not yet implemented")
+    raise ValueError(f"Unknown dependency type: {dependency}")
 
 
 @click.command("package")

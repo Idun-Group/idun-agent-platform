@@ -46,6 +46,8 @@ dependencies = [
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
     "click>=8.2.1",
+    # Pin SQLAlchemy for Python 3.13 compatibility (required by Phoenix)
+    "sqlalchemy>=2.0.36,<3.0.0",
 ]
 
 
