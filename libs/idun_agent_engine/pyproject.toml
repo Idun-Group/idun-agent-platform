@@ -79,7 +79,6 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/idun_agent_engine"]
-force-include = { "../idun_platform_cli/src" = "idun_platform_cli" }
 
 [build-system]
 requires = ["hatchling"]
