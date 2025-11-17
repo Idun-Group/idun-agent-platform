@@ -62,7 +62,7 @@ services:
       - ./services/idun_agent_web:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://host.docker.internal:8000
+      - VITE_API_URL=http://localhost:8000 #http://host.docker.internal:8000
       - CHOKIDAR_USEPOLLING=true
     networks:
       - idun_network
