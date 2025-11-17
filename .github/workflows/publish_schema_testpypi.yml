@@ -36,8 +36,8 @@ jobs:
           BASE_VERSION=$(grep -m 1 'version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
           # Get branch name for display
           BRANCH_NAME="${{ github.ref_name }}"
-          # Create dev version with UTC datetime (PyPI doesn't allow local version identifiers with +)
-          TIMESTAMP="$(date -u +%Y%m%d%H%M%S)${GITHUB_RUN_ATTEMPT}"
+          # Use workflow run id/attempt so all matrix jobs share identical version string
+          TIMESTAMP="${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           DEV_VERSION="${BASE_VERSION}.dev${TIMESTAMP}"
           echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
