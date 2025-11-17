@@ -72,17 +72,12 @@ const SourceSelectorUpload = ({
                     onChange={async (e) => {
                         const selected = e.target.files && e.target.files[0];
                         if (selected) {
-                            const pyFiles = await getAllFilePathFromZip(
+                            const yamlFiles = await getAllFilePathFromZip(
                                 selected,
-                                'py'
+                                'yaml'
                             );
 
-                            onChangeZip(
-                                pyFiles.filter(
-                                    (path) => !path.endsWith('__init__.py')
-                                )
-                            );
-
+                            onChangeZip(yamlFiles);
 
                             setSelectedAgentFile(selected, 'Folder');
                         }

@@ -98,20 +98,17 @@ interface AgentLineProps {
 
 export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps) {
     const navigate = useNavigate();
-    const selectStatus = (status: string) => {
+    const selectStatus = (status: BackendAgent['status']) => {
         switch (status) {
-            case 'running':
+            case 'active':
                 return 'green';
-            case 'stopped':
-                return 'red';
             case 'error':
                 return 'red';
-            case 'deployed':
-                return 'green';
-            case 'ready':
+            case 'deprecated':
                 return 'orange';
-            case 'draft':
+            case 'inactive':
                 return 'gray';
+            case 'draft':
             default:
                 return 'gray';
         }
@@ -171,7 +168,7 @@ export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps)
                 <Button
                     $variants="transparent"
                     title="Edit"
-                    onClick={() => navigate(`/agents/${agent.id}`)}
+                    onClick={() => navigate(`/agents/${agent.id}?edit=true`)}
                 >
                     <EditIcon size={18} />
                 </Button>

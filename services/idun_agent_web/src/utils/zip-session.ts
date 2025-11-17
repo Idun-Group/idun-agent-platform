@@ -128,9 +128,39 @@ export async function getAllFilePathFromZip(
     const contents = await zip.loadAsync(buffer);
     return Object.keys(contents.files)
         .filter(
-            (path) =>
-                !contents.files[path].dir &&
-                (!extensions || path.toLowerCase().endsWith(`.${extensions}`))
+            (path) => {
+                if (contents.files[path].dir) return false;
+                if (!extensions) return true;
+                const lower = path.toLowerCase();
+                // Support both .yaml and .yml for YAML files
+                if (extensions === 'yaml') {
+                    return lower.endsWith('.yaml') || lower.endsWith('.yml');
+                }
+                return lower.endsWith(`.${extensions}`);
+            }
         )
         .map((p) => `./${p}`.replace(/\\/g, '/'));
+}
+
+export async function readFileFromZip(
+    file: File | Blob | ArrayBuffer,
+    filePath: string
+): Promise<string> {
+    const zip = new JSZip();
+    // Convertir en ArrayBuffer si nécessaire
+    const buffer =
+        file instanceof File || file instanceof Blob
+            ? await file.arrayBuffer()
+            : file;
+    const contents = await zip.loadAsync(buffer);
+    
+    // Remove leading ./ if present
+    const normalizedPath = filePath.startsWith('./') ? filePath.slice(2) : filePath;
+    
+    const fileEntry = contents.files[normalizedPath];
+    if (!fileEntry || fileEntry.dir) {
+        throw new Error(`File not found in ZIP: ${filePath}`);
+    }
+    
+    return await fileEntry.async('text');
 }

@@ -7,7 +7,6 @@ import type { User } from '../../types/user.types';
 import { UserDashboardLine } from '../../components/dashboard/users/user-dashboard-line/component';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/use-auth';
-import { toast } from 'react-toastify';
 import { listUsers } from '../../utils/auth';
 type UserDashboardProps = {
     // config your component props here
@@ -76,16 +75,7 @@ const UserDashboardPage = ({}: UserDashboardProps) => {
         },
     ];
 
-    const isAdmin = !!session?.principal?.roles?.includes('admin');
-
-    useEffect(() => {
-        if (!isAuthLoading && !isAdmin) {
-            toast.error(t('errors.admin_required', { defaultValue: 'Admin required' }));
-        }
-    }, [isAuthLoading, isAdmin, t]);
-
-    if (isAuthLoading) return null;
-    if (!isAdmin) return null;
+    // Admin check removed: all users can access this page for now
 
     return (
         <UserDashboardContainer>
