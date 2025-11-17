@@ -50,7 +50,7 @@ dependencies = [
 
 
 [project.scripts]
-idun = "main:cli"
+idun = "idun_platform_cli.main:cli"
 
 
 [project.urls]
@@ -87,7 +87,7 @@ include = [
 
 [tool.hatch.build.targets.wheel.sources]
 "src/idun_agent_engine" = "idun_agent_engine"
-"../../libs/idun_platform_cli/src" = "."
+"../../libs/idun_platform_cli/src" = "idun_platform_cli"
 
 [build-system]
 requires = ["hatchling"]
