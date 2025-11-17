@@ -1,0 +1,73 @@
+import sys
+from enum import StrEnum
+from pathlib import Path
+
+import click
+
+"""
+1 - Scan folder ; if no requirements.txt or no pyproject.toml -> error.
+2 - Generate Dockerfile based on requirement or pyproject.
+3 - Put that into the destination
+"""
+
+
+class Dependency(StrEnum):
+    """Dependency Enum."""
+
+    REQUIREMENT = "requirements.txt"
+    PYPROJECT = "pyproject.toml"
+    NONE = "none"
+
+
+def get_dependencies(path: str) -> Dependency:
+    """Verifies if the path folder contains a `requirements.txt` or `pyproject.toml`, and returns which."""
+    """:param path: Path pointing to the agent's folder."""
+    agent_path = Path(path)
+    if (agent_path / "requirements.txt").exists():
+        return Dependency.REQUIREMENT
+    elif (agent_path / "pyproject.toml").exists():
+        return Dependency.PYPROJECT
+    else:
+        return Dependency.NONE
+
+
+def generate_dockerfile(dependency: Dependency) -> str:
+    # TODO: add envs vars based on source
+    """Generates Dockerfile based on given params."""
+    if dependency == Dependency.NONE:
+        print(
+            "[ERROR]: No pyproject.toml or requirements.txt found. Please make sure to include them."
+        )
+        sys.exit(1)
+    if dependency == Dependency.REQUIREMENT:
+        requirements_dockerfile = f"""
+        FROM python:3.13-slim
+        RUN apt-get update
+        RUN pip install uv
+        WORKDIR /app
+
+        RUN uv pip install --system /tmp/idun_platform_cli
+
+        COPY {dependency} ./
+        RUN uv pip install -r {dependency} --system
+        RUN echo 'Agent finished packaging'
+
+        CMD ["idun", "agent", "serve", "--source=file --path config.yaml"]
+        """
+        return requirements_dockerfile
+
+
+@click.command("package")
+@click.argument("path")
+@click.option("--target", required=False)
+def package_command(path: str, target: str | None):
+    """Packages the agent and it's dependencies into a Dockerfile. You can specifiy the input path and the destination. Defaults to current directory."""
+    dependency = get_dependencies(path)
+    dockerfile = generate_dockerfile(dependency)
+    target_path = Path(target)
+    dockerfile_path = target_path / "Dockerfile"
+    try:
+        dockerfile_path.write_text(dockerfile)
+        print(f"Dockerfile generated in {target}")
+    except OSError as e:
+        print(f"[ERROR]: Cannot write dockerfile to path {target}: {e}")
