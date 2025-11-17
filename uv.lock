@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = "==3.13.*"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -1385,6 +1385,7 @@ dependencies = [
     { name = "openinference-instrumentation-langchain" },
     { name = "pydantic" },
     { name = "python-dotenv" },
+    { name = "sqlalchemy" },
     { name = "streamlit" },
     { name = "uvicorn" },
 ]
@@ -1399,7 +1400,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.116.1,<0.117.0" },
     { name = "google-adk", specifier = ">=1.9.0,<2.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
-    { name = "idun-agent-schema", specifier = ">=0.2.0,<0.3.0" },
+    { name = "idun-agent-schema", specifier = ">=0.2.1,<0.3.0" },
     { name = "langchain", specifier = ">=0.3.27,<0.4" },
     { name = "langchain-core", specifier = ">=0.3.72,<0.4.0" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<3.0.0" },
@@ -1410,6 +1411,7 @@ requires-dist = [
     { name = "openinference-instrumentation-langchain", specifier = ">=0.1.13,<1.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
+    { name = "sqlalchemy", specifier = ">=2.0.36,<3.0.0" },
     { name = "streamlit", specifier = ">=1.47.1,<2.0.0" },
     { name = "uvicorn", specifier = ">=0.35.0,<0.36.0" },
 ]
@@ -1509,7 +1511,6 @@ dependencies = [
     { name = "idun-agent-engine" },
     { name = "idun-agent-manager" },
     { name = "idun-agent-schema" },
-    { name = "idun-platform-cli" },
 ]
 
 [package.dev-dependencies]
@@ -1539,7 +1540,6 @@ requires-dist = [
     { name = "idun-agent-engine", editable = "libs/idun_agent_engine" },
     { name = "idun-agent-manager", editable = "services/idun_agent_manager" },
     { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },
-    { name = "idun-platform-cli", editable = "libs/idun_platform_cli" },
 ]
 
 [package.metadata.requires-dev]
@@ -1576,21 +1576,6 @@ dependencies = [
 requires-dist = [
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0,<3.0.0" },
-]
-
-[[package]]
-name = "idun-platform-cli"
-version = "0.1.0"
-source = { editable = "libs/idun_platform_cli" }
-dependencies = [
-    { name = "click" },
-    { name = "idun-agent-engine" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click", specifier = ">=8.2.1" },
-    { name = "idun-agent-engine", specifier = ">=0.2.1" },
 ]
 
 [[package]]

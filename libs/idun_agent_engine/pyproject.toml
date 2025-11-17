@@ -3,7 +3,7 @@ name = "idun-agent-engine"
 version = "0.2.1"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.12,<3.14"
 readme = "README.md"
 license = "MIT"
 keywords = [
