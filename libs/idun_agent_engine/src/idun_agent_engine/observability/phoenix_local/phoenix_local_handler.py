@@ -23,7 +23,7 @@ class PhoenixLocalHandler(ObservabilityHandlerBase):
     def __init__(
         self,
         options: dict[str, Any] | None = None,
-        default_endpoint: str = "http://127.0.0.1:6006",
+        default_endpoint: str = "http://0.0.0.0:6006",
     ):
         """Initialize handler, start Phoenix via CLI, and set up instrumentation.
 
