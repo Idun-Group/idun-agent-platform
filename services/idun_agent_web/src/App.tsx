@@ -57,6 +57,7 @@ function App() {
                     path="/agents/:id"
                     element={
                         <AppLayout>
+                            <Header />
                             <ContentLayout>
                                 <SideBar />
                                 <MainContent>
@@ -199,7 +200,7 @@ const MainContent = styled.div`
     flex-direction: column;
     min-height: 0;
     background: var(--color-background-primary);
-    overflow: scroll;
+    overflow: auto;
 `;
 
 export default App;

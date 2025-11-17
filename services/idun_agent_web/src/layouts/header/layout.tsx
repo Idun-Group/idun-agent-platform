@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useWorkspace from '../../hooks/use-workspace';
 import { useAuth } from '../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ const Header = () => {
         { id: string; name: string; icon: string; description: string }[]
     >([]);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const { setSelectedWorkspaceId, getAllWorkspace } = useWorkspace();
     const { session, isLoading: isAuthLoading } = useAuth();
@@ -24,6 +25,41 @@ const Header = () => {
     // Local state for selected environment and workspace in the header
     const [environment, setEnvironment] = useState<string>('');
     const [workspaceId, setWorkspaceId] = useState<string>('');
+
+    // Sync environment with URL param on mount and when URL changes
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const env = params.get('env') || '';
+        setEnvironment(env);
+    }, [location.search]);
+
+    // Auto-size env select to selected option text
+    const envSelectRef = useRef<HTMLSelectElement>(null);
+    const updateEnvWidth = useCallback(() => {
+        const el = envSelectRef.current;
+        if (!el) return;
+        const selectedText = el.options[el.selectedIndex]?.text || '';
+        const span = document.createElement('span');
+        const cs = getComputedStyle(el);
+        span.style.position = 'fixed';
+        span.style.visibility = 'hidden';
+        span.style.whiteSpace = 'pre';
+        span.style.font = `${cs.fontStyle} ${cs.fontVariant} ${cs.fontWeight} ${cs.fontSize} / ${cs.lineHeight} ${cs.fontFamily}`;
+        span.textContent = selectedText;
+        document.body.appendChild(span);
+        const textWidth = span.getBoundingClientRect().width;
+        document.body.removeChild(span);
+        const padding = 32; // left+right padding from styled Select
+        const arrowRoom = 20; // dropdown arrow space
+        el.style.width = `${Math.ceil(textWidth + padding + arrowRoom)}px`;
+    }, []);
+
+    useEffect(() => {
+        updateEnvWidth();
+        const onResize = () => updateEnvWidth();
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [environment, updateEnvWidth]);
 
     return (
         <HeaderContainer>
@@ -61,32 +97,48 @@ const Header = () => {
                 )}
             </SideContainer>
 
-            <SideContainer>
-                <EnvSelect
-                    value={environment}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                        setEnvironment(e.target.value)
-                    }
-                >
-                    <option value="">
-                        {t('header.environment.select')}
-                    </option>
-                    <option value="development">
-                        {t('header.environment.development')}
-                    </option>
-                    <option value="staging">
-                        {t('header.environment.staging')}
-                    </option>
-                    <option value="production">
-                        {t('header.environment.production')}
-                    </option>
-                </EnvSelect>
-                <EnvLabel>
-                    {environment
-                        ? t(`header.environment.${environment}`)
-                        : null}
-                </EnvLabel>
-            </SideContainer>
+            {location.pathname !== '/agents/create' && (
+                <SideContainer>
+                    <EnvSelect
+                        ref={envSelectRef}
+                        value={environment}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const value = e.target.value;
+                            setEnvironment(value);
+                            const params = new URLSearchParams(location.search);
+                            if (!value) {
+                                params.delete('env');
+                            } else {
+                                params.set('env', value);
+                            }
+                            navigate(
+                                {
+                                    pathname: location.pathname,
+                                    search: params.toString()
+                                        ? `?${params.toString()}`
+                                        : '',
+                                },
+                                { replace: true }
+                            );
+                            // update width after change
+                            requestAnimationFrame(updateEnvWidth);
+                        }}
+                    >
+                        <option value="">
+                            {t('header.environment.select')}
+                        </option>
+                        <option value="development">
+                            {t('header.environment.development')}
+                        </option>
+                        <option value="staging">
+                            {t('header.environment.staging')}
+                        </option>
+                        <option value="production">
+                            {t('header.environment.production')}
+                        </option>
+                    </EnvSelect>
+                </SideContainer>
+            )}
         </HeaderContainer>
     );
 };
@@ -159,6 +211,9 @@ const EnvSelect = styled(Select)`
     background: hsl(var(--accent));
     color: hsl(var(--header-text));
     border-color: hsl(var(--header-border));
+    min-width: unset;
+    width: auto;
+    display: inline-block;
 
     &:hover {
         background: hsl(var(--accent));
@@ -172,8 +227,4 @@ const SideContainer = styled.div`
     gap: 0.75rem;
 `;
 
-const EnvLabel = styled.span`
-    font-size: 0.875rem;
-    color: hsl(var(--header-muted));
-    margin-left: 0.25rem;
-`;
+// Removed EnvLabel badge for environment selection
