@@ -1,2 +1,1 @@
-chroma-haystack
 qdrant-haystack

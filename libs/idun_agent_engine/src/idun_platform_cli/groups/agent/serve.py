@@ -3,6 +3,7 @@ import sys
 from enum import StrEnum
 
 import click
+
 from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.config_builder import ConfigBuilder
 from idun_agent_engine.core.engine_config import EngineConfig
@@ -26,7 +27,7 @@ class Serve:
         if self._source == ServerSource.MANAGER and (
             not os.getenv("IDUN_AGENT_API_KEY") or not os.getenv("IDUN_MANAGER_HOST")
         ):
-            print(
+            click.echo(
                 "[ERROR]: either IDUN_AGENT_API_KEY or IDUN_MANAGER_HOST are not found. Make sure you add them both to your env variables, as `manager` source requires both."
             )
             sys.exit(1)
@@ -90,14 +91,16 @@ def serve_command(source: str, path: str | None):
     match source:
         case ServerSource.MANAGER:
             s = Serve(source=source)
+            s.serve()
 
         case ServerSource.FILE:
             if not path:
-                print(
+                click.echo(
                     "[ERROR]: No config path provided. You need to specify the path of your config.yaml"
                 )
                 sys.exit(1)
             s = Serve(source=source, path=path)
+            s.serve()
         case _:
-            print(f"[ERROR]: Argument {source} not recognized.")
-    s.serve()
+            click.echo(f"[ERROR]: Argument {source} not recognized.")
+            sys.exit(1)

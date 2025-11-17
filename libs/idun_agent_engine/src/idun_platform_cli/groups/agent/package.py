@@ -4,14 +4,7 @@ from pathlib import Path
 
 import click
 
-"""
-1 - Scan folder ; if no requirements.txt or no pyproject.toml -> error.
-2 - Generate Dockerfile based on requirement or pyproject.
-3 - Put that into the destination
-"""
 
-
-class Dependency(StrEnum):
     """Dependency Enum."""
 
     REQUIREMENT = "requirements.txt"
@@ -22,7 +15,7 @@ class Dependency(StrEnum):
 def get_dependencies(path: str) -> Dependency:
     """Verifies if the path folder contains a `requirements.txt` or `pyproject.toml`, and returns which."""
     """:param path: Path pointing to the agent's folder."""
-    agent_path = Path(path)
+    agent_path = Path(path).resolve()
     if (agent_path / "requirements.txt").exists():
         return Dependency.REQUIREMENT
     elif (agent_path / "pyproject.toml").exists():
@@ -35,7 +28,7 @@ def generate_dockerfile(dependency: Dependency) -> str:
     # TODO: add envs vars based on source
     """Generates Dockerfile based on given params."""
     if dependency == Dependency.NONE:
-        print(
+        click.echo(
             "[ERROR]: No pyproject.toml or requirements.txt found. Please make sure to include them."
         )
         sys.exit(1)
@@ -46,7 +39,14 @@ def generate_dockerfile(dependency: Dependency) -> str:
         RUN pip install uv
         WORKDIR /app
 
-        RUN uv pip install --system /tmp/idun_platform_cli
+
+        RUN uv pip install --system --no-cache-dir --index-url https://test.pypi.org/simple/ \\
+            --extra-index-url https://pypi.org/simple idun-agent-engine==0.2.1.dev20251117114240 \\
+            --index-strategy unsafe-best-match --prerelease=allow
+
+        RUN uv  pip install --system --no-cache-dir --index-url https://test.pypi.org/simple/ \\
+            --extra-index-url https://pypi.org/simple idun-agent-engine \\
+            --index-strategy unsafe-best-match --prerelease=allow
 
         COPY {dependency} ./
         RUN uv pip install -r {dependency} --system
@@ -58,8 +58,8 @@ def generate_dockerfile(dependency: Dependency) -> str:
 
 
 @click.command("package")
-@click.argument("path")
-@click.option("--target", required=False)
+@click.argument("path", default=".")
+@click.option("--target", required=False, default=".")
 def package_command(path: str, target: str | None):
     """Packages the agent and it's dependencies into a Dockerfile. You can specifiy the input path and the destination. Defaults to current directory."""
     dependency = get_dependencies(path)

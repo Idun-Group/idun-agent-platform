@@ -63,6 +63,7 @@ def generate_dockerfile(dependency: Dependency) -> str:
 def package_command(path: str, target: str | None):
     """Packages the agent and it's dependencies into a Dockerfile. You can specifiy the input path and the destination. Defaults to current directory."""
     dependency = get_dependencies(path)
+    print(dependency)
     dockerfile = generate_dockerfile(dependency)
     target_path = Path(target)
     dockerfile_path = target_path / "Dockerfile"
