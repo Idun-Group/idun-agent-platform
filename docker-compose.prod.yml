@@ -59,6 +59,9 @@ services:
     container_name: idun-agent-prod
     ports:
       - "8000:8000"
+      - "6006:6006" # For Phoenix local
+    volumes:
+      - phoenix_prod_data:/root/.phoenix # For Phoenix local
     environment:
       IDUN_AGENT_API_KEY: 5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733
       IDUN_MANAGER_HOST: http://manager:8080/api/v1/agents/config
@@ -71,6 +74,7 @@ services:
 
 volumes:
   postgres_prod_data:
+  phoenix_prod_data:
 
 networks:
   idun_prod_network:
