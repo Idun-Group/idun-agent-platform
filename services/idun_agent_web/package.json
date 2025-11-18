@@ -10,10 +10,12 @@
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "plop": "plop --plopfile plopfile.js",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "generate:manager-types": "openapi-typescript schema/manager-openapi.json --output src/generated/agent-manager.ts"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "ajv": "^8.12.0",
     "fflate": "^0.8.2",
     "i18next": "^25.3.2",
     "jszip": "^3.10.1",
@@ -52,6 +54,7 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "openapi-typescript": "^7.4.3"
   }
 }

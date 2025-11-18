@@ -178,12 +178,6 @@ const GlobalStyles = createGlobalStyle`
       font-weight: normal;
     }
 
-    /* Global button hover text color fix */
-    button:hover,
-    .button:hover,
-    [role='button']:hover {
-      color: white !important;
-    }
 
     /* Custom Scrollbar Styles */
     * {

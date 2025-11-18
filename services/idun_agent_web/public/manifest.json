@@ -1,7 +1,7 @@
 {
-    "name": "Idun Engine",
+    "name": "Idun Agent Platform",
     "short_name": "Idun",
-    "description": "Idun Engine - Progressive Web App",
+    "description": "Idun Agent Platform - Progressive Web App",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",

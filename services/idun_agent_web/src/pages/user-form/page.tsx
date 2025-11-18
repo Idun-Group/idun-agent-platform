@@ -93,6 +93,11 @@ export default function UserFormPage() {
 
     return (
         <MainContainer>
+            <TopActions>
+                <Button type="button" $variants="transparent" onClick={() => navigate('/users')}>
+                    {t('user-form.back-to-users', { defaultValue: 'Back to Users' })}
+                </Button>
+            </TopActions>
             <Header>
                 <User size={32} />
                 <h1>{t('user-form.title')}</h1>
@@ -217,10 +222,16 @@ export default function UserFormPage() {
 
 // Styled Components
 const MainContainer = styled.main`
-    min-height: 100vh;
-    padding: 40px;
+    height: 100%;
+    min-height: 0;
+    padding: 24px 40px 40px;
     background: var(--color-background-primary, #0f1016);
-    overflow-y: auto;
+    overflow: hidden; /* avoid page-level scroll; inner form handles its own scroll */
+`;
+
+const TopActions = styled.div`
+    display: flex;
+    justify-content: flex-start;
 `;
 
 const Header = styled.div`
