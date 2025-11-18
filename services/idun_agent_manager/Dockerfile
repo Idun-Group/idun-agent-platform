@@ -47,7 +47,11 @@ FROM python:3.13-slim AS runtime
 # Metadata
 LABEL maintainer="Idun Group <contact@idun-group.com>" \
       description="Idun Agent Manager - FastAPI service for managing AI agents" \
+<<<<<<< HEAD
       version="0.2.5"
+=======
+      version="0.2.4"
+>>>>>>> cd714c2 (Develop (#89))
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

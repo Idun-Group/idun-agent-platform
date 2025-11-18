@@ -9,8 +9,13 @@ RUN apt-get update && pip install uv
 #     --extra-index-url https://pypi.org/simple idun-agent-engine==0.2.1.dev20251118083707 \
 #     --index-strategy unsafe-best-match --prerelease=allow
 
+<<<<<<< HEAD
 RUN uv pip install idun-agent-schema==0.2.5 --system
 RUN uv pip install idun-agent-engine==0.2.5 --system
+=======
+RUN uv pip install idun-agent-schema==0.2.4 --system
+RUN uv pip install idun-agent-engine==0.2.4 --system
+>>>>>>> cd714c2 (Develop (#89))
 
 COPY requirements.txt .
 COPY config.yaml .

@@ -1,7 +1,11 @@
 ## Project metadata and dependencies (PEP 621)
 [project]
 name = "idun-agent-manager"
+<<<<<<< HEAD
 version = "0.2.5"
+=======
+version = "0.2.4"
+>>>>>>> cd714c2 (Develop (#89))
 description = "Modern FastAPI backend for managing AI agents with PostgreSQL, SQLAlchemy, and observability"
 readme = "README.md"
 license = { text = "MIT" }

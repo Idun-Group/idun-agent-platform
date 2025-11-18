@@ -1363,7 +1363,11 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
+<<<<<<< HEAD
 version = "0.2.4"
+=======
+version = "0.2.3"
+>>>>>>> cd714c2 (Develop (#89))
 source = { editable = "libs/idun_agent_engine" }
 dependencies = [
     { name = "ag-ui-protocol" },
@@ -1400,7 +1404,11 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.116.1,<0.117.0" },
     { name = "google-adk", specifier = ">=1.9.0,<2.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
+<<<<<<< HEAD
     { name = "idun-agent-schema", specifier = ">=0.2.4,<0.3.0" },
+=======
+    { name = "idun-agent-schema", specifier = ">=0.2.3,<0.3.0" },
+>>>>>>> cd714c2 (Develop (#89))
     { name = "langchain", specifier = ">=0.3.27,<0.4" },
     { name = "langchain-core", specifier = ">=0.3.72,<0.4.0" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<3.0.0" },
@@ -1430,7 +1438,11 @@ dev = [
 
 [[package]]
 name = "idun-agent-manager"
+<<<<<<< HEAD
 version = "0.2.4"
+=======
+version = "0.2.3"
+>>>>>>> cd714c2 (Develop (#89))
 source = { editable = "services/idun_agent_manager" }
 dependencies = [
     { name = "alembic" },
@@ -1565,7 +1577,11 @@ dev = [
 
 [[package]]
 name = "idun-agent-schema"
+<<<<<<< HEAD
 version = "0.2.4"
+=======
+version = "0.2.3"
+>>>>>>> cd714c2 (Develop (#89))
 source = { editable = "libs/idun_agent_schema" }
 dependencies = [
     { name = "pydantic" },

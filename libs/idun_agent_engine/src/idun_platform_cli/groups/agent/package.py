@@ -39,8 +39,13 @@ def generate_dockerfile(dependency: Dependency) -> str:
         requirements_dockerfile = f"""FROM python:3.13-slim
 RUN apt-get update && pip install uv
 
+<<<<<<< HEAD
 RUN uv pip install idun-agent-schema==0.2.5 --system
 RUN uv pip install idun-agent-engine==0.2.5 --system
+=======
+RUN uv pip install idun-agent-schema==0.2.4 --system
+RUN uv pip install idun-agent-engine==0.2.4 --system
+>>>>>>> cd714c2 (Develop (#89))
 
 COPY . .
 RUN uv pip install -r requirements.txt --system
