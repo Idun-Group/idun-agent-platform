@@ -16,15 +16,25 @@ async def lifespan(app: FastAPI):
     """FastAPI lifespan context to initialize and teardown the agent."""
     # Load config and initialize agent on startup
     print("Server starting up...")
+    if not app.state.engine_config:
+        raise ValueError("Error: No Engine configuration found.")
+
     engine_config = app.state.engine_config
+    guardrails = app.state.engine_config.guardrails
+    print(guardrails.input.model_dump())
 
     # Use ConfigBuilder's centralized agent initialization
-    agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config)
+    try:
+        agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config)
+    except Exception as e:
+        raise ValueError(
+            f"Error retrieving agent instance from ConfigBuilder: {e}"
+        ) from e
 
-    # Store both in app state
     app.state.agent = agent_instance
     app.state.config = engine_config
-
+    app.state.guardrails = guardrails
+    # Store both in app state
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
 

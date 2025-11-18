@@ -31,7 +31,7 @@ async def get_config(request: Request):
         )
 
     config = request.app.state.engine_config.agent
-    logger.info(f"Fetched config for agent: {config}")
+    logger.info(f"Fetched config for agent: {request.app.state.engine_config}")
     return {"config": config}
 
 
