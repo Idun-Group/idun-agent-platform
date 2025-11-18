@@ -13,6 +13,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Use the same ref that triggered the schema workflow
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -33,7 +36,7 @@ jobs:
           # Get branch name for display
           BRANCH_NAME="${{ github.ref_name }}"
           # Create dev version with timestamp (PyPI doesn't allow local version identifiers with +)
-          TIMESTAMP="${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           DEV_VERSION="${BASE_VERSION}.dev${TIMESTAMP}"
           echo "dev_version=${DEV_VERSION}" >> $GITHUB_OUTPUT
