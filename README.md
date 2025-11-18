@@ -59,15 +59,17 @@ docker compose -f docker-compose.prod.yml up --build
 ```
 
 ### 3. Chat With Your Agent
-You can now either use the `swagger-ui` by going to: ```http://localhost:8000/docs``` and using the `invoke` or `stream` endpoints, or via `curl`:
+You can now either use the `swagger-ui` by going to: ```http://localhost:8000/docs``` and using the `invoke` or `stream` endpoints, or via `curl`: 
 ```bash
 curl -X POST "http://localhost:8000/agent/invoke" \
   -H "Content-Type: application/json" \
   -d '{"query": "Hello!", "session_id": "user-123"}'
 ```
 
-### 4. Manage your agents:
-Now, head to the manager at `localhost:8080/docs` and start managing your agent!
+### 4. Manage your agents: 
+Now, head to the manager at `localhost:8080/docs` and start managing your agent! 
+
+
 > [!TIP]
 > 📖 See the [full documentation](https://idun-group.github.io/idun-agent-platform/) for detailed guides and examples.
 
