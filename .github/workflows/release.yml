@@ -209,8 +209,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          RAW_REF=${GITHUB_REF#refs/tags/}
-          VERSION=${RAW_REF#v}
+          VERSION=${GITHUB_REF#refs/tags/v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Building Web Docker image version: $VERSION"
 
