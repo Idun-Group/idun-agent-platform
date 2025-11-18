@@ -1,0 +1,21 @@
+server:
+  api:
+    port: 8000
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "Guardrails"
+    graph_definition: "example_agent.py:app"
+    observability:
+      enabled: false
+guardrails:
+  enabled: true
+
+  input:
+    type: custom_llm
+    task: ban_words
+    banned_words: ["test", "test2"]
+
+  output:
+    type: custom_llm
+    task: stuff
