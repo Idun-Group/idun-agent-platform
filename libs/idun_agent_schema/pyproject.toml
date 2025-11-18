@@ -1,10 +1,6 @@
 [project]
 name = "idun-agent-schema"
-<<<<<<< HEAD
-version = "0.2.5"
-=======
-version = "0.2.4"
->>>>>>> cd714c2 (Develop (#89))
+version = "0.2.6"
 description = "Centralized Pydantic schema library for Idun Agent Engine and Manager"
 authors = [{ name = "Idun Group", email = "contact@idun-group.com" }]
 readme = "README.md"
