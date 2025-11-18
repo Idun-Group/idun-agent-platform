@@ -42,7 +42,8 @@ dependencies = [
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
     "langchain>=0.3.27,<0.4",
-    "arize-phoenix>=12.0.0,<13",
+    # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
+    "arize-phoenix>=11.22.0,<12.0.0",
     "idun-agent-schema>=0.2.1,<0.3.0",
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
