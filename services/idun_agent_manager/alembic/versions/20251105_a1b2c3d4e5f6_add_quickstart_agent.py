@@ -44,7 +44,7 @@ def upgrade() -> None:
                 "type": "LANGGRAPH",
                 "config": {
                     "name": "quickstart",
-                    "graph_definition": "libs/idun_agent_engine/examples/01_basic_config_file/example_agent.py:app",
+                    "graph_definition": "example_agent.py:app",
                     "checkpointer": {
                         "type": "sqlite",
                         "db_url": "sqlite:///example_checkpoint.db"

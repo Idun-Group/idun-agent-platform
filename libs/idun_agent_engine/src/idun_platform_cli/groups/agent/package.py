@@ -38,17 +38,14 @@ def generate_dockerfile(dependency: Dependency) -> str:
         # TODO: use from file
         requirements_dockerfile = f"""FROM python:3.13-slim
 RUN apt-get update && pip install uv
-WORKDIR /app
 
 RUN uv pip install idun-agent-schema==0.2.2 --system
 RUN uv pip install idun-agent-engine==0.2.2 --system
 
-COPY requirements.txt ./
-COPY config.yaml ./
-COPY agent/ ./agent/
+COPY . .
 RUN uv pip install -r requirements.txt --system
 
-CMD ["idun", "agent", "serve", "--source=file", "--path", "config.yaml"]
+CMD ["idun", "agent", "serve", "--source=manager"]
 """
         return requirements_dockerfile
     if dependency == Dependency.PYPROJECT:

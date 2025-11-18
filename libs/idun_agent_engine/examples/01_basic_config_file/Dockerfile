@@ -1,6 +1,5 @@
 FROM python:3.13-slim
 RUN apt-get update && pip install uv
-WORKDIR /app
 # TODO: use fixed version from PyPI
 # RUN uv pip install --system --no-cache-dir --index-url https://test.pypi.org/simple/ \
 #     --extra-index-url https://pypi.org/simple idun-agent-schema==0.2.1.dev20251118083710 \
@@ -13,9 +12,9 @@ WORKDIR /app
 RUN uv pip install idun-agent-schema==0.2.2 --system
 RUN uv pip install idun-agent-engine==0.2.2 --system
 
-COPY requirements.txt ./
-COPY config.yaml ./
-COPY agent/ ./agent/
+COPY requirements.txt .
+COPY config.yaml .
+COPY . .
 RUN uv pip install -r requirements.txt --system
 
-CMD ["idun", "agent", "serve", "--source=file", "--path", "config.yaml"]
+CMD ["idun", "agent", "serve", "--source=manager"]
