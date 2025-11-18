@@ -7,7 +7,7 @@ RUN uv pip install --system --no-cache-dir --index-url https://test.pypi.org/sim
     --index-strategy unsafe-best-match --prerelease=allow
 
 RUN uv pip install --system --no-cache-dir --index-url https://test.pypi.org/simple/ \
-    --extra-index-url https://pypi.org/simple idun-agent-engine==0.2.1.dev194476421651 \
+    --extra-index-url https://pypi.org/simple idun-agent-engine==0.2.1.dev194481582461 \
     --index-strategy unsafe-best-match --prerelease=allow
 
 COPY requirements.txt ./

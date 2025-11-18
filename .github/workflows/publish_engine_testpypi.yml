@@ -8,10 +8,6 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.12', '3.13'] # TODO publish to normal Pypi version for python 3.12 and 3.13
     permissions:
       contents: read
     steps:
@@ -21,7 +17,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.13'
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -36,7 +32,7 @@ jobs:
           BASE_VERSION=$(grep -m 1 'version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
           # Get branch name for display
           BRANCH_NAME="${{ github.ref_name }}"
-          # Use workflow run id/attempt so all matrix jobs share identical version string
+          # Create dev version with timestamp (PyPI doesn't allow local version identifiers with +)
           TIMESTAMP="${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
           SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
           DEV_VERSION="${BASE_VERSION}.dev${TIMESTAMP}"
@@ -100,7 +96,6 @@ jobs:
           UV_INDEX_URL=https://test.pypi.org/simple/ UV_EXTRA_INDEX_URL=https://pypi.org/simple/ uv build --no-sources
 
       - name: Publish to TestPyPI
-        if: matrix.python-version == '3.13'
         working-directory: libs/idun_agent_engine
         run: |
           uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }}

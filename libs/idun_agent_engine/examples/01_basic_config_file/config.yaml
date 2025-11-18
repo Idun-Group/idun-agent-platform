@@ -17,12 +17,12 @@ agent:
     observability:
       provider: phoenix-local #langfuse # or phoenix
       enabled: true
-      # options:
+      options:
         # Langfuse options
-        # host: ${LANGFUSE_HOST}
-        # public_key: ${LANGFUSE_PUBLIC_KEY}
-        # secret_key: ${LANGFUSE_SECRET_KEY}
-        # run_name: "idun-langgraph-run"
+        host: ${LANGFUSE_HOST}
+        public_key: ${LANGFUSE_PUBLIC_KEY}
+        secret_key: ${LANGFUSE_SECRET_KEY}
+        run_name: "idun-langgraph-run"
         # Phoenix options (if provider: phoenix)
         # api_key: ${PHOENIX_API_KEY}
         # collector_endpoint: ${PHOENIX_COLLECTOR_ENDPOINT}
