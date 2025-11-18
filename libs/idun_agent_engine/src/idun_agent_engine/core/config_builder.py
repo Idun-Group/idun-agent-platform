@@ -139,7 +139,7 @@ class ConfigBuilder:
         langgraph_config = LangGraphAgentConfig.model_validate(agent_config_dict)
 
         # Create the agent config (store as strongly-typed model, not dict)
-        self._agent_config = AgentConfig(type="langgraph", config=langgraph_config)
+        self._agent_config = AgentConfig(type=AgentFramework.LANGGRAPH, config=langgraph_config)
         return self
 
     def with_custom_agent(
@@ -160,12 +160,12 @@ class ConfigBuilder:
         """
         if agent_type == AgentFramework.LANGGRAPH:
             self._agent_config = AgentConfig(
-                type="langgraph", config=LangGraphAgentConfig.model_validate(config)
+                type=AgentFramework.LANGGRAPH, config=LangGraphAgentConfig.model_validate(config)
             )
 
         elif agent_type == AgentFramework.HAYSTACK:
             self._agent_config = AgentConfig(
-                type="haystack", config=HaystackAgentConfig.model_validate(config)
+                type=AgentFramework.HAYSTACK, config=HaystackAgentConfig.model_validate(config)
             )
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
