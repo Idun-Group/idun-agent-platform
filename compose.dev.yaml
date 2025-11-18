@@ -19,7 +19,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - idun_network
+      - idun_dev_network
 
   manager:
     build:
@@ -49,7 +49,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - idun_network
+      - idun_dev_network
 
   web:
     image: node:lts-alpine
@@ -62,10 +62,10 @@ services:
       - ./services/idun_agent_web:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000 #http://host.docker.internal:8000
+      - VITE_API_URL=http://localhost:8000 # http://host.docker.internal:8000
       - CHOKIDAR_USEPOLLING=true
     networks:
-      - idun_network
+      - idun_dev_network
     depends_on:
       - manager
 
@@ -73,5 +73,5 @@ volumes:
   postgres_data:
 
 networks:
-  idun_network:
+  idun_dev_network:
     driver: bridge
