@@ -10,10 +10,9 @@ agent:
       enabled: false
 guardrails:
   enabled: true
-
   input:
     type: custom_llm
-    task: ban_words
+    task: classify
     banned_words: ["test", "test2"]
 
   output:
