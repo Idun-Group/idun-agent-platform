@@ -3,7 +3,7 @@ name = "idun-agent-engine"
 version = "0.2.1"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.12,<3.14"
 readme = "README.md"
 license = "MIT"
 keywords = [
@@ -18,6 +18,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Framework :: FastAPI",
     "Intended Audience :: Developers",
@@ -41,13 +42,20 @@ dependencies = [
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
     "langchain>=0.3.27,<0.4",
-    "arize-phoenix>=11.22.0,<12",
-    # Centralized schema package
-    "idun-agent-schema>=0.2.0,<0.3.0",
-    # "haystack-ai>=2.17.1",
+    # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
+    "arize-phoenix>=11.22.0,<12.0.0",
+    "idun-agent-schema>=0.2.1,<0.3.0",
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
+    "click>=8.2.1",
+    # Pin SQLAlchemy for Python 3.13 compatibility (required by Phoenix)
+    "sqlalchemy>=2.0.36,<3.0.0",
 ]
+
+
+[project.scripts]
+idun = "idun_platform_cli.main:cli"
+
 
 [project.urls]
 Homepage = "https://github.com/geoffreyharrazi/idun-agent-platform"
@@ -71,16 +79,11 @@ dev = [
 include = [
     "src/idun_agent_engine",
     "src/idun_agent_engine/py.typed",
+    "src/idun_platform_cli",
 ]
 
 [tool.hatch.build.targets.wheel]
-include = [
-    "src/idun_agent_engine",
-    "src/idun_agent_engine/py.typed",
-]
-
-[tool.hatch.build.targets.wheel.sources]
-"src/idun_agent_engine" = "idun_agent_engine"
+packages = ["src/idun_agent_engine", "src/idun_platform_cli"]
 
 [build-system]
 requires = ["hatchling"]
@@ -88,7 +91,7 @@ build-backend = "hatchling.build"
 
 [tool.black]
 line-length = 88
-target-version = ["py313"]
+target-version = ["py312", "py313"]
 include = "\\.pyi?$"
 exclude = '''
 (
@@ -100,7 +103,7 @@ exclude = '''
 '''
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py312"
 line-length = 88
 extend-exclude = [
     "build",
@@ -132,7 +135,7 @@ extend-ignore = [
 convention = "google"
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_ignores = true
 ignore_missing_imports = true

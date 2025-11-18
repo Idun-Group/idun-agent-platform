@@ -102,7 +102,7 @@ wheels = [
 
 [[package]]
 name = "arize-phoenix"
-version = "11.37.0"
+version = "11.38.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aioitertools" },
@@ -146,14 +146,14 @@ dependencies = [
     { name = "uvicorn" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/72/5c/ceb965a008004b481526b7a4390194f7aa39cd405a8f3376fc52411a02b3/arize_phoenix-11.37.0.tar.gz", hash = "sha256:619300a38835fcc853d34e6b25989092776898f3b8684c7b68ac51cff55e77fb", size = 2224696, upload-time = "2025-09-24T17:51:58.938Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/06/e280a8f64ffda5718ef9d5eee2dcca8afb3dd9dbce27a41fd48a0960da00/arize_phoenix-11.38.0.tar.gz", hash = "sha256:5f63a02fdd12ac36c443105c38beee9123f99d7ae1d9a69f24ae2ad4b457faad", size = 2225790, upload-time = "2025-09-29T15:46:21.692Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3b/71/e478abadaecfcc1bc23cc4f10e019c9136965f7abb5b21d4b2e55cf4fbfb/arize_phoenix-11.37.0-py3-none-any.whl", hash = "sha256:a3a6a9902883c256179bde38b3de245a7b76851fec33f02de7215b3d0887da12", size = 2427259, upload-time = "2025-09-24T17:51:56.608Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/50/9b2014a115e0075eca69542916e577f6521fd6f113877d269e69ae838037/arize_phoenix-11.38.0-py3-none-any.whl", hash = "sha256:5c14a5440b312daddac7dd1a8108bcc8179c34bd69f027b89adc3f2be3bfb9d2", size = 2428115, upload-time = "2025-09-29T15:46:19.29Z" },
 ]
 
 [[package]]
 name = "arize-phoenix-client"
-version = "1.20.0"
+version = "1.23.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -164,14 +164,14 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/64/ef/07a4c0427a402d53268426da4be6d7783ca4abff60a21106460ce434fd71/arize_phoenix_client-1.20.0.tar.gz", hash = "sha256:d1a04ed6a0553846fb5afb5cca4f9fe11e99266cb41e0337a32e57939c21ad75", size = 117272, upload-time = "2025-09-26T17:06:59.024Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/7c/f9b057720a0b5b68e527e4f8d82ae6aad3899a876b22de2180e4309eaaf1/arize_phoenix_client-1.23.0.tar.gz", hash = "sha256:09edbb50501174b026885776b91957e475890052aa0307e4e97022fd6e14139a", size = 134698, upload-time = "2025-11-12T21:14:32.072Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/8c/16b016ffa1a501ec670c2ae085f04a6fc8dfc84c8f1401f33fc177fa5db6/arize_phoenix_client-1.20.0-py3-none-any.whl", hash = "sha256:63810c887cf99d53ae090514fd19d5f22212f617e3b3271b388890678af5786b", size = 121454, upload-time = "2025-09-26T17:06:57.478Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/11/b47ae5f47607c80e59d3aa0da0928249ff6ab1a2f30b2bac95f6df064efc/arize_phoenix_client-1.23.0-py3-none-any.whl", hash = "sha256:1570320e3756ee1e4b99e323bb82112f810cb09f36b51ebad2dd515254c47f89", size = 141528, upload-time = "2025-11-12T21:14:31.098Z" },
 ]
 
 [[package]]
 name = "arize-phoenix-evals"
-version = "2.2.0"
+version = "2.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonpath-ng" },
@@ -184,9 +184,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/67/f9/a6b5b6638fec250d046bc0147807efc1f4b9b398b38735039a4341786ff1/arize_phoenix_evals-2.2.0.tar.gz", hash = "sha256:5685526533a8639f8a0a8235152374e2f220bd5eccc6004e2a48376ff4e25550", size = 93719, upload-time = "2025-09-27T17:53:29.555Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/07/e4/a7402d8e8fb95153e587df3e59ec1ee247688f2151e76a9fb63a9aaafe4b/arize_phoenix_evals-2.6.0.tar.gz", hash = "sha256:f64dd81a8a632b38659f92443193c9c8e66bf25f4f0d6b468af2ef055f32b7af", size = 102498, upload-time = "2025-11-12T22:46:48.547Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/62/b2b874a9b393eea669e40a95493d854a0088eb0c4d1f8b44e7ae5c221239/arize_phoenix_evals-2.2.0-py3-none-any.whl", hash = "sha256:4b65d8d6d16b4e0a048c5cb8694c0a2838985b25ac20e8441744def39ea78b07", size = 129528, upload-time = "2025-09-27T17:53:28.338Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/85/316deacbfd2a88958a66021d8a471d462d5c7d3dccc5d1f864b6ffbb958a/arize_phoenix_evals-2.6.0-py3-none-any.whl", hash = "sha256:cb461d9e05a781ae9145ec3a261c2126fbc5553a61bbb86c7cf8a898a23daef2", size = 143361, upload-time = "2025-11-12T22:46:47.155Z" },
 ]
 
 [[package]]
@@ -1370,6 +1370,7 @@ dependencies = [
     { name = "aiosqlite" },
     { name = "arize-phoenix" },
     { name = "arize-phoenix-otel" },
+    { name = "click" },
     { name = "fastapi" },
     { name = "google-adk" },
     { name = "httpx" },
@@ -1384,6 +1385,7 @@ dependencies = [
     { name = "openinference-instrumentation-langchain" },
     { name = "pydantic" },
     { name = "python-dotenv" },
+    { name = "sqlalchemy" },
     { name = "streamlit" },
     { name = "uvicorn" },
 ]
@@ -1392,12 +1394,13 @@ dependencies = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = ">=0.1.8,<0.2.0" },
     { name = "aiosqlite", specifier = ">=0.21.0,<0.22.0" },
-    { name = "arize-phoenix", specifier = ">=11.22.0,<12" },
+    { name = "arize-phoenix", specifier = ">=11.22.0,<12.0.0" },
     { name = "arize-phoenix-otel", specifier = ">=0.2.0,<1.0.0" },
+    { name = "click", specifier = ">=8.2.1" },
     { name = "fastapi", specifier = ">=0.116.1,<0.117.0" },
     { name = "google-adk", specifier = ">=1.9.0,<2.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
-    { name = "idun-agent-schema", specifier = ">=0.2.0,<0.3.0" },
+    { name = "idun-agent-schema", specifier = ">=0.2.1,<0.3.0" },
     { name = "langchain", specifier = ">=0.3.27,<0.4" },
     { name = "langchain-core", specifier = ">=0.3.72,<0.4.0" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<3.0.0" },
@@ -1408,6 +1411,7 @@ requires-dist = [
     { name = "openinference-instrumentation-langchain", specifier = ">=0.1.13,<1.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
+    { name = "sqlalchemy", specifier = ">=2.0.36,<3.0.0" },
     { name = "streamlit", specifier = ">=1.47.1,<2.0.0" },
     { name = "uvicorn", specifier = ">=0.35.0,<0.36.0" },
 ]
@@ -1503,6 +1507,7 @@ name = "idun-agent-platform"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "click" },
     { name = "idun-agent-engine" },
     { name = "idun-agent-manager" },
     { name = "idun-agent-schema" },
@@ -1531,6 +1536,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "click", specifier = ">=8.2.1" },
     { name = "idun-agent-engine", editable = "libs/idun_agent_engine" },
     { name = "idun-agent-manager", editable = "services/idun_agent_manager" },
     { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },

@@ -2,15 +2,16 @@
 name = "idun-agent-schema"
 version = "0.2.1"
 description = "Centralized Pydantic schema library for Idun Agent Engine and Manager"
-authors = [{ name = "Idun Team", email = "team@idun.com" }]
+authors = [{ name = "Idun Group", email = "contact@idun-group.com" }]
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.12,<3.14"
 keywords = ["pydantic", "schemas", "fastapi", "langgraph", "idun"]
 classifiers = [
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Typing :: Typed",
 ]
@@ -44,7 +45,7 @@ include = [
 "src/idun_agent_schema" = "idun_agent_schema"
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py312"
 line-length = 88
 
 [tool.ruff.lint]
@@ -55,11 +56,11 @@ extend-ignore = ["E501"]
 
 [tool.black]
 line-length = 88
-target-version = ["py313"]
+target-version = ["py312", "py313"]
 include = "\\.pyi?$"
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_ignores = true
 ignore_missing_imports = true
