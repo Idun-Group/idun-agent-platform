@@ -9,8 +9,8 @@ RUN apt-get update && pip install uv
 #     --extra-index-url https://pypi.org/simple idun-agent-engine==0.2.1.dev20251118083707 \
 #     --index-strategy unsafe-best-match --prerelease=allow
 
-RUN uv pip install idun-agent-schema==0.2.2 --system
-RUN uv pip install idun-agent-engine==0.2.2 --system
+RUN uv pip install idun-agent-schema==0.2.3 --system
+RUN uv pip install idun-agent-engine==0.2.3 --system
 
 COPY requirements.txt .
 COPY config.yaml .
