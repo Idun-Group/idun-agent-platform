@@ -15,7 +15,7 @@ agent:
     graph_definition: "agent/example_agent.py:app" # Path to your graph definition
     # Observability (provider-agnostic). Example with Langfuse or Phoenix
     observability:
-      provider: phoenix-local #langfuse # or phoenix
+      provider: langfuse #langfuse # or phoenix
       enabled: true
       options:
         # Langfuse options

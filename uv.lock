@@ -102,7 +102,7 @@ wheels = [
 
 [[package]]
 name = "arize-phoenix"
-version = "12.15.0"
+version = "11.38.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aioitertools" },
@@ -119,7 +119,6 @@ dependencies = [
     { name = "grpcio" },
     { name = "httpx" },
     { name = "jinja2" },
-    { name = "jmespath" },
     { name = "numpy" },
     { name = "openinference-instrumentation" },
     { name = "openinference-semantic-conventions" },
@@ -147,9 +146,9 @@ dependencies = [
     { name = "uvicorn" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/6d/6241320c784288fb3c483985640b22f539328e5a7914a8b3fdd2a5c17608/arize_phoenix-12.15.0.tar.gz", hash = "sha256:c94680dc1315574a02c8df6f568209b263f8b462c5d13ff3dc7d832d7a4f9402", size = 2330822, upload-time = "2025-11-14T00:19:14.352Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/06/e280a8f64ffda5718ef9d5eee2dcca8afb3dd9dbce27a41fd48a0960da00/arize_phoenix-11.38.0.tar.gz", hash = "sha256:5f63a02fdd12ac36c443105c38beee9123f99d7ae1d9a69f24ae2ad4b457faad", size = 2225790, upload-time = "2025-09-29T15:46:21.692Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/67/77b76e41edb7eec56c888ba8e2178accff989eaccffd66c6d5b30fc63d2d/arize_phoenix-12.15.0-py3-none-any.whl", hash = "sha256:54ca6fccbfd7fae7084f3d4efde238bb970b0ab6b4662eb9a071ad038fe405f6", size = 2553535, upload-time = "2025-11-14T00:19:11.61Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/50/9b2014a115e0075eca69542916e577f6521fd6f113877d269e69ae838037/arize_phoenix-11.38.0-py3-none-any.whl", hash = "sha256:5c14a5440b312daddac7dd1a8108bcc8179c34bd69f027b89adc3f2be3bfb9d2", size = 2428115, upload-time = "2025-09-29T15:46:19.29Z" },
 ]
 
 [[package]]
@@ -1395,7 +1394,7 @@ dependencies = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = ">=0.1.8,<0.2.0" },
     { name = "aiosqlite", specifier = ">=0.21.0,<0.22.0" },
-    { name = "arize-phoenix", specifier = ">=12.0.0,<13" },
+    { name = "arize-phoenix", specifier = ">=11.22.0,<12.0.0" },
     { name = "arize-phoenix-otel", specifier = ">=0.2.0,<1.0.0" },
     { name = "click", specifier = ">=8.2.1" },
     { name = "fastapi", specifier = ">=0.116.1,<0.117.0" },
@@ -1633,15 +1632,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/13/3a/d61707803260d59520721fa326babfae25e9573a88d8b7b9cb54c5423a59/jiter-0.11.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:089f9df9f69532d1339e83142438668f52c97cd22ee2d1195551c2b1a9e6cf33", size = 313737, upload-time = "2025-09-15T09:19:59.638Z" },
     { url = "https://files.pythonhosted.org/packages/cd/cc/c9f0eec5d00f2a1da89f6bdfac12b8afdf8d5ad974184863c75060026457/jiter-0.11.0-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:29ed1fe69a8c69bf0f2a962d8d706c7b89b50f1332cd6b9fbda014f60bd03a03", size = 346183, upload-time = "2025-09-15T09:20:01.442Z" },
     { url = "https://files.pythonhosted.org/packages/a6/87/fc632776344e7aabbab05a95a0075476f418c5d29ab0f2eec672b7a1f0ac/jiter-0.11.0-cp313-cp313t-win_amd64.whl", hash = "sha256:a4d71d7ea6ea8786291423fe209acf6f8d398a0759d03e7f24094acb8ab686ba", size = 204225, upload-time = "2025-09-15T09:20:03.102Z" },
-]
-
-[[package]]
-name = "jmespath"
-version = "1.0.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/00/2a/e867e8531cf3e36b41201936b7fa7ba7b5702dbef42922193f05c8976cd6/jmespath-1.0.1.tar.gz", hash = "sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe", size = 25843, upload-time = "2022-06-17T18:00:12.224Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/b4/b9b800c45527aadd64d5b442f9b932b00648617eb5d63d2c7a6587b7cafc/jmespath-1.0.1-py3-none-any.whl", hash = "sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980", size = 20256, upload-time = "2022-06-17T18:00:10.251Z" },
 ]
 
 [[package]]
