@@ -35,7 +35,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          RAW_REF=${GITHUB_REF#refs/tags/}
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
           VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
@@ -86,7 +86,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          RAW_REF=${GITHUB_REF#refs/tags/}
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
           VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
@@ -136,7 +136,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          RAW_REF=${GITHUB_REF#refs/tags/}
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
           VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Building Docker image version: $VERSION"
@@ -209,7 +209,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          RAW_REF=${GITHUB_REF#refs/tags/}
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
           VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Building Web Docker image version: $VERSION"
@@ -260,7 +260,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          RAW_REF=${GITHUB_REF#refs/tags/}
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
           VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
