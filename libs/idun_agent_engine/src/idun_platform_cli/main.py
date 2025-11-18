@@ -1,5 +1,5 @@
 import click
-from serve import serve
+from idun_platform_cli.groups.agent.main import agent
 
 
 @click.group()
@@ -8,7 +8,7 @@ def cli():
     pass
 
 
-cli.add_command(serve)
+cli.add_command(agent)
 
 if __name__ == "__main__":
     cli()

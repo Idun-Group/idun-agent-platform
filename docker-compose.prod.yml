@@ -49,30 +49,20 @@ services:
       retries: 3
       start_period: 15s
     networks:
-      - idun_prod_network
+      - idun_prod_networkhttps://github.com/Idun-Group/idun-agent-platform/pull/76/conflict?name=services%252Fidun_agent_manager%252Falembic%252Fversions%252F20251105_a1b2c3d4e5f6_add_quickstart_agent.py&base_oid=ffe746005cf56a79e55c21a14f75c8c0f52dafad&head_oid=41e11cb4da7d588891e6c82512ba51e301411f0a
     restart: unless-stopped
 
   agent:
-    image: python:3.13-slim
+    build:
+      context: ./libs/idun_agent_engine/examples/01_basic_config_file
+      dockerfile: Dockerfile
     container_name: idun-agent-prod
     ports:
       - "8000:8000"
+      - "6006:6006" # For Phoenix local
     environment:
       IDUN_AGENT_API_KEY: 5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733
       IDUN_MANAGER_HOST: http://manager:8080/api/v1/agents/config
-    volumes:
-      - ./libs/idun_agent_engine:/app/libs/idun_agent_engine
-      - ./libs/idun_agent_schema:/app/libs/idun_agent_schema
-      - ./libs/idun_platform_cli:/app/libs/idun_platform_cli
-    working_dir: /app
-    command: >
-      sh -c "
-      apt-get update && \
-      pip install uv && \
-      uv pip install --system -e libs/idun_agent_engine && \
-      uv pip install --system -e libs/idun_platform_cli && \
-      idun serve --source=manager
-      "
     depends_on:
       manager:
         condition: service_healthy
@@ -82,6 +72,7 @@ services:
 
 volumes:
   postgres_prod_data:
+  phoenix_prod_data:
 
 networks:
   idun_prod_network:
