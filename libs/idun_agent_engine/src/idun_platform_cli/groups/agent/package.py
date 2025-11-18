@@ -40,8 +40,8 @@ def generate_dockerfile(dependency: Dependency) -> str:
 RUN apt-get update && pip install uv
 WORKDIR /app
 
-RUN uv pip install idun-agent-schema==0.2.2
-RUN uv pip install idun-agent-engine==0.2.2
+RUN uv add idun-agent-schema==0.2.2
+RUN uv add idun-agent-engine==0.2.2
 
 COPY requirements.txt ./
 COPY config.yaml ./
