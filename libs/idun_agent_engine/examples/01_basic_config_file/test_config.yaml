@@ -11,10 +11,23 @@ agent:
 guardrails:
   enabled: true
   input:
-    type: custom_llm
-    task: classify
-    banned_words: ["test", "test2"]
-
+    - type: custom_llm
+      config:
+        prompt: "hello"
+        model_name: "gemini-2.5"
+        message: "Cannot answer"
+    - type: custom_llm
+      config:
+        prompt: "hello"
+        model_name: "gemini-2.5"
   output:
-    type: custom_llm
-    task: stuff
+    - type: guardrails_hub
+      config:
+        ban_words:
+          - hello
+          - bye
+        message: "test"
+    - type: custom_llm
+      config:
+        prompt: "hello"
+        model_name: "gemini-2.5"

@@ -152,7 +152,7 @@ class ConfigBuilder:
         self._agent_config = AgentConfig(type="langgraph", config=langgraph_config)
         return self
 
-        # TODO: remove unused fns
+    # TODO: remove unused fns
 
     def with_custom_agent(
         self, agent_type: str, config: dict[str, Any]
@@ -375,6 +375,7 @@ class ConfigBuilder:
         config_dict: dict[str, Any] | None = None,
         engine_config: EngineConfig | None = None,
     ) -> EngineConfig:
+        print(config_dict)
         """Umbrella function to resolve configuration from various sources.
 
         This function handles all the different ways configuration can be provided

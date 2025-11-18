@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
 
     engine_config = app.state.engine_config
     guardrails = app.state.engine_config.guardrails
-    print(guardrails.input.model_dump())
+    print(guardrails.input[0].config.model_dump())
 
     # Use ConfigBuilder's centralized agent initialization
     try:
