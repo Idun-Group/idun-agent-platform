@@ -51,6 +51,24 @@ services:
     networks:
       - idun_network
 
+  web:
+    image: node:lts-alpine
+    container_name: idun-web-dev
+    working_dir: /app
+    command: sh -lc "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./services/idun_agent_web:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000 #http://host.docker.internal:8000
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - idun_network
+    depends_on:
+      - manager
+
 volumes:
   postgres_data:
 
