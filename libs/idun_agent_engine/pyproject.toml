@@ -1,6 +1,6 @@
 [project]
 name = "idun-agent-engine"
-version = "0.2.6"
+version = "0.2.5"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.12,<3.14"
@@ -44,7 +44,7 @@ dependencies = [
     "langchain>=0.3.27,<0.4",
     # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
     "arize-phoenix>=11.22.0,<12.0.0",
-    "idun-agent-schema>=0.2.6,<0.3.0",
+    "idun-agent-schema>=0.2.5,<0.3.0",
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
     "click>=8.2.1",
