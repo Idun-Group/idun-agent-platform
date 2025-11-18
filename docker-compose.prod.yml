@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16
-    container_name: idun-db-prod
+    container_name: idun-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -16,13 +16,13 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - idun_prod_network
+      - idun_network
 
   manager:
     build:
       context: ./services/idun_agent_manager
       dockerfile: Dockerfile
-    container_name: idun-manager-prod
+    container_name: idun-manager
     ports:
       - "8080:8080"
     environment:
@@ -49,7 +49,25 @@ services:
       retries: 3
       start_period: 15s
     networks:
-      - idun_prod_network
+      - idun_network
+    restart: unless-stopped
+
+  agent:
+    build:
+      context: ./libs/idun_agent_engine/examples/01_basic_config_file
+      dockerfile: Dockerfile
+    container_name: idun-agent
+    ports:
+      - "8000:8000"
+      - "6006:6006" # For Phoenix local
+    environment:
+      IDUN_AGENT_API_KEY: 5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733
+      IDUN_MANAGER_HOST: http://manager:8080/api/v1/agents/config
+    depends_on:
+      manager:
+        condition: service_healthy
+    networks:
+      - idun_network
     restart: unless-stopped
 
   agent:
@@ -69,29 +87,28 @@ services:
     networks:
       - idun_prod_network
     restart: unless-stopped
-
-  agent:
-    build:
-      context: ./libs/idun_agent_engine/examples/01_basic_config_file
-      dockerfile: Dockerfile
-    container_name: idun-agent-prod
+  web:
+    image: node:lts-alpine
+    container_name: idun-web
+    working_dir: /app
+    command: sh -lc "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
     ports:
-      - "8000:8000"
-      - "6006:6006" # For Phoenix local
+      - "3000:3000"
+    volumes:
+      - ./services/idun_agent_web:/app
+      - /app/node_modules
     environment:
-      IDUN_AGENT_API_KEY: 5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733
-      IDUN_MANAGER_HOST: http://manager:8080/api/v1/agents/config
-    depends_on:
-      manager:
-        condition: service_healthy
+      - VITE_API_URL=http://localhost:8080 # http://host.docker.internal:8000
+      - CHOKIDAR_USEPOLLING=true
     networks:
-      - idun_prod_network
-    restart: unless-stopped
+      - idun_network
+    depends_on:
+      - manager
 
 volumes:
   postgres_prod_data:
   phoenix_prod_data:
 
 networks:
-  idun_prod_network:
+  idun_network:
     driver: bridge
