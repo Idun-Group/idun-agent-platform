@@ -51,18 +51,32 @@ services:
     restart: unless-stopped
 
   web:
+<<<<<<< HEAD
     build:
       context: ./services/idun_agent_web
       dockerfile: Dockerfile
+=======
+    image: freezaa9/idun-ai-web:latest
+>>>>>>> d591749 (Develop (#93))
     container_name: idun-web
     ports:
       - "3000:3000"
     environment:
+<<<<<<< HEAD
       - VITE_API_URL=http://localhost:8080 # http://host.docker.internal:8000
     networks:
       - idun_network
     depends_on:
       - manager
+=======
+      # From the browser, manager is exposed on host port 8080
+      - VITE_API_URL=http://localhost:8080
+    networks:
+      - idun_network
+    depends_on:
+      manager:
+        condition: service_started
+>>>>>>> d591749 (Develop (#93))
 
   agent:
     build:

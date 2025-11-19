@@ -9,7 +9,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
+<<<<<<< HEAD
       - postgres_prod_data:/var/lib/postgresql/data
+=======
+      - postgres_data:/var/lib/postgresql/data
+>>>>>>> d591749 (Develop (#93))
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -19,9 +23,13 @@ services:
       - idun_network
 
   manager:
+<<<<<<< HEAD
     build:
       context: ./services/idun_agent_manager
       dockerfile: Dockerfile
+=======
+    image: freezaa9/idun-ai:latest
+>>>>>>> d591749 (Develop (#93))
     container_name: idun-manager
     ports:
       - "8080:8080"
@@ -51,6 +59,7 @@ services:
     networks:
       - idun_network
 <<<<<<< HEAD
+<<<<<<< HEAD
     restart: unless-stopped
 
   agent:
@@ -71,6 +80,8 @@ services:
       - idun_network
 =======
 >>>>>>> 05e119d (Develop (#86))
+=======
+>>>>>>> d591749 (Develop (#93))
     restart: unless-stopped
 
   web:
@@ -104,6 +115,7 @@ services:
     networks:
       - idun_network
     restart: unless-stopped
+<<<<<<< HEAD
   web:
     image: node:lts-alpine
     container_name: idun-web
@@ -125,6 +137,11 @@ services:
 volumes:
   postgres_prod_data:
   phoenix_prod_data:
+=======
+
+volumes:
+  postgres_data:
+>>>>>>> d591749 (Develop (#93))
 
 networks:
   idun_network:
