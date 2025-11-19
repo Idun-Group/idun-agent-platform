@@ -1,8 +1,9 @@
 """Guardrails."""
 
-from idun_agent_schema.engine.guardrails import Guardrails
+from guardrails import Guard
+from idun_agent_schema.engine.guardrails import Guardrail as GuardrailSchema
 
-from ..base import Guardrail
+from ..base import Guardrail as GuardrailBase
 
 """
 Config:  server=ServerConfig(api=ServerAPIConfig(port=8000))
@@ -21,15 +22,21 @@ output=[
 """
 
 
-class GuardrailsHub(Guardrail):
-    """wip."""
+class GuardrailsHubGuard(GuardrailBase):
+    """Class for managing guardrails from `guardrailsai`'s hub."""
 
     # Guardrail(type=<GuardrailType.GUARDRAILS_HUB: 'guardrails_hub'>
     # config=GuardrailBanList(message='test', ban_words=['hello', 'bye'])),
 
-    def __init__(self, config: Guardrails) -> None:
+    def __init__(self, config: GuardrailSchema) -> None:
         super().__init__(config)
-        self._instance_config = self._guardrail_config.config
+        self._guard_config = self._guardrail_config.config
+        self._guard_type = self._guardrail_config.type
+        self._guard: Guard | None = None
 
-    def _map_guard_to_class(self) -> None
-        pass
+    def _map_guard(self) -> None:
+        """Maps the `guard` instance based on its type, by calling the resolve_guard method."""
+        from .utils import resolve_class
+
+        guard = resolve_class(self._type)
+        self._guard = guard

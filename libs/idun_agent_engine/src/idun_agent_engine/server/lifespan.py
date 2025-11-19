@@ -14,13 +14,18 @@ from ..core.config_builder import ConfigBuilder
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context to initialize and teardown the agent."""
+    from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
+
     # Load config and initialize agent on startup
     print("Server starting up...")
     if not app.state.engine_config:
         raise ValueError("Error: No Engine configuration found.")
 
     engine_config = app.state.engine_config
-    guardrails = app.state.engine_config.guardrails
+    guardrails_obj = app.state.engine_config.guardrails.input
+
+    guardrails = [GHGuard(guard) for guard in guardrails_obj]
+    print("guardrails: ", guardrails)
 
     # Use ConfigBuilder's centralized agent initialization
     try:

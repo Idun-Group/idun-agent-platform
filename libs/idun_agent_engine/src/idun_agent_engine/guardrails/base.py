@@ -6,6 +6,8 @@ from idun_agent_schema.engine.guardrails import Guardrail, GuardrailBanList
 class Guardrail(ABC):
     """Base class for different guardrail providers."""
 
+    # TODO: output
+
     def __init__(self, config: Guardrail) -> None:
         if not isinstance(config, Guardrail):
             raise TypeError(

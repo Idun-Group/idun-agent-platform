@@ -11,4 +11,6 @@ class GuardrailType(StrEnum):
 class GuardrailHubGuardType(StrEnum):
     """Enum for different types of guards."""
 
-    BanList = "BANLIST"
+    BanList = "BAN_LIST"
+    CorrectLanguage = "CORRECT_LANGUAGE"
+    ProfanityFree = "PROFANITY_FREE"
