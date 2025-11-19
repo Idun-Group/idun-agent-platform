@@ -436,6 +436,7 @@ class ConfigBuilder:
         builder = cls()
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
+        builder._guardrails = engine_config.guardrails
 
         return builder
 
@@ -465,4 +466,6 @@ class ConfigBuilder:
         builder = cls()
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
+        builder._guardrails = engine_config.guardrails
+
         return builder

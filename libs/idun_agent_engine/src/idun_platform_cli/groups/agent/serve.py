@@ -3,6 +3,7 @@ import sys
 from enum import StrEnum
 
 import click
+
 from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.config_builder import ConfigBuilder
 from idun_agent_engine.core.engine_config import EngineConfig
@@ -49,7 +50,7 @@ class Serve:
     def _fetch_from_path(self) -> EngineConfig | None:
         try:
             config = ConfigBuilder().load_from_file(self._path)
-            print(f"Successfully fetched and built config from {self._path}")
+            print(f"✅ Successfully fetched and built config from {self._path}")
             return config
 
         except Exception as e:
@@ -64,7 +65,7 @@ class Serve:
                 .with_config_from_api(agent_api_key=self._agent_api_key, url=self._url)
                 .build()
             )
-            print(f"Successfully fetched and built config from {self._url}")
+            print(f"✅ Successfully fetched and built config from {self._url}")
             return config
         except Exception as e:
             print(f"[ERROR]: Cannot fetch config from {self._url}: {e} ")
@@ -102,3 +103,4 @@ def serve_command(source: str, path: str | None):
             s.serve()
         case _:
             print(f"[ERROR]: Argument {source} not recognized.")
+            sys.exit(1)

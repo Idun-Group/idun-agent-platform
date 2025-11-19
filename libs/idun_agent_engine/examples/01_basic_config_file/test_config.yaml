@@ -8,26 +8,30 @@ agent:
     graph_definition: "example_agent.py:app"
     observability:
       enabled: false
+
 guardrails:
   enabled: true
   input:
-    - type: custom_llm
+    - type: CUSTOM_LLM
       config:
         prompt: "hello"
         model_name: "gemini-2.5"
-        message: "Cannot answer"
-    - type: custom_llm
+    - type: GUARDRAILS_HUB
       config:
-        prompt: "hello"
-        model_name: "gemini-2.5"
+        guard: BANLIST
+        guard_config:
+          ban_words:
+            - hello
+            - bye
   output:
-    - type: guardrails_hub
+    - type: GUARDRAILS_HUB
       config:
-        ban_words:
-          - hello
-          - bye
-        message: "test"
-    - type: custom_llm
+        guard: BANLIST
+        guard_config:
+          ban_words:
+            - idun
+            - group
+    - type: CUSTOM_LLM
       config:
         prompt: "hello"
         model_name: "gemini-2.5"

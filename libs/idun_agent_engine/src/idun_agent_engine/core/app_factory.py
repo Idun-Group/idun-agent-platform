@@ -54,7 +54,6 @@ def create_app(
     )
 
     # Store configuration in app state for lifespan to use
-    print(validated_config)
     app.state.engine_config = validated_config
 
     # Include the routers
