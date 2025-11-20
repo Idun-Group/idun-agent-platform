@@ -14,12 +14,8 @@ def internet_search(query: str, max_results: int = 5):
 model = init_chat_model("groq:openai/gpt-oss-20b")
 
 
-# Create the agent and get the underlying graph
-compiled_agent = create_deep_agent(
+agent = create_deep_agent(
     model=model,
     system_prompt="search and make a report",
     tools=[internet_search],
 )
-
-# Get the uncompiled graph
-agent = compiled_agent.get_graph()

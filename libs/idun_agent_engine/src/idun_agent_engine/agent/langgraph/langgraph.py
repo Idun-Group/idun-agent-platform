@@ -159,6 +159,8 @@ class LanggraphAgent(agent_base.BaseAgent):
             self._agent_instance = graph_builder.compile(
                 checkpointer=self._checkpointer, store=self._store
             )
+        elif isinstance(graph_builder, CompiledStateGraph):
+            self._agent_instance = graph_builder
 
         if self._agent_instance:
             self._input_schema = self._agent_instance.input_schema
