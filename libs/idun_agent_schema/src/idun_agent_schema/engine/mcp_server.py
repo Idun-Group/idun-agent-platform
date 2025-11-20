@@ -8,7 +8,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
 
-class MCPConfig(BaseModel):
+class MCPServer(BaseModel):
     """Configuration for a single MCP server connection."""
 
     name: str = Field(..., description="Unique identifier for this MCP server.")
@@ -62,7 +62,7 @@ class MCPConfig(BaseModel):
     )
 
     @model_validator(mode="after")
-    def _validate_transport_fields(self) -> "MCPConfig":
+    def _validate_transport_fields(self) -> "MCPServer":
         """Ensure required fields are present for the selected transport."""
         if self.transport in {"sse", "streamable_http", "websocket"} and not self.url:
             raise ValueError(f"url is required for transport '{self.transport}'")

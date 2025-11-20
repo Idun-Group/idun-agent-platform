@@ -7,13 +7,13 @@ from typing import Any, cast
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import Connection
 
-from idun_agent_schema.engine.mcp_server import MCPConfig
+from idun_agent_schema.engine.mcp_server import MCPServer
 
 
 class MCPClientRegistry:
     """Wraps `MultiServerMCPClient` with convenience helpers."""
 
-    def __init__(self, configs: list[MCPConfig] | None = None) -> None:
+    def __init__(self, configs: list[MCPServer] | None = None) -> None:
         self._configs = configs or []
         self._client: MultiServerMCPClient | None = None
 
