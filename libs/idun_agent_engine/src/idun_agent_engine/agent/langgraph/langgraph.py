@@ -227,7 +227,7 @@ class LanggraphAgent(agent_base.BaseAgent):
                 f"Failed to load agent from {graph_definition}: {e}"
             ) from e
 
-        if not isinstance(graph_builder, StateGraph) or not isinstance(
+        if not isinstance(graph_builder, StateGraph) and not isinstance(
             graph_builder, CompiledStateGraph
         ):
             raise TypeError(

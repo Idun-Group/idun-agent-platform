@@ -14,11 +14,12 @@ def internet_search(query: str, max_results: int = 5):
 model = init_chat_model("groq:openai/gpt-oss-20b")
 
 
-agent = create_deep_agent(
+# Create the agent and get the underlying graph
+compiled_agent = create_deep_agent(
     model=model,
-    instructions="search and make a report",
+    system_prompt="search and make a report",
     tools=[internet_search],
 )
 
-result = agent.invoke({"messages": [{"role": "user", "content": "What is LangGraph?"}]})
-print(result)
+# Get the uncompiled graph
+agent = compiled_agent.get_graph()

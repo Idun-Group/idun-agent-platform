@@ -8,3 +8,5 @@ agent:
     name: "Langchain deep research"
     graph_definition: "agent.py:agent"
 
+guardrails:
+  enabled: false
