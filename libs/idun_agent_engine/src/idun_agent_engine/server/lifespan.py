@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from ..core.config_builder import ConfigBuilder
+from ..mcp import MCPClientRegistry
 
 
 @asynccontextmanager
@@ -24,9 +25,14 @@ async def lifespan(app: FastAPI):
     # Store both in app state
     app.state.agent = agent_instance
     app.state.config = engine_config
+    app.state.mcp_registry = MCPClientRegistry(engine_config.mcp_servers)
 
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
+
+    if app.state.mcp_registry.enabled:
+        servers = ", ".join(app.state.mcp_registry.available_servers())
+        print(f"🔌 MCP servers ready: {servers}")
 
     yield
 
