@@ -9,13 +9,25 @@ from idun_agent_schema.engine.guardrails_type import (
 from ..base import BaseGuardrail
 
 
-def load_guard_map():
+def get_guard_instance(name: str) -> Guard:
     """Returns a map of guard type -> guard instance."""
-    from guardrails.hub import BanList
+    if name == "BAN_LIST":
+        from guardrails.hub import BanList
 
-    return {
-        "BAN_LIST": BanList,
-    }
+        return BanList
+
+    elif name == "NSFW":
+        from guardrails.hub import NSFWText
+
+        return NSFWText
+
+    elif name == "COMPETITOR_CHECK":
+        from guardrails.hub import CompetitorCheck
+
+        return CompetitorCheck
+
+    else:
+        raise ValueError(f"Guard {name} not found.")
 
 
 class GuardrailsHubGuard(BaseGuardrail):
@@ -62,9 +74,8 @@ class GuardrailsHubGuard(BaseGuardrail):
         """Installs and configures the guard based on its yaml config."""
         if self._guard_type == GuardrailType.GUARDRAILS_HUB:
             self._install_model()
-            map = load_guard_map()
             guard_name = self._guardrail_config.config.get("guard")
-            guard = map.get(guard_name)
+            guard = get_guard_instance(guard_name)
             if guard is None:
                 raise ValueError(
                     f"Guard: {self.guard_type} is not yet supported, or does not exist."
@@ -83,4 +94,8 @@ class GuardrailsHubGuard(BaseGuardrail):
     def validate(self, input: str) -> bool:
         """TODO."""
         main_guard = Guard().use(self._guard)
-        return main_guard.validate(input)
+        try:
+            main_guard.validate(input)
+            return True
+        except Exception:
+            return False

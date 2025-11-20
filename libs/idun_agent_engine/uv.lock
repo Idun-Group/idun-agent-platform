@@ -1581,7 +1581,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.2.1" },
     { name = "fastapi", specifier = ">=0.116.1,<0.117.0" },
     { name = "google-adk", specifier = ">=1.9.0,<2.0.0" },
-    { name = "guardrails-ai" },
+    { name = "guardrails-ai", specifier = ">=0.6.6,<0.7" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "idun-agent-schema", specifier = ">=0.2.2,<0.3.0" },
     { name = "langchain", specifier = ">=0.3.27,<0.4" },
