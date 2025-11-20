@@ -25,18 +25,25 @@
       "type": "debugpy",
       "request": "launch",
       "console": "integratedTerminal",
-      "module": "uvicorn",
+      "module": "idun_platform_cli.main",
+      // "args": [
+      //   "main:app",
+      //   "--host",
+      //   "0.0.0.0",
+      //   "--port",
+      //   "8100",
+      //   "--reload"
+      // ],
       "args": [
-        "main:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8100",
-        "--reload"
+        "agent", "serve",
+        "--source",
+        "file",
+        "--path",
+        "${workspaceFolder}/libs/idun_agent_engine/examples/01_basic_config_file/config.yaml",
       ],
-      "cwd": "${workspaceFolder}/libs/idun_agent_engine/examples/01_basic_config_file",
+      "cwd": "${workspaceFolder}/libs/idun_agent_engine",
       "justMyCode": false,
-      "envFile": "${workspaceFolder}/libs/idun_agent_engine/examples/01_basic_config_file/.env"
+      "envFile": "${workspaceFolder}/libs/idun_agent_engine/.env"
     },
   ],
   "compounds": [
