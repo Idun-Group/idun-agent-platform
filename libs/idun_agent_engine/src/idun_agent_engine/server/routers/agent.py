@@ -14,7 +14,10 @@ from idun_agent_engine.server.dependencies import get_agent, get_copilotkit_agen
 from ag_ui.core.types import RunAgentInput
 from ag_ui.encoder import EventEncoder
 from copilotkit import LangGraphAGUIAgent
+<<<<<<< HEAD
 from ag_ui_adk import ADKAgent as ADKAGUIAgent
+=======
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s",
@@ -80,7 +83,6 @@ async def stream(
 ):
     """Process a message with the agent, streaming ag-ui events."""
     try:
-
         async def event_stream():
             message = {"query": request.query, "session_id": request.session_id}
             async for event in agent.stream(message):
@@ -90,11 +92,15 @@ async def stream(
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
 @agent_router.post("/copilotkit/stream")
 async def copilotkit_stream(
     input_data: RunAgentInput,
     request: Request,
+<<<<<<< HEAD
     copilotkit_agent: Annotated[
         LangGraphAGUIAgent | ADKAGUIAgent, Depends(get_copilotkit_agent)
     ],
@@ -188,3 +194,25 @@ async def copilotkit_stream(
             raise HTTPException(status_code=500, detail=str(e)) from e
     else:
         raise HTTPException(status_code=400, detail="Invalid agent type")
+=======
+    copilotkit_agent: Annotated[LangGraphAGUIAgent, Depends(get_copilotkit_agent)],
+):
+    """Process a message with the agent, streaming ag-ui events."""
+    try:
+        # Get the accept header from the request
+        accept_header = request.headers.get("accept")
+
+        # Create an event encoder to properly format SSE events
+        encoder = EventEncoder(accept=accept_header or "") # type: ignore[arg-type]
+
+        async def event_generator():
+            async for event in copilotkit_agent.run(input_data):
+                yield encoder.encode(event)
+
+        return StreamingResponse(
+            event_generator(),  # type: ignore[arg-type]
+            media_type=encoder.get_content_type()
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(e)) from e
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))

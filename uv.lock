@@ -1,6 +1,10 @@
 version = 1
 revision = 3
+<<<<<<< HEAD
 requires-python = ">=3.12, <3.14"
+=======
+requires-python = "==3.13.*"
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
     "python_full_version < '3.13' and sys_platform == 'win32'",
@@ -47,6 +51,26 @@ fastapi = [
 ]
 
 [[package]]
+name = "ag-ui-langgraph"
+version = "0.0.21"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ag-ui-protocol" },
+    { name = "langchain" },
+    { name = "langchain-core" },
+    { name = "langgraph" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/90/3b/cda443661521e4a414c28eb8b54f8467600b3cdd51b5281f6f26d8352d87/ag_ui_langgraph-0.0.21.tar.gz", hash = "sha256:0c6096604c18c836bb736bc028222887d5f39413f9024b266fc199ffbf0dacb3", size = 12670, upload-time = "2025-11-13T13:00:44.269Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/99/293cb7cf86df1eef9f7f2df2f4afd41eec31ff1c27c5f5413101b0bb8876/ag_ui_langgraph-0.0.21-py3-none-any.whl", hash = "sha256:589f52bb20a6c0fded89decacaa42265c57d984d20d8fbfb5e53d9f23cbe1060", size = 14410, upload-time = "2025-11-13T13:00:43.349Z" },
+]
+
+[package.optional-dependencies]
+fastapi = [
+    { name = "fastapi" },
+]
+
+[[package]]
 name = "ag-ui-protocol"
 version = "0.1.10"
 source = { registry = "https://pypi.org/simple" }
@@ -56,6 +80,7 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/67/bb/5a5ec893eea5805fb9a3db76a9888c3429710dfb6f24bbb37568f2cf7320/ag_ui_protocol-0.1.10.tar.gz", hash = "sha256:3213991c6b2eb24bb1a8c362ee270c16705a07a4c5962267a083d0959ed894f4", size = 6945, upload-time = "2025-11-06T15:17:17.068Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8f/78/eb55fabaab41abc53f52c0918a9a8c0f747807e5306273f51120fd695957/ag_ui_protocol-0.1.10-py3-none-any.whl", hash = "sha256:c81e6981f30aabdf97a7ee312bfd4df0cd38e718d9fc10019c7d438128b93ab5", size = 7889, upload-time = "2025-11-06T15:17:15.325Z" },
+<<<<<<< HEAD
 ]
 
 [[package]]
@@ -116,6 +141,8 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f9/c8/0932b558da0c302ffd639fc6362a313b98fdf235dc417bc2493da8394df7/aiohttp-3.13.2-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:e0c8e31cfcc4592cb200160344b2fb6ae0f9e4effe06c644b5a125d4ae5ebe23", size = 1716987, upload-time = "2025-10-28T20:57:30.233Z" },
     { url = "https://files.pythonhosted.org/packages/5d/8b/f5bd1a75003daed099baec373aed678f2e9b34f2ad40d85baa1368556396/aiohttp-3.13.2-cp313-cp313-win32.whl", hash = "sha256:0740f31a60848d6edb296a0df827473eede90c689b8f9f2a4cdde74889eb2254", size = 425859, upload-time = "2025-10-28T20:57:32.105Z" },
     { url = "https://files.pythonhosted.org/packages/5d/28/a8a9fc6957b2cee8902414e41816b5ab5536ecf43c3b1843c10e82c559b2/aiohttp-3.13.2-cp313-cp313-win_amd64.whl", hash = "sha256:a88d13e7ca367394908f8a276b89d04a3652044612b9a408a0bb22a5ed976a1a", size = 452192, upload-time = "2025-10-28T20:57:34.166Z" },
+=======
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
 ]
 
 [[package]]
@@ -702,6 +729,26 @@ wheels = [
 [[package]]
 name = "copilotkit"
 version = "0.1.72"
+<<<<<<< HEAD
+=======
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ag-ui-langgraph", extra = ["fastapi"] },
+    { name = "fastapi" },
+    { name = "langchain" },
+    { name = "langgraph" },
+    { name = "partialjson" },
+    { name = "toml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ea/ba/9e68086a51e7ca7adc7f6c1349367580d1cadae5f71de7d9402e9136e297/copilotkit-0.1.72.tar.gz", hash = "sha256:738718f28fccfd3f5ecf55ffb545da7f1f3b12f15ac5ca8f12d70583cb9b5008", size = 35611, upload-time = "2025-11-13T14:43:34.366Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/96/d3/16b7941c6dc32d42e912356cc66cec2a1d95cda5f39336e6090f8dae5c05/copilotkit-0.1.72-py3-none-any.whl", hash = "sha256:6b502cffa3d2ee17daf61673c3ed6b20d10f01b3696d7de7a67a3f2772143aa2", size = 44633, upload-time = "2025-11-13T14:43:32.463Z" },
+]
+
+[[package]]
+name = "coverage"
+version = "7.10.7"
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ag-ui-langgraph", extra = ["fastapi"] },
@@ -914,6 +961,7 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ca/53/8c38a874844a8b0fa10dd8adf3836ac154082cf88d3f22b544e9ceea0a15/fastapi-0.115.14.tar.gz", hash = "sha256:b1de15cdc1c499a4da47914db35d0e4ef8f1ce62b624e94e0e5824421df99739", size = 296263, upload-time = "2025-06-26T15:29:08.21Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/53/50/b1222562c6d270fea83e9c9075b8e8600b8479150a18e4516a6138b980d1/fastapi-0.115.14-py3-none-any.whl", hash = "sha256:6c0c8bf9420bd58f565e585036d971872472b4f7d3f6c73b698e10cffdefb3ca", size = 95514, upload-time = "2025-06-26T15:29:06.49Z" },
+<<<<<<< HEAD
 ]
 
 [[package]]
@@ -944,6 +992,8 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/bc/17/354d04951ce114bf4afc78e27a18cfbd6ee319ab1829c2d5fb5e94063ac6/fastuuid-0.14.0-cp313-cp313-musllinux_1_1_x86_64.whl", hash = "sha256:1383fff584fa249b16329a059c68ad45d030d5a4b70fb7c73a08d98fd53bcdab", size = 450921, upload-time = "2025-10-19T22:31:02.151Z" },
     { url = "https://files.pythonhosted.org/packages/fb/be/d7be8670151d16d88f15bb121c5b66cdb5ea6a0c2a362d0dcf30276ade53/fastuuid-0.14.0-cp313-cp313-win32.whl", hash = "sha256:a0809f8cc5731c066c909047f9a314d5f536c871a7a22e815cc4967c110ac9ad", size = 154559, upload-time = "2025-10-19T22:36:36.011Z" },
     { url = "https://files.pythonhosted.org/packages/22/1d/5573ef3624ceb7abf4a46073d3554e37191c868abc3aecd5289a72f9810a/fastuuid-0.14.0-cp313-cp313-win_amd64.whl", hash = "sha256:0df14e92e7ad3276327631c9e7cec09e32572ce82089c55cb1bb8df71cf394ed", size = 156539, upload-time = "2025-10-19T22:33:35.898Z" },
+=======
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
 ]
 
 [[package]]
@@ -1938,7 +1988,10 @@ name = "idun-agent-engine"
 version = "0.2.7"
 source = { editable = "libs/idun_agent_engine" }
 dependencies = [
+<<<<<<< HEAD
     { name = "ag-ui-adk" },
+=======
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
     { name = "ag-ui-langgraph" },
     { name = "ag-ui-protocol" },
     { name = "aiosqlite" },
@@ -1946,7 +1999,10 @@ dependencies = [
     { name = "arize-phoenix-otel" },
     { name = "click" },
     { name = "copilotkit" },
+<<<<<<< HEAD
     { name = "deepagents" },
+=======
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
     { name = "fastapi" },
     { name = "google-adk" },
     { name = "guardrails-ai" },
@@ -1972,12 +2028,16 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+<<<<<<< HEAD
     { name = "ag-ui-adk", specifier = ">=0.3.4,<0.4.0" },
+=======
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
     { name = "ag-ui-langgraph", specifier = ">=0.0.20,<0.1.0" },
     { name = "ag-ui-protocol", specifier = ">=0.1.8,<0.2.0" },
     { name = "aiosqlite", specifier = ">=0.21.0,<0.22.0" },
     { name = "arize-phoenix", specifier = ">=11.22.0,<12.0.0" },
     { name = "arize-phoenix-otel", specifier = ">=0.2.0,<1.0.0" },
+<<<<<<< HEAD
     { name = "click", specifier = ">=8.2.0" },
     { name = "copilotkit", specifier = ">=0.1.72,<0.2.0" },
     { name = "deepagents", specifier = ">=0.2.8,<0.3.0" },
@@ -1990,6 +2050,17 @@ requires-dist = [
     { name = "langchain-core", specifier = ">=1.0.0,<2.0.0" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<4.0.0" },
     { name = "langchain-mcp-adapters", specifier = ">=0.1.0,<0.2.0" },
+=======
+    { name = "click", specifier = ">=8.2.1" },
+    { name = "copilotkit", specifier = ">=0.1.72,<0.2.0" },
+    { name = "fastapi", specifier = ">=0.115.0,<0.116.0" },
+    { name = "google-adk", specifier = ">=1.9.0,<2.0.0" },
+    { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
+    { name = "idun-agent-schema", specifier = ">=0.2.7,<0.3.0" },
+    { name = "langchain", specifier = ">=0.3.27,<0.4" },
+    { name = "langchain-core", specifier = ">=0.3.72,<0.4.0" },
+    { name = "langchain-google-vertexai", specifier = ">=2.0.27,<3.0.0" },
+>>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
     { name = "langfuse", specifier = "==2.60.8" },
     { name = "langfuse-haystack", specifier = ">=2.3.0" },
     { name = "langgraph", specifier = ">=1.0.0,<2.0.0" },
@@ -3594,6 +3665,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/44/23/78d645adc35d94d1ac4f2a3c4112ab6f5b8999f4898b8cdf01252f8df4a9/pandas-2.3.3-cp313-cp313t-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:900f47d8f20860de523a1ac881c4c36d65efcb2eb850e6948140fa781736e110", size = 12121912, upload-time = "2025-09-29T23:23:05.042Z" },
     { url = "https://files.pythonhosted.org/packages/53/da/d10013df5e6aaef6b425aa0c32e1fc1f3e431e4bcabd420517dceadce354/pandas-2.3.3-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:a45c765238e2ed7d7c608fc5bc4a6f88b642f2f01e70c0c23d2224dd21829d86", size = 12712160, upload-time = "2025-09-29T23:23:28.57Z" },
     { url = "https://files.pythonhosted.org/packages/bd/17/e756653095a083d8a37cbd816cb87148debcfcd920129b25f99dd8d04271/pandas-2.3.3-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:c4fc4c21971a1a9f4bdb4c73978c7f7256caa3e62b323f70d6cb80db583350bc", size = 13199233, upload-time = "2025-09-29T23:24:24.876Z" },
+]
+
+[[package]]
+name = "partialjson"
+version = "0.0.8"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5d/b2/59669fdc3ecbc724a077c598c1c9b4068549af0cd8c3b5add9337bd4d93a/partialjson-0.0.8.tar.gz", hash = "sha256:91217e19a15049332df534477f56420065ad1729cedee7d8c7433e1d2acc7dca", size = 4142, upload-time = "2024-08-03T18:03:15.798Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8a/fb/453af21468774dbd0954853735a4fc7841544c3022ff86e5d93252d7ea72/partialjson-0.0.8-py3-none-any.whl", hash = "sha256:22c6c60944137f931a7033fa0eeee2d74b49114f3d45c25a560b07a6ebf22b76", size = 4549, upload-time = "2024-08-03T18:03:14.447Z" },
 ]
 
 [[package]]
