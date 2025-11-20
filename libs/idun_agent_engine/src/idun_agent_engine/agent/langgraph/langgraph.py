@@ -14,6 +14,7 @@ from idun_agent_schema.engine.langgraph import (
 )
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
@@ -154,9 +155,10 @@ class LanggraphAgent(agent_base.BaseAgent):
         graph_builder = self._load_graph_builder(self._configuration.graph_definition)
         self._infos["graph_definition"] = self._configuration.graph_definition
 
-        self._agent_instance = graph_builder.compile(
-            checkpointer=self._checkpointer, store=self._store
-        )
+        if isinstance(graph_builder, StateGraph):
+            self._agent_instance = graph_builder.compile(
+                checkpointer=self._checkpointer, store=self._store
+            )
 
         if self._agent_instance:
             self._input_schema = self._agent_instance.input_schema
@@ -208,6 +210,7 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         try:
             from pathlib import Path
+
             resolved_path = Path(module_path).resolve()
             spec = importlib.util.spec_from_file_location(
                 graph_variable_name, str(resolved_path)
@@ -224,7 +227,9 @@ class LanggraphAgent(agent_base.BaseAgent):
                 f"Failed to load agent from {graph_definition}: {e}"
             ) from e
 
-        if not isinstance(graph_builder, StateGraph):
+        if not isinstance(graph_builder, StateGraph) or not isinstance(
+            graph_builder, CompiledStateGraph
+        ):
             raise TypeError(
                 f"The variable '{graph_variable_name}' from {module_path} is not a StateGraph instance."
             )
