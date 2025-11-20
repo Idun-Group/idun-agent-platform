@@ -71,6 +71,15 @@ class HaystackAgent(BaseAgent):
         return self._agent_instance
 
     @property
+    def copilotkit_agent_instance(self) -> Any:
+        """Return the CopilotKit agent instance.
+
+        Raises:
+            RuntimeError: If the CopilotKit agent is not yet initialized.
+        """
+        raise NotImplementedError("CopilotKit agent instance not supported yet for Haystack agent.")
+
+    @property
     def configuration(self) -> HaystackAgentConfig:
         """Return validated configuration.
 

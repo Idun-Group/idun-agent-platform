@@ -40,6 +40,15 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
         pass
 
     @property
+    @abstractmethod
+    def copilotkit_agent_instance(self) -> Any:
+        """Get the CopilotKit agent instance.
+
+        This might be set after initialization.
+        """
+        pass
+
+    @property
     def configuration(self) -> ConfigType:
         """Return current configuration settings for the agent.
 

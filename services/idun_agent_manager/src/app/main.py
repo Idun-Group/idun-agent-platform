@@ -73,7 +73,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Idun Agent Manager API",
         description="Idun service for managing AI agents",
-        version="0.1.0",
+        version="0.1.0", # TODO: add dinamic auto version from pyproject.toml
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
