@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
-from idun_agent_schema.engine.guardrails import Guardrail, GuardrailBanList
+from idun_agent_schema.engine.guardrails import Guardrail
 
 
-class Guardrail(ABC):
+class BaseGuardrail(ABC):
     """Base class for different guardrail providers."""
 
     # TODO: output
@@ -15,7 +16,7 @@ class Guardrail(ABC):
             )
         self._guardrail_config = config
         # config for the specific guardrails type. currently, can only be guardrails_hub config
-        self._instance_config: GuardrailBanList = None
+        self._instance_config: dict[str, Any] = None
 
     @abstractmethod
     def validate(self, input: str) -> bool:

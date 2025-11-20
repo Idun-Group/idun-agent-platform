@@ -5,7 +5,7 @@ description = "Centralized Pydantic schema library for Idun Agent Engine and Man
 authors = [{ name = "Idun Group", email = "contact@idun-group.com" }]
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.11,<3.14"
 keywords = ["pydantic", "schemas", "fastapi", "langgraph", "idun"]
 classifiers = [
   "License :: OSI Approved :: MIT License",

@@ -54,8 +54,9 @@ class Serve:
             return config
 
         except Exception as e:
-            print(f"[ERROR]: Cannot fetch config from {self._path}: {e} ")
-            sys.exit(1)
+            raise ValueError(
+                f"[ERROR]: Cannot fetch config from {self._path}: {e} "
+            ) from e
 
     def _fetch_from_manager(self) -> EngineConfig | None:
         """Fetches the config from the api."""

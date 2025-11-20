@@ -20,7 +20,7 @@ class Guardrail(BaseModel):
 
     @model_validator(mode="after")
     def validate_type_config_match(self) -> Guardrail:
-        """Validate that the config dict has required fields for the type."""
+        """Validate that the config dict has required fields for the type, and the guard_url, that we need to fetch model from the hub."""
         if self.type == GuardrailType.CUSTOM_LLM:
             required_fields = ["prompt", "model_name"]
             for field in required_fields:
@@ -29,13 +29,22 @@ class Guardrail(BaseModel):
                         f"CUSTOM_LLM guardrail requires '{field}' in config"
                     )
         elif self.type == GuardrailType.GUARDRAILS_HUB:
-            required_fields = ["guard", "guard_config"]
+            required_fields = [
+                "guard",
+                "guard_config",
+                "guard_url",
+                "api_key",
+                "reject_message",
+            ]
             for field in required_fields:
                 if field not in self.config:
                     raise ValueError(
                         f"GUARDRAILS_HUB guardrail requires '{field}' in config"
                     )
-
+        else:
+            raise ValueError(
+                f"Guard type: {self.type} not recognized or is not yet supported."
+            )
         return self
 
 

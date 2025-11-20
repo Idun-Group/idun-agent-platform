@@ -10,11 +10,30 @@ from fastapi import FastAPI
 
 from ..core.config_builder import ConfigBuilder
 
+from idun_agent_schema.engine.guardrails import Guardrails, Guardrail
+
+
+def _parse_guardrails(guardrails_obj: Guardrails) -> list[Guardrail]:
+    """Adds the position of the guardrails (input/output) and returns the lift of updated guardrails."""
+
+    from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
+
+    guardrails = []
+    input_guardrails = guardrails_obj.input
+    output_guardrails = guardrails_obj.output
+
+    for guard in input_guardrails:
+        guardrails.append(GHGuard(guard, position="input"))
+
+    for guard in output_guardrails:
+        guardrails.append(GHGuard(guard, position="output"))
+
+    return guardrails
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context to initialize and teardown the agent."""
-    from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
 
     # Load config and initialize agent on startup
     print("Server starting up...")
@@ -22,9 +41,9 @@ async def lifespan(app: FastAPI):
         raise ValueError("Error: No Engine configuration found.")
 
     engine_config = app.state.engine_config
-    guardrails_obj = app.state.engine_config.guardrails.input
+    guardrails_obj = app.state.engine_config.guardrails
+    guardrails = _parse_guardrails(guardrails_obj)
 
-    guardrails = [GHGuard(guard) for guard in guardrails_obj]
     print("guardrails: ", guardrails)
 
     # Use ConfigBuilder's centralized agent initialization

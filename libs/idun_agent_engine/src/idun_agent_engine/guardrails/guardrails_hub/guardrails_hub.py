@@ -2,41 +2,85 @@
 
 from guardrails import Guard
 from idun_agent_schema.engine.guardrails import Guardrail as GuardrailSchema
+from idun_agent_schema.engine.guardrails_type import (
+    GuardrailType,
+)
 
-from ..base import Guardrail as GuardrailBase
-
-"""
-Config:  server=ServerConfig(api=ServerAPIConfig(port=8000))
-agent=AgentConfig(type=<AgentFramework.LANGGRAPH: 'LANGGRAPH'>, config=LangGraphAgentConfig(name='Guardrails', input_schema_definition={}, output_schema_definition={}, observability=ObservabilityConfig(provider=None, enabled=False, options={}), graph_definition='example_agent.py:app', checkpointer=None, store=None))
-guardrails=Guardrails(enabled=True,
-input=[
-      Guardrail(type=<GuardrailType.CUSTOM_LLM: 'custom_llm'>, config=LLMGuard(message='Cannot answer', model_name='gemini-2.5', prompt='hello'))
-      Guardrail(type=<GuardrailType.CUSTOM_LLM: 'custom_llm'>, config=LLMGuard(message='Cannot answer', model_name='gemini-2.5', prompt='hello'))
-      ]
-
-output=[
-       Guardrail(type=<GuardrailType.GUARDRAILS_HUB: 'guardrails_hub'>, config=GuardrailBanList(message='test', ban_words=['hello', 'bye'])),
-       Guardrail(type=<GuardrailType.CUSTOM_LLM: 'custom_llm'>, config=LLMGuard(message='Cannot answer', model_name='gemini-2.5', prompt='hello'))
-       ]
-       )
-"""
+from ..base import BaseGuardrail
 
 
-class GuardrailsHubGuard(GuardrailBase):
+def load_guard_map():
+    """Returns a map of guard type -> guard instance."""
+    from guardrails.hub import BanList
+
+    return {
+        "BAN_LIST": BanList,
+    }
+
+
+class GuardrailsHubGuard(BaseGuardrail):
     """Class for managing guardrails from `guardrailsai`'s hub."""
 
-    # Guardrail(type=<GuardrailType.GUARDRAILS_HUB: 'guardrails_hub'>
-    # config=GuardrailBanList(message='test', ban_words=['hello', 'bye'])),
-
-    def __init__(self, config: GuardrailSchema) -> None:
+    def __init__(self, config: GuardrailSchema, position: str) -> None:
         super().__init__(config)
-        self._guard_config = self._guardrail_config.config
+
         self._guard_type = self._guardrail_config.type
-        self._guard: Guard | None = None
+        self._guard_config = self._guardrail_config.config
 
-    def _map_guard(self) -> None:
-        """Maps the `guard` instance based on its type, by calling the resolve_guard method."""
-        from .utils import resolve_class
+        if self._guard_type == GuardrailType.GUARDRAILS_HUB:
+            self._guard_url = self._guardrail_config.config["guard_url"]
 
-        guard = resolve_class(self._type)
-        self._guard = guard
+        self.reject_message: str = self._guard_config["reject_message"]
+        self._install_model()
+        self._guard: Guard | None = self.setup_guard()
+        self.position: str = position
+
+    def _install_model(self) -> None:
+        import subprocess
+
+        from guardrails import install
+
+        try:
+            api_key = self._guardrail_config.config["api_key"]
+            subprocess.run(
+                [
+                    "guardrails",
+                    "configure",
+                    "--token",
+                    api_key,
+                    "--disable-remote-inferencing",  # TODO: maybe provide this as feat
+                    "--disable-metrics",
+                ],
+                check=True,
+            )
+            print(f"Installing model: {self._guard_url}..")
+            install(self._guard_url, quiet=True, install_local_models=True)
+        except Exception as e:
+            raise OSError(f"Cannot install model {self._guard_url}: {e}") from e
+
+    def setup_guard(self) -> Guard | None:
+        """Installs and configures the guard based on its yaml config."""
+        if self._guard_type == GuardrailType.GUARDRAILS_HUB:
+            self._install_model()
+            map = load_guard_map()
+            guard_name = self._guardrail_config.config.get("guard")
+            guard = map.get(guard_name)
+            if guard is None:
+                raise ValueError(
+                    f"Guard: {self.guard_type} is not yet supported, or does not exist."
+                )
+
+            guard_instance_params = self._guardrail_config.config.get(
+                "guard_config", {}
+            )
+            guard_instance = guard(**guard_instance_params)
+            for param, value in self._guardrail_config.config["guard_config"].items():
+                setattr(guard, param, value)
+            return guard_instance
+        elif self._guard_type == GuardrailType.CUSTOM_LLM:
+            raise NotImplementedError("Support for CUSTOM_LLM not yet provided.")
+
+    def validate(self, input: str) -> bool:
+        """TODO."""
+        main_guard = Guard().use(self._guard)
+        return main_guard.validate(input)
