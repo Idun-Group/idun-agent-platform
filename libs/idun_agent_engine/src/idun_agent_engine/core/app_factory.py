@@ -14,6 +14,7 @@ from ..server.routers.agent import agent_router
 from ..server.routers.base import base_router
 from .config_builder import ConfigBuilder
 from .engine_config import EngineConfig
+from .._version import __version__
 
 
 def create_app(
@@ -48,7 +49,7 @@ def create_app(
         lifespan=lifespan,
         title="Idun Agent Engine Server",
         description="A production-ready server for conversational AI agents",
-        version="0.1.0",
+        version=__version__,
         docs_url="/docs",
         redoc_url="/redoc",
     )
