@@ -17,7 +17,7 @@ guardrails:
       config:
         guard: BAN_LIST
         guard_url: "hub://guardrails/ban_list"
-        api_key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODYyNDMzNDI1NTgxOTkzNzM1OCIsImFwaUtleUlkIjoiYmYzOWVkY2YtZjMxMS00NWQ3LWI5ODgtM2MzYTRiNGVhMmQwIiwic2NvcGUiOiJyZWFkOnBhY2thZ2VzIiwicGVybWlzc2lvbnMiOltdLCJpYXQiOjE3NjM2MzIzNzIsImV4cCI6NDkxNzIzMjM3Mn0.ASvISsWnPnkQU4lYIpFYTD93zzSYEEWM8ZEG_uduHTM
+        api_key: eyXXX
         reject_message: "ban!!"
         guard_config:
           banned_words:
@@ -28,7 +28,7 @@ guardrails:
       config:
         guard: COMPETITOR_CHECK
         guard_url: "hub://guardrails/competitor_check"
-        api_key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODYyNDMzNDI1NTgxOTkzNzM1OCIsImFwaUtleUlkIjoiYmYzOWVkY2YtZjMxMS00NWQ3LWI5ODgtM2MzYTRiNGVhMmQwIiwic2NvcGUiOiJyZWFkOnBhY2thZ2VzIiwicGVybWlzc2lvbnMiOltdLCJpYXQiOjE3NjM2MzIzNzIsImV4cCI6NDkxNzIzMjM3Mn0.ASvISsWnPnkQU4lYIpFYTD93zzSYEEWM8ZEG_uduHTM
+        api_key: eyXXX
         reject_message: "comp!!!"
         guard_config:
           competitors:
@@ -40,7 +40,7 @@ guardrails:
       config:
         guard: NSFW
         guard_url: "hub://guardrails/nsfw_text"
-        api_key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODYyNDMzNDI1NTgxOTkzNzM1OCIsImFwaUtleUlkIjoiYmYzOWVkY2YtZjMxMS00NWQ3LWI5ODgtM2MzYTRiNGVhMmQwIiwic2NvcGUiOiJyZWFkOnBhY2thZ2VzIiwicGVybWlzc2lvbnMiOltdLCJpYXQiOjE3NjM2MzIzNzIsImV4cCI6NDkxNzIzMjM3Mn0.ASvISsWnPnkQU4lYIpFYTD93zzSYEEWM8ZEG_uduHTM
+        api_key: eyXXX
         reject_message: "nsfw!!!"
         guard_config:
           on_fail: exception
@@ -49,7 +49,7 @@ guardrails:
       config:
         guard: BAN_LIST
         guard_url: "hub://guardrails/ban_list"
-        api_key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnb29nbGUtb2F1dGgyfDEwODYyNDMzNDI1NTgxOTkzNzM1OCIsImFwaUtleUlkIjoiYmYzOWVkY2YtZjMxMS00NWQ3LWI5ODgtM2MzYTRiNGVhMmQwIiwic2NvcGUiOiJyZWFkOnBhY2thZ2VzIiwicGVybWlzc2lvbnMiOltdLCJpYXQiOjE3NjM2MzIzNzIsImV4cCI6NDkxNzIzMjM3Mn0.ASvISsWnPnkQU4lYIpFYTD93zzSYEEWM8ZEG_uduHTM
+        api_key: eyXXX
         reject_message: "aaaa"
         guard_config:
           banned_words:
