@@ -163,10 +163,18 @@ class LanggraphAgent(agent_base.BaseAgent):
             self._agent_instance = graph_builder
 
         if self._agent_instance:
-            self._input_schema = self._agent_instance.input_schema
-            self._output_schema = self._agent_instance.output_schema
-            self._infos["input_schema"] = str(self._input_schema)
-            self._infos["output_schema"] = str(self._output_schema)
+            try:
+                self._input_schema = self._agent_instance.input_schema
+                self._output_schema = self._agent_instance.output_schema
+                self._infos["input_schema"] = str(self._input_schema)
+                self._infos["output_schema"] = str(self._output_schema)
+            except Exception:
+                print("Could not parse schema")
+                self._input_schema = self._configuration.input_schema_definition
+                self._output_schema = self._configuration.output_schema_definition
+                self._infos["input_schema"] = "Cannot extract schema"
+                self._infos["output_schema"] = "Cannot extract schema"
+
         else:
             self._input_schema = self._configuration.input_schema_definition
             self._output_schema = self._configuration.output_schema_definition
