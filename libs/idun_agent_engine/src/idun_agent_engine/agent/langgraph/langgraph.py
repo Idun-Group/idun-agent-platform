@@ -236,7 +236,7 @@ class LanggraphAgent(agent_base.BaseAgent):
             raise ValueError(
                 f"Failed to load agent from {graph_definition}: {e}"
             ) from e
-
+        # TODO to remove, dirty fix for template deepagent langgraph
         if not isinstance(graph_builder, StateGraph) and not isinstance(
             graph_builder, CompiledStateGraph
         ):
