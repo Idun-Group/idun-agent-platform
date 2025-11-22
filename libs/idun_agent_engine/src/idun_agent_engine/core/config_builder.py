@@ -7,6 +7,7 @@ This approach ensures type safety, validation, and consistency with the rest of 
 from pathlib import Path
 from typing import Any
 
+from idun_agent_schema.engine.guardrails import Guardrails
 import yaml
 from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.haystack import HaystackAgentConfig
@@ -16,6 +17,7 @@ from idun_agent_schema.engine.langgraph import (
 )
 
 from idun_agent_engine.server.server_config import ServerAPIConfig
+from yaml.serializer import YAMLError
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
@@ -44,6 +46,7 @@ class ConfigBuilder:
         """Initialize a new configuration builder with default values."""
         self._server_config = ServerConfig()
         self._agent_config: AgentConfig | None = None
+        self._guardrails: Guardrails | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """Set the API port for the server.
@@ -96,9 +99,16 @@ class ConfigBuilder:
                     f"Error sending retrieving config from url. response : {response.json()}"
                 )
             yaml_config = yaml.safe_load(response.text)
-            self._server_config = yaml_config["engine_config"]["server"]
-            self._agent_config = yaml_config["engine_config"]["agent"]
-            return self
+
+            try:
+                self._server_config = yaml_config["engine_config"]["server"]
+                self._agent_config = yaml_config["engine_config"]["agent"]
+                self._guardrails = yaml_config["guardrails"]
+                return self
+            except Exception as e:
+                raise YAMLError(
+                    f"Failed to parse yaml file for EngineConfig and/or Guardrails: {e}"
+                ) from e
 
         except Exception as e:
             raise ValueError(f"Error occured while getting config from api: {e}") from e
@@ -141,6 +151,8 @@ class ConfigBuilder:
         # Create the agent config (store as strongly-typed model, not dict)
         self._agent_config = AgentConfig(type=AgentFramework.LANGGRAPH, config=langgraph_config)
         return self
+
+    # TODO: remove unused fns
 
     def with_custom_agent(
         self, agent_type: str, config: dict[str, Any]
@@ -186,7 +198,11 @@ class ConfigBuilder:
             )
 
         # Create and validate the complete configuration
-        return EngineConfig(server=self._server_config, agent=self._agent_config)
+        return EngineConfig(
+            server=self._server_config,
+            agent=self._agent_config,
+            guardrails=self._guardrails,
+        )
 
     def build_dict(self) -> dict[str, Any]:
         """Build and return the configuration as a dictionary.
@@ -235,7 +251,6 @@ class ConfigBuilder:
             ValueError: If agent type is unsupported
         """
         agent_config_obj = engine_config.agent.config
-        print("CONFIG:", agent_config_obj)
         agent_type = engine_config.agent.type
 
         # Initialize the appropriate agent
@@ -311,10 +326,6 @@ class ConfigBuilder:
         if agent_type == "langgraph":
             validated_config = LangGraphAgentConfig.model_validate(config)
             return validated_config.model_dump()
-        # Future agent types can be added here:
-        # elif agent_type == "crewai":
-        #     validated_config = CrewAIAgentConfig.model_validate(config)
-        #     return validated_config.model_dump()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
@@ -364,6 +375,7 @@ class ConfigBuilder:
         config_dict: dict[str, Any] | None = None,
         engine_config: EngineConfig | None = None,
     ) -> EngineConfig:
+        print(config_dict)
         """Umbrella function to resolve configuration from various sources.
 
         This function handles all the different ways configuration can be provided
@@ -424,6 +436,7 @@ class ConfigBuilder:
         builder = cls()
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
+        builder._guardrails = engine_config.guardrails
 
         return builder
 
@@ -453,4 +466,6 @@ class ConfigBuilder:
         builder = cls()
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
+        builder._guardrails = engine_config.guardrails
+
         return builder

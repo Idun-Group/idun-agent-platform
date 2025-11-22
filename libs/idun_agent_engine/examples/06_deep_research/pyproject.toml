@@ -1,0 +1,31 @@
+[project]
+  name = "idun-agents"
+  version = "0.1.0"
+  description = "Add your description here"
+  readme = "README.md"
+  requires-python = "==3.13.*"
+  dependencies = [
+      "deepagents>=0.0.5",
+      "idun-agent-engine==0.2.2.dev20251120201157",
+      "langchain-groq>=0.3.8",
+      "langgraph>=0.6.11",
+      "setuptools>=80.9.0",
+      "tavily-python>=0.7.13",
+]
+
+  [[tool.uv.index]]
+  name = "test-pypi"
+  url = "https://test.pypi.org/simple/"
+
+  [tool.uv.sources]
+  idun-agent-engine = { index = "test-pypi" }
+  idun-agent-schema = { index = "test-pypi" }
+
+[tool.uv]
+override-dependencies = [
+    "langchain-core>=1.0.0,<2.0.0",
+    "langchain>=1.0.2",
+    "langgraph>=1.0.0",
+    "lxml>=5.0.0",
+    "setuptools>=65.0.0"
+]

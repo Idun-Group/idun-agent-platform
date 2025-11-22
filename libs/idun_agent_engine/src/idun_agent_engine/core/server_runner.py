@@ -41,7 +41,7 @@ def run_server(
         # Run in production mode
         run_server(app, workers=4)
     """
-    print(f"🌐 Starting Idun Agent Engine server on http://{host}:{port}")
+    print(f"🌐 Starting Idun Agent Engine server on http://{host}:{port}...")
     print(f"📚 API documentation available at http://{host}:{port}/docs")
 
     if reload and workers:
@@ -50,13 +50,12 @@ def run_server(
         )
         reload = False
 
+    print("Config: ", app.state.engine_config)
     uvicorn.run(
         app,
         host=host,
         port=port,
-        # reload=reload,
         log_level=log_level,
-        # workers=workers
     )
 
 
