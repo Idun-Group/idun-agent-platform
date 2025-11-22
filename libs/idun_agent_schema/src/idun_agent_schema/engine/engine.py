@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from .agent import AgentConfig
+from .mcp_server import MCPServer
 from .guardrails import Guardrails
 from .server import ServerConfig
 
@@ -12,4 +13,5 @@ class EngineConfig(BaseModel):
 
     server: ServerConfig = Field(default_factory=ServerConfig)
     agent: AgentConfig
+    mcp_servers: list[MCPServer] = Field(default_factory=list)
     guardrails: Guardrails

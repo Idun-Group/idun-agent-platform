@@ -167,12 +167,50 @@ agent:
 - `agent.config.graph_definition` (str): absolute or relative `path/to/file.py:variable`
 - `agent.config.checkpointer` (sqlite): `{ type: "sqlite", db_url: "sqlite:///file.db" }`
 - `agent.config.observability` (optional): provider options as shown above
+- `mcp_servers` (list, optional): collection of MCP servers that should be available to your agent runtime. Each entry matches the fields supported by `langchain-mcp-adapters` (name, transport, url/command, headers, etc.).
 
 Config can be sourced by:
 
 - `engine_config` (preferred): pass a validated `EngineConfig` to `create_app`
 - `config_dict`: dict validated at runtime
 - `config_path`: path to YAML; defaults to `config.yaml`
+
+### MCP Servers
+
+You can mount MCP servers directly in your engine config. The engine will automatically
+create a `MultiServerMCPClient` and expose it on `app.state.mcp_registry`.
+
+```yaml
+mcp_servers:
+  - name: "math"
+    transport: "stdio"
+    command: "python"
+    args:
+      - "/path/to/math_server.py"
+  - name: "weather"
+    transport: "streamable_http"
+    url: "http://localhost:8000/mcp"
+```
+
+Inside your FastAPI dependencies or handlers:
+
+```python
+from idun_agent_engine.server.dependencies import get_mcp_registry
+
+@router.get("/mcp/{server}/tools")
+async def list_tools(server: str, registry = Depends(get_mcp_registry)):
+    return await registry.get_tools(server)
+```
+
+Or outside of FastAPI:
+
+```python
+from langchain_mcp_adapters.tools import load_mcp_tools
+
+registry = app.state.mcp_registry
+async with registry.get_session("math") as session:
+    tools = await load_mcp_tools(session)
+```
 
 ## Examples
 
