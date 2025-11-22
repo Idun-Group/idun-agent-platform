@@ -6,7 +6,7 @@ description = "Modern FastAPI backend for managing AI agents with PostgreSQL, SQ
 readme = "README.md"
 license = { text = "MIT" }
 authors = [ { name = "Idun Group", email = "contact@idun-group.com" } ]
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.12,<3.14"
 
 dependencies = [
   # Core web framework
@@ -19,7 +19,6 @@ dependencies = [
   "alembic>=1.14.0,<2.0.0",
   "asyncpg>=0.30.0,<0.31.0",  # Async PostgreSQL driver
   "psycopg[binary]>=3.2.0,<4.0.0",  # Sync PostgreSQL driver (required by Alembic)
-  "psycopg2-binary>=2.9.10,<3.0.0",  # Sync PostgreSQL driver (required by Alembic)
 
   # Data validation
   "pydantic[email]>=2.11.0,<3.0.0",
