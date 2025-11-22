@@ -3,7 +3,7 @@ name = "idun-agent-engine"
 version = "0.2.7"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.10,<3.14"
 readme = "README.md"
 license = "MIT"
 keywords = [
@@ -26,6 +26,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
+    "guardrails-ai>=0.6.6, <0.7",
     "fastapi>=0.115.0,<0.116.0",
     "uvicorn>=0.35.0,<0.36.0",
     "langgraph>=0.6.3,<0.7.0",

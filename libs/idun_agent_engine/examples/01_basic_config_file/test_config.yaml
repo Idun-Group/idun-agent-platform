@@ -1,0 +1,57 @@
+server:
+  api:
+    port: 8000
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "Guardrails"
+    graph_definition: "example_agent.py:app"
+    observability:
+      enabled: false
+
+guardrails:
+  enabled: true
+
+  input:
+    - type: GUARDRAILS_HUB
+      config:
+        guard: BAN_LIST
+        guard_url: "hub://guardrails/ban_list"
+        api_key: eyXXX
+        reject_message: "ban!!"
+        guard_config:
+          banned_words:
+            - hello
+            - bye
+
+    - type: GUARDRAILS_HUB
+      config:
+        guard: COMPETITOR_CHECK
+        guard_url: "hub://guardrails/competitor_check"
+        api_key: eyXXX
+        reject_message: "comp!!!"
+        guard_config:
+          competitors:
+            - spheir
+            - bob
+
+
+    - type: GUARDRAILS_HUB
+      config:
+        guard: NSFW
+        guard_url: "hub://guardrails/nsfw_text"
+        api_key: eyXXX
+        reject_message: "nsfw!!!"
+        guard_config:
+          on_fail: exception
+  output:
+    - type: GUARDRAILS_HUB
+      config:
+        guard: BAN_LIST
+        guard_url: "hub://guardrails/ban_list"
+        api_key: eyXXX
+        reject_message: "aaaa"
+        guard_config:
+          banned_words:
+              - idun
+              - group
