@@ -53,6 +53,7 @@ dependencies = [
     "sqlalchemy>=2.0.36,<3.0.0",
     "ag-ui-langgraph>=0.0.20,<0.1.0",
     "copilotkit>=0.1.72,<0.2.0",
+    "langchain-mcp-adapters>=0.1.0,<0.2.0",
 ]
 
 

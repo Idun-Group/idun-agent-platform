@@ -46,6 +46,8 @@ class ConfigBuilder:
         """Initialize a new configuration builder with default values."""
         self._server_config = ServerConfig()
         self._agent_config: AgentConfig | None = None
+        # TODO: add mcp_servers config
+
         self._guardrails: Guardrails | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
