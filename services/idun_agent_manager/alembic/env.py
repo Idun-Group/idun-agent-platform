@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 # Import your models here for autogenerate to work
 from app.infrastructure.db.session import Base
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel  # noqa: F401
+from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel  # noqa: F401
 
 # Initialize application logging for Alembic
 from app.core.logging import setup_logging
@@ -28,9 +29,17 @@ try:
         # Convert async URL to sync URL for migrations
         # Replace asyncpg with psycopg (v3) dialect
         sync_url = settings.database.url.replace("+asyncpg", "+psycopg").replace("+asyncio", "")
-        config.set_main_option("sqlalchemy.url", sync_url)
-except Exception:  # pragma: no cover - fallback to alembic.ini if settings unavailable
-    pass
+        if sync_url:
+            config.set_main_option("sqlalchemy.url", sync_url)
+        else:
+            raise ValueError("DATABASE__URL is empty or not set in .env file")
+except Exception as e:  # pragma: no cover - fallback to alembic.ini if settings unavailable
+    import sys
+    print(f"Warning: Could not load database URL from settings: {e}", file=sys.stderr)
+    print("Make sure DATABASE__URL is set in your .env file", file=sys.stderr)
+    # Re-raise if we're in online mode and have no URL
+    if not context.is_offline_mode():
+        raise
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
