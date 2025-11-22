@@ -1,6 +1,6 @@
 [project]
 name = "idun-agent-engine"
-version = "0.2.2"
+version = "0.2.7"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.10,<3.14"
@@ -26,9 +26,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-
     "guardrails-ai>=0.6.6, <0.7",
-    "fastapi>=0.116.1,<0.117.0",
+    "fastapi>=0.115.0,<0.116.0",
     "uvicorn>=0.35.0,<0.36.0",
     "langgraph>=0.6.3,<0.7.0",
     "langgraph-checkpoint-sqlite>=2.0.11,<3.0.0",
@@ -46,12 +45,14 @@ dependencies = [
     "langchain>=0.3.27,<0.4",
     # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
     "arize-phoenix>=11.22.0,<12.0.0",
-    "idun-agent-schema>=0.2.2,<0.3.0",
+    "idun-agent-schema>=0.2.7,<0.3.0",
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
     "click>=8.2.1",
     # Pin SQLAlchemy for Python 3.13 compatibility (required by Phoenix)
     "sqlalchemy>=2.0.36,<3.0.0",
+    "ag-ui-langgraph>=0.0.20,<0.1.0",
+    "copilotkit>=0.1.72,<0.2.0",
 ]
 
 

@@ -35,7 +35,8 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
 
@@ -85,7 +86,8 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
 
@@ -104,8 +106,8 @@ jobs:
 
       - name: Wait for schema to be available on PyPI
         run: |
-          echo "Waiting 10 seconds for schema to propagate on PyPI..."
-          sleep 10
+          echo "Waiting 30 seconds for schema to propagate on PyPI..."
+          sleep 30
 
       - name: Build engine package
         working-directory: libs/idun_agent_engine
@@ -134,9 +136,8 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-
-          VERSION=${{github.ref_name}}
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Building Docker image version: $VERSION"
 
@@ -164,8 +165,8 @@ jobs:
 
       - name: Wait for engine to be available on PyPI
         run: |
-          echo "Waiting 10 seconds for engine to propagate on PyPI..."
-          sleep 10
+          echo "Waiting 30 seconds for engine to propagate on PyPI..."
+          sleep 30
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -194,19 +195,73 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
-  # Job 4: Create Release Summary
+  # Job 4: Build and Publish Web Docker Image (depends on engine)
+  # ============================================================================
+  publish-web-docker:
+    name: Build & Publish Web Docker Image
+    runs-on: ubuntu-latest
+    needs: publish-engine
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          VERSION=${RAW_REF#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building Web Docker image version: $VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/idun_agent_web
+          file: ./services/idun_agent_web/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            freezaa9/idun-ai-web:${{ steps.version.outputs.VERSION }}
+            freezaa9/idun-ai-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker image summary
+        run: |
+          echo "## 🌐 Web Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`freezaa9/idun-ai-web:${{ steps.version.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull freezaa9/idun-ai-web:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # Job 5: Create Release Summary
   # ============================================================================
   release-summary:
     name: Create Release Summary
     runs-on: ubuntu-latest
-    needs: [publish-schema, publish-engine, publish-manager-docker]
+    needs: [publish-schema, publish-engine, publish-manager-docker, publish-web-docker]
     if: always()
 
     steps:
       - name: Extract version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create summary
@@ -230,10 +285,16 @@ jobs:
           echo "docker pull freezaa9/idun-ai:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 4. Web (Docker Hub)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull freezaa9/idun-ai-web:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔗 Links" >> $GITHUB_STEP_SUMMARY
           echo "- [Schema on PyPI](https://pypi.org/project/idun-agent-schema/${{ steps.version.outputs.VERSION }}/)" >> $GITHUB_STEP_SUMMARY
           echo "- [Engine on PyPI](https://pypi.org/project/idun-agent-engine/${{ steps.version.outputs.VERSION }}/)" >> $GITHUB_STEP_SUMMARY
           echo "- [Manager on Docker Hub](https://hub.docker.com/r/freezaa9/idun-ai/tags)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Web on Docker Hub](https://hub.docker.com/r/freezaa9/idun-ai-web/tags)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## ✅ Release Complete!" >> $GITHUB_STEP_SUMMARY
           echo "All components have been successfully published." >> $GITHUB_STEP_SUMMARY

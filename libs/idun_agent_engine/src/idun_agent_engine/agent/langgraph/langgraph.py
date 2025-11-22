@@ -18,6 +18,7 @@ from langgraph.graph.state import CompiledStateGraph
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
+from copilotkit import LangGraphAGUIAgent
 
 
 class LanggraphAgent(agent_base.BaseAgent):
@@ -30,6 +31,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         self._input_schema: Any = None
         self._output_schema: Any = None
         self._agent_instance: Any = None
+        self._copilotkit_agent_instance: LangGraphAGUIAgent | None = None
         self._checkpointer: Any = None
         self._store: Any = None
         self._connection: Any = None
@@ -79,6 +81,17 @@ class LanggraphAgent(agent_base.BaseAgent):
         if self._agent_instance is None:
             raise RuntimeError("Agent not initialized. Call initialize() first.")
         return self._agent_instance
+
+    @property
+    def copilotkit_agent_instance(self) -> LangGraphAGUIAgent:
+        """Return the CopilotKit agent instance.
+
+        Raises:
+            RuntimeError: If the CopilotKit agent is not yet initialized.
+        """
+        if self._copilotkit_agent_instance is None:
+            raise RuntimeError("CopilotKit agent not initialized. Call initialize() first.")
+        return self._copilotkit_agent_instance
 
     @property
     def configuration(self) -> LangGraphAgentConfig:
@@ -161,6 +174,12 @@ class LanggraphAgent(agent_base.BaseAgent):
             )
         elif isinstance(graph_builder, CompiledStateGraph):
             self._agent_instance = graph_builder
+
+        self._copilotkit_agent_instance = LangGraphAGUIAgent(
+            name=self._name,
+            description="Agent description", # TODO: add agent description
+            graph=self._agent_instance,
+        )
 
         if self._agent_instance:
             try:
