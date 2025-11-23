@@ -14,7 +14,7 @@ interface AppMarketplaceProps {
 const AppMarketplacePage = ({ onAppClick, category }: AppMarketplaceProps) => {
     const { t } = useTranslation();
     const [search, setSearch] = React.useState('');
-    
+
     // If a category prop is provided, use it to filter. Otherwise, default to showing all or a default tab if we had tabs.
     // Since the UI for tabs was removed based on previous instructions, we essentially filter by the passed category if present.
 
@@ -34,16 +34,16 @@ const AppMarketplacePage = ({ onAppClick, category }: AppMarketplaceProps) => {
         <Container>
             <MainLayout>
                 <ContentArea>
-                    <Header>
+            <Header>
                         <Title>{t('connected-app.marketplace.title', 'Add New Configuration')}</Title>
                         <Subtitle>{t('connected-app.marketplace.subtitle', 'Create persisted configurations to reuse across your agents')}</Subtitle>
-                        <SearchInput
-                            type="text"
+                <SearchInput
+                    type="text"
                             placeholder={t('connected-app.marketplace.search.placeholder', 'Search apps...')}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </Header>
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
+            </Header>
 
                     <Grid>
                         {filteredApps.map((app) => (
@@ -53,7 +53,7 @@ const AppMarketplacePage = ({ onAppClick, category }: AppMarketplaceProps) => {
                         ))}
                         {filteredApps.length === 0 && (
                             <NoResults>No applications found.</NoResults>
-                        )}
+                    )}
                     </Grid>
                 </ContentArea>
             </MainLayout>

@@ -81,7 +81,7 @@ const deriveRunConfig = (
         }
     }
     return undefined;
-};
+        };
 
 const decorateAgent = (agent: ManagedAgent): BackendAgent => {
     const framework = agent.engine_config.agent.type;

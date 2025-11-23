@@ -583,7 +583,7 @@ export default function AgentDetailPage() {
                         <Avatar>{getAgentInitials()}</Avatar>
                         <AgentDetails>
                             <AgentTitleRow>
-                                <h1>{agent?.name ?? '...'}</h1>
+                            <h1>{agent?.name ?? '...'}</h1>
                                 <StatusBadge status={(agent?.status || 'draft').toLowerCase()}>
                                     {agent?.status ?? 'draft'}
                                 </StatusBadge>
@@ -637,13 +637,13 @@ export default function AgentDetailPage() {
                                     disabled={!agent}
                                 >
                                     Modifier
-                                </Button>
+                        </Button>
                                 <Button $variants="transparent" $color="secondary" disabled>
-                                    Pause
-                                </Button>
+                            Pause
+                        </Button>
                                 <Button $variants="base" $color="primary" disabled>
-                                    Exécuter
-                                </Button>
+                            Exécuter
+                        </Button>
                             </>
                         )}
                     </Controls>
@@ -772,19 +772,19 @@ export default function AgentDetailPage() {
                     </>
                 ) : (
                     <>
-                        <TabContainer>
-                            {tabs.map((tab) => (
-                                <Tab
-                                    key={tab.id}
-                                    active={activeTab === tab.id}
-                                    onClick={() => handleTabClick(tab.id)}
-                                >
-                                    {tab.label}
-                                </Tab>
-                            ))}
-                        </TabContainer>
+                <TabContainer>
+                    {tabs.map((tab) => (
+                        <Tab
+                            key={tab.id}
+                            active={activeTab === tab.id}
+                            onClick={() => handleTabClick(tab.id)}
+                        >
+                            {tab.label}
+                        </Tab>
+                    ))}
+                </TabContainer>
 
-                        <>{renderTabContent()}</>
+                <>{renderTabContent()}</>
                     </>
                 )}
             </Content>

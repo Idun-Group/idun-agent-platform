@@ -28,7 +28,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
     useEffect(() => {
         if (isOpen) {
             if (mode === 'create') {
-                setName(`My ${appToCreate?.name}`);
+                setName('');
                 setConfig({});
                 setIsEditing(true);
             } else if (appToEdit) {
@@ -349,6 +349,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 value={name} 
                 onChange={e => setName(e.target.value)}
                 disabled={!isEditing}
+                placeholder={mode === 'create' ? `My ${appToCreate?.name}` : ''}
             />
 
             {renderFields()}
@@ -409,4 +410,5 @@ const ActionButtons = styled.div`
     gap: 12px;
     margin-top: 16px;
     justify-content: flex-end;
+    margin-bottom: 16px;
 `;
