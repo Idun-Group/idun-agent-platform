@@ -89,7 +89,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
     # Setup routes
     setup_routes(app)
 

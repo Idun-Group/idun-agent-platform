@@ -13,5 +13,5 @@ class EngineConfig(BaseModel):
 
     server: ServerConfig = Field(default_factory=ServerConfig)
     agent: AgentConfig
-    mcp_servers: list[MCPServer] = Field(default_factory=list)
-    guardrails: Guardrails
+    mcp_servers: list[MCPServer] | None = None
+    guardrails: Guardrails | None = None
