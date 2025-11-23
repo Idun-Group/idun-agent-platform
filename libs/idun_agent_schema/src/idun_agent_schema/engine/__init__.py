@@ -11,3 +11,4 @@ from .langgraph import (  # noqa: F401
 )
 from .server import ServerAPIConfig, ServerConfig  # noqa: F401
 from .observability import ObservabilityConfig  # noqa: F401
+from .observability_v2 import ObservabilityConfig as ObservabilityConfigV2  # noqa: F401
