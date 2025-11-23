@@ -20,7 +20,8 @@
         "button-marketplace": "Accéder au marketplace des applications",
         "navigation": {
             "overview": "Vue d'ensemble",
-            "applications": "Applications"
+            "applications": "Configurations",
+            "add": "Ajouter une configuration"
         },
         "apps": {
             "title": "Connecter votre première application.",
@@ -28,8 +29,8 @@
             "first-install": "Installer la première application"
         },
         "marketplace": {
-            "title": "Marketplace des applications",
-            "subtitle": "Découvrez et connectez des applications sur l'Idun Agent Platform.",
+            "title": "Ajouter une configuration",
+            "subtitle": "Créez des configurations persistantes à réutiliser dans vos agents",
             "all-apps": "Toutes les applications",
             "by": "par",
             "install": "Ajouter l'application",

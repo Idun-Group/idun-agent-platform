@@ -32,7 +32,7 @@ const Signin = () => {
     return (
         <main>
             <StyledForm onSubmit={handleSubmit}>
-                <h1>Idun Engine</h1>
+                <h1>Idun Agent Platform</h1>
                 <h2>{t('signin.title')}</h2>
                 <p>{t('signin.description')}</p>
 

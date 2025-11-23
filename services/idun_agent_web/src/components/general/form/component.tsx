@@ -1,13 +1,14 @@
 import { forwardRef } from 'react';
 import styled from 'styled-components';
 import ToggleButton from '../toggle-button/component';
+import { Info } from 'lucide-react';
 
 // Types
 interface TextInputProps {
     label?: string;
     placeholder?: string;
     required?: boolean;
-    type?: 'text' | 'email' | 'password' | 'url' | 'tel' | 'search';
+    type?: 'text' | 'email' | 'password' | 'url' | 'tel' | 'search' | 'number';
     value?: string;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     id?: string;
@@ -16,10 +17,14 @@ interface TextInputProps {
     style?: React.CSSProperties;
     disabled?: boolean;
     autocomplete?: string;
+    step?: string;
+    min?: string;
+    max?: string;
+    tooltip?: string;
 }
 
 interface TextAreaProps {
-    label: string;
+    label?: string;
     placeholder?: string;
     required?: boolean;
     value?: string;
@@ -27,15 +32,19 @@ interface TextAreaProps {
     rows?: number;
     id?: string;
     name?: string;
+    disabled?: boolean;
+    tooltip?: string;
 }
 
 interface SelectProps {
-    label: string;
+    label?: string;
     value?: string;
     onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
     children: React.ReactNode;
     id?: string;
     name?: string;
+    disabled?: boolean;
+    tooltip?: string;
 }
 
 // Styled Components
@@ -44,7 +53,7 @@ const FormGroup = styled.div`
     width: 100%;
 `;
 
-const Label = styled.label`
+export const Label = styled.label`
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -53,6 +62,12 @@ const Label = styled.label`
     font-weight: 600;
     color: var(--color-text-primary, #ffffff);
     margin-bottom: 8px;
+`;
+
+const LabelContent = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
 `;
 
 const Required = styled.span`
@@ -143,6 +158,60 @@ const ErrorText = styled.p`
     margin-top: 4px;
 `;
 
+// Tooltip Components
+const TooltipContainer = styled.div`
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: help;
+`;
+
+const TooltipContent = styled.div`
+    visibility: hidden;
+    width: max-content;
+    max-width: 300px;
+    background-color: #2a2a40;
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 8px 12px;
+    position: absolute;
+    z-index: 100;
+    bottom: 125%;
+    left: -10px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+    font-weight: 400;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--color-border-primary, #2a3f5f);
+    pointer-events: none;
+    white-space: normal;
+
+    /* Arrow */
+    &::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 17px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #2a2a40 transparent transparent transparent;
+    }
+
+    ${TooltipContainer}:hover & {
+        visibility: visible;
+        opacity: 1;
+    }
+`;
+
+const TooltipIcon = ({ text }: { text: string }) => (
+    <TooltipContainer>
+        <Info size={14} color="#a0a0a0" />
+        <TooltipContent>{text}</TooltipContent>
+    </TooltipContainer>
+);
+
 // Components
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
     (
@@ -159,16 +228,21 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             disabled = false,
             autocomplete,
             style,
+            step,
+            min,
+            max,
+            tooltip,
         },
         ref
     ) => {
         return (
             <FormGroup style={style}>
                 <Label htmlFor={id}>
-                    <span>
+                    <LabelContent>
                         {label}
                         {required && <Required>*</Required>}
-                    </span>
+                        {tooltip && <TooltipIcon text={tooltip} />}
+                    </LabelContent>
                     <Input
                         ref={ref}
                         id={id}
@@ -180,6 +254,9 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
                         disabled={disabled}
                         onChange={onChange}
                         autoComplete={autocomplete}
+                        step={step}
+                        min={min}
+                        max={max}
                     />
                 </Label>
 
@@ -193,14 +270,17 @@ TextInput.displayName = 'TextInput';
 
 export const FormTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
     (
-        { label, placeholder, required, value, onChange, rows = 4, id, name },
+        { label, placeholder, required, value, onChange, rows = 4, id, name, disabled, tooltip },
         ref
     ) => {
         return (
             <FormGroup>
                 <Label htmlFor={id}>
-                    {label}
-                    {required && <Required>*</Required>}
+                    <LabelContent>
+                        {label}
+                        {required && <Required>*</Required>}
+                        {tooltip && <TooltipIcon text={tooltip} />}
+                    </LabelContent>
                     <TextArea
                         ref={ref}
                         id={id}
@@ -210,6 +290,7 @@ export const FormTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
                         value={value}
                         onChange={onChange}
                         rows={rows}
+                        disabled={disabled}
                     />
                 </Label>
             </FormGroup>
@@ -220,17 +301,21 @@ export const FormTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
 FormTextArea.displayName = 'FormTextArea';
 
 export const FormSelect = forwardRef<HTMLSelectElement, SelectProps>(
-    ({ label, value, onChange, children, id, name }, ref) => {
+    ({ label, value, onChange, children, id, name, disabled, tooltip }, ref) => {
         return (
             <FormGroup>
                 <Label htmlFor={id}>
-                    {label}
+                    <LabelContent>
+                        {label}
+                        {tooltip && <TooltipIcon text={tooltip} />}
+                    </LabelContent>
                     <Select
                         ref={ref}
                         id={id}
                         name={name}
                         value={value}
                         onChange={onChange}
+                        disabled={disabled}
                     >
                         {children}
                     </Select>
@@ -241,6 +326,58 @@ export const FormSelect = forwardRef<HTMLSelectElement, SelectProps>(
 );
 
 FormSelect.displayName = 'FormSelect';
+
+export { FormTextArea as TextArea, FormSelect as Select };
+
+interface CheckboxProps {
+    label?: string;
+    checked?: boolean;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    disabled?: boolean;
+    id?: string;
+    tooltip?: string;
+}
+
+export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
+    ({ label, checked, onChange, disabled, id, tooltip }, ref) => {
+        return (
+            <CheckboxContainer>
+                <input
+                    ref={ref}
+                    type="checkbox"
+                    id={id}
+                    checked={checked}
+                    onChange={onChange}
+                    disabled={disabled}
+                />
+                {label && <span style={{marginLeft: '8px'}}>{label}</span>}
+                {tooltip && <span style={{marginLeft: '6px'}}><TooltipIcon text={tooltip} /></span>}
+            </CheckboxContainer>
+        );
+    }
+);
+
+Checkbox.displayName = 'Checkbox';
+
+const CheckboxContainer = styled.label`
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--color-text-primary, #ffffff);
+    font-size: 14px;
+
+    input {
+        accent-color: var(--color-primary, #8c52ff);
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+
+    input:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+`;
 
 // Form Container
 export const Form = styled.form`

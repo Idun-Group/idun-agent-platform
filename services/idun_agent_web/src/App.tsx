@@ -17,8 +17,7 @@ import { SettingPageProvider } from './hooks/use-settings-page';
 import SigninPage from './pages/signin/page';
 import { useEffect } from 'react';
 import { useAuth } from './hooks/use-auth';
-import AppMarketplacePage from './pages/app-marketplace-page/page';
-import ConnectedApp from './pages/connected-app/page';
+import ApplicationPage from './pages/application-page/page';
 import Loader from './components/general/loader/component';
 import { useLoader } from './hooks/use-loader';
 import ObservationPage from './pages/observation/page';
@@ -134,26 +133,28 @@ function App() {
                 />
                 <Route path="/signin" element={<SigninPage />} />
                 <Route
-                    path="/apps"
+                    path="/observability"
                     element={
                         <AppLayout>
+                            <Header />
                             <ContentLayout>
                                 <SideBar />
                                 <MainContent>
-                                    <ConnectedApp />
+                                    <ApplicationPage category="Observability" />
                                 </MainContent>
                             </ContentLayout>
                         </AppLayout>
                     }
                 />
                 <Route
-                    path="/apps/marketplace"
+                    path="/memory"
                     element={
                         <AppLayout>
+                            <Header />
                             <ContentLayout>
                                 <SideBar />
                                 <MainContent>
-                                    <AppMarketplacePage />
+                                    <ApplicationPage category="Memory" />
                                 </MainContent>
                             </ContentLayout>
                         </AppLayout>
