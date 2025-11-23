@@ -5,9 +5,10 @@ import { useState, useEffect } from 'react';
 import AppMarketplacePage from '../app-marketplace-page/page';
 import ApplicationModal from '../../components/applications/application-modal/component';
 import ConfiguredAppCard from '../../components/connected-app/configured-app-card/component';
-import { fetchApplications } from '../../services/applications';
+import { fetchApplications, MARKETPLACE_APPS } from '../../services/applications';
 import type { ApplicationConfig, MarketplaceApp, AppCategory } from '../../types/application.types';
 import { Loader } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 // Define props to make the component reusable for different categories
 interface ApplicationPageProps {
@@ -17,6 +18,7 @@ interface ApplicationPageProps {
 const ApplicationPage = ({ category }: ApplicationPageProps) => {
     const { t } = useTranslation();
     const [currentPage, setCurrentPage] = useState<'configurations' | 'add'>('configurations');
+    const isSingleTabView = category === 'MCP';
 
     // Data State
     const [myApps, setMyApps] = useState<ApplicationConfig[]>([]);
@@ -45,6 +47,12 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
         }
     }, [currentPage]);
 
+    useEffect(() => {
+        if (isSingleTabView) {
+            setCurrentPage('configurations');
+        }
+    }, [isSingleTabView]);
+
     const handleMarketplaceAppClick = (app: MarketplaceApp) => {
         setAppToCreate(app);
         setAppToEdit(undefined);
@@ -70,12 +78,21 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
         }
     };
 
+    const openDefaultTemplateModal = () => {
+        const template = MARKETPLACE_APPS.find(app => app.category === category);
+        if (template) {
+            handleMarketplaceAppClick(template);
+        } else {
+            toast.error(t('connected-app.marketplace.no-template', 'No template available for this category.'));
+        }
+    };
+
     // Filter apps by the current page's category
     const filteredApps = myApps.filter(app => app.category === category);
 
     // Render content based on current tab
     const renderContent = () => {
-        if (currentPage === 'configurations') {
+        if (currentPage === 'configurations' || isSingleTabView) {
             return (
                 <DashboardContainer>
                     {isLoading ? (
@@ -95,8 +112,19 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
                     ) : (
                         <EmptyState>
                             <p>{t('connected-app.dataBoard.emptyState', 'No configurations found.')}</p>
-                            <Button $variants="base" onClick={() => setCurrentPage('add')}>
-                                {t('connected-app.navigation.add', 'Add Configuration')}
+                            <Button
+                                $variants="base"
+                                onClick={() => {
+                                    if (isSingleTabView) {
+                                        openDefaultTemplateModal();
+                                    } else {
+                                        setCurrentPage('add');
+                                    }
+                                }}
+                            >
+                                {isSingleTabView
+                                    ? t('connected-app.actions.createConfiguration', 'Create Configuration')
+                                    : t('connected-app.navigation.add', 'Add Configuration')}
                             </Button>
                         </EmptyState>
                     )}
@@ -104,7 +132,7 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
             );
         }
 
-        if (currentPage === 'add') {
+        if (!isSingleTabView && currentPage === 'add') {
             return (
                 <AppMarketplacePage 
                     onAppClick={handleMarketplaceAppClick} 
@@ -115,32 +143,43 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
     };
 
     // Get localized title
-    const pageTitle = category === 'Observability' 
-        ? t('connected-app.categories.observability', 'Observability')
-        : t('connected-app.categories.memory', 'Memory');
+    const pageTitleMap: Record<AppCategory, string> = {
+        Observability: t('connected-app.categories.observability', 'Observability'),
+        Memory: t('connected-app.categories.memory', 'Memory'),
+        MCP: t('connected-app.categories.mcp', 'MCP'),
+        Guardrails: t('connected-app.categories.guard', 'Guardrails')
+    };
+    const pageTitle = pageTitleMap[category] ?? '';
 
     return (
         <Page>
             <SubHeader>
                 <TopContainer>
                     <h1>{pageTitle}</h1>
+                    {isSingleTabView && (
+                        <Button $variants="base" onClick={openDefaultTemplateModal}>
+                            {t('connected-app.actions.newConfiguration', 'New Configuration')}
+                        </Button>
+                    )}
                 </TopContainer>
-                <Nav>
-                    <NavButton
-                        isSelected={currentPage === 'configurations'}
-                        onClick={() => setCurrentPage('configurations')}
-                        $variants="transparent"
-                    >
-                        {t('connected-app.navigation.applications', 'Configurations')}
-                    </NavButton>
-                    <NavButton
-                        isSelected={currentPage === 'add'}
-                        onClick={() => setCurrentPage('add')}
-                        $variants="transparent"
-                    >
-                        {t('connected-app.navigation.add', 'Add Configuration')}
-                    </NavButton>
-                </Nav>
+                {!isSingleTabView && (
+                    <Nav>
+                        <NavButton
+                            isSelected={currentPage === 'configurations'}
+                            onClick={() => setCurrentPage('configurations')}
+                            $variants="transparent"
+                        >
+                            {t('connected-app.navigation.applications', 'Configurations')}
+                        </NavButton>
+                        <NavButton
+                            isSelected={currentPage === 'add'}
+                            onClick={() => setCurrentPage('add')}
+                            $variants="transparent"
+                        >
+                            {t('connected-app.navigation.add', 'Add Configuration')}
+                        </NavButton>
+                    </Nav>
+                )}
             </SubHeader>
 
             <Content>

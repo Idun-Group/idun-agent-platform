@@ -1,0 +1,298 @@
+import React from 'react';
+import styled from 'styled-components';
+import Editor from '@monaco-editor/react';
+import { 
+    FormSelect,
+    TextInput
+} from '../form/component';
+
+// Helper to resolve $ref in OpenAPI schema
+const resolveRef = (ref: string, schema: any) => {
+    if (!ref.startsWith('#/')) return null;
+    const parts = ref.split('/').slice(1); // remove #
+    let current = schema;
+    for (const part of parts) {
+        current = current[part];
+        if (!current) return null;
+    }
+    return current;
+};
+
+interface DynamicFormProps {
+    schema: any; // The specific definition for the agent type (e.g. LangGraphAgentConfig)
+    rootSchema: any; // The full OpenAPI schema (for resolving refs)
+    data: any;
+    onChange: (newData: any) => void;
+    errors?: Record<string, string | null>;
+    excludeFields?: string[]; // Fields to skip rendering
+}
+
+const FieldWrapper = styled.div`
+    width: 100%;
+    margin-bottom: 16px;
+`;
+
+const InputLabel = styled.label`
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #9ca3af;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+`;
+
+const EditorWrapper = styled.div`
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #0B0A15;
+    min-height: 200px;
+    height: 300px;
+`;
+
+const ErrorMessage = styled.p`
+    margin-top: 8px;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 400;
+    color: #ff4757;
+    line-height: 1.5;
+`;
+
+const SectionTitle = styled.h3`
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    margin-top: 24px;
+`;
+
+const SectionIndicator = styled.span<{ $color?: string }>`
+    width: 4px;
+    height: 16px;
+    background-color: ${props => props.$color || '#8c52ff'};
+    border-radius: 9999px;
+    margin-right: 8px;
+`;
+
+export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, data, onChange, errors, excludeFields = [] }) => {
+    if (!schema || !schema.properties) return null;
+
+    const handleChange = (key: string, value: any) => {
+        onChange({
+            ...data,
+            [key]: value
+        });
+    };
+
+    const renderField = (key: string, prop: any) => {
+        // Resolve Ref if present
+        if (prop.$ref) {
+            const resolved = resolveRef(prop.$ref, rootSchema);
+            if (resolved) {
+                return renderObjectField(key, resolved);
+            }
+        }
+
+        // Handle anyOf/allOf (simplified)
+        if (prop.anyOf) {
+            // Often used for nullable fields (type | null)
+            const nonNullType = prop.anyOf.find((t: any) => t.type !== 'null');
+            if (nonNullType) {
+                if (nonNullType.$ref) {
+                     const resolved = resolveRef(nonNullType.$ref, rootSchema);
+                     if (resolved) return renderObjectField(key, resolved);
+                }
+                return renderField(key, nonNullType);
+            }
+        }
+
+        const label = prop.title || key.replace(/_/g, ' ');
+        const description = prop.description || '';
+        const isRequired = schema.required?.includes(key);
+
+        // Special Handling based on key names or types
+        
+        // 1. Enums -> Select
+        if (prop.enum) {
+            return (
+                <FieldWrapper key={key}>
+                    <InputLabel>{label} {isRequired && '*'}</InputLabel>
+                    <FormSelect
+                        value={data[key] || ''}
+                        onChange={(e) => handleChange(key, e.target.value)}
+                        tooltip={description}
+                    >
+                        <option value="">Select...</option>
+                        {prop.enum.map((val: string) => (
+                            <option key={val} value={val}>{val}</option>
+                        ))}
+                    </FormSelect>
+                    {errors?.[key] && <ErrorMessage>{errors[key]}</ErrorMessage>}
+                </FieldWrapper>
+            );
+        }
+
+        // 2. Booleans -> Checkbox (or Select for now to match style)
+        if (prop.type === 'boolean') {
+             return (
+                <FieldWrapper key={key}>
+                    <InputLabel>{label} {isRequired && '*'}</InputLabel>
+                    <FormSelect
+                        value={data[key] === undefined ? '' : String(data[key])}
+                        onChange={(e) => handleChange(key, e.target.value === 'true')}
+                        tooltip={description}
+                    >
+                        <option value="">Select...</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </FormSelect>
+                </FieldWrapper>
+            );
+        }
+
+        // 3. JSON Objects (Schema Definitions, Stores) -> Monaco Editor
+        if (prop.type === 'object' || key.includes('definition') || key === 'store') {
+             // Determine if it's a specific object type we know how to render, or just a blob
+             // For input/output schema and store, we want JSON editor
+             const value = typeof data[key] === 'object' ? JSON.stringify(data[key], null, 2) : (data[key] || '');
+             
+             return (
+                <FieldWrapper key={key}>
+                    <InputLabel>{label} (JSON) {isRequired && '*'}</InputLabel>
+                    <EditorWrapper>
+                        <Editor
+                            height="100%"
+                            language="json"
+                            theme="vs-dark"
+                            value={value}
+                            onChange={(val) => {
+                                try {
+                                    // Try to parse to store as object if valid
+                                    if (!val) {
+                                        handleChange(key, null);
+                                    } else {
+                                        const parsed = JSON.parse(val);
+                                        handleChange(key, parsed);
+                                    }
+                                } catch (e) {
+                                    // Store as string if invalid (will need validation on submit) or just keep previous valid?
+                                    // For raw string fields like graph_definition (if it's a file path), it's a string.
+                                    // But input_schema_definition is an object.
+                                    if (prop.type === 'string') {
+                                         handleChange(key, val);
+                                    }
+                                }
+                            }}
+                            options={{
+                                minimap: { enabled: false },
+                                scrollBeyondLastLine: false,
+                                formatOnPaste: true,
+                                formatOnType: true,
+                                automaticLayout: true,
+                                wordWrap: 'on',
+                                lineNumbers: 'off',
+                            }}
+                        />
+                    </EditorWrapper>
+                    <p style={{fontSize: '10px', color: '#6b7280', marginTop: '4px'}}>{description}</p>
+                    {errors?.[key] && <ErrorMessage>{errors[key]}</ErrorMessage>}
+                </FieldWrapper>
+             );
+        }
+
+        // 4. Strings -> Text Input
+        if (prop.type === 'string') {
+            return (
+                <FieldWrapper key={key}>
+                    <TextInput
+                        label={label}
+                        required={isRequired}
+                        value={data[key] || ''}
+                        onChange={(e) => handleChange(key, e.target.value)}
+                        tooltip={description}
+                        placeholder={prop.example || `Enter ${label}`}
+                    />
+                    {errors?.[key] && <ErrorMessage>{errors[key]}</ErrorMessage>}
+                </FieldWrapper>
+            );
+        }
+
+        // 5. Numbers -> Text Input (type=number)
+        if (prop.type === 'integer' || prop.type === 'number') {
+            return (
+                <FieldWrapper key={key}>
+                    <TextInput
+                        label={label}
+                        required={isRequired}
+                        type="number"
+                        value={data[key] || ''}
+                        onChange={(e) => handleChange(key, Number(e.target.value))}
+                        tooltip={description}
+                    />
+                    {errors?.[key] && <ErrorMessage>{errors[key]}</ErrorMessage>}
+                </FieldWrapper>
+            );
+        }
+
+        return null;
+    };
+
+    const renderObjectField = (key: string, schemaDef: any) => {
+        // If it's a nested object like Checkpointer or Observability
+        // We render a subsection
+        
+        if (excludeFields.includes(key)) return null;
+
+        if (key === 'observability') {
+            // Observability might need special handling to match the existing UI
+            // or we can render it dynamically if the schema allows
+            return null; // Skip observability here, handled separately or via specific logic if desired
+        }
+
+        const title = schemaDef.title || key;
+        
+        return (
+            <div key={key} style={{ width: '100%' }}>
+                <SectionTitle>
+                    <SectionIndicator $color="emerald" /> {title}
+                </SectionTitle>
+                <div style={{ paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                    <DynamicForm 
+                        schema={schemaDef} 
+                        rootSchema={rootSchema} 
+                        data={data[key] || {}} 
+                        onChange={(subData) => handleChange(key, subData)}
+                        errors={errors} // Would need nested error handling
+                        excludeFields={excludeFields}
+                    />
+                </div>
+            </div>
+        );
+    };
+
+    // Prioritize specific order if needed, otherwise generic
+    // We typically want Name first
+    const keys = Object.keys(schema.properties);
+    const orderedKeys = keys.sort((a, b) => {
+        if (a === 'name') return -1;
+        if (b === 'name') return 1;
+        return 0;
+    });
+
+    return (
+        <>
+            {orderedKeys.map(key => {
+                if (excludeFields.includes(key)) return null;
+                if (key === 'observability') return null; // Handled outside or strictly skipped
+                return renderField(key, schema.properties[key]);
+            })}
+        </>
+    );
+};

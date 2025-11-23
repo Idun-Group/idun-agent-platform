@@ -8,6 +8,7 @@ interface TextInputProps {
     label?: string;
     placeholder?: string;
     required?: boolean;
+    nativeRequired?: boolean; // If set, overrides the default required behavior for the HTML input
     type?: 'text' | 'email' | 'password' | 'url' | 'tel' | 'search' | 'number';
     value?: string;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -27,6 +28,7 @@ interface TextAreaProps {
     label?: string;
     placeholder?: string;
     required?: boolean;
+    nativeRequired?: boolean;
     value?: string;
     onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
     rows?: number;
@@ -45,6 +47,8 @@ interface SelectProps {
     name?: string;
     disabled?: boolean;
     tooltip?: string;
+    required?: boolean;
+    nativeRequired?: boolean;
 }
 
 // Styled Components
@@ -219,6 +223,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             label,
             placeholder,
             required,
+            nativeRequired,
             type = 'text',
             value,
             onChange,
@@ -249,7 +254,8 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
                         name={name}
                         type={type}
                         placeholder={placeholder}
-                        required={required}
+                        // Default native validation to disabled unless explicitly requested
+                        required={nativeRequired === true}
                         value={value}
                         disabled={disabled}
                         onChange={onChange}
@@ -270,7 +276,7 @@ TextInput.displayName = 'TextInput';
 
 export const FormTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
     (
-        { label, placeholder, required, value, onChange, rows = 4, id, name, disabled, tooltip },
+        { label, placeholder, required, nativeRequired, value, onChange, rows = 4, id, name, disabled, tooltip },
         ref
     ) => {
         return (
@@ -286,7 +292,8 @@ export const FormTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
                         id={id}
                         name={name}
                         placeholder={placeholder}
-                        required={required}
+                        // Default native validation to disabled unless explicitly requested
+                        required={nativeRequired === true}
                         value={value}
                         onChange={onChange}
                         rows={rows}
@@ -301,12 +308,13 @@ export const FormTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
 FormTextArea.displayName = 'FormTextArea';
 
 export const FormSelect = forwardRef<HTMLSelectElement, SelectProps>(
-    ({ label, value, onChange, children, id, name, disabled, tooltip }, ref) => {
+    ({ label, value, onChange, children, id, name, disabled, tooltip, required, nativeRequired }, ref) => {
         return (
             <FormGroup>
                 <Label htmlFor={id}>
                     <LabelContent>
                         {label}
+                        {required && <Required>*</Required>}
                         {tooltip && <TooltipIcon text={tooltip} />}
                     </LabelContent>
                     <Select
@@ -316,6 +324,7 @@ export const FormSelect = forwardRef<HTMLSelectElement, SelectProps>(
                         value={value}
                         onChange={onChange}
                         disabled={disabled}
+                        required={nativeRequired === true}
                     >
                         {children}
                     </Select>
@@ -440,7 +449,7 @@ export const LabeledToggleButton = ({
     subLabel,
     isOn,
     onToggle,
-}: {
+    }: {
     label: string;
     subLabel: string;
     isOn: boolean;

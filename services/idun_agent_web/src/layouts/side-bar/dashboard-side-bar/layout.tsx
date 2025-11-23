@@ -70,8 +70,8 @@ const SideBar = ({}: SideBarProps) => {
             icon: ShieldCheck,
             label: t('sidebar.guard'),
             key: 'guard',
-            path: '/guard',
-            onClick: () => navigate('/guard'),
+            path: '/guardrails',
+            onClick: () => navigate('/guardrails'),
         },
     ];
 
@@ -177,17 +177,7 @@ const SideBarNav = styled.nav<{ $collapsed?: boolean }>`
     flex-direction: column;
     ${({ $collapsed }) =>
         !$collapsed && `
-        /* Separator only for the top 4 items, only when expanded */
-        > button:nth-child(-n + 4) { position: relative; }
-        > button:nth-child(-n + 4)::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 1px;
-            background: rgb(130, 111, 149);
-        }
+        /* No separators currently applied */
     `}
 `;
 

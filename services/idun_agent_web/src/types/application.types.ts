@@ -1,7 +1,7 @@
 
-export type AppCategory = 'Observability' | 'Memory';
+export type AppCategory = 'Observability' | 'Memory' | 'MCP' | 'Guardrails';
 
-export type AppType = 'Langfuse' | 'Phoenix' | 'PostgreSQL' | 'SQLite' | 'GoogleCloudLogging' | 'GoogleCloudTrace' | 'LangSmith';
+export type AppType = 'Langfuse' | 'Phoenix' | 'PostgreSQL' | 'SQLite' | 'GoogleCloudLogging' | 'GoogleCloudTrace' | 'LangSmith' | 'MCPServer' | 'Guard' | 'ModelArmor' | 'CustomLLM' | 'BanList' | 'BiasCheck' | 'CompetitionCheck' | 'CorrectLanguage' | 'DetectPII' | 'GibberishText' | 'NSFWText' | 'DetectJailbreak' | 'RestrictTopic' | 'Secrets' | 'ValidSQL' | 'ValidPython' | 'WebSanitization';
 
 export interface MarketplaceApp {
     id: string;
@@ -24,4 +24,3 @@ export interface ApplicationConfig {
     config: Record<string, any>; // For storing keys, urls, etc.
     imageUrl?: string;
 }
-

@@ -161,6 +161,34 @@ function App() {
                     }
                 />
                 <Route
+                    path="/mcp"
+                    element={
+                        <AppLayout>
+                            <Header />
+                            <ContentLayout>
+                                <SideBar />
+                                <MainContent>
+                                    <ApplicationPage category="MCP" />
+                                </MainContent>
+                            </ContentLayout>
+                        </AppLayout>
+                    }
+                />
+                <Route
+                    path="/guardrails"
+                    element={
+                        <AppLayout>
+                            <Header />
+                            <ContentLayout>
+                                <SideBar />
+                                <MainContent>
+                                    <ApplicationPage category="Guardrails" />
+                                </MainContent>
+                            </ContentLayout>
+                        </AppLayout>
+                    }
+                />
+                <Route
                     path="/observation"
                     element={
                         <AppLayout>

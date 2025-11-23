@@ -37,7 +37,18 @@
             "description": "Description",
             "search": {
                 "placeholder": "Rechercher des applications..."
-            }
+            },
+            "no-template": "Aucun modèle disponible pour cette catégorie."
+        },
+        "categories": {
+            "observability": "Observabilité",
+            "memory": "Mémoire",
+            "mcp": "MCP",
+            "guard": "Guardrails"
+        },
+        "actions": {
+            "createConfiguration": "Créer une configuration",
+            "newConfiguration": "Nouvelle configuration"
         }
     },
     "header": {
@@ -140,7 +151,10 @@
         "observation": "Observation",
         "tools": "Outils",
         "users": "Utilisateurs",
-        "apps": "Applications"
+        "apps": "Applications",
+        "observability": "Observabilité",
+        "memory": "Mémoire",
+        "mcp": "MCP"
     },
     "signin": {
         "title": "Créer un compte",

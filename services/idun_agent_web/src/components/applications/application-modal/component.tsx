@@ -29,7 +29,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
         if (isOpen) {
             if (mode === 'create') {
                 setName('');
-                setConfig({});
+                setConfig(appType === 'MCPServer' ? { transport: 'streamable_http' } : {});
                 setIsEditing(true);
             } else if (appToEdit) {
                 setName(appToEdit.name);
@@ -37,7 +37,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 setIsEditing(false); // Start in view mode
             }
         }
-    }, [isOpen, appToCreate, appToEdit, mode]);
+    }, [isOpen, appToCreate, appToEdit, mode, appType]);
 
     const handleSubmit = async () => {
         if (!name) {
@@ -100,20 +100,52 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'Phoenix':
                 return !!config.host;
             case 'GoogleCloudLogging':
-                // Optional fields: Region/Zone (often optional but good to have), Log Name (can have default), etc.
-                // Strict check on mandatory fields: Project ID.
-                // Assuming others might have defaults or are optional based on API flexibility.
-                // Let's enforce Project ID at minimum.
                 return !!config.gcpProjectId;
             case 'GoogleCloudTrace':
                 return !!config.gcpProjectId;
             case 'LangSmith':
-                // Api Key is usually required. Project Name might be optional or have default.
                 return !!config.apiKey;
             case 'PostgreSQL':
                 return !!config.connectionString;
             case 'SQLite':
                 return !!config.connectionString;
+            case 'MCPServer':
+                // Validate based on transport
+                if (config.transport === 'stdio') {
+                    return !!config.command;
+                }
+                // For http/sse/websocket
+                if (['sse', 'streamable_http', 'websocket'].includes(config.transport)) {
+                    return !!config.url;
+                }
+                return true;
+            case 'ModelArmor':
+                return !!(config.projectId && config.location && config.templateId);
+            case 'CustomLLM':
+                return !!(config.model && config.prompt);
+            case 'BanList':
+                return !!config.banned_words;
+            case 'BiasCheck':
+            case 'GibberishText':
+            case 'NSFWText':
+                return !!config.threshold;
+            case 'CompetitionCheck':
+                return !!config.competitors;
+            case 'CorrectLanguage':
+                return !!config.expected_languages;
+            case 'DetectPII':
+                // Check if any PII entity is selected (stored as comma-separated string or handling logic)
+                return !!config.pii_entities; 
+            case 'DetectJailbreak':
+                return !!(config.sensitivity && config.check_type);
+            case 'RestrictTopic':
+                return !!config.valid_topics;
+            case 'Secrets':
+                return !!config.secret_types;
+            case 'ValidSQL':
+            case 'ValidPython':
+            case 'WebSanitization':
+                return true; // No config required
             default:
                 return true;
         }
@@ -133,6 +165,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             onChange={e => setConfig({...config, host: e.target.value})}
                             disabled={!isEditing}
                             placeholder="https://cloud.langfuse.com"
+                            required
                         />
                         <TextInput 
                             label="Public Key"
@@ -141,6 +174,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             onChange={e => setConfig({...config, publicKey: e.target.value})}
                             disabled={!isEditing}
                             type={isEditing ? "text" : "password"}
+                            required
                         />
                         <TextInput 
                             label="Secret Key"
@@ -149,6 +183,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             onChange={e => setConfig({...config, secretKey: e.target.value})}
                             disabled={!isEditing}
                             type={isEditing ? "text" : "password"}
+                            required
                         />
                     </>
                 );
@@ -162,6 +197,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             onChange={e => setConfig({...config, host: e.target.value})}
                             disabled={!isEditing}
                             placeholder="http://localhost:6006"
+                            required
                         />
                     </>
                 );
@@ -174,6 +210,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             value={config.gcpProjectId || ''} 
                             onChange={e => setConfig({...config, gcpProjectId: e.target.value})}
                             disabled={!isEditing}
+                            required
                         />
                         <TextInput 
                             label="Region/Zone"
@@ -230,6 +267,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             value={config.gcpProjectId || ''} 
                             onChange={e => setConfig({...config, gcpProjectId: e.target.value})}
                             disabled={!isEditing}
+                            required
                         />
                         <TextInput 
                             label="Region/Zone"
@@ -276,6 +314,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             onChange={e => setConfig({...config, apiKey: e.target.value})}
                             disabled={!isEditing}
                             type={isEditing ? "text" : "password"}
+                            required
                         />
                         <TextInput 
                             label="LangChain Project Name"
@@ -318,6 +357,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                         disabled={!isEditing}
                         placeholder="postgresql+asyncpg://user:password@host:port/dbname"
                         type={isEditing ? "text" : "password"}
+                        required
                     />
                 );
             case 'SQLite':
@@ -329,8 +369,383 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                         onChange={e => setConfig({...config, connectionString: e.target.value})}
                         disabled={!isEditing}
                         placeholder="sqlite+aiosqlite:///./data.db"
+                        required
                     />
                 );
+            case 'MCPServer':
+                const transport = config.transport || 'streamable_http';
+                return (
+                    <>
+                        <Select
+                            label="Transport"
+                            tooltip="Transport type used to reach the MCP server."
+                            value={transport}
+                            onChange={e => setConfig({...config, transport: e.target.value})}
+                            disabled={!isEditing}
+                        >
+                            <option value="streamable_http">streamable_http</option>
+                            <option value="sse">sse</option>
+                            <option value="websocket">websocket</option>
+                            <option value="stdio">stdio</option>
+                        </Select>
+
+                        {['sse', 'streamable_http', 'websocket'].includes(transport) && (
+                            <>
+                                <TextInput 
+                                    label="URL"
+                                    tooltip="Endpoint URL for HTTP/S based transports."
+                                    value={config.url || ''} 
+                                    onChange={e => setConfig({...config, url: e.target.value})}
+                                    disabled={!isEditing}
+                                    required
+                                />
+                                <TextArea 
+                                    label="Headers (JSON)"
+                                    tooltip='Optional headers for HTTP/S transports. E.g. {"Authorization": "Bearer token"}'
+                                    value={config.headers || ''} 
+                                    onChange={e => setConfig({...config, headers: e.target.value})}
+                                    disabled={!isEditing}
+                                    rows={3}
+                                />
+                                {transport === 'streamable_http' && (
+                                    <Checkbox 
+                                        label="Terminate on Close"
+                                        tooltip="Whether to terminate Streamable HTTP sessions on close."
+                                        checked={config.terminate_on_close === 'true'}
+                                        onChange={e => setConfig({...config, terminate_on_close: String(e.target.checked)})}
+                                        disabled={!isEditing}
+                                    />
+                                )}
+                                {transport === 'sse' && (
+                                    <TextInput 
+                                        label="SSE Read Timeout (s)"
+                                        tooltip="Timeout in seconds waiting for SSE events."
+                                        value={config.sse_read_timeout_seconds || ''} 
+                                        onChange={e => setConfig({...config, sse_read_timeout_seconds: e.target.value})}
+                                        disabled={!isEditing}
+                                        type="number"
+                                    />
+                                )}
+                                <TextInput 
+                                    label="Timeout (s)"
+                                    tooltip="Timeout in seconds for HTTP/S transports."
+                                    value={config.timeout_seconds || ''} 
+                                    onChange={e => setConfig({...config, timeout_seconds: e.target.value})}
+                                    disabled={!isEditing}
+                                    type="number"
+                                />
+                            </>
+                        )}
+
+                        {transport === 'stdio' && (
+                            <>
+                                <TextInput 
+                                    label="Command"
+                                    tooltip="Executable to run when using stdio transport."
+                                    value={config.command || ''} 
+                                    onChange={e => setConfig({...config, command: e.target.value})}
+                                    disabled={!isEditing}
+                                    required
+                                />
+                                <TextArea 
+                                    label="Args (JSON Array)"
+                                    tooltip='Arguments to pass to the command. E.g. ["--port", "8000"]'
+                                    value={config.args || ''} 
+                                    onChange={e => setConfig({...config, args: e.target.value})}
+                                    disabled={!isEditing}
+                                    rows={3}
+                                />
+                                <TextArea 
+                                    label="Environment Variables (JSON)"
+                                    tooltip='Environment variables to set. E.g. {"DEBUG": "true"}'
+                                    value={config.env || ''} 
+                                    onChange={e => setConfig({...config, env: e.target.value})}
+                                    disabled={!isEditing}
+                                    rows={3}
+                                />
+                                <TextInput 
+                                    label="Working Directory"
+                                    tooltip="Working directory for stdio transports."
+                                    value={config.cwd || ''} 
+                                    onChange={e => setConfig({...config, cwd: e.target.value})}
+                                    disabled={!isEditing}
+                                />
+                                <TextInput 
+                                    label="Encoding"
+                                    tooltip="Encoding used for stdio transport."
+                                    value={config.encoding || ''} 
+                                    onChange={e => setConfig({...config, encoding: e.target.value})}
+                                    disabled={!isEditing}
+                                />
+                                <Select
+                                    label="Encoding Error Handler"
+                                    tooltip="Encoding error handler for stdio transport."
+                                    value={config.encoding_error_handler || ''}
+                                    onChange={e => setConfig({...config, encoding_error_handler: e.target.value})}
+                                    disabled={!isEditing}
+                                >
+                                    <option value="">None</option>
+                                    <option value="strict">strict</option>
+                                    <option value="ignore">ignore</option>
+                                    <option value="replace">replace</option>
+                                </Select>
+                            </>
+                        )}
+                    </>
+                );
+            case 'ModelArmor':
+                return (
+                    <>
+                        <TextInput 
+                            label="Project ID"
+                            tooltip="ID du projet auquel appartient le modèle."
+                            value={config.projectId || ''} 
+                            onChange={e => setConfig({...config, projectId: e.target.value})}
+                            disabled={!isEditing}
+                            required
+                        />
+                        <TextInput 
+                            label="Location"
+                            tooltip="Emplacement du modèle."
+                            value={config.location || ''} 
+                            onChange={e => setConfig({...config, location: e.target.value})}
+                            disabled={!isEditing}
+                            required
+                        />
+                        <TextInput 
+                            label="Template ID"
+                            tooltip="ID du modèle."
+                            value={config.templateId || ''} 
+                            onChange={e => setConfig({...config, templateId: e.target.value})}
+                            disabled={!isEditing}
+                            required
+                        />
+                    </>
+                );
+            case 'CustomLLM':
+                return (
+                    <>
+                        <Select
+                            label="Model"
+                            tooltip="Select the LLM model."
+                            value={config.model || ''}
+                            onChange={e => setConfig({...config, model: e.target.value})}
+                            disabled={!isEditing}
+                            required
+                        >
+                            <option value="">Select a model</option>
+                            <option value="gemini-2.5-flash-lite">Gemini 2.5 flash lite</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 flash</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 pro</option>
+                            <option value="gemini-3-pro">Gemini 3 pro</option>
+                            <option value="gpt-5.1">OpenAi GPT-5.1</option>
+                            <option value="gpt-5-mini">OpenAi GPT-5 mini</option>
+                            <option value="gpt-5-nano">OpenAi GPT-5 nano</option>
+                        </Select>
+                        <TextArea 
+                            label="Prompt"
+                            tooltip="Define the custom prompt."
+                            value={config.prompt || ''} 
+                            onChange={e => setConfig({...config, prompt: e.target.value})}
+                            disabled={!isEditing}
+                            rows={5}
+                            required
+                        />
+                    </>
+                );
+            case 'BanList':
+                return (
+                    <TextArea 
+                        label="Banned Words"
+                        tooltip="A list of strings (words or phrases) to block. One per line or comma-separated."
+                        value={config.banned_words || ''} 
+                        onChange={e => setConfig({...config, banned_words: e.target.value})}
+                        disabled={!isEditing}
+                        rows={5}
+                        required
+                    />
+                );
+            case 'BiasCheck':
+                return (
+                    <TextInput 
+                        label="Threshold"
+                        tooltip="A number between 0.0 and 1.0 (sensitivity level)."
+                        value={config.threshold || ''} 
+                        onChange={e => setConfig({...config, threshold: e.target.value})}
+                        disabled={!isEditing}
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        required
+                    />
+                );
+            case 'CompetitionCheck':
+                return (
+                    <TextArea 
+                        label="Competitors"
+                        tooltip="A list of strings (names of competitor companies or products). One per line or comma-separated."
+                        value={config.competitors || ''} 
+                        onChange={e => setConfig({...config, competitors: e.target.value})}
+                        disabled={!isEditing}
+                        rows={5}
+                        required
+                    />
+                );
+            case 'CorrectLanguage':
+                return (
+                    <TextArea 
+                        label="Expected Languages"
+                        tooltip="A list of valid ISO language codes (e.g., en, fr, es). One per line or comma-separated."
+                        value={config.expected_languages || ''} 
+                        onChange={e => setConfig({...config, expected_languages: e.target.value})}
+                        disabled={!isEditing}
+                        rows={3}
+                        required
+                    />
+                );
+            case 'DetectPII': {
+                // Helper to toggle PII entities
+                const togglePII = (entity: string) => {
+                    const current = config.pii_entities ? config.pii_entities.split(',') : [];
+                    if (current.includes(entity)) {
+                        setConfig({...config, pii_entities: current.filter(e => e !== entity).join(',')});
+                    } else {
+                        setConfig({...config, pii_entities: [...current, entity].join(',')});
+                    }
+                };
+                const piiList = ['Email', 'Phone Number', 'Credit Card', 'SSN', 'Location'];
+                return (
+                    <div style={{ marginBottom: '24px' }}>
+                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-primary, #ffffff)' }}>
+                            PII Entities <span style={{ color: '#ff4757', marginLeft: '4px' }}>*</span>
+                        </label>
+                        {piiList.map(entity => (
+                             <Checkbox 
+                                key={entity}
+                                label={entity}
+                                checked={(config.pii_entities || '').split(',').includes(entity)}
+                                onChange={() => togglePII(entity)}
+                                disabled={!isEditing}
+                            />
+                        ))}
+                    </div>
+                );
+            }
+            case 'GibberishText':
+                return (
+                    <TextInput 
+                        label="Threshold"
+                        tooltip="A number between 0.0 and 1.0 (sensitivity level)."
+                        value={config.threshold || ''} 
+                        onChange={e => setConfig({...config, threshold: e.target.value})}
+                        disabled={!isEditing}
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        required
+                    />
+                );
+            case 'NSFWText':
+                return (
+                    <TextInput 
+                        label="Threshold"
+                        tooltip="A number between 0.0 and 1.0 (sensitivity level)."
+                        value={config.threshold || ''} 
+                        onChange={e => setConfig({...config, threshold: e.target.value})}
+                        disabled={!isEditing}
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        required
+                    />
+                );
+            case 'DetectJailbreak':
+                return (
+                    <>
+                        <Select
+                            label="Sensitivity"
+                            tooltip="Sensitivity level for jailbreak detection."
+                            value={config.sensitivity || ''}
+                            onChange={e => setConfig({...config, sensitivity: e.target.value})}
+                            disabled={!isEditing}
+                            required
+                        >
+                            <option value="">Select Sensitivity</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </Select>
+                        <Select
+                            label="Check Type"
+                            tooltip="Type of check to perform."
+                            value={config.check_type || ''}
+                            onChange={e => setConfig({...config, check_type: e.target.value})}
+                            disabled={!isEditing}
+                            required
+                        >
+                            <option value="">Select Check Type</option>
+                            <option value="Prompt Injection">Prompt Injection</option>
+                            <option value="System Prompt Leakage">System Prompt Leakage</option>
+                        </Select>
+                    </>
+                );
+            case 'RestrictTopic':
+                return (
+                    <>
+                        <TextArea 
+                            label="Valid Topics"
+                            tooltip="A list of strings describing allowed subjects (e.g., 'Sports', 'Finance'). One per line or comma-separated."
+                            value={config.valid_topics || ''} 
+                            onChange={e => setConfig({...config, valid_topics: e.target.value})}
+                            disabled={!isEditing}
+                            rows={3}
+                            required
+                        />
+                        <TextArea 
+                            label="Invalid Topics"
+                            tooltip="A list of strings describing forbidden subjects (e.g., 'Politics', 'Religion'). One per line or comma-separated."
+                            value={config.invalid_topics || ''} 
+                            onChange={e => setConfig({...config, invalid_topics: e.target.value})}
+                            disabled={!isEditing}
+                            rows={3}
+                        />
+                    </>
+                );
+            case 'Secrets': {
+                 // Helper to toggle Secrets
+                 const toggleSecret = (type: string) => {
+                    const current = config.secret_types ? config.secret_types.split(',') : [];
+                    if (current.includes(type)) {
+                        setConfig({...config, secret_types: current.filter(t => t !== type).join(',')});
+                    } else {
+                        setConfig({...config, secret_types: [...current, type].join(',')});
+                    }
+                };
+                const secretList = ['API Keys', 'AWS Credentials', 'SSH Keys', 'Passwords'];
+                return (
+                    <div style={{ marginBottom: '24px' }}>
+                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-primary, #ffffff)' }}>
+                            Secret Types <span style={{ color: '#ff4757', marginLeft: '4px' }}>*</span>
+                        </label>
+                        {secretList.map(type => (
+                             <Checkbox 
+                                key={type}
+                                label={type}
+                                checked={(config.secret_types || '').split(',').includes(type)}
+                                onChange={() => toggleSecret(type)}
+                                disabled={!isEditing}
+                            />
+                        ))}
+                    </div>
+                );
+            }
+            case 'ValidSQL':
+            case 'ValidPython':
+            case 'WebSanitization':
+                 return <p style={{ color: 'var(--color-text-secondary, #8892b0)' }}>No configuration required for this guard.</p>;
             default:
                 return <p>No configuration needed for this app type.</p>;
         }
@@ -350,6 +765,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 onChange={e => setName(e.target.value)}
                 disabled={!isEditing}
                 placeholder={mode === 'create' ? `My ${appToCreate?.name}` : ''}
+                required
             />
 
             {renderFields()}
@@ -357,31 +773,32 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             <ActionButtons>
                 {mode === 'view' && !isEditing && (
                     <>
-                        <Button $variants="colored" $color="#ef4444" onClick={handleDelete} disabled={isSubmitting}>
+                        <Button type="button" $variants="colored" $color="#ef4444" onClick={handleDelete} disabled={isSubmitting}>
                             Delete
                         </Button>
                          <div style={{ flex: 1 }} />
-                        <Button $variants="transparent" onClick={() => setIsEditing(true)}>
+                        <Button type="button" $variants="transparent" onClick={() => setIsEditing(true)}>
                             Modify
                         </Button>
                     </>
                 )}
 
                 {isEditing && mode === 'view' && (
-                     <>
-                         <Button $variants="transparent" onClick={() => setIsEditing(false)} disabled={isSubmitting}>
-                             Cancel
-                         </Button>
-                         <div style={{ flex: 1 }} />
-                         <Button $variants="base" onClick={handleSubmit} disabled={isSubmitDisabled}>
-                             {isSubmitting ? 'Saving...' : 'Save'}
-                         </Button>
-                     </>
+                    <>
+                        <Button type="button" $variants="transparent" onClick={() => setIsEditing(false)} disabled={isSubmitting}>
+                            Cancel
+                        </Button>
+                        <div style={{ flex: 1 }} />
+                        <Button type="button" $variants="base" onClick={handleSubmit} disabled={isSubmitDisabled}>
+                            {isSubmitting ? 'Saving...' : 'Save'}
+                        </Button>
+                    </>
                 )}
                 
                 {mode === 'create' && (
                     <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                          <Button 
+                            type="button"
                             $variants="base" 
                             onClick={handleSubmit} 
                             disabled={isSubmitDisabled} 
