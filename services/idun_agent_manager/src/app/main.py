@@ -13,6 +13,7 @@ from app.core.settings import get_settings
 from app.infrastructure.db.migrate import auto_migrate
 from app.infrastructure.db.session import close_engines, get_async_engine
 from app.core.logging import setup_logging, get_logger
+from app import __version__
 
 # Simple in-memory storage for development
 agents_db = []
@@ -73,7 +74,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Idun Agent Manager API",
         description="Idun service for managing AI agents",
-        version="0.1.0", # TODO: add dinamic auto version from pyproject.toml
+        version=__version__,
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
@@ -136,6 +137,6 @@ async def root() -> dict[str, str]:
     """Root endpoint."""
     return {
         "name": "Idun Agent Manager API",
-        "version": "0.1.0",
+        "version": __version__,
         "status": "running",
     }
