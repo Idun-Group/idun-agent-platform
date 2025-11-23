@@ -410,5 +410,5 @@ const ActionButtons = styled.div`
     gap: 12px;
     margin-top: 16px;
     justify-content: flex-end;
-    margin-bottom: 16px;
+
 `;

@@ -169,6 +169,7 @@ const Grid = styled.div`
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 24px;
     width: 100%;
+    margin-bottom: 24px;
 `;
 
 const CardWrapper = styled.div`
