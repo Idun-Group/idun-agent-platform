@@ -100,6 +100,8 @@ def setup_routes(app: FastAPI) -> None:
     # Import minimal routers
     from app.api.v1.routers.agents import router as agents_router
     from app.api.v1.routers.health import router as health_router
+    from app.api.v1.routers.mcp_servers import router as mcp_servers_router
+    from app.api.v1.routers.observability import router as observability_router
 
     # API v1 routes
     app.include_router(
@@ -111,6 +113,16 @@ def setup_routes(app: FastAPI) -> None:
         health_router,
         prefix="/api/v1",
         tags=["Health"],
+    )
+    app.include_router(
+        mcp_servers_router,
+        prefix="/api/v1/mcp-servers",
+        tags=["MCP Servers"],
+    )
+    app.include_router(
+        observability_router,
+        prefix="/api/v1/observability",
+        tags=["Observability"],
     )
 
 
