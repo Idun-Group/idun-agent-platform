@@ -11,12 +11,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.db.session import Base
 
-class ManagedMCPServerModel(Base):
-    __tablename__ = "managed_mcp_servers"
+class ManagedObservabilityModel(Base):
+    __tablename__ = "managed_observabilities"
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    mcp_server_config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    observability_config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
