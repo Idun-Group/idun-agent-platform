@@ -1,4 +1,4 @@
-import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus } from 'lucide-react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
@@ -91,6 +91,8 @@ export default function AgentFormPage() {
     // Applications Data
     const [observabilityApps, setObservabilityApps] = useState<ApplicationConfig[]>([]);
     const [memoryApps, setMemoryApps] = useState<ApplicationConfig[]>([]);
+    const [mcpApps, setMcpApps] = useState<ApplicationConfig[]>([]);
+    const [guardApps, setGuardApps] = useState<ApplicationConfig[]>([]);
 
     // Selection State
     const [selectedMemoryType, setSelectedMemoryType] = useState<string>('');
@@ -98,6 +100,10 @@ export default function AgentFormPage() {
     
     const [selectedObservabilityTypes, setSelectedObservabilityTypes] = useState<string[]>([]);
     const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({}); // Type -> AppID
+
+    const [selectedMCPIds, setSelectedMCPIds] = useState<string[]>([]);
+    const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
+    const [selectedGuardTypeToAdd, setSelectedGuardTypeToAdd] = useState<string>('');
 
     // Application Modal State
     const [isAppModalOpen, setIsAppModalOpen] = useState(false);
@@ -118,6 +124,8 @@ export default function AgentFormPage() {
         fetchApplications().then(apps => {
             setObservabilityApps(apps.filter(a => a.category === 'Observability'));
             setMemoryApps(apps.filter(a => a.category === 'Memory'));
+            setMcpApps(apps.filter(a => a.category === 'MCP'));
+            setGuardApps(apps.filter(a => a.category === 'Guardrails'));
         });
     };
 
@@ -164,6 +172,22 @@ export default function AgentFormPage() {
     }, [name]);
 
     // Helpers
+    const getRiskLevel = (type: string) => {
+        const high = ['DetectPII', 'Secrets', 'DetectJailbreak', 'NSFWText', 'ModelArmor'];
+        const medium = ['BiasCheck', 'CompetitionCheck', 'GibberishText', 'ValidSQL', 'ValidPython', 'WebSanitization'];
+        if (high.includes(type)) return { label: 'High Risk', color: 'red' };
+        if (medium.includes(type)) return { label: 'Medium Risk', color: 'amber' };
+        return { label: 'Low Risk', color: 'blue' };
+    };
+
+    const toggleMCP = (id: string) => {
+        setSelectedMCPIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const toggleGuard = (id: string) => {
+        setSelectedGuardIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
     const handleVersionChange = (event: ChangeEvent<HTMLInputElement>) => {
         const rawValue = event.target.value ?? '';
         const normalized = `v${rawValue.replace(/^(v|V)+/, '').replace(/[^0-9a-zA-Z._-]/g, '')}`;
@@ -280,6 +304,10 @@ export default function AgentFormPage() {
             if (obsConfig.enabled) {
                 finalAgentConfig.observability = obsConfig;
             }
+
+            // 3. Handle MCP & Guardrails
+            finalAgentConfig.mcp_servers = selectedMCPIds;
+            finalAgentConfig.guardrails = selectedGuardIds;
 
             const payload = {
                 name: name.trim(),
@@ -556,10 +584,113 @@ export default function AgentFormPage() {
                         {currentStep === 3 && (
                             <StepContainer>
                                 <StepGrid>
-                                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
-                                        <SectionTitle style={{ justifyContent: 'center' }}><SectionIndicator $color="purple" /> Capabilities & Safety</SectionTitle>
-                                        <p style={{ color: '#9ca3af' }}>Configuration for Tools, Guardrails, and other capabilities will appear here.</p>
-                                        <p style={{ color: '#9ca3af', fontSize: '12px' }}>(Agent Input/Output Schemas are now configured in the Logic & Data tab)</p>
+                                    <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                                        
+                                        {/* MCP Section */}
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                                 <SectionTitle style={{ marginBottom: 0 }}><SectionIndicator $color="purple" /> Model Context Protocol (MCP) Servers</SectionTitle>
+                                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <span style={{ fontSize: '12px', color: '#9ca3af', padding: '4px 12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '9999px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        {selectedMCPIds.length} Selected
+                                                    </span>
+                                                    <AddButton onClick={() => handleCreateApp('MCPServer', 'MCP')}>
+                                                        <Plus size={14} style={{ marginRight: '4px' }} /> Add Server
+                                                    </AddButton>
+                                                 </div>
+                                            </div>
+                                            
+                                            {mcpApps.length === 0 ? (
+                                                <EmptyState>No MCP Servers configured.</EmptyState>
+                                            ) : (
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px' }}>
+                                                    {mcpApps.map(app => (
+                                                        <SafetyCardContainer 
+                                                            key={app.id} 
+                                                            $enabled={selectedMCPIds.includes(app.id)}
+                                                            onClick={() => toggleMCP(app.id)}
+                                                        >
+                                                            <SafetyCardHeader>
+                                                                <Zap size={18} color={selectedMCPIds.includes(app.id) ? '#c084fc' : '#4b5563'} />
+                                                                <SafetyCheckbox $checked={selectedMCPIds.includes(app.id)}>
+                                                                    {selectedMCPIds.includes(app.id) && <Check size={12} />}
+                                                                </SafetyCheckbox>
+                                                            </SafetyCardHeader>
+                                                            
+                                                            <SafetyTitle $enabled={selectedMCPIds.includes(app.id)}>{app.name}</SafetyTitle>
+                                                            
+                                                            <SafetyFooter>
+                                                                <span style={{ fontSize: '10px', fontWeight: 500, padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(140, 82, 255, 0.2)', backgroundColor: 'rgba(140, 82, 255, 0.1)', color: '#c084fc' }}>
+                                                                    {app.type}
+                                                                </span>
+                                                            </SafetyFooter>
+                                                        </SafetyCardContainer>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Guardrails Section */}
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                                 <SectionTitle style={{ marginBottom: 0 }}><SectionIndicator $color="red" /> Safety Guardrails</SectionTitle>
+                                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <span style={{ fontSize: '12px', color: '#9ca3af', padding: '4px 12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '9999px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        {selectedGuardIds.length} Selected
+                                                    </span>
+                                                    <div style={{ position: 'relative', display: 'flex' }}>
+                                                        <StyledSelect 
+                                                            value={selectedGuardTypeToAdd} 
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                setSelectedGuardTypeToAdd(val);
+                                                                if(val) handleCreateApp(val as AppType, 'Guardrails');
+                                                                setTimeout(() => setSelectedGuardTypeToAdd(''), 500);
+                                                            }}
+                                                            style={{ width: '140px', padding: '6px 12px', fontSize: '12px', height: '32px' }}
+                                                        >
+                                                            <option value="">+ Add Guardrail</option>
+                                                            {MARKETPLACE_APPS.filter(a => a.category === 'Guardrails').map(a => (
+                                                                <option key={a.type} value={a.type}>{a.name}</option>
+                                                            ))}
+                                                        </StyledSelect>
+                                                    </div>
+                                                 </div>
+                                            </div>
+
+                                            {guardApps.length === 0 ? (
+                                                <EmptyState>No Safety Guardrails configured.</EmptyState>
+                                            ) : (
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px' }}>
+                                                    {guardApps.map(app => {
+                                                        const risk = getRiskLevel(app.type);
+                                                        const isEnabled = selectedGuardIds.includes(app.id);
+                                                        return (
+                                                            <SafetyCardContainer 
+                                                                key={app.id} 
+                                                                $enabled={isEnabled} 
+                                                                $risk={risk.label.includes('High') ? 'High' : 'Low'}
+                                                                onClick={() => toggleGuard(app.id)}
+                                                            >
+                                                                <SafetyCardHeader>
+                                                                    <Shield size={18} color={isEnabled ? (risk.label.includes('High') ? '#f87171' : '#c084fc') : '#4b5563'} />
+                                                                    <SafetyCheckbox $checked={isEnabled} $risk={risk.label.includes('High') ? 'High' : 'Low'}>
+                                                                        {isEnabled && <Check size={12} />}
+                                                                    </SafetyCheckbox>
+                                                                </SafetyCardHeader>
+                                                                
+                                                                <SafetyTitle $enabled={isEnabled}>{app.name}</SafetyTitle>
+                                                                
+                                                                <SafetyFooter>
+                                                                    <RiskTag $color={risk.color}>{risk.label}</RiskTag>
+                                                                </SafetyFooter>
+                                                            </SafetyCardContainer>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+
                                     </div>
                                 </StepGrid>
                             </StepContainer>
@@ -845,4 +976,118 @@ const StyledForm = styled.form`
     height: 100%;
     display: flex;
     flex-direction: column;
+`;
+
+const SafetyCardContainer = styled.div<{ $enabled: boolean, $risk?: string }>`
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid ${props => props.$enabled
+        ? (props.$risk === 'High' ? 'rgba(239, 68, 68, 0.5)' : props.$risk ? 'rgba(140, 82, 255, 0.5)' : 'rgba(140, 82, 255, 0.5)')
+        : 'rgba(255, 255, 255, 0.1)'};
+    background-color: ${props => props.$enabled
+        ? (props.$risk === 'High' ? 'rgba(127, 29, 29, 0.1)' : props.$risk ? 'rgba(140, 82, 255, 0.1)' : 'rgba(140, 82, 255, 0.1)')
+        : '#0B0A15'};
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s;
+    cursor: pointer;
+    height: 100%;
+    min-height: 120px;
+    
+    &:hover {
+        border-color: ${props => props.$enabled ? '' : 'rgba(255, 255, 255, 0.2)'};
+    }
+`;
+
+const SafetyCardHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    width: 100%;
+`;
+
+const SafetyCheckbox = styled.div<{ $checked: boolean, $risk?: string }>`
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    
+    ${props => props.$checked
+        ? `
+            background-color: ${props.$risk === 'High' ? '#ef4444' : '#8c52ff'};
+            border-color: ${props.$risk === 'High' ? '#ef4444' : '#8c52ff'};
+            color: white;
+        `
+        : `
+            background-color: rgba(0, 0, 0, 0.2);
+            border-color: #374151;
+        `
+    }
+`;
+
+const SafetyTitle = styled.h4<{ $enabled: boolean }>`
+    font-size: 14px;
+    font-weight: 700;
+    color: ${props => props.$enabled ? 'white' : '#d1d5db'};
+    margin: 0 0 4px 0;
+`;
+
+const SafetyFooter = styled.div`
+    margin-top: auto;
+    padding-top: 8px;
+`;
+
+const SafetyDesc = styled.p`
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+`;
+
+// Removed unused SafetyToggle and SafetyToggleKnob styled components
+
+const RiskTag = styled.span<{ $color: string }>`
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid;
+    ${props => {
+        switch(props.$color) {
+            case 'red': return `background-color: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2);`;
+            case 'amber': return `background-color: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2);`;
+            default: return `background-color: rgba(59, 130, 246, 0.1); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2);`;
+        }
+    }}
+`;
+
+const AddButton = styled.button`
+    display: flex;
+    align-items: center;
+    padding: 4px 12px;
+    background-color: rgba(140, 82, 255, 0.1);
+    color: #8c52ff;
+    border: 1px solid rgba(140, 82, 255, 0.2);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    &:hover {
+        background-color: rgba(140, 82, 255, 0.2);
+    }
+`;
+
+const EmptyState = styled.div`
+    padding: 32px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 13px;
+    background-color: rgba(255, 255, 255, 0.02);
 `;
