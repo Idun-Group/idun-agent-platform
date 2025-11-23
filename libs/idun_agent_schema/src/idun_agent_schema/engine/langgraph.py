@@ -36,7 +36,37 @@ class SqliteCheckpointConfig(BaseModel):
         return path
 
 
-CheckpointConfig = SqliteCheckpointConfig
+class InMemoryCheckpointConfig(BaseModel):
+    """Configuration for In-Memory checkpointer."""
+
+    type: Literal["memory"]
+
+
+class PostgresCheckpointConfig(BaseModel):
+    """Configuration for Postgres checkpointer."""
+
+    type: Literal["postgres"]
+    db_url: str
+
+    @field_validator("db_url")
+    @classmethod
+    def db_url_must_be_postgres(cls, v: str) -> str:
+        """Ensure the provided database URL uses the postgresql scheme.
+
+        Raises:
+            ValueError: If the URL does not start with 'postgresql://' or 'postgres://'.
+
+        """
+        if not (v.startswith("postgresql://") or v.startswith("postgres://")):
+            raise ValueError(
+                "Postgres DB URL must start with 'postgresql://' or 'postgres://'"
+            )
+        return v
+
+
+CheckpointConfig = (
+    SqliteCheckpointConfig | InMemoryCheckpointConfig | PostgresCheckpointConfig
+)
 
 
 class LangGraphAgentConfig(BaseAgentConfig):

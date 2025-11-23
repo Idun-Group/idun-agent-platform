@@ -11,6 +11,7 @@ from app.infrastructure.db.session import Base
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel  # noqa: F401
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel  # noqa: F401
 from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel  # noqa: F401
+from app.infrastructure.db.models.managed_memory import ManagedMemoryModel  # noqa: F401
 
 # Initialize application logging for Alembic
 from app.core.logging import setup_logging
