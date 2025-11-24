@@ -1,0 +1,17 @@
+server:
+  api:
+    port: 8001
+
+agent:
+  type: "ADK"
+  config:
+    name: "ADK Agent"
+    app_name: "adk_agent"
+    agent: "examples/07_adk/agent.py:root_agent"
+    session_service:
+      type: "in_memory"
+    memory_service:
+      type: "in_memory"
+
+guardrails:
+  enabled: false

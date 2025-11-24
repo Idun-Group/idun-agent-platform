@@ -45,6 +45,38 @@
       "justMyCode": false,
       "envFile": "${workspaceFolder}/libs/idun_agent_engine/.env"
     },
+    {
+      "name": "Idun Engine (Exemple ADK)",
+      "type": "debugpy",
+      "request": "launch",
+      "console": "integratedTerminal",
+      "module": "idun_platform_cli.main",
+      "args": [
+        "agent", "serve",
+        "--source",
+        "file",
+        "--path",
+        "${workspaceFolder}/libs/idun_agent_engine/examples/07_adk/config.yaml",
+      ],
+      "cwd": "${workspaceFolder}/libs/idun_agent_engine",
+      "justMyCode": false,
+      "envFile": "${workspaceFolder}/libs/idun_agent_engine/.env",
+      "env": {
+        "GOOGLE_GENAI_USE_VERTEXAI": "TRUE",
+        "GOOGLE_CLOUD_PROJECT": "chat-appsheet-prd",
+        "GOOGLE_CLOUD_LOCATION": "us-central1"
+      }
+    },
+    {
+      "name": "Python: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
   ],
   "compounds": [
     {

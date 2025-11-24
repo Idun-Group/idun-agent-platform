@@ -15,7 +15,7 @@ from idun_agent_schema.engine.langgraph import (
     LangGraphAgentConfig,
     SqliteCheckpointConfig,
 )
-
+from idun_agent_schema.engine.adk import AdkAgentConfig
 from idun_agent_engine.server.server_config import ServerAPIConfig
 from yaml.serializer import YAMLError
 
@@ -281,6 +281,15 @@ class ConfigBuilder:
                     f"Cannot validate into a HaystackAgentConfig model. Got {agent_config_obj}"
                 ) from e
             agent_instance = HaystackAgent()
+        elif agent_type == AgentFramework.ADK:
+            from idun_agent_engine.agent.adk.adk import AdkAgent
+
+            try:
+                validated_config = AdkAgentConfig.model_validate(agent_config_obj)
+
+            except Exception as e:
+                raise ValueError(f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}") from e
+            agent_instance = AdkAgent()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 

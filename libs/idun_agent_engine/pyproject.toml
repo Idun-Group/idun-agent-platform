@@ -26,23 +26,23 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "guardrails-ai>=0.6.6, <0.7",
+    # "guardrails-ai>=0.6.6, <0.7", # TODO: Uncomment this when guardrails-ai is compatible with langchain-core>=1.0.0
     "fastapi>=0.115.0,<0.116.0",
     "uvicorn>=0.35.0,<0.36.0",
-    "langgraph>=0.6.3,<0.7.0",
+    "langgraph>=1.0.0,<2.0.0",
     "langgraph-checkpoint-sqlite>=2.0.11,<3.0.0",
     "streamlit>=1.47.1,<2.0.0",
     "httpx>=0.28.1,<0.29.0",
     "pydantic>=2.11.7,<3.0.0",
-    "langchain-core>=0.3.72,<0.4.0",
-    "langchain-google-vertexai>=2.0.27,<3.0.0",
+    "langchain-core>=1.0.0,<2.0.0",
+    "langchain-google-vertexai>=2.0.27,<4.0.0",
     "google-adk>=1.9.0,<2.0.0",
     "ag-ui-protocol>=0.1.8,<0.2.0",
     "aiosqlite>=0.21.0,<0.22.0",
     "langfuse==2.60.8",
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
-    "langchain>=0.3.27,<0.4",
+    "langchain>=1.0.0,<2.0.0",
     # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
     "arize-phoenix>=11.22.0,<12.0.0",
     "idun-agent-schema>=0.2.7,<0.3.0",
@@ -54,6 +54,8 @@ dependencies = [
     "ag-ui-langgraph>=0.0.20,<0.1.0",
     "copilotkit>=0.1.72,<0.2.0",
     "langchain-mcp-adapters>=0.1.0,<0.2.0",
+    "google-adk>=1.19.0,<2.0.0",
+    "ag-ui-adk>=0.3.4,<0.4.0",
 ]
 
 

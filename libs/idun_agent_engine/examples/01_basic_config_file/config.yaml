@@ -12,7 +12,10 @@ agent:
   # Agent-specific configuration (passed to the LangGraph adapter)
   config:
     name: "My Example LangGraph Agent"
-    graph_definition: "./example_agent.py:app"  # Path to your graph definition
+    graph_definition: "examples/01_basic_config_file/example_agent.py:app"  # Path to your graph definition
+    checkpointer:
+      type: "sqlite"
+      db_url: "sqlite:///example_checkpoint.db"
     # Observability (provider-agnostic). Example with Langfuse or Phoenix
     guardrails:
       enabled: false
