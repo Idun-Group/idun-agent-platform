@@ -26,7 +26,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    # "guardrails-ai>=0.6.6, <0.7", # TODO: Uncomment this when guardrails-ai is compatible with langchain-core>=1.0.0
+
+    "tavily-python>0.7.9, <=0.7.13",
+    "guardrails-ai>=0.7.0, <0.8.0",
     "fastapi>=0.115.0,<0.116.0",
     "uvicorn>=0.35.0,<0.36.0",
     "langgraph>=1.0.0,<2.0.0",
@@ -49,7 +51,7 @@ dependencies = [
     "idun-agent-schema>=0.2.7,<0.3.0",
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
-    "click>=8.2.1",
+    "click>=8.2.0",
     # Pin SQLAlchemy for Python 3.13 compatibility (required by Phoenix)
     "sqlalchemy>=2.0.36,<3.0.0",
     "ag-ui-langgraph>=0.0.20,<0.1.0",

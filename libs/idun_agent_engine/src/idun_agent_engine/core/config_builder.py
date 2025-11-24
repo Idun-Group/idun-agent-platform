@@ -356,7 +356,7 @@ class ConfigBuilder:
                 ) from e
 
             os.environ["DEEP_RESEARCH_MODEL"] = deep_research_config.model_name
-            os.environ["DEEP_RESEARCH_PROMPT"] = deep_research_config.prompt
+            os.environ["DEEP_RESEARCH_PROMPT"] = deep_research_config.system_prompt
             os.environ["TAVILY_API_KEY"] = deep_research_config.tavily_api_key
 
             validated_config = LangGraphAgentConfig(
@@ -409,6 +409,7 @@ class ConfigBuilder:
         """
         if (
             agent_type == "langgraph"
+            or agent_type == AgentFramework.LANGGRAPH
             or agent_type == AgentFramework.TRANSLATION_AGENT
             or agent_type == AgentFramework.CORRECTION_AGENT
             or agent_type == AgentFramework.DEEP_RESEARCH_AGENT
