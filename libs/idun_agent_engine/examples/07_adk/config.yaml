@@ -1,6 +1,6 @@
 server:
   api:
-    port: 8000
+    port: 8001
 
 agent:
   type: "ADK"

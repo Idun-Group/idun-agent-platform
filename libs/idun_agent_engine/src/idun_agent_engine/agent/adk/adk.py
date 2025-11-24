@@ -127,6 +127,9 @@ class AdkAgent(agent_base.BaseAgent):
         # TODO: Pass session and memory services when supported by AG-UI ADK adapter if needed
         self._copilotkit_agent_instance = ADKAGUIAgent(
             adk_agent=agent,
+            session_service=self._session_service,
+            memory_service=self._memory_service,
+            app_name=self._name,
         )
 
         self._infos["status"] = "Initialized"

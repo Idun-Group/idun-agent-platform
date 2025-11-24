@@ -7,7 +7,7 @@ structure for integration with the Idun Agent Engine.
 import operator
 from typing import Annotated, TypedDict
 
-from langchain.schema import HumanMessage
+from langchain_core.messages import HumanMessage
 from langgraph.graph import END, StateGraph, MessagesState
 
 
