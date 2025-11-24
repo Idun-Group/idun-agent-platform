@@ -7,20 +7,21 @@ structure for integration with the Idun Agent Engine.
 import operator
 from typing import Annotated, TypedDict
 
-from langgraph.graph import END, StateGraph
+from langchain_core.messages import HumanMessage
+from langgraph.graph import END, StateGraph, MessagesState
 
 
-class AgentState(TypedDict):
+
+class AgentState(MessagesState):
     """State structure for our agent."""
 
-    messages: Annotated[list, operator.add]
 
 
 def greeting_node(state):
     """A simple node that returns a greeting message."""
-    user_message = state["messages"][-1] if state["messages"] else ""
+    user_message = state["messages"][-1] if state["messages"] else HumanMessage(content="")
 
-    response = f"Hello! I'm a basic LangGraph agent. You said: '{user_message}'"
+    response = f"Hello! I'm a basic LangGraph agent. You said: '{user_message.content}'"
 
     return {"messages": [("ai", response)]}
 

@@ -10,9 +10,13 @@ import aiosqlite
 from ag_ui.core import events as ag_events
 from ag_ui.core import types as ag_types
 from idun_agent_schema.engine.langgraph import (
+    InMemoryCheckpointConfig,
     LangGraphAgentConfig,
+    PostgresCheckpointConfig,
     SqliteCheckpointConfig,
 )
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -223,8 +227,23 @@ class LanggraphAgent(agent_base.BaseAgent):
                 self._infos["checkpointer"] = (
                     self._configuration.checkpointer.model_dump()
                 )
+            elif isinstance(self._configuration.checkpointer, InMemoryCheckpointConfig):
+                self._checkpointer = InMemorySaver()
+                self._infos["checkpointer"] = (
+                    self._configuration.checkpointer.model_dump()
+                )
+            elif isinstance(self._configuration.checkpointer, PostgresCheckpointConfig):
+                self._checkpointer = AsyncPostgresSaver.from_conn_string(
+                    self._configuration.checkpointer.db_url
+                )
+                await self._checkpointer.setup()
+                self._infos["checkpointer"] = (
+                    self._configuration.checkpointer.model_dump()
+                )
             else:
-                raise NotImplementedError("Only SQLite checkpointer is supported.")
+                raise NotImplementedError(
+                    f"Checkpointer type {type(self._configuration.checkpointer)} is not supported."
+                )
 
         if self._configuration.store:
             raise NotImplementedError("Store functionality is not yet implemented.")
