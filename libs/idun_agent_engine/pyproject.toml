@@ -55,6 +55,7 @@ dependencies = [
     "copilotkit>=0.1.72,<0.2.0",
     "langchain-mcp-adapters>=0.1.0,<0.2.0",
     "google-adk>=1.19.0,<2.0.0",
+    "ag-ui-adk>=0.3.4,<0.4.0",
 ]
 
 
