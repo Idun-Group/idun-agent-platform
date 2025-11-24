@@ -43,9 +43,14 @@ async def cleanup_agent(app: FastAPI):
 
     engine_config = app.state.engine_config
     guardrails_obj = app.state.engine_config.guardrails
+<<<<<<< HEAD
     guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
+=======
+    # TODO temporary disabled guardrails
+    # guardrails = _parse_guardrails(guardrails_obj) # TODO to reactivate
+>>>>>>> 66d7a3c (add adk agent schema, remove guardrails dependencie to to langchain-c… (#102))
 
-    print("guardrails: ", guardrails)
+    #print("guardrails: ", guardrails)
 
     # Use ConfigBuilder's centralized agent initialization
     try:
@@ -60,7 +65,11 @@ async def cleanup_agent(app: FastAPI):
     app.state.mcp_registry = MCPClientRegistry(engine_config.mcp_servers)
     app.state.engine_config = engine_config
 
+<<<<<<< HEAD
     # app.state.guardrails = guardrails # TODO: to reactivate
+=======
+    #app.state.guardrails = guardrails # TODO: to reactivate
+>>>>>>> 66d7a3c (add adk agent schema, remove guardrails dependencie to to langchain-c… (#102))
     # Store both in app state
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")

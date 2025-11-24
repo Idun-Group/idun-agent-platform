@@ -385,8 +385,15 @@ class ConfigBuilder:
 
             try:
                 validated_config = AdkAgentConfig.model_validate(agent_config_obj)
+<<<<<<< HEAD
             except Exception as e:
                 raise ValueError(f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}") from e
+=======
+
+            except Exception as e:
+                raise ValueError(f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}") from e
+            agent_instance = AdkAgent()
+>>>>>>> 66d7a3c (add adk agent schema, remove guardrails dependencie to to langchain-c… (#102))
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 

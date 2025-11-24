@@ -13,6 +13,7 @@ agent:
   config:
     name: "My Example LangGraph Agent"
 <<<<<<< HEAD
+<<<<<<< HEAD
     graph_definition: "examples/01_basic_config_file/example_agent.py:app"  # Path to your graph definition
 =======
     graph_definition: "./examples/01_basic_config_file/example_agent.py:app" # Path to your graph definition
@@ -36,6 +37,9 @@ agent:
 
     # Optional: Enable conversation persistence
 >>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
+=======
+    graph_definition: "examples/01_basic_config_file/example_agent.py:app"  # Path to your graph definition
+>>>>>>> 66d7a3c (add adk agent schema, remove guardrails dependencie to to langchain-c… (#102))
     checkpointer:
       type: "sqlite"
       db_url: "sqlite:///example_checkpoint.db"
