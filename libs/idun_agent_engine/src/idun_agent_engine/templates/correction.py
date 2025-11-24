@@ -1,9 +1,8 @@
-"""Translation Agent Template."""
+"""Correction Agent Template."""
 
 import os
 from typing import TypedDict, Annotated, List
 
-# Try importing init_chat_model, fallback if necessary
 try:
     from langchain.chat_models import init_chat_model
 except ImportError:
@@ -17,24 +16,16 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 
 
-# Define the state
 class State(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
 
 
-# Read configuration from environment variables
-# These are set by ConfigBuilder when initializing the agent
-MODEL_NAME = os.getenv("TRANSLATION_MODEL", "gemini-2.5-flash")
-SOURCE_LANG = os.getenv("TRANSLATION_SOURCE_LANG", "English")
-TARGET_LANG = os.getenv("TRANSLATION_TARGET_LANG", "French")
+MODEL_NAME = os.getenv("CORRECTION_MODEL", "gemini-2.5-flash")
+LANGUAGE = os.getenv("CORRECTION_LANGUAGE", "French")
 
-# Initialize the model
 llm = None
 if init_chat_model:
     try:
-        # init_chat_model requires langchain>=0.2.x or similar.
-        # It auto-detects provider from model name (e.g. "gpt-4" -> openai, "claude" -> anthropic)
-        # provided the integration packages are installed.
         llm = init_chat_model(MODEL_NAME)
     except Exception as e:
         print(f"Warning: Failed to init model {MODEL_NAME}: {e}")
@@ -42,14 +33,15 @@ else:
     print("Warning: init_chat_model not found in langchain.")
 
 
-async def translate(state: State):
-    """Translate the last message."""
+async def correct_text(state: State):
+    """Correct the spelling, syntax, and grammar of the text."""
     if not llm:
         return {"messages": [SystemMessage(content="Error: Model not initialized. Check logs.")]}
 
     prompt = (
-        f"You are a professional translator. Translate the following text "
-        f"from {SOURCE_LANG} to {TARGET_LANG}. Output ONLY the translation."
+        f"You are a professional text corrector for {LANGUAGE}. "
+        f"Correct the spelling, syntax, grammar, and conjugation of the following text. "
+        f"Return ONLY the corrected text without any explanations or modifications to the meaning."
     )
 
     messages = [SystemMessage(content=prompt)] + state["messages"]
@@ -59,8 +51,8 @@ async def translate(state: State):
 
 
 workflow = StateGraph(State)
-workflow.add_node("translate", translate)
-workflow.add_edge(START, "translate")
-workflow.add_edge("translate", END)
+workflow.add_node("correct", correct_text)
+workflow.add_edge(START, "correct")
+workflow.add_edge("correct", END)
 
 graph = workflow.compile()

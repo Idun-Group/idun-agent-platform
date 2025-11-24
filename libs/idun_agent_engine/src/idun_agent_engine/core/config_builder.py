@@ -294,6 +294,32 @@ class ConfigBuilder:
                 input_schema_definition=translation_config.input_schema_definition,
                 output_schema_definition=translation_config.output_schema_definition,
                 observability=translation_config.observability,
+                checkpointer=translation_config.checkpointer,
+            )
+            agent_instance = LanggraphAgent()
+
+        elif agent_type == AgentFramework.CORRECTION_AGENT:
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+            from idun_agent_schema.engine.templates import CorrectionAgentConfig
+            import os
+
+            try:
+                correction_config = CorrectionAgentConfig.model_validate(agent_config_obj)
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot validate into a CorrectionAgentConfig model. Got {agent_config_obj}"
+                ) from e
+
+            os.environ["CORRECTION_MODEL"] = correction_config.model_name
+            os.environ["CORRECTION_LANGUAGE"] = correction_config.language
+
+            validated_config = LangGraphAgentConfig(
+                name=correction_config.name,
+                graph_definition="idun_agent_engine.templates.correction:graph",
+                input_schema_definition=correction_config.input_schema_definition,
+                output_schema_definition=correction_config.output_schema_definition,
+                observability=correction_config.observability,
+                checkpointer=correction_config.checkpointer,
             )
             agent_instance = LanggraphAgent()
 
@@ -328,7 +354,7 @@ class ConfigBuilder:
         Raises:
             ValueError: If agent type is unsupported
         """
-        if agent_type == "langgraph" or agent_type == AgentFramework.TRANSLATION_AGENT:
+        if agent_type == "langgraph" or agent_type == AgentFramework.TRANSLATION_AGENT or agent_type == AgentFramework.CORRECTION_AGENT:
             from ..agent.langgraph.langgraph import LanggraphAgent
 
             return LanggraphAgent
@@ -359,6 +385,11 @@ class ConfigBuilder:
             from idun_agent_schema.engine.templates import TranslationAgentConfig
 
             validated_config = TranslationAgentConfig.model_validate(config)
+            return validated_config.model_dump()
+        elif agent_type == AgentFramework.CORRECTION_AGENT:
+            from idun_agent_schema.engine.templates import CorrectionAgentConfig
+
+            validated_config = CorrectionAgentConfig.model_validate(config)
             return validated_config.model_dump()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
