@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
 
     engine_config = app.state.engine_config
     guardrails_obj = app.state.engine_config.guardrails
-    guardrails = _parse_guardrails(guardrails_obj)
+    guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
 
     print("guardrails: ", guardrails)
 
