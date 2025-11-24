@@ -65,13 +65,14 @@ async def invoke(
     """Process a chat message with the agent without streaming."""
     try:
         message = {"query": chat_request.query, "session_id": chat_request.session_id}
-        guardrails = request.app.state.guardrails
-        # validate the input
-        _run_guardrails(guardrails, message, position="input")
+        guardrails = getattr(request.app.state, 'guardrails', [])
+        if guardrails:
+            _run_guardrails(guardrails, message, position="input")
         response_content = await agent.invoke(
             {"query": message["query"], "session_id": message["session_id"]}
         )
-        _run_guardrails(guardrails, response_content, position="output")
+        if guardrails:
+            _run_guardrails(guardrails, response_content, position="output")
         return ChatResponse(session_id=message["session_id"], response=response_content)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e

@@ -1,0 +1,14 @@
+server:
+  api:
+    port: 8000
+agent:
+  type: "TRANSLATION_AGENT"
+  config:
+    name: "English-Spanish Translator"
+    model_name: "gemini-2.5-flash"
+    source_lang: "English"
+    target_lang: "Spanish"
+    graph_definition: "libs/idun_agent_engine/src/idun_agent_engine/templates/translation.py:graph"
+    checkpointer:
+      type: "sqlite"
+      db_url: "sqlite:///translation_agent.db"
