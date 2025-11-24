@@ -323,6 +323,32 @@ class ConfigBuilder:
             )
             agent_instance = LanggraphAgent()
 
+        elif agent_type == AgentFramework.DEEP_RESEARCH_AGENT:
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
+            import os
+
+            try:
+                deep_research_config = DeepResearchAgentConfig.model_validate(agent_config_obj)
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot validate into a DeepResearchAgentConfig model. Got {agent_config_obj}"
+                ) from e
+
+            os.environ["DEEP_RESEARCH_MODEL"] = deep_research_config.model_name
+            os.environ["DEEP_RESEARCH_PROMPT"] = deep_research_config.system_prompt
+            os.environ["TAVILY_API_KEY"] = deep_research_config.tavily_api_key
+
+            validated_config = LangGraphAgentConfig(
+                name=deep_research_config.name,
+                graph_definition="idun_agent_engine.templates.deep_research:graph",
+                input_schema_definition=deep_research_config.input_schema_definition,
+                output_schema_definition=deep_research_config.output_schema_definition,
+                observability=deep_research_config.observability,
+                checkpointer=deep_research_config.checkpointer,
+            )
+            agent_instance = LanggraphAgent()
+
         elif agent_type == AgentFramework.HAYSTACK:
             from idun_agent_engine.agent.haystack.haystack import HaystackAgent
 
@@ -354,7 +380,7 @@ class ConfigBuilder:
         Raises:
             ValueError: If agent type is unsupported
         """
-        if agent_type == "langgraph" or agent_type == AgentFramework.TRANSLATION_AGENT or agent_type == AgentFramework.CORRECTION_AGENT:
+        if agent_type == "langgraph" or agent_type == AgentFramework.TRANSLATION_AGENT or agent_type == AgentFramework.CORRECTION_AGENT or agent_type == AgentFramework.DEEP_RESEARCH_AGENT:
             from ..agent.langgraph.langgraph import LanggraphAgent
 
             return LanggraphAgent
@@ -390,6 +416,11 @@ class ConfigBuilder:
             from idun_agent_schema.engine.templates import CorrectionAgentConfig
 
             validated_config = CorrectionAgentConfig.model_validate(config)
+            return validated_config.model_dump()
+        elif agent_type == AgentFramework.DEEP_RESEARCH_AGENT:
+            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
+
+            validated_config = DeepResearchAgentConfig.model_validate(config)
             return validated_config.model_dump()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
