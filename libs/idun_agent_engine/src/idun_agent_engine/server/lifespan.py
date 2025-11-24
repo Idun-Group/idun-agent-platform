@@ -32,18 +32,22 @@ def _parse_guardrails(guardrails_obj: Guardrails) -> list[Guardrail]:
     return guardrails
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """FastAPI lifespan context to initialize and teardown the agent."""
+async def cleanup_agent(app: FastAPI):
+    """Clean up agent resources."""
+    agent = getattr(app.state, "agent", None)
+    if agent is not None:
+        close_fn = getattr(agent, "close", None)
+        if callable(close_fn):
+            result = close_fn()
+            if inspect.isawaitable(result):
+                await result
 
-    # Load config and initialize agent on startup
-    print("Server starting up...")
-    if not app.state.engine_config:
-        raise ValueError("Error: No Engine configuration found.")
 
-    engine_config = app.state.engine_config
-    guardrails_obj = app.state.engine_config.guardrails
+async def configure_app(app: FastAPI, engine_config):
+    """Initialize the agent and configure the app with the given config."""
+    guardrails_obj = engine_config.guardrails
     # TODO temporary disabled guardrails
+    # guardrails_obj = app.state.engine_config.guardrails
     # guardrails = _parse_guardrails(guardrails_obj) # TODO to reactivate
 
     #print("guardrails: ", guardrails)
@@ -59,6 +63,7 @@ async def lifespan(app: FastAPI):
     app.state.agent = agent_instance
     app.state.config = engine_config
     app.state.mcp_registry = MCPClientRegistry(engine_config.mcp_servers)
+    app.state.engine_config = engine_config
 
     #app.state.guardrails = guardrails # TODO: to reactivate
     # Store both in app state
@@ -82,15 +87,21 @@ async def lifespan(app: FastAPI):
         servers = ", ".join(app.state.mcp_registry.available_servers())
         print(f"🔌 MCP servers ready: {servers}")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan context to initialize and teardown the agent."""
+
+    # Load config and initialize agent on startup
+    print("Server starting up...")
+    if not app.state.engine_config:
+        raise ValueError("Error: No Engine configuration found.")
+
+    await configure_app(app, app.state.engine_config)
+
     yield
 
     # Clean up on shutdown
     print("🔄 Idun Agent Engine shutting down...")
-    agent = getattr(app.state, "agent", None)
-    if agent is not None:
-        close_fn = getattr(agent, "close", None)
-        if callable(close_fn):
-            result = close_fn()
-            if inspect.isawaitable(result):
-                await result
+    await cleanup_agent(app)
     print("✅ Agent resources cleaned up successfully.")
