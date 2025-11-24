@@ -64,6 +64,17 @@ async def lifespan(app: FastAPI):
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
 
+    # Setup AGUI routes if the agent is a LangGraph agent
+    from ..agent.langgraph.langgraph import LanggraphAgent
+    from ..server.routers.agui import setup_agui_router
+
+    if isinstance(agent_instance, LanggraphAgent):
+        try:
+            # compiled_graph = getattr(agent_instance, "agent_instance")
+            setup_agui_router(app, agent_instance) # TODO: agent_instance is a compiled graph (duplicate agent_instance name not clear)
+        except Exception as e:
+            print(f"⚠️ Warning: Failed to setup AGUI routes: {e}")
+            # Continue even if AGUI setup fails
     if app.state.mcp_registry.enabled:
         servers = ", ".join(app.state.mcp_registry.available_servers())
         print(f"🔌 MCP servers ready: {servers}")
