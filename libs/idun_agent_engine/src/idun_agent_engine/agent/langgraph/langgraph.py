@@ -1,6 +1,7 @@
 """LangGraph agent adapter implementing the BaseAgent protocol."""
 
 import importlib.util
+import importlib
 import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -237,10 +238,15 @@ class LanggraphAgent(agent_base.BaseAgent):
                 "graph_definition must be in the format 'path/to/file.py:variable_name'"
             ) from None
 
+        # Try loading as a file path first
         try:
             from pathlib import Path
 
             resolved_path = Path(module_path).resolve()
+            # If the file doesn't exist, it might be a python module path
+            if not resolved_path.exists():
+                raise FileNotFoundError
+
             spec = importlib.util.spec_from_file_location(
                 graph_variable_name, str(resolved_path)
             )
@@ -251,18 +257,35 @@ class LanggraphAgent(agent_base.BaseAgent):
             spec.loader.exec_module(module)
 
             graph_builder = getattr(module, graph_variable_name)
-        except (FileNotFoundError, ImportError, AttributeError) as e:
-            raise ValueError(
+            return self._validate_graph_builder(graph_builder, module_path, graph_variable_name)
+
+        except (FileNotFoundError, ImportError):
+            # Fallback: try loading as a python module
+            try:
+                module = importlib.import_module(module_path)
+                graph_builder = getattr(module, graph_variable_name)
+                return self._validate_graph_builder(graph_builder, module_path, graph_variable_name)
+            except ImportError as e:
+                 raise ValueError(
+                    f"Failed to load agent from {graph_definition}. Checked file path and python module: {e}"
+                ) from e
+            except AttributeError as e:
+                raise ValueError(
+                    f"Variable '{graph_variable_name}' not found in module {module_path}: {e}"
+                ) from e
+        except Exception as e:
+             raise ValueError(
                 f"Failed to load agent from {graph_definition}: {e}"
             ) from e
-        # TODO to remove, dirty fix for template deepagent langgraph
+
+    def _validate_graph_builder(self, graph_builder: Any, module_path: str, graph_variable_name: str) -> StateGraph:
+         # TODO to remove, dirty fix for template deepagent langgraph
         if not isinstance(graph_builder, StateGraph) and not isinstance(
             graph_builder, CompiledStateGraph
         ):
             raise TypeError(
                 f"The variable '{graph_variable_name}' from {module_path} is not a StateGraph instance."
             )
-
         return graph_builder
 
     async def invoke(self, message: Any) -> Any:

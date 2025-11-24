@@ -17,7 +17,7 @@ from idun_agent_schema.engine.langgraph import (
 )
 
 from idun_agent_engine.server.server_config import ServerAPIConfig
-from yaml.serializer import YAMLError
+from yaml import YAMLError
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
@@ -270,6 +270,33 @@ class ConfigBuilder:
 
             agent_instance = LanggraphAgent()
 
+        elif agent_type == AgentFramework.TRANSLATION_AGENT:
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+            from idun_agent_schema.engine.templates import TranslationAgentConfig
+            import os
+
+            try:
+                translation_config = TranslationAgentConfig.model_validate(agent_config_obj)
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot validate into a TranslationAgentConfig model. Got {agent_config_obj}"
+                ) from e
+
+            # Configure environment for the template
+            os.environ["TRANSLATION_MODEL"] = translation_config.model_name
+            os.environ["TRANSLATION_SOURCE_LANG"] = translation_config.source_lang
+            os.environ["TRANSLATION_TARGET_LANG"] = translation_config.target_lang
+
+            # Create LangGraph config for the template
+            validated_config = LangGraphAgentConfig(
+                name=translation_config.name,
+                graph_definition="idun_agent_engine.templates.translation:graph",
+                input_schema_definition=translation_config.input_schema_definition,
+                output_schema_definition=translation_config.output_schema_definition,
+                observability=translation_config.observability,
+            )
+            agent_instance = LanggraphAgent()
+
         elif agent_type == AgentFramework.HAYSTACK:
             from idun_agent_engine.agent.haystack.haystack import HaystackAgent
 
@@ -301,7 +328,7 @@ class ConfigBuilder:
         Raises:
             ValueError: If agent type is unsupported
         """
-        if agent_type == "langgraph":
+        if agent_type == "langgraph" or agent_type == AgentFramework.TRANSLATION_AGENT:
             from ..agent.langgraph.langgraph import LanggraphAgent
 
             return LanggraphAgent
@@ -327,6 +354,11 @@ class ConfigBuilder:
         """
         if agent_type == "langgraph":
             validated_config = LangGraphAgentConfig.model_validate(config)
+            return validated_config.model_dump()
+        elif agent_type == AgentFramework.TRANSLATION_AGENT:
+            from idun_agent_schema.engine.templates import TranslationAgentConfig
+
+            validated_config = TranslationAgentConfig.model_validate(config)
             return validated_config.model_dump()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
