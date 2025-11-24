@@ -1,19 +1,77 @@
-# Idun Agent Platform
+<div align="center">
+  <img src="docs/images/banner.png" alt="Idun Agent Platform Banner"/>
 
-The Idun Agent Platform is an open, modular platform for building, deploying, and operating AI agents with a unified API, observability, and multiple deployment targets. It is composed of:
+  [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT) [![Python 3.13+](https://img.shields.io/badge/python-3.13+-purple.svg)](https://www.python.org/downloads/) [![PyPI](https://img.shields.io/pypi/v/idun-agent-engine?color=purple)](https://pypi.org/project/idun-agent-engine/) [![Documentation](https://img.shields.io/badge/docs-mkdocs-purple.svg)](https://idun-group.github.io/idun-agent-platform/) [![Discord](https://img.shields.io/badge/Discord-Join%20Us-purple?logo=discord&logoColor=white)](https://discord.gg/tcwH4z7R)
 
-- Idun Agent Engine: Python library that wraps agent frameworks (e.g., LangGraph) behind a FastAPI server with unified endpoints, streaming, and optional observability.
-- Idun Agent Manager: Service that packages agent code, builds container images, and deploys them to local Docker, Cloud Run, or Kubernetes.
-- Idun Agent Gateway: API gateway (Traefik) that routes requests to the correct agent instance by Agent ID.
-- Idun Agent UI: Next.js web application to manage agents and interact with them.
-- Idun Agent Auth (optional, future): Authentication and RBAC.
+</div>
 
-## Why Idun
+---
 
-- Unified API: Interact with any supported agent type via the same endpoints and event stream protocol (AG-UI).
-- Framework flexibility: Start with LangGraph today; support for more frameworks is planned.
-- Production-ready: Containerized runtime, health checks, observability hooks, and checkpointing.
-- Choice of deployment: Local Docker, Google Cloud Run, or Kubernetes.
+> [!WARNING]
+> **Under Active Development** - This repository is currently under active development. APIs and features may change. Check the [Documentation](https://idun-group.github.io/idun-agent-platform/) for more info.
+
+
+## Overview
+
+Idun Agent Platform is an **open-source, production-ready platform** for building and operating AI agents. It provides a unified API layer over multiple agent frameworks (LangGraph, Haystack, CrewAI), built-in observability, and flexible deployment options.
+
+The platform solves the fragmentation problem in the AI agent ecosystem—each framework has different APIs, deployment patterns, and monitoring solutions. With Idun, you configure once and deploy anywhere, while we handle the infrastructure, observability, and scaling.
+
+<div align="center">
+  <div style="overflow: hidden; padding: 1.5em 0; margin: 1.5em 0;">
+    <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 2em; max-width: 800px; margin: 0 auto;">
+      <img src="docs/images/haystack.png" height="45" alt="Haystack" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/langgraph.png" height="45" alt="LangGraph" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/crew.png" height="45" alt="CrewAI" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/adk.png" height="45" alt="ADK" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/langfuse.jpg" height="45" alt="Langfuse" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/phoenix.jpg" height="45" alt="Phoenix" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/aws.png" height="45" alt="AWS" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/gcp.png" height="45" alt="GCP" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+      <img src="docs/images/azure.jpg" height="45" alt="Azure" style="opacity: 0.7; filter: grayscale(60%); max-width: 120px; max-height: 45px; object-fit: contain;"/>
+    </div>
+  </div>
+</div>
+
+## Key Features
+
+- **Multi-Framework Support** – Work with LangGraph, Haystack, CrewAI, and more through a single unified API
+- **Production-Ready** – Containerized runtime with health checks, checkpointing, and streaming responses
+- **Built-in Observability** – Native integration with Langfuse and Arize Phoenix for monitoring and tracing
+- **Guardrails** – Built-in safety and validation mechanisms to ensure agent behavior stays within defined boundaries
+- **Flexible Deployment** – Deploy to local Docker, Google Cloud Run, or Kubernetes with the same configuration
+- **Centralized Management** – Control all your agents via CLI or web dashboard from one place
+- **Simple Configuration** – YAML-based configs that define agent setup and packaging requirements
+
+## Quick Start
+
+### 1. Clone The Repo
+
+```bash
+git clone https://github.com/Idun-Group/idun-agent-platform.git
+```
+
+### 2. Start The Services 
+For conveniance, you can run the docker-compose file, which will spin-up the `idun-agent-manager`, and an example agent from `libs/idun_agent_engine/examples/01_basic_config_file` configured with the `idun-agent-engine`. It will load a saved config from the manager:
+
+```bash
+docker compose -f docker-compose.prod.yml up --build
+```
+
+### 3. Chat With Your Agent
+You can now either use the `swagger-ui` by going to: ```http://localhost:8000/docs``` and using the `invoke` or `stream` endpoints, or via `curl`: 
+```bash
+curl -X POST "http://localhost:8000/agent/invoke" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Hello!", "session_id": "user-123"}'
+```
+
+### 4. Manage your agents: 
+Now, head to the manager at `localhost:8080/docs` and start managing your agent! 
+
+
+> [!TIP]
+> 📖 See the [full documentation](https://idun-group.github.io/idun-agent-platform/) for detailed guides and examples.
 
 ---
 
@@ -53,183 +111,62 @@ graph TD
 
 ## Components
 
-### Idun Agent Engine (Library)
+### Idun Agent Engine
 
-Python library that encapsulates your agent into a production-grade FastAPI service. Configure via YAML or a fluent builder. Ships with streaming, structured responses, health endpoints, and simple persistence.
+Python library that encapsulates your agent into a production-grade FastAPI service. Configure via YAML or a fluent builder. Validates configuration and ships with observability, guardrails, streaming, structured responses, health endpoints, and simple persistence.
 
-- Libraries: FastAPI, Uvicorn, LangGraph, AG-UI protocol bridge, optional Langfuse or Arize Phoenix, OpenTelemetry hooks
-- Endpoints (default):
-  - POST `/agent/invoke` – single request/response
-  - POST `/agent/stream` – Server-Sent Events stream of AG-UI events
-  - GET `/health` – engine health and version
+**Endpoints:**
+- `POST /agent/invoke` – Single request/response
+- `POST /agent/stream` – Server-Sent Events stream with AG-UI protocol
+- `GET /health` – Engine health and version
 
-Features (Ready):
-
-- LangGraph agent support
+**Features:**
+- LangGraph and Haystack agent support
 - SQLite checkpointing for LangGraph
 - Observability via Langfuse or Arize Phoenix
 - Unified API using the AG-UI protocol
 
-Coming soon:
+> [!TIP]
+> See `libs/idun_agent_engine/README.md` for full details
 
-- CrewAI, LangFlow, n8n, ADK, Haystack adapters
-- Postgres checkpointers for LangGraph
-- First-class CLI
+---
 
-See `libs/idun_agent_engine/README.md` for full details and examples.
+### Idun Agent Manager
 
-### Idun Agent Manager (Service)
+Centralized control plane for managing deployed agents with authentication and RBAC. FastAPI service that provides agent lifecycle management, configuration storage, and access control.
 
-FastAPI service to package and deploy agent runtimes built with Idun Agent Engine. It stores configurations, builds images, and deploys them to your chosen environment. It supports retrieving agent code from local archives or GitHub.
+**Features:**
+- **Agent Management** – CRUD operations for agents
+- **LLM Gateway** – Control access to models, track usage, and monitor LLM interactions
+- **UI Chat** – Communicate with managed agents directly through the web interface
+- **API Key Management** – Generate and manage API keys for agent access
 
-Capabilities:
-
-- CRUD agents: list, create, update, delete
-- Build container images using the Engine
-- Push to artifact registry
-- Deploy to:
-  - Local Docker
-  - Google Cloud Run
-  - Kubernetes
-- Configure Traefik to route by Agent ID
-- Persist configurations and deployment metadata in PostgreSQL
-
-Agent creation/update workflow:
-
-1. Receive configs: Engine config, Deployment config, Retriever config
-1. Retrieve code: local zip or GitHub (branch, tag, or commit)
-1. Generate Dockerfile using Idun Agent Engine
-1. Build and push image to Artifact Registry
-1. Deploy the image according to Deployment config
-1. Configure Traefik to route traffic to the deployed agent
-1. Persist configuration and state in PostgreSQL
+---
 
 ### Idun Agent Gateway
 
 API gateway powered by Traefik that routes traffic to specific agent instances by Agent ID. Supports TLS termination and rate limiting policies.
 
+---
+
 ### Idun Agent UI
 
 Next.js web interface to manage agents and interact with deployed agents via the unified API.
 
-### Idun Agent Auth (optional, future)
-
-Authentication and RBAC for enterprise environments.
-
 ---
 
-## Quickstart
+## Configuration
 
-Prerequisites:
+The Engine uses YAML-based configuration. Key fields:
 
-- Docker and Docker Compose
-- Python 3.13 if running the Engine locally
-
-### Run a local Engine example
-
-1. Install the engine
-
-```bash
-pip install idun-agent-engine
-```
-
-1. Create a minimal `config.yaml`
-
-```yaml
-server:
-  api:
-    port: 8000
-
-agent:
-  type: "langgraph"
-  config:
-    name: "My Example LangGraph Agent"
-    graph_definition: "./examples/01_basic_config_file/example_agent.py:app"
-    checkpointer:
-      type: "sqlite"
-      db_url: "sqlite:///example_checkpoint.db"
-    observability:
-      provider: langfuse
-      enabled: true
-      options:
-        host: ${LANGFUSE_HOST}
-        public_key: ${LANGFUSE_PUBLIC_KEY}
-        secret_key: ${LANGFUSE_SECRET_KEY}
-        run_name: "idun-langgraph-run"
-```
-
-1. Run the server
-
-```python
-from idun_agent_engine.core.server_runner import run_server_from_config
-
-run_server_from_config("config.yaml")
-```
-
-1. Try the API
-
-```bash
-curl -X POST "http://localhost:8000/agent/invoke" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Hello!", "session_id": "user-123"}'
-```
-
-### Docker Compose (dev preview)
-
-Example `docker-compose.yml` to run the Gateway and a single Engine container. Replace image names and env values for your environment.
-
-```yaml
-version: "3.9"
-services:
-  gateway:
-    image: traefik:v3.1
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-    ports:
-      - "80:80"
-      - "8080:8080" # Traefik dashboard
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
-  example-agent:
-    image: ghcr.io/your-org/idun-agent-engine-example:latest
-    environment:
-      - LANGFUSE_HOST=${LANGFUSE_HOST}
-      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
-      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.example.rule=PathPrefix(`/agents/example`)"
-      - "traefik.http.services.example.loadbalancer.server.port=8000"
-```
-
-### Deploy via Manager (conceptual)
-
-The Manager exposes CRUD endpoints to register an agent config, retrieve code, build and push an image, and deploy.
-
-High-level steps:
-
-1. POST agent spec to the Manager (engine, retriever, deploy configs)
-1. Manager clones or unpacks the agent source
-1. Manager generates Dockerfile via the Engine
-1. Manager builds and pushes image to registry
-1. Manager deploys (Docker/Cloud Run/Kubernetes)
-1. Gateway routes traffic based on Agent ID
-
----
-
-## Configuration Model (Engine)
-
-Key fields supported by the Engine today:
-
-- `server.api.port`: HTTP port (default 8000)
-- `agent.type`: currently `langgraph`
-- `agent.config.name`: human-readable agent name
-- `agent.config.graph_definition`: `path/to/file.py:variable` pointing to a LangGraph `StateGraph`
-- `agent.config.checkpointer`: `{ type: "sqlite", db_url: "sqlite:///file.db" }`
-- `agent.config.observability`: provider config for `langfuse` or `phoenix`
+| Field | Description | Example |
+|-------|-------------|---------|
+| `server.api.port` | HTTP port (default 8000) | `8000` |
+| `agent.type` | Agent framework (`langgraph`, `haystack`) | `langgraph` |
+| `agent.config.name` | Human-readable agent name | `"My Agent"` |
+| `agent.config.graph_definition` | Path to agent code | `"./agent.py:app"` |
+| `agent.config.checkpointer` | Checkpoint configuration | `{ type: "sqlite", db_url: "..." }` |
+| `agent.config.observability` | Observability provider | `{ provider: "langfuse", enabled: true }` |
 
 More adapters and stores are on the roadmap.
 
@@ -237,65 +174,57 @@ More adapters and stores are on the roadmap.
 
 ## Development
 
-Monorepo layout (selected):
+### Monorepo Structure
 
-- `libs/idun_agent_engine`: Engine library code and examples
-- `services/idun_agent_manager`: Manager service code (WIP)
-- `services/idun_agent_gateway`: Traefik configs (WIP)
-- `services/idun_agent_ui`: Next.js UI (WIP)
-- `services/idun_agent_auth`: Auth service (future)
+```
+idun-agent-platform/
+├── libs/idun_agent_engine/    # Engine library code and examples
+├── services/
+│   ├── idun_agent_manager/    # Manager service code
+│   ├── idun_agent_gateway/    # Traefik configs
+│   └── idun_agent_ui/         # Next.js UI
+└── docs/                      # Documentation
+```
 
-### Local setup (Engine library)
+### Local Setup
+
+Run the Docker Compose setup at the root level:
 
 ```bash
-cd libs/idun_agent_engine
-poetry install
-poetry run pytest -q
+docker compose up --build
 ```
+
+Or use Make commands:
+
+```bash
+make dev              # Run all services
+make dev-manager      # Run Manager only (port 8000)
+```
+
+Check the `Makefile` for more commands and options.
 
 ---
 
 ## Roadmap
 
-- More agent framework adapters: CrewAI, LangFlow, n8n, ADK, Haystack
-- Postgres and external checkpoint stores
-- First-class CLI and templates
-- Multi-tenant Auth and RBAC
-- Horizontal autoscaling and canary deploys
-- Built-in secrets management and vault integration
-- Cost tracking and token accounting
+- **Framework Adapters** – CrewAI, LangFlow, n8n, ADK support
+- **Storage** – Postgres and external checkpoint stores
+- **CLI & Templates** – First-class CLI with project templates
+- **Multi-tenancy** – Enhanced Auth and RBAC features
+- **Scaling** – Horizontal autoscaling and canary deployments
+- **Security** – Built-in secrets management and vault integration
+- **Monitoring** – Cost tracking and token accounting
 
 ---
 
-## Support & Community
+## Contributing
 
-- Documentation: `docs/` folder and `libs/idun_agent_engine/README.md`
-- Issues: open on GitHub
-- License: MIT (see `LICENSE`)
+We welcome contributions! Please see our [contributing guidelines](CONTRIBUTING.md) for details.
 
 ---
 
-## Dev (local)
+## Support
 
-```bash
-make dev
-make dev-manager   # serves Manager on :8000
-```
-
-## Docker (dev)
-
-```bash
-docker compose -f compose.dev.yaml up --build
-```
-
-## Prod image (Manager)
-
-```bash
-docker build -f services/idun_agent_manager/Dockerfile -t idun/manager:0.2.1 services/idun_agent_manager
-```
-
-## Install Engine (users)
-
-```bash
-uv pip install idun-agent-engine
-```
+- **Documentation**: [https://idun-group.github.io/idun-agent-platform/](https://idun-group.github.io/idun-agent-platform/)
+- **Issues**: [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues)
+- **License**: MIT

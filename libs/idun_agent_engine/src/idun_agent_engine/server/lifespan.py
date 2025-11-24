@@ -9,22 +9,58 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from ..core.config_builder import ConfigBuilder
+from ..mcp import MCPClientRegistry
+
+from idun_agent_schema.engine.guardrails import Guardrails, Guardrail
+
+
+def _parse_guardrails(guardrails_obj: Guardrails) -> list[Guardrail]:
+    """Adds the position of the guardrails (input/output) and returns the lift of updated guardrails."""
+
+    from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
+
+    guardrails = []
+    input_guardrails = guardrails_obj.input
+    output_guardrails = guardrails_obj.output
+
+    for guard in input_guardrails:
+        guardrails.append(GHGuard(guard, position="input"))
+
+    for guard in output_guardrails:
+        guardrails.append(GHGuard(guard, position="output"))
+
+    return guardrails
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context to initialize and teardown the agent."""
+
     # Load config and initialize agent on startup
     print("Server starting up...")
+    if not app.state.engine_config:
+        raise ValueError("Error: No Engine configuration found.")
+
     engine_config = app.state.engine_config
+    guardrails_obj = app.state.engine_config.guardrails
+    guardrails = _parse_guardrails(guardrails_obj)
+
+    print("guardrails: ", guardrails)
 
     # Use ConfigBuilder's centralized agent initialization
-    agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config)
+    try:
+        agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config)
+    except Exception as e:
+        raise ValueError(
+            f"Error retrieving agent instance from ConfigBuilder: {e}"
+        ) from e
 
-    # Store both in app state
     app.state.agent = agent_instance
     app.state.config = engine_config
+    app.state.mcp_registry = MCPClientRegistry(engine_config.mcp_servers)
 
+    app.state.guardrails = guardrails
+    # Store both in app state
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
 
@@ -39,6 +75,9 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"⚠️ Warning: Failed to setup AGUI routes: {e}")
             # Continue even if AGUI setup fails
+    if app.state.mcp_registry.enabled:
+        servers = ", ".join(app.state.mcp_registry.available_servers())
+        print(f"🔌 MCP servers ready: {servers}")
 
     yield
 

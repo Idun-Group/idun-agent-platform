@@ -31,6 +31,25 @@ class Settings(BaseSettings):
     workers: int = Field(default=1)
     reload: bool = Field(default=False)
     is_development: bool = Field(default=True)
+    cors_allow_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://0.0.0.0:5173",
+            "http://localhost:4173",
+            "http://127.0.0.1:4173",
+            "http://0.0.0.0:4173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://0.0.0.0:3000",
+            "http://localhost:8080",
+            "http://127.0.0.1:8080",
+            "http://0.0.0.0:8080",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "http://0.0.0.0:8000",
+        ]
+    )
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
 

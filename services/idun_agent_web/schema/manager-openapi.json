@@ -1,0 +1,995 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Idun Agent Manager API",
+    "description": "Idun service for managing AI agents",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/agents/": {
+      "post": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Create managed agent",
+        "description": "Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
+        "operationId": "create_agent_api_v1_agents__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagedAgentCreate-Input"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedAgentCreate-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "List managed agents",
+        "description": "List all managed agents with pagination.",
+        "operationId": "list_agents_api_v1_agents__get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ManagedAgentRead"
+                  },
+                  "title": "Response List Agents Api V1 Agents  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/key": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Generate agent API key",
+        "description": "Generate a unique API key (hash) for an agent to authenticate API requests.",
+        "operationId": "generate_key_api_v1_agents_key_get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/config": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get agent config by API key",
+        "description": "Retrieve agent configuration using API key authentication (Bearer token).",
+        "operationId": "config_api_v1_agents_config_get",
+        "parameters": [
+          {
+            "name": "auth",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Auth"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/{id}": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get managed agent by ID",
+        "description": "Retrieve a specific managed agent by its UUID with complete configuration details.",
+        "operationId": "get_agent_api_v1_agents__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedAgentRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Delete managed agent",
+        "description": "Permanently delete a managed agent and all its configuration data.",
+        "operationId": "delete_agent_api_v1_agents__id__delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Partially update agent (PATCH)",
+        "description": "Partially update an agent's configuration. Only the name andengine_config field can be updated if provided.",
+        "operationId": "patch_agent_api_v1_agents__id__patch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagedAgentPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedAgentRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/healthz": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health Check",
+        "description": "Basic health check.",
+        "operationId": "health_check_api_v1_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Check Api V1 Healthz Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/readyz": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Readiness Check",
+        "description": "Readiness check including database connectivity.",
+        "operationId": "readiness_check_api_v1_readyz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Readiness Check Api V1 Readyz Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/version": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Version",
+        "description": "Get application version and name from FastAPI app metadata.",
+        "operationId": "version_api_v1_version_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Version Api V1 Version Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Root endpoint.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Root  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentConfig-Input": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/AgentFramework"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BaseAgentConfig"
+              },
+              {
+                "$ref": "#/components/schemas/LangGraphAgentConfig"
+              },
+              {
+                "$ref": "#/components/schemas/HaystackAgentConfig"
+              }
+            ],
+            "title": "Config"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "config"
+        ],
+        "title": "AgentConfig",
+        "description": "Configuration for agent specification and settings."
+      },
+      "AgentConfig-Output": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/AgentFramework"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BaseAgentConfig"
+              },
+              {
+                "$ref": "#/components/schemas/LangGraphAgentConfig"
+              },
+              {
+                "$ref": "#/components/schemas/HaystackAgentConfig"
+              }
+            ],
+            "title": "Config"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "config"
+        ],
+        "title": "AgentConfig",
+        "description": "Configuration for agent specification and settings."
+      },
+      "AgentFramework": {
+        "type": "string",
+        "enum": [
+          "LANGGRAPH",
+          "ADK",
+          "CREWAI",
+          "HAYSTACK",
+          "CUSTOM"
+        ],
+        "title": "AgentFramework",
+        "description": "Supported agent frameworks for engine."
+      },
+      "AgentStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "active",
+          "inactive",
+          "deprecated",
+          "error"
+        ],
+        "title": "AgentStatus",
+        "description": "Agent status enumeration."
+      },
+      "ApiKeyResponse": {
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "title": "Api Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "api_key"
+        ],
+        "title": "ApiKeyResponse",
+        "description": "Response shape for a single agent resource."
+      },
+      "BaseAgentConfig": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "input_schema_definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Schema Definition"
+          },
+          "output_schema_definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Schema Definition"
+          },
+          "observability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservabilityConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "BaseAgentConfig",
+        "description": "Base model for agent configurations. Extend for specific frameworks."
+      },
+      "EngineConfig-Input": {
+        "properties": {
+          "server": {
+            "$ref": "#/components/schemas/ServerConfig"
+          },
+          "agent": {
+            "$ref": "#/components/schemas/AgentConfig-Input"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent"
+        ],
+        "title": "EngineConfig",
+        "description": "Main engine configuration model for the entire Idun Agent Engine."
+      },
+      "EngineConfig-Output": {
+        "properties": {
+          "server": {
+            "$ref": "#/components/schemas/ServerConfig"
+          },
+          "agent": {
+            "$ref": "#/components/schemas/AgentConfig-Output"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent"
+        ],
+        "title": "EngineConfig",
+        "description": "Main engine configuration model for the entire Idun Agent Engine."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HaystackAgentConfig": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "input_schema_definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Schema Definition"
+          },
+          "output_schema_definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Schema Definition"
+          },
+          "observability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservabilityConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "haystack",
+            "title": "Type",
+            "default": "haystack"
+          },
+          "component_type": {
+            "type": "string",
+            "enum": [
+              "pipeline",
+              "agent"
+            ],
+            "title": "Component Type"
+          },
+          "component_definition": {
+            "type": "string",
+            "title": "Component Definition"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "component_type",
+          "component_definition"
+        ],
+        "title": "HaystackAgentConfig",
+        "description": "Configuration model for Haystack Agents."
+      },
+      "LangGraphAgentConfig": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "input_schema_definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Schema Definition"
+          },
+          "output_schema_definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Schema Definition"
+          },
+          "observability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservabilityConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "graph_definition": {
+            "type": "string",
+            "title": "Graph Definition"
+          },
+          "checkpointer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SqliteCheckpointConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "store": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "graph_definition"
+        ],
+        "title": "LangGraphAgentConfig",
+        "description": "Configuration model for LangGraph agents."
+      },
+      "ManagedAgentCreate-Input": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "Agent version"
+          },
+          "engine_config": {
+            "$ref": "#/components/schemas/EngineConfig-Input",
+            "description": "Idun Agent Engine configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "engine_config"
+        ],
+        "title": "ManagedAgentCreate",
+        "description": "Create managed agent model for requests."
+      },
+      "ManagedAgentCreate-Output": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "Agent version"
+          },
+          "engine_config": {
+            "$ref": "#/components/schemas/EngineConfig-Output",
+            "description": "Idun Agent Engine configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "engine_config"
+        ],
+        "title": "ManagedAgentCreate",
+        "description": "Create managed agent model for requests."
+      },
+      "ManagedAgentPatch": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "engine_config": {
+            "$ref": "#/components/schemas/EngineConfig-Input",
+            "description": "Idun Agent Engine configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "engine_config"
+        ],
+        "title": "ManagedAgentPatch",
+        "description": "Full replacement schema for PUT of a managed agent."
+      },
+      "ManagedAgentRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AgentStatus",
+            "description": "Agent status",
+            "default": "draft"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "Agent version"
+          },
+          "engine_config": {
+            "$ref": "#/components/schemas/EngineConfig-Output",
+            "description": "Idun Agent Engine configuration"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "engine_config",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ManagedAgentRead",
+        "description": "Complete managed agent model for responses."
+      },
+      "ObservabilityConfig": {
+        "properties": {
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": false
+          },
+          "options": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Options"
+          }
+        },
+        "type": "object",
+        "title": "ObservabilityConfig",
+        "description": "Provider-agnostic observability configuration based on Pydantic.\n\nExample YAML:\n  observability:\n    provider: \"langfuse\"  # or \"phoenix\"\n    enabled: true\n    options:\n      host: ${LANGFUSE_HOST}\n      public_key: ${LANGFUSE_PUBLIC_KEY}\n      secret_key: ${LANGFUSE_SECRET_KEY}\n      run_name: \"my-run\""
+      },
+      "ServerAPIConfig": {
+        "properties": {
+          "port": {
+            "type": "integer",
+            "title": "Port",
+            "default": 8000
+          }
+        },
+        "type": "object",
+        "title": "ServerAPIConfig",
+        "description": "API server configuration."
+      },
+      "ServerConfig": {
+        "properties": {
+          "api": {
+            "$ref": "#/components/schemas/ServerAPIConfig"
+          }
+        },
+        "type": "object",
+        "title": "ServerConfig",
+        "description": "Configuration for the Engine's universal settings."
+      },
+      "SqliteCheckpointConfig": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "sqlite",
+            "title": "Type"
+          },
+          "db_url": {
+            "type": "string",
+            "title": "Db Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "db_url"
+        ],
+        "title": "SqliteCheckpointConfig",
+        "description": "Configuration for SQLite checkpointer."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Copilotkit stream
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://0.0.0.0:8001/agent/copilotkit/stream
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+}
+
+body:json {
+  {"threadId":"thread-001","runId":"run-001","state":{},"messages":[{"id":"msg-001","role":"user","content":"Hello! boss"}],"tools":[],"context":[],"forwardedProps":{}}
+}

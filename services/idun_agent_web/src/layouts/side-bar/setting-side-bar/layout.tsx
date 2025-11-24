@@ -122,13 +122,13 @@ const NavPoint = styled.li<{ $selected: boolean }>`
     padding: 0 16px 0 30px;
     background: #040210;
     &:hover {
-        background: #040210;
+        background: #000000; /* maximum contrast vs default */
     }
 
     ${({ $selected: selected }) => {
         return selected
             ? `
-            background: #040210;
+            background: #000000; /* maximum contrast */
             font-weight: 400;
             border-right: none;
         `

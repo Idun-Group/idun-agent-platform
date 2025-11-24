@@ -13,6 +13,7 @@ from app.core.settings import get_settings
 from app.infrastructure.db.migrate import auto_migrate
 from app.infrastructure.db.session import close_engines, get_async_engine
 from app.core.logging import setup_logging, get_logger
+from app import __version__
 
 # Simple in-memory storage for development
 agents_db = []
@@ -73,21 +74,21 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Idun Agent Manager API",
         description="Idun service for managing AI agents",
-        version="0.1.0",
+        version=__version__,
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
     )
 
     # Setup CORS
+    settings = get_settings()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # For development only
+        allow_origins=settings.cors_allow_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
     # Setup routes
     setup_routes(app)
 
@@ -99,6 +100,11 @@ def setup_routes(app: FastAPI) -> None:
     # Import minimal routers
     from app.api.v1.routers.agents import router as agents_router
     from app.api.v1.routers.health import router as health_router
+    from app.api.v1.routers.mcp_servers import router as mcp_servers_router
+    from app.api.v1.routers.observability import router as observability_router
+    from app.api.v1.routers.memory import router as memory_router
+    from app.api.v1.routers.agent_frameworks import router as agent_frameworks_router
+    from app.api.v1.routers.guardrails import router as guardrails_router
 
     # API v1 routes
     app.include_router(
@@ -110,6 +116,31 @@ def setup_routes(app: FastAPI) -> None:
         health_router,
         prefix="/api/v1",
         tags=["Health"],
+    )
+    app.include_router(
+        mcp_servers_router,
+        prefix="/api/v1/mcp-servers",
+        tags=["MCP Servers"],
+    )
+    app.include_router(
+        observability_router,
+        prefix="/api/v1/observability",
+        tags=["Observability"],
+    )
+    app.include_router(
+        memory_router,
+        prefix="/api/v1/memory",
+        tags=["Memory"],
+    )
+    app.include_router(
+        agent_frameworks_router,
+        prefix="/api/v1/agent-frameworks",
+        tags=["Agent Frameworks"],
+    )
+    app.include_router(
+        guardrails_router,
+        prefix="/api/v1/guardrails",
+        tags=["Guardrails"],
     )
 
 
@@ -123,6 +154,6 @@ async def root() -> dict[str, str]:
     """Root endpoint."""
     return {
         "name": "Idun Agent Manager API",
-        "version": "0.1.0",
+        "version": __version__,
         "status": "running",
     }

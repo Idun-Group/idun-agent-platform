@@ -7,6 +7,20 @@ const ConfigurationTab = ({ agent }: ConfigurationTabProps) => {
     return (
         <ConfigurationSection>
             <ConfigurationGrid>
+                {agent?.engine_config?.server?.api?.port && (
+                    <ConfigCard>
+                        <ConfigCardHeader>
+                            <ConfigCardTitle>Server Configuration</ConfigCardTitle>
+                        </ConfigCardHeader>
+                        <ConfigCardContent>
+                            <ConfigRow>
+                                <ConfigLabel>API Port</ConfigLabel>
+                                <ConfigValue>{agent.engine_config.server.api.port}</ConfigValue>
+                            </ConfigRow>
+                        </ConfigCardContent>
+                    </ConfigCard>
+                )}
+                
                 {agent?.config ? (
                     <ConfigCard>
                         <ConfigCardHeader>

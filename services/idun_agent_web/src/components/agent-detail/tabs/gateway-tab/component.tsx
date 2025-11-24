@@ -372,6 +372,34 @@ const ActionButton = styled.button<{ $danger?: boolean; $warning?: boolean }>`
             : 'transparent'};
     color: var(--color-text-secondary, #8892b0);
     cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        color: ${({ $danger, $warning }) =>
+            $danger
+                ? '#ef4444'
+                : $warning
+                ? '#fbbf24'
+                : 'var(--color-primary, #8c52ff)'};
+        border-color: ${({ $danger, $warning }) =>
+            $danger
+                ? '#ef4444'
+                : $warning
+                ? '#fbbf24'
+                : 'var(--color-primary, #8c52ff)'};
+        background: ${({ $danger, $warning }) =>
+            $danger
+                ? 'rgba(239,68,68,0.1)'
+                : $warning
+                ? 'rgba(250,204,21,0.1)'
+                : 'rgba(140, 82, 255, 0.1)'};
+    }
+
+    &:active:not(:disabled) {
+        transform: scale(0.98);
+    }
 
     &:disabled {
         opacity: 0.5;
