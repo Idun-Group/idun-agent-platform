@@ -11,3 +11,4 @@ class AgentFramework(str, Enum):
     CREWAI = "CREWAI"
     HAYSTACK = "HAYSTACK"
     CUSTOM = "CUSTOM"
+    TRANSLATION_AGENT = "TRANSLATION_AGENT"
