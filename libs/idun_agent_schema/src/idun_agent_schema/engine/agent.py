@@ -8,6 +8,7 @@ from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.langgraph import LangGraphAgentConfig
 from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_schema.engine.base_agent import BaseAgentConfig
+from idun_agent_schema.engine.adk import AdkAgentConfig
 from pydantic import model_validator
 
 
@@ -15,7 +16,7 @@ class AgentConfig(BaseModel):
     """Configuration for agent specification and settings."""
 
     type: AgentFramework
-    config: BaseAgentConfig | LangGraphAgentConfig | HaystackAgentConfig
+    config: BaseAgentConfig | LangGraphAgentConfig | HaystackAgentConfig | AdkAgentConfig
 
     @model_validator(mode="after")
     def _validate_framework_config(self) -> "AgentConfig":
@@ -23,7 +24,8 @@ class AgentConfig(BaseModel):
 
         - LANGGRAPH  -> LangGraphAgentConfig
         - HAYSTACK   -> HaystackAgentConfig
-        - ADK/CREWAI/CUSTOM -> BaseAgentConfig (or subclass)
+        - ADK        -> AdkAgentConfig
+        - CREWAI/CUSTOM -> BaseAgentConfig (or subclass)
         """
         expected_type: type[BaseAgentConfig] | None = None
 
@@ -31,7 +33,9 @@ class AgentConfig(BaseModel):
             expected_type = LangGraphAgentConfig
         elif self.type == AgentFramework.HAYSTACK:
             expected_type = HaystackAgentConfig
-        elif self.type in {AgentFramework.ADK, AgentFramework.CREWAI, AgentFramework.CUSTOM}:
+        elif self.type == AgentFramework.ADK:
+            expected_type = AdkAgentConfig
+        elif self.type in {AgentFramework.CREWAI, AgentFramework.CUSTOM}:
             expected_type = BaseAgentConfig
 
         if expected_type is not None and not isinstance(self.config, expected_type):

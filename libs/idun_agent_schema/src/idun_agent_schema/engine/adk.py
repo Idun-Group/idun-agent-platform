@@ -62,7 +62,6 @@ MemoryServiceConfig = Annotated[
 
 class AdkAgentConfig(BaseAgentConfig):
     """Configuration model for ADK agents."""
-
     agent: str = Field(
         ..., description="Agent definition (e.g. module.path:agent_instance)"
     )

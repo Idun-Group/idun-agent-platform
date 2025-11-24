@@ -5,11 +5,27 @@ import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from idun_agent_schema.engine.adk import AdkAgentConfig
+from google.adk.apps.app import App
+from google.adk.memory import (
+    InMemoryMemoryService,
+    VertexAiMemoryBankService,
+)
+from google.adk.sessions import (
+    DatabaseSessionService,
+    InMemorySessionService,
+    VertexAiSessionService,
+)
+from idun_agent_schema.engine.adk import (
+    AdkAgentConfig,
+    AdkDatabaseSessionConfig,
+    AdkInMemoryMemoryConfig,
+    AdkInMemorySessionConfig,
+    AdkVertexAiMemoryConfig,
+    AdkVertexAiSessionConfig,
+)
 
+from ag_ui_adk import ADKAgent as ADKAGUIAgent
 from idun_agent_engine.agent import base as agent_base
-from ag_ui_adk import ADKAgent
-
 
 
 class AdkAgent(agent_base.BaseAgent):
@@ -20,7 +36,7 @@ class AdkAgent(agent_base.BaseAgent):
         self._id = str(uuid.uuid4())
         self._agent_type = "ADK"
         self._agent_instance: Any = None
-        self._copilotkit_agent_instance: ADKAgent | None = None
+        self._copilotkit_agent_instance: ADKAGUIAgent | None = None
         self._configuration: AdkAgentConfig | None = None
         self._name: str = "Unnamed ADK Agent"
         self._infos: dict[str, Any] = {
@@ -28,6 +44,8 @@ class AdkAgent(agent_base.BaseAgent):
             "name": self._name,
             "id": self._id,
         }
+        self._session_service: Any = None
+        self._memory_service: Any = None
 
     @property
     def id(self) -> str:
@@ -56,13 +74,17 @@ class AdkAgent(agent_base.BaseAgent):
         return self._agent_instance
 
     @property
-    def copilotkit_agent_instance(self) -> Any:
+    def copilotkit_agent_instance(self) -> ADKAGUIAgent:
         """Return the CopilotKit agent instance.
 
         Raises:
-            NotImplementedError: ADK integration does not currently support CopilotKit.
+            RuntimeError: If the CopilotKit agent is not yet initialized.
         """
-        raise NotImplementedError("ADK integration does not currently support CopilotKit.")
+        if self._copilotkit_agent_instance is None:
+            raise RuntimeError(
+                "CopilotKit agent not initialized. Call initialize() first."
+            )
+        return self._copilotkit_agent_instance
 
     @property
     def configuration(self) -> AdkAgentConfig:
@@ -90,17 +112,71 @@ class AdkAgent(agent_base.BaseAgent):
         self._name = self._configuration.app_name or "Unnamed ADK Agent"
         self._infos["name"] = self._name
 
-        # TODO: Initialize Session Service
-        # self._configuration.session_service
+        # Initialize Session Service
+        await self._initialize_session_service()
 
-        # TODO: Initialize Memory Service
-        # self._configuration.memory_service
+        # Initialize Memory Service
+        await self._initialize_memory_service()
 
         # Load the agent instance
-        self._agent_instance = self._load_agent(self._configuration.agent)
+        agent = self._load_agent(self._configuration.agent)
+
+        self._agent_instance = App(root_agent=agent, name=self._name)
+
+        # Initialize CopilotKit/AG-UI Agent Wrapper
+        # TODO: Pass session and memory services when supported by AG-UI ADK adapter if needed
+        self._copilotkit_agent_instance = ADKAGUIAgent(
+            adk_agent=agent,
+        )
 
         self._infos["status"] = "Initialized"
         self._infos["config_used"] = self._configuration.model_dump()
+
+    async def _initialize_session_service(self) -> None:
+        """Initialize the session service based on configuration."""
+        if not self._configuration:
+            raise RuntimeError("Configuration not initialized")
+
+        if not self._configuration.session_service:
+            # Default to InMemory if not specified
+            self._session_service = InMemorySessionService()
+            return
+
+        config = self._configuration.session_service
+        if isinstance(config, AdkInMemorySessionConfig):
+            self._session_service = InMemorySessionService()
+        elif isinstance(config, AdkVertexAiSessionConfig):
+            self._session_service = VertexAiSessionService(
+                project=config.project_id,
+                location=config.location,
+                agent_engine_id=config.reasoning_engine_app_name,
+            )
+        elif isinstance(config, AdkDatabaseSessionConfig):
+            self._session_service = DatabaseSessionService(db_url=config.db_url)
+        else:
+            raise ValueError(f"Unsupported session service type: {config.type}")  # type: ignore
+
+    async def _initialize_memory_service(self) -> None:
+        """Initialize the memory service based on configuration."""
+        if not self._configuration:
+            raise RuntimeError("Configuration not initialized")
+
+        if not self._configuration.memory_service:
+            # Default to InMemory if not specified
+            self._memory_service = InMemoryMemoryService()
+            return
+
+        config = self._configuration.memory_service
+        if isinstance(config, AdkInMemoryMemoryConfig):
+            self._memory_service = InMemoryMemoryService()
+        elif isinstance(config, AdkVertexAiMemoryConfig):
+            self._memory_service = VertexAiMemoryBankService(
+                project=config.project_id,
+                location=config.location,
+                agent_engine_id=config.memory_bank_id,
+            )
+        else:
+            raise ValueError(f"Unsupported memory service type: {config.type}")  # type: ignore
 
     def _load_agent(self, agent_definition: str) -> Any:
         """Loads an agent instance from a specified path."""
@@ -138,11 +214,7 @@ class AdkAgent(agent_base.BaseAgent):
                 "Agent not initialized. Call initialize() before processing messages."
             )
 
-        # TODO: Implement ADK invoke logic
-        # 1. Create/Get Session
-        # 2. Process message
-        # 3. Update state
-        # 4. Return response
+        # TODO: Implement ADK invoke logic using session and memory services
         raise NotImplementedError("ADK invoke not implemented yet")
 
     async def stream(self, message: Any) -> AsyncGenerator[Any]:
@@ -152,7 +224,7 @@ class AdkAgent(agent_base.BaseAgent):
                 "Agent not initialized. Call initialize() before processing messages."
             )
 
-        # TODO: Implement ADK stream logic
+        # TODO: Implement ADK stream logic using session and memory services
         raise NotImplementedError("ADK stream not implemented yet")
 
         # Required to make this a generator

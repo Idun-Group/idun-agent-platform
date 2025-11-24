@@ -3,10 +3,15 @@ server:
     port: 8000
 
 agent:
-  type: "LANGGRAPH"
+  type: "ADK"
   config:
-    name: "Langchain deep research"
-    graph_definition: "agent.py:agent"
+    name: "ADK Agent"
+    app_name: "adk_agent"
+    agent: "examples/07_adk/agent.py:root_agent"
+    session_service:
+      type: "in_memory"
+    memory_service:
+      type: "in_memory"
 
 guardrails:
   enabled: false
