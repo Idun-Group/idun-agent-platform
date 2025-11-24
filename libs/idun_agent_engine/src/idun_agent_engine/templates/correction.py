@@ -1,7 +1,7 @@
 """Correction Agent Template."""
 
 import os
-from typing import TypedDict, Annotated, List
+from typing import TypedDict, Annotated, List, Any
 
 try:
     from langchain.chat_models import init_chat_model
@@ -23,8 +23,8 @@ class State(TypedDict):
 MODEL_NAME = os.getenv("CORRECTION_MODEL", "gemini-2.5-flash")
 LANGUAGE = os.getenv("CORRECTION_LANGUAGE", "French")
 
-llm = None
-if init_chat_model:
+llm: Any = None
+if init_chat_model and callable(init_chat_model):
     try:
         llm = init_chat_model(MODEL_NAME)
     except Exception as e:
@@ -33,14 +33,17 @@ else:
     print("Warning: init_chat_model not found in langchain.")
 
 
+
 async def correct_text(state: State):
     """Correct the spelling, syntax, and grammar of the text."""
     if not llm:
+
         return {
             "messages": [
                 SystemMessage(content="Error: Model not initialized. Check logs.")
             ]
         }
+
 
     prompt = (
         f"You are a professional text corrector for {LANGUAGE}. "
@@ -60,4 +63,3 @@ workflow.add_edge(START, "correct")
 workflow.add_edge("correct", END)
 
 graph = workflow.compile()
-

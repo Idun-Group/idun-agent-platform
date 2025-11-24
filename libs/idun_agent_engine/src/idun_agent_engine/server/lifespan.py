@@ -4,6 +4,7 @@ Initializes the agent at startup and cleans up resources on shutdown.
 """
 
 import inspect
+from collections.abc import Sequence
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -13,8 +14,10 @@ from ..mcp import MCPClientRegistry
 
 from idun_agent_schema.engine.guardrails import Guardrails, Guardrail
 
+from ..guardrails.base import BaseGuardrail
 
-def _parse_guardrails(guardrails_obj: Guardrails) -> list[Guardrail]:
+
+def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
     """Adds the position of the guardrails (input/output) and returns the lift of updated guardrails."""
 
     from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
@@ -38,10 +41,9 @@ async def lifespan(app: FastAPI):
 
     engine_config = app.state.engine_config
     guardrails_obj = app.state.engine_config.guardrails
-    # TODO temporary disabled guardrails
-    # guardrails = _parse_guardrails(guardrails_obj) # TODO to reactivate
+    guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
 
-    # print("guardrails: ", guardrails)
+    print("guardrails: ", guardrails)
 
     # Use ConfigBuilder's centralized agent initialization
     try:
