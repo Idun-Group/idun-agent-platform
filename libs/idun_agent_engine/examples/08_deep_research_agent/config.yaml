@@ -8,7 +8,7 @@ agent:
     model_name: "gemini-2.5-flash"
     project: "gcp-deep-research-project"
     region: "eu-west1"
-    tavily_api_key: "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"
+    tavily_api_key: "${TAVILY_API_KEY}"
     prompt: "Conduct thorough research and write a comprehensive, well-structured report."
     graph_definition: "libs/idun_agent_engine/src/idun_agent_engine/templates/deep_research.py:graph"
     checkpointer:
