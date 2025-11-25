@@ -19,17 +19,12 @@ def _parse_guardrails(guardrails_obj: Guardrails) -> list[Guardrail]:
 
     from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
 
-    guardrails = []
-    input_guardrails = guardrails_obj.input
-    output_guardrails = guardrails_obj.output
+    if not guardrails_obj.enabled:
+        return []
 
-    for guard in input_guardrails:
-        guardrails.append(GHGuard(guard, position="input"))
-
-    for guard in output_guardrails:
-        guardrails.append(GHGuard(guard, position="output"))
-
-    return guardrails
+    return [GHGuard(guard, position="input") for guard in guardrails_obj.input] + [
+        GHGuard(guard, position="output") for guard in guardrails_obj.output
+    ]
 
 
 @asynccontextmanager
@@ -46,7 +41,7 @@ async def lifespan(app: FastAPI):
     # TODO temporary disabled guardrails
     # guardrails = _parse_guardrails(guardrails_obj) # TODO to reactivate
 
-    #print("guardrails: ", guardrails)
+    # print("guardrails: ", guardrails)
 
     # Use ConfigBuilder's centralized agent initialization
     try:
@@ -60,7 +55,7 @@ async def lifespan(app: FastAPI):
     app.state.config = engine_config
     app.state.mcp_registry = MCPClientRegistry(engine_config.mcp_servers)
 
-    #app.state.guardrails = guardrails # TODO: to reactivate
+    # app.state.guardrails = guardrails # TODO: to reactivate
     # Store both in app state
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")

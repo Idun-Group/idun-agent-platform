@@ -45,7 +45,11 @@ else:
 async def translate(state: State):
     """Translate the last message."""
     if not llm:
-        return {"messages": [SystemMessage(content="Error: Model not initialized. Check logs.")]}
+        return {
+            "messages": [
+                SystemMessage(content="Error: Model not initialized. Check logs.")
+            ]
+        }
 
     prompt = (
         f"You are a professional translator. Translate the following text "
