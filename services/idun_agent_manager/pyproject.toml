@@ -49,6 +49,7 @@ dependencies = [
   "idun-agent-schema>=0.2.0,<0.3.0",
 ]
 
+
 ## uv configuration
 [tool.uv]
 # Avoid installing the current project as a package during sync

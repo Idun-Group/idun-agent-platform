@@ -24,9 +24,14 @@ classifiers = [
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries",
     "Typing :: Typed",
-]
-dependencies = [
 
+
+
+]
+
+dependencies = [
+    # "guardrails-ai>=0.6.6, <0.7", # TODO: Uncomment this when guardrails-ai is compatible with langchain-core>=1.0.0
+    "tavily-python==0.7.13",
     "deepagents==0.2.8",
     "tavily-python>0.7.9, <=0.7.13",
     "guardrails-ai>=0.7.0, <0.8.0",
@@ -35,9 +40,14 @@ dependencies = [
     "langgraph>=1.0.0,<2.0.0",
     "langgraph-checkpoint-sqlite>=3.0.0,<4.0.0",
     "langgraph-checkpoint-postgres>=3.0.0,<4.0.0",
+    "langgraph>=1.0.0,<2.0.0",
+    "langgraph-checkpoint-sqlite>=3.0.0,<4.0.0",
+    "langgraph-checkpoint-postgres>=3.0.0,<4.0.0",
     "streamlit>=1.47.1,<2.0.0",
     "httpx>=0.28.1,<0.29.0",
     "pydantic>=2.11.7,<3.0.0",
+    "langchain-core>=1.0.0,<2.0.0",
+    "langchain-google-vertexai>=2.0.27,<4.0.0",
     "langchain-core>=1.0.0,<2.0.0",
     "langchain-google-vertexai>=2.0.27,<4.0.0",
     "google-adk>=1.9.0,<2.0.0",
@@ -46,6 +56,7 @@ dependencies = [
     "langfuse==2.60.8",
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
+    "langchain>=1.0.0,<2.0.0",
     "langchain>=1.0.0,<2.0.0",
     # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
     "arize-phoenix>=11.22.0,<12.0.0",
@@ -58,6 +69,8 @@ dependencies = [
     "ag-ui-langgraph>=0.0.20,<0.1.0",
     "copilotkit>=0.1.72,<0.2.0",
     "langchain-mcp-adapters>=0.1.0,<0.2.0",
+    "google-adk>=1.19.0,<2.0.0",
+    "ag-ui-adk>=0.3.4,<0.4.0",
     "google-adk>=1.19.0,<2.0.0",
     "ag-ui-adk>=0.3.4,<0.4.0",
 ]
