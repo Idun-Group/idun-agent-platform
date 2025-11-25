@@ -13,9 +13,11 @@ except ImportError:
         init_chat_model = None
 
 MODEL_NAME = os.getenv("DEEP_RESEARCH_MODEL", "gemini-2.5-flash")
+
 SYSTEM_PROMPT = os.getenv(
     "DEEP_RESEARCH_PROMPT", "Conduct research and write a polished report."
 )
+
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
 tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
@@ -35,4 +37,4 @@ if init_chat_model:
 else:
     print("Warning: init_chat_model not found in langchain.")
 
-graph = create_deep_agent(SYSTEM_PROMPT, tools=[internet_search], model=llm)
+graph = create_deep_agent(llm, [internet_search], system_prompt=SYSTEM_PROMPT)

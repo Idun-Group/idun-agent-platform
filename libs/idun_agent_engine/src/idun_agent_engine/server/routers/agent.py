@@ -40,6 +40,15 @@ def _run_guardrails(
     return
 
 
+async def _invoke_agent_and_parse_response(agent, message: dict[str, str]) -> str:
+    response_content = await agent.invoke(
+        {"query": message["query"], "session_id": message["session_id"]}
+    )
+    if agent.name == "Deep Research Agent":
+        return response_content[0]["text"]
+    return response_content
+
+
 @agent_router.get("/config")
 async def get_config(request: Request):
     """Get the current agent configuration."""
@@ -64,14 +73,16 @@ async def invoke(
     """Process a chat message with the agent without streaming."""
     try:
         message = {"query": chat_request.query, "session_id": chat_request.session_id}
-        guardrails = getattr(request.app.state, 'guardrails', [])
+        guardrails = getattr(request.app.state, "guardrails", [])
         if guardrails:
             _run_guardrails(guardrails, message, position="input")
-        response_content = await agent.invoke(
-            {"query": message["query"], "session_id": message["session_id"]}
-        )
+
+        response_content = await _invoke_agent_and_parse_response(agent, message)
         if guardrails:
             _run_guardrails(guardrails, response_content, position="output")
+        import pdb
+
+        pdb.set_trace()
         return ChatResponse(session_id=message["session_id"], response=response_content)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -84,6 +95,7 @@ async def stream(
 ):
     """Process a message with the agent, streaming ag-ui events."""
     try:
+
         async def event_stream():
             message = {"query": request.query, "session_id": request.session_id}
             async for event in agent.stream(message):
@@ -92,6 +104,7 @@ async def stream(
         return StreamingResponse(event_stream(), media_type="text/event-stream")
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @agent_router.post("/copilotkit/stream")
 async def copilotkit_stream(
@@ -105,7 +118,7 @@ async def copilotkit_stream(
         accept_header = request.headers.get("accept")
 
         # Create an event encoder to properly format SSE events
-        encoder = EventEncoder(accept=accept_header or "") # type: ignore[arg-type]
+        encoder = EventEncoder(accept=accept_header or "")  # type: ignore[arg-type]
 
         async def event_generator():
             async for event in copilotkit_agent.run(input_data):
@@ -113,7 +126,7 @@ async def copilotkit_stream(
 
         return StreamingResponse(
             event_generator(),  # type: ignore[arg-type]
-            media_type=encoder.get_content_type()
+            media_type=encoder.get_content_type(),
         )
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e

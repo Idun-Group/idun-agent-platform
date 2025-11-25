@@ -15,7 +15,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "deepagents==0.2.8",
     "ruff>=0.6.5,<0.7",
     "black>=24.8.0,<25",
     "pre-commit>=3.8.0,<4",
