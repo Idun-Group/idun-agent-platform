@@ -3,7 +3,7 @@ name = "idun-agent-platform"
 version = "0.1.0"
 description = "Monorepo for Idun Agent Platform"
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.12,<3.14"
 readme = "README.md"
 license = "MIT"
 dependencies = [
@@ -15,6 +15,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "deepagents==0.2.8",
     "ruff>=0.6.5,<0.7",
     "black>=24.8.0,<25",
     "pre-commit>=3.8.0,<4",
