@@ -101,16 +101,26 @@ class ConfigBuilder:
                     f"Error sending retrieving config from url. response : {response.json()}"
                 )
             yaml_config = yaml.safe_load(response.text)
-
             try:
                 self._server_config = yaml_config["engine_config"]["server"]
-                self._agent_config = yaml_config["engine_config"]["agent"]
-                self._guardrails = yaml_config["guardrails"]
-                return self
             except Exception as e:
                 raise YAMLError(
-                    f"Failed to parse yaml file for EngineConfig and/or Guardrails: {e}"
+                    f"Failed to parse yaml file for  ServerConfig: {e}"
                 ) from e
+            try:
+                self._agent_config = yaml_config["engine_config"]["agent"]
+            except Exception as e:
+                raise YAMLError(
+                    f"Failed to parse yaml file for Engine config: {e}"
+                ) from e
+            try:
+                guardrails = yaml_config.get("guardrails", "")
+                if not guardrails:
+                    self._guardrails = Guardrails(enabled=False)
+            except Exception as e:
+                raise YAMLError(f"Failed to parse yaml file for Guardrails: {e}") from e
+
+            return self
 
         except Exception as e:
             raise ValueError(f"Error occured while getting config from api: {e}") from e
@@ -151,7 +161,9 @@ class ConfigBuilder:
         langgraph_config = LangGraphAgentConfig.model_validate(agent_config_dict)
 
         # Create the agent config (store as strongly-typed model, not dict)
-        self._agent_config = AgentConfig(type=AgentFramework.LANGGRAPH, config=langgraph_config)
+        self._agent_config = AgentConfig(
+            type=AgentFramework.LANGGRAPH, config=langgraph_config
+        )
         return self
 
     # TODO: remove unused fns
@@ -174,12 +186,14 @@ class ConfigBuilder:
         """
         if agent_type == AgentFramework.LANGGRAPH:
             self._agent_config = AgentConfig(
-                type=AgentFramework.LANGGRAPH, config=LangGraphAgentConfig.model_validate(config)
+                type=AgentFramework.LANGGRAPH,
+                config=LangGraphAgentConfig.model_validate(config),
             )
 
         elif agent_type == AgentFramework.HAYSTACK:
             self._agent_config = AgentConfig(
-                type=AgentFramework.HAYSTACK, config=HaystackAgentConfig.model_validate(config)
+                type=AgentFramework.HAYSTACK,
+                config=HaystackAgentConfig.model_validate(config),
             )
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
@@ -276,7 +290,9 @@ class ConfigBuilder:
             import os
 
             try:
-                translation_config = TranslationAgentConfig.model_validate(agent_config_obj)
+                translation_config = TranslationAgentConfig.model_validate(
+                    agent_config_obj
+                )
             except Exception as e:
                 raise ValueError(
                     f"Cannot validate into a TranslationAgentConfig model. Got {agent_config_obj}"
@@ -304,7 +320,9 @@ class ConfigBuilder:
             import os
 
             try:
-                correction_config = CorrectionAgentConfig.model_validate(agent_config_obj)
+                correction_config = CorrectionAgentConfig.model_validate(
+                    agent_config_obj
+                )
             except Exception as e:
                 raise ValueError(
                     f"Cannot validate into a CorrectionAgentConfig model. Got {agent_config_obj}"
@@ -320,6 +338,34 @@ class ConfigBuilder:
                 output_schema_definition=correction_config.output_schema_definition,
                 observability=correction_config.observability,
                 checkpointer=correction_config.checkpointer,
+            )
+            agent_instance = LanggraphAgent()
+
+        elif agent_type == AgentFramework.DEEP_RESEARCH_AGENT:
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
+            import os
+
+            try:
+                deep_research_config = DeepResearchAgentConfig.model_validate(
+                    agent_config_obj
+                )
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot validate into a DeepResearchAgentConfig model. Got {agent_config_obj}"
+                ) from e
+
+            os.environ["DEEP_RESEARCH_MODEL"] = deep_research_config.model_name
+            os.environ["DEEP_RESEARCH_PROMPT"] = deep_research_config.prompt
+            os.environ["TAVILY_API_KEY"] = deep_research_config.tavily_api_key
+
+            validated_config = LangGraphAgentConfig(
+                name=deep_research_config.name,
+                graph_definition="idun_agent_engine.templates.deep_research:graph",
+                input_schema_definition=deep_research_config.input_schema_definition,
+                output_schema_definition=deep_research_config.output_schema_definition,
+                observability=deep_research_config.observability,
+                checkpointer=deep_research_config.checkpointer,
             )
             agent_instance = LanggraphAgent()
 
@@ -339,10 +385,8 @@ class ConfigBuilder:
 
             try:
                 validated_config = AdkAgentConfig.model_validate(agent_config_obj)
-
             except Exception as e:
                 raise ValueError(f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}") from e
-            agent_instance = AdkAgent()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
@@ -363,7 +407,12 @@ class ConfigBuilder:
         Raises:
             ValueError: If agent type is unsupported
         """
-        if agent_type == "langgraph" or agent_type == AgentFramework.TRANSLATION_AGENT or agent_type == AgentFramework.CORRECTION_AGENT:
+        if (
+            agent_type == "langgraph"
+            or agent_type == AgentFramework.TRANSLATION_AGENT
+            or agent_type == AgentFramework.CORRECTION_AGENT
+            or agent_type == AgentFramework.DEEP_RESEARCH_AGENT
+        ):
             from ..agent.langgraph.langgraph import LanggraphAgent
 
             return LanggraphAgent
@@ -399,6 +448,11 @@ class ConfigBuilder:
             from idun_agent_schema.engine.templates import CorrectionAgentConfig
 
             validated_config = CorrectionAgentConfig.model_validate(config)
+            return validated_config.model_dump()
+        elif agent_type == AgentFramework.DEEP_RESEARCH_AGENT:
+            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
+
+            validated_config = DeepResearchAgentConfig.model_validate(config)
             return validated_config.model_dump()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")

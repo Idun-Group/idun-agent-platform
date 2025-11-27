@@ -36,7 +36,11 @@ else:
 async def correct_text(state: State):
     """Correct the spelling, syntax, and grammar of the text."""
     if not llm:
-        return {"messages": [SystemMessage(content="Error: Model not initialized. Check logs.")]}
+        return {
+            "messages": [
+                SystemMessage(content="Error: Model not initialized. Check logs.")
+            ]
+        }
 
     prompt = (
         f"You are a professional text corrector for {LANGUAGE}. "
@@ -56,3 +60,4 @@ workflow.add_edge(START, "correct")
 workflow.add_edge("correct", END)
 
 graph = workflow.compile()
+

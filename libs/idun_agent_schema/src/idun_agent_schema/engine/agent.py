@@ -17,7 +17,13 @@ class AgentConfig(BaseModel):
     """Configuration for agent specification and settings."""
 
     type: AgentFramework
-    config: BaseAgentConfig | LangGraphAgentConfig | HaystackAgentConfig | AdkAgentConfig | TranslationAgentConfig
+    config: (
+        BaseAgentConfig
+        | LangGraphAgentConfig
+        | HaystackAgentConfig
+        | AdkAgentConfig
+        | TranslationAgentConfig
+    )
 
     @model_validator(mode="after")
     def _validate_framework_config(self) -> "AgentConfig":
