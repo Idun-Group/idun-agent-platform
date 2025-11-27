@@ -15,9 +15,9 @@ from idun_agent_schema.engine.langgraph import (
     LangGraphAgentConfig,
     SqliteCheckpointConfig,
 )
-
+from idun_agent_schema.engine.adk import AdkAgentConfig
 from idun_agent_engine.server.server_config import ServerAPIConfig
-from yaml import YAMLError
+from yaml.serializer import YAMLError
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
@@ -111,7 +111,7 @@ class ConfigBuilder:
                 self._agent_config = yaml_config["engine_config"]["agent"]
             except Exception as e:
                 raise YAMLError(
-                    f"Failed to parse yaml file for AgentConfig: {e}"
+                    f"Failed to parse yaml file for Engine config: {e}"
                 ) from e
             try:
                 guardrails = yaml_config.get("guardrails", "")
@@ -380,6 +380,13 @@ class ConfigBuilder:
                     f"Cannot validate into a HaystackAgentConfig model. Got {agent_config_obj}"
                 ) from e
             agent_instance = HaystackAgent()
+        elif agent_type == AgentFramework.ADK:
+            from idun_agent_engine.agent.adk.adk import AdkAgent
+
+            try:
+                validated_config = AdkAgentConfig.model_validate(agent_config_obj)
+            except Exception as e:
+                raise ValueError(f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}") from e
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 

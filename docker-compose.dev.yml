@@ -30,6 +30,8 @@ services:
       - idun_dev_network
 
   manager:
+    stdin_open: true
+    tty: true
     build:
       context: ./services/idun_agent_manager
       dockerfile: Dockerfile.dev
