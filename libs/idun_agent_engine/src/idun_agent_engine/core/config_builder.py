@@ -17,7 +17,7 @@ from idun_agent_schema.engine.langgraph import (
 )
 from idun_agent_schema.engine.adk import AdkAgentConfig
 from idun_agent_engine.server.server_config import ServerAPIConfig
-from yaml import YAMLError
+from yaml.serializer import YAMLError
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
