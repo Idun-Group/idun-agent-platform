@@ -3,7 +3,7 @@
 
 services:
   db:
-    image: postgres:16
+    image: postgres:15
     container_name: idun-db-dev
     environment:
       POSTGRES_USER: postgres
@@ -21,20 +21,25 @@ services:
     networks:
       - idun_dev_network
 
+  redis:
+    image: redis:7-alpine
+    container_name: idun-redis-dev
+    ports:
+      - "6379:6379"
+    networks:
+      - idun_dev_network
+
   manager:
     build:
       context: ./services/idun_agent_manager
       dockerfile: Dockerfile.dev
     container_name: idun-manager-dev
+    env_file:
+      - .env
     environment:
       # Database connection (use internal port 5432)
       DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
       DATABASEAUTO_MIGRATE: true
-      AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
-      ENVIRONMENT: development
-      # Optional: Add other env vars as needed
-      # LANGFUSE_HOST: ${LANGFUSE_HOST}
-      DEBUG: true
     volumes:
       # Mount manager source for hot reload
       - ./services/idun_agent_manager/src:/app/src
@@ -44,10 +49,12 @@ services:
       # Mount schema source for hot reload (entire package root)
       - ./libs/idun_agent_schema:/schema
     ports:
-      - "8000:8000"
+      - "8080:8000"
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - idun_dev_network
 

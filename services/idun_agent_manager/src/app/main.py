@@ -34,7 +34,9 @@ async def lifespan(app: FastAPI):
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         elapsed_ms = (perf_counter() - start_time) * 1000
-        logger.info("Database connectivity OK", extra={"db_check_ms": round(elapsed_ms, 2)})
+        logger.info(
+            "Database connectivity OK", extra={"db_check_ms": round(elapsed_ms, 2)}
+        )
     except Exception:
         logger.exception("Database connectivity check failed")
         # Re-raise so the app fails fast if DB is not reachable
@@ -45,7 +47,12 @@ async def lifespan(app: FastAPI):
         logger.info("Starting Alembic migrations")
         settings = get_settings()
         project_root = Path(__file__).resolve().parents[2]
-        await auto_migrate(engine, async_db_url=settings.database.url, project_root=project_root, enable_migrate=True)
+        await auto_migrate(
+            engine,
+            async_db_url=settings.database.url,
+            project_root=project_root,
+            enable_migrate=True,
+        )
         logger.info("Alembic migrations completed")
     except Exception:
         logger.exception("Alembic migrations failed")
@@ -69,7 +76,6 @@ def create_app() -> FastAPI:
     # Import all DB models early so SQLAlchemy resolves relationships
     import app.infrastructure.db.models  # noqa: F401
 
-
     # Create FastAPI app
     app = FastAPI(
         title="Idun Agent Manager API",
@@ -84,7 +90,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_allow_origins,
+        allow_origins=[],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -105,8 +111,15 @@ def setup_routes(app: FastAPI) -> None:
     from app.api.v1.routers.memory import router as memory_router
     from app.api.v1.routers.agent_frameworks import router as agent_frameworks_router
     from app.api.v1.routers.guardrails import router as guardrails_router
+    from app.api.v1.routers.auth import router as auth_router
 
     # API v1 routes
+
+    app.include_router(
+        auth_router,
+        prefix="/api/v1/auth",
+        tags=["Auth"],
+    )
     app.include_router(
         agents_router,
         prefix="/api/v1/agents",
