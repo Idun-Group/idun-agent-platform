@@ -6,7 +6,7 @@ description = "Modern FastAPI backend for managing AI agents with PostgreSQL, SQ
 readme = "README.md"
 license = { text = "MIT" }
 authors = [ { name = "Idun Group", email = "contact@idun-group.com" } ]
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.10,<3.14"
 
 dependencies = [
   # Core web framework
@@ -48,6 +48,7 @@ dependencies = [
   # Idun schemas
   "idun-agent-schema>=0.2.0,<0.3.0",
 ]
+
 
 ## uv configuration
 [tool.uv]

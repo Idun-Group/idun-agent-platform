@@ -3,7 +3,7 @@ name = "idun-agent-engine"
 version = "0.2.7"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.11,<3.14"
 readme = "README.md"
 license = "MIT"
 keywords = [
@@ -24,9 +24,15 @@ classifiers = [
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries",
     "Typing :: Typed",
+
+
+
 ]
+
 dependencies = [
-    # "guardrails-ai>=0.6.6, <0.7", # TODO: Uncomment this when guardrails-ai is compatible with langchain-core>=1.0.0
+    "tavily-python>=0.7.9,<0.8.0",
+    "deepagents>=0.2.8,<0.3.0",
+    "guardrails-ai>=0.7.0, <0.8.0",
     "fastapi>=0.115.0,<0.116.0",
     "uvicorn>=0.35.0,<0.36.0",
     "langgraph>=1.0.0,<2.0.0",
@@ -37,7 +43,7 @@ dependencies = [
     "pydantic>=2.11.7,<3.0.0",
     "langchain-core>=1.0.0,<2.0.0",
     "langchain-google-vertexai>=2.0.27,<4.0.0",
-    "google-adk>=1.9.0,<2.0.0",
+    "google-adk>=1.19.0,<2.0.0",
     "ag-ui-protocol>=0.1.8,<0.2.0",
     "aiosqlite>=0.21.0,<0.22.0",
     "langfuse==2.60.8",
@@ -49,13 +55,12 @@ dependencies = [
     "idun-agent-schema>=0.2.7,<0.3.0",
     "langfuse-haystack>=2.3.0",
     "python-dotenv>=1.1.1",
-    "click>=8.2.1",
+    "click>=8.2.0",
     # Pin SQLAlchemy for Python 3.13 compatibility (required by Phoenix)
     "sqlalchemy>=2.0.36,<3.0.0",
     "ag-ui-langgraph>=0.0.20,<0.1.0",
     "copilotkit>=0.1.72,<0.2.0",
     "langchain-mcp-adapters>=0.1.0,<0.2.0",
-    "google-adk>=1.19.0,<2.0.0",
     "ag-ui-adk>=0.3.4,<0.4.0",
 ]
 

@@ -30,15 +30,10 @@ def _run_guardrails(
     guardrails: list[Guardrail], message: dict[str, str] | str, position: str
 ) -> None:
     """Validates the request's message, by running it on given guardrails. If input is a dict -> input, else its an output guardrails."""
+    text = message["query"] if isinstance(message, dict) else message
     for guard in guardrails:
-        if guard.position == position:
-            if not guard.validate(
-                message["query"] if isinstance(message, dict) else message
-            ):
-                raise HTTPException(status_code=429, detail=guard.reject_message)
-        else:
-            pass
-    return
+        if guard.position == position and not guard.validate(text):
+            raise HTTPException(status_code=429, detail=guard.reject_message)
 
 
 @agent_router.get("/config")
@@ -85,6 +80,7 @@ async def stream(
 ):
     """Process a message with the agent, streaming ag-ui events."""
     try:
+
         async def event_stream():
             message = {"query": request.query, "session_id": request.session_id}
             async for event in agent.stream(message):
@@ -94,11 +90,14 @@ async def stream(
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
 
+
 @agent_router.post("/copilotkit/stream")
 async def copilotkit_stream(
     input_data: RunAgentInput,
     request: Request,
-    copilotkit_agent: Annotated[LangGraphAGUIAgent | ADKAGUIAgent, Depends(get_copilotkit_agent)],
+    copilotkit_agent: Annotated[
+        LangGraphAGUIAgent | ADKAGUIAgent, Depends(get_copilotkit_agent)
+    ],
 ):
     """Process a message with the agent, streaming ag-ui events."""
     if isinstance(copilotkit_agent, LangGraphAGUIAgent):
@@ -107,7 +106,7 @@ async def copilotkit_stream(
             accept_header = request.headers.get("accept")
 
             # Create an event encoder to properly format SSE events
-            encoder = EventEncoder(accept=accept_header or "") # type: ignore[arg-type]
+            encoder = EventEncoder(accept=accept_header or "")  # type: ignore[arg-type]
 
             async def event_generator():
                 async for event in copilotkit_agent.run(input_data):
@@ -115,7 +114,7 @@ async def copilotkit_stream(
 
             return StreamingResponse(
                 event_generator(),  # type: ignore[arg-type]
-                media_type=encoder.get_content_type()
+                media_type=encoder.get_content_type(),
             )
         except Exception as e:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=str(e)) from e
@@ -123,8 +122,7 @@ async def copilotkit_stream(
         try:
             # Get the accept header from the request
             accept_header = request.headers.get("accept")
-            agent_id = request.url.path.lstrip('/')
-
+            agent_id = request.url.path.lstrip("/")
 
             # Create an event encoder to properly format SSE events
             encoder = EventEncoder(accept=accept_header)
@@ -139,21 +137,27 @@ async def copilotkit_stream(
                             yield encoded
                         except Exception as encoding_error:
                             # Handle encoding-specific errors
-                            logger.error(f"❌ Event encoding error: {encoding_error}", exc_info=True)
+                            logger.error(
+                                f"❌ Event encoding error: {encoding_error}",
+                                exc_info=True,
+                            )
                             # Create a RunErrorEvent for encoding failures
                             from ag_ui.core import RunErrorEvent, EventType
+
                             error_event = RunErrorEvent(
                                 type=EventType.RUN_ERROR,
                                 message=f"Event encoding failed: {str(encoding_error)}",
-                                code="ENCODING_ERROR"
+                                code="ENCODING_ERROR",
                             )
                             try:
                                 error_encoded = encoder.encode(error_event)
                                 yield error_encoded
                             except Exception:
                                 # If we can't even encode the error event, yield a basic SSE error
-                                logger.error("Failed to encode error event, yielding basic SSE error")
-                                yield "event: error\ndata: {\"error\": \"Event encoding failed\"}\n\n"
+                                logger.error(
+                                    "Failed to encode error event, yielding basic SSE error"
+                                )
+                                yield 'event: error\ndata: {"error": "Event encoding failed"}\n\n'
                             break  # Stop the stream after an encoding error
                 except Exception as agent_error:
                     # Handle errors from ADKAgent.run() itself
@@ -162,19 +166,24 @@ async def copilotkit_stream(
                     # in the async generator itself, we need to handle it
                     try:
                         from ag_ui.core import RunErrorEvent, EventType
+
                         error_event = RunErrorEvent(
                             type=EventType.RUN_ERROR,
                             message=f"Agent execution failed: {str(agent_error)}",
-                            code="AGENT_ERROR"
+                            code="AGENT_ERROR",
                         )
                         error_encoded = encoder.encode(error_event)
                         yield error_encoded
                     except Exception:
                         # If we can't encode the error event, yield a basic SSE error
-                        logger.error("Failed to encode agent error event, yielding basic SSE error")
-                        yield "event: error\ndata: {\"error\": \"Agent execution failed\"}\n\n"
+                        logger.error(
+                            "Failed to encode agent error event, yielding basic SSE error"
+                        )
+                        yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
 
-            return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
+            return StreamingResponse(
+                event_generator(), media_type=encoder.get_content_type()
+            )
         except Exception as e:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=str(e)) from e
     else:
