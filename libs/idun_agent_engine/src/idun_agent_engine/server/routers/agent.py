@@ -60,7 +60,7 @@ async def invoke(
     """Process a chat message with the agent without streaming."""
     try:
         message = {"query": chat_request.query, "session_id": chat_request.session_id}
-        guardrails = getattr(request.app.state, "guardrails", [])
+        guardrails = getattr(request.app.state, 'guardrails', [])
         if guardrails:
             _run_guardrails(guardrails, message, position="input")
         response_content = await agent.invoke(
