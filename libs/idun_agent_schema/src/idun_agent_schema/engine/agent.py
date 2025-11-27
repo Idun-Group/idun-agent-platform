@@ -8,9 +8,9 @@ from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.langgraph import LangGraphAgentConfig
 from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_schema.engine.base_agent import BaseAgentConfig
-from idun_agent_schema.engine.templates import TranslationAgentConfig
 from idun_agent_schema.engine.adk import AdkAgentConfig
 from pydantic import model_validator
+from idun_agent_schema.engine.templates import TranslationAgentConfig, CorrectionAgentConfig, DeepResearchAgentConfig
 
 
 class AgentConfig(BaseModel):
@@ -23,8 +23,9 @@ class AgentConfig(BaseModel):
         | HaystackAgentConfig
         | AdkAgentConfig
         | TranslationAgentConfig
+        | CorrectionAgentConfig
+        | DeepResearchAgentConfig
     )
-
     @model_validator(mode="after")
     def _validate_framework_config(self) -> "AgentConfig":
         """Ensure the `config` type matches the selected framework.
@@ -33,7 +34,9 @@ class AgentConfig(BaseModel):
         - HAYSTACK   -> HaystackAgentConfig
         - ADK        -> AdkAgentConfig
         - TRANSLATION_AGENT -> TranslationAgentConfig
-        - CREWAI/CUSTOM -> BaseAgentConfig (or subclass)
+        - CORRECTION_AGENT -> CorrectionAgentConfig
+        - DEEP_RESEARCH_AGENT -> DeepResearchAgentConfig
+        - ADK/CREWAI/CUSTOM -> BaseAgentConfig (or subclass)
         """
         expected_type: type[BaseAgentConfig] | None = None
 
@@ -45,7 +48,11 @@ class AgentConfig(BaseModel):
             expected_type = TranslationAgentConfig
         elif self.type == AgentFramework.ADK:
             expected_type = AdkAgentConfig
-        elif self.type in {AgentFramework.CREWAI, AgentFramework.CUSTOM}:
+        elif self.type == AgentFramework.CORRECTION_AGENT:
+            expected_type = CorrectionAgentConfig
+        elif self.type == AgentFramework.DEEP_RESEARCH_AGENT:
+            expected_type = DeepResearchAgentConfig
+        elif self.type in {AgentFramework.ADK, AgentFramework.CREWAI, AgentFramework.CUSTOM}:
             expected_type = BaseAgentConfig
 
         if expected_type is not None and not isinstance(self.config, expected_type):
