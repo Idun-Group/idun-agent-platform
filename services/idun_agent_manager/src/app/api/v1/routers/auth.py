@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.core.settings import get_settings
 from app.infrastructure.auth.oidc import get_provider
-from app.infrastructure.cache.redis_client import get_redis_client
+from app.infrastructure.cache.session_provider import get_session_storage
 
 router = APIRouter()
 
@@ -153,9 +153,8 @@ async def callback(request: Request) -> Response:
     except Exception:
         # If verification fails here, we still create session; API will refresh/verify later
         pass
-    redis = get_redis_client()
-    client = await redis.get_client()
-    await client.set(f"sid:{sid}", json.dumps(data), ex=max(effective_expires, 60))
+    storage = get_session_storage()
+    await storage.set(f"sid:{sid}", json.dumps(data), max(effective_expires, 60))
 
     resp = RedirectResponse(url="/")
     resp.set_cookie(
@@ -179,8 +178,8 @@ async def me(request: Request) -> JSONResponse:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
         )
-    redis = get_redis_client()
-    raw = await redis.get(f"sid:{sid}")
+    storage = get_session_storage()
+    raw = await storage.get(f"sid:{sid}")
     if not raw:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired"

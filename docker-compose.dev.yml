@@ -21,14 +21,6 @@ services:
     networks:
       - idun_dev_network
 
-  redis:
-    image: redis:7-alpine
-    container_name: idun-redis-dev
-    ports:
-      - "6379:6379"
-    networks:
-      - idun_dev_network
-
   manager:
     stdin_open: true
     tty: true
@@ -55,8 +47,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_started
     networks:
       - idun_dev_network
 

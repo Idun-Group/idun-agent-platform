@@ -144,6 +144,7 @@ class Settings(BaseSettings):
     workers: int = Field(default=1)
     reload: bool = Field(default=False)
     is_development: bool = Field(default=True)
+    cors_allow_origins: list[str] = Field(default_factory=list)
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)

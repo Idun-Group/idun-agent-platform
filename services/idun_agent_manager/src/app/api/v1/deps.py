@@ -64,10 +64,10 @@ async def get_principal(request: Request) -> Principal:
         import time
 
         from app.infrastructure.auth.oidc import get_provider
-        from app.infrastructure.cache.redis_client import get_redis_client
+        from app.infrastructure.cache.session_provider import get_session_storage
 
-        redis = get_redis_client()
-        raw = await redis.get(f"sid:{sid}")
+        storage = get_session_storage()
+        raw = await storage.get(f"sid:{sid}")
         if not raw:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired"
@@ -119,8 +119,8 @@ async def get_principal(request: Request) -> Principal:
                             "expires_at": int(time.time()) + expires_in,
                         }
                     )
-                    await redis.set(
-                        f"sid:{sid}", json.dumps(data), ex=max(expires_in, 3600)
+                    await storage.set(
+                        f"sid:{sid}", json.dumps(data), max(expires_in, 3600)
                     )
             except Exception as err:
                 raise HTTPException(
