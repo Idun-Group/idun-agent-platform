@@ -1980,9 +1980,8 @@ requires-dist = [
     { name = "arize-phoenix-otel", specifier = ">=0.2.0,<1.0.0" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "copilotkit", specifier = ">=0.1.72,<0.2.0" },
-    { name = "deepagents", specifier = "==0.2.8" },
+    { name = "deepagents", specifier = ">=0.2.8,<0.3.0" },
     { name = "fastapi", specifier = ">=0.115.0,<0.116.0" },
-    { name = "google-adk", specifier = ">=1.9.0,<2.0.0" },
     { name = "google-adk", specifier = ">=1.19.0,<2.0.0" },
     { name = "guardrails-ai", specifier = ">=0.7.0,<0.8.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
@@ -2001,8 +2000,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "sqlalchemy", specifier = ">=2.0.36,<3.0.0" },
     { name = "streamlit", specifier = ">=1.47.1,<2.0.0" },
-    { name = "tavily-python", specifier = "==0.7.13" },
-    { name = "tavily-python", specifier = ">0.7.9,<=0.7.13" },
+    { name = "tavily-python", specifier = ">=0.7.9,<0.8.0" },
     { name = "uvicorn", specifier = ">=0.35.0,<0.36.0" },
 ]
 
