@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from idun_agent_schema.manager.settings import Settings  # noqa: F401
+from src.app.infrastructure.db.models.settings import Settings
 
 
 @lru_cache

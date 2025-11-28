@@ -1,8 +1,8 @@
 """Application settings schemas using Pydantic Settings v2."""
 
-
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Literal
 
 
 class DatabaseSettings(BaseSettings):
@@ -17,6 +17,81 @@ class DatabaseSettings(BaseSettings):
     pool_pre_ping: bool = Field(default=True)
 
     model_config = SettingsConfigDict(env_prefix="DATABASE__", env_file=".env")
+
+
+class AuthSettings(BaseSettings):
+    """Authentication and OIDC-related configuration."""
+
+    provider_type: Literal["okta", "auth0", "entra", "google"] = Field(default="auth0")
+    issuer: str = Field(default="")
+    client_id: str = Field(default="")
+    client_secret: str = Field(default="")
+    audience: str | None = Field(default=None)
+    redirect_uri: str | None = Field(default=None)
+    scopes: list[str] = Field(default_factory=lambda: ["openid", "profile", "email"])
+
+    allowed_algs: list[str] = Field(default_factory=lambda: ["RS256", "RS512", "ES256"])
+    jwks_cache_ttl: int = Field(default=300)
+    clock_skew_seconds: int = Field(default=60)
+    expected_audiences: list[str] = Field(default_factory=list)
+
+    claim_user_id_path: list[str] | None = Field(default=None)
+    claim_email_path: list[str] | None = Field(default=None)
+    claim_roles_paths: list[list[str]] | None = Field(default=None)
+    claim_groups_paths: list[list[str]] | None = Field(default=None)
+    claim_workspace_ids_paths: list[list[str]] | None = Field(default=None)
+
+    @field_validator("claim_user_id_path", "claim_email_path", mode="before")
+    @classmethod
+    def _string_to_list(cls, v):
+        if isinstance(v, str) and v.strip().startswith("#"):
+            return None
+        return v
+
+    @field_validator(
+        "claim_roles_paths",
+        "claim_groups_paths",
+        "claim_workspace_ids_paths",
+        mode="before",
+    )
+    @classmethod
+    def _string_to_list_of_lists(cls, v):
+        if isinstance(v, str) and v.strip().startswith("#"):
+            return None
+        return v
+
+    model_config = SettingsConfigDict(env_prefix="AUTH_", extra="ignore")
+
+    @field_validator("issuer")
+    @classmethod
+    def validate_issuer(cls, v: str) -> str:
+        """Validate that issuer is either empty or a URL."""
+        if not v:
+            return v
+        if not v.startswith("http"):
+            raise ValueError("issuer must be a URL")
+        return v
+
+
+class APISettings(BaseSettings):
+    """API metadata, CORS, and rate limiting settings."""
+
+    title: str = Field(default="Idun Agent Manager API")
+    description: str = Field(default="Modern FastAPI backend for managing AI agents")
+    version: str = Field(default="0.1.0")
+    docs_url: str = Field(default="/docs")
+    redoc_url: str = Field(default="/redoc")
+    openapi_url: str = Field(default="/openapi.json")
+    cors_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8080"]
+    )
+    cors_methods: list[str] = Field(default=["*"])
+    cors_headers: list[str] = Field(default=["*"])
+    rate_limit_enabled: bool = Field(default=True)
+    rate_limit_requests: int = Field(default=100)
+    rate_limit_window: int = Field(default=60)
+
+    model_config = SettingsConfigDict(env_prefix="API_", extra="ignore")
 
 
 class Settings(BaseSettings):
@@ -51,7 +126,8 @@ class Settings(BaseSettings):
     )
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
-
+    auth: AuthSettings = Field(default_factory=AuthSettings)
+    api: APISettings = Field(default_factory=APISettings)
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
