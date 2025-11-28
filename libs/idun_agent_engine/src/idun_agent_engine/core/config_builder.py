@@ -268,6 +268,7 @@ class ConfigBuilder:
         """
         agent_config_obj = engine_config.agent.config
         agent_type = engine_config.agent.type
+        observability_config = engine_config.observability
 
         # Initialize the appropriate agent
         agent_instance = None
@@ -385,20 +386,14 @@ class ConfigBuilder:
 
             try:
                 validated_config = AdkAgentConfig.model_validate(agent_config_obj)
-<<<<<<< HEAD
-            except Exception as e:
-                raise ValueError(f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}") from e
-=======
-
             except Exception as e:
                 raise ValueError(f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}") from e
             agent_instance = AdkAgent()
->>>>>>> 66d7a3c (add adk agent schema, remove guardrails dependencie to to langchain-c… (#102))
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration
-        await agent_instance.initialize(validated_config)  # type: ignore[arg-type]
+        await agent_instance.initialize(validated_config, observability_config)  # type: ignore[arg-type]
         return agent_instance
 
     @staticmethod

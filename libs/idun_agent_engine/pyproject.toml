@@ -46,7 +46,7 @@ dependencies = [
     "google-adk>=1.19.0,<2.0.0",
     "ag-ui-protocol>=0.1.8,<0.2.0",
     "aiosqlite>=0.21.0,<0.22.0",
-    "langfuse==2.60.8",
+    "langfuse>=2.60.8,<4.0.0",
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
     "langchain>=1.0.0,<2.0.0",
