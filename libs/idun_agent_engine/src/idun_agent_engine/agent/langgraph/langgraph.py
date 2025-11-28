@@ -134,7 +134,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         # Observability (provider-agnostic)
         if observability_config:
             handlers, infos = observability.create_observability_handlers(
-                observability_config
+                observability_config # type: ignore[arg-type]
             )
             self._obs_callbacks = []
             for handler in handlers:
@@ -329,7 +329,7 @@ class LanggraphAgent(agent_base.BaseAgent):
             raise TypeError(
                 f"The variable '{graph_variable_name}' from {module_path} is not a StateGraph instance."
             )
-        return graph_builder
+        return graph_builder # type: ignore[return-value]
 
     async def invoke(self, message: Any) -> Any:
         """Process a single input to chat with the agent.

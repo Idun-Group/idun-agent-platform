@@ -27,6 +27,6 @@ observability:
     enabled: true
     config:
       host: "https://cloud.langfuse.com"
-      public_key: "pk-lf-1bb4a653-c614-44db-8ace-41550f429a64"
-      secret_key: "sk-lf-d983ac37-13fc-45d8-a4ed-4194f2ce29ab"
+      public_key: "pk-FAKE"
+      secret_key: "sk-FAKE"
       run_name: "idun-langgraph-run"
