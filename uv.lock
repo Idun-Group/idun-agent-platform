@@ -2018,7 +2018,7 @@ dev = [
 
 [[package]]
 name = "idun-agent-manager"
-version = "0.2.7"
+version = "0.2.6"
 source = { editable = "services/idun_agent_manager" }
 dependencies = [
     { name = "alembic" },

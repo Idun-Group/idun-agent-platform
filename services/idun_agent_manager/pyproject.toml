@@ -10,7 +10,7 @@ requires-python = ">=3.12,<3.14"
 
 dependencies = [
   # Core web framework
-  "fastapi>=0.116.1,<0.117.0",
+  "fastapi>=0.115.0,<0.116.0",
   "uvicorn[standard]>=0.35.0,<0.36.0",
   "gunicorn>=23.0.0,<24.0.0",
 
