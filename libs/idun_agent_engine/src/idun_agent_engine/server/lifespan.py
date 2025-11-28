@@ -41,9 +41,8 @@ async def cleanup_agent(app: FastAPI):
                 await result
 
 
-async def configure_app(app: FastAPI, engine_config):
-    """Initialize the agent and other components."""
-    guardrails_obj = engine_config.guardrails
+    engine_config = app.state.engine_config
+    guardrails_obj = app.state.engine_config.guardrails
     guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
 
     print("guardrails: ", guardrails)

@@ -210,6 +210,12 @@ class LanggraphAgent(agent_base.BaseAgent):
             config={"callbacks": self._obs_callbacks} if self._obs_callbacks else None,
         )
 
+        self._copilotkit_agent_instance = LangGraphAGUIAgent(
+            name=self._name,
+            description="Agent description", # TODO: add agent description
+            graph=self._agent_instance,
+        )
+
         if self._agent_instance:
             try:
                 self._input_schema = self._agent_instance.input_schema

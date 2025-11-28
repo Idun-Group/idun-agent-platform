@@ -240,10 +240,30 @@ const mapConfigToApi = (type: AppType, config: any, name?: string): any => {
             topics: config.valid_topics ? config.valid_topics.split('\n').filter((s: string) => s.trim()) : []
         };
     }
-    // Note: Secrets, ValidSQL, ValidPython, WebSanitization are missing in current schema or mapped differently.
-    // We will skip API mapping for them and let them fall back to local storage or throw error?
-    // The create function checks category. If category is Guardrails, we try to use API.
-    // If we return 'config' as is, it won't match API schema.
+    if (type === 'PromptInjection') {
+        return {
+            config_id: 'prompt_injection',
+            threshold: Number(config.threshold)
+        };
+    }
+    if (type === 'RagHallucination') {
+        return {
+            config_id: 'rag_hallucination',
+            threshold: Number(config.threshold)
+        };
+    }
+    if (type === 'ToxicLanguage') {
+        return {
+            config_id: 'toxic_language',
+            threshold: Number(config.threshold)
+        };
+    }
+    if (type === 'CodeScanner') {
+        return {
+            config_id: 'code_scanner',
+            allowed_languages: config.allowed_languages ? config.allowed_languages.split('\n').filter((s: string) => s.trim()) : []
+        };
+    }
     
     return config;
 };
@@ -425,12 +445,21 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
                     type = 'RestrictTopic';
                     config = { valid_topics: ((activeConfig as any).topics || []).join('\n') };
                     break;
-                case 'toxic_language': // Added if available
-                    type = 'ToxicLanguage' as any; // Cast if not in AppType yet, but let's stick to AppType
+                case 'prompt_injection':
+                    type = 'PromptInjection';
+                    config = { threshold: (activeConfig as any).threshold };
+                    break;
+                case 'rag_hallucination':
+                    type = 'RagHallucination';
+                    config = { threshold: (activeConfig as any).threshold };
+                    break;
+                case 'toxic_language':
+                    type = 'ToxicLanguage';
                     config = { threshold: (activeConfig as any).threshold };
                     break;
                 case 'code_scanner':
-                     // Maybe map to ValidPython? Or just ignore if not in AppType
+                     type = 'CodeScanner';
+                     config = { allowed_languages: ((activeConfig as any).allowed_languages || []).join('\n') };
                      break;
             }
         }
@@ -460,36 +489,7 @@ const mapTypeToProvider = (type: AppType): components["schemas"]["ObservabilityP
     }
 };
 
-const MOCK_APPS: ApplicationConfig[] = [
-    {
-        id: '1',
-        name: 'My Langfuse',
-        type: 'Langfuse',
-        category: 'Observability',
-        owner: 'admin',
-        createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-        updatedAt: new Date(Date.now() - 86400000).toISOString(),
-        config: {
-            publicKey: 'pk-lf-123456',
-            secretKey: 'sk-lf-123456',
-            host: 'https://cloud.langfuse.com'
-        },
-        imageUrl: '/img/langfuse-logo.png'
-    },
-    {
-        id: '2',
-        name: 'Prod DB',
-        type: 'PostgreSQL',
-        category: 'Memory',
-        owner: 'admin',
-        createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
-        updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-        config: {
-            connectionString: 'postgresql://user:pass@localhost:5432/db'
-        },
-        imageUrl: '/img/postgresql-logo.png'
-    }
-];
+const MOCK_APPS: ApplicationConfig[] = [];
 
 export const MARKETPLACE_APPS: MarketplaceApp[] = [
     {
@@ -664,45 +664,44 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         by: 'Idun'
     },
     {
-        id: 'secrets',
-        name: 'Secrets',
-        type: 'Secrets',
+        id: 'prompt-injection',
+        name: 'Prompt Injection',
+        type: 'PromptInjection',
         category: 'Guardrails',
-        description: 'Detects exposed secrets such as API keys and passwords.',
+        description: 'Detects prompt injection attempts.',
         imageUrl: '/img/agent-icon.svg',
         by: 'Idun'
     },
     {
-        id: 'valid-sql',
-        name: 'Valid SQL',
-        type: 'ValidSQL',
+        id: 'rag-hallucination',
+        name: 'RAG Hallucination',
+        type: 'RagHallucination',
         category: 'Guardrails',
-        description: 'Verifies that generated SQL code is syntactically correct and safe.',
+        description: 'Detects hallucinations in RAG outputs.',
         imageUrl: '/img/agent-icon.svg',
         by: 'Idun'
     },
     {
-        id: 'valid-python',
-        name: 'Valid Python',
-        type: 'ValidPython',
+        id: 'toxic-language',
+        name: 'Toxic Language',
+        type: 'ToxicLanguage',
         category: 'Guardrails',
-        description: 'Ensures generated Python code is syntactically valid.',
+        description: 'Detects toxic language.',
         imageUrl: '/img/agent-icon.svg',
         by: 'Idun'
     },
     {
-        id: 'web-sanitization',
-        name: 'Web Sanitization',
-        type: 'WebSanitization',
+        id: 'code-scanner',
+        name: 'Code Scanner',
+        type: 'CodeScanner',
         category: 'Guardrails',
-        description: 'Strips dangerous HTML tags to prevent XSS attacks.',
+        description: 'Scan code for allowed languages.',
         imageUrl: '/img/agent-icon.svg',
         by: 'Idun'
     }
 ];
 
 export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
-    // Fetch Observability from API
     let observabilityApps: ApplicationConfig[] = [];
     try {
         const apiApps = await getJson<components["schemas"]["ManagedObservabilityRead"][]>('/api/v1/observability/');
@@ -711,7 +710,6 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
         console.error("Failed to fetch observability apps", e);
     }
 
-    // Fetch Memory from API
     let memoryApps: ApplicationConfig[] = [];
     try {
         const apiApps = await getJson<components["schemas"]["ManagedMemoryRead"][]>('/api/v1/memory/');
@@ -720,7 +718,6 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
         console.error("Failed to fetch memory apps", e);
     }
 
-    // Fetch MCP Servers from API
     let mcpApps: ApplicationConfig[] = [];
     try {
         const apiApps = await getJson<components["schemas"]["ManagedMCPServerRead"][]>('/api/v1/mcp-servers/');
@@ -729,7 +726,6 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
         console.error("Failed to fetch MCP apps", e);
     }
 
-    // Fetch Guardrails from API
     let guardrailApps: ApplicationConfig[] = [];
     try {
         const apiApps = await getJson<components["schemas"]["ManagedGuardrailRead"][]>('/api/v1/guardrails/');
@@ -737,27 +733,8 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
     } catch (e) {
         console.error("Failed to fetch guardrail apps", e);
     }
-
-    // Simulate API delay for mock data
-    // await new Promise(resolve => setTimeout(resolve, 500));
     
-    const stored = localStorage.getItem('idun_applications');
-    let localApps: ApplicationConfig[] = stored ? JSON.parse(stored) : MOCK_APPS;
-
-    // Filter out Observability, Memory, MCP and known Guardrails from local apps to use API source of truth
-    localApps = localApps.filter(a => 
-        a.category !== 'Observability' && 
-        a.category !== 'Memory' && 
-        a.category !== 'MCP' &&
-        // Filter out Guardrails that are supported by API
-        !(a.category === 'Guardrails' && [
-            'ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck', 
-            'CompetitionCheck', 'CorrectLanguage', 'DetectPII', 
-            'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic'
-        ].includes(a.type))
-    );
-
-    return [...observabilityApps, ...memoryApps, ...mcpApps, ...guardrailApps, ...localApps];
+    return [...observabilityApps, ...memoryApps, ...mcpApps, ...guardrailApps];
 };
 
 export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'createdAt' | 'updatedAt' | 'owner'>): Promise<ApplicationConfig> => {
@@ -794,14 +771,13 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
     }
 
     if (app.category === 'Guardrails') {
-        // Only use API for supported types
         const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck', 
             'CompetitionCheck', 'CorrectLanguage', 'DetectPII', 
-            'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic'];
+            'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic',
+            'PromptInjection', 'RagHallucination', 'ToxicLanguage', 'CodeScanner'];
         
         if (supportedTypes.includes(app.type)) {
             const configPayload = mapConfigToApi(app.type, app.config, app.name);
-            // We put it in 'input' by default for now as it's the most common use case for these checks
             const payload: components["schemas"]["ManagedGuardrailCreate"] = {
                 name: app.name,
                 guardrail: {
@@ -813,49 +789,11 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
             return mapGuardrailToApp(res);
         }
     }
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const newApp: ApplicationConfig = {
-        ...app,
-        id: Math.random().toString(36).substr(2, 9),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        owner: 'Current User' // Mock owner
-    };
     
-    // For non-Observability apps, store in localStorage
-    const stored = localStorage.getItem('idun_applications');
-    const currentApps = stored ? JSON.parse(stored) : MOCK_APPS;
-    const updatedApps = [...currentApps, newApp];
-    localStorage.setItem('idun_applications', JSON.stringify(updatedApps));
-    return newApp;
+    throw new Error(`Application type ${app.type} is not supported by API yet.`);
 };
 
 export const updateApplication = async (id: string, updates: Partial<ApplicationConfig>): Promise<ApplicationConfig> => {
-    // We need to know the category. If it's Observability, use API.
-    // We might need to fetch it first or check if ID exists in API list, 
-    // but since we don't have category passed in args easily without fetching all...
-    // Actually, updates usually come from a context where we know the object. 
-    // But here we only have ID.
-    // Let's try to find it in local storage first? Or check if updates has category?
-    // A robust way is to try to patch to observability API and if 404, fall back? 
-    // Or better, fetchApplications() is cached? No.
-    
-    // Optimization: The UI usually passes the full object or we know what we are editing.
-    // But strictly based on this signature...
-    
-    // Let's guess based on ID format? No, UUID vs random string. API uses UUID usually? 
-    // But let's assume if it fails on API it might be local.
-    // However, "updates" might not contain "category".
-    
-    // Let's fetch all apps to find the category if not provided?
-    // That is expensive. 
-    // The caller usually knows.
-    
-    // Let's check if we can determine from the updates or ID.
-    // For now, let's try to update via API if it looks like an Observability app (we can fetch it by ID from API).
-    
-    // Optimization: If category is known, skip probing
     if (updates.category === 'Observability') {
         try {
             const apiApp = await getJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/observability/${id}`);
@@ -871,29 +809,25 @@ export const updateApplication = async (id: string, updates: Partial<Application
             const res = await patchJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/observability/${id}`, payload);
             return mapObservabilityToApp(res);
         } catch (e) {
-            console.error('Failed to update observability app', e);
+            console.warn(`Failed to update Observability app ${id} via API.`, e);
             throw e;
         }
-    }
-
-    if (updates.category === 'Memory') {
+    } else if (updates.category === 'Memory') {
         try {
             const apiMem = await getJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`);
             const type = updates.type || mapMemoryToApp(apiMem).type;
             const payload: components["schemas"]["ManagedMemoryPatch"] = {
                 name: updates.name || apiMem.name,
-                agent_framework: 'LANGGRAPH',
+                agent_framework: 'LANGGRAPH', // Default
                 memory: mapConfigToApi(type, updates.config || (type === 'PostgreSQL' || type === 'SQLite' ? { connectionString: (apiMem.memory as any).db_url } : {}))
             };
             const res = await patchJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`, payload);
             return mapMemoryToApp(res);
         } catch (e) {
-            console.error('Failed to update memory app', e);
+            console.warn(`Failed to update Memory app ${id} via API.`, e);
             throw e;
         }
-    }
-
-    if (updates.category === 'MCP') {
+    } else if (updates.category === 'MCP') {
         try {
             const apiMcp = await getJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/mcp-servers/${id}`);
             const type = 'MCPServer';
@@ -904,22 +838,20 @@ export const updateApplication = async (id: string, updates: Partial<Application
             const res = await patchJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/mcp-servers/${id}`, payload);
             return mapMCPServerToApp(res);
         } catch (e) {
-            console.error('Failed to update MCP app', e);
+            console.warn(`Failed to update MCP app ${id} via API.`, e);
             throw e;
         }
-    }
-
-    if (updates.category === 'Guardrails') {
-        // Check if supported
-        const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck', 
+    } else if (updates.category === 'Guardrails') {
+        try {
+            const apiGuard = await getJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`);
+            const currentApp = mapGuardrailToApp(apiGuard);
+            const type = updates.type || currentApp.type;
+            const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck', 
                 'CompetitionCheck', 'CorrectLanguage', 'DetectPII', 
-                'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic'];
-        
-        if (updates.type && supportedTypes.includes(updates.type)) {
-            try {
-                const apiGuard = await getJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`);
-                const currentApp = mapGuardrailToApp(apiGuard);
-                const type = updates.type || currentApp.type;
+                'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic',
+                'PromptInjection', 'RagHallucination', 'ToxicLanguage', 'CodeScanner'];
+
+            if (supportedTypes.includes(type)) {
                 const configPayload = mapConfigToApi(type, updates.config || currentApp.config, updates.name || apiGuard.name);
                 const payload: components["schemas"]["ManagedGuardrailPatch"] = {
                     name: updates.name || apiGuard.name,
@@ -930,16 +862,15 @@ export const updateApplication = async (id: string, updates: Partial<Application
                 };
                 const res = await patchJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`, payload);
                 return mapGuardrailToApp(res);
-            } catch (e) {
-                console.error('Failed to update guardrail app', e);
-                throw e;
             }
+        } catch (e) {
+            console.warn(`Failed to update Guardrail app ${id} via API.`, e);
+            throw e;
         }
-        // Fallback for unsupported types
     }
 
+    // Fallback logic if category not provided, trying sequentially
     try {
-        // Try to fetch from Observability API
         const apiApp = await getJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/observability/${id}`);
         if (apiApp) {
              const type = updates.type || mapObservabilityToApp(apiApp).type;
@@ -954,12 +885,9 @@ export const updateApplication = async (id: string, updates: Partial<Application
             const res = await patchJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/observability/${id}`, payload);
             return mapObservabilityToApp(res);
         }
-    } catch (e) {
-        // Ignore 404
-    }
+    } catch (e) { /* ignore, try next */ }
 
     try {
-        // Try to fetch from Memory API
         const apiMem = await getJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`);
         if (apiMem) {
             const type = updates.type || mapMemoryToApp(apiMem).type;
@@ -971,12 +899,9 @@ export const updateApplication = async (id: string, updates: Partial<Application
             const res = await patchJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`, payload);
             return mapMemoryToApp(res);
         }
-    } catch (e) {
-        // Ignore 404
-    }
+    } catch (e) { /* ignore, try next */ }
 
     try {
-        // Try to fetch from MCP API
         const apiMcp = await getJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/mcp-servers/${id}`);
         if (apiMcp) {
             const type = 'MCPServer';
@@ -987,19 +912,17 @@ export const updateApplication = async (id: string, updates: Partial<Application
             const res = await patchJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/mcp-servers/${id}`, payload);
             return mapMCPServerToApp(res);
         }
-    } catch (e) {
-        // Ignore 404
-    }
+    } catch (e) { /* ignore, try next */ }
 
     try {
-        // Try to fetch from Guardrail API
         const apiGuard = await getJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`);
         if (apiGuard) {
             const currentApp = mapGuardrailToApp(apiGuard);
             const type = updates.type || currentApp.type;
             const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck', 
                 'CompetitionCheck', 'CorrectLanguage', 'DetectPII', 
-                'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic'];
+                'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic',
+                'PromptInjection', 'RagHallucination', 'ToxicLanguage', 'CodeScanner'];
 
             if (supportedTypes.includes(type)) {
                 const configPayload = mapConfigToApi(type, updates.config || currentApp.config, updates.name || apiGuard.name);
@@ -1014,61 +937,17 @@ export const updateApplication = async (id: string, updates: Partial<Application
                 return mapGuardrailToApp(res);
             }
         }
-    } catch (e) {
-        // Ignore 404
-    }
+    } catch (e) { /* ignore, try next */ }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const stored = localStorage.getItem('idun_applications');
-    const currentApps: ApplicationConfig[] = stored ? JSON.parse(stored) : MOCK_APPS;
-    const index = currentApps.findIndex(a => a.id === id);
-    
-    if (index === -1) throw new Error('App not found');
-    
-    const updatedApp = {
-        ...currentApps[index],
-        ...updates,
-        updatedAt: new Date().toISOString()
-    };
-    
-    currentApps[index] = updatedApp;
-    localStorage.setItem('idun_applications', JSON.stringify(currentApps));
-    return updatedApp;
+    throw new Error('App not found or update failed');
 };
 
 export const deleteApplication = async (id: string): Promise<void> => {
-    try {
-        // Try delete on Observability API
-        await deleteRequest(`/api/v1/observability/${id}`);
-        return; // If successful, we are done
-    } catch (e) {
-        // If error (e.g. 404), try Memory API
-    }
-
-    try {
-        await deleteRequest(`/api/v1/memory/${id}`);
-        return;
-    } catch (e) {
-        // If error, try MCP API
-    }
-
-    try {
-        await deleteRequest(`/api/v1/mcp-servers/${id}`);
-        return;
-    } catch (e) {
-        // If error, try Guardrail API
-    }
-
-    try {
-        await deleteRequest(`/api/v1/guardrails/${id}`);
-        return;
-    } catch (e) {
-        // If error, try local storage
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const stored = localStorage.getItem('idun_applications');
-    const currentApps: ApplicationConfig[] = stored ? JSON.parse(stored) : MOCK_APPS;
-    const updatedApps = currentApps.filter(a => a.id !== id);
-    localStorage.setItem('idun_applications', JSON.stringify(updatedApps));
+    try { await deleteRequest(`/api/v1/observability/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/memory/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/mcp-servers/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/guardrails/${id}`); return; } catch (e) { /* ignore */ }
+    
+    // If we reached here, it means we couldn't delete from any API
+    // throw new Error('Failed to delete application from any source');
 };

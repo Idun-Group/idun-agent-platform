@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import Modal from '../../general/modal/component';
 import { Button } from '../../general/button/component';
-import { TextInput, Checkbox, TextArea, Select } from '../../general/form/component';
+import { TextInput, Checkbox, TextArea, Select, TagInput } from '../../general/form/component';
 import type { AppType, ApplicationConfig, MarketplaceApp } from '../../../types/application.types';
 import { createApplication, updateApplication, deleteApplication } from '../../../services/applications';
 import { toast } from 'react-toastify';
@@ -167,12 +167,12 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 return !!(config.sensitivity && config.check_type);
             case 'RestrictTopic':
                 return !!config.valid_topics;
-            case 'Secrets':
-                return !!config.secret_types;
-            case 'ValidSQL':
-            case 'ValidPython':
-            case 'WebSanitization':
-                return true; // No config required
+            case 'PromptInjection':
+            case 'RagHallucination':
+            case 'ToxicLanguage':
+                return !!config.threshold;
+            case 'CodeScanner':
+                return !!config.allowed_languages;
             default:
                 return true;
         }
@@ -388,7 +388,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                     />
                 );
             case 'SQLite':
-                 return (
+                return (
                     <TextInput 
                         label="Connection String"
                         tooltip="Format: sqlite+aiosqlite:///./data.db (Use 4 slashes for absolute path)"
@@ -582,13 +582,12 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'BanList':
                 return (
-                    <TextArea 
+                    <TagInput 
                         label="Banned Words"
-                        tooltip="A list of strings (words or phrases) to block. One per line or comma-separated."
+                        tooltip="Type a word and press Enter to add. Double click to edit."
                         value={config.banned_words || ''} 
                         onChange={e => setConfig({...config, banned_words: e.target.value})}
                         disabled={!isEditing}
-                        rows={5}
                         required
                     />
                 );
@@ -609,25 +608,23 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'CompetitionCheck':
                 return (
-                    <TextArea 
+                    <TagInput 
                         label="Competitors"
-                        tooltip="A list of strings (names of competitor companies or products). One per line or comma-separated."
+                        tooltip="Type a competitor name and press Enter to add. Double click to edit."
                         value={config.competitors || ''} 
                         onChange={e => setConfig({...config, competitors: e.target.value})}
                         disabled={!isEditing}
-                        rows={5}
                         required
                     />
                 );
             case 'CorrectLanguage':
                 return (
-                    <TextArea 
+                    <TagInput 
                         label="Expected Languages"
-                        tooltip="A list of valid ISO language codes (e.g., en, fr, es). One per line or comma-separated."
+                        tooltip="Type an ISO language code (e.g., en, fr) and press Enter to add. Double click to edit."
                         value={config.expected_languages || ''} 
                         onChange={e => setConfig({...config, expected_languages: e.target.value})}
                         disabled={!isEditing}
-                        rows={3}
                         required
                     />
                 );
@@ -722,57 +719,51 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'RestrictTopic':
                 return (
                     <>
-                        <TextArea 
+                        <TagInput 
                             label="Valid Topics"
-                            tooltip="A list of strings describing allowed subjects (e.g., 'Sports', 'Finance'). One per line or comma-separated."
+                            tooltip="Type a topic and press Enter to add. Double click to edit."
                             value={config.valid_topics || ''} 
                             onChange={e => setConfig({...config, valid_topics: e.target.value})}
                             disabled={!isEditing}
-                            rows={3}
                             required
                         />
-                        <TextArea 
+                        <TagInput 
                             label="Invalid Topics"
-                            tooltip="A list of strings describing forbidden subjects (e.g., 'Politics', 'Religion'). One per line or comma-separated."
+                            tooltip="Type a topic and press Enter to add. Double click to edit."
                             value={config.invalid_topics || ''} 
                             onChange={e => setConfig({...config, invalid_topics: e.target.value})}
                             disabled={!isEditing}
-                            rows={3}
                         />
                     </>
                 );
-            case 'Secrets': {
-                 // Helper to toggle Secrets
-                 const toggleSecret = (type: string) => {
-                    const current = config.secret_types ? config.secret_types.split(',') : [];
-                    if (current.includes(type)) {
-                        setConfig({...config, secret_types: current.filter(t => t !== type).join(',')});
-                    } else {
-                        setConfig({...config, secret_types: [...current, type].join(',')});
-                    }
-                };
-                const secretList = ['API Keys', 'AWS Credentials', 'SSH Keys', 'Passwords'];
+            case 'PromptInjection':
+            case 'RagHallucination':
+            case 'ToxicLanguage':
                 return (
-                    <div style={{ marginBottom: '24px' }}>
-                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600, color: 'var(--color-text-primary, #ffffff)' }}>
-                            Secret Types <span style={{ color: '#ff4757', marginLeft: '4px' }}>*</span>
-                        </label>
-                        {secretList.map(type => (
-                             <Checkbox 
-                                key={type}
-                                label={type}
-                                checked={(config.secret_types || '').split(',').includes(type)}
-                                onChange={() => toggleSecret(type)}
-                                disabled={!isEditing}
-                            />
-                        ))}
-                    </div>
+                    <TextInput 
+                        label="Threshold"
+                        tooltip="A number between 0.0 and 1.0 (sensitivity level)."
+                        value={config.threshold || ''} 
+                        onChange={e => setConfig({...config, threshold: e.target.value})}
+                        disabled={!isEditing}
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        required
+                    />
                 );
-            }
-            case 'ValidSQL':
-            case 'ValidPython':
-            case 'WebSanitization':
-                 return <p style={{ color: 'var(--color-text-secondary, #8892b0)' }}>No configuration required for this guard.</p>;
+            case 'CodeScanner':
+                return (
+                    <TagInput 
+                        label="Allowed Languages"
+                        tooltip="Type a language (e.g. python) and press Enter to add. Double click to edit."
+                        value={config.allowed_languages || ''} 
+                        onChange={e => setConfig({...config, allowed_languages: e.target.value})}
+                        disabled={!isEditing}
+                        required
+                    />
+                );
             default:
                 return <p>No configuration needed for this app type.</p>;
         }
@@ -839,7 +830,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             }}
                         >
                              {isSubmitting ? 'Creating...' : 'Create Configuration'}
-                         </Button>
+                        </Button>
                          {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
                     </div>
                 )}

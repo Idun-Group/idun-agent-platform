@@ -80,6 +80,7 @@ async def stream(
 ):
     """Process a message with the agent, streaming ag-ui events."""
     try:
+
         async def event_stream():
             message = {"query": request.query, "session_id": request.session_id}
             async for event in agent.stream(message):

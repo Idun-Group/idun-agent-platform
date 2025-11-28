@@ -7,7 +7,7 @@ import ApplicationModal from '../../components/applications/application-modal/co
 import ConfiguredAppCard from '../../components/connected-app/configured-app-card/component';
 import { fetchApplications, MARKETPLACE_APPS } from '../../services/applications';
 import type { ApplicationConfig, MarketplaceApp, AppCategory } from '../../types/application.types';
-import { Loader } from 'lucide-react';
+import { Loader, Plus, Wrench } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 // Define props to make the component reusable for different categories
@@ -18,7 +18,6 @@ interface ApplicationPageProps {
 const ApplicationPage = ({ category }: ApplicationPageProps) => {
     const { t } = useTranslation();
     const [currentPage, setCurrentPage] = useState<'configurations' | 'add'>('configurations');
-    const isSingleTabView = category === 'MCP';
 
     // Data State
     const [myApps, setMyApps] = useState<ApplicationConfig[]>([]);
@@ -47,12 +46,6 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
         }
     }, [currentPage]);
 
-    useEffect(() => {
-        if (isSingleTabView) {
-            setCurrentPage('configurations');
-        }
-    }, [isSingleTabView]);
-
     const handleMarketplaceAppClick = (app: MarketplaceApp) => {
         setAppToCreate(app);
         setAppToEdit(undefined);
@@ -78,21 +71,12 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
         }
     };
 
-    const openDefaultTemplateModal = () => {
-        const template = MARKETPLACE_APPS.find(app => app.category === category);
-        if (template) {
-            handleMarketplaceAppClick(template);
-        } else {
-            toast.error(t('connected-app.marketplace.no-template', 'No template available for this category.'));
-        }
-    };
-
     // Filter apps by the current page's category
     const filteredApps = myApps.filter(app => app.category === category);
 
     // Render content based on current tab
     const renderContent = () => {
-        if (currentPage === 'configurations' || isSingleTabView) {
+        if (currentPage === 'configurations') {
             return (
                 <DashboardContainer>
                     {isLoading ? (
@@ -115,16 +99,10 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
                             <Button
                                 $variants="base"
                                 onClick={() => {
-                                    if (isSingleTabView) {
-                                        openDefaultTemplateModal();
-                                    } else {
-                                        setCurrentPage('add');
-                                    }
+                                    setCurrentPage('add');
                                 }}
                             >
-                                {isSingleTabView
-                                    ? t('connected-app.actions.createConfiguration', 'Create Configuration')
-                                    : t('connected-app.navigation.add', 'Add Configuration')}
+                                {t('connected-app.navigation.add', 'Add Configuration')}
                             </Button>
                         </EmptyState>
                     )}
@@ -132,7 +110,28 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
             );
         }
 
-        if (!isSingleTabView && currentPage === 'add') {
+        if (currentPage === 'add') {
+            if (category === 'MCP') {
+                const mcpTemplate = MARKETPLACE_APPS.find(app => app.category === 'MCP');
+                return (
+                    <MCPAddContainer>
+                        <MCPCard onClick={() => mcpTemplate && handleMarketplaceAppClick(mcpTemplate)}>
+                            <IconWrapper>
+                                <Wrench size={40} color="#8c52ff" />
+                            </IconWrapper>
+                            <CardTitle>Configure New MCP Server</CardTitle>
+                            <CardDescription>
+                                Connect to an existing Model Context Protocol (MCP) server to extend your agent's capabilities.
+                            </CardDescription>
+                            <Button $variants="base" style={{ marginTop: 'auto', width: '100%' }}>
+                                <Plus size={16} style={{ marginRight: '8px' }} />
+                                Configure Server
+                            </Button>
+                        </MCPCard>
+                    </MCPAddContainer>
+                );
+            }
+
             return (
                 <AppMarketplacePage 
                     onAppClick={handleMarketplaceAppClick} 
@@ -156,30 +155,23 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
             <SubHeader>
                 <TopContainer>
                     <h1>{pageTitle}</h1>
-                    {isSingleTabView && (
-                        <Button $variants="base" onClick={openDefaultTemplateModal}>
-                            {t('connected-app.actions.newConfiguration', 'New Configuration')}
-                        </Button>
-                    )}
                 </TopContainer>
-                {!isSingleTabView && (
-                    <Nav>
-                        <NavButton
-                            isSelected={currentPage === 'configurations'}
-                            onClick={() => setCurrentPage('configurations')}
-                            $variants="transparent"
-                        >
-                            {t('connected-app.navigation.applications', 'Configurations')}
-                        </NavButton>
-                        <NavButton
-                            isSelected={currentPage === 'add'}
-                            onClick={() => setCurrentPage('add')}
-                            $variants="transparent"
-                        >
-                            {t('connected-app.navigation.add', 'Add Configuration')}
-                        </NavButton>
-                    </Nav>
-                )}
+                <Nav>
+                    <NavButton
+                        isSelected={currentPage === 'configurations'}
+                        onClick={() => setCurrentPage('configurations')}
+                        $variants="transparent"
+                    >
+                        {t('connected-app.navigation.applications', 'Configurations')}
+                    </NavButton>
+                    <NavButton
+                        isSelected={currentPage === 'add'}
+                        onClick={() => setCurrentPage('add')}
+                        $variants="transparent"
+                    >
+                        {t('connected-app.navigation.add', 'Add Configuration')}
+                    </NavButton>
+                </Nav>
             </SubHeader>
 
             <Content>
@@ -310,3 +302,56 @@ const LoaderContainer = styled.div`
     }
 `;
 
+const MCPAddContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 40px;
+    width: 100%;
+`;
+
+const MCPCard = styled.div`
+    background: var(--color-background-secondary, #1a1a2e);
+    border: 1px solid var(--color-border-primary, #2a3f5f);
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        transform: translateY(-4px);
+        border-color: var(--color-primary, #8c52ff);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+`;
+
+const IconWrapper = styled.div`
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(140, 82, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+`;
+
+const CardTitle = styled.h3`
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 12px;
+`;
+
+const CardDescription = styled.p`
+    font-size: 14px;
+    color: var(--color-text-secondary, #8892b0);
+    margin-bottom: 32px;
+    line-height: 1.5;
+`;
