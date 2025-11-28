@@ -39,7 +39,6 @@ async def get_copilotkit_agent(request: Request):
         app_config = ConfigBuilder.load_from_file()
         copilotkit_agent = await ConfigBuilder.initialize_agent_from_config(app_config)
         return copilotkit_agent
-<<<<<<< HEAD
 
 
 def get_mcp_registry(request: Request) -> MCPClientRegistry:
@@ -51,5 +50,3 @@ def get_mcp_registry(request: Request) -> MCPClientRegistry:
             detail="MCP servers are not configured for this engine.",
         )
     return registry
-=======
->>>>>>> f3399e2 (add copilotkip ag-ui endpoint for langgraph (#95))
