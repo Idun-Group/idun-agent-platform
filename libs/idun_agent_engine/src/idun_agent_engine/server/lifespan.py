@@ -60,7 +60,7 @@ async def cleanup_agent(app: FastAPI):
     app.state.mcp_registry = MCPClientRegistry(engine_config.mcp_servers)
     app.state.engine_config = engine_config
 
-    # app.state.guardrails = guardrails # TODO: to reactivate
+    app.state.guardrails = guardrails # TODO: to reactivate
     # Store both in app state
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")

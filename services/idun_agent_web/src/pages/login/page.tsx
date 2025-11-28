@@ -36,7 +36,7 @@ const LoginPage = () => {
     return (
         <main>
             <StyledForm onSubmit={handleSubmit} noValidate>
-                <h1>Idun Engine</h1>
+                <h1>Idun Agent Platform</h1>
                 <h2>{t('login.title')}</h2>
                 <p>{t('login.description')}</p>
 

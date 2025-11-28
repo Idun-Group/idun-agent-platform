@@ -32,8 +32,8 @@ def _run_guardrails(
     """Validates the request's message, by running it on given guardrails. If input is a dict -> input, else its an output guardrails."""
     text = message["query"] if isinstance(message, dict) else message
     for guard in guardrails:
-        if guard.position == position and not guard.validate(text):
-            raise HTTPException(status_code=429, detail=guard.reject_message)
+        if guard.position == position and not guard.validate(text): # type: ignore[attr-defined]
+            raise HTTPException(status_code=429, detail=guard.reject_message) # type: ignore[attr-defined]
 
 
 @agent_router.get("/config")
@@ -90,7 +90,6 @@ async def stream(
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
 
-
 @agent_router.post("/copilotkit/stream")
 async def copilotkit_stream(
     input_data: RunAgentInput,
@@ -110,7 +109,7 @@ async def copilotkit_stream(
 
             async def event_generator():
                 async for event in copilotkit_agent.run(input_data):
-                    yield encoder.encode(event)
+                    yield encoder.encode(event)  # type: ignore[arg-type]
 
             return StreamingResponse(
                 event_generator(),  # type: ignore[arg-type]
@@ -125,7 +124,7 @@ async def copilotkit_stream(
             agent_id = request.url.path.lstrip("/")
 
             # Create an event encoder to properly format SSE events
-            encoder = EventEncoder(accept=accept_header)
+            encoder = EventEncoder(accept=accept_header or "")
 
             async def event_generator():
                 """Generate events from ADK agent."""

@@ -5,7 +5,7 @@ from idun_agent_engine.observability import create_observability_handler
 
 def test_langfuse_handler_creation(monkeypatch) -> None:
     """Ensure Langfuse handler is created when env vars are provided."""
-    monkeypatch.setenv("LANGFUSE_HOST", "http://localhost:3000")
+    monkeypatch.setenv("LANGFUSE_BASE_URL", "http://localhost:3000")
     monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk")
     monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk")
 

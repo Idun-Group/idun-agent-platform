@@ -20,7 +20,8 @@
         "button-marketplace": "Accéder au marketplace des applications",
         "navigation": {
             "overview": "Vue d'ensemble",
-            "applications": "Applications"
+            "applications": "Configurations",
+            "add": "Ajouter une configuration"
         },
         "apps": {
             "title": "Connecter votre première application.",
@@ -28,15 +29,26 @@
             "first-install": "Installer la première application"
         },
         "marketplace": {
-            "title": "Marketplace des applications",
-            "subtitle": "Découvrez et connectez des applications sur l'Idun Agent Platform.",
+            "title": "Ajouter une configuration",
+            "subtitle": "Créez des configurations persistantes à réutiliser dans vos agents",
             "all-apps": "Toutes les applications",
             "by": "par",
             "install": "Ajouter l'application",
             "description": "Description",
             "search": {
                 "placeholder": "Rechercher des applications..."
-            }
+            },
+            "no-template": "Aucun modèle disponible pour cette catégorie."
+        },
+        "categories": {
+            "observability": "Observabilité",
+            "memory": "Mémoire",
+            "mcp": "MCP",
+            "guard": "Guardrails"
+        },
+        "actions": {
+            "createConfiguration": "Créer une configuration",
+            "newConfiguration": "Nouvelle configuration"
         }
     },
     "header": {
@@ -139,7 +151,10 @@
         "observation": "Observation",
         "tools": "Outils",
         "users": "Utilisateurs",
-        "apps": "Applications"
+        "apps": "Applications",
+        "observability": "Observabilité",
+        "memory": "Mémoire",
+        "mcp": "MCP"
     },
     "signin": {
         "title": "Créer un compte",

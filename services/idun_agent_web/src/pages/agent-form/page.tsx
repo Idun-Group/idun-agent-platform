@@ -1,1463 +1,1111 @@
-import Editor from '@monaco-editor/react';
-import type { editor as MonacoEditor } from 'monaco-editor';
-import { FolderIcon, GithubIcon, NetworkIcon, UploadIcon } from 'lucide-react';
-import { type ChangeEvent, useEffect, useState } from 'react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap } from 'lucide-react';
+import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
-import SourcePopup from '../../components/create-agent/source-popup/component';
-import { Button } from '../../components/general/button/component';
-import useAgentFile from '../../hooks/use-agent-file';
-import { Label } from '../../components/create-agent/popup-styled';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
-import {
-    Form,
-    FormSelect,
-    LabeledToggleButton,
-    TextInput,
-} from '../../components/general/form/component';
-import ToggleButton from '../../components/general/toggle-button/component';
-import { readFileFromZip } from '../../utils/zip-session';
-import { extractFrameworkFromYaml, extractObservabilityFromYaml, extractDatabaseFromYaml, normalizeFrameworkName, isFrameworkSupported, SUPPORTED_FRAMEWORKS, parseYamlConfig } from '../../utils/yaml-parser';
+import { SUPPORTED_FRAMEWORKS } from '../../utils/yaml-parser';
 import { createAgent } from '../../services/agents';
 import { useNavigate } from 'react-router-dom';
+import { AgentAvatar } from '../../components/general/agent-avatar/component';
+import { DynamicForm } from '../../components/general/dynamic-form/component';
+import { API_BASE_URL } from '../../utils/api';
+import { fetchApplications, MARKETPLACE_APPS, mapConfigToApi } from '../../services/applications';
+import type { ApplicationConfig, AppType, MarketplaceApp, AppCategory } from '../../types/application.types';
+import ApplicationModal from '../../components/applications/application-modal/component';
 
 const DISABLED_FRAMEWORKS = new Set(['ADK', 'CREWAI', 'CUSTOM']);
 
+// Mapping of AgentFramework enum to OpenAPI schema definition names
+const FRAMEWORK_SCHEMA_MAP: Record<string, string> = {
+    'LANGGRAPH': 'LangGraphAgentConfig',
+    'HAYSTACK': 'HaystackAgentConfig',
+    'ADK': 'BaseAgentConfig',
+    'CREWAI': 'BaseAgentConfig',
+    'CUSTOM': 'BaseAgentConfig'
+};
+
+const OBSERVABILITY_TYPES: AppType[] = ['Langfuse', 'Phoenix', 'GoogleCloudLogging', 'GoogleCloudTrace', 'LangSmith'];
+const MEMORY_TYPES: AppType[] = ['PostgreSQL', 'SQLite'];
+
+// Component for Horizontal Scrolling Carousel
+const Carousel = ({ children }: { children: React.ReactNode }) => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const checkScroll = () => {
+        if (scrollRef.current) {
+            const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+            setCanScrollLeft(scrollLeft > 0);
+            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+        }
+    };
+
+    useEffect(() => {
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        return () => window.removeEventListener('resize', checkScroll);
+    }, [children]);
+
+    const scroll = (direction: 'left' | 'right') => {
+        if (scrollRef.current) {
+            const amount = 200;
+            scrollRef.current.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
+            setTimeout(checkScroll, 300);
+        }
+    };
+
+    return (
+        <CarouselContainer>
+            {canScrollLeft && (
+                <CarouselButton direction="left" onClick={() => scroll('left')}>
+                    <ChevronLeft size={16} />
+                </CarouselButton>
+            )}
+            <CarouselTrack ref={scrollRef} onScroll={checkScroll}>
+                {children}
+            </CarouselTrack>
+            {canScrollRight && (
+                <CarouselButton direction="right" onClick={() => scroll('right')}>
+                    <ChevronRight size={16} />
+                </CarouselButton>
+            )}
+        </CarouselContainer>
+    );
+    };
+
 export default function AgentFormPage() {
     const navigate = useNavigate();
+    const [currentStep, setCurrentStep] = useState(1);
     const [name, setName] = useState<string>('');
     const [version, setVersion] = useState<string>('v1');
+    const [description, setDescription] = useState<string>('');
     const [serverPort, setServerPort] = useState<string>('8000');
     const [agentType, setAgentType] = useState<string | null>('LANGGRAPH');
-    const [configName, setConfigName] = useState<string>('');
-    const [graphDefinition, setGraphDefinition] = useState<string>('');
-    const [checkpointerType, setCheckpointerType] = useState<'sqlite' | 'postgres'>('sqlite');
-    const [databaseUrl, setDatabaseUrl] = useState<string>('');
-    const [haystackComponentType, setHaystackComponentType] =
-        useState<'pipeline' | 'agent'>('pipeline');
-    const [haystackComponentDefinition, setHaystackComponentDefinition] =
-        useState<string>('');
-    const [baseInputSchema, setBaseInputSchema] = useState<string>('');
-    const [baseOutputSchema, setBaseOutputSchema] = useState<string>('');
-    const [langGraphStore, setLangGraphStore] = useState<string>('');
-    const [baseInputSchemaError, setBaseInputSchemaError] = useState<string | null>(null);
-    const [baseOutputSchemaError, setBaseOutputSchemaError] = useState<string | null>(null);
-    const [langGraphStoreError, setLangGraphStoreError] = useState<string | null>(null);
-    const [selectedObservabilityProvider, setSelectedObservabilityProvider] =
-        useState<string | null>(null);
-    const { selectedAgentFile } = useAgentFile();
+    
+    // Dynamic Config State
+    const [agentConfig, setAgentConfig] = useState<Record<string, any>>({});
+    const [rootSchema, setRootSchema] = useState<any>(null);
+    const [schemaError, setSchemaError] = useState<string | null>(null);
+
+    // Applications Data
+    const [observabilityApps, setObservabilityApps] = useState<ApplicationConfig[]>([]);
+    const [memoryApps, setMemoryApps] = useState<ApplicationConfig[]>([]);
+    const [mcpApps, setMcpApps] = useState<ApplicationConfig[]>([]);
+    const [guardApps, setGuardApps] = useState<ApplicationConfig[]>([]);
+
+    // Selection State
+    const [selectedMemoryType, setSelectedMemoryType] = useState<string>('');
+    const [selectedMemoryAppId, setSelectedMemoryAppId] = useState<string>('');
+    
+    const [selectedObservabilityTypes, setSelectedObservabilityTypes] = useState<string[]>([]);
+    const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({}); // Type -> AppID
+
+    const [selectedMCPIds, setSelectedMCPIds] = useState<string[]>([]);
+    const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
+    const [selectedGuardTypeToAdd, setSelectedGuardTypeToAdd] = useState<string>('');
+
+    // Application Modal State
+    const [isAppModalOpen, setIsAppModalOpen] = useState(false);
+    const [appToCreate, setAppToCreate] = useState<MarketplaceApp | undefined>(undefined);
+    const [appToEdit, setAppToEdit] = useState<ApplicationConfig | undefined>(undefined);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
     const [availableFrameworks, setAvailableFrameworks] = useState<
         Array<{ id: string; name: string }>
     >([]);
-    const [isPopupOpen, setIsPopupOpen] = useState(false);
-    const [selectedSourceType, setSelectedSourceType] = useState<
-        'upload' | 'Git' | 'remote' | 'project'
-    >('upload');
-    const [yamlFiles, setYamlFiles] = useState<string[]>([]);
-    const [selectedConfigFile, setSelectedConfigFile] = useState<string>('');
-    const [detectedFramework, setDetectedFramework] = useState<string | null>(null);
-    const [frameworkError, setFrameworkError] = useState<string | null>(null);
 
-    const formatJsonField = (
-        value: string,
-        setter: (formatted: string) => void,
-        errorSetter: (error: string | null) => void
-    ) => {
-        const trimmed = value.trim();
-        if (!trimmed) {
-            setter('');
-            errorSetter(null);
-            return;
-        }
-
-        try {
-            const parsed = JSON.parse(trimmed);
-            setter(JSON.stringify(parsed, null, 2));
-            errorSetter(null);
-        } catch (error) {
-            errorSetter('Invalid JSON');
-        }
-    };
-
-    const handleLangGraphStoreChange = (value: string | undefined) => {
-        setLangGraphStore(value ?? '');
-        if (langGraphStoreError) {
-            setLangGraphStoreError(null);
-        }
-    };
-
-    const handleBaseInputSchemaChange = (value: string | undefined) => {
-        setBaseInputSchema(value ?? '');
-        if (baseInputSchemaError) {
-            setBaseInputSchemaError(null);
-        }
-    };
-
-    const handleBaseOutputSchemaChange = (value: string | undefined) => {
-        setBaseOutputSchema(value ?? '');
-        if (baseOutputSchemaError) {
-            setBaseOutputSchemaError(null);
-        }
-    };
-
-    const handleLangGraphStoreEditorMount = (
-        editorInstance: MonacoEditor.IStandaloneCodeEditor
-    ) => {
-        editorInstance.onDidBlurEditorText(() => {
-            const currentValue = editorInstance.getValue();
-            formatJsonField(
-                currentValue,
-                setLangGraphStore,
-                setLangGraphStoreError
-            );
-        });
-    };
-
-    const handleBaseInputSchemaEditorMount = (
-        editorInstance: MonacoEditor.IStandaloneCodeEditor
-    ) => {
-        editorInstance.onDidBlurEditorText(() => {
-            const currentValue = editorInstance.getValue();
-            formatJsonField(
-                currentValue,
-                setBaseInputSchema,
-                setBaseInputSchemaError
-            );
-        });
-    };
-
-    const handleBaseOutputSchemaEditorMount = (
-        editorInstance: MonacoEditor.IStandaloneCodeEditor
-    ) => {
-        editorInstance.onDidBlurEditorText(() => {
-            const currentValue = editorInstance.getValue();
-            formatJsonField(
-                currentValue,
-                setBaseOutputSchema,
-                setBaseOutputSchemaError
-            );
-        });
-    };
-
-    const jsonEditorOptions = {
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        formatOnPaste: true,
-        formatOnType: true,
-        automaticLayout: true,
-        wordWrap: 'on' as const,
-        lineNumbers: 'off' as const,
-    };
-
-    const handleChangesYamlFiles = (files: string[]) => {
-        setYamlFiles(files);
-        // Reset framework detection when new files are loaded
-        setDetectedFramework(null);
-        setFrameworkError(null);
-        setSelectedConfigFile('');
-        setAgentType('LANGGRAPH');
-        setConfigName('');
-        setGraphDefinition('');
-        setDatabaseUrl('');
-        setCheckpointerType('sqlite');
-        setHaystackComponentDefinition('');
-        setBaseInputSchema('');
-        setBaseOutputSchema('');
-        setLangGraphStore('');
-        setBaseInputSchemaError(null);
-        setBaseOutputSchemaError(null);
-        setLangGraphStoreError(null);
-        console.log('YAML files in ZIP:', files);
-    };
-
-    // Handle config file selection and read its content
-    const handleVersionChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const rawValue = event.target.value ?? '';
-        const withoutPrefix = rawValue.replace(/^(v|V)+/, '');
-        const sanitized = withoutPrefix.replace(/[^0-9a-zA-Z._-]/g, '');
-        const normalized = `v${sanitized}`;
-        setVersion(normalized || 'v');
-    };
-
-    const handleConfigFileChange = async (e: ChangeEvent<HTMLSelectElement>) => {
-        const filePath = e.target.value;
-        console.log('Config file selected:', filePath);
-        console.log('Selected agent file:', selectedAgentFile);
-        
-        setSelectedConfigFile(filePath);
-        setDetectedFramework(null);
-        setFrameworkError(null);
-
-        if (!filePath) {
-            console.log('No file path selected');
-            return;
-        }
-        
-        if (!selectedAgentFile) {
-            console.log('No agent file available');
-            return;
-        }
-
-        try {
-            console.log('Reading file from ZIP...');
-            const yamlContent = await readFileFromZip(selectedAgentFile.file, filePath);
-            console.log('YAML content:', yamlContent);
-            
-            const framework = extractFrameworkFromYaml(yamlContent);
-            console.log('Extracted framework:', framework);
-
-            if (!framework) {
-                setFrameworkError('Could not detect framework in the config file. Please ensure your YAML has an "agent.type" field.');
-                return;
-            }
-
-            const normalizedFramework = normalizeFrameworkName(framework);
-            setDetectedFramework(normalizedFramework);
-
-            if (!isFrameworkSupported(framework)) {
-                setFrameworkError(
-                    `Framework "${normalizedFramework}" is not supported. Supported frameworks: ${SUPPORTED_FRAMEWORKS.join(', ')}`
-                );
-            } else {
-                const upperFramework = normalizedFramework.toUpperCase();
-                if (DISABLED_FRAMEWORKS.has(upperFramework)) {
-                    const message = `Framework "${upperFramework}" is not enabled yet.`;
-                    setFrameworkError(message);
-                    setAgentType('LANGGRAPH');
-                    toast.error(message);
-                } else {
-                    setFrameworkError(null);
-                    setAgentType(upperFramework);
-                    toast.success(`Framework detected: ${upperFramework}`);
-                }
-            }
-
-            const parsedConfig = parseYamlConfig(yamlContent);
-
-            if (parsedConfig?.agent?.config) {
-                const parsedAgentConfig: Record<string, any> = parsedConfig.agent.config;
-                if (parsedAgentConfig.name) {
-                    setConfigName(parsedAgentConfig.name);
-                }
-                if (parsedAgentConfig.graph_definition) {
-                    setGraphDefinition(parsedAgentConfig.graph_definition);
-                }
-                if (parsedAgentConfig.checkpointer) {
-                    const parsedType = (parsedAgentConfig.checkpointer.type ?? '').toString().toLowerCase();
-                    if (parsedType === 'postgres') {
-                        setCheckpointerType('postgres');
-                    } else {
-                        setCheckpointerType('sqlite');
-                    }
-                    if (parsedAgentConfig.checkpointer.db_url) {
-                        setDatabaseUrl(parsedAgentConfig.checkpointer.db_url ?? '');
-                    }
-                }
-                if (parsedAgentConfig.store) {
-                    try {
-                        setLangGraphStore(
-                            JSON.stringify(parsedAgentConfig.store, null, 2)
-                        );
-                        setLangGraphStoreError(null);
-                    } catch (error) {
-                        console.warn('Unable to parse store from config', error);
-                    }
-                }
-                if (parsedAgentConfig.component_type) {
-                    setHaystackComponentType(parsedAgentConfig.component_type);
-                }
-                if (parsedAgentConfig.component_definition) {
-                    setHaystackComponentDefinition(parsedAgentConfig.component_definition);
-                }
-                if (parsedAgentConfig.input_schema_definition) {
-                    setBaseInputSchema(
-                        JSON.stringify(parsedAgentConfig.input_schema_definition, null, 2)
-                    );
-                    setBaseInputSchemaError(null);
-                }
-                if (parsedAgentConfig.output_schema_definition) {
-                    setBaseOutputSchema(
-                        JSON.stringify(parsedAgentConfig.output_schema_definition, null, 2)
-                    );
-                    setBaseOutputSchemaError(null);
-                }
-            }
-
-            // Extract and pre-fill observability config
-            const observability = extractObservabilityFromYaml(yamlContent);
-            console.log('Extracted observability:', observability);
-            
-            if (observability) {
-                if (observability.enabled) {
-                    setIsObservabilityEnabled(true);
-                }
-                
-                if (observability.provider) {
-                    setSelectedObservabilityProvider(observability.provider.toLowerCase());
-                }
-                
-                if (observability.options) {
-                    if (observability.options.host) {
-                        setLangfuseHost(observability.options.host);
-                    }
-                    if (observability.options.public_key) {
-                        setLangfusePublicKey(observability.options.public_key);
-                    }
-                    if (observability.options.secret_key) {
-                        setLangfuseSecretKey(observability.options.secret_key);
-                    }
-                    if (observability.options.run_name) {
-                        setLangfuseRunName(observability.options.run_name);
-                    }
-                }
-            }
-
-            // Extract and pre-fill database URL if not already set above
-            if (!parsedConfig?.agent?.config?.checkpointer?.db_url) {
-                const dbUrl = extractDatabaseFromYaml(yamlContent);
-                console.log('Extracted database URL:', dbUrl);
-                if (dbUrl) {
-                    setDatabaseUrl(dbUrl ?? '');
-                }
-            }
-        } catch (error) {
-            console.error('Error reading config file:', error);
-            setFrameworkError(`Error reading config file: ${error instanceof Error ? error.message : String(error)}`);
-            toast.error('Failed to read config file');
-        }
-    };
-
-
-    const handleSourceClick = (
-        sourceType: 'upload' | 'Git' | 'remote' | 'project'
-    ) => {
-        setSelectedSourceType(sourceType);
-        setIsPopupOpen(true);
-    };
-
-
-    const [isObservabilityEnabled, setIsObservabilityEnabled] = useState(false);
-
-    // Environment selector (DEV, STAGING, PRODUCTION)
     const [environment, setEnvironment] = useState<'development' | 'staging' | 'production' | null>('development');
-
-    const [langfusePublicKey, setLangfusePublicKey] = useState<string>('');
-    const [langfuseHost, setLangfuseHost] = useState<string>('');
-    const [langfuseSecretKey, setLangfuseSecretKey] = useState<string>('');
-    const [langfuseRunName, setLangfuseRunName] = useState<string>('');
-
-    const [dbUrlError, setDbUrlError] = useState<string | null>(null);
-    const handleDatabaseUrlChange = (
-        e: ChangeEvent<HTMLInputElement>
-    ) => {
-        const url = e.target.value;
-        setDatabaseUrl(url);
-
-        if (checkpointerType === 'sqlite') {
-            if (url && !url.startsWith('sqlite:///')) {
-                setDbUrlError('SQLite URLs must start with "sqlite:///"');
-            } else {
-        setDbUrlError(null);
-            }
-            return;
-        }
-
-        const postgresRegex =
-            /^(postgres(?:ql)?:\/\/)([a-zA-Z0-9._%+-]+)(:[^@]+)?@([a-zA-Z0-9.-]+)(:\d+)?\/[a-zA-Z0-9_-]+$/;
-        if (url && !postgresRegex.test(url)) {
-            setDbUrlError(
-                'Postgres URLs must look like postgres://user:password@host:5432/database'
-            );
-        } else {
-            setDbUrlError(null);
-        }
-    };
-
-    const handleManualCheckpointerTypeChange = (type: 'sqlite' | 'postgres') => {
-        setCheckpointerType(type);
-        setDbUrlError(null);
-        if (!databaseUrl || (type === 'sqlite' && !databaseUrl.startsWith('sqlite:///')) || (type === 'postgres' && !databaseUrl.startsWith('postgres'))) {
-            setDatabaseUrl('');
-        }
-    };
-
     const { t } = useTranslation();
 
-    const rawFrameworkOptions = (availableFrameworks.length > 0
-        ? availableFrameworks.map((framework) => ({
-              id: framework.id.toUpperCase(),
-              label: framework.name,
-          }))
-        : SUPPORTED_FRAMEWORKS.map((framework) => ({
-              id: framework.toUpperCase(),
-              label: framework.replace(/_/g, ' '),
-          }))
-    )
-        .filter((option) => option.id)
-        .filter((option) => !DISABLED_FRAMEWORKS.has(option.id));
-
-    const frameworkOptions = Array.from(
-        new Map(rawFrameworkOptions.map((option) => [option.id, option])).values()
-    );
-
-    useEffect(() => {
-        if (!databaseUrl) {
-            setDbUrlError(null);
-            return;
-        }
-
-        if (
-            checkpointerType.trim().toLowerCase() === 'sqlite' &&
-            !databaseUrl.startsWith('sqlite:///')
-        ) {
-            setDbUrlError('SQLite URLs must start with "sqlite:///"');
-        } else {
-            setDbUrlError(null);
-        }
-    }, [checkpointerType, databaseUrl]);
-
-    const handleClosePopup = () => {
-        setIsPopupOpen(false);
+    const loadApps = () => {
+        fetchApplications().then(apps => {
+            setObservabilityApps(apps.filter(a => a.category === 'Observability'));
+            setMemoryApps(apps.filter(a => a.category === 'Memory'));
+            setMcpApps(apps.filter(a => a.category === 'MCP'));
+            setGuardApps(apps.filter(a => a.category === 'Guardrails'));
+        });
     };
 
+    // Data Fetching
     useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        
+        // Fetch Schema
+        fetch(`${API_BASE_URL}/openapi.json`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to fetch OpenAPI schema');
+                return res.json();
+            })
+            .then(data => setRootSchema(data))
+            .catch(err => {
+                console.error('Error fetching OpenAPI schema:', err);
+                setSchemaError('Failed to load agent configuration schema.');
+            });
+
+        // Fetch Apps
+        loadApps();
+
+        // Fetch Frameworks
         fetch('http://localhost:4001/api/v1/framework')
             .then((response) => response.json())
             .then((data) => {
                 if (Array.isArray(data)) {
-                    const normalized = data
-                        .map((item: any) => {
-                            const id = (item?.id ?? item?.value ?? '')
-                                .toString()
-                                .trim();
-
-                            if (!id) {
-                                return null;
-                            }
-
-                            const nameSource = item?.name ?? item?.label;
-                            const name = nameSource
-                                ? nameSource.toString()
-                                : id;
-
-                            return {
-                                id,
-                                name,
-                            } as { id: string; name: string };
-                        })
-                        .filter((item): item is { id: string; name: string } =>
-                            item !== null
-                        );
-
+                    const normalized = data.map((item: any) => ({
+                        id: (item?.id ?? item?.value ?? '').toString().trim(),
+                        name: item?.name ?? item?.label ?? item?.id
+                    })).filter((item): item is { id: string; name: string } => !!item.id);
                     setAvailableFrameworks(normalized);
                 }
             })
-            .catch((error) =>
-                console.error('Error fetching frameworks:', error)
-            );
+            .catch((error) => console.error('Error fetching frameworks:', error));
+
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, []);
 
-    const handleSubmitForm = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        console.log('Submitting create-agent form');
+    useEffect(() => {
+        setAgentConfig(prev => ({ ...prev, name: name }));
+    }, [name]);
 
-        // Validate required fields
-        if (!name.trim()) {
-            toast.error('Agent name is required');
-            return;
+    // Helpers
+    const getRiskLevel = (type: string) => {
+        const high = ['DetectPII', 'Secrets', 'DetectJailbreak', 'NSFWText', 'ModelArmor'];
+        const medium = ['BiasCheck', 'CompetitionCheck', 'GibberishText', 'ValidSQL', 'ValidPython', 'WebSanitization'];
+        if (high.includes(type)) return { label: 'High Risk', color: 'red' };
+        if (medium.includes(type)) return { label: 'Medium Risk', color: 'amber' };
+        return { label: 'Low Risk', color: 'blue' };
+    };
+
+    const toggleMCP = (id: string) => {
+        setSelectedMCPIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const toggleGuard = (id: string) => {
+        setSelectedGuardIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const handleVersionChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const rawValue = event.target.value ?? '';
+        const normalized = `v${rawValue.replace(/^(v|V)+/, '').replace(/[^0-9a-zA-Z._-]/g, '')}`;
+        setVersion(normalized || 'v');
+    };
+
+    // Step Navigation
+    const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 3));
+    const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+
+    const toggleObservabilityType = (type: string) => {
+        setSelectedObservabilityTypes(prev => 
+            prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+        );
+    };
+
+    const selectObservabilityApp = (type: string, appId: string) => {
+        setSelectedObservabilityApps(prev => ({
+            ...prev,
+            [type]: appId
+        }));
+    };
+
+    const getFilteredMemoryApps = () => {
+        if (!selectedMemoryType) return [];
+        return memoryApps.filter(app => app.type === selectedMemoryType);
+    };
+
+    const getFilteredObservabilityApps = (type: string) => {
+        return observabilityApps.filter(app => app.type === type);
+    };
+
+    const formatDate = (dateStr: string) => {
+        return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    const handleCreateApp = (type: AppType, category: AppCategory) => {
+        const marketplaceApp = MARKETPLACE_APPS.find(app => app.type === type && app.category === category);
+        if (marketplaceApp) {
+            setAppToCreate(marketplaceApp);
+            setAppToEdit(undefined);
+            setIsAppModalOpen(true);
+            } else {
+            toast.error(`Configuration template for ${type} not found.`);
         }
+    };
 
-        if (!agentType) {
-            toast.error('Please select an agent type');
-            return;
-        }
+    const handleViewApp = (e: React.MouseEvent, app: ApplicationConfig) => {
+        e.stopPropagation();
+        setAppToCreate(undefined);
+        setAppToEdit(app);
+        setIsAppModalOpen(true);
+    };
 
-        if (!configName.trim()) {
-            toast.error('Agent config name is required');
-            return;
-        }
-
+    const handleSubmitForm = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
+        if (e && 'preventDefault' in e) e.preventDefault();
+        
+        if (!name.trim()) return toast.error('Agent name is required');
+        if (!agentType) return toast.error('Please select an agent type');
         const parsedPort = Number(serverPort);
-        if (!Number.isFinite(parsedPort) || parsedPort <= 0) {
-            toast.error('Please provide a valid server port');
-            return;
-        }
-
-        if (frameworkError) {
-            toast.error(frameworkError);
-            return;
-        }
-
-        if (agentType === 'LANGGRAPH' && !graphDefinition.trim()) {
-            toast.error('Graph definition is required for LangGraph agents');
-            return;
-        }
-
-        if (
-            agentType === 'HAYSTACK' &&
-            !haystackComponentDefinition.trim()
-        ) {
-            toast.error('Component definition is required for Haystack agents');
-            return;
-        }
-
-        if (baseInputSchemaError || baseOutputSchemaError || langGraphStoreError) {
-            toast.error('Please fix invalid JSON fields before submitting');
-            return;
-        }
-
-        if (dbUrlError) {
-            toast.error(dbUrlError);
-            return;
-        }
-
-        let parsedInputSchema: Record<string, any> | undefined;
-        let parsedOutputSchema: Record<string, any> | undefined;
-        let parsedStore: Record<string, any> | undefined;
-
-        if (baseInputSchema.trim()) {
-            try {
-                parsedInputSchema = JSON.parse(baseInputSchema);
-            } catch (error) {
-                toast.error('Input schema definition must be valid JSON');
-                return;
-            }
-        }
-
-        if (baseOutputSchema.trim()) {
-            try {
-                parsedOutputSchema = JSON.parse(baseOutputSchema);
-            } catch (error) {
-                toast.error('Output schema definition must be valid JSON');
-                return;
-            }
-        }
-
-        if (langGraphStore.trim()) {
-            try {
-                parsedStore = JSON.parse(langGraphStore);
-        } catch (error) {
-                toast.error('Store must be valid JSON');
-                return;
-            }
-        }
+        if (!Number.isFinite(parsedPort) || parsedPort <= 0) return toast.error('Invalid server port');
 
         setIsSubmitting(true);
-            setSubmitError(null); // Clear any previous errors
+        setSubmitError(null);
 
         try {
-            const agentConfig: Record<string, any> = {
-                name: configName.trim() || name.trim(),
-            };
+            const finalAgentConfig = { ...agentConfig };
 
-            if (agentType === 'LANGGRAPH') {
-                agentConfig.graph_definition = graphDefinition.trim();
-                if (databaseUrl.trim()) {
-                    agentConfig.checkpointer = {
-                        type: checkpointerType,
-                        db_url: databaseUrl.trim(),
+            // 1. Handle Memory (Checkpointer)
+            if (selectedMemoryAppId) {
+                const memApp = memoryApps.find(a => a.id === selectedMemoryAppId);
+                if (memApp) {
+                    const typeMap: Record<string, string> = { 'SQLite': 'sqlite', 'PostgreSQL': 'postgres' };
+                    finalAgentConfig.checkpointer = {
+                        type: typeMap[memApp.type] || memApp.type.toLowerCase(),
+                        db_url: memApp.config.connectionString
                     };
                 }
-                if (parsedStore) {
-                    agentConfig.store = parsedStore;
-                }
             }
 
-            if (agentType === 'HAYSTACK') {
-                agentConfig.type = 'haystack';
-                agentConfig.component_type = haystackComponentType;
-                agentConfig.component_definition =
-                    haystackComponentDefinition.trim();
-            }
+            // 2. Handle Observability
+            const obsConfig: any = {
+                enabled: selectedObservabilityTypes.length > 0,
+                options: {}
+            };
 
-            if (isObservabilityEnabled && selectedObservabilityProvider) {
-                agentConfig.observability = {
-                    provider: selectedObservabilityProvider,
-                    enabled: true,
-                    options: {},
-                };
+            let primaryProviderSet = false;
 
-                if (selectedObservabilityProvider === 'langfuse') {
-                    if (langfuseHost) {
-                        agentConfig.observability.options.host = langfuseHost;
-                    }
-                    if (langfusePublicKey) {
-                        agentConfig.observability.options.public_key =
-                            langfusePublicKey;
-                    }
-                    if (langfuseSecretKey) {
-                        agentConfig.observability.options.secret_key =
-                            langfuseSecretKey;
-                    }
-                    if (langfuseRunName) {
-                        agentConfig.observability.options.run_name =
-                            langfuseRunName;
+            selectedObservabilityTypes.forEach(type => {
+                const appId = selectedObservabilityApps[type];
+                if (appId) {
+                    const app = observabilityApps.find(a => a.id === appId);
+                    if (app) {
+                        // Map app type to provider key
+                        const providerMap: Record<string, string> = {
+                            'Langfuse': 'langfuse',
+                            'Phoenix': 'phoenix',
+                            'GoogleCloudLogging': 'google_cloud_logging',
+                            'GoogleCloudTrace': 'google_cloud_trace',
+                            'LangSmith': 'langsmith'
+                        };
+                        const providerKey = providerMap[app.type] || app.type.toLowerCase();
+
+                        if (!primaryProviderSet) {
+                            obsConfig.provider = providerKey;
+                            primaryProviderSet = true;
+                        }
+
+                        obsConfig.options = { ...obsConfig.options, ...app.config };
                     }
                 }
+            });
+
+            if (obsConfig.enabled) {
+                finalAgentConfig.observability = obsConfig;
             }
 
-            if (parsedInputSchema) {
-                agentConfig.input_schema_definition = parsedInputSchema;
-            }
-            if (parsedOutputSchema) {
-                agentConfig.output_schema_definition = parsedOutputSchema;
-            }
+            // 3. Handle MCP & Guardrails
+            // Map MCP IDs to actual config objects
+            const mcpConfigs = selectedMCPIds.map(id => {
+                const app = mcpApps.find(a => a.id === id);
+                return app ? mapConfigToApi('MCPServer', app.config, app.name) : null;
+            }).filter(Boolean);
+
+            // Map Guardrail IDs to actual config objects (just the raw config, no wrapper)
+            const guardConfigObjects = selectedGuardIds.map(id => {
+                const app = guardApps.find(a => a.id === id);
+                if (!app) return null;
+                return mapConfigToApi(app.type, app.config);
+            }).filter(Boolean);
+
+            // Construct Guardrails object
+            const guardrailsConfig = guardConfigObjects.length > 0 ? {
+                input: guardConfigObjects,
+                output: []
+            } : undefined;
 
             const payload = {
                 name: name.trim(),
                 version: version.trim() || 'v1',
                 engine_config: {
-                    server: {
-                        api: {
-                            port: parsedPort,
-                        },
-                    },
-                    agent: {
-                        type: agentType,
-                        config: agentConfig,
-                    },
-                },
+                    server: { api: { port: parsedPort } },
+                    agent: { type: agentType, config: finalAgentConfig },
+                    mcp_servers: mcpConfigs.length > 0 ? mcpConfigs : undefined,
+                    guardrails: guardrailsConfig
+                }
             };
 
-            console.log('Creating agent with payload:', payload);
-
+            console.log('Creating agent:', payload);
             const createdAgent = await createAgent(payload);
-
             toast.success(`Agent "${createdAgent.name}" created successfully!`);
+            setTimeout(() => navigate('/agents'), 1000);
 
-            setTimeout(() => {
-                navigate('/agents');
-            }, 1000);
-        } catch (error) {
-            console.error('Error creating agent:', error);
-            
-            // Extract error message from the backend response
-            let errorMessage = 'Failed to create agent';
-            
-            if (error instanceof Error) {
-                try {
-                    // Try to parse JSON error response from backend
-                    const parsedError = JSON.parse(error.message);
-                    if (parsedError.detail) {
-                        // Handle FastAPI validation errors
-                        if (Array.isArray(parsedError.detail)) {
-                            errorMessage = parsedError.detail
-                                .map((err: any) => `${err.loc.join('.')}: ${err.msg}`)
-                                .join(', ');
-                        } else if (typeof parsedError.detail === 'string') {
-                            errorMessage = parsedError.detail;
-                        }
-                    }
-                } catch {
-                    // If not JSON, use the error message as-is
-                    errorMessage = error.message;
+        } catch (error: any) {
+            console.error('Error:', error);
+            let msg = 'Failed to create agent';
+            try {
+                const parsed = JSON.parse(error.message);
+                if (parsed.detail) {
+                    msg = Array.isArray(parsed.detail) 
+                        ? parsed.detail.map((d: any) => `${d.loc.join('.')}: ${d.msg}`).join(', ')
+                        : parsed.detail;
                 }
-            }
-            
-            setSubmitError(errorMessage);
-            // Don't use toast for errors, display inline instead
+            } catch {}
+            setSubmitError(msg);
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const frameworkOptions = (availableFrameworks.length > 0 ? availableFrameworks : SUPPORTED_FRAMEWORKS.map(f => ({ id: f, name: f.replace(/_/g, ' ') })))
+        .map(f => ({ id: f.id.toUpperCase(), label: f.name }))
+        .filter(f => !DISABLED_FRAMEWORKS.has(f.id));
+
+    const getCurrentSchema = () => {
+        if (!rootSchema || !agentType) return null;
+        return rootSchema.components?.schemas?.[FRAMEWORK_SCHEMA_MAP[agentType]];
+    };
+
     return (
-        <MainContainer>
-            <Header>
-                <h1>{t('agent-form.title')}</h1>
-                <p>{t('agent-form.description')}</p>
-            </Header>
-
-            <Form
-                onSubmit={handleSubmitForm}
-                onKeyDown={(e: React.KeyboardEvent<HTMLFormElement>) => {
-                    if (e.key === 'Enter') {
-                        const target = e.target as HTMLElement;
-                        const tag = (target.tagName || '').toLowerCase();
-
-                        if (tag === 'input' || tag === 'select') {
-                                e.preventDefault();
-                        }
-                    }
-                }}
-            >
-                    <>
-                        <h2>{t('agent-form.general-info')}</h2>
-
-                        <TextInput
-                            label={t('agent-form.name.label')}
-                            placeholder={t('agent-form.name.placeholder')}
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-
-                    <TextInput
-                        label="Agent Version"
-                        placeholder="e.g., v1"
-                        value={version}
-                        onChange={handleVersionChange}
-                    />
-
-                    <TextInput
-                        label="Server Port"
-                        type="text"
-                        placeholder="8000"
-                        value={serverPort}
-                        onChange={(e) => setServerPort(e.target.value)}
-                    />
-
-                    <LabelWithButtons>
-                        <ButtonLabel>Agent Type</ButtonLabel>
-                        <SelectButtonContainer>
-                            {frameworkOptions.map((framework) => (
-                                <SelectButton
-                                    type="button"
-                                    key={framework.id}
-                                    onClick={() => {
-                                        setAgentType(framework.id);
-                                        setDetectedFramework(framework.id);
-                                        setFrameworkError(null);
-                                    }}
-                                    $selected={agentType === framework.id}
-                                >
-                                    {framework.label}
-                                </SelectButton>
-                            ))}
-                        </SelectButtonContainer>
-                    </LabelWithButtons>
-
-                    <TextInput
-                        label="Agent Config Name"
-                        placeholder="Enter a config name"
-                        required
-                        value={configName}
-                        onChange={(e) => setConfigName(e.target.value)}
-                    />
-
-                    {agentType === 'LANGGRAPH' && (
-                        <>
-                            <TextInput
-                                label="Graph Definition"
-                                placeholder="./path/to/file.py:app"
-                                required
-                                value={graphDefinition}
-                                onChange={(e) => setGraphDefinition(e.target.value)}
-                            />
-                            <JsonEditorContainer>
-                                <JsonEditorLabel>Store (JSON)</JsonEditorLabel>
-                                <JsonEditorWrapper>
-                                    <Editor
-                                        height="220px"
-                                        language="json"
-                                        theme="vs-dark"
-                                        value={langGraphStore}
-                                        onChange={handleLangGraphStoreChange}
-                                        onMount={handleLangGraphStoreEditorMount}
-                                        options={jsonEditorOptions}
-                                    />
-                                </JsonEditorWrapper>
-                                {langGraphStoreError && (
-                                    <ErrorMessage>{langGraphStoreError}</ErrorMessage>
-                                )}
-                            </JsonEditorContainer>
-                        </>
-                    )}
-
-                    {agentType === 'HAYSTACK' && (
-                        <>
-                            <LabelWithButtons>
-                                <ButtonLabel>Haystack Component Type</ButtonLabel>
-                                <SelectButtonContainer>
-                                    {(['pipeline', 'agent'] as const).map((type) => (
-                                        <SelectButton
-                                            type="button"
-                                            key={type}
-                                            onClick={() => setHaystackComponentType(type)}
-                                            $selected={haystackComponentType === type}
-                                        >
-                                            {type.toUpperCase()}
-                                        </SelectButton>
-                                    ))}
-                                </SelectButtonContainer>
-                            </LabelWithButtons>
-                            <TextInput
-                                label="Haystack Component Definition"
-                                placeholder="path.to.module:component"
-                                required
-                                value={haystackComponentDefinition}
-                                onChange={(e) =>
-                                    setHaystackComponentDefinition(e.target.value)
-                                }
-                            />
-                        </>
-                    )}
-
-                    {['LANGGRAPH', 'HAYSTACK'].includes(agentType ?? '') && (
-                        <>
-                            <JsonEditorContainer>
-                                <JsonEditorLabel>
-                                    Input Schema Definition (JSON)
-                                </JsonEditorLabel>
-                                <JsonEditorWrapper>
-                                    <Editor
-                                        height="220px"
-                                        language="json"
-                                        theme="vs-dark"
-                                        value={baseInputSchema}
-                                        onChange={handleBaseInputSchemaChange}
-                                        onMount={handleBaseInputSchemaEditorMount}
-                                        options={jsonEditorOptions}
-                                    />
-                                </JsonEditorWrapper>
-                                {baseInputSchemaError && (
-                                    <ErrorMessage>{baseInputSchemaError}</ErrorMessage>
-                                )}
-                            </JsonEditorContainer>
-                            <JsonEditorContainer>
-                                <JsonEditorLabel>
-                                    Output Schema Definition (JSON)
-                                </JsonEditorLabel>
-                                <JsonEditorWrapper>
-                                    <Editor
-                                        height="220px"
-                                        language="json"
-                                        theme="vs-dark"
-                                        value={baseOutputSchema}
-                                        onChange={handleBaseOutputSchemaChange}
-                                        onMount={handleBaseOutputSchemaEditorMount}
-                                        options={jsonEditorOptions}
-                                    />
-                                </JsonEditorWrapper>
-                                {baseOutputSchemaError && (
-                                    <ErrorMessage>{baseOutputSchemaError}</ErrorMessage>
-                                )}
-                            </JsonEditorContainer>
-                        </>
-                    )}
-
-                    <SourceLabel style={{ display: 'none' }}>
-                            {t('agent-form.source.label')}
-                        </SourceLabel>
-                    <SourceSection style={{ display: 'none' }}>
-                            <SourceCard
-                                onClick={() => handleSourceClick('upload')}
-                            >
-                                <UploadIcon />
-                                <p>
-                                    {t('agent-form.source.upload')}
-                                    <br />
-                                    {selectedAgentFile &&
-                                    selectedAgentFile.source == 'Folder' ? (
-                                        <span>
-                                            {selectedAgentFile.file.name}
-                                        </span>
-                                    ) : (
-                                        <span>
-                                            {t(
-                                                'agent-form.source.select-folder'
-                                            )}
-                                        </span>
-                                    )}
-                                </p>
-                            </SourceCard>
-                            <SourceCard
-                                onClick={() => handleSourceClick('Git')}
-                            style={{ display: 'none' }}
-                            >
-                                <GithubIcon />
-                                <p>
-                                    {t('agent-form.source.git')}
-                                    <br />
-                                    {selectedAgentFile &&
-                                    selectedAgentFile.source == 'Git' ? (
-                                        <span>
-                                            {selectedAgentFile.file.name}
-                                        </span>
-                                    ) : (
-                                        <span>
-                                            {t(
-                                                'agent-form.source.select-git-repo'
-                                            )}
-                                        </span>
-                                    )}
-                                </p>
-                            </SourceCard>
-                            <SourceCard
-                                onClick={() => handleSourceClick('remote')}
-                            style={{ display: 'none' }}
-                            >
-                                <NetworkIcon />
-                                <p>
-                                    {t('agent-form.source.remote')}
-                                    <br />
-                                    {selectedAgentFile &&
-                                    selectedAgentFile.source == 'Remote' ? (
-                                        <span>
-                                            {selectedAgentFile.file.name}
-                                        </span>
-                                    ) : (
-                                        <span>
-                                            {t(
-                                                'agent-form.source.select-remote'
-                                            )}
-                                        </span>
-                                    )}
-                                </p>
-                            </SourceCard>
-                            <SourceCard
-                                onClick={() => handleSourceClick('project')}
-                            style={{ display: 'none' }}
-                            >
-                                <FolderIcon />
-                                <p>
-                                    {t('agent-form.source.project')}
-                                    <br />
-                                    {selectedAgentFile &&
-                                    selectedAgentFile.source == 'Project' ? (
-                                        <span>
-                                            {selectedAgentFile.file.name}
-                                        </span>
-                                    ) : (
-                                        <span>
-                                            {t(
-                                                'agent-form.source.select-project-template'
-                                            )}
-                                        </span>
-                                    )}
-                                </p>
-                            </SourceCard>
-                        </SourceSection>
-
-                    <div style={{ display: 'none' }}>
-                        <FormSelect
-                            label={t('agent-form.graph-definition-path.label')}
-                            value={selectedConfigFile}
-                            onChange={handleConfigFileChange}
-                        >
-                            <option value="">
-                                --{' '}
-                                {t('agent-form.graph-definition-path.select')}{' '}
-                                --
-                            </option>
-                            {yamlFiles.map((file) => (
-                                <option key={file} value={file}>
-                                    {file}
-                                </option>
-                            ))}
-                        </FormSelect>
+        <PageContainer>
+            <Backdrop onClick={() => navigate('/agents')} />
+            <ModalWindow>
+                <ModalHeader>
+                    <div>
+                        <ModalTitle>{t('agent-form.title')}</ModalTitle>
+                        <ModalSubtitle>{t('agent-form.description')} • Step {currentStep} of 3</ModalSubtitle>
                     </div>
+                    <CloseButton onClick={() => navigate('/agents')}><X size={24} /></CloseButton>
+                </ModalHeader>
 
-                    {/* Framework Detection Display */}
-                    {(detectedFramework || frameworkError) && (
-                        <FrameworkDetectionBox
-                            $isError={!!frameworkError}
-                            style={{ display: 'none' }}
-                        >
-                            <FrameworkLabel>
-                                {frameworkError ? '❌ Framework Error' : '✓ Framework Detected'}
-                            </FrameworkLabel>
-                            {detectedFramework && (
-                                <FrameworkValue $isError={!!frameworkError}>
-                                    {detectedFramework}
-                                </FrameworkValue>
-                            )}
-                            {frameworkError && (
-                                <ErrorMessage>{frameworkError}</ErrorMessage>
-                            )}
-                        </FrameworkDetectionBox>
-                    )}
+                <StepperContainer>
+                    <StepperInner>
+                        {[
+                            { number: 1, title: 'Identity & Runtime', icon: Box },
+                            { number: 2, title: 'Logic & Data', icon: Code2 },
+                            { number: 3, title: 'Capabilities & Safety', icon: Shield }
+                        ].map((step, idx) => (
+                            <StepItem key={step.number}>
+                                <StepContent>
+                                    <StepCircle $isActive={step.number === currentStep} $isCompleted={step.number < currentStep}>
+                                        {step.number < currentStep ? <Check size={18} /> : <step.icon size={18} />}
+                                    </StepCircle>
+                                    <StepInfo>
+                                        <StepTitle $isActive={step.number === currentStep} $isCompleted={step.number < currentStep}>{step.title}</StepTitle>
+                                        {step.number === currentStep && <StepInProgress>In Progress</StepInProgress>}
+                                    </StepInfo>
+                                </StepContent>
+                                {idx < 2 && <StepSeparatorLine><StepProgress $isCompleted={step.number < currentStep} /></StepSeparatorLine>}
+                            </StepItem>
+                        ))}
+                    </StepperInner>
+                </StepperContainer>
 
-                        <LabelWithButtons>
-                            <ButtonLabel>Environnement</ButtonLabel>
-                            <SelectButtonContainer>
-                                <SelectButton
-                                    type="button"
-                                    onClick={() => setEnvironment('development')}
-                                    $selected={environment === 'development'}
-                                >
-                                    DEV
-                                </SelectButton>
-                                <SelectButton
-                                    type="button"
-                                    onClick={() => setEnvironment('staging')}
-                                    $selected={environment === 'staging'}
-                                >
-                                    STAGING
-                                </SelectButton>
-                                <SelectButton
-                                    type="button"
-                                    onClick={() => setEnvironment('production')}
-                                    $selected={environment === 'production'}
-                                >
-                                    PRODUCTION
-                                </SelectButton>
-                            </SelectButtonContainer>
-                        </LabelWithButtons>
-
-                    {/* Framework is now auto-detected from the config file */}
-                    {/* <Label>
-                            {t('agent-form.framework.label')}
-                            <SelectButtonContainer>
-                                {availableFrameworks.map((framework) => (
-                                    <SelectButton
-                                        $variants="base"
-                                        $color="secondary"
-                                        type="button"
-                                        onClick={() =>
-                                            setSelectedFramework(framework.id)
-                                        }
-                                        selected={
-                                            selectedFramework === framework.id
-                                        }
-                                        key={framework.id}
-                                    >
-                                        {framework.name}
-                                    </SelectButton>
-                                ))}
-                            </SelectButtonContainer>
-                    </Label> */}
-
-                    {/* Agent path is now in the YAML config file */}
-                    {/* <TextInput
-                            label={t('agent-form.agent-path.label')}
-                            placeholder={t('agent-form.agent-path.placeholder')}
-                            value={agentPath}
-                            onChange={(e) => setAgentPath(e.target.value)}
-                    /> */}
-                        <h2>{t('agent-form.observability.title')}</h2>
-
-                        <LabelWithButtons>
-                            <ButtonLabel>
-                            {t('agent-form.observability.label')}
-                            <sup>*</sup>
-                            </ButtonLabel>
-                            <SelectButtonContainer>
-                                <SelectButton
-                                    type="button"
-                                    onClick={() =>
-                                        setSelectedObservabilityProvider(null)
-                                    }
-                                    $selected={
-                                        selectedObservabilityProvider === null
-                                    }
-                                >
-                                    {t('agent-form.observability.tools.none')}
-                                </SelectButton>
-                                <SelectButton
-                                    type="button"
-                                    onClick={() =>
-                                        setSelectedObservabilityProvider(
-                                            'langfuse'
-                                        )
-                                    }
-                                    $selected={
-                                        selectedObservabilityProvider ===
-                                        'langfuse'
-                                    }
-                                >
-                                    Langfuse
-                                </SelectButton>
-                                <SelectButton
-                                    type="button"
-                                    onClick={() =>
-                                        setSelectedObservabilityProvider(
-                                            'phoenix'
-                                        )
-                                    }
-                                    $selected={
-                                        selectedObservabilityProvider ===
-                                        'phoenix'
-                                    }
-                                >
-                                    Phoenix
-                                </SelectButton>
-                            </SelectButtonContainer>
-                        </LabelWithButtons>
-
-                        {selectedObservabilityProvider === 'langfuse' && (
-                            <>
-                                <TextInput
-                                    label={t(
-                                        'agent-form.observability.langfuse.host.label'
-                                    )}
-                                    placeholder={t(
-                                        'agent-form.observability.langfuse.host.placeholder'
-                                    )}
-                                    value={langfuseHost}
-                                    required
-                                    onChange={(e) =>
-                                        setLangfuseHost(e.target.value)
-                                    }
-                                />
-                                <TextInput
-                                    label={t(
-                                        'agent-form.observability.langfuse.public-key.label'
-                                    )}
-                                    placeholder={t(
-                                        'agent-form.observability.langfuse.public-key.placeholder'
-                                    )}
-                                    value={langfusePublicKey}
-                                    onChange={(e) =>
-                                        setLangfusePublicKey(e.target.value)
-                                    }
-                                    required
-                                />
-                                <TextInput
-                                    label={t(
-                                        'agent-form.observability.langfuse.secret-key.label'
-                                    )}
-                                    placeholder={t(
-                                        'agent-form.observability.langfuse.secret-key.placeholder'
-                                    )}
-                                    required
-                                    value={langfuseSecretKey}
-                                    onChange={(e) =>
-                                        setLangfuseSecretKey(e.target.value)
-                                    }
-                                />
-                                <TextInput
-                                    label={t(
-                                        'agent-form.observability.langfuse.run-name.label'
-                                    )}
-                                    placeholder={t(
-                                        'agent-form.observability.langfuse.run-name.placeholder'
-                                    )}
-                                    value={langfuseRunName}
-                                    onChange={(e) =>
-                                        setLangfuseRunName(e.target.value)
-                                    }
-                                />
-                            </>
+                <ModalBody>
+                    <StyledForm onSubmit={(e) => e.preventDefault()}>
+                        {currentStep === 1 && (
+                            <StepContainer>
+                                <StepGrid>
+                                    <IdentityColumn>
+                                        <SectionTitle><SectionIndicator /> Identity</SectionTitle>
+                                        <IdentityRow>
+                                            <AvatarSection>
+                                                <AvatarLabel>ICON</AvatarLabel>
+                                                <AvatarWrapper>
+                                                    <AgentAvatar name={name || 'New Agent'} size={96} />
+                                                    <AvatarOverlay><Upload size={20} color="white" /></AvatarOverlay>
+                                                </AvatarWrapper>
+                                            </AvatarSection>
+                                            <IdentityFields>
+                                                <Row>
+                                                    <FieldWrapper style={{ flex: 2 }}>
+                                                        <InputLabel>{t('agent-form.name.label')}</InputLabel>
+                                                        <StyledInput placeholder={t('agent-form.name.placeholder')} value={name} onChange={e => setName(e.target.value)} />
+                                                    </FieldWrapper>
+                                                    <FieldWrapper style={{ flex: 1 }}>
+                                                        <InputLabel>Version</InputLabel>
+                                                        <StyledInput placeholder="1.0.0" value={version} onChange={handleVersionChange} />
+                                                    </FieldWrapper>
+                                                </Row>
+                                                <FieldWrapper>
+                                                    <InputLabel>Description</InputLabel>
+                                                    <StyledTextarea placeholder="Describe the agent's purpose..." rows={3} value={description} onChange={e => setDescription(e.target.value)} />
+                                                </FieldWrapper>
+                                            </IdentityFields>
+                                        </IdentityRow>
+                                    </IdentityColumn>
+                                    <RuntimeColumn>
+                                        <SectionTitle><SectionIndicator $color="blue" /> Runtime</SectionTitle>
+                                        <FieldWrapper>
+                                            <InputLabel>Target Environment</InputLabel>
+                                            <div style={{ position: 'relative' }}>
+                                                <Server size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#6b7280' }} />
+                                                <StyledSelect value={environment || ''} onChange={e => setEnvironment(e.target.value as any)} style={{ paddingLeft: '40px' }}>
+                                                    <option value="development">Development</option>
+                                                    <option value="staging">Staging</option>
+                                                    <option value="production">Production</option>
+                                                </StyledSelect>
+                                            </div>
+                                        </FieldWrapper>
+                                        <FieldWrapper>
+                                            <InputLabel>Server Port</InputLabel>
+                                            <StyledInput value={serverPort} onChange={e => setServerPort(e.target.value)} />
+                                        </FieldWrapper>
+                                        <FieldWrapper>
+                                            <InputLabel>Framework</InputLabel>
+                                            <FrameworkList>
+                                                {frameworkOptions.map(fw => (
+                                                    <FrameworkOption key={fw.id} $isSelected={agentType === fw.id} onClick={() => setAgentType(fw.id)} type="button">
+                                                        <span style={{ display: 'flex', alignItems: 'center' }}>
+                                                            <Layers size={16} style={{ marginRight: '8px', opacity: 0.7 }} />
+                                                            {fw.label}
+                                        </span>
+                                                        {agentType === fw.id && <CheckCircle><Check size={10} color="white" /></CheckCircle>}
+                                                    </FrameworkOption>
+                                                ))}
+                                            </FrameworkList>
+                                        </FieldWrapper>
+                                    </RuntimeColumn>
+                                </StepGrid>
+                            </StepContainer>
                         )}
 
-                    {agentType === 'LANGGRAPH' && (
-                        <>
-                        <LabelWithButtons>
-                            <ButtonLabel>Checkpointer Type</ButtonLabel>
-                            <SelectButtonContainer>
-                                {(['sqlite', 'postgres'] as const).map((type) => (
-                                    <SelectButton
-                                        type="button"
-                                        key={type}
-                                        onClick={() => handleManualCheckpointerTypeChange(type)}
-                                        $selected={checkpointerType === type}
-                                    >
-                                        {type.toUpperCase()}
-                                    </SelectButton>
-                                ))}
-                            </SelectButtonContainer>
-                        </LabelWithButtons>
-                        <TextInput
-                                label="Checkpointer Database URL"
-                                placeholder={
-                                    checkpointerType === 'sqlite'
-                                        ? 'sqlite:///support_bot.db'
-                                        : 'postgres://user:password@host:5432/database'
-                                }
-                                value={databaseUrl}
-                            error={dbUrlError ?? undefined}
-                            onChange={handleDatabaseUrlChange}
-                        />
-                    </>
-                )}
+                        {currentStep === 2 && (
+                            <StepContainer>
+                                <StepGrid>
+                                    <LogicColumn>
+                                        {schemaError ? <ErrorMessage>{schemaError}</ErrorMessage> : rootSchema ? (
+                                            <DynamicForm 
+                                                schema={getCurrentSchema()} 
+                                                rootSchema={rootSchema}
+                                                data={agentConfig}
+                                                onChange={setAgentConfig}
+                                                excludeFields={['checkpointer', 'observability']}
+                                            />
+                                        ) : <div style={{ color: '#fff' }}>Loading schema...</div>}
+                                    </LogicColumn>
 
-                <ButtonContainer>
-                                    <Button
-                                        $variants="base"
-                                        $color="primary"
-                                        type="submit"
-                            disabled={isSubmitting}
-                                    >
-                            {isSubmitting
-                                ? 'Creating Agent...'
-                                : t('agent-form.create-agent') || 'Create Agent'}
-                                    </Button>
-                </ButtonContainer>
-                
-                {submitError && (
-                    <SubmitErrorMessage>{submitError}</SubmitErrorMessage>
-                )}
-                </>
-            </Form>
+                                    <DataColumn>
+                                        {/* Memory Section */}
+                                        <div>
+                                            <SectionTitle><SectionIndicator $color="emerald" /> Data Sources</SectionTitle>
+                                            <FieldWrapper>
+                                                <InputLabel>Memory Store Type</InputLabel>
+                                                <div style={{ position: 'relative' }}>
+                                                    <Database size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#6b7280' }} />
+                                                    <StyledSelect 
+                                                        value={selectedMemoryType} 
+                                                        onChange={(e) => {
+                                                            setSelectedMemoryType(e.target.value);
+                                                            setSelectedMemoryAppId('');
+                                                        }}
+                                                        style={{ paddingLeft: '40px' }}
+                                                    >
+                                                        <option value="">Select Type...</option>
+                                                        {MEMORY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                                    </StyledSelect>
+                                                </div>
+                                            </FieldWrapper>
 
-            <SourcePopup
-                isOpen={isPopupOpen}
-                onClose={handleClosePopup}
-                onChangeZip={handleChangesYamlFiles}
-                sourceType={selectedSourceType}
+                                            {selectedMemoryType && (
+                                                <CardGrid>
+                                                    {/* Add Config Button */}
+                                                    <AddConfigCard onClick={() => handleCreateApp(selectedMemoryType as AppType, 'Memory')}>
+                                                        <Plus size={24} color="#8c52ff" />
+                                                        <span>Add New</span>
+                                                    </AddConfigCard>
+
+                                                    {getFilteredMemoryApps().map(app => (
+                                                        <ConfigCard 
+                                                            key={app.id} 
+                                                            $selected={selectedMemoryAppId === app.id}
+                                                            onClick={() => setSelectedMemoryAppId(app.id)}
+                                                        >
+                                                            <CardHeader>
+                                                                <CardTitle>{app.name}</CardTitle>
+                                                                <div style={{display: 'flex', gap: '4px'}}>
+                                                                    <MiniIconButton onClick={(e) => handleViewApp(e, app)}>
+                                                                        <Eye size={12} />
+                                                                    </MiniIconButton>
+                                                                    {selectedMemoryAppId === app.id && <Check size={14} color="#10b981" />}
+                                                                </div>
+                                                            </CardHeader>
+                                                            <CardMeta>{formatDate(app.updatedAt)} • {app.owner}</CardMeta>
+                                                        </ConfigCard>
+                                                    ))}
+                                                </CardGrid>
+                                            )}
+                                        </div>
+
+                                        {/* Observability Section */}
+                                        <div style={{ marginTop: '32px' }}>
+                                            <SectionTitle><SectionIndicator $color="yellow" /> Monitoring</SectionTitle>
+                                            <FieldWrapper>
+                                                <InputLabel>Observability Types (Multi-Select)</InputLabel>
+                                                <MultiSelectContainer>
+                                                    {OBSERVABILITY_TYPES.map(type => (
+                                                        <TypeCheckbox key={type} $checked={selectedObservabilityTypes.includes(type)} onClick={() => toggleObservabilityType(type)}>
+                                                            <div style={{display: 'flex', alignItems: 'center'}}>
+                                                                <div className="checkbox">{selectedObservabilityTypes.includes(type) && <Check size={10} />}</div>
+                                                                <span>{type}</span>
+                                                            </div>
+                                                        </TypeCheckbox>
+                                                    ))}
+                                                </MultiSelectContainer>
+                                            </FieldWrapper>
+
+                                            {selectedObservabilityTypes.map(type => {
+                                                const apps = getFilteredObservabilityApps(type);
+                                                return (
+                                                    <div key={type} style={{ marginTop: '16px' }}>
+                                                        <TypeHeader>{type}</TypeHeader>
+                                                        <Carousel>
+                                                            {/* Add Config Button in Carousel */}
+                                                            <AddConfigCard 
+                                                                style={{ minWidth: '140px', height: 'auto', aspectRatio: 'unset' }}
+                                                                onClick={() => handleCreateApp(type as AppType, 'Observability')}
+                                                            >
+                                                                <Plus size={24} color="#8c52ff" />
+                                                                <span>Add New</span>
+                                                            </AddConfigCard>
+
+                                                            {apps.map(app => (
+                                                                <ConfigCard 
+                                                                    key={app.id} 
+                                                                    $selected={selectedObservabilityApps[type] === app.id}
+                                                                    onClick={() => selectObservabilityApp(type, app.id)}
+                                                                    style={{ minWidth: '200px' }}
+                                                                >
+                                                                    <CardHeader>
+                                                                        <CardTitle>{app.name}</CardTitle>
+                                                                        <div style={{display: 'flex', gap: '4px'}}>
+                                                                            <MiniIconButton onClick={(e) => handleViewApp(e, app)}>
+                                                                                <Eye size={12} />
+                                                                            </MiniIconButton>
+                                                                            {selectedObservabilityApps[type] === app.id && <Check size={14} color="#10b981" />}
+                                                                        </div>
+                                                                    </CardHeader>
+                                                                    <CardMeta>{formatDate(app.updatedAt)}</CardMeta>
+                                                                </ConfigCard>
+                                                            ))}
+                                                        </Carousel>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </DataColumn>
+                                </StepGrid>
+                            </StepContainer>
+                        )}
+
+                        {currentStep === 3 && (
+                            <StepContainer>
+                                <StepGrid>
+                                    <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                                        
+                                        {/* MCP Section */}
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                                 <SectionTitle style={{ marginBottom: 0 }}><SectionIndicator $color="purple" /> Model Context Protocol (MCP) Servers</SectionTitle>
+                                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <span style={{ fontSize: '12px', color: '#9ca3af', padding: '4px 12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '9999px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        {selectedMCPIds.length} Selected
+                                        </span>
+                                                    <AddButton onClick={() => handleCreateApp('MCPServer', 'MCP')}>
+                                                        <Plus size={14} style={{ marginRight: '4px' }} /> Add Server
+                                                    </AddButton>
+                                                 </div>
+                                            </div>
+                                            
+                                            {mcpApps.length === 0 ? (
+                                                <EmptyState>No MCP Servers configured.</EmptyState>
+                                            ) : (
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px' }}>
+                                                    {mcpApps.map(app => (
+                                                        <SafetyCardContainer 
+                                                            key={app.id} 
+                                                            $enabled={selectedMCPIds.includes(app.id)}
+                                                            onClick={() => toggleMCP(app.id)}
+                                                        >
+                                                            <SafetyCardHeader>
+                                                                <Zap size={18} color={selectedMCPIds.includes(app.id) ? '#c084fc' : '#4b5563'} />
+                                                                <SafetyCheckbox $checked={selectedMCPIds.includes(app.id)}>
+                                                                    {selectedMCPIds.includes(app.id) && <Check size={12} />}
+                                                                </SafetyCheckbox>
+                                                            </SafetyCardHeader>
+                                                            
+                                                            <SafetyTitle $enabled={selectedMCPIds.includes(app.id)}>{app.name}</SafetyTitle>
+                                                            
+                                                            <SafetyFooter>
+                                                                <span style={{ fontSize: '10px', fontWeight: 500, padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(140, 82, 255, 0.2)', backgroundColor: 'rgba(140, 82, 255, 0.1)', color: '#c084fc' }}>
+                                                                    {app.type}
+                                        </span>
+                                                            </SafetyFooter>
+                                                        </SafetyCardContainer>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Guardrails Section */}
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                                 <SectionTitle style={{ marginBottom: 0 }}><SectionIndicator $color="red" /> Safety Guardrails</SectionTitle>
+                                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <span style={{ fontSize: '12px', color: '#9ca3af', padding: '4px 12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '9999px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        {selectedGuardIds.length} Selected
+                                                    </span>
+                                                    <div style={{ position: 'relative', display: 'flex' }}>
+                                                        <StyledSelect 
+                                                            value={selectedGuardTypeToAdd} 
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                setSelectedGuardTypeToAdd(val);
+                                                                if(val) handleCreateApp(val as AppType, 'Guardrails');
+                                                                setTimeout(() => setSelectedGuardTypeToAdd(''), 500);
+                                                            }}
+                                                            style={{ width: '140px', padding: '6px 12px', fontSize: '12px', height: '32px' }}
+                                                        >
+                                                            <option value="">+ Add Guardrail</option>
+                                                            {MARKETPLACE_APPS.filter(a => a.category === 'Guardrails').map(a => (
+                                                                <option key={a.type} value={a.type}>{a.name}</option>
+                            ))}
+                                                        </StyledSelect>
+                                                    </div>
+                                                 </div>
+                                            </div>
+
+                                            {guardApps.length === 0 ? (
+                                                <EmptyState>No Safety Guardrails configured.</EmptyState>
+                                            ) : (
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px' }}>
+                                                    {guardApps.map(app => {
+                                                        const risk = getRiskLevel(app.type);
+                                                        const isEnabled = selectedGuardIds.includes(app.id);
+                                                        return (
+                                                            <SafetyCardContainer 
+                                                                key={app.id} 
+                                                                $enabled={isEnabled} 
+                                                                $risk={risk.label.includes('High') ? 'High' : 'Low'}
+                                                                onClick={() => toggleGuard(app.id)}
+                                                            >
+                                                                <SafetyCardHeader>
+                                                                    <Shield size={18} color={isEnabled ? (risk.label.includes('High') ? '#f87171' : '#c084fc') : '#4b5563'} />
+                                                                    <SafetyCheckbox $checked={isEnabled} $risk={risk.label.includes('High') ? 'High' : 'Low'}>
+                                                                        {isEnabled && <Check size={12} />}
+                                                                    </SafetyCheckbox>
+                                                                </SafetyCardHeader>
+                                                                
+                                                                <SafetyTitle $enabled={isEnabled}>{app.name}</SafetyTitle>
+                                                                
+                                                                <SafetyFooter>
+                                                                    <RiskTag $color={risk.color}>{risk.label}</RiskTag>
+                                                                </SafetyFooter>
+                                                            </SafetyCardContainer>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                    </div>
+                                </StepGrid>
+                            </StepContainer>
+                        )}
+                    </StyledForm>
+                </ModalBody>
+
+                <ModalFooter>
+                    <CancelButton onClick={() => navigate('/agents')}>Cancel</CancelButton>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        {currentStep > 1 && <BackButton onClick={prevStep}><ChevronLeft size={16} style={{ marginRight: '8px' }} /> Back</BackButton>}
+                        {currentStep < 3 ? (
+                            <NextButton onClick={nextStep}>Next Step <ChevronRight size={16} style={{ marginLeft: '8px' }} /></NextButton>
+                        ) : (
+                            <DeployButton onClick={(e) => handleSubmitForm(e as any)} disabled={isSubmitting}>
+                                {isSubmitting ? 'Deploying...' : 'Deploy Agent'} <Activity size={16} style={{ marginLeft: '8px' }} />
+                            </DeployButton>
+                        )}
+                    </div>
+                </ModalFooter>
+            </ModalWindow>
+
+            <ApplicationModal
+                isOpen={isAppModalOpen}
+                onClose={() => setIsAppModalOpen(false)}
+                appToCreate={appToCreate}
+                appToEdit={appToEdit}
+                onSuccess={loadApps}
             />
-        </MainContainer>
+        </PageContainer>
     );
 }
 
-const MainContainer = styled.main`
-    min-height: 100vh;
-    padding: 40px;
-    background: var(--color-background-primary, #0f1016);
-    overflow-y: auto;
+// Styled Components
+const PageContainer = styled.div`
+    position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px;
 `;
-
-const Header = styled.div`
-    text-align: center;
-    margin-bottom: 40px;
-
-    h1 {
-        font-size: 32px;
-        font-weight: 700;
-        margin: 0 0 16px 0;
-        color: var(--color-text-primary, #ffffff);
-    }
-
-    p {
-        font-size: 18px;
-        color: var(--color-text-secondary, #8892b0);
-        margin: 0;
-        line-height: 1.5;
-    }
+const Backdrop = styled.div`
+    position: absolute; inset: 0; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
 `;
-
-const StepsWrapper = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    justify-content: center;
+const ModalWindow = styled.div`
+    position: relative; width: 100%; max-width: 1152px; background-color: #0f1016; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden;
 `;
-
-const StepDot = styled.div<{ active?: boolean }>`
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: ${({ active }) =>
-        active ? 'var(--color-primary, #8c52ff)' : 'transparent'};
-    color: ${({ active }) =>
-        active
-            ? 'var(--color-background-primary, #16213e)'
-            : 'var(--color-text-secondary, #8892b0)'};
-    border: 2px solid var(--color-primary, #8c52ff);
-    font-weight: 700;
+const ModalHeader = styled.div`
+    display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); background-color: #0B0A15;
 `;
+const ModalTitle = styled.h2` font-size: 24px; font-weight: 700; color: white; margin: 0; `;
+const ModalSubtitle = styled.p` font-size: 14px; color: #9ca3af; margin-top: 4px; `;
+const CloseButton = styled.button` padding: 8px; color: #9ca3af; background: transparent; border: none; cursor: pointer; border-radius: 8px; transition: all 0.2s; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); } `;
+const StepperContainer = styled.div` background-color: #08070f; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding: 16px 32px; `;
+const StepperInner = styled.div` display: flex; align-items: center; justify-content: space-between; max-width: 768px; margin: 0 auto; `;
+const StepItem = styled.div` display: flex; align-items: center; flex: 1; &:last-child { flex: none; } `;
+const StepContent = styled.div` display: flex; align-items: center; position: relative; `;
+const StepCircle = styled.div<{ $isActive: boolean; $isCompleted: boolean }>` width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid; transition: all 0.2s; z-index: 10; ${props => props.$isActive ? `background-color: #8c52ff; border-color: #8c52ff; color: white; box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);` : props.$isCompleted ? `background-color: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #34d399;` : `background-color: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #6b7280;`} `;
+const StepInfo = styled.div` margin-left: 12px; `;
+const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>` font-size: 14px; font-weight: 700; color: ${props => (props.$isActive || props.$isCompleted) ? 'white' : '#6b7280'}; margin: 0; `;
+const StepInProgress = styled.p` font-size: 10px; color: #8c52ff; margin: 0; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } `;
+const StepSeparatorLine = styled.div` flex: 1; height: 2px; margin: 0 16px; background-color: rgba(255, 255, 255, 0.1); position: relative; `;
+const StepProgress = styled.div<{ $isCompleted: boolean }>` position: absolute; inset: 0; background-color: #10b981; width: ${props => props.$isCompleted ? '100%' : '0%'}; transition: width 0.5s; `;
+const ModalBody = styled.div` flex: 1; overflow-y: auto; padding: 32px; background-color: #040210; `;
+const ModalFooter = styled.div` padding: 24px; border-top: 1px solid rgba(255, 255, 255, 0.05); background-color: #0B0A15; display: flex; justify-content: space-between; align-items: center; `;
+const CancelButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: #9ca3af; background: transparent; border: none; border-radius: 8px; cursor: pointer; transition: color 0.2s; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); } `;
+const BackButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: #d1d5db; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; display: flex; align-items: center; transition: all 0.2s; &:hover { color: white; background-color: rgba(255, 255, 255, 0.1); } `;
+const NextButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: white; background-color: #8c52ff; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.2); transition: all 0.2s; &:hover { background-color: #7c3aed; } `;
+const DeployButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: white; background-color: #10b981; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2); transition: all 0.2s; &:hover { background-color: #059669; } &:disabled { opacity: 0.6; cursor: not-allowed; } `;
+const StepContainer = styled.div` animation: fadeIn 0.3s ease-in-out; height: 100%; @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } `;
+const StepGrid = styled.div` display: grid; grid-template-columns: 1fr; gap: 32px; height: 100%; @media (min-width: 768px) { grid-template-columns: repeat(3, 1fr); } `;
+const IdentityColumn = styled.div` grid-column: span 2; display: flex; flex-direction: column; gap: 24px; `;
+const RuntimeColumn = styled.div` display: flex; flex-direction: column; gap: 24px; `;
+const LogicColumn = styled.div` grid-column: span 2; display: flex; flex-direction: column; gap: 24px; height: 100%; min-height: 400px; `;
+const DataColumn = styled.div` display: flex; flex-direction: column; gap: 24px; `;
+const SectionTitle = styled.h3` font-size: 14px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; margin-bottom: 16px; `;
+const SectionIndicator = styled.span<{ $color?: string }>` width: 4px; height: 16px; background-color: ${props => { switch(props.$color) { case 'blue': return '#3b82f6'; case 'emerald': return '#10b981'; case 'yellow': return '#eab308'; case 'purple': return '#a855f7'; default: return '#8c52ff'; } }}; border-radius: 9999px; margin-right: 8px; `;
+const IdentityRow = styled.div` display: flex; gap: 24px; align-items: flex-start; `;
+const AvatarSection = styled.div` flex-shrink: 0; `;
+const AvatarLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; text-align: center; `;
+const AvatarWrapper = styled.div` position: relative; cursor: pointer; &:hover > div { opacity: 1; } `;
+const AvatarOverlay = styled.div` position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.6); opacity: 0; transition: opacity 0.2s; border-radius: 12px; `;
+const IdentityFields = styled.div` flex: 1; display: flex; flex-direction: column; gap: 20px; `;
+const Row = styled.div` display: flex; gap: 16px; `;
+const FieldWrapper = styled.div` width: 100%; `;
+const InputLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; `;
+const StyledInput = styled.input` width: 100%; background-color: #0B0A15; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: white; outline: none; transition: all 0.2s; &:focus { border-color: #8c52ff; box-shadow: 0 0 0 1px #8c52ff; } &::placeholder { color: #374151; } `;
+const StyledTextarea = styled.textarea` width: 100%; background-color: #0B0A15; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: white; outline: none; transition: all 0.2s; resize: none; &:focus { border-color: #8c52ff; box-shadow: 0 0 0 1px #8c52ff; } &::placeholder { color: #374151; } `;
+const StyledSelect = styled.select` width: 100%; background-color: #0B0A15; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: #d1d5db; outline: none; appearance: none; transition: all 0.2s; cursor: pointer; &:focus { border-color: #8c52ff; } &:hover { border-color: rgba(255, 255, 255, 0.2); } `;
+const FrameworkList = styled.div` display: flex; flex-direction: column; gap: 8px; `;
+const FrameworkOption = styled.button<{ $isSelected: boolean }>` width: 100%; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; cursor: pointer; ${props => props.$isSelected ? `background-color: rgba(140, 82, 255, 0.1); border-color: #8c52ff; color: white;` : `background-color: #0B0A15; border-color: rgba(255, 255, 255, 0.1); color: #9ca3af; &:hover { border-color: rgba(255, 255, 255, 0.2); background-color: rgba(255, 255, 255, 0.05); }`} `;
+const CheckCircle = styled.div` width: 16px; height: 16px; background-color: #8c52ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; `;
+const ErrorMessage = styled.p` margin-top: 8px; margin-bottom: 0; font-size: 14px; font-family: inherit; font-weight: 400; color: #ff4757; line-height: 1.5; `;
 
-const StepLabel = styled.span`
-    color: var(--color-text-secondary, #8892b0);
-    font-size: 14px;
-    margin-right: 12px;
-`;
-
-const StepSeparator = styled.div`
-    width: 24px;
-    height: 2px;
-    background: var(--color-border-primary, #2a3f5f);
-`;
-
-const SourceLabel = styled.label`
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
-    margin-bottom: 16px;
-    margin-top: 24px;
-`;
-
-const SourceSection = styled.section`
+// New Components for Enhanced Selection
+const CardGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
 `;
 
-const SourceCard = styled.div`
+const AddConfigCard = styled.button`
+    background-color: rgba(140, 82, 255, 0.05);
+    border: 1px dashed rgba(140, 82, 255, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 24px;
-    background: var(--color-background-tertiary, #2a3f5f);
-    border: 2px solid var(--color-border-primary, #2a3f5f);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-
-    &:hover {
-        border-color: var(--color-primary, #8c52ff);
-        background: var(--color-background-primary, #16213e);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    }
-
-    svg {
-        width: 32px;
-        height: 32px;
-        color: var(--color-primary, #8c52ff);
-        margin-bottom: 16px;
-    }
-
-    p {
-        font-size: 16px;
-        font-weight: 600;
-        margin: 0;
-        color: var(--color-text-primary, #ffffff);
-        line-height: 1.4;
-
-        span {
-            display: block;
-            font-size: 14px;
-            font-weight: 400;
-            color: var(--color-text-secondary, #8892b0);
-            margin-top: 4px;
-        }
-    }
-`;
-
-const ButtonContainer = styled.div`
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 32px;
-    padding-top: 32px;    gap: 8px;
-    border-top: 1px solid var(--color-border-primary, #2a3f5f);
-`;
-
-const SelectButton = styled.button<{ $selected: boolean }>`
-    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 16px;
-    flex: 0 0 auto;
-    font: inherit;
-    border-radius: 8px;
-    border: 2px solid var(--color-primary, #8c52ff);
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: var(--color-primary, #8c52ff) !important;
-        color: var(--color-background-primary, #16213e) !important;
-    }
-
-    color: ${({ $selected }) =>
-        $selected
-            ? 'var(--color-background-primary, #16213e)'
-            : 'var(--color-text-primary, #ffffff)'} !important;
-    background: ${({ $selected }) =>
-        $selected ? 'var(--color-primary, #8c52ff)' : 'transparent'} !important;
-
-    &:focus-visible {
-        outline: 2px solid rgba(140, 82, 255, 0.7);
-        outline-offset: 2px;
-    }
-
-    &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        background: transparent;
-        color: var(--color-text-secondary, #8892b0);
-    }
-`;
-
-const SelectButtonContainer = styled.div`
-    display: inline-flex;
     gap: 8px;
-    vertical-align: middle;
-    flex-wrap: wrap;
-`;
-
-const LabelWithButtons = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 24px;
-`;
-
-const ButtonLabel = styled.div`
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
-`;
-
-const JsonEditorContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 16px;
-`;
-
-const JsonEditorLabel = styled.span`
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
-`;
-
-const JsonEditorWrapper = styled.div`
-    border: 1px solid var(--color-border-primary, #2a3f5f);
-    border-radius: 8px;
-    overflow: hidden;
-    background: var(--color-background-primary, #0f1016);
-`;
-
-const FrameworkDetectionBox = styled.div<{ $isError: boolean }>`
-    padding: 16px 20px;
-    background: ${({ $isError }) => 
-        $isError 
-            ? 'rgba(255, 71, 87, 0.1)' 
-            : 'rgba(140, 82, 255, 0.1)'
-    };
-    border: 1px solid ${({ $isError }) => 
-        $isError 
-            ? '#ff4757' 
-            : 'var(--color-primary, #8c52ff)'
-    };
-    border-radius: 8px;
-    margin-bottom: 24px;
-`;
-
-const FrameworkLabel = styled.div`
+    min-height: 80px;
+    color: #8c52ff;
     font-size: 12px;
     font-weight: 600;
-    font-family: inherit;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--color-text-secondary, #8892b0);
-    margin-bottom: 4px;
+
+    &:hover {
+        background-color: rgba(140, 82, 255, 0.1);
+        border-color: #8c52ff;
+    }
 `;
 
-const FrameworkValue = styled.div<{ $isError: boolean }>`
-    font-size: 16px;
-    font-weight: 600;
-    font-family: inherit;
-    color: ${({ $isError }) => 
-        $isError 
-            ? '#ff4757' 
-            : 'var(--color-primary, #8c52ff)'
-    };
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-`;
-
-const ErrorMessage = styled.p`
-    margin-top: 8px;
-    margin-bottom: 0;
-    font-size: 14px;
-    font-family: inherit;
-    font-weight: 400;
-    color: #ff4757;
-    line-height: 1.5;
-`;
-
-const SubmitErrorMessage = styled.div`
-    margin-top: 16px;
-    padding: 16px 20px;
-    background: rgba(255, 71, 87, 0.1);
-    border: 1px solid #ff4757;
+const ConfigCard = styled.div<{ $selected: boolean }>`
+    background-color: ${props => props.$selected ? 'rgba(140, 82, 255, 0.1)' : '#0B0A15'};
+    border: 1px solid ${props => props.$selected ? '#8c52ff' : 'rgba(255, 255, 255, 0.1)'};
     border-radius: 8px;
-    color: #ff4757;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &:hover {
+        border-color: ${props => props.$selected ? '#8c52ff' : 'rgba(255, 255, 255, 0.2)'};
+        background-color: ${props => props.$selected ? 'rgba(140, 82, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)'};
+    }
+`;
+
+const CardHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+`;
+
+const CardTitle = styled.span`
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`;
+
+const MiniIconButton = styled.div`
+    padding: 2px;
+    border-radius: 4px;
+    color: #9ca3af;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+`;
+
+const CardMeta = styled.span`
+    font-size: 10px;
+    color: #9ca3af;
+`;
+
+const EmptyText = styled.p`
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+        margin: 0;
+`;
+
+const MultiSelectContainer = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    background-color: #0B0A15;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+`;
+
+const TypeCheckbox = styled.div<{ $checked: boolean }>`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background-color: ${props => props.$checked ? 'rgba(140, 82, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
+    border: 1px solid ${props => props.$checked ? '#8c52ff' : 'transparent'};
+    border-radius: 6px;
+    font-size: 12px;
+    color: ${props => props.$checked ? 'white' : '#9ca3af'};
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+
+    &:hover {
+        background-color: ${props => props.$checked ? 'rgba(140, 82, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+    }
+
+    .checkbox {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        border: 1px solid ${props => props.$checked ? '#8c52ff' : '#4b5563'};
+        background-color: ${props => props.$checked ? '#8c52ff' : 'transparent'};
+        display: flex;
+        align-items: center;
+    justify-content: center;
+        margin-right: 6px;
+    }
+`;
+
+const CarouselContainer = styled.div`
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+`;
+
+const CarouselTrack = styled.div`
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 0;
+    scroll-behavior: smooth;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    width: 100%;
+`;
+
+const CarouselButton = styled.button<{ direction: 'left' | 'right' }>`
+    position: absolute;
+    ${props => props.direction === 'left' ? 'left: -12px;' : 'right: -12px;'}
+    z-index: 10;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #1f2937;
+    border: 1px solid #374151;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0.8;
+    &:hover { opacity: 1; background-color: #374151; }
+`;
+
+const TypeHeader = styled.div`
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+`;
+
+const StyledForm = styled.form`
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
+
+const SafetyCardContainer = styled.div<{ $enabled: boolean, $risk?: string }>`
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid ${props => props.$enabled
+        ? (props.$risk === 'High' ? 'rgba(239, 68, 68, 0.5)' : props.$risk ? 'rgba(140, 82, 255, 0.5)' : 'rgba(140, 82, 255, 0.5)')
+        : 'rgba(255, 255, 255, 0.1)'};
+    background-color: ${props => props.$enabled
+        ? (props.$risk === 'High' ? 'rgba(127, 29, 29, 0.1)' : props.$risk ? 'rgba(140, 82, 255, 0.1)' : 'rgba(140, 82, 255, 0.1)')
+        : '#0B0A15'};
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s;
+    cursor: pointer;
+    height: 100%;
+    min-height: 120px;
+
+    &:hover {
+        border-color: ${props => props.$enabled ? '' : 'rgba(255, 255, 255, 0.2)'};
+    }
+`;
+
+const SafetyCardHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    width: 100%;
+`;
+
+const SafetyCheckbox = styled.div<{ $checked: boolean, $risk?: string }>`
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    
+    ${props => props.$checked
+        ? `
+            background-color: ${props.$risk === 'High' ? '#ef4444' : '#8c52ff'};
+            border-color: ${props.$risk === 'High' ? '#ef4444' : '#8c52ff'};
+            color: white;
+        `
+        : `
+            background-color: rgba(0, 0, 0, 0.2);
+            border-color: #374151;
+        `
+    }
+`;
+
+const SafetyTitle = styled.h4<{ $enabled: boolean }>`
     font-size: 14px;
+    font-weight: 700;
+    color: ${props => props.$enabled ? 'white' : '#d1d5db'};
+    margin: 0 0 4px 0;
+`;
+
+const SafetyFooter = styled.div`
+    margin-top: auto;
+    padding-top: 8px;
+`;
+
+const SafetyDesc = styled.p`
+    font-size: 12px;
+    color: #6b7280;
+        margin: 0;
+`;
+
+// Removed unused SafetyToggle and SafetyToggleKnob styled components
+
+const RiskTag = styled.span<{ $color: string }>`
+    font-size: 10px;
     font-weight: 500;
-    line-height: 1.5;
-    word-break: break-word;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid;
+    ${props => {
+        switch(props.$color) {
+            case 'red': return `background-color: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2);`;
+            case 'amber': return `background-color: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2);`;
+            default: return `background-color: rgba(59, 130, 246, 0.1); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2);`;
+        }
+    }}
+`;
+
+const AddButton = styled.button`
+    display: flex;
+    align-items: center;
+    padding: 4px 12px;
+    background-color: rgba(140, 82, 255, 0.1);
+    color: #8c52ff;
+    border: 1px solid rgba(140, 82, 255, 0.2);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    &:hover {
+        background-color: rgba(140, 82, 255, 0.2);
+    }
+`;
+
+const EmptyState = styled.div`
+    padding: 32px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 13px;
+    background-color: rgba(255, 255, 255, 0.02);
 `;

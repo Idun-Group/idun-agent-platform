@@ -4,8 +4,10 @@ from pydantic import BaseModel, Field
 
 from .agent import AgentConfig
 from .mcp_server import MCPServer
-from .guardrails import Guardrails
+from .guardrails import Guardrails as GuardrailsV1
 from .server import ServerConfig
+from .observability_v2 import ObservabilityConfig
+from .guardrails_v2 import GuardrailsV2 as Guardrails
 
 
 class EngineConfig(BaseModel):
@@ -15,3 +17,4 @@ class EngineConfig(BaseModel):
     agent: AgentConfig
     mcp_servers: list[MCPServer] | None = None
     guardrails: Guardrails | None = None
+    observability: list[ObservabilityConfig] | None = None
