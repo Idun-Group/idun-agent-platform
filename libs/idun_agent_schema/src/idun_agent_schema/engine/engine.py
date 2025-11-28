@@ -6,6 +6,7 @@ from .agent import AgentConfig
 from .mcp_server import MCPServer
 from .guardrails import Guardrails
 from .server import ServerConfig
+from .observability_v2 import ObservabilityConfig
 
 
 class EngineConfig(BaseModel):
@@ -15,3 +16,4 @@ class EngineConfig(BaseModel):
     agent: AgentConfig
     mcp_servers: list[MCPServer] | None = None
     guardrails: Guardrails | None = None
+    observability: list[ObservabilityConfig] | None = None
