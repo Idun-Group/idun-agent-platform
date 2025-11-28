@@ -28,6 +28,7 @@ dependencies = [
   # Security & Auth
   "python-jose[cryptography]>=3.3.0,<4.0.0",
   "passlib[bcrypt]>=1.7.4,<2.0.0",
+  "authlib",
 
   # HTTP & Utilities
   "httpx>=0.28.1,<0.29.0",

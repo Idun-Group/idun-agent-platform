@@ -31,12 +31,10 @@ async def _reflect_tables(conn: AsyncConnection) -> dict[str, Table]:
         metadata.reflect(
             bind=sync_conn,
             only=[
-                "tenants",
-                "workspaces",
-                "users",
-                "tenant_users",
-                "workspace_users",
                 "managed_agents",
+                "managed_observabilities",
+                "managed_mcp_servers",
+                "managed_guardrails",
             ],
         )
 
@@ -73,107 +71,14 @@ async def seed() -> None:
     async with engine.begin() as conn:
         tables = await _reflect_tables(conn)
 
-        tenants = tables["tenants"]
-        workspaces = tables["workspaces"]
-        users = tables["users"]
-        tenant_users = tables["tenant_users"]
-        workspace_users = tables["workspace_users"]
         managed_agents = tables["managed_agents"]
+        managed_observabilities = tables["managed_observabilities"]
+        managed_mcp_servers = tables["managed_mcp_servers"]
+        managed_guardrails = tables["managed_guardrails"]
 
-        # --- Seed tenant ---
-        tenant_slug = "acme"
-        tenant_id = _stable_uuid5(f"tenant:{tenant_slug}")
-        tenant_row = await _get_or_create(
-            conn,
-            tenants,
-            {"slug": tenant_slug},
-            {
-                "id": tenant_id,
-                "name": "Acme Inc",
-                "slug": tenant_slug,
-                "plan": "free",
-                "status": "active",
-            },
-        )
-
-        # --- Seed workspaces ---
-        ws_default_slug = "default"
-        ws_dev_slug = "dev"
-        ws_default_id = _stable_uuid5(f"workspace:{tenant_row['id']}:{ws_default_slug}")
-        ws_dev_id = _stable_uuid5(f"workspace:{tenant_row['id']}:{ws_dev_slug}")
-
-        ws_default = await _get_or_create(
-            conn,
-            workspaces,
-            {"tenant_id": tenant_row["id"], "slug": ws_default_slug},
-            {
-                "id": ws_default_id,
-                "tenant_id": tenant_row["id"],
-                "name": "Default",
-                "slug": ws_default_slug,
-                "status": "active",
-            },
-        )
-
-        ws_dev = await _get_or_create(
-            conn,
-            workspaces,
-            {"tenant_id": tenant_row["id"], "slug": ws_dev_slug},
-            {
-                "id": ws_dev_id,
-                "tenant_id": tenant_row["id"],
-                "name": "Development",
-                "slug": ws_dev_slug,
-                "status": "active",
-            },
-        )
-
-        # --- Seed user ---
-        admin_email = "admin@acme.test"
-        user_id = _stable_uuid5(f"user:{admin_email}")
-        user_row = await _get_or_create(
-            conn,
-            users,
-            {"email": admin_email},
-            {
-                "id": user_id,
-                "email": admin_email,
-                "name": "Acme Admin",
-                "avatar_url": None,
-            },
-        )
-
-        # --- Seed memberships (tenant_users, workspace_users) ---
-        await _get_or_create(
-            conn,
-            tenant_users,
-            {"tenant_id": tenant_row["id"], "user_id": user_row["id"]},
-            {
-                "id": _stable_uuid5(f"tenant_user:{tenant_row['id']}:{user_row['id']}"),
-                "tenant_id": tenant_row["id"],
-                "user_id": user_row["id"],
-                "role": "owner",
-            },
-        )
-
-        for ws in (ws_default, ws_dev):
-            await _get_or_create(
-                conn,
-                workspace_users,
-                {"workspace_id": ws["id"], "user_id": user_row["id"]},
-                {
-                    "id": _stable_uuid5(f"workspace_user:{ws['id']}:{user_row['id']}"),
-                    "workspace_id": ws["id"],
-                    "user_id": user_row["id"],
-                    "role": "admin",
-                },
-            )
-
-        # --- Seed a sample managed_agent in default workspace ---
-        agent_name = "Acme Support Agent"
-        agent_id = _stable_uuid5(
-            f"agent:{tenant_row['id']}:{ws_default['id']}:{agent_name}"
-        )
+        # --- Seed a sample managed_agent ---
+        agent_name = "Example Support Agent"
+        agent_id = _stable_uuid5(f"agent:{agent_name}")
         await _get_or_create(
             conn,
             managed_agents,
@@ -181,28 +86,87 @@ async def seed() -> None:
             {
                 "id": agent_id,
                 "name": agent_name,
-                "description": "Example agent for getting started.",
-                "framework": "langgraph",
                 "status": "draft",
-                "config": {
-                    "agent": {"type": "langgraph", "graph": {"nodes": [], "edges": []}},
-                },
                 "engine_config": {
-                    "runtime": "langgraph",
-                    "graph": {"nodes": [], "edges": []},
+                    "server": {"api": {"port": 8000}},
+                    "agent": {
+                        "type": "LANGGRAPH",
+                        "config": {
+                            "name": "Example Support Agent",
+                            "graph_definition": "example_agent.py:app",
+                            "observability": {"enabled": False},
+                        },
+                    },
                 },
-                "run_config": {
-                    "max_steps": 20,
-                    "temperature": 0.2,
+                "agent_hash": "example_hash_123",
+                "version": "1.0.0",
+            },
+        )
+
+        # --- Seed observability config ---
+        observability_name = "Default Langfuse Observability"
+        observability_id = _stable_uuid5(f"observability:{observability_name}")
+        await _get_or_create(
+            conn,
+            managed_observabilities,
+            {"id": observability_id},
+            {
+                "id": observability_id,
+                "name": observability_name,
+                "observability_config": {
+                    "provider": "LANGFUSE",
+                    "enabled": True,
+                    "config": {
+                        "host": "https://cloud.langfuse.com",
+                        "public_key": "pk_lf_example_key",
+                        "secret_key": "sk_lf_example_secret",
+                        "run_name": "example-agent",
+                    },
                 },
-                "tenant_id": tenant_row["id"],
-                "workspace_id": ws_default["id"],
+            },
+        )
+
+        # --- Seed MCP server config ---
+        mcp_server_name = "File System MCP Server"
+        mcp_server_id = _stable_uuid5(f"mcp_server:{mcp_server_name}")
+        await _get_or_create(
+            conn,
+            managed_mcp_servers,
+            {"id": mcp_server_id},
+            {
+                "id": mcp_server_id,
+                "name": mcp_server_name,
+                "mcp_server_config": {
+                    "name": "filesystem",
+                    "transport": "stdio",
+                    "command": "npx",
+                    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+                },
+            },
+        )
+
+        # --- Seed guardrails config ---
+        guardrail_name = "Basic Content Guardrails"
+        guardrail_id = _stable_uuid5(f"guardrail:{guardrail_name}")
+        await _get_or_create(
+            conn,
+            managed_guardrails,
+            {"id": guardrail_id},
+            {
+                "id": guardrail_id,
+                "name": guardrail_name,
+                "guardrail_config": {
+                    "input": [
+                        {"config_id": "ban_list", "banned_words": ["spam", "scam"]}
+                    ],
+                    "output": [{"config_id": "toxic_language", "threshold": 0.8}],
+                },
             },
         )
 
         # Commit is implicit via engine.begin() transaction
         print(
-            "✅ Seed completed: tenant 'acme', workspaces ['default','dev'], user 'admin@acme.test', managed_agent 'Acme Support Agent'."
+            "✅ Seed completed: managed_agent 'Example Support Agent', observability 'Default Langfuse Observability', mcp_server 'File System MCP Server', guardrail 'Basic Content Guardrails'."
         )
 
 
