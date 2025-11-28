@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
 import { DynamicForm } from '../../components/general/dynamic-form/component';
 import { API_BASE_URL } from '../../utils/api';
-import { fetchApplications, MARKETPLACE_APPS } from '../../services/applications';
+import { fetchApplications, MARKETPLACE_APPS, mapConfigToApi } from '../../services/applications';
 import type { ApplicationConfig, AppType, MarketplaceApp, AppCategory } from '../../types/application.types';
 import ApplicationModal from '../../components/applications/application-modal/component';
 
@@ -306,15 +306,33 @@ export default function AgentFormPage() {
             }
 
             // 3. Handle MCP & Guardrails
-            finalAgentConfig.mcp_servers = selectedMCPIds;
-            finalAgentConfig.guardrails = selectedGuardIds;
+            // Map MCP IDs to actual config objects
+            const mcpConfigs = selectedMCPIds.map(id => {
+                const app = mcpApps.find(a => a.id === id);
+                return app ? mapConfigToApi('MCPServer', app.config, app.name) : null;
+            }).filter(Boolean);
+
+            // Map Guardrail IDs to actual config objects (just the raw config, no wrapper)
+            const guardConfigObjects = selectedGuardIds.map(id => {
+                const app = guardApps.find(a => a.id === id);
+                if (!app) return null;
+                return mapConfigToApi(app.type, app.config);
+            }).filter(Boolean);
+
+            // Construct Guardrails object
+            const guardrailsConfig = guardConfigObjects.length > 0 ? {
+                input: guardConfigObjects,
+                output: []
+            } : undefined;
 
             const payload = {
                 name: name.trim(),
                 version: version.trim() || 'v1',
                 engine_config: {
                     server: { api: { port: parsedPort } },
-                    agent: { type: agentType, config: finalAgentConfig }
+                    agent: { type: agentType, config: finalAgentConfig },
+                    mcp_servers: mcpConfigs.length > 0 ? mcpConfigs : undefined,
+                    guardrails: guardrailsConfig
                 }
             };
 

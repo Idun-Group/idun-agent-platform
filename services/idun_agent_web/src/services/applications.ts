@@ -54,7 +54,7 @@ const mapConfigFromApi = (type: AppType, config: any): any => {
     return config;
 };
 
-const mapConfigToApi = (type: AppType, config: any, name?: string): any => {
+export const mapConfigToApi = (type: AppType, config: any, name?: string): any => {
     if (type === 'Langfuse') {
         return {
             host: config.host,
@@ -478,7 +478,7 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
     };
 };
 
-const mapTypeToProvider = (type: AppType): components["schemas"]["ObservabilityProvider"] => {
+export const mapTypeToProvider = (type: AppType): components["schemas"]["ObservabilityProvider"] => {
     switch (type) {
         case 'Langfuse': return 'LANGFUSE';
         case 'Phoenix': return 'PHOENIX';

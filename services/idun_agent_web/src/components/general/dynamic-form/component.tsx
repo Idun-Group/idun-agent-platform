@@ -173,6 +173,13 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
                             theme="vs-dark"
                             value={value}
                             onChange={(val) => {
+                                // If the schema explicitly defines it as a string, keep it as a string
+                                // regardless of whether it looks like JSON.
+                                if (prop.type === 'string') {
+                                    handleChange(key, val);
+                                    return;
+                                }
+
                                 try {
                                     // Try to parse to store as object if valid
                                     if (!val) {
@@ -182,12 +189,14 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
                                         handleChange(key, parsed);
                                     }
                                 } catch (e) {
-                                    // Store as string if invalid (will need validation on submit) or just keep previous valid?
-                                    // For raw string fields like graph_definition (if it's a file path), it's a string.
-                                    // But input_schema_definition is an object.
-                                    if (prop.type === 'string') {
-                                         handleChange(key, val);
-                                    }
+                                    // If parsing fails, store as string?
+                                    // But if it's supposed to be an object, this might be invalid state.
+                                    // However, for user experience, we might let them type until valid.
+                                    // But here we are assuming if it's NOT a string type, it IS an object type (or anyOf object).
+                                    // So we probably shouldn't set invalid string to object field unless we handle it.
+                                    // For now, let's keep previous behavior for non-string types: 
+                                    // if it fails parse, it might not update or update as string (which will fail validation later).
+                                    console.warn('Invalid JSON entered for object field');
                                 }
                             }}
                             options={{
