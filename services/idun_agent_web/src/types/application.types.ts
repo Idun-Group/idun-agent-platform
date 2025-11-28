@@ -1,7 +1,7 @@
 
 export type AppCategory = 'Observability' | 'Memory' | 'MCP' | 'Guardrails';
 
-export type AppType = 'Langfuse' | 'Phoenix' | 'PostgreSQL' | 'SQLite' | 'GoogleCloudLogging' | 'GoogleCloudTrace' | 'LangSmith' | 'MCPServer' | 'Guard' | 'ModelArmor' | 'CustomLLM' | 'BanList' | 'BiasCheck' | 'CompetitionCheck' | 'CorrectLanguage' | 'DetectPII' | 'GibberishText' | 'NSFWText' | 'DetectJailbreak' | 'RestrictTopic' | 'Secrets' | 'ValidSQL' | 'ValidPython' | 'WebSanitization';
+export type AppType = 'Langfuse' | 'Phoenix' | 'PostgreSQL' | 'SQLite' | 'GoogleCloudLogging' | 'GoogleCloudTrace' | 'LangSmith' | 'MCPServer' | 'Guard' | 'ModelArmor' | 'CustomLLM' | 'BanList' | 'BiasCheck' | 'CompetitionCheck' | 'CorrectLanguage' | 'DetectPII' | 'GibberishText' | 'NSFWText' | 'DetectJailbreak' | 'RestrictTopic' | 'PromptInjection' | 'RagHallucination' | 'ToxicLanguage' | 'CodeScanner';
 
 export interface MarketplaceApp {
     id: string;

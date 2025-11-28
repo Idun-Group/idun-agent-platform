@@ -72,7 +72,7 @@ const Carousel = ({ children }: { children: React.ReactNode }) => {
             )}
         </CarouselContainer>
     );
-};
+    };
 
 export default function AgentFormPage() {
     const navigate = useNavigate();
@@ -230,7 +230,7 @@ export default function AgentFormPage() {
             setAppToCreate(marketplaceApp);
             setAppToEdit(undefined);
             setIsAppModalOpen(true);
-        } else {
+            } else {
             toast.error(`Configuration template for ${type} not found.`);
         }
     };
@@ -593,7 +593,7 @@ export default function AgentFormPage() {
                                                  <div style={{ display: 'flex', gap: '8px' }}>
                                                     <span style={{ fontSize: '12px', color: '#9ca3af', padding: '4px 12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '9999px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                                         {selectedMCPIds.length} Selected
-                                                    </span>
+                                        </span>
                                                     <AddButton onClick={() => handleCreateApp('MCPServer', 'MCP')}>
                                                         <Plus size={14} style={{ marginRight: '4px' }} /> Add Server
                                                     </AddButton>
@@ -622,7 +622,7 @@ export default function AgentFormPage() {
                                                             <SafetyFooter>
                                                                 <span style={{ fontSize: '10px', fontWeight: 500, padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(140, 82, 255, 0.2)', backgroundColor: 'rgba(140, 82, 255, 0.1)', color: '#c084fc' }}>
                                                                     {app.type}
-                                                                </span>
+                                        </span>
                                                             </SafetyFooter>
                                                         </SafetyCardContainer>
                                                     ))}
@@ -652,7 +652,7 @@ export default function AgentFormPage() {
                                                             <option value="">+ Add Guardrail</option>
                                                             {MARKETPLACE_APPS.filter(a => a.category === 'Guardrails').map(a => (
                                                                 <option key={a.type} value={a.type}>{a.name}</option>
-                                                            ))}
+                            ))}
                                                         </StyledSelect>
                                                     </div>
                                                  </div>
@@ -869,7 +869,7 @@ const EmptyText = styled.p`
     font-size: 12px;
     color: #6b7280;
     font-style: italic;
-    margin: 0;
+        margin: 0;
 `;
 
 const MultiSelectContainer = styled.div`
@@ -908,7 +908,7 @@ const TypeCheckbox = styled.div<{ $checked: boolean }>`
         background-color: ${props => props.$checked ? '#8c52ff' : 'transparent'};
         display: flex;
         align-items: center;
-        justify-content: center;
+    justify-content: center;
         margin-right: 6px;
     }
 `;
@@ -993,7 +993,7 @@ const SafetyCardContainer = styled.div<{ $enabled: boolean, $risk?: string }>`
     cursor: pointer;
     height: 100%;
     min-height: 120px;
-    
+
     &:hover {
         border-color: ${props => props.$enabled ? '' : 'rgba(255, 255, 255, 0.2)'};
     }
@@ -1045,7 +1045,7 @@ const SafetyFooter = styled.div`
 const SafetyDesc = styled.p`
     font-size: 12px;
     color: #6b7280;
-    margin: 0;
+        margin: 0;
 `;
 
 // Removed unused SafetyToggle and SafetyToggleKnob styled components

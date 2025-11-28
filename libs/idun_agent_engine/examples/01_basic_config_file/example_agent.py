@@ -7,11 +7,7 @@ structure for integration with the Idun Agent Engine.
 import operator
 from typing import Annotated, TypedDict
 
-<<<<<<< HEAD
 from langchain_core.messages import HumanMessage, AIMessage
-=======
-from langchain_core.messages import HumanMessage
->>>>>>> 66d7a3c (add adk agent schema, remove guardrails dependencie to to langchain-c… (#102))
 from langgraph.graph import END, StateGraph, MessagesState
 
 

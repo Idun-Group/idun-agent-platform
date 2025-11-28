@@ -61,10 +61,10 @@ const SideBar = ({}: SideBarProps) => {
         },
         {
             icon: Wrench,
-            label: t('sidebar.tools'),
-            key: 'tools',
-            path: '/tools',
-            onClick: () => navigate('/tools'),
+            label: t('sidebar.mcp', 'MCP'),
+            key: 'mcp',
+            path: '/mcp',
+            onClick: () => navigate('/mcp'),
         },
         {
             icon: ShieldCheck,

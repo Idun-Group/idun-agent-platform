@@ -1,7 +1,8 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import styled from 'styled-components';
 import ToggleButton from '../toggle-button/component';
-import { Info } from 'lucide-react';
+import { Info, X } from 'lucide-react';
 
 // Types
 interface TextInputProps {
@@ -49,6 +50,18 @@ interface SelectProps {
     tooltip?: string;
     required?: boolean;
     nativeRequired?: boolean;
+}
+
+interface TagInputProps {
+    label?: string;
+    placeholder?: string;
+    required?: boolean;
+    value?: string; // Newline separated string to maintain compatibility
+    onChange?: (e: { target: { value: string } }) => void; // Mock event to maintain compatibility
+    id?: string;
+    name?: string;
+    disabled?: boolean;
+    tooltip?: string;
 }
 
 // Styled Components
@@ -283,8 +296,8 @@ export const FormTextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
             <FormGroup>
                 <Label htmlFor={id}>
                     <LabelContent>
-                        {label}
-                        {required && <Required>*</Required>}
+                    {label}
+                    {required && <Required>*</Required>}
                         {tooltip && <TooltipIcon text={tooltip} />}
                     </LabelContent>
                     <TextArea
@@ -313,7 +326,7 @@ export const FormSelect = forwardRef<HTMLSelectElement, SelectProps>(
             <FormGroup>
                 <Label htmlFor={id}>
                     <LabelContent>
-                        {label}
+                    {label}
                         {required && <Required>*</Required>}
                         {tooltip && <TooltipIcon text={tooltip} />}
                     </LabelContent>
@@ -337,6 +350,195 @@ export const FormSelect = forwardRef<HTMLSelectElement, SelectProps>(
 FormSelect.displayName = 'FormSelect';
 
 export { FormTextArea as TextArea, FormSelect as Select };
+
+// Tag/Badge Input Component
+const TagContainer = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+    min-height: 48px;
+    background: var(--color-background-primary, #0f1016);
+    border: 1px solid var(--color-border-primary, #1a1a2e);
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+
+    &:focus-within {
+        border-color: var(--color-primary, #8c52ff);
+        box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
+    }
+`;
+
+const Tag = styled.div`
+    display: inline-flex;
+    align-items: center;
+    background: rgba(140, 82, 255, 0.15);
+    color: var(--color-text-primary, #ffffff);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    border: 1px solid rgba(140, 82, 255, 0.3);
+    
+    .remove-icon {
+        margin-left: 6px;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+        display: flex;
+        align-items: center;
+
+        &:hover {
+            opacity: 1;
+            color: #ff4757;
+        }
+    }
+`;
+
+const TagInputRaw = styled.input`
+    background: transparent;
+    border: none;
+    color: var(--color-text-primary, #ffffff);
+    font-size: 14px;
+    flex: 1;
+    min-width: 120px;
+    padding: 4px 0;
+
+    &:focus {
+        outline: none;
+    }
+
+    &::placeholder {
+        color: var(--color-text-tertiary, #64748b);
+    }
+`;
+
+export const TagInput = ({
+    label,
+    placeholder,
+    required,
+    value,
+    onChange,
+    id,
+    disabled,
+    tooltip,
+}: TagInputProps) => {
+    const [inputValue, setInputValue] = useState('');
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const tags = value ? value.split('\n').filter(t => t.trim() !== '') : [];
+    
+    // Add tag on Enter
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addTag(inputValue);
+        } else if (e.key === 'Backspace' && inputValue === '' && tags.length > 0) {
+            // Remove last tag on backspace if input is empty
+            removeTag(tags.length - 1);
+        }
+    };
+
+    const addTag = (val: string) => {
+        const trimmed = val.trim();
+        if (trimmed && !tags.includes(trimmed)) {
+            const newTags = [...tags, trimmed];
+            updateParent(newTags);
+            setInputValue('');
+        } else if (trimmed) {
+            setInputValue(''); // Clear duplicate but don't add
+        }
+    };
+
+    const removeTag = (index: number) => {
+        const newTags = tags.filter((_, i) => i !== index);
+        updateParent(newTags);
+    };
+
+    const updateParent = (newTags: string[]) => {
+        if (onChange) {
+            // Join with newline to maintain compatibility with existing handlers
+            onChange({ target: { value: newTags.join('\n') } });
+        }
+    };
+
+    const handleEditStart = (index: number) => {
+        if (!disabled) {
+            setEditingIndex(index);
+        }
+    };
+
+    const handleEditComplete = (index: number, newValue: string) => {
+        const trimmed = newValue.trim();
+        if (trimmed) {
+            const newTags = [...tags];
+            newTags[index] = trimmed;
+            // Remove duplicates if editing resulted in one (except self)
+            if (newTags.filter((t, i) => t === trimmed && i !== index).length === 0) {
+                updateParent(newTags);
+            } else {
+               // If duplicate, revert or just remove? Let's just remove the edited one if it became duplicate
+               removeTag(index);
+            }
+        } else {
+            removeTag(index);
+        }
+        setEditingIndex(null);
+    };
+
+    return (
+        <FormGroup>
+            <Label htmlFor={id}>
+                <LabelContent>
+                    {label}
+                    {required && <Required>*</Required>}
+                    {tooltip && <TooltipIcon text={tooltip} />}
+                </LabelContent>
+                <TagContainer>
+                    {tags.map((tag, index) => (
+                        <Tag key={index} onDoubleClick={() => handleEditStart(index)}>
+                            {editingIndex === index ? (
+                                <TagInputRaw
+                                    autoFocus
+                                    defaultValue={tag}
+                                    onBlur={(e) => handleEditComplete(index, e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleEditComplete(index, e.currentTarget.value);
+                                        }
+                                    }}
+                                />
+                            ) : (
+                                <>
+                                    <span>{tag}</span>
+                                    {!disabled && (
+                                        <div className="remove-icon" onClick={() => removeTag(index)}>
+                                            <X size={12} />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </Tag>
+                    ))}
+                    {!disabled && (
+                        <TagInputRaw
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={tags.length === 0 ? placeholder : ''}
+                            onBlur={() => {
+                                if (inputValue.trim()) {
+                                    addTag(inputValue);
+                                }
+                            }}
+                        />
+                    )}
+                </TagContainer>
+            </Label>
+        </FormGroup>
+    );
+};
 
 interface CheckboxProps {
     label?: string;
@@ -449,7 +651,7 @@ export const LabeledToggleButton = ({
     subLabel,
     isOn,
     onToggle,
-    }: {
+}: {
     label: string;
     subLabel: string;
     isOn: boolean;
