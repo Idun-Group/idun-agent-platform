@@ -1,7 +1,7 @@
 """LangGraph agent adapter implementing the BaseAgent protocol."""
 
-import importlib.util
 import importlib
+import importlib.util
 import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -9,6 +9,7 @@ from typing import Any
 import aiosqlite
 from ag_ui.core import events as ag_events
 from ag_ui.core import types as ag_types
+from copilotkit import LangGraphAGUIAgent
 from idun_agent_schema.engine.langgraph import (
     InMemoryCheckpointConfig,
     LangGraphAgentConfig,
@@ -23,7 +24,6 @@ from langgraph.graph.state import CompiledStateGraph
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
-from copilotkit import LangGraphAGUIAgent
 
 
 class LanggraphAgent(agent_base.BaseAgent):
@@ -95,7 +95,9 @@ class LanggraphAgent(agent_base.BaseAgent):
             RuntimeError: If the CopilotKit agent is not yet initialized.
         """
         if self._copilotkit_agent_instance is None:
-            raise RuntimeError("CopilotKit agent not initialized. Call initialize() first.")
+            raise RuntimeError(
+                "CopilotKit agent not initialized. Call initialize() first."
+            )
         return self._copilotkit_agent_instance
 
     @property
@@ -182,7 +184,7 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         self._copilotkit_agent_instance = LangGraphAGUIAgent(
             name=self._name,
-            description="Agent description", # TODO: add agent description
+            description="Agent description",  # TODO: add agent description
             graph=self._agent_instance,
         )
 
@@ -276,16 +278,20 @@ class LanggraphAgent(agent_base.BaseAgent):
             spec.loader.exec_module(module)
 
             graph_builder = getattr(module, graph_variable_name)
-            return self._validate_graph_builder(graph_builder, module_path, graph_variable_name)
+            return self._validate_graph_builder(
+                graph_builder, module_path, graph_variable_name
+            )
 
         except (FileNotFoundError, ImportError):
             # Fallback: try loading as a python module
             try:
                 module = importlib.import_module(module_path)
                 graph_builder = getattr(module, graph_variable_name)
-                return self._validate_graph_builder(graph_builder, module_path, graph_variable_name)
+                return self._validate_graph_builder(
+                    graph_builder, module_path, graph_variable_name
+                )
             except ImportError as e:
-                 raise ValueError(
+                raise ValueError(
                     f"Failed to load agent from {graph_definition}. Checked file path and python module: {e}"
                 ) from e
             except AttributeError as e:
@@ -293,12 +299,14 @@ class LanggraphAgent(agent_base.BaseAgent):
                     f"Variable '{graph_variable_name}' not found in module {module_path}: {e}"
                 ) from e
         except Exception as e:
-             raise ValueError(
+            raise ValueError(
                 f"Failed to load agent from {graph_definition}: {e}"
             ) from e
 
-    def _validate_graph_builder(self, graph_builder: Any, module_path: str, graph_variable_name: str) -> StateGraph:
-         # TODO to remove, dirty fix for template deepagent langgraph
+    def _validate_graph_builder(
+        self, graph_builder: Any, module_path: str, graph_variable_name: str
+    ) -> StateGraph:
+        # TODO to remove, dirty fix for template deepagent langgraph
         if not isinstance(graph_builder, StateGraph) and not isinstance(
             graph_builder, CompiledStateGraph
         ):

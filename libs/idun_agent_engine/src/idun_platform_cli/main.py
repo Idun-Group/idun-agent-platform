@@ -1,4 +1,5 @@
 import click
+
 from idun_platform_cli.groups.agent.main import agent
 
 

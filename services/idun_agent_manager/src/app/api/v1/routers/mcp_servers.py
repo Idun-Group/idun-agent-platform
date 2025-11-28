@@ -9,17 +9,17 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.v1.deps import get_session
-from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
 from idun_agent_schema.engine.mcp_server import MCPServer
 from idun_agent_schema.manager.managed_mcp_server import (
     ManagedMCPServerCreate,
     ManagedMCPServerPatch,
     ManagedMCPServerRead,
 )
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.v1.deps import get_session
+from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
 
 router = APIRouter()
 

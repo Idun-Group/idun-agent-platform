@@ -62,7 +62,7 @@ class MCPServer(BaseModel):
     )
 
     @model_validator(mode="after")
-    def _validate_transport_fields(self) -> "MCPServer":
+    def _validate_transport_fields(self) -> MCPServer:
         """Ensure required fields are present for the selected transport."""
         if self.transport in {"sse", "streamable_http", "websocket"} and not self.url:
             raise ValueError(f"url is required for transport '{self.transport}'")

@@ -36,7 +36,6 @@ dependencies = [
   "python-dotenv>=1.0.1,<2.0.0",
   "orjson>=3.10.12,<4.0.0",  # Fast JSON serialization
   "tenacity>=9.0.0,<10.0.0",  # Retry logic
-  "redis>=5.2.0,<6.0.0",
   # Observability
   "opentelemetry-api>=1.34.0,<2.0.0",
   "opentelemetry-sdk>=1.34.0,<2.0.0",

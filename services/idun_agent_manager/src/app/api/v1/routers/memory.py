@@ -9,19 +9,21 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.v1.deps import get_session
-from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
-from idun_agent_schema.engine.langgraph import CheckpointConfig, SqliteCheckpointConfig, InMemoryCheckpointConfig, PostgresCheckpointConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
+from idun_agent_schema.engine.langgraph import (
+    CheckpointConfig,
+)
 from idun_agent_schema.manager.managed_memory import (
     ManagedMemoryCreate,
     ManagedMemoryPatch,
     ManagedMemoryRead,
 )
 from pydantic import TypeAdapter
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.v1.deps import get_session
+from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
 
 router = APIRouter()
 

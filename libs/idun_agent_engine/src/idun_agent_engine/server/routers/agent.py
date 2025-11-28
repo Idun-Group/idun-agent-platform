@@ -3,6 +3,10 @@
 import logging
 from typing import Annotated
 
+from ag_ui.core.types import RunAgentInput
+from ag_ui.encoder import EventEncoder
+from ag_ui_adk import ADKAgent as ADKAGUIAgent
+from copilotkit import LangGraphAGUIAgent
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
@@ -10,11 +14,6 @@ from idun_agent_schema.engine.guardrails import Guardrail
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.dependencies import get_agent, get_copilotkit_agent
-
-from ag_ui.core.types import RunAgentInput
-from ag_ui.encoder import EventEncoder
-from copilotkit import LangGraphAGUIAgent
-from ag_ui_adk import ADKAgent as ADKAGUIAgent
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s",
@@ -142,7 +141,7 @@ async def copilotkit_stream(
                                 exc_info=True,
                             )
                             # Create a RunErrorEvent for encoding failures
-                            from ag_ui.core import RunErrorEvent, EventType
+                            from ag_ui.core import EventType, RunErrorEvent
 
                             error_event = RunErrorEvent(
                                 type=EventType.RUN_ERROR,
@@ -165,7 +164,7 @@ async def copilotkit_stream(
                     # ADKAgent should have yielded a RunErrorEvent, but if something went wrong
                     # in the async generator itself, we need to handle it
                     try:
-                        from ag_ui.core import RunErrorEvent, EventType
+                        from ag_ui.core import EventType, RunErrorEvent
 
                         error_event = RunErrorEvent(
                             type=EventType.RUN_ERROR,

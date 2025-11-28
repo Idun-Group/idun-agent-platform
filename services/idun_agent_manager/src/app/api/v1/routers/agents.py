@@ -23,8 +23,8 @@ Endpoints:
 
 import logging
 from datetime import UTC, datetime
-from uuid import UUID, uuid4
 from typing import Any
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from idun_agent_schema.engine import EngineConfig
@@ -39,7 +39,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_session, allow_user
+from app.api.v1.deps import get_session
 from app.api.v1.routers.auth import encrypt_payload
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 

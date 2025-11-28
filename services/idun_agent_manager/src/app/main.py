@@ -1,19 +1,18 @@
 """Main FastAPI application - simplified for development."""
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from time import perf_counter
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
-
 from sqlalchemy import text
 
+from app import __version__
+from app.core.logging import get_logger, setup_logging
 from app.core.settings import get_settings
 from app.infrastructure.db.migrate import auto_migrate
 from app.infrastructure.db.session import close_engines, get_async_engine
-from app.core.logging import setup_logging, get_logger
-from app import __version__
 
 # Simple in-memory storage for development
 agents_db = []
@@ -104,14 +103,14 @@ def create_app() -> FastAPI:
 def setup_routes(app: FastAPI) -> None:
     """Setup application routes."""
     # Import minimal routers
+    from app.api.v1.routers.agent_frameworks import router as agent_frameworks_router
     from app.api.v1.routers.agents import router as agents_router
+    from app.api.v1.routers.auth import router as auth_router
+    from app.api.v1.routers.guardrails import router as guardrails_router
     from app.api.v1.routers.health import router as health_router
     from app.api.v1.routers.mcp_servers import router as mcp_servers_router
-    from app.api.v1.routers.observability import router as observability_router
     from app.api.v1.routers.memory import router as memory_router
-    from app.api.v1.routers.agent_frameworks import router as agent_frameworks_router
-    from app.api.v1.routers.guardrails import router as guardrails_router
-    from app.api.v1.routers.auth import router as auth_router
+    from app.api.v1.routers.observability import router as observability_router
 
     # API v1 routes
 

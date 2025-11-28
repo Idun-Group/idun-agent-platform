@@ -7,17 +7,18 @@ This approach ensures type safety, validation, and consistency with the rest of 
 from pathlib import Path
 from typing import Any
 
-from idun_agent_schema.engine.guardrails import Guardrails
 import yaml
 from idun_agent_schema.engine.agent_framework import AgentFramework
+from idun_agent_schema.engine.guardrails import Guardrails
 from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_schema.engine.langgraph import (
     LangGraphAgentConfig,
     SqliteCheckpointConfig,
 )
 from idun_agent_schema.engine.adk import AdkAgentConfig
-from idun_agent_engine.server.server_config import ServerAPIConfig
 from yaml import YAMLError
+
+from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
@@ -286,9 +287,11 @@ class ConfigBuilder:
             agent_instance = LanggraphAgent()
 
         elif agent_type == AgentFramework.TRANSLATION_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import TranslationAgentConfig
             import os
+
+            from idun_agent_schema.engine.templates import TranslationAgentConfig
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
                 translation_config = TranslationAgentConfig.model_validate(
@@ -316,9 +319,11 @@ class ConfigBuilder:
             agent_instance = LanggraphAgent()
 
         elif agent_type == AgentFramework.CORRECTION_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import CorrectionAgentConfig
             import os
+
+            from idun_agent_schema.engine.templates import CorrectionAgentConfig
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
                 correction_config = CorrectionAgentConfig.model_validate(
@@ -343,9 +348,11 @@ class ConfigBuilder:
             agent_instance = LanggraphAgent()
 
         elif agent_type == AgentFramework.DEEP_RESEARCH_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
             import os
+
+            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
                 deep_research_config = DeepResearchAgentConfig.model_validate(

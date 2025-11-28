@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from idun_agent_schema.engine.observability import ObservabilityConfig
 
+
 class BaseAgentConfig(BaseModel):
     """Base model for agent configurations. Extend for specific frameworks."""
 

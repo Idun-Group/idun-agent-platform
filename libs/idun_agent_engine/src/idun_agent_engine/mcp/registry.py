@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from idun_agent_schema.engine.mcp_server import MCPServer
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import Connection
-
-from idun_agent_schema.engine.mcp_server import MCPServer
 
 
 class MCPClientRegistry:

@@ -17,16 +17,7 @@ class DatabaseSettings(BaseSettings):
     max_overflow: int = Field(default=20)
     pool_pre_ping: bool = Field(default=True)
 
-    model_config = SettingsConfigDict(env_prefix="DATABASE_", env_file=".env")
-
-
-class RedisSettings(BaseSettings):
-    """Redis cache settings."""
-
-    url: str = Field(default="redis://localhost:6379/0")
-    max_connections: int = Field(default=20)
-
-    model_config = SettingsConfigDict(env_prefix="REDIS_", env_file=".env")
+    model_config = SettingsConfigDict(env_prefix="DATABASE_")
 
 
 class AuthSettings(BaseSettings):
@@ -70,9 +61,7 @@ class AuthSettings(BaseSettings):
             return None
         return v
 
-    model_config = SettingsConfigDict(
-        env_prefix="AUTH_", env_file=".env", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_prefix="AUTH_", extra="ignore")
 
     @field_validator("issuer")
     @classmethod
@@ -83,31 +72,6 @@ class AuthSettings(BaseSettings):
         if not v.startswith("http"):
             raise ValueError("issuer must be a URL")
         return v
-
-
-class ObservabilitySettings(BaseSettings):
-    """OpenTelemetry and logging settings."""
-
-    otel_service_name: str = Field(default="idun-agent-manager")
-    otel_exporter_endpoint: str | None = Field(default=None)
-    otel_exporter_headers: str | None = Field(default=None)
-    log_level: str = Field(default="INFO")
-    log_format: str = Field(default="json")
-
-    model_config = SettingsConfigDict(env_prefix="OTEL_", env_file=".env")
-
-
-class CelerySettings(BaseSettings):
-    """Celery broker/result backend settings."""
-
-    broker_url: str = Field(default="redis://localhost:6379/1")
-    result_backend: str = Field(default="redis://localhost:6379/2")
-    task_serializer: str = Field(default="json")
-    result_serializer: str = Field(default="json")
-    accept_content: list[str] = Field(default=["json"])
-    timezone: str = Field(default="UTC")
-
-    model_config = SettingsConfigDict(env_prefix="CELERY_", env_file=".env")
 
 
 class APISettings(BaseSettings):
@@ -128,9 +92,7 @@ class APISettings(BaseSettings):
     rate_limit_requests: int = Field(default=100)
     rate_limit_window: int = Field(default=60)
 
-    model_config = SettingsConfigDict(
-        env_prefix="API_", env_file=".env", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_prefix="API_", extra="ignore")
 
 
 class Settings(BaseSettings):
@@ -144,13 +106,12 @@ class Settings(BaseSettings):
     workers: int = Field(default=1)
     reload: bool = Field(default=False)
     is_development: bool = Field(default=True)
-    cors_allow_origins: list[str] = Field(default_factory=list)
+    cors_allow_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8080"]
+    )
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
-    redis: RedisSettings = Field(default_factory=RedisSettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)
-    observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
-    celery: CelerySettings = Field(default_factory=CelerySettings)
     api: APISettings = Field(default_factory=APISettings)
 
     model_config = SettingsConfigDict(

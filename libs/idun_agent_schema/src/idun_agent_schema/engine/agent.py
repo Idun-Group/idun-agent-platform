@@ -1,16 +1,14 @@
 """Common agent model definitions (engine)."""
 
-from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, model_validator
 
-from idun_agent_schema.engine.agent_framework import AgentFramework
-from idun_agent_schema.engine.langgraph import LangGraphAgentConfig
-from idun_agent_schema.engine.haystack import HaystackAgentConfig
-from idun_agent_schema.engine.base_agent import BaseAgentConfig
-from idun_agent_schema.engine.templates import TranslationAgentConfig
 from idun_agent_schema.engine.adk import AdkAgentConfig
-from pydantic import model_validator
+from idun_agent_schema.engine.agent_framework import AgentFramework
+from idun_agent_schema.engine.base_agent import BaseAgentConfig
+from idun_agent_schema.engine.haystack import HaystackAgentConfig
+from idun_agent_schema.engine.langgraph import LangGraphAgentConfig
+from idun_agent_schema.engine.templates import TranslationAgentConfig
 
 
 class AgentConfig(BaseModel):

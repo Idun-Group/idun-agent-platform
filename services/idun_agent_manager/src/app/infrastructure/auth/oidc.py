@@ -7,7 +7,8 @@ import time
 from typing import Any
 
 import httpx
-from authlib.jose import JsonWebKey, jwt as jose_jwt
+from authlib.jose import JsonWebKey
+from authlib.jose import jwt as jose_jwt
 from fastapi import HTTPException, status
 
 from app.core.settings import get_settings
@@ -144,7 +145,8 @@ class GenericOIDCProvider:
         jwks = await self._get_jwks()
         # Parse unverified header to get kid without relying on PyJWT
         try:
-            import base64, json
+            import base64
+            import json
 
             header_b64 = token.split(".")[0]
             padded = header_b64 + "=" * (-len(header_b64) % 4)

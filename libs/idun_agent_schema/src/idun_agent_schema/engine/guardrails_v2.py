@@ -1,7 +1,7 @@
 """Guardrails V2 configuration schema."""
 
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -53,7 +53,9 @@ class CustomLLMConfig(BaseModel):
 
     config_id: Literal[GuardrailConfigId.CUSTOM_LLM] = GuardrailConfigId.CUSTOM_LLM
     name: str = Field(description="Name of the custom LLM config")
-    model: CustomLLMModel = Field(description="Specific underlying Large Language Model")
+    model: CustomLLMModel = Field(
+        description="Specific underlying Large Language Model"
+    )
     prompt: str = Field(description="System instruction prompt")
 
 
@@ -111,9 +113,7 @@ class DetectPIIConfig(BaseModel):
     """Detect PII configuration."""
 
     config_id: Literal[GuardrailConfigId.DETECT_PII] = GuardrailConfigId.DETECT_PII
-    pii_entities: list[PIIEntity] = Field(
-        description="List of PII entities to detect"
-    )
+    pii_entities: list[PIIEntity] = Field(description="List of PII entities to detect")
 
 
 class GibberishTextConfig(BaseModel):
@@ -192,9 +192,7 @@ class ToxicLanguageConfig(BaseModel):
 class CodeScannerConfig(BaseModel):
     """Code Scanner configuration."""
 
-    config_id: Literal[GuardrailConfigId.CODE_SCANNER] = (
-        GuardrailConfigId.CODE_SCANNER
-    )
+    config_id: Literal[GuardrailConfigId.CODE_SCANNER] = GuardrailConfigId.CODE_SCANNER
     allowed_languages: list[str] = Field(
         description="List of allowed programming languages"
     )

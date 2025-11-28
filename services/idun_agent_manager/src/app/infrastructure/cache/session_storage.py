@@ -17,4 +17,3 @@ class SessionStorage(ABC):
     @abstractmethod
     async def exists(self, key: str) -> bool:
         pass
-
