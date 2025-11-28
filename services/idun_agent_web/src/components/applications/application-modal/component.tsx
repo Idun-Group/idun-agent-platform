@@ -20,6 +20,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
     const [config, setConfig] = useState<Record<string, string>>({});
     const [isEditing, setIsEditing] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const mode = appToCreate ? 'create' : 'view';
     const appType = appToCreate?.type || appToEdit?.type;
@@ -27,6 +28,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
 
     useEffect(() => {
         if (isOpen) {
+            setErrorMessage(null);
             if (mode === 'create') {
                 setName('');
                 setConfig(appType === 'MCPServer' ? { transport: 'streamable_http' } : {});
@@ -39,6 +41,23 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
         }
     }, [isOpen, appToCreate, appToEdit, mode, appType]);
 
+    const formatError = (error: any): string => {
+        try {
+            // Check if error.message is JSON
+            const errObj = JSON.parse(error.message);
+            if (errObj.detail) {
+                if (Array.isArray(errObj.detail)) {
+                    return errObj.detail.map((e: any) => e.msg).join('\n');
+                }
+                return String(errObj.detail);
+            }
+            if (errObj.message) return errObj.message;
+        } catch (e) {
+            // Not JSON, use message directly
+        }
+        return error.message || 'An error occurred';
+    };
+
     const handleSubmit = async () => {
         if (!name) {
             toast.error('Please provide a name');
@@ -46,6 +65,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
         }
 
         setIsSubmitting(true);
+        setErrorMessage(null);
         try {
             if (mode === 'create' && appToCreate) {
                 await createApplication({
@@ -59,15 +79,19 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             } else if (appToEdit) {
                 await updateApplication(appToEdit.id, {
                     name,
-                    config
+                    config,
+                    category: appToEdit.category,
+                    type: appToEdit.type
                 });
                 toast.success('Application updated successfully');
             }
             onSuccess();
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error('An error occurred');
+            const msg = formatError(error);
+            setErrorMessage(msg);
+            toast.error(msg);
         } finally {
             setIsSubmitting(false);
         }
@@ -77,14 +101,17 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
         if (!appToEdit || !confirm('Are you sure you want to delete this application?')) return;
         
         setIsSubmitting(true);
+        setErrorMessage(null);
         try {
             await deleteApplication(appToEdit.id);
             toast.success('Application deleted successfully');
             onSuccess();
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error('An error occurred');
+            const msg = formatError(error);
+            setErrorMessage(msg);
+            toast.error(msg);
         } finally {
             setIsSubmitting(false);
         }
@@ -796,7 +823,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 )}
                 
                 {mode === 'create' && (
-                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                          <Button 
                             type="button"
                             $variants="base" 
@@ -813,9 +840,13 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                         >
                              {isSubmitting ? 'Creating...' : 'Create Configuration'}
                          </Button>
+                         {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
                     </div>
                 )}
             </ActionButtons>
+            {mode !== 'create' && errorMessage && (
+                <ErrorMessage style={{ textAlign: 'right', marginTop: '0' }}>{errorMessage}</ErrorMessage>
+            )}
         </Modal>
     );
 };
@@ -827,5 +858,12 @@ const ActionButtons = styled.div`
     gap: 12px;
     margin-top: 16px;
     justify-content: flex-end;
+`;
 
+const ErrorMessage = styled.div`
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: 8px;
+    white-space: pre-wrap;
+    text-align: center;
 `;
