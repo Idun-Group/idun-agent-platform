@@ -7,7 +7,7 @@ This approach ensures type safety, validation, and consistency with the rest of 
 from pathlib import Path
 from typing import Any
 
-from idun_agent_schema.engine.guardrails import Guardrails
+from idun_agent_schema.engine.guardrails import Guardrails as GuardrailsV1
 import yaml
 from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.haystack import HaystackAgentConfig
@@ -16,6 +16,9 @@ from idun_agent_schema.engine.langgraph import (
     SqliteCheckpointConfig,
 )
 from idun_agent_schema.engine.adk import AdkAgentConfig
+from idun_agent_schema.engine.mcp_server import MCPServer
+from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2 as Guardrails
 from idun_agent_engine.server.server_config import ServerAPIConfig
 from yaml import YAMLError
 
@@ -47,9 +50,9 @@ class ConfigBuilder:
         self._server_config = ServerConfig()
         self._agent_config: AgentConfig | None = None
         # TODO: add mcp_servers config
-
+        self._mcp_servers: list[MCPServer] | None = None
+        self._observability: list[ObservabilityConfig] | None = None
         self._guardrails: Guardrails | None = None
-
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """Set the API port for the server.
 
@@ -117,7 +120,8 @@ class ConfigBuilder:
             try:
                 guardrails = yaml_config.get("guardrails", "")
                 if not guardrails:
-                    self._guardrails = Guardrails(enabled=False)
+                    # self._guardrails = Guardrails(enabled=False)
+                    self._guardrails = None
             except Exception as e:
                 raise YAMLError(f"Failed to parse yaml file for Guardrails: {e}") from e
 
@@ -275,7 +279,8 @@ class ConfigBuilder:
         agent_instance = None
         if agent_type == AgentFramework.LANGGRAPH:
             from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-
+            import os
+            print("Current directory: ", os.getcwd()) # TODO remove
             try:
                 validated_config = LangGraphAgentConfig.model_validate(agent_config_obj)
 
