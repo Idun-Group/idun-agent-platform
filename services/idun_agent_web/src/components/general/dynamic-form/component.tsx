@@ -41,6 +41,11 @@ const InputLabel = styled.label`
     margin-bottom: 8px;
 `;
 
+const RequiredAsterisk = styled.span`
+    color: #ef4444;
+    margin-left: 4px;
+`;
+
 const EditorWrapper = styled.div`
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -123,7 +128,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         if (prop.enum) {
             return (
                 <FieldWrapper key={key}>
-                    <InputLabel>{label} {isRequired && '*'}</InputLabel>
+                    <InputLabel>{label}{isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
                     <FormSelect
                         value={data[key] || ''}
                         onChange={(e) => handleChange(key, e.target.value)}
@@ -143,7 +148,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         if (prop.type === 'boolean') {
              return (
                 <FieldWrapper key={key}>
-                    <InputLabel>{label} {isRequired && '*'}</InputLabel>
+                    <InputLabel>{label}{isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
                     <FormSelect
                         value={data[key] === undefined ? '' : String(data[key])}
                         onChange={(e) => handleChange(key, e.target.value === 'true')}
@@ -158,14 +163,15 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         }
 
         // 3. JSON Objects (Schema Definitions, Stores) -> Monaco Editor
-        if (prop.type === 'object' || key.includes('definition') || key === 'store') {
+        // But NOT graph_definition or component_definition which are simple strings
+        if ((prop.type === 'object' || key.includes('schema_definition') || key === 'store') && key !== 'graph_definition' && key !== 'component_definition') {
              // Determine if it's a specific object type we know how to render, or just a blob
              // For input/output schema and store, we want JSON editor
              const value = typeof data[key] === 'object' ? JSON.stringify(data[key], null, 2) : (data[key] || '');
              
              return (
                 <FieldWrapper key={key}>
-                    <InputLabel>{label} (JSON) {isRequired && '*'}</InputLabel>
+                    <InputLabel>{label} (JSON){isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
                     <EditorWrapper>
                         <Editor
                             height="100%"
@@ -286,13 +292,23 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         );
     };
 
-    // Prioritize specific order if needed, otherwise generic
-    // We typically want Name first
+    // Prioritize required fields first, then name, then the rest
     const keys = Object.keys(schema.properties);
+    const requiredFields = schema.required || [];
+    
     const orderedKeys = keys.sort((a, b) => {
-        if (a === 'name') return -1;
-        if (b === 'name') return 1;
-        return 0;
+        const aRequired = requiredFields.includes(a);
+        const bRequired = requiredFields.includes(b);
+        
+        // Both required or both optional - sort by name priority then alphabetically
+        if (aRequired === bRequired) {
+            if (a === 'name') return -1;
+            if (b === 'name') return 1;
+            return 0;
+        }
+        
+        // Required fields come first
+        return aRequired ? -1 : 1;
     });
 
     return (

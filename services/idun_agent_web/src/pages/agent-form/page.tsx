@@ -78,7 +78,7 @@ export default function AgentFormPage() {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
     const [name, setName] = useState<string>('');
-    const [version, setVersion] = useState<string>('v1');
+    const [version, setVersion] = useState<string>('1.0.0');
     const [description, setDescription] = useState<string>('');
     const [serverPort, setServerPort] = useState<string>('8000');
     const [agentType, setAgentType] = useState<string | null>('LANGGRAPH');
@@ -189,9 +189,7 @@ export default function AgentFormPage() {
     };
 
     const handleVersionChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const rawValue = event.target.value ?? '';
-        const normalized = `v${rawValue.replace(/^(v|V)+/, '').replace(/[^0-9a-zA-Z._-]/g, '')}`;
-        setVersion(normalized || 'v');
+        setVersion(event.target.value ?? '');
     };
 
     // Step Navigation
@@ -250,6 +248,21 @@ export default function AgentFormPage() {
         const parsedPort = Number(serverPort);
         if (!Number.isFinite(parsedPort) || parsedPort <= 0) return toast.error('Invalid server port');
 
+        // Validate required fields based on framework
+        if (agentType === 'LANGGRAPH') {
+            if (!agentConfig.graph_definition || (typeof agentConfig.graph_definition === 'string' && !agentConfig.graph_definition.trim())) {
+                return toast.error('Graph Definition is required for LangGraph agents');
+            }
+        }
+        if (agentType === 'HAYSTACK') {
+            if (!agentConfig.component_type) {
+                return toast.error('Component Type is required for Haystack agents');
+            }
+            if (!agentConfig.component_definition || (typeof agentConfig.component_definition === 'string' && !agentConfig.component_definition.trim())) {
+                return toast.error('Component Definition is required for Haystack agents');
+            }
+        }
+
         setIsSubmitting(true);
         setSubmitError(null);
 
@@ -266,43 +279,46 @@ export default function AgentFormPage() {
                         db_url: memApp.config.connectionString
                     };
                 }
+            } else {
+                finalAgentConfig.checkpointer = null;
             }
 
             // 2. Handle Observability
-            const obsConfig: any = {
-                enabled: selectedObservabilityTypes.length > 0,
-                options: {}
-            };
+            if (selectedObservabilityTypes.length > 0) {
+                const obsConfig: any = {
+                    enabled: true,
+                    options: {}
+                };
 
-            let primaryProviderSet = false;
+                let primaryProviderSet = false;
 
-            selectedObservabilityTypes.forEach(type => {
-                const appId = selectedObservabilityApps[type];
-                if (appId) {
-                    const app = observabilityApps.find(a => a.id === appId);
-                    if (app) {
-                        // Map app type to provider key
-                        const providerMap: Record<string, string> = {
-                            'Langfuse': 'langfuse',
-                            'Phoenix': 'phoenix',
-                            'GoogleCloudLogging': 'google_cloud_logging',
-                            'GoogleCloudTrace': 'google_cloud_trace',
-                            'LangSmith': 'langsmith'
-                        };
-                        const providerKey = providerMap[app.type] || app.type.toLowerCase();
+                selectedObservabilityTypes.forEach(type => {
+                    const appId = selectedObservabilityApps[type];
+                    if (appId) {
+                        const app = observabilityApps.find(a => a.id === appId);
+                        if (app) {
+                            const providerMap: Record<string, string> = {
+                                'Langfuse': 'langfuse',
+                                'Phoenix': 'phoenix',
+                                'GoogleCloudLogging': 'google_cloud_logging',
+                                'GoogleCloudTrace': 'google_cloud_trace',
+                                'LangSmith': 'langsmith'
+                            };
+                            const providerKey = providerMap[app.type] || app.type.toLowerCase();
 
-                        if (!primaryProviderSet) {
-                            obsConfig.provider = providerKey;
-                            primaryProviderSet = true;
+                            if (!primaryProviderSet) {
+                                obsConfig.provider = providerKey;
+                                primaryProviderSet = true;
+                            }
+
+                            obsConfig.options = { ...obsConfig.options, ...app.config };
                         }
-
-                        obsConfig.options = { ...obsConfig.options, ...app.config };
                     }
-                }
-            });
+                });
 
-            if (obsConfig.enabled) {
                 finalAgentConfig.observability = obsConfig;
+            } else {
+                finalAgentConfig.observability = null;
             }
 
             // 3. Handle MCP & Guardrails
@@ -323,15 +339,15 @@ export default function AgentFormPage() {
             const guardrailsConfig = guardConfigObjects.length > 0 ? {
                 input: guardConfigObjects,
                 output: []
-            } : undefined;
+            } : null;
 
             const payload = {
                 name: name.trim(),
-                version: version.trim() || 'v1',
+                version: version.trim() || '1.0.0',
                 engine_config: {
                     server: { api: { port: parsedPort } },
                     agent: { type: agentType, config: finalAgentConfig },
-                    mcp_servers: mcpConfigs.length > 0 ? mcpConfigs : undefined,
+                    mcp_servers: mcpConfigs.length > 0 ? mcpConfigs : null,
                     guardrails: guardrailsConfig
                 }
             };
@@ -374,7 +390,7 @@ export default function AgentFormPage() {
                 <ModalHeader>
                     <div>
                         <ModalTitle>{t('agent-form.title')}</ModalTitle>
-                        <ModalSubtitle>{t('agent-form.description')} • Step {currentStep} of 3</ModalSubtitle>
+                        <ModalSubtitle>Step {currentStep} of 3</ModalSubtitle>
                     </div>
                     <CloseButton onClick={() => navigate('/agents')}><X size={24} /></CloseButton>
                 </ModalHeader>
@@ -420,7 +436,7 @@ export default function AgentFormPage() {
                                             <IdentityFields>
                                                 <Row>
                                                     <FieldWrapper style={{ flex: 2 }}>
-                                                        <InputLabel>{t('agent-form.name.label')}</InputLabel>
+                                                        <InputLabel>{t('agent-form.name.label')}<RequiredAsterisk>*</RequiredAsterisk></InputLabel>
                                                         <StyledInput placeholder={t('agent-form.name.placeholder')} value={name} onChange={e => setName(e.target.value)} />
                                                     </FieldWrapper>
                                                     <FieldWrapper style={{ flex: 1 }}>
@@ -791,6 +807,7 @@ const IdentityFields = styled.div` flex: 1; display: flex; flex-direction: colum
 const Row = styled.div` display: flex; gap: 16px; `;
 const FieldWrapper = styled.div` width: 100%; `;
 const InputLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; `;
+const RequiredAsterisk = styled.span` color: #ef4444; margin-left: 4px; `;
 const StyledInput = styled.input` width: 100%; background-color: #0B0A15; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: white; outline: none; transition: all 0.2s; &:focus { border-color: #8c52ff; box-shadow: 0 0 0 1px #8c52ff; } &::placeholder { color: #374151; } `;
 const StyledTextarea = styled.textarea` width: 100%; background-color: #0B0A15; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: white; outline: none; transition: all 0.2s; resize: none; &:focus { border-color: #8c52ff; box-shadow: 0 0 0 1px #8c52ff; } &::placeholder { color: #374151; } `;
 const StyledSelect = styled.select` width: 100%; background-color: #0B0A15; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: #d1d5db; outline: none; appearance: none; transition: all 0.2s; cursor: pointer; &:focus { border-color: #8c52ff; } &:hover { border-color: rgba(255, 255, 255, 0.2); } `;
