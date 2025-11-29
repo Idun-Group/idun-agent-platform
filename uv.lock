@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
@@ -2023,6 +2023,7 @@ source = { editable = "services/idun_agent_manager" }
 dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
+    { name = "authlib" },
     { name = "fastapi" },
     { name = "gunicorn" },
     { name = "httpx" },
@@ -2051,6 +2052,7 @@ dependencies = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.14.0,<2.0.0" },
     { name = "asyncpg", specifier = ">=0.30.0,<0.31.0" },
+    { name = "authlib" },
     { name = "fastapi", specifier = ">=0.115.0,<0.116.0" },
     { name = "gunicorn", specifier = ">=23.0.0,<24.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
@@ -2078,6 +2080,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "black", specifier = "==24.10.0" },
+    { name = "debugpy", specifier = ">=1.8.0" },
     { name = "factory-boy", specifier = "==3.3.1" },
     { name = "ipdb" },
     { name = "ipython" },
