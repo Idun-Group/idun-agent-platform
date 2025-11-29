@@ -49,7 +49,7 @@ class Serve:
 
     def _fetch_from_path(self) -> EngineConfig | None:
         try:
-            config = ConfigBuilder().load_from_file(self._path)
+            config = ConfigBuilder().load_from_file(self._path or "")
             print(f"✅ Successfully fetched and built config from {self._path}")
             return config
 

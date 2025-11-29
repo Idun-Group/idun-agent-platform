@@ -76,6 +76,7 @@ dev = [
   "types-passlib==1.7.7",
 
   "psycopg2-binary>=2.9.10,<3.0.0",  # Sync PostgreSQL driver (required by Alembic)
+  "debugpy>=1.8.0",
 ]
 
 [build-system]
