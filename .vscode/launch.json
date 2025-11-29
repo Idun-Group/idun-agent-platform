@@ -140,7 +140,7 @@
       "id": "agentApiKey",
       "type": "promptString",
       "description": "Enter the Agent API Key",
-      "default": "5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733"
+      "default": "0fd84deb11b4687e25b58520622d006ce6cc6e863275fd48b9f998e086172ac5"
     }
   ]
 }
