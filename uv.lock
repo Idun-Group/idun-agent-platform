@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
@@ -1961,7 +1961,12 @@ dependencies = [
     { name = "langgraph" },
     { name = "langgraph-checkpoint-postgres" },
     { name = "langgraph-checkpoint-sqlite" },
+    { name = "openinference-instrumentation-google-adk" },
+    { name = "openinference-instrumentation-guardrails" },
     { name = "openinference-instrumentation-langchain" },
+    { name = "openinference-instrumentation-mcp" },
+    { name = "openinference-instrumentation-vertexai" },
+    { name = "opentelemetry-exporter-gcp-trace" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "sqlalchemy" },
@@ -1995,7 +2000,12 @@ requires-dist = [
     { name = "langgraph", specifier = ">=1.0.0,<2.0.0" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=3.0.0,<4.0.0" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0.0,<4.0.0" },
+    { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.0,<1.0.0" },
+    { name = "openinference-instrumentation-guardrails", specifier = ">=0.1.0,<1.0.0" },
     { name = "openinference-instrumentation-langchain", specifier = ">=0.1.13,<1.0.0" },
+    { name = "openinference-instrumentation-mcp", specifier = ">=1.0.0,<2.0.0" },
+    { name = "openinference-instrumentation-vertexai", specifier = ">=0.1.0,<1.0.0" },
+    { name = "opentelemetry-exporter-gcp-trace", specifier = ">=1.6.0,<2.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "sqlalchemy", specifier = ">=2.0.36,<3.0.0" },
@@ -3230,6 +3240,43 @@ wheels = [
 ]
 
 [[package]]
+name = "openinference-instrumentation-google-adk"
+version = "0.1.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openinference-instrumentation" },
+    { name = "openinference-semantic-conventions" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "typing-extensions" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ac/57/67726039822ed94e27932b1d7298cb255a4a271af66cef5cedff9b54d2ee/openinference_instrumentation_google_adk-0.1.6.tar.gz", hash = "sha256:9c19669c0b830156bdcfe912e616b14500e32f3869f05979059737243ee4d364", size = 11849, upload-time = "2025-10-10T03:49:13.916Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/7c/ad27e45075049ddd034ba96dabeb7a488f743824ed7c4c9f47512e263085/openinference_instrumentation_google_adk-0.1.6-py3-none-any.whl", hash = "sha256:a18ae167260411a005b4a3981de6f6f6c049c6bc09f02ff6a5964fbfe77d0801", size = 13654, upload-time = "2025-10-10T03:48:51.706Z" },
+]
+
+[[package]]
+name = "openinference-instrumentation-guardrails"
+version = "0.1.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openinference-instrumentation" },
+    { name = "openinference-semantic-conventions" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "packaging" },
+    { name = "typing-extensions" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/84/9b/e7a2fdfd62598b2161b11873f108101204fa4eb29cb511a25b67376f7c2b/openinference_instrumentation_guardrails-0.1.10.tar.gz", hash = "sha256:731cddcae4131884ebd72b7e3accb77b7012a3084fcb1318c0e4b6c8068b536b", size = 9588, upload-time = "2025-10-10T03:49:02.357Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ae/1c/2732277c68fdf393826be885fcbc61e583d4ca46045ad1c648fc71b6127f/openinference_instrumentation_guardrails-0.1.10-py3-none-any.whl", hash = "sha256:cba7753d6901418f666c9dba73250b4a547d664c3124b314e4b3a3f80f7ecf69", size = 11099, upload-time = "2025-10-10T03:48:49.074Z" },
+]
+
+[[package]]
 name = "openinference-instrumentation-langchain"
 version = "0.1.55"
 source = { registry = "https://pypi.org/simple" }
@@ -3244,6 +3291,38 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2c/18/0242af5d7ea1170287b4d1e89aa9a3bcd545788cf748b5494a19b9499b18/openinference_instrumentation_langchain-0.1.55.tar.gz", hash = "sha256:57a2875ca845950f944700d9352efb080c8b20049253408e7739d960c43f34e8", size = 68602, upload-time = "2025-11-10T21:45:29.899Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/22/5a/55a99fd64cc1c8c21b1c47211c7389af5a9cd98f75d83a21c8b97e6c1d33/openinference_instrumentation_langchain-0.1.55-py3-none-any.whl", hash = "sha256:3f755950254fdf7741e0327a585cb0609c6c5553109a2b52929c29ce2a02c2d3", size = 22195, upload-time = "2025-11-10T21:45:28.147Z" },
+]
+
+[[package]]
+name = "openinference-instrumentation-mcp"
+version = "1.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openinference-instrumentation" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f4/66/4a21f048f89653ba782edf6b901d384c5c71819ec7459378894831e444ed/openinference_instrumentation_mcp-1.3.3.tar.gz", hash = "sha256:2094caa206428b3f3d1e5aa299fe48653694fd20402172169f128d45416ddd5a", size = 7387, upload-time = "2025-10-23T20:55:26.359Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/11/246c177613a59d35ba2ad365fda11ff2acfbf2193742978efd183257b90f/openinference_instrumentation_mcp-1.3.3-py3-none-any.whl", hash = "sha256:c220523c9975328ac04011f328461e2b9196be97aba63d18b6e7109b0f4d0f7d", size = 8621, upload-time = "2025-10-23T20:55:25.23Z" },
+]
+
+[[package]]
+name = "openinference-instrumentation-vertexai"
+version = "0.1.11"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "openinference-instrumentation" },
+    { name = "openinference-semantic-conventions" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/06/3e/a1cd041ed1237e80178c70e5d71d95417225f84065e3aae854b70173f01c/openinference_instrumentation_vertexai-0.1.11.tar.gz", hash = "sha256:600d9be988af6e1371e17187cf6aeed3ebb893d1ca0ef567cc00f67b3242aba6", size = 21061, upload-time = "2025-05-05T16:38:46.18Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8f/c9/e2ea586fec1f7650d0f8c6e630417859851995ed5ba693315d1ef282de57/openinference_instrumentation_vertexai-0.1.11-py3-none-any.whl", hash = "sha256:5fceb31a89aea0d8b7c93b7b89f8095888fedf8f8944518b2d803b02f39810dc", size = 17169, upload-time = "2025-05-05T16:38:45.151Z" },
 ]
 
 [[package]]
