@@ -290,6 +290,8 @@ class LanggraphAgent(agent_base.BaseAgent):
         # Try loading as a file path first
         try:
             from pathlib import Path
+            import os
+            print("Current directory: ", os.getcwd()) # TODO remove
 
             resolved_path = Path(module_path).resolve()
             # If the file doesn't exist, it might be a python module path

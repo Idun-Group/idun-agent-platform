@@ -7,7 +7,8 @@ This approach ensures type safety, validation, and consistency with the rest of 
 from pathlib import Path
 from typing import Any
 
-from idun_agent_schema.engine.guardrails import Guardrails
+from idun_agent_schema.engine.guardrails import Guardrails as GuardrailsV1
+from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2 as Guardrails
 import yaml
 from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.haystack import HaystackAgentConfig

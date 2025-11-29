@@ -43,8 +43,9 @@ async def cleanup_agent(app: FastAPI):
 
 async def configure_app(app: FastAPI, engine_config):
     """Initialize the agent, MCP registry, guardrails, and app state with the given engine config."""
-    guardrails_obj = engine_config.guardrails
-    guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
+    guardrails_obj = engine_config.guardrails # TODO Reactivate and use GuardrailsV2
+    # guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else [] # TODO Reactivate and use GuardrailsV2
+    guardrails = None # TODO Reactivate and use GuardrailsV2
 
     print("guardrails: ", guardrails)
 
