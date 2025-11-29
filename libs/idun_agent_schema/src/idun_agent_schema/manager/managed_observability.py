@@ -17,6 +17,8 @@ class ManagedObservabilityCreate(BaseModel):
 
 class ManagedObservabilityRead(BaseModel):
     """Complete managed observability model for responses."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     name: str
     observability: ObservabilityConfig = Field(..., description="Observability configuration")
