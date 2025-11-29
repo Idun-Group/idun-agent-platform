@@ -95,7 +95,8 @@ class ConfigBuilder:
 
         headers = {"auth": f"Bearer {agent_api_key}"}
         try:
-            response = requests.get(url=url, headers=headers)
+            print(f"Fetching config from {url + '/api/v1/agents/config'}")
+            response = requests.get(url=url + "/api/v1/agents/config", headers=headers)
             if response.status_code != 200:
                 raise ValueError(
                     f"Error sending retrieving config from url. response : {response.json()}"

@@ -41,8 +41,9 @@ async def cleanup_agent(app: FastAPI):
                 await result
 
 
-    engine_config = app.state.engine_config
-    guardrails_obj = app.state.engine_config.guardrails
+async def configure_app(app: FastAPI, engine_config):
+    """Initialize the agent, MCP registry, guardrails, and app state with the given engine config."""
+    guardrails_obj = engine_config.guardrails
     guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
 
     print("guardrails: ", guardrails)
@@ -60,8 +61,7 @@ async def cleanup_agent(app: FastAPI):
     app.state.mcp_registry = MCPClientRegistry(engine_config.mcp_servers)
     app.state.engine_config = engine_config
 
-    app.state.guardrails = guardrails # TODO: to reactivate
-    # Store both in app state
+    app.state.guardrails = guardrails  # TODO: to reactivate
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
 
@@ -78,9 +78,11 @@ async def cleanup_agent(app: FastAPI):
         except Exception as e:
             print(f"⚠️ Warning: Failed to setup AGUI routes: {e}")
             # Continue even if AGUI setup fails
+
     if app.state.mcp_registry.enabled:
         servers = ", ".join(app.state.mcp_registry.available_servers())
         print(f"🔌 MCP servers ready: {servers}")
+
 
 
 @asynccontextmanager
