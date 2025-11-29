@@ -1,17 +1,16 @@
-import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap } from 'lucide-react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_FRAMEWORKS } from '../../utils/yaml-parser';
-import { createAgent } from '../../services/agents';
-import { useNavigate } from 'react-router-dom';
-import { AgentAvatar } from '../../components/general/agent-avatar/component';
-import { DynamicForm } from '../../components/general/dynamic-form/component';
+import { AgentAvatar } from '../general/agent-avatar/component';
+import { DynamicForm } from '../general/dynamic-form/component';
 import { API_BASE_URL } from '../../utils/api';
 import { fetchApplications, MARKETPLACE_APPS, mapConfigToApi } from '../../services/applications';
 import type { ApplicationConfig, AppType, MarketplaceApp, AppCategory } from '../../types/application.types';
-import ApplicationModal from '../../components/applications/application-modal/component';
+import ApplicationModal from '../applications/application-modal/component';
+import type { BackendAgent } from '../../services/agents';
 
 const DISABLED_FRAMEWORKS = new Set(['ADK', 'CREWAI', 'CUSTOM']);
 
@@ -72,10 +71,17 @@ const Carousel = ({ children }: { children: React.ReactNode }) => {
             )}
         </CarouselContainer>
     );
-    };
+};
 
-export default function AgentFormPage() {
-    const navigate = useNavigate();
+export interface AgentFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: (agent: any) => void;
+    mode: 'create' | 'edit';
+    initialData?: BackendAgent;
+}
+
+export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initialData }: AgentFormModalProps) {
     const [currentStep, setCurrentStep] = useState(1);
     const [name, setName] = useState<string>('');
     const [version, setVersion] = useState<string>('1.0.0');
@@ -99,7 +105,7 @@ export default function AgentFormPage() {
     const [selectedMemoryAppId, setSelectedMemoryAppId] = useState<string>('');
     
     const [selectedObservabilityTypes, setSelectedObservabilityTypes] = useState<string[]>([]);
-    const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({}); // Type -> AppID
+    const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({});
 
     const [selectedMCPIds, setSelectedMCPIds] = useState<string[]>([]);
     const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
@@ -129,8 +135,84 @@ export default function AgentFormPage() {
         });
     };
 
+    // Initialize form with existing data when editing
+    useEffect(() => {
+        if (mode === 'edit' && initialData && isOpen) {
+            setName(initialData.name || '');
+            setVersion(initialData.version || '1.0.0');
+            setDescription(initialData.description || '');
+            
+            // Extract port from engine_config
+            const port = initialData.engine_config?.server?.api?.port;
+            setServerPort(port ? String(port) : '8000');
+            
+            // Extract framework/agent type
+            const framework = initialData.engine_config?.agent?.type || initialData.framework || 'LANGGRAPH';
+            setAgentType(framework);
+            
+            // Extract agent config - cast to any to access dynamic properties
+            const config = (initialData.engine_config?.agent?.config || {}) as any;
+            setAgentConfig(config);
+            
+            // Extract checkpointer/memory selection
+            const checkpointer = config.checkpointer;
+            if (checkpointer) {
+                if (checkpointer.type === 'memory') {
+                    setSelectedMemoryType('InMemoryCheckpointConfig');
+                } else {
+                    const memType = checkpointer.type === 'sqlite' ? 'SQLite' : 'PostgreSQL';
+                    setSelectedMemoryType(memType);
+                    // We'd need to match by db_url to find the exact app
+                }
+            }
+            
+            // Extract observability
+            const obs = (initialData.engine_config as any)?.observability || config.observability;
+            if (Array.isArray(obs)) {
+                const types: string[] = [];
+                obs.forEach((o: any) => {
+                    if (o.provider) {
+                        const providerMap: Record<string, string> = {
+                            'langfuse': 'Langfuse',
+                            'LANGFUSE': 'Langfuse',
+                            'phoenix': 'Phoenix',
+                            'PHOENIX': 'Phoenix',
+                            'google_cloud_logging': 'GoogleCloudLogging',
+                            'GCP_LOGGING': 'GoogleCloudLogging',
+                            'google_cloud_trace': 'GoogleCloudTrace',
+                            'GCP_TRACE': 'GoogleCloudTrace',
+                            'langsmith': 'LangSmith',
+                            'LANGSMITH': 'LangSmith'
+                        };
+                        const type = providerMap[o.provider];
+                        if (type) {
+                            types.push(type);
+                        }
+                    }
+                });
+                setSelectedObservabilityTypes(types);
+            } else if (obs?.provider) {
+                const providerMap: Record<string, string> = {
+                    'langfuse': 'Langfuse',
+                    'phoenix': 'Phoenix',
+                    'google_cloud_logging': 'GoogleCloudLogging',
+                    'google_cloud_trace': 'GoogleCloudTrace',
+                    'langsmith': 'LangSmith'
+                };
+                const type = providerMap[obs.provider];
+                if (type) {
+                    setSelectedObservabilityTypes([type]);
+                }
+            }
+            
+            // MCP and Guards would need similar matching logic
+        }
+    }, [mode, initialData, isOpen]);
+
     // Data Fetching
     useEffect(() => {
+        if (!isOpen) return;
+        
         document.body.style.overflow = 'hidden';
         
         // Fetch Schema
@@ -165,11 +247,33 @@ export default function AgentFormPage() {
         return () => {
             document.body.style.overflow = '';
         };
-    }, []);
+    }, [isOpen]);
 
     useEffect(() => {
         setAgentConfig(prev => ({ ...prev, name: name }));
     }, [name]);
+
+    // Reset form when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setCurrentStep(1);
+            if (mode === 'create') {
+                setName('');
+                setVersion('1.0.0');
+                setDescription('');
+                setServerPort('8000');
+                setAgentType('LANGGRAPH');
+                setAgentConfig({});
+                setSelectedMemoryType('InMemoryCheckpointConfig');
+                setSelectedMemoryAppId('');
+                setSelectedObservabilityTypes([]);
+                setSelectedObservabilityApps({});
+                setSelectedMCPIds([]);
+                setSelectedGuardIds([]);
+            }
+            setSubmitError(null);
+        }
+    }, [isOpen, mode]);
 
     // Helpers
     const getRiskLevel = (type: string) => {
@@ -228,7 +332,7 @@ export default function AgentFormPage() {
             setAppToCreate(marketplaceApp);
             setAppToEdit(undefined);
             setIsAppModalOpen(true);
-            } else {
+        } else {
             toast.error(`Configuration template for ${type} not found.`);
         }
     };
@@ -314,26 +418,23 @@ export default function AgentFormPage() {
             });
 
             if (observabilityConfigs.length > 0) {
-                // finalAgentConfig.observability = observabilityConfigs; // Removed from agent config
+                // finalAgentConfig.observability = observabilityConfigs;
             } else {
-                // finalAgentConfig.observability = []; // Removed from agent config
+                // finalAgentConfig.observability = [];
             }
 
             // 3. Handle MCP & Guardrails
-            // Map MCP IDs to actual config objects
             const mcpConfigs = selectedMCPIds.map(id => {
                 const app = mcpApps.find(a => a.id === id);
                 return app ? mapConfigToApi('MCPServer', app.config, app.name) : null;
             }).filter(Boolean);
 
-            // Map Guardrail IDs to actual config objects (just the raw config, no wrapper)
             const guardConfigObjects = selectedGuardIds.map(id => {
                 const app = guardApps.find(a => a.id === id);
                 if (!app) return null;
                 return mapConfigToApi(app.type, app.config);
             }).filter(Boolean);
 
-            // Construct Guardrails object
             const guardrailsConfig = guardConfigObjects.length > 0 ? {
                 input: guardConfigObjects,
                 output: []
@@ -351,14 +452,14 @@ export default function AgentFormPage() {
                 }
             };
 
-            console.log('Creating agent:', payload);
-            const createdAgent = await createAgent(payload);
-            toast.success(`Agent "${createdAgent.name}" created successfully!`);
-            setTimeout(() => navigate('/agents'), 1000);
+            console.log(`${mode === 'edit' ? 'Updating' : 'Creating'} agent:`, payload);
+            
+            // Call the appropriate API based on mode
+            onSuccess(payload);
 
         } catch (error: any) {
             console.error('Error:', error);
-            let msg = 'Failed to create agent';
+            let msg = `Failed to ${mode === 'edit' ? 'update' : 'create'} agent`;
             try {
                 const parsed = JSON.parse(error.message);
                 if (parsed.detail) {
@@ -382,16 +483,18 @@ export default function AgentFormPage() {
         return rootSchema.components?.schemas?.[FRAMEWORK_SCHEMA_MAP[agentType]];
     };
 
+    if (!isOpen) return null;
+
     return (
         <PageContainer>
-            <Backdrop onClick={() => navigate('/agents')} />
+            <Backdrop onClick={onClose} />
             <ModalWindow>
                 <ModalHeader>
                     <div>
-                        <ModalTitle>{t('agent-form.title')}</ModalTitle>
+                        <ModalTitle>{mode === 'edit' ? t('agent-form.edit-title', 'Edit Agent') : t('agent-form.title')}</ModalTitle>
                         <ModalSubtitle>Step {currentStep} of 3</ModalSubtitle>
                     </div>
-                    <CloseButton onClick={() => navigate('/agents')}><X size={24} /></CloseButton>
+                    <CloseButton onClick={onClose}><X size={24} /></CloseButton>
                 </ModalHeader>
 
                 <StepperContainer>
@@ -685,7 +788,7 @@ export default function AgentFormPage() {
                 </ModalBody>
 
                 <ModalFooter>
-                    <CancelButton onClick={() => navigate('/agents')}>Cancel</CancelButton>
+                    <CancelButton onClick={onClose}>Cancel</CancelButton>
                     <div style={{ display: 'flex', gap: '12px' }}>
                         {currentStep > 1 && (
                             <BackButton onClick={prevStep}>
@@ -700,7 +803,7 @@ export default function AgentFormPage() {
                             </NextButton>
                         ) : (
                             <DeployButton onClick={handleSubmitForm} disabled={isSubmitting}>
-                                {isSubmitting ? 'Creating Agent...' : 'Create Agent'}
+                                {isSubmitting ? 'Saving...' : (mode === 'edit' ? 'Save Changes' : 'Create Agent')}
                             </DeployButton>
                         )}
                     </div>
@@ -776,7 +879,7 @@ const FrameworkOption = styled.button<{ $isSelected: boolean }>` width: 100%; pa
 const CheckCircle = styled.div` width: 16px; height: 16px; background-color: #8c52ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; `;
 const ErrorMessage = styled.p` margin-top: 8px; margin-bottom: 0; font-size: 14px; font-family: inherit; font-weight: 400; color: #ff4757; line-height: 1.5; `;
 
-// New Components for Enhanced Selection
+// Card Components
 const CardGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -864,7 +967,7 @@ const EmptyText = styled.p`
     font-size: 12px;
     color: #6b7280;
     font-style: italic;
-        margin: 0;
+    margin: 0;
 `;
 
 const MultiSelectContainer = styled.div`
@@ -902,8 +1005,8 @@ const TypeCheckbox = styled.div<{ $checked: boolean }>`
         border: 1px solid ${props => props.$checked ? '#8c52ff' : '#4b5563'};
         background-color: ${props => props.$checked ? '#8c52ff' : 'transparent'};
         display: flex;
-    align-items: center;
-    justify-content: center;
+        align-items: center;
+        justify-content: center;
         margin-right: 6px;
     }
 `;
@@ -922,8 +1025,8 @@ const CarouselTrack = styled.div`
     overflow-x: auto;
     padding: 4px 0;
     scroll-behavior: smooth;
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
     &::-webkit-scrollbar {
         display: none;
     }
@@ -1040,10 +1143,8 @@ const SafetyFooter = styled.div`
 const SafetyDesc = styled.p`
     font-size: 12px;
     color: #6b7280;
-        margin: 0;
+    margin: 0;
 `;
-
-// Removed unused SafetyToggle and SafetyToggleKnob styled components
 
 const RiskTag = styled.span<{ $color: string }>`
     font-size: 10px;
@@ -1086,3 +1187,4 @@ const EmptyState = styled.div`
     font-size: 13px;
     background-color: rgba(255, 255, 255, 0.02);
 `;
+
