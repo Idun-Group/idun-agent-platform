@@ -15,6 +15,7 @@ export type BackendAgent = ManagedAgent & {
     run_config?: {
         env?: Record<string, string | undefined>;
     };
+    base_url?: string | null;
 };
 
 const createMockManagedAgent = (index: number): ManagedAgent => {

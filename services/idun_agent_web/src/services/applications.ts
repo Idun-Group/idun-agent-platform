@@ -389,7 +389,11 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
 
     const inputConfig = findConfig(guard.guardrail.input);
     const outputConfig = findConfig(guard.guardrail.output);
-    const activeConfig = inputConfig || outputConfig;
+    let activeConfig = inputConfig || outputConfig;
+
+    if (!activeConfig && 'config_id' in guard.guardrail) {
+        activeConfig = guard.guardrail;
+    }
 
     if (activeConfig) {
         if ('config_id' in activeConfig) {
@@ -780,10 +784,7 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
             const configPayload = mapConfigToApi(app.type, app.config, app.name);
             const payload: components["schemas"]["ManagedGuardrailCreate"] = {
                 name: app.name,
-                guardrail: {
-                    input: [configPayload],
-                    output: []
-                }
+                guardrail: configPayload as any
             };
             const res = await postJson<components["schemas"]["ManagedGuardrailRead"]>('/api/v1/guardrails/', payload);
             return mapGuardrailToApp(res);
@@ -855,10 +856,7 @@ export const updateApplication = async (id: string, updates: Partial<Application
                 const configPayload = mapConfigToApi(type, updates.config || currentApp.config, updates.name || apiGuard.name);
                 const payload: components["schemas"]["ManagedGuardrailPatch"] = {
                     name: updates.name || apiGuard.name,
-                    guardrail: {
-                        input: [configPayload],
-                        output: []
-                    }
+                    guardrail: configPayload as any
                 };
                 const res = await patchJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`, payload);
                 return mapGuardrailToApp(res);
@@ -928,10 +926,7 @@ export const updateApplication = async (id: string, updates: Partial<Application
                 const configPayload = mapConfigToApi(type, updates.config || currentApp.config, updates.name || apiGuard.name);
                 const payload: components["schemas"]["ManagedGuardrailPatch"] = {
                     name: updates.name || apiGuard.name,
-                    guardrail: {
-                        input: [configPayload],
-                        output: []
-                    }
+                    guardrail: configPayload as any
                 };
                 const res = await patchJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`, payload);
                 return mapGuardrailToApp(res);

@@ -331,7 +331,7 @@ export default function AgentDetailPage() {
                         <Avatar>{getAgentInitials()}</Avatar>
                         <AgentDetails>
                             <AgentTitleRow>
-                                <h1>{agent?.name ?? '...'}</h1>
+                            <h1>{agent?.name ?? '...'}</h1>
                                 <StatusBadge status={(agent?.status || 'draft').toLowerCase()}>
                                     {agent?.status ?? 'draft'}
                                 </StatusBadge>

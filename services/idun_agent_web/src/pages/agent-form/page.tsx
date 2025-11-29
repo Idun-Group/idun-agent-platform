@@ -79,6 +79,7 @@ export default function AgentFormPage() {
     const [currentStep, setCurrentStep] = useState(1);
     const [name, setName] = useState<string>('');
     const [version, setVersion] = useState<string>('1.0.0');
+    const [baseUrl, setBaseUrl] = useState<string>('');
     const [description, setDescription] = useState<string>('');
     const [serverPort, setServerPort] = useState<string>('8000');
     const [agentType, setAgentType] = useState<string | null>('LANGGRAPH');
@@ -342,6 +343,7 @@ export default function AgentFormPage() {
             const payload = {
                 name: name.trim(),
                 version: version.trim() || '1.0.0',
+                base_url: baseUrl.trim() || null,
                 engine_config: {
                     server: { api: { port: parsedPort } },
                     agent: { type: agentType, config: finalAgentConfig },
@@ -443,6 +445,10 @@ export default function AgentFormPage() {
                                                         <StyledInput placeholder="1.0.0" value={version} onChange={handleVersionChange} />
                                                     </FieldWrapper>
                                                 </Row>
+                                                <FieldWrapper>
+                                                    <InputLabel>Base URL</InputLabel>
+                                                    <StyledInput placeholder="https://api.example.com" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} />
+                                                </FieldWrapper>
                                                 <FieldWrapper>
                                                     <InputLabel>Description</InputLabel>
                                                     <StyledTextarea placeholder="Describe the agent's purpose..." rows={3} value={description} onChange={e => setDescription(e.target.value)} />
