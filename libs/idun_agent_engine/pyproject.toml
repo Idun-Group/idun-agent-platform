@@ -62,6 +62,12 @@ dependencies = [
     "copilotkit>=0.1.72,<0.2.0",
     "langchain-mcp-adapters>=0.1.0,<0.2.0",
     "ag-ui-adk>=0.3.4,<0.4.0",
+    "opentelemetry-exporter-gcp-trace>=1.6.0,<2.0.0",
+    "openinference-instrumentation-guardrails>=0.1.0,<1.0.0",
+    "openinference-instrumentation-vertexai>=0.1.0,<1.0.0",
+    "openinference-instrumentation-google-adk>=0.1.0,<1.0.0",
+    "openinference-instrumentation-mcp>=1.0.0,<2.0.0",
+    "google-cloud-logging>=3.10.0,<4.0.0",
 ]
 
 
