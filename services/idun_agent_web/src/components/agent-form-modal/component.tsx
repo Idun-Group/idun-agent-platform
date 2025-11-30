@@ -95,7 +95,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
     const [description, setDescription] = useState<string>('');
     const [serverPort, setServerPort] = useState<string>('8000');
     const [agentType, setAgentType] = useState<string | null>('LANGGRAPH');
-    
+
     // Dynamic Config State
     const [agentConfig, setAgentConfig] = useState<Record<string, any>>({});
     const [rootSchema, setRootSchema] = useState<any>(null);
@@ -110,7 +110,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
     // Selection State
     const [selectedMemoryType, setSelectedMemoryType] = useState<string>('InMemoryCheckpointConfig');
     const [selectedMemoryAppId, setSelectedMemoryAppId] = useState<string>('');
-    
+
     const [selectedObservabilityTypes, setSelectedObservabilityTypes] = useState<string[]>([]);
     const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({});
 
@@ -150,18 +150,18 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             setVersion(initialData.version || '1.0.0');
             setBaseUrl(initialData.base_url || '');
             setDescription(initialData.description || '');
-            
+
             // Extract port from engine_config
             const port = initialData.engine_config?.server?.api?.port;
             setServerPort(port ? String(port) : '8000');
-            
+
             // Extract framework/agent type
             const framework = initialData.engine_config?.agent?.type || initialData.framework || 'LANGGRAPH';
             setAgentType(framework);
-            
+
             // Extract agent config - cast to any to access dynamic properties
             const config = { ...(initialData.engine_config?.agent?.config || {}) } as any;
-            
+
             // Ensure graph_definition is a string
             if (config.graph_definition && typeof config.graph_definition !== 'string') {
                 try {
@@ -192,7 +192,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             });
 
             setAgentConfig(config);
-            
+
             // Extract checkpointer/memory selection
             const checkpointer = config.checkpointer;
             const sessionService = config.session_service;
@@ -208,7 +208,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                             setSelectedMemoryType(memType);
                             // Try to match with existing apps
                             // This logic assumes we can match by config. Ideally we should store app_id if possible or just match by config values.
-                            // For now, let's leave app matching logic basic or skip it if complex, 
+                            // For now, let's leave app matching logic basic or skip it if complex,
                             // as we mainly need to set the type.
                             // Re-using the checkpointer matching logic style:
                             if (memoryApps.length > 0) {
@@ -233,7 +233,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 } else {
                     const memType = checkpointer.type === 'sqlite' ? 'SQLite' : 'PostgreSQL';
                     setSelectedMemoryType(memType);
-                    
+
                     if (memoryApps.length > 0 && checkpointer.db_url) {
                         const match = memoryApps.find(app => app.type === memType && app.config.connectionString === checkpointer.db_url);
                         if (match) {
@@ -242,13 +242,13 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                     }
                 }
             }
-            
+
             // Extract observability
             const obs = (initialData.engine_config as any)?.observability || config.observability;
             if (Array.isArray(obs)) {
                 const types: string[] = [];
                 const selectedApps: Record<string, string> = {};
-                
+
                 obs.forEach((o: any) => {
                     if (o.provider && o.enabled !== false) {
                         const providerMap: Record<string, string> = {
@@ -266,7 +266,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                         const type = providerMap[o.provider];
                         if (type) {
                             types.push(type);
-                            
+
                             if (observabilityApps.length > 0 && o.config) {
                                 const match = observabilityApps.find(app => {
                                     if (app.type !== type) return false;
@@ -285,7 +285,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 setSelectedObservabilityTypes([...new Set(types)]);
                 setSelectedObservabilityApps(selectedApps);
             }
-            
+
             // Guardrails
             const guards = (initialData.engine_config as any)?.guardrails;
             if (guards?.input && Array.isArray(guards.input) && guardApps.length > 0) {
@@ -317,9 +317,9 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
     // Data Fetching
     useEffect(() => {
         if (!isOpen) return;
-        
+
         document.body.style.overflow = 'hidden';
-        
+
         // Fetch Schema
         fetch(`${API_BASE_URL}/openapi.json`)
             .then(res => {
@@ -407,7 +407,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
     const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
     const toggleObservabilityType = (type: string) => {
-        setSelectedObservabilityTypes(prev => 
+        setSelectedObservabilityTypes(prev =>
             prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
         );
     };
@@ -452,7 +452,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
 
     const handleSubmitForm = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
         if (e && 'preventDefault' in e) e.preventDefault();
-        
+
         if (!name.trim()) return toast.error('Agent name is required');
         if (!agentType) return toast.error('Please select an agent type');
         const parsedPort = Number(serverPort);
@@ -505,12 +505,12 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 } else if (selectedMemoryAppId) {
                     const memApp = memoryApps.find(a => a.id === selectedMemoryAppId);
                     if (memApp) {
-                        const typeMap: Record<string, string> = { 
+                        const typeMap: Record<string, string> = {
                             'AdkVertexAi': 'vertex_ai',
                             'AdkDatabase': 'database'
                         };
                         const type = typeMap[memApp.type];
-                        
+
                         if (type) {
                             const sessionConfig: any = { type };
                             if (type === 'vertex_ai') {
@@ -608,7 +608,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             };
 
             console.log(`${mode === 'edit' ? 'Updating' : 'Creating'} agent:`, payload);
-            
+
             // Call the appropriate API based on mode
             onSuccess(payload);
 
@@ -618,7 +618,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             try {
                 const parsed = JSON.parse(error.message);
                 if (parsed.detail) {
-                    msg = Array.isArray(parsed.detail) 
+                    msg = Array.isArray(parsed.detail)
                         ? parsed.detail.map((d: any) => `${d.loc.join('.')}: ${d.msg}`).join(', ')
                         : parsed.detail;
                 }
@@ -648,7 +648,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             console.log('patched', patched);
             return patched;
         }
-        
+
         return schema;
     };
 
@@ -730,6 +730,17 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                                                     <InputLabel>Description</InputLabel>
                                                     <StyledTextarea placeholder="Describe the agent's purpose..." rows={3} value={description} onChange={e => setDescription(e.target.value)} />
                                                 </FieldWrapper>
+                                                <A2ARow>
+                                                    <A2ALogo src="https://www.a2aprotocol.org/logo.png" alt="A2A" />
+                                                    <A2ALabel>
+                                                        <Checkbox
+                                                            type="checkbox"
+                                                            checked={!!agentConfig.a2a}
+                                                            onChange={(e) => setAgentConfig(prev => ({ ...prev, a2a: e.target.checked }))}
+                                                        />
+                                                        Agent2Agent (A2A) Protocol
+                                                    </A2ALabel>
+                                                </A2ARow>
                                             </IdentityFields>
                                         </IdentityRow>
                                     </IdentityColumn>
@@ -794,7 +805,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
 
                                     <DataColumn>
                                         <SectionTitle><SectionIndicator $color="yellow" /> Data Connections</SectionTitle>
-                                        
+
                                         {/* Memory Section */}
                                         {agentType !== 'ADK' && (
                                             <FieldWrapper>
@@ -844,7 +855,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                                                         <AddButton onClick={() => handleCreateApp(type as AppType, 'Observability')}><Plus size={12} style={{ marginRight: '4px' }} />Add</AddButton>
                                                     </TypeHeader>
                                                     <Carousel>
-                                                        <AddConfigCard 
+                                                        <AddConfigCard
                                                             style={{ minWidth: '140px', height: 'auto', aspectRatio: 'unset' }}
                                                             onClick={() => handleCreateApp(type as AppType, 'Observability')}
                                                         >
@@ -915,7 +926,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                                     {/* Guardrails */}
                                     <div>
                                         <SectionTitle><SectionIndicator $color="blue" /><Shield size={16} style={{ marginRight: '8px' }} />Guardrails</SectionTitle>
-                                        
+
                                         {guardApps.length > 0 && (
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px', marginBottom: '16px' }}>
                                                 {guardApps.map(app => {
@@ -961,7 +972,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                                                  </div>
                                             </div>
                                         )}
-                                        
+
                                         {guardApps.length === 0 && !isGuardrailMarketplaceVisible && (
                                             <EmptyText style={{ marginTop: '8px' }}>No guardrails configured.</EmptyText>
                                         )}
@@ -1045,7 +1056,7 @@ const WarningBanner = styled.div`
     gap: 12px;
     color: #facc15;
     font-size: 13px;
-    
+
     svg {
         flex-shrink: 0;
     }
@@ -1263,7 +1274,7 @@ const TypeHeader = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    
+
     &::after {
         content: '';
         flex: 1;
@@ -1317,7 +1328,7 @@ const SafetyCheckbox = styled.div<{ $checked: boolean, $risk?: string }>`
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    
+
     ${props => props.$checked
         ? `
             background-color: ${props.$risk === 'High' ? '#ef4444' : '#8c52ff'};
@@ -1391,3 +1402,46 @@ const EmptyState = styled.div`
     background-color: rgba(255, 255, 255, 0.02);
 `;
 
+const A2ARow = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    padding: 12px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+    &:hover {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+        border-color: rgba(140, 82, 255, 0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+`;
+
+const A2ALogo = styled.img`
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+`;
+
+const A2ALabel = styled.label`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    user-select: none;
+`;
+
+const Checkbox = styled.input`
+    accent-color: #8c52ff;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+`;
