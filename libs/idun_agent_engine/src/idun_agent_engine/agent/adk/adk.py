@@ -123,7 +123,7 @@ class AdkAgent(agent_base.BaseAgent):
         # Observability (provider-agnostic)
         if observability_config:
             handlers, infos = observability.create_observability_handlers(
-                observability_config
+                observability_config # type: ignore[arg-type]
             )
             self._obs_callbacks = []
             for handler in handlers:

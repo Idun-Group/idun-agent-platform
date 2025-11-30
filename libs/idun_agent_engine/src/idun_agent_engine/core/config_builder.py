@@ -135,6 +135,16 @@ class ConfigBuilder:
                     self._observability = None
             except Exception as e:
                 raise YAMLError(f"Failed to parse yaml file for Observability: {e}") from e
+            # try:
+            #     mcp_servers_list = yaml_config.get("engine_config", {}).get("mcp_servers") or yaml_config.get("engine_config", {}).get("mcpServers") # TODO to fix camelcase issues
+            #     if mcp_servers_list:
+            #         self._mcp_servers = [
+            #             MCPServer.model_validate(server) for server in mcp_servers_list
+            #         ]
+            #     else:
+            #         self._mcp_servers = None
+            # except Exception as e:
+            #     raise YAMLError(f"Failed to parse yaml file for MCP Servers: {e}") from e
 
             return self
 
@@ -259,7 +269,9 @@ class ConfigBuilder:
         with open(file_path, "w") as f:
             yaml.dump(config, f, default_flow_style=False, indent=2)
 
-    async def build_and_initialize_agent(self) -> BaseAgent:
+    async def build_and_initialize_agent(
+        self, mcp_registry: Any | None = None
+    ) -> BaseAgent:
         """Build configuration and initialize the agent in one step.
 
         Returns:
@@ -269,14 +281,19 @@ class ConfigBuilder:
             ValueError: If agent type is unsupported or configuration is invalid
         """
         engine_config = self.build()
-        return await self.initialize_agent_from_config(engine_config)
+        return await self.initialize_agent_from_config(
+            engine_config, mcp_registry=mcp_registry
+        )
 
     @staticmethod
-    async def initialize_agent_from_config(engine_config: EngineConfig) -> BaseAgent:
+    async def initialize_agent_from_config(
+        engine_config: EngineConfig, mcp_registry: Any | None = None
+    ) -> BaseAgent:
         """Initialize an agent instance from a validated EngineConfig.
 
         Args:
             engine_config: Validated configuration object
+            mcp_registry: Optional MCP registry client.
 
         Returns:
             BaseAgent: Initialized agent instance
@@ -287,7 +304,7 @@ class ConfigBuilder:
         agent_config_obj = engine_config.agent.config
         agent_type = engine_config.agent.type
         observability_config = engine_config.observability
-
+        # mcp_servers = engine_config.mcp_servers
         # Initialize the appropriate agent
         agent_instance = None
         if agent_type == AgentFramework.LANGGRAPH:
@@ -412,7 +429,9 @@ class ConfigBuilder:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration
-        await agent_instance.initialize(validated_config, observability_config)  # type: ignore[arg-type]
+        await agent_instance.initialize(
+            validated_config, observability_config#, mcp_registry=mcp_registry
+        )  # type: ignore[arg-type]
         return agent_instance
 
     @staticmethod
@@ -506,17 +525,21 @@ class ConfigBuilder:
     @staticmethod
     async def load_and_initialize_agent(
         config_path: str = "config.yaml",
+        mcp_registry: Any | None = None,
     ) -> tuple[EngineConfig, BaseAgent]:
         """Load configuration and initialize agent in one step.
 
         Args:
             config_path: Path to the configuration YAML file
+            mcp_registry: Optional MCP registry client.
 
         Returns:
             tuple[EngineConfig, BaseAgent]: Configuration and initialized agent
         """
         engine_config = ConfigBuilder.load_from_file(config_path)
-        agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+        agent = await ConfigBuilder.initialize_agent_from_config(
+            engine_config, mcp_registry=mcp_registry
+        )
         return engine_config, agent
 
     @staticmethod
@@ -619,5 +642,6 @@ class ConfigBuilder:
         builder._agent_config = engine_config.agent
         builder._guardrails = engine_config.guardrails
         builder._observability = engine_config.observability
+        builder._mcp_servers = engine_config.mcp_servers
 
         return builder

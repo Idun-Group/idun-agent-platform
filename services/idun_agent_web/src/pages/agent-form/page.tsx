@@ -89,7 +89,7 @@ export default function AgentFormPage() {
     const [description, setDescription] = useState<string>('');
     const [serverPort, setServerPort] = useState<string>('8000');
     const [agentType, setAgentType] = useState<string | null>('LANGGRAPH');
-    
+
     // Dynamic Config State
     const [agentConfig, setAgentConfig] = useState<Record<string, any>>({});
     const [rootSchema, setRootSchema] = useState<any>(null);
@@ -104,7 +104,7 @@ export default function AgentFormPage() {
     // Selection State
     const [selectedMemoryType, setSelectedMemoryType] = useState<string>('InMemoryCheckpointConfig');
     const [selectedMemoryAppId, setSelectedMemoryAppId] = useState<string>('');
-    
+
     const [selectedObservabilityTypes, setSelectedObservabilityTypes] = useState<string[]>([]);
     const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({}); // Type -> AppID
 
@@ -139,7 +139,7 @@ export default function AgentFormPage() {
     // Data Fetching
     useEffect(() => {
         document.body.style.overflow = 'hidden';
-        
+
         // Fetch Schema
         fetch(`${API_BASE_URL}/openapi.json`)
             .then(res => {
@@ -204,7 +204,7 @@ export default function AgentFormPage() {
     const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
     const toggleObservabilityType = (type: string) => {
-        setSelectedObservabilityTypes(prev => 
+        setSelectedObservabilityTypes(prev =>
             prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
         );
     };
@@ -249,7 +249,7 @@ export default function AgentFormPage() {
 
     const handleSubmitForm = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
         if (e && 'preventDefault' in e) e.preventDefault();
-        
+
         if (!name.trim()) return toast.error('Agent name is required');
         if (!agentType) return toast.error('Please select an agent type');
         const parsedPort = Number(serverPort);
@@ -302,12 +302,12 @@ export default function AgentFormPage() {
                 } else if (selectedMemoryAppId) {
                     const memApp = memoryApps.find(a => a.id === selectedMemoryAppId);
                     if (memApp) {
-                        const typeMap: Record<string, string> = { 
+                        const typeMap: Record<string, string> = {
                             'AdkVertexAi': 'vertex_ai',
                             'AdkDatabase': 'database'
                         };
                         const type = typeMap[memApp.type];
-                        
+
                         if (type) {
                             const sessionConfig: any = { type };
                             if (type === 'vertex_ai') {
@@ -418,7 +418,7 @@ export default function AgentFormPage() {
             try {
                 const parsed = JSON.parse(error.message);
                 if (parsed.detail) {
-                    msg = Array.isArray(parsed.detail) 
+                    msg = Array.isArray(parsed.detail)
                         ? parsed.detail.map((d: any) => `${d.loc.join('.')}: ${d.msg}`).join(', ')
                         : parsed.detail;
                 }
@@ -438,7 +438,7 @@ export default function AgentFormPage() {
     const getCurrentSchema = () => {
         if (!rootSchema || !agentType) return null;
         const schema = rootSchema.components?.schemas?.[FRAMEWORK_SCHEMA_MAP[agentType]];
-        
+
         // Patch schema labels if needed
         if (schema && agentType === 'ADK') {
             const patched = JSON.parse(JSON.stringify(schema));
@@ -447,7 +447,7 @@ export default function AgentFormPage() {
             }
             return patched;
         }
-        
+
         return schema;
     };
 
@@ -520,6 +520,17 @@ export default function AgentFormPage() {
                                                     <InputLabel>Description</InputLabel>
                                                     <StyledTextarea placeholder="Describe the agent's purpose..." rows={3} value={description} onChange={e => setDescription(e.target.value)} />
                                                 </FieldWrapper>
+                                                <A2ARow>
+                                                    <A2ALogo src="https://www.a2aprotocol.org/logo.png" alt="A2A" />
+                                                    <A2ALabel>
+                                                        <Checkbox
+                                                            type="checkbox"
+                                                            checked={!!agentConfig.a2a}
+                                                            onChange={(e) => setAgentConfig(prev => ({ ...prev, a2a: e.target.checked }))}
+                                                        />
+                                                        Agent2Agent (A2A) Protocol
+                                                    </A2ALabel>
+                                                </A2ARow>
                                             </IdentityFields>
                                         </IdentityRow>
                                     </IdentityColumn>
@@ -584,7 +595,7 @@ export default function AgentFormPage() {
 
                                     <DataColumn>
                                         <SectionTitle><SectionIndicator $color="yellow" /> Data Connections</SectionTitle>
-                                        
+
                                         {/* Memory Section */}
                                         <FieldWrapper>
                                             <InputLabel><Database size={14} style={{ marginRight: '6px' }} />
@@ -633,7 +644,7 @@ export default function AgentFormPage() {
                                                         <AddButton onClick={() => handleCreateApp(type as AppType, 'Observability')}><Plus size={12} style={{ marginRight: '4px' }} />Add</AddButton>
                                                     </TypeHeader>
                                                     <Carousel>
-                                                        <AddConfigCard 
+                                                        <AddConfigCard
                                                             style={{ minWidth: '140px', height: 'auto', aspectRatio: 'unset' }}
                                                             onClick={() => handleCreateApp(type as AppType, 'Observability')}
                                                         >
@@ -1039,7 +1050,7 @@ const TypeHeader = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    
+
     &::after {
         content: '';
         flex: 1;
@@ -1093,7 +1104,7 @@ const SafetyCheckbox = styled.div<{ $checked: boolean, $risk?: string }>`
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    
+
     ${props => props.$checked
         ? `
             background-color: ${props.$risk === 'High' ? '#ef4444' : '#8c52ff'};
@@ -1167,4 +1178,48 @@ const EmptyState = styled.div`
     color: #6b7280;
     font-size: 13px;
     background-color: rgba(255, 255, 255, 0.02);
+`;
+
+const A2ARow = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    padding: 12px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+    &:hover {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+        border-color: rgba(140, 82, 255, 0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+`;
+
+const A2ALogo = styled.img`
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+`;
+
+const A2ALabel = styled.label`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    user-select: none;
+`;
+
+const Checkbox = styled.input`
+    accent-color: #8c52ff;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
 `;

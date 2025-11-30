@@ -126,7 +126,11 @@ class HaystackAgent(BaseAgent):
                 self._langfuse_tracing = True
         logger.info("Agent tracing not supported yet")
 
-    async def initialize(self, config: HaystackAgentConfig | dict[str, Any]) -> None:
+    async def initialize(
+        self,
+        config: HaystackAgentConfig | dict[str, Any],
+        observability_config: list[ObservabilityConfig] | None = None,
+    ) -> None:
         try:
             logger.debug(f"Initializing haystack agent config: {config}...")
 

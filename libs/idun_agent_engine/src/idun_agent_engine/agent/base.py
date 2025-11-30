@@ -65,7 +65,9 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
 
     @abstractmethod
     async def initialize(
-        self, config: dict[str, Any], observability: list[ObservabilityConfig] | None = None
+        self,
+        config: dict[str, Any],
+        observability: list[ObservabilityConfig] | None = None,
     ) -> None:
         """Initialize the agent with a given configuration.
 
