@@ -55,7 +55,7 @@ async def configure_app(app: FastAPI, engine_config):
     # Use ConfigBuilder's centralized agent initialization, passing the registry
     try:
         agent_instance = await ConfigBuilder.initialize_agent_from_config(
-            engine_config, mcp_registry=mcp_registry
+            engine_config
         )
     except Exception as e:
         raise ValueError(
@@ -84,9 +84,9 @@ async def configure_app(app: FastAPI, engine_config):
             print(f"⚠️ Warning: Failed to setup AGUI routes: {e}")
             # Continue even if AGUI setup fails
 
-    if app.state.mcp_registry.enabled:
-        servers = ", ".join(app.state.mcp_registry.available_servers())
-        print(f"🔌 MCP servers ready: {servers}")
+    # if app.state.mcp_registry.enabled:
+    #     servers = ", ".join(app.state.mcp_registry.available_servers())
+    #     print(f"🔌 MCP servers ready: {servers}")
 
 
 

@@ -304,7 +304,7 @@ class ConfigBuilder:
         agent_config_obj = engine_config.agent.config
         agent_type = engine_config.agent.type
         observability_config = engine_config.observability
-        mcp_servers = engine_config.mcp_servers
+        # mcp_servers = engine_config.mcp_servers
         # Initialize the appropriate agent
         agent_instance = None
         if agent_type == AgentFramework.LANGGRAPH:
@@ -430,7 +430,7 @@ class ConfigBuilder:
 
         # Initialize the agent with its configuration
         await agent_instance.initialize(
-            validated_config, observability_config, mcp_registry=mcp_registry
+            validated_config, observability_config#, mcp_registry=mcp_registry
         )  # type: ignore[arg-type]
         return agent_instance
 

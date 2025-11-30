@@ -100,7 +100,7 @@ class MCPClientRegistry:
                 )
 
                 toolset = McpToolset(
-                    name=config.name,
+                    # name=config.name,
                     connection_params=server_params
                 )
                 toolsets.append(toolset)
