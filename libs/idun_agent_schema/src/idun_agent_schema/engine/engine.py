@@ -20,6 +20,6 @@ class EngineConfig(BaseModel):
 
     server: ServerConfig = Field(default_factory=ServerConfig)
     agent: AgentConfig
-    mcp_servers: list[MCPServer] | None = None
+    mcp_servers: list[MCPServer] | None = Field(default=None, alias="mcpServers")
     guardrails: Guardrails | None = None
     observability: list[ObservabilityConfig] | None = None

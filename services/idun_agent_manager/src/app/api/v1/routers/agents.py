@@ -202,8 +202,11 @@ async def generate_key(
     "/config",
     summary="Get agent config by API key",
     description="Retrieve agent configuration using API key authentication (Bearer token).",
+    response_model=ManagedAgentRead,
 )
-async def config(session: AsyncSession = Depends(get_session), auth: str = Header(...)):
+async def config(
+    session: AsyncSession = Depends(get_session), auth: str = Header(...)
+) -> ManagedAgentRead:
     """Get agent configuration using API key authentication.
 
     Expects the full API key (including prefix) as the Bearer token. If the key
@@ -250,7 +253,7 @@ async def config(session: AsyncSession = Depends(get_session), auth: str = Heade
             status_code=status.HTTP_404_NOT_FOUND, detail="Invalid API Key"
         )
 
-    return agent_model
+    return _model_to_schema(agent_model)
 
 
 @router.get(
