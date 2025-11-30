@@ -12,19 +12,25 @@ import type { ApplicationConfig, AppType, MarketplaceApp, AppCategory } from '..
 import ApplicationModal from '../applications/application-modal/component';
 import type { BackendAgent } from '../../services/agents';
 
-const DISABLED_FRAMEWORKS = new Set(['ADK', 'CREWAI', 'CUSTOM']);
+const DISABLED_FRAMEWORKS = new Set(['CREWAI', 'CUSTOM']);
 
 // Mapping of AgentFramework enum to OpenAPI schema definition names
 const FRAMEWORK_SCHEMA_MAP: Record<string, string> = {
     'LANGGRAPH': 'LangGraphAgentConfig',
     'HAYSTACK': 'HaystackAgentConfig',
-    'ADK': 'BaseAgentConfig',
+    'ADK': 'AdkAgentConfig',
     'CREWAI': 'BaseAgentConfig',
     'CUSTOM': 'BaseAgentConfig'
 };
 
 const OBSERVABILITY_TYPES: AppType[] = ['Langfuse', 'Phoenix', 'GoogleCloudLogging', 'GoogleCloudTrace', 'LangSmith'];
-const MEMORY_TYPES: AppType[] = ['PostgreSQL', 'SQLite'];
+const FRAMEWORK_MEMORY_MAP: Record<string, AppType[]> = {
+    'LANGGRAPH': ['PostgreSQL', 'SQLite'],
+    'ADK': ['AdkVertexAi', 'AdkDatabase'],
+    'HAYSTACK': [],
+    'CREWAI': [],
+    'CUSTOM': []
+};
 
 // Component for Horizontal Scrolling Carousel
 const Carousel = ({ children }: { children: React.ReactNode }) => {
@@ -189,7 +195,39 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             
             // Extract checkpointer/memory selection
             const checkpointer = config.checkpointer;
-            if (checkpointer) {
+            const sessionService = config.session_service;
+
+            if (framework === 'ADK') {
+                if (sessionService) {
+                    if (sessionService.type === 'in_memory') {
+                        setSelectedMemoryType('AdkInMemory');
+                    } else {
+                        const typeMap: Record<string, string> = { 'vertex_ai': 'AdkVertexAi', 'database': 'AdkDatabase' };
+                        const memType = typeMap[sessionService.type];
+                        if (memType) {
+                            setSelectedMemoryType(memType);
+                            // Try to match with existing apps
+                            // This logic assumes we can match by config. Ideally we should store app_id if possible or just match by config values.
+                            // For now, let's leave app matching logic basic or skip it if complex, 
+                            // as we mainly need to set the type.
+                            // Re-using the checkpointer matching logic style:
+                            if (memoryApps.length > 0) {
+                                const match = memoryApps.find(app => {
+                                    if (app.type !== memType) return false;
+                                    if (memType === 'AdkDatabase') return app.config.connectionString === sessionService.db_url;
+                                    if (memType === 'AdkVertexAi') return app.config.project_id === sessionService.project_id;
+                                    return false;
+                                });
+                                if (match) setSelectedMemoryAppId(match.id);
+                            }
+                        }
+                    }
+                } else {
+                    // Default to AdkInMemory if no session service config present? Or leave empty?
+                    // User query implies default is AdkInMemory.
+                    setSelectedMemoryType('AdkInMemory');
+                }
+            } else if (checkpointer) {
                 if (checkpointer.type === 'memory') {
                     setSelectedMemoryType('InMemoryCheckpointConfig');
                 } else {
@@ -434,6 +472,14 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 return toast.error('Component Definition is required for Haystack agents');
             }
         }
+        if (agentType === 'ADK') {
+            if (!agentConfig.agent) {
+                return toast.error('Agent definition is required for ADK agents');
+            }
+            if (!agentConfig.app_name) {
+                return toast.error('App Name is required for ADK agents');
+            }
+        }
 
         setIsSubmitting(true);
         setSubmitError(null);
@@ -452,22 +498,51 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 }
             });
 
-            // 1. Handle Memory (Checkpointer)
-            if (selectedMemoryType === 'InMemoryCheckpointConfig') {
-                finalAgentConfig.checkpointer = {
-                    type: "memory"
-                };
-            } else if (selectedMemoryAppId) {
-                const memApp = memoryApps.find(a => a.id === selectedMemoryAppId);
-                if (memApp) {
-                    const typeMap: Record<string, string> = { 'SQLite': 'sqlite', 'PostgreSQL': 'postgres' };
-                    finalAgentConfig.checkpointer = {
-                        type: typeMap[memApp.type] || memApp.type.toLowerCase(),
-                        db_url: memApp.config.connectionString
-                    };
+            // 1. Handle Memory
+            if (agentType === 'ADK') {
+                if (selectedMemoryType === 'AdkInMemory') {
+                    finalAgentConfig.session_service = { type: 'in_memory' };
+                } else if (selectedMemoryAppId) {
+                    const memApp = memoryApps.find(a => a.id === selectedMemoryAppId);
+                    if (memApp) {
+                        const typeMap: Record<string, string> = { 
+                            'AdkVertexAi': 'vertex_ai',
+                            'AdkDatabase': 'database'
+                        };
+                        const type = typeMap[memApp.type];
+                        
+                        if (type) {
+                            const sessionConfig: any = { type };
+                            if (type === 'vertex_ai') {
+                                sessionConfig.project_id = memApp.config.project_id;
+                                sessionConfig.location = memApp.config.location;
+                                sessionConfig.reasoning_engine_app_name = memApp.config.reasoning_engine_app_name;
+                            } else if (type === 'database') {
+                                sessionConfig.db_url = memApp.config.connectionString || memApp.config.db_url;
+                            }
+                            finalAgentConfig.session_service = sessionConfig;
+                        }
+                    }
                 }
+                // Ensure memory_service is null as requested
+                finalAgentConfig.memory_service = null;
             } else {
-                finalAgentConfig.checkpointer = null;
+                if (selectedMemoryType === 'InMemoryCheckpointConfig') {
+                    finalAgentConfig.checkpointer = {
+                        type: "memory"
+                    };
+                } else if (selectedMemoryAppId) {
+                    const memApp = memoryApps.find(a => a.id === selectedMemoryAppId);
+                    if (memApp) {
+                        const typeMap: Record<string, string> = { 'SQLite': 'sqlite', 'PostgreSQL': 'postgres' };
+                        finalAgentConfig.checkpointer = {
+                            type: typeMap[memApp.type] || memApp.type.toLowerCase(),
+                            db_url: memApp.config.connectionString
+                        };
+                    }
+                } else {
+                    finalAgentConfig.checkpointer = null;
+                }
             }
 
             // 2. Handle Observability
@@ -558,9 +633,23 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
         .map(f => ({ id: f.id.toUpperCase(), label: f.name }))
         .filter(f => !DISABLED_FRAMEWORKS.has(f.id));
 
+    const availableMemoryTypes = FRAMEWORK_MEMORY_MAP[agentType || 'LANGGRAPH'] || [];
+
     const getCurrentSchema = () => {
         if (!rootSchema || !agentType) return null;
-        return rootSchema.components?.schemas?.[FRAMEWORK_SCHEMA_MAP[agentType]];
+        const schema = rootSchema.components?.schemas?.[FRAMEWORK_SCHEMA_MAP[agentType]];
+        console.log('schema', schema);
+        // Patch schema labels if needed
+        if (schema && agentType === 'ADK') {
+            const patched = JSON.parse(JSON.stringify(schema));
+            if (patched.properties?.agent) {
+                patched.properties.agent.title = 'Agent Definition Path';
+            }
+            console.log('patched', patched);
+            return patched;
+        }
+        
+        return schema;
     };
 
     if (!isOpen) return null;
@@ -665,7 +754,13 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                                             <InputLabel>Agent Framework<RequiredAsterisk>*</RequiredAsterisk></InputLabel>
                                             <FrameworkList>
                                                 {frameworkOptions.map((f) => (
-                                                    <FrameworkOption key={f.id} $isSelected={agentType === f.id} onClick={() => setAgentType(f.id)} type="button">
+                                                    <FrameworkOption key={f.id} $isSelected={agentType === f.id} onClick={() => {
+                                                        setAgentType(f.id);
+                                                        if (f.id === 'ADK') setSelectedMemoryType('AdkInMemory');
+                                                        else if (f.id === 'LANGGRAPH') setSelectedMemoryType('InMemoryCheckpointConfig');
+                                                        else setSelectedMemoryType('');
+                                                        setSelectedMemoryAppId('');
+                                                    }} type="button">
                                                         <span>{f.label}</span>
                                                         {agentType === f.id && <CheckCircle><Check size={10} color="white" /></CheckCircle>}
                                                     </FrameworkOption>
@@ -690,7 +785,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                                                 data={agentConfig}
                                                 onChange={setAgentConfig}
                                                 rootSchema={rootSchema}
-                                                excludeFields={['checkpointer', 'observability']}
+                                                excludeFields={['checkpointer', 'observability', 'memory_service', 'session_service']}
                                             />
                                         ) : (
                                             <EmptyText>Loading schema...</EmptyText>
@@ -701,31 +796,35 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                                         <SectionTitle><SectionIndicator $color="yellow" /> Data Connections</SectionTitle>
                                         
                                         {/* Memory Section */}
-                                        <FieldWrapper>
-                                            <InputLabel><Database size={14} style={{ marginRight: '6px' }} />Memory (Checkpointer)</InputLabel>
-                                            <StyledSelect value={selectedMemoryType} onChange={e => { setSelectedMemoryType(e.target.value); setSelectedMemoryAppId(''); }}>
-                                                <option value="">No Memory</option>
-                                                <option value="InMemoryCheckpointConfig">InMemoryCheckpointConfig</option>
-                                                {MEMORY_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
-                                            </StyledSelect>
-                                            {selectedMemoryType && selectedMemoryType !== 'InMemoryCheckpointConfig' && (
-                                                <CardGrid>
-                                                    <AddConfigCard onClick={() => handleCreateApp(selectedMemoryType as AppType, 'Memory')}>
-                                                        <Plus size={20} />
-                                                        <span>New</span>
-                                                    </AddConfigCard>
-                                                    {getFilteredMemoryApps().map(app => (
-                                                        <ConfigCard key={app.id} $selected={selectedMemoryAppId === app.id} onClick={() => setSelectedMemoryAppId(app.id)}>
-                                                            <CardHeader>
-                                                                <CardTitle>{app.name}</CardTitle>
-                                                                <MiniIconButton onClick={(e) => handleViewApp(e, app)}><Eye size={12} /></MiniIconButton>
-                                                            </CardHeader>
-                                                            <CardMeta>{formatDate(app.updatedAt)}</CardMeta>
-                                                        </ConfigCard>
-                                                    ))}
-                                                </CardGrid>
-                                            )}
-                                        </FieldWrapper>
+                                        {agentType !== 'ADK' && (
+                                            <FieldWrapper>
+                                                <InputLabel><Database size={14} style={{ marginRight: '6px' }} />
+                                                    Memory (Checkpointer)
+                                                </InputLabel>
+                                                <StyledSelect value={selectedMemoryType} onChange={e => { setSelectedMemoryType(e.target.value); setSelectedMemoryAppId(''); }}>
+                                                    <option value="">No Memory</option>
+                                                    <option value="InMemoryCheckpointConfig">InMemoryCheckpointConfig</option>
+                                                    {availableMemoryTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                                                </StyledSelect>
+                                                {selectedMemoryType && selectedMemoryType !== 'InMemoryCheckpointConfig' && (
+                                                    <CardGrid>
+                                                        <AddConfigCard onClick={() => handleCreateApp(selectedMemoryType as AppType, 'Memory')}>
+                                                            <Plus size={20} />
+                                                            <span>New</span>
+                                                        </AddConfigCard>
+                                                        {getFilteredMemoryApps().map(app => (
+                                                            <ConfigCard key={app.id} $selected={selectedMemoryAppId === app.id} onClick={() => setSelectedMemoryAppId(app.id)}>
+                                                                <CardHeader>
+                                                                    <CardTitle>{app.name}</CardTitle>
+                                                                    <MiniIconButton onClick={(e) => handleViewApp(e, app)}><Eye size={12} /></MiniIconButton>
+                                                                </CardHeader>
+                                                                <CardMeta>{formatDate(app.updatedAt)}</CardMeta>
+                                                            </ConfigCard>
+                                                        ))}
+                                                    </CardGrid>
+                                                )}
+                                            </FieldWrapper>
+                                        )}
 
                                         {/* Observability Section */}
                                         <FieldWrapper>

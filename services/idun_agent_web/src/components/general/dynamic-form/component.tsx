@@ -105,10 +105,76 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
             }
         }
 
-        // Handle anyOf/allOf (simplified)
-        if (prop.anyOf) {
-            // Often used for nullable fields (type | null)
-            const nonNullType = prop.anyOf.find((t: any) => t.type !== 'null');
+        // Handle anyOf/oneOf
+        if (prop.anyOf || prop.oneOf) {
+            const variants = (prop.anyOf || prop.oneOf).filter((t: any) => t.type !== 'null');
+            
+            // If multiple variants, check for discriminated union
+            if (variants.length > 1) {
+                const resolvedVariants = variants.map((v: any) => v.$ref ? resolveRef(v.$ref, rootSchema) : v).filter(Boolean);
+                // Check if they look like objects with a 'type' property (discriminator)
+                const isDiscriminated = resolvedVariants.every((v: any) => 
+                    (v.type === 'object' || v.properties) && v.properties?.type
+                );
+                
+                if (isDiscriminated) {
+                     const label = prop.title || key.replace(/_/g, ' ');
+                     const description = prop.description || '';
+                     const isRequired = schema.required?.includes(key);
+                     
+                     const options = resolvedVariants.map((v: any) => {
+                        const typeEnum = v.properties?.type?.enum?.[0] || v.properties?.type?.const || v.properties?.type?.default;
+                        return {
+                            value: typeEnum || v.title,
+                            label: v.title || typeEnum,
+                            schema: v
+                        };
+                     });
+                     
+                     const currentValue = data[key];
+                     const currentType = currentValue?.type || '';
+                     const selectedOption = options.find((o: any) => o.value === currentType);
+
+                     return (
+                        <div key={key} style={{ marginBottom: '16px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', backgroundColor: '#0B0A15' }}>
+                            <InputLabel>{label}{isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
+                            <FormSelect
+                                value={currentType}
+                                onChange={(e) => {
+                                    const newType = e.target.value;
+                                    if (!newType) {
+                                        handleChange(key, undefined);
+                                    } else {
+                                        handleChange(key, { type: newType });
+                                    }
+                                }}
+                                tooltip={description}
+                            >
+                                <option value="">Select Type...</option>
+                                {options.map((opt: any) => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </FormSelect>
+                            
+                            {selectedOption && (
+                                <div style={{ marginTop: '12px' }}>
+                                    <DynamicForm 
+                                        schema={selectedOption.schema} 
+                                        rootSchema={rootSchema} 
+                                        data={currentValue || {}} 
+                                        onChange={(subData) => handleChange(key, subData)}
+                                        errors={errors} 
+                                        excludeFields={['type']} 
+                                    />
+                                </div>
+                            )}
+                        </div>
+                     );
+                }
+            }
+
+            // Fallback
+            const nonNullType = variants[0];
             if (nonNullType) {
                 if (nonNullType.$ref) {
                      const resolved = resolveRef(nonNullType.$ref, rootSchema);

@@ -112,6 +112,23 @@ export const mapConfigToApi = (type: AppType, config: any, name?: string): any =
             db_url: config.connectionString
         };
     }
+    if (type === 'AdkInMemory') {
+        return { type: 'in_memory' };
+    }
+    if (type === 'AdkVertexAi') {
+        return {
+            type: 'vertex_ai',
+            project_id: config.project_id,
+            location: config.location,
+            reasoning_engine_app_name: config.reasoning_engine_app_name
+        };
+    }
+    if (type === 'AdkDatabase') {
+        return {
+            type: 'database',
+            db_url: config.connectionString
+        };
+    }
     if (type === 'MCPServer') {
         const transport = config.transport || 'streamable_http';
         const mcpConfig: any = {
@@ -316,15 +333,29 @@ const mapMemoryToApp = (mem: components["schemas"]["ManagedMemoryRead"]): Applic
     const config: any = {};
 
     // mem.memory is a union type
-    if ('type' in mem.memory) {
-        if (mem.memory.type === 'postgres') {
+    const memConfig = mem.memory as any;
+    if ('type' in memConfig) {
+        if (memConfig.type === 'postgres') {
             type = 'PostgreSQL';
             imageUrl = '/img/postgresql-logo.png';
-            config.connectionString = (mem.memory as any).db_url;
-        } else if (mem.memory.type === 'sqlite') {
+            config.connectionString = memConfig.db_url;
+        } else if (memConfig.type === 'sqlite') {
             type = 'SQLite';
             imageUrl = '/img/sqlite-logo.png';
-            config.connectionString = (mem.memory as any).db_url;
+            config.connectionString = memConfig.db_url;
+        } else if (memConfig.type === 'in_memory') {
+            type = 'AdkInMemory';
+            imageUrl = '/img/agent-icon.svg';
+        } else if (memConfig.type === 'vertex_ai') {
+            type = 'AdkVertexAi';
+            imageUrl = '/img/google-cloud-logo.png';
+            config.project_id = memConfig.project_id;
+            config.location = memConfig.location;
+            config.reasoning_engine_app_name = memConfig.reasoning_engine_app_name;
+        } else if (memConfig.type === 'database') {
+            type = 'AdkDatabase';
+            imageUrl = '/img/postgresql-logo.png';
+            config.connectionString = memConfig.db_url;
         }
     }
 
@@ -333,6 +364,7 @@ const mapMemoryToApp = (mem: components["schemas"]["ManagedMemoryRead"]): Applic
         name: mem.name,
         type: type,
         category: 'Memory',
+        framework: (mem as any).agent_framework,
         owner: 'admin',
         createdAt: mem.created_at,
         updatedAt: mem.updated_at,
@@ -548,7 +580,8 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         category: 'Memory',
         description: 'The World\'s Most Advanced Open Source Relational Database.',
         imageUrl: '/img/postgresql-logo.png',
-        by: 'PostgreSQL'
+        by: 'PostgreSQL',
+        framework: 'LANGGRAPH'
     },
     {
         id: 'sqlite',
@@ -557,7 +590,38 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         category: 'Memory',
         description: 'Small, fast, self-contained, high-reliability, full-featured, SQL database engine.',
         imageUrl: '/img/sqlite-logo.png',
-        by: 'SQLite'
+        by: 'SQLite',
+        framework: 'LANGGRAPH'
+    },
+    {
+        id: 'adk-in-memory',
+        name: 'In Memory',
+        type: 'AdkInMemory',
+        category: 'Memory',
+        description: 'Ephemeral in-memory storage for ADK.',
+        imageUrl: '/img/agent-icon.svg',
+        by: 'ADK',
+        framework: 'ADK'
+    },
+    {
+        id: 'adk-vertex-ai',
+        name: 'Vertex AI',
+        type: 'AdkVertexAi',
+        category: 'Memory',
+        description: 'Vertex AI Memory Service for ADK.',
+        imageUrl: '/img/google-cloud-logo.png',
+        by: 'Google Cloud',
+        framework: 'ADK'
+    },
+    {
+        id: 'adk-database',
+        name: 'Database',
+        type: 'AdkDatabase',
+        category: 'Memory',
+        description: 'Database Session Service for ADK.',
+        imageUrl: '/img/postgresql-logo.png',
+        by: 'ADK',
+        framework: 'ADK'
     },
     {
         id: 'mcp-server',
@@ -705,6 +769,11 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
     }
 ];
 
+const getFrameworkForType = (type: AppType): string => {
+    const app = MARKETPLACE_APPS.find(a => a.type === type);
+    return app?.framework || 'LANGGRAPH';
+};
+
 export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
     let observabilityApps: ApplicationConfig[] = [];
     try {
@@ -758,7 +827,7 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
     if (app.category === 'Memory') {
         const payload: components["schemas"]["ManagedMemoryCreate"] = {
             name: app.name,
-            agent_framework: 'LANGGRAPH', // Default for now
+            agent_framework: getFrameworkForType(app.type) as any,
             memory: mapConfigToApi(app.type, app.config)
         };
         const res = await postJson<components["schemas"]["ManagedMemoryRead"]>('/api/v1/memory/', payload);
@@ -819,8 +888,8 @@ export const updateApplication = async (id: string, updates: Partial<Application
             const type = updates.type || mapMemoryToApp(apiMem).type;
             const payload: components["schemas"]["ManagedMemoryPatch"] = {
                 name: updates.name || apiMem.name,
-                agent_framework: 'LANGGRAPH', // Default
-                memory: mapConfigToApi(type, updates.config || (type === 'PostgreSQL' || type === 'SQLite' ? { connectionString: (apiMem.memory as any).db_url } : {}))
+                agent_framework: getFrameworkForType(type) as any,
+                memory: mapConfigToApi(type, updates.config || mapMemoryToApp(apiMem).config)
             };
             const res = await patchJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`, payload);
             return mapMemoryToApp(res);
@@ -891,8 +960,8 @@ export const updateApplication = async (id: string, updates: Partial<Application
             const type = updates.type || mapMemoryToApp(apiMem).type;
             const payload: components["schemas"]["ManagedMemoryPatch"] = {
                 name: updates.name || apiMem.name,
-                agent_framework: 'LANGGRAPH', // Default
-                memory: mapConfigToApi(type, updates.config || (type === 'PostgreSQL' || type === 'SQLite' ? { connectionString: (apiMem.memory as any).db_url } : {}))
+                agent_framework: getFrameworkForType(type) as any,
+                memory: mapConfigToApi(type, updates.config || mapMemoryToApp(apiMem).config)
             };
             const res = await patchJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`, payload);
             return mapMemoryToApp(res);
