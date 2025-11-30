@@ -173,6 +173,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 return !!config.threshold;
             case 'CodeScanner':
                 return !!config.allowed_languages;
+            case 'AdkVertexAi':
+                return !!(config.project_id && config.location && config.reasoning_engine_app_name);
+            case 'AdkDatabase':
+                return !!config.connectionString;
             default:
                 return true;
         }
@@ -760,6 +764,48 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                         tooltip="Type a language (e.g. python) and press Enter to add. Double click to edit."
                         value={config.allowed_languages || ''} 
                         onChange={e => setConfig({...config, allowed_languages: e.target.value})}
+                        disabled={!isEditing}
+                        required
+                    />
+                );
+            case 'AdkInMemory':
+                return <p>No configuration needed for In-Memory session service.</p>;
+            case 'AdkVertexAi':
+                return (
+                    <>
+                        <TextInput 
+                            label="Project ID"
+                            tooltip="Google Cloud Project ID."
+                            value={config.project_id || ''} 
+                            onChange={e => setConfig({...config, project_id: e.target.value})}
+                            disabled={!isEditing}
+                            required
+                        />
+                        <TextInput 
+                            label="Location"
+                            tooltip="Google Cloud Location (e.g. us-central1)."
+                            value={config.location || ''} 
+                            onChange={e => setConfig({...config, location: e.target.value})}
+                            disabled={!isEditing}
+                            required
+                        />
+                        <TextInput 
+                            label="Reasoning Engine App Name"
+                            tooltip="Reasoning Engine Application Name or ID."
+                            value={config.reasoning_engine_app_name || ''} 
+                            onChange={e => setConfig({...config, reasoning_engine_app_name: e.target.value})}
+                            disabled={!isEditing}
+                            required
+                        />
+                    </>
+                );
+            case 'AdkDatabase':
+                return (
+                    <TextInput 
+                        label="Database URL"
+                        tooltip="The connection string (e.g. postgresql://user:password@host:port/db)."
+                        value={config.connectionString || ''} 
+                        onChange={e => setConfig({...config, connectionString: e.target.value})}
                         disabled={!isEditing}
                         required
                     />

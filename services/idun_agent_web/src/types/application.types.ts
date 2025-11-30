@@ -1,7 +1,7 @@
 
 export type AppCategory = 'Observability' | 'Memory' | 'MCP' | 'Guardrails';
 
-export type AppType = 'Langfuse' | 'Phoenix' | 'PostgreSQL' | 'SQLite' | 'GoogleCloudLogging' | 'GoogleCloudTrace' | 'LangSmith' | 'MCPServer' | 'Guard' | 'ModelArmor' | 'CustomLLM' | 'BanList' | 'BiasCheck' | 'CompetitionCheck' | 'CorrectLanguage' | 'DetectPII' | 'GibberishText' | 'NSFWText' | 'DetectJailbreak' | 'RestrictTopic' | 'PromptInjection' | 'RagHallucination' | 'ToxicLanguage' | 'CodeScanner';
+export type AppType = 'Langfuse' | 'Phoenix' | 'PostgreSQL' | 'SQLite' | 'GoogleCloudLogging' | 'GoogleCloudTrace' | 'LangSmith' | 'MCPServer' | 'Guard' | 'ModelArmor' | 'CustomLLM' | 'BanList' | 'BiasCheck' | 'CompetitionCheck' | 'CorrectLanguage' | 'DetectPII' | 'GibberishText' | 'NSFWText' | 'DetectJailbreak' | 'RestrictTopic' | 'PromptInjection' | 'RagHallucination' | 'ToxicLanguage' | 'CodeScanner' | 'AdkInMemory' | 'AdkVertexAi' | 'AdkDatabase';
 
 export interface MarketplaceApp {
     id: string;
@@ -11,6 +11,7 @@ export interface MarketplaceApp {
     description: string;
     imageUrl: string;
     by: string;
+    framework?: string;
 }
 
 export interface ApplicationConfig {
@@ -23,4 +24,5 @@ export interface ApplicationConfig {
     updatedAt: string;
     config: Record<string, any>; // For storing keys, urls, etc.
     imageUrl?: string;
+    framework?: string;
 }

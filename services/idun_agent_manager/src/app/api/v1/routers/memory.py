@@ -14,12 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_session
 from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
-from idun_agent_schema.engine.langgraph import CheckpointConfig, SqliteCheckpointConfig, InMemoryCheckpointConfig, PostgresCheckpointConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.manager.managed_memory import (
     ManagedMemoryCreate,
     ManagedMemoryPatch,
     ManagedMemoryRead,
+    MemoryConfig,
 )
 from pydantic import TypeAdapter
 
@@ -55,8 +55,8 @@ async def _get_memory(id: str, session: AsyncSession) -> ManagedMemoryModel:
 def _model_to_schema(model: ManagedMemoryModel) -> ManagedMemoryRead:
     """Transform database model to response schema."""
     # We need to use TypeAdapter for validating the Union type correctly
-    checkpoint_adapter = TypeAdapter(CheckpointConfig)
-    memory_config = checkpoint_adapter.validate_python(model.memory_config)
+    config_adapter = TypeAdapter(MemoryConfig)
+    memory_config = config_adapter.validate_python(model.memory_config)
 
     return ManagedMemoryRead(
         id=model.id,  # type: ignore

@@ -1,17 +1,16 @@
-import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap } from 'lucide-react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap, AlertTriangle } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_FRAMEWORKS } from '../../utils/yaml-parser';
-import { createAgent } from '../../services/agents';
-import { useNavigate } from 'react-router-dom';
-import { AgentAvatar } from '../../components/general/agent-avatar/component';
-import { DynamicForm } from '../../components/general/dynamic-form/component';
+import { AgentAvatar } from '../general/agent-avatar/component';
+import { DynamicForm } from '../general/dynamic-form/component';
 import { API_BASE_URL } from '../../utils/api';
 import { fetchApplications, MARKETPLACE_APPS, mapConfigToApi } from '../../services/applications';
 import type { ApplicationConfig, AppType, MarketplaceApp, AppCategory } from '../../types/application.types';
-import ApplicationModal from '../../components/applications/application-modal/component';
+import ApplicationModal from '../applications/application-modal/component';
+import type { BackendAgent } from '../../services/agents';
 
 const DISABLED_FRAMEWORKS = new Set(['CREWAI', 'CUSTOM']);
 
@@ -78,10 +77,17 @@ const Carousel = ({ children }: { children: React.ReactNode }) => {
             )}
         </CarouselContainer>
     );
-    };
+};
 
-export default function AgentFormPage() {
-    const navigate = useNavigate();
+export interface AgentFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: (agent: any) => void;
+    mode: 'create' | 'edit';
+    initialData?: BackendAgent;
+}
+
+export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initialData }: AgentFormModalProps) {
     const [currentStep, setCurrentStep] = useState(1);
     const [name, setName] = useState<string>('');
     const [version, setVersion] = useState<string>('1.0.0');
@@ -106,11 +112,12 @@ export default function AgentFormPage() {
     const [selectedMemoryAppId, setSelectedMemoryAppId] = useState<string>('');
     
     const [selectedObservabilityTypes, setSelectedObservabilityTypes] = useState<string[]>([]);
-    const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({}); // Type -> AppID
+    const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({});
 
     const [selectedMCPIds, setSelectedMCPIds] = useState<string[]>([]);
     const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
     const [selectedGuardTypeToAdd, setSelectedGuardTypeToAdd] = useState<string>('');
+    const [isGuardrailMarketplaceVisible, setIsGuardrailMarketplaceVisible] = useState(false);
 
     // Application Modal State
     const [isAppModalOpen, setIsAppModalOpen] = useState(false);
@@ -136,8 +143,181 @@ export default function AgentFormPage() {
         });
     };
 
+    // Initialize form with existing data when editing
+    useEffect(() => {
+        if (mode === 'edit' && initialData && isOpen) {
+            setName(initialData.name || '');
+            setVersion(initialData.version || '1.0.0');
+            setBaseUrl(initialData.base_url || '');
+            setDescription(initialData.description || '');
+            
+            // Extract port from engine_config
+            const port = initialData.engine_config?.server?.api?.port;
+            setServerPort(port ? String(port) : '8000');
+            
+            // Extract framework/agent type
+            const framework = initialData.engine_config?.agent?.type || initialData.framework || 'LANGGRAPH';
+            setAgentType(framework);
+            
+            // Extract agent config - cast to any to access dynamic properties
+            const config = { ...(initialData.engine_config?.agent?.config || {}) } as any;
+            
+            // Ensure graph_definition is a string
+            if (config.graph_definition && typeof config.graph_definition !== 'string') {
+                try {
+                    config.graph_definition = JSON.stringify(config.graph_definition, null, 4);
+                } catch (e) {
+                    console.error('Failed to stringify graph_definition', e);
+                }
+            }
+
+            // Ensure component_definition is a string
+            if (config.component_definition && typeof config.component_definition !== 'string') {
+                try {
+                    config.component_definition = JSON.stringify(config.component_definition, null, 4);
+                } catch (e) {
+                    console.error('Failed to stringify component_definition', e);
+                }
+            }
+
+            // Ensure schema definitions and store are strings
+            ['input_schema_definition', 'output_schema_definition', 'store'].forEach(key => {
+                if (config[key] && typeof config[key] !== 'string') {
+                    try {
+                        config[key] = JSON.stringify(config[key], null, 4);
+                    } catch (e) {
+                        console.error(`Failed to stringify ${key}`, e);
+                    }
+                }
+            });
+
+            setAgentConfig(config);
+            
+            // Extract checkpointer/memory selection
+            const checkpointer = config.checkpointer;
+            const sessionService = config.session_service;
+
+            if (framework === 'ADK') {
+                if (sessionService) {
+                    if (sessionService.type === 'in_memory') {
+                        setSelectedMemoryType('AdkInMemory');
+                    } else {
+                        const typeMap: Record<string, string> = { 'vertex_ai': 'AdkVertexAi', 'database': 'AdkDatabase' };
+                        const memType = typeMap[sessionService.type];
+                        if (memType) {
+                            setSelectedMemoryType(memType);
+                            // Try to match with existing apps
+                            // This logic assumes we can match by config. Ideally we should store app_id if possible or just match by config values.
+                            // For now, let's leave app matching logic basic or skip it if complex, 
+                            // as we mainly need to set the type.
+                            // Re-using the checkpointer matching logic style:
+                            if (memoryApps.length > 0) {
+                                const match = memoryApps.find(app => {
+                                    if (app.type !== memType) return false;
+                                    if (memType === 'AdkDatabase') return app.config.connectionString === sessionService.db_url;
+                                    if (memType === 'AdkVertexAi') return app.config.project_id === sessionService.project_id;
+                                    return false;
+                                });
+                                if (match) setSelectedMemoryAppId(match.id);
+                            }
+                        }
+                    }
+                } else {
+                    // Default to AdkInMemory if no session service config present? Or leave empty?
+                    // User query implies default is AdkInMemory.
+                    setSelectedMemoryType('AdkInMemory');
+                }
+            } else if (checkpointer) {
+                if (checkpointer.type === 'memory') {
+                    setSelectedMemoryType('InMemoryCheckpointConfig');
+                } else {
+                    const memType = checkpointer.type === 'sqlite' ? 'SQLite' : 'PostgreSQL';
+                    setSelectedMemoryType(memType);
+                    
+                    if (memoryApps.length > 0 && checkpointer.db_url) {
+                        const match = memoryApps.find(app => app.type === memType && app.config.connectionString === checkpointer.db_url);
+                        if (match) {
+                            setSelectedMemoryAppId(match.id);
+                        }
+                    }
+                }
+            }
+            
+            // Extract observability
+            const obs = (initialData.engine_config as any)?.observability || config.observability;
+            if (Array.isArray(obs)) {
+                const types: string[] = [];
+                const selectedApps: Record<string, string> = {};
+                
+                obs.forEach((o: any) => {
+                    if (o.provider && o.enabled !== false) {
+                        const providerMap: Record<string, string> = {
+                            'langfuse': 'Langfuse',
+                            'LANGFUSE': 'Langfuse',
+                            'phoenix': 'Phoenix',
+                            'PHOENIX': 'Phoenix',
+                            'google_cloud_logging': 'GoogleCloudLogging',
+                            'GCP_LOGGING': 'GoogleCloudLogging',
+                            'google_cloud_trace': 'GoogleCloudTrace',
+                            'GCP_TRACE': 'GoogleCloudTrace',
+                            'langsmith': 'LangSmith',
+                            'LANGSMITH': 'LangSmith'
+                        };
+                        const type = providerMap[o.provider];
+                        if (type) {
+                            types.push(type);
+                            
+                            if (observabilityApps.length > 0 && o.config) {
+                                const match = observabilityApps.find(app => {
+                                    if (app.type !== type) return false;
+                                    // Compare config keys
+                                    const keys = Object.keys(o.config);
+                                    if (keys.length === 0) return false;
+                                    return keys.every(k => app.config[k] === o.config[k]);
+                                });
+                                if (match) {
+                                    selectedApps[type] = match.id;
+                                }
+                            }
+                        }
+                    }
+                });
+                setSelectedObservabilityTypes([...new Set(types)]);
+                setSelectedObservabilityApps(selectedApps);
+            }
+            
+            // Guardrails
+            const guards = (initialData.engine_config as any)?.guardrails;
+            if (guards?.input && Array.isArray(guards.input) && guardApps.length > 0) {
+                 const ids: string[] = [];
+                 guards.input.forEach((g: any) => {
+                     const match = guardApps.find(app => app.name === g.name);
+                     if (match) {
+                        ids.push(match.id);
+                     }
+                 });
+                 setSelectedGuardIds([...new Set(ids)]);
+            }
+
+            // MCP Servers
+            const mcp = (initialData.engine_config as any)?.mcp_servers;
+            if (Array.isArray(mcp) && mcpApps.length > 0) {
+                const ids: string[] = [];
+                mcp.forEach((m: any) => {
+                    const match = mcpApps.find(app => app.name === m.name);
+                    if (match) {
+                        ids.push(match.id);
+                    }
+                });
+                setSelectedMCPIds([...new Set(ids)]);
+            }
+        }
+    }, [mode, initialData, isOpen, guardApps, memoryApps, observabilityApps, mcpApps]);
+
     // Data Fetching
     useEffect(() => {
+        if (!isOpen) return;
+        
         document.body.style.overflow = 'hidden';
         
         // Fetch Schema
@@ -172,11 +352,34 @@ export default function AgentFormPage() {
         return () => {
             document.body.style.overflow = '';
         };
-    }, []);
+    }, [isOpen]);
 
     useEffect(() => {
         setAgentConfig(prev => ({ ...prev, name: name }));
     }, [name]);
+
+    // Reset form when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setCurrentStep(1);
+            if (mode === 'create') {
+                setName('');
+                setVersion('1.0.0');
+                setBaseUrl('');
+                setDescription('');
+                setServerPort('8000');
+                setAgentType('LANGGRAPH');
+                setAgentConfig({});
+                setSelectedMemoryType('InMemoryCheckpointConfig');
+                setSelectedMemoryAppId('');
+                setSelectedObservabilityTypes([]);
+                setSelectedObservabilityApps({});
+                setSelectedMCPIds([]);
+                setSelectedGuardIds([]);
+            }
+            setSubmitError(null);
+        }
+    }, [isOpen, mode]);
 
     // Helpers
     const getRiskLevel = (type: string) => {
@@ -235,7 +438,7 @@ export default function AgentFormPage() {
             setAppToCreate(marketplaceApp);
             setAppToEdit(undefined);
             setIsAppModalOpen(true);
-            } else {
+        } else {
             toast.error(`Configuration template for ${type} not found.`);
         }
     };
@@ -369,26 +572,23 @@ export default function AgentFormPage() {
             });
 
             if (observabilityConfigs.length > 0) {
-                // finalAgentConfig.observability = observabilityConfigs; // Removed from agent config
+                // finalAgentConfig.observability = observabilityConfigs;
             } else {
-                // finalAgentConfig.observability = []; // Removed from agent config
+                // finalAgentConfig.observability = [];
             }
 
             // 3. Handle MCP & Guardrails
-            // Map MCP IDs to actual config objects
             const mcpConfigs = selectedMCPIds.map(id => {
                 const app = mcpApps.find(a => a.id === id);
                 return app ? mapConfigToApi('MCPServer', app.config, app.name) : null;
             }).filter(Boolean);
 
-            // Map Guardrail IDs to actual config objects (just the raw config, no wrapper)
             const guardConfigObjects = selectedGuardIds.map(id => {
                 const app = guardApps.find(a => a.id === id);
                 if (!app) return null;
                 return mapConfigToApi(app.type, app.config);
             }).filter(Boolean);
 
-            // Construct Guardrails object
             const guardrailsConfig = guardConfigObjects.length > 0 ? {
                 input: guardConfigObjects,
                 output: []
@@ -407,14 +607,14 @@ export default function AgentFormPage() {
                 }
             };
 
-            console.log('Creating agent:', payload);
-            const createdAgent = await createAgent(payload);
-            toast.success(`Agent "${createdAgent.name}" created successfully!`);
-            setTimeout(() => navigate('/agents'), 1000);
+            console.log(`${mode === 'edit' ? 'Updating' : 'Creating'} agent:`, payload);
+            
+            // Call the appropriate API based on mode
+            onSuccess(payload);
 
         } catch (error: any) {
             console.error('Error:', error);
-            let msg = 'Failed to create agent';
+            let msg = `Failed to ${mode === 'edit' ? 'update' : 'create'} agent`;
             try {
                 const parsed = JSON.parse(error.message);
                 if (parsed.detail) {
@@ -438,30 +638,40 @@ export default function AgentFormPage() {
     const getCurrentSchema = () => {
         if (!rootSchema || !agentType) return null;
         const schema = rootSchema.components?.schemas?.[FRAMEWORK_SCHEMA_MAP[agentType]];
-        
+        console.log('schema', schema);
         // Patch schema labels if needed
         if (schema && agentType === 'ADK') {
             const patched = JSON.parse(JSON.stringify(schema));
             if (patched.properties?.agent) {
                 patched.properties.agent.title = 'Agent Definition Path';
             }
+            console.log('patched', patched);
             return patched;
         }
         
         return schema;
     };
 
+    if (!isOpen) return null;
+
     return (
         <PageContainer>
-            <Backdrop onClick={() => navigate('/agents')} />
+            <Backdrop onClick={onClose} />
             <ModalWindow>
                 <ModalHeader>
                     <div>
-                        <ModalTitle>{t('agent-form.title')}</ModalTitle>
+                        <ModalTitle>{mode === 'edit' ? t('agent-form.edit-title', 'Edit Agent') : t('agent-form.title')}</ModalTitle>
                         <ModalSubtitle>Step {currentStep} of 3</ModalSubtitle>
                     </div>
-                    <CloseButton onClick={() => navigate('/agents')}><X size={24} /></CloseButton>
+                    <CloseButton onClick={onClose}><X size={24} /></CloseButton>
                 </ModalHeader>
+
+                {mode === 'edit' && (
+                    <WarningBanner>
+                        <AlertTriangle size={16} />
+                        <span>Updating the agent will overwrite its configuration. Please ensure all desired settings are selected below.</span>
+                    </WarningBanner>
+                )}
 
                 <StepperContainer>
                     <StepperInner>
@@ -586,34 +796,35 @@ export default function AgentFormPage() {
                                         <SectionTitle><SectionIndicator $color="yellow" /> Data Connections</SectionTitle>
                                         
                                         {/* Memory Section */}
-                                        <FieldWrapper>
-                                            <InputLabel><Database size={14} style={{ marginRight: '6px' }} />
-                                                {agentType === 'ADK' ? 'Session Service' : 'Memory (Checkpointer)'}
-                                            </InputLabel>
-                                            <StyledSelect value={selectedMemoryType} onChange={e => { setSelectedMemoryType(e.target.value); setSelectedMemoryAppId(''); }}>
-                                                <option value="">No Memory</option>
-                                                {agentType === 'LANGGRAPH' && <option value="InMemoryCheckpointConfig">InMemoryCheckpointConfig</option>}
-                                                {agentType === 'ADK' && <option value="AdkInMemory">AdkInMemory</option>}
-                                                {availableMemoryTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                                            </StyledSelect>
-                                            {selectedMemoryType && selectedMemoryType !== 'InMemoryCheckpointConfig' && selectedMemoryType !== 'AdkInMemory' && (
-                                                <CardGrid>
-                                                    <AddConfigCard onClick={() => handleCreateApp(selectedMemoryType as AppType, 'Memory')}>
-                                                        <Plus size={20} />
-                                                        <span>New</span>
-                                                    </AddConfigCard>
-                                                    {getFilteredMemoryApps().map(app => (
-                                                        <ConfigCard key={app.id} $selected={selectedMemoryAppId === app.id} onClick={() => setSelectedMemoryAppId(app.id)}>
-                                                            <CardHeader>
-                                                                <CardTitle>{app.name}</CardTitle>
-                                                                <MiniIconButton onClick={(e) => handleViewApp(e, app)}><Eye size={12} /></MiniIconButton>
-                                                            </CardHeader>
-                                                            <CardMeta>{formatDate(app.updatedAt)}</CardMeta>
-                                                        </ConfigCard>
-                                                    ))}
-                                                </CardGrid>
-                                            )}
-                                        </FieldWrapper>
+                                        {agentType !== 'ADK' && (
+                                            <FieldWrapper>
+                                                <InputLabel><Database size={14} style={{ marginRight: '6px' }} />
+                                                    Memory (Checkpointer)
+                                                </InputLabel>
+                                                <StyledSelect value={selectedMemoryType} onChange={e => { setSelectedMemoryType(e.target.value); setSelectedMemoryAppId(''); }}>
+                                                    <option value="">No Memory</option>
+                                                    <option value="InMemoryCheckpointConfig">InMemoryCheckpointConfig</option>
+                                                    {availableMemoryTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                                                </StyledSelect>
+                                                {selectedMemoryType && selectedMemoryType !== 'InMemoryCheckpointConfig' && (
+                                                    <CardGrid>
+                                                        <AddConfigCard onClick={() => handleCreateApp(selectedMemoryType as AppType, 'Memory')}>
+                                                            <Plus size={20} />
+                                                            <span>New</span>
+                                                        </AddConfigCard>
+                                                        {getFilteredMemoryApps().map(app => (
+                                                            <ConfigCard key={app.id} $selected={selectedMemoryAppId === app.id} onClick={() => setSelectedMemoryAppId(app.id)}>
+                                                                <CardHeader>
+                                                                    <CardTitle>{app.name}</CardTitle>
+                                                                    <MiniIconButton onClick={(e) => handleViewApp(e, app)}><Eye size={12} /></MiniIconButton>
+                                                                </CardHeader>
+                                                                <CardMeta>{formatDate(app.updatedAt)}</CardMeta>
+                                                            </ConfigCard>
+                                                        ))}
+                                                    </CardGrid>
+                                                )}
+                                            </FieldWrapper>
+                                        )}
 
                                         {/* Observability Section */}
                                         <FieldWrapper>
@@ -704,58 +915,55 @@ export default function AgentFormPage() {
                                     {/* Guardrails */}
                                     <div>
                                         <SectionTitle><SectionIndicator $color="blue" /><Shield size={16} style={{ marginRight: '8px' }} />Guardrails</SectionTitle>
-                                        {guardApps.length === 0 ? (
-                                            <EmptyState>
-                                                <p>No guardrails configured.</p>
-                                                <StyledSelect value={selectedGuardTypeToAdd} onChange={e => setSelectedGuardTypeToAdd(e.target.value)} style={{ marginTop: '12px', marginBottom: '8px' }}>
-                                                    <option value="">Select guardrail type...</option>
-                                                    {MARKETPLACE_APPS.filter(a => a.category === 'Guardrails').map(a => (
-                                                        <option key={a.type} value={a.type}>{a.name}</option>
-                                                    ))}
-                                                </StyledSelect>
-                                                {selectedGuardTypeToAdd && (
-                                                    <AddButton onClick={() => handleCreateApp(selectedGuardTypeToAdd as AppType, 'Guardrails')}>
-                                                        <Plus size={14} style={{ marginRight: '4px' }} />Create {selectedGuardTypeToAdd}
-                                                    </AddButton>
-                                                )}
-                                            </EmptyState>
+                                        
+                                        {guardApps.length > 0 && (
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                                                {guardApps.map(app => {
+                                                    const risk = getRiskLevel(app.type);
+                                                    return (
+                                                        <SafetyCardContainer key={app.id} $enabled={selectedGuardIds.includes(app.id)} $risk={risk.label.split(' ')[0]} onClick={() => toggleGuard(app.id)}>
+                                                            <SafetyCardHeader>
+                                                                <div>
+                                                                    <Shield size={16} color={risk.color === 'red' ? '#ef4444' : '#8c52ff'} style={{ marginBottom: '4px' }} />
+                                                                    <SafetyTitle $enabled={selectedGuardIds.includes(app.id)}>{app.name}</SafetyTitle>
+                                                                </div>
+                                                                <SafetyCheckbox $checked={selectedGuardIds.includes(app.id)} $risk={risk.label.split(' ')[0]}>
+                                                                    {selectedGuardIds.includes(app.id) && <Check size={12} />}
+                                                                </SafetyCheckbox>
+                                                            </SafetyCardHeader>
+                                                            <SafetyFooter>
+                                                                <RiskTag $color={risk.color}>{risk.label}</RiskTag>
+                                                            </SafetyFooter>
+                                                        </SafetyCardContainer>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {!isGuardrailMarketplaceVisible ? (
+                                            <AddButton onClick={() => setIsGuardrailMarketplaceVisible(true)}>
+                                                <Plus size={14} style={{ marginRight: '4px' }} />
+                                                Show available guardrails
+                                            </AddButton>
                                         ) : (
-                                            <>
-                                                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                                                    <StyledSelect value={selectedGuardTypeToAdd} onChange={e => setSelectedGuardTypeToAdd(e.target.value)} style={{ flex: 1, minWidth: '150px' }}>
-                                                        <option value="">Add guardrail...</option>
-                                                        {MARKETPLACE_APPS.filter(a => a.category === 'Guardrails').map(a => (
-                                                            <option key={a.type} value={a.type}>{a.name}</option>
-                                                        ))}
-                                                    </StyledSelect>
-                                                    {selectedGuardTypeToAdd && (
-                                                        <AddButton onClick={() => { handleCreateApp(selectedGuardTypeToAdd as AppType, 'Guardrails'); setSelectedGuardTypeToAdd(''); }}>
-                                                            <Plus size={14} />
-                                                        </AddButton>
-                                                    )}
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px' }}>
-                                                    {guardApps.map(app => {
-                                                        const risk = getRiskLevel(app.type);
-                                                        return (
-                                                            <SafetyCardContainer key={app.id} $enabled={selectedGuardIds.includes(app.id)} $risk={risk.label.split(' ')[0]} onClick={() => toggleGuard(app.id)}>
-                                                                <SafetyCardHeader>
-                                                                    <div>
-                                                                        <Shield size={16} color={risk.color === 'red' ? '#ef4444' : '#8c52ff'} style={{ marginBottom: '4px' }} />
-                                                                        <SafetyTitle $enabled={selectedGuardIds.includes(app.id)}>{app.name}</SafetyTitle>
-                                                                    </div>
-                                                                    <SafetyCheckbox $checked={selectedGuardIds.includes(app.id)} $risk={risk.label.split(' ')[0]}>
-                                                                        {selectedGuardIds.includes(app.id) && <Check size={12} />}
-                                                                    </SafetyCheckbox>
-                                                                </SafetyCardHeader>
-                                                                <SafetyFooter>
-                                                                    <RiskTag $color={risk.color}>{risk.label}</RiskTag>
-                                                                </SafetyFooter>
-                                                                </SafetyCardContainer>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </>
+                                            <div style={{ marginTop: '16px', animation: 'fadeIn 0.3s', backgroundColor: '#0B0A15', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                                    <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase' }}>Available Guardrails</span>
+                                                    <CloseButton onClick={() => setIsGuardrailMarketplaceVisible(false)} style={{ padding: '4px' }}><X size={14} /></CloseButton>
+                                                 </div>
+                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+                                                    {MARKETPLACE_APPS.filter(a => a.category === 'Guardrails').map(a => (
+                                                        <AddConfigCard key={a.type} onClick={() => { handleCreateApp(a.type as AppType, 'Guardrails'); setIsGuardrailMarketplaceVisible(false); }}>
+                                                            <Plus size={20} />
+                                                            <span style={{ textAlign: 'center' }}>{a.name}</span>
+                                                        </AddConfigCard>
+                                                    ))}
+                                                 </div>
+                                            </div>
+                                        )}
+                                        
+                                        {guardApps.length === 0 && !isGuardrailMarketplaceVisible && (
+                                            <EmptyText style={{ marginTop: '8px' }}>No guardrails configured.</EmptyText>
                                         )}
                                     </div>
                                 </StepGrid>
@@ -767,7 +975,7 @@ export default function AgentFormPage() {
                 </ModalBody>
 
                 <ModalFooter>
-                    <CancelButton onClick={() => navigate('/agents')}>Cancel</CancelButton>
+                    <CancelButton onClick={onClose}>Cancel</CancelButton>
                     <div style={{ display: 'flex', gap: '12px' }}>
                         {currentStep > 1 && (
                             <BackButton onClick={prevStep}>
@@ -782,7 +990,7 @@ export default function AgentFormPage() {
                             </NextButton>
                         ) : (
                             <DeployButton onClick={handleSubmitForm} disabled={isSubmitting}>
-                                {isSubmitting ? 'Creating Agent...' : 'Create Agent'}
+                                {isSubmitting ? 'Saving...' : (mode === 'edit' ? 'Save Changes' : 'Create Agent')}
                             </DeployButton>
                         )}
                     </div>
@@ -826,6 +1034,22 @@ const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>` font-
 const StepInProgress = styled.p` font-size: 10px; color: #8c52ff; margin: 0; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } `;
 const StepSeparatorLine = styled.div` flex: 1; height: 2px; margin: 0 16px; background-color: rgba(255, 255, 255, 0.1); position: relative; `;
 const StepProgress = styled.div<{ $isCompleted: boolean }>` position: absolute; inset: 0; background-color: #10b981; width: ${props => props.$isCompleted ? '100%' : '0%'}; transition: width 0.5s; `;
+const WarningBanner = styled.div`
+    background-color: rgba(234, 179, 8, 0.1);
+    border: 1px solid rgba(234, 179, 8, 0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 0 32px 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #facc15;
+    font-size: 13px;
+    
+    svg {
+        flex-shrink: 0;
+    }
+`;
 const ModalBody = styled.div` flex: 1; overflow-y: auto; padding: 32px; background-color: #040210; `;
 const ModalFooter = styled.div` padding: 24px; border-top: 1px solid rgba(255, 255, 255, 0.05); background-color: #0B0A15; display: flex; justify-content: space-between; align-items: center; `;
 const CancelButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: #9ca3af; background: transparent; border: none; border-radius: 8px; cursor: pointer; transition: color 0.2s; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); } `;
@@ -858,7 +1082,7 @@ const FrameworkOption = styled.button<{ $isSelected: boolean }>` width: 100%; pa
 const CheckCircle = styled.div` width: 16px; height: 16px; background-color: #8c52ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; `;
 const ErrorMessage = styled.p` margin-top: 8px; margin-bottom: 0; font-size: 14px; font-family: inherit; font-weight: 400; color: #ff4757; line-height: 1.5; `;
 
-// New Components for Enhanced Selection
+// Card Components
 const CardGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -946,7 +1170,7 @@ const EmptyText = styled.p`
     font-size: 12px;
     color: #6b7280;
     font-style: italic;
-        margin: 0;
+    margin: 0;
 `;
 
 const MultiSelectContainer = styled.div`
@@ -984,8 +1208,8 @@ const TypeCheckbox = styled.div<{ $checked: boolean }>`
         border: 1px solid ${props => props.$checked ? '#8c52ff' : '#4b5563'};
         background-color: ${props => props.$checked ? '#8c52ff' : 'transparent'};
         display: flex;
-    align-items: center;
-    justify-content: center;
+        align-items: center;
+        justify-content: center;
         margin-right: 6px;
     }
 `;
@@ -1004,8 +1228,8 @@ const CarouselTrack = styled.div`
     overflow-x: auto;
     padding: 4px 0;
     scroll-behavior: smooth;
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
     &::-webkit-scrollbar {
         display: none;
     }
@@ -1122,10 +1346,8 @@ const SafetyFooter = styled.div`
 const SafetyDesc = styled.p`
     font-size: 12px;
     color: #6b7280;
-        margin: 0;
+    margin: 0;
 `;
-
-// Removed unused SafetyToggle and SafetyToggleKnob styled components
 
 const RiskTag = styled.span<{ $color: string }>`
     font-size: 10px;
@@ -1168,3 +1390,4 @@ const EmptyState = styled.div`
     font-size: 13px;
     background-color: rgba(255, 255, 255, 0.02);
 `;
+

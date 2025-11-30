@@ -106,24 +106,35 @@ class ConfigBuilder:
                 )
             yaml_config = yaml.safe_load(response.text)
             try:
-                self._server_config = yaml_config["engine_config"]["server"]
+                self._server_config = yaml_config.get("engine_config", {}).get("server")
             except Exception as e:
                 raise YAMLError(
                     f"Failed to parse yaml file for  ServerConfig: {e}"
                 ) from e
             try:
-                self._agent_config = yaml_config["engine_config"]["agent"]
+                self._agent_config = yaml_config.get("engine_config", {}).get("agent")
             except Exception as e:
                 raise YAMLError(
                     f"Failed to parse yaml file for Engine config: {e}"
                 ) from e
             try:
-                guardrails = yaml_config.get("guardrails", "")
+                guardrails = yaml_config.get("engine_config", {}).get("guardrails", "")
                 if not guardrails:
                     # self._guardrails = Guardrails(enabled=False)
                     self._guardrails = None
             except Exception as e:
                 raise YAMLError(f"Failed to parse yaml file for Guardrails: {e}") from e
+
+            try:
+                observability_list = yaml_config.get("engine_config", {}).get("observability")
+                if observability_list:
+                    self._observability = [
+                        ObservabilityConfig.model_validate(obs) for obs in observability_list
+                    ]
+                else:
+                    self._observability = None
+            except Exception as e:
+                raise YAMLError(f"Failed to parse yaml file for Observability: {e}") from e
 
             return self
 
@@ -223,6 +234,8 @@ class ConfigBuilder:
             server=self._server_config,
             agent=self._agent_config,
             guardrails=self._guardrails,
+            observability=self._observability,
+            mcp_servers=self._mcp_servers,
         )
 
     def build_dict(self) -> dict[str, Any]:
@@ -574,7 +587,8 @@ class ConfigBuilder:
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
         builder._guardrails = engine_config.guardrails
-
+        builder._observability = engine_config.observability
+        builder._mcp_servers = engine_config.mcp_servers
         return builder
 
     @classmethod
@@ -604,5 +618,6 @@ class ConfigBuilder:
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
         builder._guardrails = engine_config.guardrails
+        builder._observability = engine_config.observability
 
         return builder

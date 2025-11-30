@@ -41,6 +41,11 @@ const InputLabel = styled.label`
     margin-bottom: 8px;
 `;
 
+const RequiredAsterisk = styled.span`
+    color: #ef4444;
+    margin-left: 4px;
+`;
+
 const EditorWrapper = styled.div`
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -100,10 +105,76 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
             }
         }
 
-        // Handle anyOf/allOf (simplified)
-        if (prop.anyOf) {
-            // Often used for nullable fields (type | null)
-            const nonNullType = prop.anyOf.find((t: any) => t.type !== 'null');
+        // Handle anyOf/oneOf
+        if (prop.anyOf || prop.oneOf) {
+            const variants = (prop.anyOf || prop.oneOf).filter((t: any) => t.type !== 'null');
+            
+            // If multiple variants, check for discriminated union
+            if (variants.length > 1) {
+                const resolvedVariants = variants.map((v: any) => v.$ref ? resolveRef(v.$ref, rootSchema) : v).filter(Boolean);
+                // Check if they look like objects with a 'type' property (discriminator)
+                const isDiscriminated = resolvedVariants.every((v: any) => 
+                    (v.type === 'object' || v.properties) && v.properties?.type
+                );
+                
+                if (isDiscriminated) {
+                     const label = prop.title || key.replace(/_/g, ' ');
+                     const description = prop.description || '';
+                     const isRequired = schema.required?.includes(key);
+                     
+                     const options = resolvedVariants.map((v: any) => {
+                        const typeEnum = v.properties?.type?.enum?.[0] || v.properties?.type?.const || v.properties?.type?.default;
+                        return {
+                            value: typeEnum || v.title,
+                            label: v.title || typeEnum,
+                            schema: v
+                        };
+                     });
+                     
+                     const currentValue = data[key];
+                     const currentType = currentValue?.type || '';
+                     const selectedOption = options.find((o: any) => o.value === currentType);
+
+                     return (
+                        <div key={key} style={{ marginBottom: '16px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', backgroundColor: '#0B0A15' }}>
+                            <InputLabel>{label}{isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
+                            <FormSelect
+                                value={currentType}
+                                onChange={(e) => {
+                                    const newType = e.target.value;
+                                    if (!newType) {
+                                        handleChange(key, undefined);
+                                    } else {
+                                        handleChange(key, { type: newType });
+                                    }
+                                }}
+                                tooltip={description}
+                            >
+                                <option value="">Select Type...</option>
+                                {options.map((opt: any) => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </FormSelect>
+                            
+                            {selectedOption && (
+                                <div style={{ marginTop: '12px' }}>
+                                    <DynamicForm 
+                                        schema={selectedOption.schema} 
+                                        rootSchema={rootSchema} 
+                                        data={currentValue || {}} 
+                                        onChange={(subData) => handleChange(key, subData)}
+                                        errors={errors} 
+                                        excludeFields={['type']} 
+                                    />
+                                </div>
+                            )}
+                        </div>
+                     );
+                }
+            }
+
+            // Fallback
+            const nonNullType = variants[0];
             if (nonNullType) {
                 if (nonNullType.$ref) {
                      const resolved = resolveRef(nonNullType.$ref, rootSchema);
@@ -123,7 +194,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         if (prop.enum) {
             return (
                 <FieldWrapper key={key}>
-                    <InputLabel>{label} {isRequired && '*'}</InputLabel>
+                    <InputLabel>{label}{isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
                     <FormSelect
                         value={data[key] || ''}
                         onChange={(e) => handleChange(key, e.target.value)}
@@ -143,7 +214,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         if (prop.type === 'boolean') {
              return (
                 <FieldWrapper key={key}>
-                    <InputLabel>{label} {isRequired && '*'}</InputLabel>
+                    <InputLabel>{label}{isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
                     <FormSelect
                         value={data[key] === undefined ? '' : String(data[key])}
                         onChange={(e) => handleChange(key, e.target.value === 'true')}
@@ -158,14 +229,15 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         }
 
         // 3. JSON Objects (Schema Definitions, Stores) -> Monaco Editor
-        if (prop.type === 'object' || key.includes('definition') || key === 'store') {
+        // But NOT graph_definition or component_definition which are simple strings
+        if ((prop.type === 'object' || key.includes('schema_definition') || key === 'store') && key !== 'graph_definition' && key !== 'component_definition') {
              // Determine if it's a specific object type we know how to render, or just a blob
              // For input/output schema and store, we want JSON editor
              const value = typeof data[key] === 'object' ? JSON.stringify(data[key], null, 2) : (data[key] || '');
              
              return (
                 <FieldWrapper key={key}>
-                    <InputLabel>{label} (JSON) {isRequired && '*'}</InputLabel>
+                    <InputLabel>{label} (JSON){isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
                     <EditorWrapper>
                         <Editor
                             height="100%"
@@ -286,13 +358,23 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         );
     };
 
-    // Prioritize specific order if needed, otherwise generic
-    // We typically want Name first
+    // Prioritize required fields first, then name, then the rest
     const keys = Object.keys(schema.properties);
+    const requiredFields = schema.required || [];
+    
     const orderedKeys = keys.sort((a, b) => {
-        if (a === 'name') return -1;
-        if (b === 'name') return 1;
-        return 0;
+        const aRequired = requiredFields.includes(a);
+        const bRequired = requiredFields.includes(b);
+        
+        // Both required or both optional - sort by name priority then alphabetically
+        if (aRequired === bRequired) {
+            if (a === 'name') return -1;
+            if (b === 'name') return 1;
+            return 0;
+        }
+        
+        // Required fields come first
+        return aRequired ? -1 : 1;
     });
 
     return (

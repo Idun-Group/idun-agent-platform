@@ -10,7 +10,7 @@ const AppCard = ({ app }: AppCardProps) => {
     const { t } = useTranslation();
     return (
         <Container>
-            <Tag>{app.category}</Tag>
+            <Tag>{app.framework || app.category}</Tag>
             <AppImage src={app.imageUrl} alt={app.name} />
             <Title>{app.name}</Title>
             <By>
