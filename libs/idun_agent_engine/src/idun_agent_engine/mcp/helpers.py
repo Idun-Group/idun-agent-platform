@@ -81,3 +81,17 @@ def get_adk_tools_from_api() -> list[Any]:
         raise ValueError(f"Failed to fetch config from API: {e}") from e
     except yaml.YAMLError as e:
         raise ValueError(f"Failed to parse config YAML: {e}") from e
+
+
+def get_adk_tools() -> list[Any]:
+    """
+    Fetches configuration from the Idun Manager API and returns a list of ADK toolsets.
+
+    Args:
+        agent_api_key: The API key for authentication.
+        manager_url: The base URL of the Idun Manager (e.g. http://localhost:8000).
+
+    Returns:
+        List of initialized ADK McpToolset instances.
+    """
+    return get_adk_tools_from_api()

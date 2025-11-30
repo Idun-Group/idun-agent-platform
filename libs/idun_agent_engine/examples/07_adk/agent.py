@@ -1,5 +1,5 @@
 from google.adk.agents import LlmAgent
-from idun_agent_engine.mcp.helpers import get_adk_tools_from_api, get_adk_tools_from_file
+from idun_agent_engine.mcp.helpers import get_adk_tools
 from pathlib import Path
 import os
 
@@ -18,7 +18,7 @@ def get_current_time(city: str) -> dict:
     return {"status": "success", "city": city, "time": "10:30 AM"}
 
 
-idun_tools = get_adk_tools_from_api() # type: ignore
+idun_tools = get_adk_tools() # type: ignore
 tools = [get_current_time] + idun_tools
 
 root_agent = LlmAgent(
