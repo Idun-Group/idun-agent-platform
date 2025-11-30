@@ -37,6 +37,10 @@ services:
       # Optional: Add other env vars as needed
       # LANGFUSE_HOST: ${LANGFUSE_HOST}
       DEBUG: true
+      # Loki logging
+      LOKI_ENABLED: "true"
+      LOKI_URL: "http://idun-loki-dev:3100"
+      LOKI_BATCH_SIZE: "10"
     volumes:
       # Mount manager source for hot reload
       - ./services/idun_agent_manager/src:/app/src
@@ -89,8 +93,35 @@ services:
   #   depends_on:
   #     - manager
 
+  loki:
+    image: grafana/loki:3.2.1
+    container_name: idun-loki-dev
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./config/loki.yml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - idun_dev_network
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: idun-grafana-dev
+    ports:
+      - "3030:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - idun_dev_network
+
 volumes:
   postgres_data:
+  loki_data:
+  grafana_data:
 
 networks:
   idun_dev_network:

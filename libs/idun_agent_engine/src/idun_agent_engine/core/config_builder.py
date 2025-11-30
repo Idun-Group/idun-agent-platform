@@ -24,6 +24,9 @@ from yaml import YAMLError
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
+from .logging_config import get_logger, log_operation
+
+logger = get_logger("config_builder")
 
 
 class ConfigBuilder:
@@ -335,26 +338,153 @@ class ConfigBuilder:
                     f"Cannot validate into a TranslationAgentConfig model. Got {agent_config_obj}"
                 ) from e
 
-            # Configure environment for the template
-            os.environ["TRANSLATION_MODEL"] = translation_config.model_name
-            os.environ["TRANSLATION_SOURCE_LANG"] = translation_config.source_lang
-            os.environ["TRANSLATION_TARGET_LANG"] = translation_config.target_lang
+        try:
+            # Initialize the appropriate agent
+            agent_instance = None
+            if agent_type == AgentFramework.LANGGRAPH:
+                from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
-            # Create LangGraph config for the template
-            validated_config = LangGraphAgentConfig(
-                name=translation_config.name,
-                graph_definition="idun_agent_engine.templates.translation:graph",
-                input_schema_definition=translation_config.input_schema_definition,
-                output_schema_definition=translation_config.output_schema_definition,
-                observability=translation_config.observability,
-                checkpointer=translation_config.checkpointer,
+                try:
+                    validated_config = LangGraphAgentConfig.model_validate(
+                        agent_config_obj
+                    )
+
+                except Exception as e:
+                    raise ValueError(
+                        f"Cannot validate into a LangGraphAgentConfig model. Got {agent_config_obj}"
+                    ) from e
+
+                agent_instance = LanggraphAgent()
+
+            elif agent_type == AgentFramework.TRANSLATION_AGENT:
+                from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+                from idun_agent_schema.engine.templates import TranslationAgentConfig
+                import os
+
+                try:
+                    translation_config = TranslationAgentConfig.model_validate(
+                        agent_config_obj
+                    )
+                except Exception as e:
+                    raise ValueError(
+                        f"Cannot validate into a TranslationAgentConfig model. Got {agent_config_obj}"
+                    ) from e
+
+                # Configure environment for the template
+                os.environ["TRANSLATION_MODEL"] = translation_config.model_name
+                os.environ["TRANSLATION_SOURCE_LANG"] = translation_config.source_lang
+                os.environ["TRANSLATION_TARGET_LANG"] = translation_config.target_lang
+
+                # Create LangGraph config for the template
+                validated_config = LangGraphAgentConfig(
+                    name=translation_config.name,
+                    graph_definition="idun_agent_engine.templates.translation:graph",
+                    input_schema_definition=translation_config.input_schema_definition,
+                    output_schema_definition=translation_config.output_schema_definition,
+                    observability=translation_config.observability,
+                    checkpointer=translation_config.checkpointer,
+                )
+                agent_instance = LanggraphAgent()
+
+            elif agent_type == AgentFramework.CORRECTION_AGENT:
+                from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+                from idun_agent_schema.engine.templates import CorrectionAgentConfig
+                import os
+
+                try:
+                    correction_config = CorrectionAgentConfig.model_validate(
+                        agent_config_obj
+                    )
+                except Exception as e:
+                    raise ValueError(
+                        f"Cannot validate into a CorrectionAgentConfig model. Got {agent_config_obj}"
+                    ) from e
+
+                os.environ["CORRECTION_MODEL"] = correction_config.model_name
+                os.environ["CORRECTION_LANGUAGE"] = correction_config.language
+
+                validated_config = LangGraphAgentConfig(
+                    name=correction_config.name,
+                    graph_definition="idun_agent_engine.templates.correction:graph",
+                    input_schema_definition=correction_config.input_schema_definition,
+                    output_schema_definition=correction_config.output_schema_definition,
+                    observability=correction_config.observability,
+                    checkpointer=correction_config.checkpointer,
+                )
+                agent_instance = LanggraphAgent()
+
+            elif agent_type == AgentFramework.DEEP_RESEARCH_AGENT:
+                from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+                from idun_agent_schema.engine.templates import DeepResearchAgentConfig
+                import os
+
+                try:
+                    deep_research_config = DeepResearchAgentConfig.model_validate(
+                        agent_config_obj
+                    )
+                except Exception as e:
+                    raise ValueError(
+                        f"Cannot validate into a DeepResearchAgentConfig model. Got {agent_config_obj}"
+                    ) from e
+
+                os.environ["DEEP_RESEARCH_MODEL"] = deep_research_config.model_name
+                os.environ["DEEP_RESEARCH_PROMPT"] = deep_research_config.prompt
+                os.environ["TAVILY_API_KEY"] = deep_research_config.tavily_api_key
+
+                validated_config = LangGraphAgentConfig(
+                    name=deep_research_config.name,
+                    graph_definition="idun_agent_engine.templates.deep_research:graph",
+                    input_schema_definition=deep_research_config.input_schema_definition,
+                    output_schema_definition=deep_research_config.output_schema_definition,
+                    observability=deep_research_config.observability,
+                    checkpointer=deep_research_config.checkpointer,
+                )
+                agent_instance = LanggraphAgent()
+
+            elif agent_type == AgentFramework.HAYSTACK:
+                from idun_agent_engine.agent.haystack.haystack import HaystackAgent
+
+                try:
+                    validated_config = HaystackAgentConfig.model_validate(
+                        agent_config_obj
+                    )
+
+                except Exception as e:
+                    raise ValueError(
+                        f"Cannot validate into a HaystackAgentConfig model. Got {agent_config_obj}"
+                    ) from e
+                agent_instance = HaystackAgent()
+            else:
+                error_msg = f"Unsupported agent type: {agent_type}"
+                log_operation(
+                    logger,
+                    "ERROR",
+                    "agent_initialization_failed",
+                    error_msg,
+                    agent_type=agent_type,
+                    error_type="UnsupportedAgentType",
+                    error_details=error_msg,
+                )
+                raise ValueError(error_msg)
+
+            # Initialize the agent with its configuration
+            await agent_instance.initialize(validated_config)  # type: ignore[arg-type]
+
+            agent_id = getattr(agent_instance, "id", None)
+            agent_name = getattr(agent_instance, "name", None)
+
+            log_operation(
+                logger,
+                "INFO",
+                "agent_initialization_completed",
+                "Agent initialized successfully",
+                agent_id=agent_id,
+                agent_type=agent_type,
+                agent_name=agent_name,
+                agent_config=validated_config.model_dump()
+                if hasattr(validated_config, "model_dump")
+                else validated_config,
             )
-            agent_instance = LanggraphAgent()
-
-        elif agent_type == AgentFramework.CORRECTION_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import CorrectionAgentConfig
-            import os
 
             try:
                 correction_config = CorrectionAgentConfig.model_validate(
@@ -368,13 +498,15 @@ class ConfigBuilder:
             os.environ["CORRECTION_MODEL"] = correction_config.model_name
             os.environ["CORRECTION_LANGUAGE"] = correction_config.language
 
-            validated_config = LangGraphAgentConfig(
-                name=correction_config.name,
-                graph_definition="idun_agent_engine.templates.correction:graph",
-                input_schema_definition=correction_config.input_schema_definition,
-                output_schema_definition=correction_config.output_schema_definition,
-                observability=correction_config.observability,
-                checkpointer=correction_config.checkpointer,
+        except Exception as e:
+            log_operation(
+                logger,
+                "ERROR",
+                "agent_initialization_failed",
+                "Agent initialization failed",
+                agent_type=agent_type,
+                error_type=type(e).__name__,
+                error_details=str(e),
             )
             agent_instance = LanggraphAgent()
 
@@ -512,15 +644,68 @@ class ConfigBuilder:
             FileNotFoundError: If the configuration file doesn't exist
             ValidationError: If the configuration is invalid
         """
-        path = Path(config_path)
-        if not path.is_absolute():
-            # Resolve relative to the current working directory
-            path = Path.cwd() / path
+        log_operation(
+            logger,
+            "INFO",
+            "config_load_start",
+            f"Loading configuration from {config_path}",
+        )
 
-        with open(path) as f:
-            config_data = yaml.safe_load(f)
+        try:
+            path = Path(config_path)
+            if not path.is_absolute():
+                path = Path.cwd() / path
 
-        return EngineConfig.model_validate(config_data)
+            with open(path) as f:
+                config_data = yaml.safe_load(f)
+
+            engine_config = EngineConfig.model_validate(config_data)
+
+            log_operation(
+                logger,
+                "INFO",
+                "config_load_completed",
+                "Configuration loaded and validated successfully",
+                agent_config=engine_config.agent.model_dump()
+                if hasattr(engine_config.agent, "model_dump")
+                else engine_config.agent,
+                server_config=engine_config.server.model_dump()
+                if hasattr(engine_config.server, "model_dump")
+                else engine_config.server,
+            )
+
+            return engine_config
+
+        except FileNotFoundError as e:
+            log_operation(
+                logger,
+                "ERROR",
+                "config_load_failed",
+                f"Configuration file not found: {config_path}",
+                error_type="FileNotFoundError",
+                error_details=str(e),
+            )
+            raise
+        except yaml.YAMLError as e:
+            log_operation(
+                logger,
+                "ERROR",
+                "config_parse_failed",
+                "Failed to parse YAML configuration",
+                error_type="YAMLError",
+                error_details=str(e),
+            )
+            raise
+        except Exception as e:
+            log_operation(
+                logger,
+                "ERROR",
+                "config_validation_failed",
+                "Configuration validation failed",
+                error_type=type(e).__name__,
+                error_details=str(e),
+            )
+            raise
 
     @staticmethod
     async def load_and_initialize_agent(

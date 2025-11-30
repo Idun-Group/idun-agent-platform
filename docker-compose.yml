@@ -81,9 +81,41 @@ services:
     networks:
       - idun_network
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  loki:
+    image: grafana/loki:3.2.1
+    container_name: idun-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./config/loki.yml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - idun_network
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: idun-grafana
+    ports:
+      - "3030:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - idun_network
 
 volumes:
   postgres_data:
+  loki_data:
+  grafana_data:
 
 networks:
   idun_network:

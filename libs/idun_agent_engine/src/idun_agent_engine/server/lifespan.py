@@ -10,9 +10,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from ..core.config_builder import ConfigBuilder
+from ..core.logging_config import get_logger, log_operation
 from ..mcp import MCPClientRegistry
 
 from idun_agent_schema.engine.guardrails import Guardrails, Guardrail
+
+logger = get_logger("server_lifespan")
 
 from ..guardrails.base import BaseGuardrail
 
@@ -28,7 +31,6 @@ def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
     return [GHGuard(guard, position="input") for guard in guardrails_obj.input] + [
         GHGuard(guard, position="output") for guard in guardrails_obj.output
     ]
-
 
 async def cleanup_agent(app: FastAPI):
     """Clean up agent resources."""
@@ -58,6 +60,14 @@ async def configure_app(app: FastAPI, engine_config):
             engine_config
         )
     except Exception as e:
+        log_operation(
+            logger,
+            "ERROR",
+            "agent_initialization_failed",
+            "Agent initialization failed",
+            error_type=type(e).__name__,
+            error_details=str(e),
+        )
         raise ValueError(
             f"Error retrieving agent instance from ConfigBuilder: {e}"
         ) from e
@@ -73,13 +83,19 @@ async def configure_app(app: FastAPI, engine_config):
     # Setup AGUI routes if the agent is a LangGraph agent
     from ..agent.langgraph.langgraph import LanggraphAgent
     from ..agent.adk.adk import AdkAgent
-    # from ..server.routers.agui import setup_agui_router
 
     if isinstance(agent_instance, (LanggraphAgent, AdkAgent)):
         try:
-            # compiled_graph = getattr(agent_instance, "agent_instance")
-            # app.state.copilotkit_agent = setup_agui_router(app, agent_instance) # TODO: agent_instance is a compiled graph (duplicate agent_instance name not clear)
             app.state.copilotkit_agent = agent_instance.copilotkit_agent_instance
+            log_operation(
+                logger,
+                "DEBUG",
+                "copilotkit_setup",
+                "CopilotKit agent setup completed",
+                agent_id=agent_id,
+                agent_type=agent_type,
+                agent_name=agent_name,
+            )
         except Exception as e:
             print(f"⚠️ Warning: Failed to setup AGUI routes: {e}")
             # Continue even if AGUI setup fails

@@ -44,7 +44,6 @@ async def correct_text(state: State):
             ]
         }
 
-
     prompt = (
         f"You are a professional text corrector for {LANGUAGE}. "
         f"Correct the spelling, syntax, grammar, and conjugation of the following text. "

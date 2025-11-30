@@ -6,6 +6,9 @@ the Idun Agent Engine. It handles common deployment scenarios and provides sensi
 
 import uvicorn
 from fastapi import FastAPI
+from .logging_config import get_logger, log_operation
+
+logger = get_logger("server_runner")
 
 
 def run_server(
@@ -41,22 +44,42 @@ def run_server(
         # Run in production mode
         run_server(app, workers=4)
     """
-    print(f"🌐 Starting Idun Agent Engine server on http://{host}:{port}...")
-    print(f"📚 API documentation available at http://{host}:{port}/docs")
+    engine_config = getattr(app.state, 'engine_config', None)
+    agent_config = None
+    server_config = None
+
+    if engine_config:
+        agent_config = engine_config.agent.model_dump() if hasattr(engine_config.agent, 'model_dump') else engine_config.agent
+        server_config = {"host": host, "port": port, "reload": reload, "log_level": log_level, "workers": workers}
+
+    log_operation(
+        logger, "INFO", "server_start", f"Starting Idun Agent Engine server on http://{host}:{port}",
+        agent_config=agent_config,
+        server_config=server_config
+    )
 
     if reload and workers:
-        print(
-            "⚠️  Warning: reload=True is incompatible with workers > 1. Disabling reload."
+        log_operation(
+            logger, "WARNING", "config_conflict", "reload=True is incompatible with workers > 1. Disabling reload",
+            server_config={"reload": reload, "workers": workers}
         )
         reload = False
 
-    print("Config: ", app.state.engine_config)
-    uvicorn.run(
-        app,
-        host=host,
-        port=port,
-        log_level=log_level,
-    )
+    try:
+        uvicorn.run(
+            app,
+            host=host,
+            port=port,
+            log_level=log_level,
+        )
+    except Exception as e:
+        log_operation(
+            logger, "ERROR", "server_failed", "Server failed to start",
+            server_config=server_config,
+            error_type=type(e).__name__,
+            error_details=str(e)
+        )
+        raise
 
 
 def run_server_from_config(config_path: str = "config.yaml", **kwargs) -> None:
@@ -76,27 +99,42 @@ def run_server_from_config(config_path: str = "config.yaml", **kwargs) -> None:
     from .app_factory import create_app
     from .config_builder import ConfigBuilder
 
-    # Load configuration using ConfigBuilder
-    engine_config = ConfigBuilder.load_from_file(config_path)
-
-    # Create app with the loaded config
-    app = create_app(engine_config=engine_config)
-
-    # Extract port from config if not overridden
-    if "port" not in kwargs:
-        kwargs["port"] = engine_config.server.api.port
-
-    # Show configuration info
-    print(f"🔧 Loaded configuration from {config_path}")
-    # Best-effort: handle both dict-like and model access
-    agent_name = (
-        engine_config.agent.config.get("name")  # type: ignore[call-arg, index]
-        if hasattr(engine_config.agent.config, "get")
-        else getattr(engine_config.agent.config, "name", "Unknown")
+    log_operation(
+        logger, "INFO", "server_from_config_start", f"Loading configuration and starting server from {config_path}"
     )
-    print(f"🤖 Agent: {agent_name} ({engine_config.agent.type})")
 
-    run_server(app, **kwargs)
+    try:
+        # Load configuration using ConfigBuilder
+        engine_config = ConfigBuilder.load_from_file(config_path)
+
+        # Create app with the loaded config
+        app = create_app(engine_config=engine_config)
+
+        # Extract port from config if not overridden
+        if "port" not in kwargs:
+            kwargs["port"] = engine_config.server.api.port
+
+        agent_name = (
+            engine_config.agent.config.get("name")  # type: ignore[call-arg, index]
+            if hasattr(engine_config.agent.config, "get")
+            else getattr(engine_config.agent.config, "name", "Unknown")
+        )
+
+        log_operation(
+            logger, "INFO", "config_loaded_for_server", f"Configuration loaded: Agent {agent_name} ({engine_config.agent.type})",
+            agent_config=engine_config.agent.model_dump() if hasattr(engine_config.agent, 'model_dump') else engine_config.agent,
+            server_config=kwargs
+        )
+
+        run_server(app, **kwargs)
+
+    except Exception as e:
+        log_operation(
+            logger, "ERROR", "server_from_config_failed", f"Failed to start server from config {config_path}",
+            error_type=type(e).__name__,
+            error_details=str(e)
+        )
+        raise
 
 
 def run_server_from_builder(config_builder, **kwargs) -> None:
@@ -119,27 +157,43 @@ def run_server_from_builder(config_builder, **kwargs) -> None:
     """
     from .app_factory import create_app
 
-    # Build the configuration if it's a ConfigBuilder instance
-    if hasattr(config_builder, "build"):
-        engine_config = config_builder.build()
-    else:
-        # Assume it's already an EngineConfig
-        engine_config = config_builder
-
-    # Create app with the config
-    app = create_app(engine_config=engine_config)
-
-    # Extract port from config if not overridden
-    if "port" not in kwargs:
-        kwargs["port"] = engine_config.server.api.port
-
-    # Show configuration info
-    print("🔧 Using programmatic configuration")
-    agent_name = (
-        engine_config.agent.config.get("name")  # type: ignore[call-arg, index]
-        if hasattr(engine_config.agent.config, "get")
-        else getattr(engine_config.agent.config, "name", "Unknown")
+    log_operation(
+        logger, "INFO", "server_from_builder_start", "Starting server from ConfigBuilder instance"
     )
-    print(f"🤖 Agent: {agent_name} ({engine_config.agent.type})")
 
-    run_server(app, **kwargs)
+    try:
+        # Build the configuration if it's a ConfigBuilder instance
+        if hasattr(config_builder, "build"):
+            engine_config = config_builder.build()
+        else:
+            # Assume it's already an EngineConfig
+            engine_config = config_builder
+
+        # Create app with the config
+        app = create_app(engine_config=engine_config)
+
+        # Extract port from config if not overridden
+        if "port" not in kwargs:
+            kwargs["port"] = engine_config.server.api.port
+
+        agent_name = (
+            engine_config.agent.config.get("name")  # type: ignore[call-arg, index]
+            if hasattr(engine_config.agent.config, "get")
+            else getattr(engine_config.agent.config, "name", "Unknown")
+        )
+
+        log_operation(
+            logger, "INFO", "builder_config_ready", f"ConfigBuilder ready: Agent {agent_name} ({engine_config.agent.type})",
+            agent_config=engine_config.agent.model_dump() if hasattr(engine_config.agent, 'model_dump') else engine_config.agent,
+            server_config=kwargs
+        )
+
+        run_server(app, **kwargs)
+
+    except Exception as e:
+        log_operation(
+            logger, "ERROR", "server_from_builder_failed", "Failed to start server from ConfigBuilder",
+            error_type=type(e).__name__,
+            error_details=str(e)
+        )
+        raise
