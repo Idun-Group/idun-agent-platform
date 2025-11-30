@@ -13,5 +13,27 @@ agent:
     memory_service:
       type: "in_memory"
 
-guardrails:
-  enabled: false
+# guardrails:
+#   enabled: false
+
+observability:
+  - provider: "LANGFUSE"
+    enabled: true
+    config:
+      host: "https://cloud.langfuse.com"
+      public_key: "pk-FAKE"
+      secret_key: "sk-lf-FAKE"
+      run_name: "idun-langgraph-run"
+
+  - provider: "GCP_TRACE"
+    enabled: true
+    config:
+      project_id: "idun-platform"
+      region: "europe-west1"
+
+  - provider: "GCP_LOGGING"
+    enabled: true
+    config:
+      project_id: "idun-platform"
+      resource_type: "global"
+      severity: "INFO"

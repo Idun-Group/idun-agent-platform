@@ -131,35 +131,20 @@ def create_observability_handler(
     if provider_upper == ObservabilityProvider.GCP_LOGGING:
         from .gcp_logging.gcp_logging_handler import GCPLoggingHandler
 
-        # Pass options but implementation will raise NotImplementedError for now as requested
-        try:
-            handler = GCPLoggingHandler(options)
-            return handler, {
-                "enabled": True,
-                "provider": "gcp_logging",
-            }
-        except NotImplementedError:
-             return None, {
-                "enabled": True,
-                "provider": "gcp_logging",
-                "status": "Not Implemented"
-            }
+        handler = GCPLoggingHandler(options)
+        return handler, {
+            "enabled": True,
+            "provider": "gcp_logging",
+        }
 
     if provider_upper == ObservabilityProvider.GCP_TRACE:
         from .gcp_trace.gcp_trace_handler import GCPTraceHandler
 
-        try:
-            handler = GCPTraceHandler(options)
-            return handler, {
-                "enabled": True,
-                "provider": "gcp_trace",
-            }
-        except NotImplementedError:
-             return None, {
-                "enabled": True,
-                "provider": "gcp_trace",
-                "status": "Not Implemented"
-            }
+        handler = GCPTraceHandler(options)
+        return handler, {
+            "enabled": True,
+            "provider": "gcp_trace",
+        }
 
     return None, {
         "enabled": False,

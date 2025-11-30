@@ -210,12 +210,6 @@ class LanggraphAgent(agent_base.BaseAgent):
             config={"callbacks": self._obs_callbacks} if self._obs_callbacks else None,
         )
 
-        self._copilotkit_agent_instance = LangGraphAGUIAgent(
-            name=self._name,
-            description="Agent description", # TODO: add agent description
-            graph=self._agent_instance,
-        )
-
         if self._agent_instance:
             try:
                 self._input_schema = self._agent_instance.input_schema
@@ -282,6 +276,8 @@ class LanggraphAgent(agent_base.BaseAgent):
         """Loads a StateGraph instance from a specified path."""
         try:
             module_path, graph_variable_name = graph_definition.rsplit(":", 1)
+            if not module_path.endswith(".py"):
+                module_path += ".py"
         except ValueError:
             raise ValueError(
                 "graph_definition must be in the format 'path/to/file.py:variable_name'"
@@ -289,6 +285,8 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         # Try loading as a file path first
         try:
+            import os
+            print("Current directory: ", os.getcwd()) # TODO remove
             from pathlib import Path
 
             resolved_path = Path(module_path).resolve()
