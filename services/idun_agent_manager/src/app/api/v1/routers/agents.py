@@ -87,6 +87,7 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
 
     return ManagedAgentRead(
         id=model.id,  # type: ignore
+        base_url=model.base_url,
         name=model.name,
         status=AgentStatus(model.status),
         version=model.version,
@@ -132,6 +133,7 @@ async def create_agent(
     # Create database model instance (status persisted as string)
     model = ManagedAgentModel(
         id=uuid4(),
+        base_url=request.base_url,
         name=request.name,
         status=AgentStatus.DRAFT.value,
         version=request.version,
@@ -400,6 +402,8 @@ async def patch_agent(
 
     # Update name
     model.name = request.name
+    # Update base url
+    model.base_url = request.base_url
     # Validate engine config
     engine_config = EngineConfig(**request.engine_config.model_dump())
     # Update engine config
