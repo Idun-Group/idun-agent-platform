@@ -77,6 +77,7 @@ services:
       - "8001:8001"
     volumes:
       - ./services/copilot_runtime:/app
+      - /app/node_modules
     environment:
       - PORT=8001
       - MANAGER_URL=http://manager:8000
