@@ -84,8 +84,10 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
         ManagedAgentRead: Pydantic response model
     """
     engine_config = EngineConfig(**model.engine_config)
+
     return ManagedAgentRead(
         id=model.id,  # type: ignore
+        base_url=model.base_url,
         name=model.name,
         status=AgentStatus(model.status),
         version=model.version,
@@ -104,8 +106,8 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
 )
 async def create_agent(
     request: ManagedAgentCreate,
-#    client_key: str,
- #   _: None = Depends(allow_user),
+    #    client_key: str,
+    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> ManagedAgentRead:
     """Create a new managed agent.
@@ -125,11 +127,13 @@ async def create_agent(
     now = datetime.now(UTC)
 
     # Validate engine config
+
     engine_config = EngineConfig(**request.engine_config.model_dump())
 
     # Create database model instance (status persisted as string)
     model = ManagedAgentModel(
         id=uuid4(),
+        base_url=request.base_url,
         name=request.name,
         status=AgentStatus.DRAFT.value,
         version=request.version,
@@ -153,9 +157,9 @@ async def create_agent(
     description="Generate a unique API key (hash) for an agent to authenticate API requests.",
 )
 async def generate_key(
-#    client_key: str,
+    #    client_key: str,
     agent_id: str,
- #   _: None = Depends(allow_user),
+    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, Any]:
     try:
@@ -198,8 +202,11 @@ async def generate_key(
     "/config",
     summary="Get agent config by API key",
     description="Retrieve agent configuration using API key authentication (Bearer token).",
+    response_model=ManagedAgentRead,
 )
-async def config(session: AsyncSession = Depends(get_session), auth: str = Header(...)):
+async def config(
+    session: AsyncSession = Depends(get_session), auth: str = Header(...)
+) -> ManagedAgentRead:
     """Get agent configuration using API key authentication.
 
     Expects the full API key (including prefix) as the Bearer token. If the key
@@ -246,7 +253,7 @@ async def config(session: AsyncSession = Depends(get_session), auth: str = Heade
             status_code=status.HTTP_404_NOT_FOUND, detail="Invalid API Key"
         )
 
-    return agent_model
+    return _model_to_schema(agent_model)
 
 
 @router.get(
@@ -256,8 +263,8 @@ async def config(session: AsyncSession = Depends(get_session), auth: str = Heade
     description="List all managed agents with pagination.",
 )
 async def list_agents(
-#    client_key: str,
- #   _: None = Depends(allow_user),
+    #    client_key: str,
+    #   _: None = Depends(allow_user),
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
@@ -306,9 +313,9 @@ async def list_agents(
     description="Retrieve a specific managed agent by its UUID with complete configuration details.",
 )
 async def get_agent(
-#    client_key: str,
+    #    client_key: str,
     id: str,
- #   _: None = Depends(allow_user),
+    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> ManagedAgentRead:
     """Get a managed agent by ID.
@@ -335,9 +342,9 @@ async def get_agent(
     description="Permanently delete a managed agent and all its configuration data.",
 )
 async def delete_agent(
-#    client_key: str,
+    #    client_key: str,
     id: str,
- #   _: None = Depends(allow_user),
+    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
     """Delete a managed agent permanently.
@@ -370,10 +377,10 @@ async def delete_agent(
     description="Partially update an agent's configuration. Only the name andengine_config field can be updated if provided.",
 )
 async def patch_agent(
-#    client_key: str,
+    #    client_key: str,
     id: str,
     request: ManagedAgentPatch,
- #   _: None = Depends(allow_user),
+    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> ManagedAgentRead:
     """Partially update an agent's configuration.
@@ -398,6 +405,8 @@ async def patch_agent(
 
     # Update name
     model.name = request.name
+    # Update base url
+    model.base_url = request.base_url
     # Validate engine config
     engine_config = EngineConfig(**request.engine_config.model_dump())
     # Update engine config

@@ -15,6 +15,7 @@ export type BackendAgent = ManagedAgent & {
     run_config?: {
         env?: Record<string, string | undefined>;
     };
+    base_url?: string | null;
 };
 
 const createMockManagedAgent = (index: number): ManagedAgent => {
@@ -81,7 +82,7 @@ const deriveRunConfig = (
         }
     }
     return undefined;
-};
+        };
 
 const decorateAgent = (agent: ManagedAgent): BackendAgent => {
     const framework = agent.engine_config.agent.type;

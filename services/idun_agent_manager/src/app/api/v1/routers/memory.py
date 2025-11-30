@@ -14,12 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_session
 from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
-from idun_agent_schema.engine.langgraph import CheckpointConfig, SqliteCheckpointConfig, InMemoryCheckpointConfig, PostgresCheckpointConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.manager.managed_memory import (
     ManagedMemoryCreate,
     ManagedMemoryPatch,
     ManagedMemoryRead,
+    MemoryConfig,
 )
 from pydantic import TypeAdapter
 
@@ -55,8 +55,8 @@ async def _get_memory(id: str, session: AsyncSession) -> ManagedMemoryModel:
 def _model_to_schema(model: ManagedMemoryModel) -> ManagedMemoryRead:
     """Transform database model to response schema."""
     # We need to use TypeAdapter for validating the Union type correctly
-    checkpoint_adapter = TypeAdapter(CheckpointConfig)
-    memory_config = checkpoint_adapter.validate_python(model.memory_config)
+    config_adapter = TypeAdapter(MemoryConfig)
+    memory_config = config_adapter.validate_python(model.memory_config)
 
     return ManagedMemoryRead(
         id=model.id,  # type: ignore
@@ -107,6 +107,7 @@ async def create_memory(
 async def list_memories(
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
+    agent_framework: AgentFramework | None = None,
     session: AsyncSession = Depends(get_session),
 ) -> list[ManagedMemoryRead]:
     """List managed memory configurations with pagination."""
@@ -120,7 +121,11 @@ async def list_memories(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    stmt = select(ManagedMemoryModel).limit(limit).offset(offset)
+    stmt = select(ManagedMemoryModel)
+    if agent_framework:
+        stmt = stmt.where(ManagedMemoryModel.agent_framework == agent_framework.value)
+    stmt = stmt.limit(limit).offset(offset)
+
     result = await session.execute(stmt)
     rows = result.scalars().all()
 

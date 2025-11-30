@@ -21,7 +21,7 @@ class LangfuseHandler(ObservabilityHandlerBase):
         opts = self.options
 
         # Resolve and set env vars as required by Langfuse
-        host = self._resolve_env(opts.get("host")) or os.getenv("LANGFUSE_HOST")
+        host = self._resolve_env(opts.get("host")) or os.getenv("LANGFUSE_BASE_URL")
         public_key = self._resolve_env(opts.get("public_key")) or os.getenv(
             "LANGFUSE_PUBLIC_KEY"
         )
@@ -30,7 +30,7 @@ class LangfuseHandler(ObservabilityHandlerBase):
         )
 
         if host:
-            os.environ["LANGFUSE_HOST"] = host
+            os.environ["LANGFUSE_BASE_URL"] = host
         if public_key:
             os.environ["LANGFUSE_PUBLIC_KEY"] = public_key
         if secret_key:
@@ -40,10 +40,11 @@ class LangfuseHandler(ObservabilityHandlerBase):
         self._callbacks: list[Any] = []
         self._langfuse_client = None
         try:
-            from langfuse.callback import CallbackHandler
-            from langfuse.client import Langfuse
+            from langfuse import get_client
+            from langfuse.langchain import CallbackHandler
 
-            self._langfuse_client = Langfuse()
+            # Initialize client for auth check
+            self._langfuse_client = get_client()
 
             try:
                 if self._langfuse_client.auth_check():
@@ -52,11 +53,17 @@ class LangfuseHandler(ObservabilityHandlerBase):
                     print(
                         "Authentication failed. Please check your credentials and host."
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Error during Langfuse client authentication: {e}")
 
-            self._callbacks = [CallbackHandler()]
-        except Exception:
+            # Initialize callback handler
+            # We pass the resolved credentials explicitly to ensure they are used
+            # even if env vars were not successfully set or read.
+            self._callbacks = [
+                CallbackHandler()
+            ]
+        except Exception as e:
+            print(f"Failed to initialize Langfuse callback/client: {e}")
             self._callbacks = []
 
     @staticmethod

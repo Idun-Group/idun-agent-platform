@@ -2,6 +2,27 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Docker: Attach to Manager",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5678
+      },
+      "subProcess": true,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/services/idun_agent_manager/src",
+          "remoteRoot": "/app/src"
+        },
+        {
+          "localRoot": "${workspaceFolder}/libs/idun_agent_schema",
+          "remoteRoot": "/schema"
+        }
+      ],
+      "justMyCode": false
+    },
+    {
       "name": "Idun Manager (FastAPI)",
       "type": "debugpy",
       "request": "launch",
@@ -44,6 +65,25 @@
       "cwd": "${workspaceFolder}/libs/idun_agent_engine",
       "justMyCode": false,
       "envFile": "${workspaceFolder}/libs/idun_agent_engine/.env"
+    },
+    {
+      "name": "Idun Engine (Manager Source)",
+      "type": "debugpy",
+      "request": "launch",
+      "console": "integratedTerminal",
+      "module": "idun_platform_cli.main",
+      "args": [
+        "agent", "serve",
+        "--source",
+        "manager"
+      ],
+      "cwd": "${workspaceFolder}/libs/idun_agent_engine",
+      "justMyCode": false,
+      "envFile": "${workspaceFolder}/libs/idun_agent_engine/.env",
+      "env": {
+        "IDUN_MANAGER_HOST": "http://0.0.0.0:8000",
+        "IDUN_AGENT_API_KEY": "${input:agentApiKey}"
+      }
     },
     {
       "name": "Idun Engine (Exemple ADK)",
@@ -94,5 +134,13 @@
     //     "IdunEngine Streamlit (placeholder)"
     //   ]
     // }
+  ],
+  "inputs": [
+    {
+      "id": "agentApiKey",
+      "type": "promptString",
+      "description": "Enter the Agent API Key",
+      "default": "0fd84deb11b4687e25b58520622d006ce6cc6e863275fd48b9f998e086172ac5"
+    }
   ]
 }

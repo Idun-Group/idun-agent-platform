@@ -156,6 +156,234 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mcp-servers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List managed MCP servers
+         * @description List managed MCP server configurations with pagination.
+         */
+        get: operations["list_mcp_servers_api_v1_mcp_servers__get"];
+        put?: never;
+        /**
+         * Create managed MCP server
+         * @description Create a new managed MCP server configuration.
+         */
+        post: operations["create_mcp_server_api_v1_mcp_servers__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp-servers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get managed MCP server by ID
+         * @description Get a managed MCP server configuration by ID.
+         */
+        get: operations["get_mcp_server_api_v1_mcp_servers__id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete managed MCP server
+         * @description Delete a managed MCP server configuration permanently.
+         */
+        delete: operations["delete_mcp_server_api_v1_mcp_servers__id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update managed MCP server
+         * @description Update an MCP server configuration.
+         */
+        patch: operations["patch_mcp_server_api_v1_mcp_servers__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/observability/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List managed observability configs
+         * @description List managed observability configurations with pagination.
+         */
+        get: operations["list_observabilities_api_v1_observability__get"];
+        put?: never;
+        /**
+         * Create managed observability config
+         * @description Create a new managed observability configuration.
+         */
+        post: operations["create_observability_api_v1_observability__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/observability/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get managed observability config by ID
+         * @description Get a managed observability configuration by ID.
+         */
+        get: operations["get_observability_api_v1_observability__id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete managed observability config
+         * @description Delete a managed observability configuration permanently.
+         */
+        delete: operations["delete_observability_api_v1_observability__id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update managed observability config
+         * @description Update an observability configuration.
+         */
+        patch: operations["patch_observability_api_v1_observability__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/memory/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List managed memory configs
+         * @description List managed memory configurations with pagination.
+         */
+        get: operations["list_memories_api_v1_memory__get"];
+        put?: never;
+        /**
+         * Create managed memory config
+         * @description Create a new managed memory configuration.
+         */
+        post: operations["create_memory_api_v1_memory__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/memory/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get managed memory config by ID
+         * @description Get a managed memory configuration by ID.
+         */
+        get: operations["get_memory_api_v1_memory__id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete managed memory config
+         * @description Delete a managed memory configuration permanently.
+         */
+        delete: operations["delete_memory_api_v1_memory__id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update managed memory config
+         * @description Update a memory configuration.
+         */
+        patch: operations["patch_memory_api_v1_memory__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/agent-frameworks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List available agent frameworks
+         * @description Retrieve the list of supported agent frameworks in the platform.
+         */
+        get: operations["list_agent_frameworks_api_v1_agent_frameworks__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guardrails/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List managed guardrail configs
+         * @description List managed guardrail configurations with pagination.
+         */
+        get: operations["list_guardrails_api_v1_guardrails__get"];
+        put?: never;
+        /**
+         * Create managed guardrail config
+         * @description Create a new managed guardrail configuration.
+         */
+        post: operations["create_guardrail_api_v1_guardrails__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/guardrails/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get managed guardrail config by ID
+         * @description Get a managed guardrail configuration by ID.
+         */
+        get: operations["get_guardrail_api_v1_guardrails__id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete managed guardrail config
+         * @description Delete a managed guardrail configuration permanently.
+         */
+        delete: operations["delete_guardrail_api_v1_guardrails__id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update managed guardrail config
+         * @description Update a guardrail configuration.
+         */
+        patch: operations["patch_guardrail_api_v1_guardrails__id__patch"];
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -181,13 +409,140 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AdkAgentConfig
+         * @description Configuration model for ADK agents.
+         */
+        AdkAgentConfig: {
+            /** Name */
+            name: string;
+            /** Input Schema Definition */
+            input_schema_definition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Output Schema Definition */
+            output_schema_definition?: {
+                [key: string]: unknown;
+            } | null;
+            observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
+            /**
+             * Agent
+             * @description Agent definition (e.g. module.path:agent_instance)
+             */
+            agent: string;
+            /**
+             * App Name
+             * @description Application name for the agent
+             */
+            app_name: string;
+            /**
+             * Session Service
+             * @description Session service configuration
+             */
+            session_service?: (components["schemas"]["AdkInMemorySessionConfig"] | components["schemas"]["AdkVertexAiSessionConfig"] | components["schemas"]["AdkDatabaseSessionConfig"]) | null;
+            /**
+             * Memory Service
+             * @description Memory service configuration
+             */
+            memory_service?: (components["schemas"]["AdkInMemoryMemoryConfig"] | components["schemas"]["AdkVertexAiMemoryConfig"]) | null;
+        };
+        /**
+         * AdkDatabaseSessionConfig
+         * @description Configuration for Database Session Service.
+         */
+        AdkDatabaseSessionConfig: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "database";
+            /**
+             * Db Url
+             * @description Database URL (e.g. postgresql://...)
+             */
+            db_url: string;
+        };
+        /**
+         * AdkInMemoryMemoryConfig
+         * @description Configuration for In-Memory Memory Service.
+         */
+        AdkInMemoryMemoryConfig: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "in_memory";
+        };
+        /**
+         * AdkInMemorySessionConfig
+         * @description Configuration for In-Memory Session Service.
+         */
+        AdkInMemorySessionConfig: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "in_memory";
+        };
+        /**
+         * AdkVertexAiMemoryConfig
+         * @description Configuration for Vertex AI Memory Service.
+         */
+        AdkVertexAiMemoryConfig: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "vertex_ai";
+            /**
+             * Project Id
+             * @description Google Cloud Project ID
+             */
+            project_id: string;
+            /**
+             * Location
+             * @description Google Cloud Location
+             */
+            location: string;
+            /**
+             * Memory Bank Id
+             * @description Vertex AI Memory Bank Resource ID
+             */
+            memory_bank_id?: string | null;
+        };
+        /**
+         * AdkVertexAiSessionConfig
+         * @description Configuration for Vertex AI Session Service.
+         */
+        AdkVertexAiSessionConfig: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "vertex_ai";
+            /**
+             * Project Id
+             * @description Google Cloud Project ID
+             */
+            project_id: string;
+            /**
+             * Location
+             * @description Google Cloud Location (e.g. us-central1)
+             */
+            location: string;
+            /**
+             * Reasoning Engine App Name
+             * @description Reasoning Engine Application Name or ID
+             */
+            reasoning_engine_app_name: string;
+        };
+        /**
          * AgentConfig
          * @description Configuration for agent specification and settings.
          */
         "AgentConfig-Input": {
             type: components["schemas"]["AgentFramework"];
             /** Config */
-            config: components["schemas"]["BaseAgentConfig"] | components["schemas"]["LangGraphAgentConfig"] | components["schemas"]["HaystackAgentConfig"];
+            config: components["schemas"]["BaseAgentConfig"] | components["schemas"]["LangGraphAgentConfig"] | components["schemas"]["HaystackAgentConfig"] | components["schemas"]["AdkAgentConfig"] | components["schemas"]["TranslationAgentConfig"] | components["schemas"]["CorrectionAgentConfig"] | components["schemas"]["DeepResearchAgentConfig"];
         };
         /**
          * AgentConfig
@@ -196,14 +551,14 @@ export interface components {
         "AgentConfig-Output": {
             type: components["schemas"]["AgentFramework"];
             /** Config */
-            config: components["schemas"]["BaseAgentConfig"] | components["schemas"]["LangGraphAgentConfig"] | components["schemas"]["HaystackAgentConfig"];
+            config: components["schemas"]["BaseAgentConfig"] | components["schemas"]["LangGraphAgentConfig"] | components["schemas"]["HaystackAgentConfig"] | components["schemas"]["AdkAgentConfig"] | components["schemas"]["TranslationAgentConfig"] | components["schemas"]["CorrectionAgentConfig"] | components["schemas"]["DeepResearchAgentConfig"];
         };
         /**
          * AgentFramework
          * @description Supported agent frameworks for engine.
          * @enum {string}
          */
-        AgentFramework: "LANGGRAPH" | "ADK" | "CREWAI" | "HAYSTACK" | "CUSTOM";
+        AgentFramework: "LANGGRAPH" | "ADK" | "CREWAI" | "HAYSTACK" | "CUSTOM" | "TRANSLATION_AGENT" | "CORRECTION_AGENT" | "DEEP_RESEARCH_AGENT";
         /**
          * AgentStatus
          * @description Agent status enumeration.
@@ -217,6 +572,23 @@ export interface components {
         ApiKeyResponse: {
             /** Api Key */
             api_key: string;
+        };
+        /**
+         * BanListConfig
+         * @description Ban List configuration.
+         */
+        BanListConfig: {
+            /**
+             * Config Id
+             * @default ban_list
+             * @constant
+             */
+            config_id: "ban_list";
+            /**
+             * Banned Words
+             * @description A list of strings (words or phrases) to block
+             */
+            banned_words: string[];
         };
         /**
          * BaseAgentConfig
@@ -233,7 +605,216 @@ export interface components {
             output_schema_definition?: {
                 [key: string]: unknown;
             } | null;
-            observability?: components["schemas"]["ObservabilityConfig"] | null;
+            observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
+        };
+        /**
+         * BiasCheckConfig
+         * @description Bias Check configuration.
+         */
+        BiasCheckConfig: {
+            /**
+             * Config Id
+             * @default bias_check
+             * @constant
+             */
+            config_id: "bias_check";
+            /**
+             * Threshold
+             * @description Sensitivity level for bias detection
+             */
+            threshold: number;
+        };
+        /**
+         * CodeScannerConfig
+         * @description Code Scanner configuration.
+         */
+        CodeScannerConfig: {
+            /**
+             * Config Id
+             * @default code_scanner
+             * @constant
+             */
+            config_id: "code_scanner";
+            /**
+             * Allowed Languages
+             * @description List of allowed programming languages
+             */
+            allowed_languages: string[];
+        };
+        /**
+         * CompetitionCheckConfig
+         * @description Competition Check configuration.
+         */
+        CompetitionCheckConfig: {
+            /**
+             * Config Id
+             * @default competition_check
+             * @constant
+             */
+            config_id: "competition_check";
+            /**
+             * Competitors
+             * @description Names of competitor companies or products
+             */
+            competitors: string[];
+        };
+        /**
+         * CorrectLanguageConfig
+         * @description Correct Language configuration.
+         */
+        CorrectLanguageConfig: {
+            /**
+             * Config Id
+             * @default correct_language
+             * @constant
+             */
+            config_id: "correct_language";
+            /**
+             * Expected Languages
+             * @description Valid ISO language codes (e.g., en, fr, es)
+             */
+            expected_languages: string[];
+        };
+        /**
+         * CorrectionAgentConfig
+         * @description Configuration model for the Correction Agent Template.
+         */
+        CorrectionAgentConfig: {
+            /** Name */
+            name: string;
+            /** Input Schema Definition */
+            input_schema_definition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Output Schema Definition */
+            output_schema_definition?: {
+                [key: string]: unknown;
+            } | null;
+            observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
+            /**
+             * Language
+             * @description Language to correct text in
+             * @default French
+             */
+            language: string;
+            /**
+             * Model Name
+             * @description LLM model to use
+             * @default gemini-2.5-flash
+             */
+            model_name: string;
+            /** Checkpointer */
+            checkpointer?: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"] | null;
+        };
+        /**
+         * CustomLLMConfig
+         * @description Custom LLM configuration.
+         */
+        CustomLLMConfig: {
+            /**
+             * Config Id
+             * @default custom_llm
+             * @constant
+             */
+            config_id: "custom_llm";
+            /**
+             * Name
+             * @description Name of the custom LLM config
+             */
+            name: string;
+            /** @description Specific underlying Large Language Model */
+            model: components["schemas"]["CustomLLMModel"];
+            /**
+             * Prompt
+             * @description System instruction prompt
+             */
+            prompt: string;
+        };
+        /**
+         * CustomLLMModel
+         * @description Supported models for Custom LLM guardrail.
+         * @enum {string}
+         */
+        CustomLLMModel: "Gemini 2.5 flash lite" | "Gemini 2.5 flash" | "Gemini 2.5 pro" | "Gemini 3 pro" | "OpenAi GPT-5.1" | "OpenAi GPT-5 mini" | "OpenAi GPT-5 nano";
+        /**
+         * DeepResearchAgentConfig
+         * @description Configuration model for the Deep Research Agent Template.
+         */
+        DeepResearchAgentConfig: {
+            /** Name */
+            name: string;
+            /** Input Schema Definition */
+            input_schema_definition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Output Schema Definition */
+            output_schema_definition?: {
+                [key: string]: unknown;
+            } | null;
+            observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
+            /**
+             * Model Name
+             * @description LLM model to use
+             * @default gemini-2.5-flash
+             */
+            model_name: string;
+            /**
+             * Project
+             * @description Project identifier
+             */
+            project: string;
+            /**
+             * Region
+             * @description Region identifier
+             */
+            region: string;
+            /**
+             * Tavily Api Key
+             * @description Tavily API key for web search
+             */
+            tavily_api_key: string;
+            /**
+             * System Prompt
+             * @description System prompt for the agent
+             * @default Conduct research and write a polished report.
+             */
+            system_prompt: string;
+            /** Checkpointer */
+            checkpointer?: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"] | null;
+        };
+        /**
+         * DetectJailbreakConfig
+         * @description Detect Jailbreak configuration.
+         */
+        DetectJailbreakConfig: {
+            /**
+             * Config Id
+             * @default detect_jailbreak
+             * @constant
+             */
+            config_id: "detect_jailbreak";
+            /**
+             * Threshold
+             * @description Sensitivity level for jailbreak detection
+             */
+            threshold: number;
+        };
+        /**
+         * DetectPIIConfig
+         * @description Detect PII configuration.
+         */
+        DetectPIIConfig: {
+            /**
+             * Config Id
+             * @default detect_pii
+             * @constant
+             */
+            config_id: "detect_pii";
+            /**
+             * Pii Entities
+             * @description List of PII entities to detect
+             */
+            pii_entities: components["schemas"]["PIIEntity"][];
         };
         /**
          * EngineConfig
@@ -242,6 +823,9 @@ export interface components {
         "EngineConfig-Input": {
             server?: components["schemas"]["ServerConfig"];
             agent: components["schemas"]["AgentConfig-Input"];
+            /** Mcp Servers */
+            mcp_servers?: components["schemas"]["MCPServer"][] | null;
+            guardrails?: components["schemas"]["Guardrails-Input"] | null;
         };
         /**
          * EngineConfig
@@ -250,6 +834,205 @@ export interface components {
         "EngineConfig-Output": {
             server?: components["schemas"]["ServerConfig"];
             agent: components["schemas"]["AgentConfig-Output"];
+            /** Mcp Servers */
+            mcp_servers?: components["schemas"]["MCPServer"][] | null;
+            guardrails?: components["schemas"]["Guardrails-Output"] | null;
+        };
+        /**
+         * GCPLoggingConfig
+         * @description GCP Logging configuration.
+         */
+        GCPLoggingConfig: {
+            /**
+             * Project Id
+             * @description The project identifier where logs and traces will be sent.
+             * @default
+             */
+            project_id: string;
+            /**
+             * Region
+             * @description (Optional) The specific region/zone associated with the resource (e.g., us-central1).
+             * @default
+             */
+            region: string;
+            /**
+             * Log Name
+             * @description The identifier for the log stream (e.g., application-log).
+             * @default
+             */
+            log_name: string;
+            /**
+             * Resource Type
+             * @description The resource type label (e.g., global, gce_instance, cloud_run_revision).
+             * @default
+             */
+            resource_type: string;
+            /**
+             * Severity
+             * @description Minimum level to record (e.g., INFO, WARNING, ERROR, CRITICAL).
+             * @default INFO
+             */
+            severity: string;
+            /**
+             * Transport
+             * @description Selection for delivery method (e.g., BackgroundThread vs Synchronous).
+             * @default BackgroundThread
+             */
+            transport: string;
+        };
+        /**
+         * GCPTraceConfig
+         * @description GCP Trace configuration.
+         */
+        GCPTraceConfig: {
+            /**
+             * Project Id
+             * @description The project identifier where logs and traces will be sent.
+             * @default
+             */
+            project_id: string;
+            /**
+             * Region
+             * @description (Optional) The specific region/zone associated with the resource (e.g., us-central1).
+             * @default
+             */
+            region: string;
+            /**
+             * Trace Name
+             * @description The name for the trace or tracing session.
+             * @default
+             */
+            trace_name: string;
+            /**
+             * Sampling Rate
+             * @description A number between 0.0 and 1.0 indicating the probability of a request being traced (e.g., 1.0 for 100%, 0.1 for 10%).
+             * @default 1
+             */
+            sampling_rate: number;
+            /**
+             * Flush Interval
+             * @description Time in seconds to wait before sending buffered traces to the cloud.
+             * @default 5
+             */
+            flush_interval: number;
+            /**
+             * Ignore Urls
+             * @description A list or comma-separated string of URL paths to exclude from tracing (e.g., /health, /metrics).
+             * @default
+             */
+            ignore_urls: string;
+        };
+        /**
+         * GibberishTextConfig
+         * @description Gibberish Text configuration.
+         */
+        GibberishTextConfig: {
+            /**
+             * Config Id
+             * @default gibberish_text
+             * @constant
+             */
+            config_id: "gibberish_text";
+            /**
+             * Threshold
+             * @description Sensitivity level for gibberish detection
+             */
+            threshold: number;
+        };
+        /**
+         * Guardrail
+         * @description Base class for defining guardrails.
+         */
+        Guardrail: {
+            /** @description Type of guardrail to use */
+            type: components["schemas"]["GuardrailType"];
+            /**
+             * Config
+             * @description Configuration for the specific guardrail type
+             */
+            config: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * GuardrailType
+         * @description Enum for different guardrails.
+         * @enum {string}
+         */
+        GuardrailType: "CUSTOM_LLM" | "GUARDRAILS_HUB";
+        /**
+         * Guardrails
+         * @description Class for specifying the engine's Guardrails configuration.
+         */
+        "Guardrails-Input": {
+            /**
+             * Enabled
+             * @description enable/disable guardrails
+             */
+            enabled: boolean;
+            /**
+             * Input
+             * @description List of guardrails to apply to input messages
+             */
+            input?: components["schemas"]["Guardrail"][];
+            /**
+             * Output
+             * @description List of guardrails to apply to output messages
+             */
+            output?: components["schemas"]["Guardrail"][];
+        };
+        /**
+         * Guardrails
+         * @description Class for specifying the engine's Guardrails configuration.
+         */
+        "Guardrails-Output": {
+            /**
+             * Enabled
+             * @description enable/disable guardrails
+             */
+            enabled: boolean;
+            /**
+             * Input
+             * @description List of guardrails to apply to input messages
+             */
+            input?: components["schemas"]["Guardrail"][];
+            /**
+             * Output
+             * @description List of guardrails to apply to output messages
+             */
+            output?: components["schemas"]["Guardrail"][];
+        };
+        /**
+         * GuardrailsV2
+         * @description Guardrails V2 configuration.
+         */
+        "GuardrailsV2-Input": {
+            /**
+             * Input
+             * @description List of input guardrails
+             */
+            input?: (components["schemas"]["ModelArmorConfig"] | components["schemas"]["CustomLLMConfig"] | components["schemas"]["BanListConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
+            /**
+             * Output
+             * @description List of output guardrails
+             */
+            output?: (components["schemas"]["ModelArmorConfig"] | components["schemas"]["CustomLLMConfig"] | components["schemas"]["BanListConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
+        };
+        /**
+         * GuardrailsV2
+         * @description Guardrails V2 configuration.
+         */
+        "GuardrailsV2-Output": {
+            /**
+             * Input
+             * @description List of input guardrails
+             */
+            input?: (components["schemas"]["ModelArmorConfig"] | components["schemas"]["CustomLLMConfig"] | components["schemas"]["BanListConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
+            /**
+             * Output
+             * @description List of output guardrails
+             */
+            output?: (components["schemas"]["ModelArmorConfig"] | components["schemas"]["CustomLLMConfig"] | components["schemas"]["BanListConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -271,7 +1054,7 @@ export interface components {
             output_schema_definition?: {
                 [key: string]: unknown;
             } | null;
-            observability?: components["schemas"]["ObservabilityConfig"] | null;
+            observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
             /**
              * Type
              * @default haystack
@@ -285,6 +1068,17 @@ export interface components {
             component_type: "pipeline" | "agent";
             /** Component Definition */
             component_definition: string;
+        };
+        /**
+         * InMemoryCheckpointConfig
+         * @description Configuration for In-Memory checkpointer.
+         */
+        InMemoryCheckpointConfig: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "memory";
         };
         /**
          * LangGraphAgentConfig
@@ -301,14 +1095,173 @@ export interface components {
             output_schema_definition?: {
                 [key: string]: unknown;
             } | null;
-            observability?: components["schemas"]["ObservabilityConfig"] | null;
+            observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
             /** Graph Definition */
             graph_definition: string;
-            checkpointer?: components["schemas"]["SqliteCheckpointConfig"] | null;
+            /** Checkpointer */
+            checkpointer?: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"] | null;
             /** Store */
             store?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * LangfuseConfig
+         * @description Langfuse configuration.
+         */
+        LangfuseConfig: {
+            /**
+             * Host
+             * @default https://cloud.langfuse.com
+             */
+            host: string;
+            /**
+             * Public Key
+             * @default
+             */
+            public_key: string;
+            /**
+             * Secret Key
+             * @default
+             */
+            secret_key: string;
+            /**
+             * Run Name
+             * @default
+             */
+            run_name: string;
+        };
+        /**
+         * LangsmithConfig
+         * @description Langsmith configuration.
+         */
+        LangsmithConfig: {
+            /**
+             * Api Key
+             * @description The unique authentication key from the LangSmith settings page.
+             * @default
+             */
+            api_key: string;
+            /**
+             * Project Id
+             * @description The project identifier (corresponds to project id in LangSmith).
+             * @default
+             */
+            project_id: string;
+            /**
+             * Project Name
+             * @description The name of the project in LangSmith to bucket these traces under (e.g., prod-chatbot-v1).
+             * @default
+             */
+            project_name: string;
+            /**
+             * Endpoint
+             * @description The URL endpoint, used primarily if you are self-hosting LangSmith or using a specific enterprise instance. (e.g., https://api.smith.langchain.com)
+             * @default
+             */
+            endpoint: string;
+            /**
+             * Trace Name
+             * @description The name for the trace or tracing session.
+             * @default
+             */
+            trace_name: string;
+            /**
+             * Tracing Enabled
+             * @description A toggle to globally turn tracing on or off.
+             * @default false
+             */
+            tracing_enabled: boolean;
+            /**
+             * Capture Inputs Outputs
+             * @description A toggle to decide if the full text of LLM inputs and outputs should be logged.
+             * @default false
+             */
+            capture_inputs_outputs: boolean;
+        };
+        /**
+         * MCPServer
+         * @description Configuration for a single MCP server connection.
+         */
+        MCPServer: {
+            /**
+             * Name
+             * @description Unique identifier for this MCP server.
+             */
+            name: string;
+            /**
+             * Transport
+             * @description Transport type used to reach the MCP server.
+             * @default streamable_http
+             * @enum {string}
+             */
+            transport: "stdio" | "sse" | "streamable_http" | "websocket";
+            /**
+             * Url
+             * @description Endpoint URL for HTTP/S based transports (SSE, streamable_http, websocket).
+             */
+            url?: string | null;
+            /**
+             * Command
+             * @description Executable to run when using stdio transport.
+             */
+            command?: string | null;
+            /**
+             * Args
+             * @description Arguments to pass to the command for stdio transport.
+             */
+            args?: string[];
+            /**
+             * Headers
+             * @description Optional headers for HTTP/S transports.
+             */
+            headers?: {
+                [key: string]: string;
+            };
+            /**
+             * Env
+             * @description Environment variables to set when spawning stdio servers.
+             */
+            env?: {
+                [key: string]: string;
+            };
+            /**
+             * Cwd
+             * @description Working directory for stdio transports.
+             */
+            cwd?: string | null;
+            /**
+             * Encoding
+             * @description Encoding used for stdio transport.
+             */
+            encoding?: string | null;
+            /**
+             * Encoding Error Handler
+             * @description Encoding error handler for stdio transport.
+             */
+            encoding_error_handler?: ("strict" | "ignore" | "replace") | null;
+            /**
+             * Timeout Seconds
+             * @description Timeout in seconds for HTTP/S transports (maps to `timeout`).
+             */
+            timeout_seconds?: number | null;
+            /**
+             * Sse Read Timeout Seconds
+             * @description Timeout in seconds waiting for SSE events (maps to `sse_read_timeout`).
+             */
+            sse_read_timeout_seconds?: number | null;
+            /**
+             * Terminate On Close
+             * @description Whether to terminate Streamable HTTP sessions on close.
+             */
+            terminate_on_close?: boolean | null;
+            /**
+             * Session Kwargs
+             * @description Extra keyword arguments forwarded to MCP ClientSession.
+             */
+            session_kwargs?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * ManagedAgentCreate
@@ -388,31 +1341,348 @@ export interface components {
             updated_at: string;
         };
         /**
-         * ObservabilityConfig
-         * @description Provider-agnostic observability configuration based on Pydantic.
-         *
-         *     Example YAML:
-         *       observability:
-         *         provider: "langfuse"  # or "phoenix"
-         *         enabled: true
-         *         options:
-         *           host: ${LANGFUSE_HOST}
-         *           public_key: ${LANGFUSE_PUBLIC_KEY}
-         *           secret_key: ${LANGFUSE_SECRET_KEY}
-         *           run_name: "my-run"
+         * ManagedGuardrailCreate
+         * @description Create managed guardrail model for requests.
          */
-        ObservabilityConfig: {
-            /** Provider */
-            provider?: string | null;
+        ManagedGuardrailCreate: {
+            /** Name */
+            name: string;
+            /** @description Guardrail configuration */
+            guardrail: components["schemas"]["GuardrailsV2-Input"];
+        };
+        /**
+         * ManagedGuardrailPatch
+         * @description Full replacement schema for PUT of a managed guardrail.
+         */
+        ManagedGuardrailPatch: {
+            /** Name */
+            name: string;
+            /** @description Guardrail configuration */
+            guardrail: components["schemas"]["GuardrailsV2-Input"];
+        };
+        /**
+         * ManagedGuardrailRead
+         * @description Complete managed guardrail model for responses.
+         */
+        ManagedGuardrailRead: {
             /**
-             * Enabled
-             * @default false
+             * Id
+             * Format: uuid
              */
-            enabled: boolean;
-            /** Options */
-            options?: {
-                [key: string]: unknown;
-            };
+            id: string;
+            /** Name */
+            name: string;
+            /** @description Guardrail configuration */
+            guardrail: components["schemas"]["GuardrailsV2-Output"];
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description Last update timestamp
+             */
+            updated_at: string;
+        };
+        /**
+         * ManagedMCPServerCreate
+         * @description Create managed MCP server model for requests.
+         */
+        ManagedMCPServerCreate: {
+            /** Name */
+            name: string;
+            /** @description MCP server configuration */
+            mcp_server: components["schemas"]["MCPServer"];
+        };
+        /**
+         * ManagedMCPServerPatch
+         * @description Full replacement schema for PUT of a managed MCP server.
+         */
+        ManagedMCPServerPatch: {
+            /** Name */
+            name: string;
+            /** @description MCP server configuration */
+            mcp_server: components["schemas"]["MCPServer"];
+        };
+        /**
+         * ManagedMCPServerRead
+         * @description Complete managed MCP server model for responses.
+         */
+        ManagedMCPServerRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** @description MCP server configuration */
+            mcp_server: components["schemas"]["MCPServer"];
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description Last update timestamp
+             */
+            updated_at: string;
+        };
+        /**
+         * ManagedMemoryCreate
+         * @description Create managed memory model for requests.
+         */
+        ManagedMemoryCreate: {
+            /** Name */
+            name: string;
+            /** @description Agent framework */
+            agent_framework: components["schemas"]["AgentFramework"];
+            /**
+             * Memory
+             * @description Memory (checkpoint) configuration
+             */
+            memory: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"];
+        };
+        /**
+         * ManagedMemoryPatch
+         * @description Full replacement schema for PUT of a managed memory.
+         */
+        ManagedMemoryPatch: {
+            /** Name */
+            name: string;
+            /** @description Agent framework */
+            agent_framework: components["schemas"]["AgentFramework"];
+            /**
+             * Memory
+             * @description Memory (checkpoint) configuration
+             */
+            memory: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"];
+        };
+        /**
+         * ManagedMemoryRead
+         * @description Complete managed memory model for responses.
+         */
+        ManagedMemoryRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** @description Agent framework */
+            agent_framework: components["schemas"]["AgentFramework"];
+            /**
+             * Memory
+             * @description Memory (checkpoint) configuration
+             */
+            memory: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"];
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description Last update timestamp
+             */
+            updated_at: string;
+        };
+        /**
+         * ManagedObservabilityCreate
+         * @description Create managed observability model for requests.
+         */
+        ManagedObservabilityCreate: {
+            /** Name */
+            name: string;
+            /** @description Observability configuration */
+            observability: components["schemas"]["idun_agent_schema__engine__observability_v2__ObservabilityConfig"];
+        };
+        /**
+         * ManagedObservabilityPatch
+         * @description Full replacement schema for PUT of a managed observability.
+         */
+        ManagedObservabilityPatch: {
+            /** Name */
+            name: string;
+            /** @description Observability configuration */
+            observability: components["schemas"]["idun_agent_schema__engine__observability_v2__ObservabilityConfig"];
+        };
+        /**
+         * ManagedObservabilityRead
+         * @description Complete managed observability model for responses.
+         */
+        ManagedObservabilityRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** @description Observability configuration */
+            observability: components["schemas"]["idun_agent_schema__engine__observability_v2__ObservabilityConfig"];
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description Last update timestamp
+             */
+            updated_at: string;
+        };
+        /**
+         * ModelArmorConfig
+         * @description Model Armor configuration.
+         */
+        ModelArmorConfig: {
+            /**
+             * Config Id
+             * @default model_armor
+             * @constant
+             */
+            config_id: "model_armor";
+            /**
+             * Name
+             * @description Name of the armor config
+             */
+            name: string;
+            /**
+             * Project Id
+             * @description ID of the project the model belongs to
+             */
+            project_id: string;
+            /**
+             * Location
+             * @description Location of the model
+             */
+            location: string;
+            /**
+             * Template Id
+             * @description ID of the template
+             */
+            template_id: string;
+        };
+        /**
+         * NSFWTextConfig
+         * @description NSFW Text configuration.
+         */
+        NSFWTextConfig: {
+            /**
+             * Config Id
+             * @default nsfw_text
+             * @constant
+             */
+            config_id: "nsfw_text";
+            /**
+             * Threshold
+             * @description Sensitivity level for NSFW content
+             */
+            threshold: number;
+        };
+        /**
+         * ObservabilityProvider
+         * @description Supported observability providers.
+         * @enum {string}
+         */
+        ObservabilityProvider: "LANGFUSE" | "PHOENIX" | "GCP_LOGGING" | "GCP_TRACE" | "LANGSMITH";
+        /**
+         * PIIEntity
+         * @description Personally Identifiable Information entities.
+         * @enum {string}
+         */
+        PIIEntity: "Email" | "Phone Number" | "Credit Card" | "SSN" | "Location";
+        /**
+         * PhoenixConfig
+         * @description Phoenix configuration.
+         */
+        PhoenixConfig: {
+            /**
+             * Collector Endpoint
+             * @default https://collector.phoenix.com
+             */
+            collector_endpoint: string;
+            /**
+             * Project Name
+             * @default
+             */
+            project_name: string;
+        };
+        /**
+         * PostgresCheckpointConfig
+         * @description Configuration for Postgres checkpointer.
+         */
+        PostgresCheckpointConfig: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "postgres";
+            /** Db Url */
+            db_url: string;
+        };
+        /**
+         * PromptInjectionConfig
+         * @description Prompt Injection configuration.
+         */
+        PromptInjectionConfig: {
+            /**
+             * Config Id
+             * @default prompt_injection
+             * @constant
+             */
+            config_id: "prompt_injection";
+            /**
+             * Threshold
+             * @description Sensitivity level for prompt injection
+             */
+            threshold: number;
+        };
+        /**
+         * RagHallucinationConfig
+         * @description RAG Hallucination configuration.
+         */
+        RagHallucinationConfig: {
+            /**
+             * Config Id
+             * @default rag_hallucination
+             * @constant
+             */
+            config_id: "rag_hallucination";
+            /**
+             * Threshold
+             * @description Sensitivity level for hallucination detection
+             */
+            threshold: number;
+        };
+        /**
+         * RestrictToTopicConfig
+         * @description Restrict To Topic configuration.
+         */
+        RestrictToTopicConfig: {
+            /**
+             * Config Id
+             * @default restrict_to_topic
+             * @constant
+             */
+            config_id: "restrict_to_topic";
+            /**
+             * Topics
+             * @description List of allowed topics
+             */
+            topics: string[];
         };
         /**
          * ServerAPIConfig
@@ -445,6 +1715,66 @@ export interface components {
             /** Db Url */
             db_url: string;
         };
+        /**
+         * ToxicLanguageConfig
+         * @description Toxic Language configuration.
+         */
+        ToxicLanguageConfig: {
+            /**
+             * Config Id
+             * @default toxic_language
+             * @constant
+             */
+            config_id: "toxic_language";
+            /**
+             * Threshold
+             * @description Sensitivity level for toxic language
+             */
+            threshold: number;
+        };
+        /**
+         * TranslationAgentConfig
+         * @description Configuration model for the Translation Agent Template.
+         */
+        TranslationAgentConfig: {
+            /** Name */
+            name: string;
+            /** Input Schema Definition */
+            input_schema_definition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Output Schema Definition */
+            output_schema_definition?: {
+                [key: string]: unknown;
+            } | null;
+            observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
+            /** Graph Definition */
+            graph_definition: string;
+            /** Checkpointer */
+            checkpointer?: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"] | null;
+            /** Store */
+            store?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Source Lang
+             * @description Source language to translate from
+             * @default English
+             */
+            source_lang: string;
+            /**
+             * Target Lang
+             * @description Target language to translate to
+             * @default French
+             */
+            target_lang: string;
+            /**
+             * Model Name
+             * @description LLM model to use
+             * @default gpt-3.5-turbo
+             */
+            model_name: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -453,6 +1783,48 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * ObservabilityConfig
+         * @description Provider-agnostic observability configuration based on Pydantic.
+         *
+         *     Example YAML:
+         *       observability:
+         *         provider: "langfuse"  # or "phoenix"
+         *         enabled: true
+         *         options:
+         *           host: ${LANGFUSE_HOST}
+         *           public_key: ${LANGFUSE_PUBLIC_KEY}
+         *           secret_key: ${LANGFUSE_SECRET_KEY}
+         *           run_name: "my-run"
+         */
+        idun_agent_schema__engine__observability__ObservabilityConfig: {
+            /** Provider */
+            provider?: string | null;
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /** Options */
+            options?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * ObservabilityConfig
+         * @description Observability configuration.
+         */
+        idun_agent_schema__engine__observability_v2__ObservabilityConfig: {
+            /** @default LANGFUSE */
+            provider: components["schemas"]["ObservabilityProvider"];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Config */
+            config: components["schemas"]["LangfuseConfig"] | components["schemas"]["PhoenixConfig"] | components["schemas"]["GCPLoggingConfig"] | components["schemas"]["GCPTraceConfig"] | components["schemas"]["LangsmithConfig"];
         };
     };
     responses: never;
@@ -747,6 +2119,666 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    list_mcp_servers_api_v1_mcp_servers__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedMCPServerRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_mcp_server_api_v1_mcp_servers__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedMCPServerCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedMCPServerRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mcp_server_api_v1_mcp_servers__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedMCPServerRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_mcp_server_api_v1_mcp_servers__id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_mcp_server_api_v1_mcp_servers__id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedMCPServerPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedMCPServerRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_observabilities_api_v1_observability__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedObservabilityRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_observability_api_v1_observability__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedObservabilityCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedObservabilityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_observability_api_v1_observability__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedObservabilityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_observability_api_v1_observability__id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_observability_api_v1_observability__id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedObservabilityPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedObservabilityRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_memories_api_v1_memory__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedMemoryRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_memory_api_v1_memory__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedMemoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedMemoryRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_memory_api_v1_memory__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedMemoryRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_memory_api_v1_memory__id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_memory_api_v1_memory__id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedMemoryPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedMemoryRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_agent_frameworks_api_v1_agent_frameworks__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
+    list_guardrails_api_v1_guardrails__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedGuardrailRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_guardrail_api_v1_guardrails__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedGuardrailCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedGuardrailRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_guardrail_api_v1_guardrails__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedGuardrailRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_guardrail_api_v1_guardrails__id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_guardrail_api_v1_guardrails__id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedGuardrailPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedGuardrailRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

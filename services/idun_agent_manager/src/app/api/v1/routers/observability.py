@@ -54,7 +54,7 @@ def _model_to_schema(model: ManagedObservabilityModel) -> ManagedObservabilityRe
     """Transform database model to response schema."""
     observability = ObservabilityConfig(**model.observability_config)
     return ManagedObservabilityRead(
-        id=model.id,
+        id=model.id,  # type: ignore
         name=model.name,
         observability=observability,
         created_at=model.created_at,

@@ -8,6 +8,7 @@ setting up routes, dependencies, and lifecycle management behind the scenes.
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from ..server.lifespan import lifespan
 from ..server.routers.agent import agent_router
@@ -67,6 +68,14 @@ def create_app(
             docs_url="/docs",
             redoc_url="/redoc",
         )
+        
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
         # Store configuration in app state for lifespan to use
         app.state.engine_config = validated_config
@@ -79,7 +88,7 @@ def create_app(
             logger, "INFO", "app_creation_completed", "FastAPI application created successfully",
             agent_config=validated_config.agent.model_dump() if hasattr(validated_config.agent, 'model_dump') else validated_config.agent
         )
-
+        
         return app
 
     except Exception as e:

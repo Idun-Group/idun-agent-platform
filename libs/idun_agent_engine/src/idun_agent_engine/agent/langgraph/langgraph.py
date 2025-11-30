@@ -15,6 +15,7 @@ from idun_agent_schema.engine.langgraph import (
     PostgresCheckpointConfig,
     SqliteCheckpointConfig,
 )
+from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -126,7 +127,11 @@ class LanggraphAgent(agent_base.BaseAgent):
         )
         return self._infos
 
-    async def initialize(self, config: LangGraphAgentConfig) -> None:
+    async def initialize(
+        self,
+        config: LangGraphAgentConfig,
+        observability_config: list[ObservabilityConfig] | None = None,
+    ) -> None:
         """Initialize the LangGraph agent asynchronously."""
         log_operation(
             self._logger, "INFO", "initialization_start", "Starting LangGraph agent initialization",
@@ -149,49 +154,67 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         await self._setup_persistence()
 
-        # Observability (provider-agnostic). Prefer generic block; fallback to legacy langfuse block.
-        obs_cfg = None
-        try:
-            if getattr(self._configuration, "observability", None):
-                obs_cfg = self._configuration.observability.resolved()  # type: ignore[attr-defined]
-            elif getattr(self._configuration, "langfuse", None):
-                lf = self._configuration.langfuse.resolved()  # type: ignore[attr-defined]
-                obs_cfg = type(
-                    "_Temp",
-                    (),
-                    {
-                        "provider": "langfuse",
-                        "enabled": lf.enabled,
-                        "options": {
-                            "host": lf.host,
-                            "public_key": lf.public_key,
-                            "secret_key": lf.secret_key,
-                            "run_name": lf.run_name,
-                        },
-                    },
-                )()
-        except Exception:
-            obs_cfg = None
-
-        if obs_cfg and getattr(obs_cfg, "enabled", False):
-            provider = getattr(obs_cfg, "provider", None)
-            options = dict(getattr(obs_cfg, "options", {}) or {})
-            # Fallback: if using Langfuse and run_name is not provided, use agent name
-            if provider == "langfuse" and not options.get("run_name"):
-                options["run_name"] = self._name
-
-            handler, info = observability.create_observability_handler(
-                {
-                    "provider": provider,
-                    "enabled": True,
-                    "options": options,
-                }
+        # Observability (provider-agnostic)
+        if observability_config:
+            handlers, infos = observability.create_observability_handlers(
+                observability_config # type: ignore[arg-type]
             )
-            if handler:
-                self._obs_callbacks = handler.get_callbacks()
-                self._obs_run_name = handler.get_run_name()
-            if info:
-                self._infos["observability"] = dict(info)
+            self._obs_callbacks = []
+            for handler in handlers:
+                self._obs_callbacks.extend(handler.get_callbacks())
+                # Use the first run name found if not set
+                if not self._obs_run_name:
+                    self._obs_run_name = handler.get_run_name()
+
+            if infos:
+                self._infos["observability"] = infos
+
+        # Fallback to legacy generic block or langfuse block if no new observability config provided
+        elif getattr(self._configuration, "observability", None) or getattr(
+            self._configuration, "langfuse", None
+        ):
+            obs_cfg = None
+            try:
+                if getattr(self._configuration, "observability", None):
+                    obs_cfg = self._configuration.observability.resolved()  # type: ignore[attr-defined]
+                elif getattr(self._configuration, "langfuse", None):
+                    lf = self._configuration.langfuse.resolved()  # type: ignore[attr-defined]
+                    obs_cfg = type(
+                        "_Temp",
+                        (),
+                        {
+                            "provider": "langfuse",
+                            "enabled": lf.enabled,
+                            "options": {
+                                "host": lf.host,
+                                "public_key": lf.public_key,
+                                "secret_key": lf.secret_key,
+                                "run_name": lf.run_name,
+                            },
+                        },
+                    )()
+            except Exception:
+                obs_cfg = None
+
+            if obs_cfg and getattr(obs_cfg, "enabled", False):
+                provider = getattr(obs_cfg, "provider", None)
+                options = dict(getattr(obs_cfg, "options", {}) or {})
+                # Fallback: if using Langfuse and run_name is not provided, use agent name
+                if provider == "langfuse" and not options.get("run_name"):
+                    options["run_name"] = self._name
+
+                handler, info = observability.create_observability_handler(
+                    {
+                        "provider": provider,
+                        "enabled": True,
+                        "options": options,
+                    }
+                )
+                if handler:
+                    self._obs_callbacks = handler.get_callbacks()
+                    self._obs_run_name = handler.get_run_name()
+                if info:
+                    self._infos["observability"] = dict(info)
 
         graph_builder = self._load_graph_builder(self._configuration.graph_definition)
         self._infos["graph_definition"] = self._configuration.graph_definition
@@ -207,6 +230,7 @@ class LanggraphAgent(agent_base.BaseAgent):
             name=self._name,
             description="Agent description", # TODO: add agent description
             graph=self._agent_instance,
+            config={"callbacks": self._obs_callbacks} if self._obs_callbacks else None,
         )
 
         if self._agent_instance:
@@ -288,6 +312,8 @@ class LanggraphAgent(agent_base.BaseAgent):
         """Loads a StateGraph instance from a specified path."""
         try:
             module_path, graph_variable_name = graph_definition.rsplit(":", 1)
+            if not module_path.endswith(".py"):
+                module_path += ".py"
         except ValueError:
             raise ValueError(
                 "graph_definition must be in the format 'path/to/file.py:variable_name'"
@@ -295,6 +321,8 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         # Try loading as a file path first
         try:
+            import os
+            print("Current directory: ", os.getcwd()) # TODO remove
             from pathlib import Path
 
             resolved_path = Path(module_path).resolve()
@@ -341,7 +369,7 @@ class LanggraphAgent(agent_base.BaseAgent):
             raise TypeError(
                 f"The variable '{graph_variable_name}' from {module_path} is not a StateGraph instance."
             )
-        return graph_builder
+        return graph_builder # type: ignore[return-value]
 
     async def invoke(self, message: Any) -> Any:
         """Process a single input to chat with the agent.

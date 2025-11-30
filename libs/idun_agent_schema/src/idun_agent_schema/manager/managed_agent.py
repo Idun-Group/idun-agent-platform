@@ -36,6 +36,7 @@ class ManagedAgentCreate(BaseModel):
 
     name: str
     version: str | None = Field(None, description="Agent version")
+    base_url: str | None = Field(None, description="Base URL")
     engine_config: EngineConfig = Field(..., description="Idun Agent Engine configuration")
 
 
@@ -47,6 +48,7 @@ class ManagedAgentRead(BaseModel):
     name: str
     status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
     version: str | None = Field(None, description="Agent version")
+    base_url: str | None = Field(None, description="Base URL")
     engine_config: EngineConfig = Field(..., description="Idun Agent Engine configuration")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -55,4 +57,5 @@ class ManagedAgentRead(BaseModel):
 class ManagedAgentPatch(BaseModel):
     """Full replacement schema for PUT of a managed agent."""
     name: str
+    base_url: str | None = Field(None, description="Base URL")
     engine_config: EngineConfig = Field(..., description="Idun Agent Engine configuration")
