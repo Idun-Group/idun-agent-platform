@@ -14,6 +14,8 @@
     "generate:manager-types": "openapi-typescript schema/manager-openapi.json --output src/generated/agent-manager.ts"
   },
   "dependencies": {
+    "@copilotkit/react-core": "^1.10.6",
+    "@copilotkit/react-ui": "^1.10.6",
     "@monaco-editor/react": "^4.7.0",
     "ajv": "^8.12.0",
     "fflate": "^0.8.2",
@@ -26,7 +28,8 @@
     "react-i18next": "^15.6.0",
     "react-router-dom": "^7.7.0",
     "react-toastify": "^11.0.5",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "vite-plugin-node-polyfills": "^0.24.0"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^4.1.1",
@@ -47,6 +50,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "eslint-plugin-storybook": "^9.1.4",
     "globals": "^16.3.0",
+    "openapi-typescript": "^7.4.3",
     "playwright": "^1.54.1",
     "plop": "^4.0.1",
     "storybook": "^9.1.4",
@@ -54,7 +58,6 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.4",
-    "vitest": "^3.2.4",
-    "openapi-typescript": "^7.4.3"
+    "vitest": "^3.2.4"
   }
 }
