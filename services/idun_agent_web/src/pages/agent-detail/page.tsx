@@ -32,6 +32,10 @@ const LogsTab = lazy(
     () => import('../../components/agent-detail/tabs/logs-tab/component')
 );
 
+const ServerLogsTab = lazy(
+    () => import('../../components/agent-detail/tabs/server-logs-tab/component')
+);
+
 const GatewayTab = lazy(
     () => import('../../components/agent-detail/tabs/gateway-tab/component')
 );
@@ -263,6 +267,7 @@ export default function AgentDetailPage() {
         // Activity temporarily hidden
         { id: 'configuration', label: 'Configuration' },
         { id: 'logs', label: 'Logs' },
+        { id: 'server-logs', label: 'Server Logs' },
         // { id: 'code', label: 'Code' },
     ];
 
@@ -528,6 +533,7 @@ export default function AgentDetailPage() {
                     activity: <ActivityTab />,
                     configuration: <ConfigurationTab agent={agent} />,
                     logs: <LogsTab />,
+                    'server-logs': <ServerLogsTab agentId={agent?.id} />,
                     // code: <CodeTab />,
                 }[activeTab]
             }

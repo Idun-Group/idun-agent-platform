@@ -14,7 +14,10 @@ from ..server.routers.agent import agent_router
 from ..server.routers.base import base_router
 from .config_builder import ConfigBuilder
 from .engine_config import EngineConfig
+from .logging_config import get_logger, log_operation
 from .._version import __version__
+
+logger = get_logger("app_factory")
 
 
 def create_app(
@@ -39,26 +42,50 @@ def create_app(
     Returns:
         FastAPI: A configured FastAPI application ready to serve your agent.
     """
-    # Resolve configuration from various sources using ConfigBuilder's umbrella function
-    validated_config = ConfigBuilder.resolve_config(
-        config_path=config_path, config_dict=config_dict, engine_config=engine_config
+    log_operation(
+        logger, "INFO", "app_creation_start", "Creating FastAPI application"
     )
 
-    # Create the FastAPI application
-    app = FastAPI(
-        lifespan=lifespan,
-        title="Idun Agent Engine Server",
-        description="A production-ready server for conversational AI agents",
-        version=__version__,
-        docs_url="/docs",
-        redoc_url="/redoc",
-    )
+    try:
+        # Resolve configuration from various sources using ConfigBuilder's umbrella function
+        validated_config = ConfigBuilder.resolve_config(
+            config_path=config_path, config_dict=config_dict, engine_config=engine_config
+        )
 
-    # Store configuration in app state for lifespan to use
-    app.state.engine_config = validated_config
+        log_operation(
+            logger, "INFO", "config_resolved", "Configuration resolved successfully",
+            agent_config=validated_config.agent.model_dump() if hasattr(validated_config.agent, 'model_dump') else validated_config.agent,
+            server_config=validated_config.server.model_dump() if hasattr(validated_config.server, 'model_dump') else validated_config.server
+        )
 
-    # Include the routers
-    app.include_router(agent_router, prefix="/agent", tags=["Agent"])
-    app.include_router(base_router, tags=["Base"])
+        # Create the FastAPI application
+        app = FastAPI(
+            lifespan=lifespan,
+            title="Idun Agent Engine Server",
+            description="A production-ready server for conversational AI agents",
+            version=__version__,
+            docs_url="/docs",
+            redoc_url="/redoc",
+        )
 
-    return app
+        # Store configuration in app state for lifespan to use
+        app.state.engine_config = validated_config
+
+        # Include the routers
+        app.include_router(agent_router, prefix="/agent", tags=["Agent"])
+        app.include_router(base_router, tags=["Base"])
+
+        log_operation(
+            logger, "INFO", "app_creation_completed", "FastAPI application created successfully",
+            agent_config=validated_config.agent.model_dump() if hasattr(validated_config.agent, 'model_dump') else validated_config.agent
+        )
+
+        return app
+
+    except Exception as e:
+        log_operation(
+            logger, "ERROR", "app_creation_failed", "Failed to create FastAPI application",
+            error_type=type(e).__name__,
+            error_details=str(e)
+        )
+        raise

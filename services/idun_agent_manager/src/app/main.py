@@ -105,6 +105,7 @@ def setup_routes(app: FastAPI) -> None:
     from app.api.v1.routers.memory import router as memory_router
     from app.api.v1.routers.agent_frameworks import router as agent_frameworks_router
     from app.api.v1.routers.guardrails import router as guardrails_router
+    from app.api.v1.routers.logs import router as logs_router
 
     # API v1 routes
     app.include_router(
@@ -141,6 +142,11 @@ def setup_routes(app: FastAPI) -> None:
         guardrails_router,
         prefix="/api/v1/guardrails",
         tags=["Guardrails"],
+    )
+    app.include_router(
+        logs_router,
+        prefix="/api/v1/logs",
+        tags=["Logs"],
     )
 
 

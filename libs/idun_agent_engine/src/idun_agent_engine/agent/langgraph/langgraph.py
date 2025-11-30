@@ -23,6 +23,7 @@ from langgraph.graph.state import CompiledStateGraph
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
+from idun_agent_engine.core.logging_config import get_logger, log_operation
 from copilotkit import LangGraphAGUIAgent
 
 
@@ -50,6 +51,14 @@ class LanggraphAgent(agent_base.BaseAgent):
         # Observability (provider-agnostic)
         self._obs_callbacks: list[Any] | None = None
         self._obs_run_name: str | None = None
+        self._logger = get_logger("langgraph_agent")
+
+        log_operation(
+            self._logger, "DEBUG", "agent_created", "LangGraph agent instance created",
+            agent_id=self._id,
+            agent_type=self._agent_type,
+            agent_name=self._name
+        )
 
     @property
     def id(self) -> str:
@@ -119,10 +128,24 @@ class LanggraphAgent(agent_base.BaseAgent):
 
     async def initialize(self, config: LangGraphAgentConfig) -> None:
         """Initialize the LangGraph agent asynchronously."""
+        log_operation(
+            self._logger, "INFO", "initialization_start", "Starting LangGraph agent initialization",
+            agent_id=self._id,
+            agent_type=self._agent_type
+        )
+
         self._configuration = LangGraphAgentConfig.model_validate(config)
 
         self._name = self._configuration.name or "Unnamed LangGraph Agent"
         self._infos["name"] = self._name
+
+        log_operation(
+            self._logger, "INFO", "config_validated", "Agent configuration validated",
+            agent_id=self._id,
+            agent_type=self._agent_type,
+            agent_name=self._name,
+            agent_config=self._configuration.model_dump()
+        )
 
         await self._setup_persistence()
 
@@ -206,12 +229,25 @@ class LanggraphAgent(agent_base.BaseAgent):
         self._infos["status"] = "Initialized"
         self._infos["config_used"] = self._configuration.model_dump()
 
+        log_operation(
+            self._logger, "INFO", "initialization_completed", "LangGraph agent initialization completed",
+            agent_id=self._id,
+            agent_type=self._agent_type,
+            agent_name=self._name,
+            agent_config=self._configuration.model_dump()
+        )
+
     async def close(self):
         """Closes any open resources, like database connections."""
         if self._connection:
             await self._connection.close()
             self._connection = None
-            print("Database connection closed.")
+            log_operation(
+                self._logger, "INFO", "database_connection_closed", "Database connection closed",
+                agent_id=self._id,
+                agent_type=self._agent_type,
+                agent_name=self._name
+            )
 
     async def _setup_persistence(self) -> None:
         """Configures the agent's persistence (checkpoint and store) asynchronously."""
@@ -313,50 +349,112 @@ class LanggraphAgent(agent_base.BaseAgent):
         The message should be a dictionary containing 'query' and 'session_id'.
         """
         if self._agent_instance is None:
-            raise RuntimeError(
-                "Agent not initialized. Call initialize() before processing messages."
+            error_msg = "Agent not initialized. Call initialize() before processing messages."
+            log_operation(
+                self._logger, "ERROR", "invoke_failed", error_msg,
+                agent_id=self._id,
+                agent_type=self._agent_type,
+                agent_name=self._name,
+                error_type="AgentNotInitialized"
             )
+            raise RuntimeError(error_msg)
 
         if (
             not isinstance(message, dict)
             or "query" not in message
             or "session_id" not in message
         ):
-            raise ValueError(
-                "Message must be a dictionary with 'query' and 'session_id' keys."
+            error_msg = "Message must be a dictionary with 'query' and 'session_id' keys."
+            log_operation(
+                self._logger, "ERROR", "invoke_failed", error_msg,
+                agent_id=self._id,
+                agent_type=self._agent_type,
+                agent_name=self._name,
+                error_type="InvalidMessageFormat",
+                error_details=f"Received message: {message}"
+            )
+            raise ValueError(error_msg)
+
+        log_operation(
+            self._logger, "INFO", "invoke_start", "Starting agent invoke",
+            agent_id=self._id,
+            agent_type=self._agent_type,
+            agent_name=self._name,
+            session_id=message["session_id"],
+            user_query=message["query"]
+        )
+
+        try:
+            graph_input = {"messages": [("user", message["query"])]}
+            config: dict[str, Any] = {"configurable": {"thread_id": message["session_id"]}}
+            if self._obs_callbacks:
+                config["callbacks"] = self._obs_callbacks
+                if self._obs_run_name:
+                    config["run_name"] = self._obs_run_name
+
+            output = await self._agent_instance.ainvoke(graph_input, config)
+
+            response_content = None
+            if output and "messages" in output and output["messages"]:
+                response_message = output["messages"][-1]
+                if hasattr(response_message, "content"):
+                    response_content = response_message.content
+                elif isinstance(response_message, dict) and "content" in response_message:
+                    response_content = response_message["content"]
+                elif isinstance(response_message, tuple):
+                    response_content = response_message[1]
+                else:
+                    response_content = output
+            else:
+                response_content = output
+
+            log_operation(
+                self._logger, "INFO", "invoke_completed", "Agent invoke completed successfully",
+                agent_id=self._id,
+                agent_type=self._agent_type,
+                agent_name=self._name,
+                session_id=message["session_id"],
+                user_query=message["query"],
+                agent_response=str(response_content)
             )
 
-        graph_input = {"messages": [("user", message["query"])]}
-        config: dict[str, Any] = {"configurable": {"thread_id": message["session_id"]}}
-        if self._obs_callbacks:
-            config["callbacks"] = self._obs_callbacks
-            if self._obs_run_name:
-                config["run_name"] = self._obs_run_name
+            return response_content
 
-        output = await self._agent_instance.ainvoke(graph_input, config)
-
-        if output and "messages" in output and output["messages"]:
-            response_message = output["messages"][-1]
-            if hasattr(response_message, "content"):
-                return response_message.content
-            elif isinstance(response_message, dict) and "content" in response_message:
-                return response_message["content"]
-            elif isinstance(response_message, tuple):
-                return response_message[1]
-            else:
-                # No usable content attribute; fall through to returning raw output
-                pass
-
-        return output
+        except Exception as e:
+            log_operation(
+                self._logger, "ERROR", "invoke_failed", "Agent invoke failed",
+                agent_id=self._id,
+                agent_type=self._agent_type,
+                agent_name=self._name,
+                session_id=message["session_id"],
+                user_query=message["query"],
+                error_type=type(e).__name__,
+                error_details=str(e)
+            )
+            raise
 
     async def stream(self, message: Any) -> AsyncGenerator[Any]:
         """Processes a single input message and returns a stream of ag-ui events."""
         if self._agent_instance is None:
-            raise RuntimeError(
-                "Agent not initialized. Call initialize() before processing messages."
+            error_msg = "Agent not initialized. Call initialize() before processing messages."
+            log_operation(
+                self._logger, "ERROR", "stream_failed", error_msg,
+                agent_id=self._id,
+                agent_type=self._agent_type,
+                agent_name=self._name,
+                error_type="AgentNotInitialized"
             )
+            raise RuntimeError(error_msg)
 
         if isinstance(message, dict) and "query" in message and "session_id" in message:
+            log_operation(
+                self._logger, "INFO", "stream_start", "Starting agent stream",
+                agent_id=self._id,
+                agent_type=self._agent_type,
+                agent_name=self._name,
+                session_id=message["session_id"],
+                user_query=message["query"]
+            )
             run_id = f"run_{uuid.uuid4()}"
             thread_id = message["session_id"]
             user_message = ag_types.UserMessage(
@@ -366,9 +464,16 @@ class LanggraphAgent(agent_base.BaseAgent):
                 "messages": [user_message.model_dump(by_alias=True, exclude_none=True)]
             }
         else:
-            raise ValueError(
-                "Unsupported message format for process_message_stream. Expects {'query': str, 'session_id': str}"
+            error_msg = "Unsupported message format for process_message_stream. Expects {'query': str, 'session_id': str}"
+            log_operation(
+                self._logger, "ERROR", "stream_failed", error_msg,
+                agent_id=self._id,
+                agent_type=self._agent_type,
+                agent_name=self._name,
+                error_type="InvalidMessageFormat",
+                error_details=f"Received message: {message}"
             )
+            raise ValueError(error_msg)
 
         config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
         if self._obs_callbacks:
