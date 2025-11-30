@@ -270,6 +270,17 @@ export default function AgentFormPage() {
         try {
             const finalAgentConfig = { ...agentConfig };
 
+            // Parse schema definitions and store if they are JSON strings
+            ['input_schema_definition', 'output_schema_definition', 'store'].forEach(key => {
+                if (typeof finalAgentConfig[key] === 'string') {
+                    try {
+                        finalAgentConfig[key] = JSON.parse(finalAgentConfig[key]);
+                    } catch (e) {
+                        console.warn(`Failed to parse ${key} as JSON`, e);
+                    }
+                }
+            });
+
             // 1. Handle Memory (Checkpointer)
             if (selectedMemoryType === 'InMemoryCheckpointConfig') {
                 finalAgentConfig.checkpointer = {

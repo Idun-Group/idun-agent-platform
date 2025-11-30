@@ -1,4 +1,4 @@
-import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap } from 'lucide-react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap, AlertTriangle } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
@@ -174,6 +174,17 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 }
             }
 
+            // Ensure schema definitions and store are strings
+            ['input_schema_definition', 'output_schema_definition', 'store'].forEach(key => {
+                if (config[key] && typeof config[key] !== 'string') {
+                    try {
+                        config[key] = JSON.stringify(config[key], null, 4);
+                    } catch (e) {
+                        console.error(`Failed to stringify ${key}`, e);
+                    }
+                }
+            });
+
             setAgentConfig(config);
             
             // Extract checkpointer/memory selection
@@ -184,7 +195,13 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 } else {
                     const memType = checkpointer.type === 'sqlite' ? 'SQLite' : 'PostgreSQL';
                     setSelectedMemoryType(memType);
-                    // We'd need to match by db_url to find the exact app
+                    
+                    if (memoryApps.length > 0 && checkpointer.db_url) {
+                        const match = memoryApps.find(app => app.type === memType && app.config.connectionString === checkpointer.db_url);
+                        if (match) {
+                            setSelectedMemoryAppId(match.id);
+                        }
+                    }
                 }
             }
             
@@ -192,8 +209,10 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             const obs = (initialData.engine_config as any)?.observability || config.observability;
             if (Array.isArray(obs)) {
                 const types: string[] = [];
+                const selectedApps: Record<string, string> = {};
+                
                 obs.forEach((o: any) => {
-                    if (o.provider) {
+                    if (o.provider && o.enabled !== false) {
                         const providerMap: Record<string, string> = {
                             'langfuse': 'Langfuse',
                             'LANGFUSE': 'Langfuse',
@@ -209,22 +228,24 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                         const type = providerMap[o.provider];
                         if (type) {
                             types.push(type);
+                            
+                            if (observabilityApps.length > 0 && o.config) {
+                                const match = observabilityApps.find(app => {
+                                    if (app.type !== type) return false;
+                                    // Compare config keys
+                                    const keys = Object.keys(o.config);
+                                    if (keys.length === 0) return false;
+                                    return keys.every(k => app.config[k] === o.config[k]);
+                                });
+                                if (match) {
+                                    selectedApps[type] = match.id;
+                                }
+                            }
                         }
                     }
                 });
-                setSelectedObservabilityTypes(types);
-            } else if (obs?.provider) {
-                const providerMap: Record<string, string> = {
-                    'langfuse': 'Langfuse',
-                    'phoenix': 'Phoenix',
-                    'google_cloud_logging': 'GoogleCloudLogging',
-                    'google_cloud_trace': 'GoogleCloudTrace',
-                    'langsmith': 'LangSmith'
-                };
-                const type = providerMap[obs.provider];
-                if (type) {
-                    setSelectedObservabilityTypes([type]);
-                }
+                setSelectedObservabilityTypes([...new Set(types)]);
+                setSelectedObservabilityApps(selectedApps);
             }
             
             // Guardrails
@@ -239,8 +260,21 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                  });
                  setSelectedGuardIds([...new Set(ids)]);
             }
+
+            // MCP Servers
+            const mcp = (initialData.engine_config as any)?.mcp_servers;
+            if (Array.isArray(mcp) && mcpApps.length > 0) {
+                const ids: string[] = [];
+                mcp.forEach((m: any) => {
+                    const match = mcpApps.find(app => app.name === m.name);
+                    if (match) {
+                        ids.push(match.id);
+                    }
+                });
+                setSelectedMCPIds([...new Set(ids)]);
+            }
         }
-    }, [mode, initialData, isOpen, guardApps]);
+    }, [mode, initialData, isOpen, guardApps, memoryApps, observabilityApps, mcpApps]);
 
     // Data Fetching
     useEffect(() => {
@@ -407,6 +441,17 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
         try {
             const finalAgentConfig = { ...agentConfig };
 
+            // Parse schema definitions and store if they are JSON strings
+            ['input_schema_definition', 'output_schema_definition', 'store'].forEach(key => {
+                if (typeof finalAgentConfig[key] === 'string') {
+                    try {
+                        finalAgentConfig[key] = JSON.parse(finalAgentConfig[key]);
+                    } catch (e) {
+                        console.warn(`Failed to parse ${key} as JSON`, e);
+                    }
+                }
+            });
+
             // 1. Handle Memory (Checkpointer)
             if (selectedMemoryType === 'InMemoryCheckpointConfig') {
                 finalAgentConfig.checkpointer = {
@@ -531,6 +576,13 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                     </div>
                     <CloseButton onClick={onClose}><X size={24} /></CloseButton>
                 </ModalHeader>
+
+                {mode === 'edit' && (
+                    <WarningBanner>
+                        <AlertTriangle size={16} />
+                        <span>Updating the agent will overwrite its configuration. Please ensure all desired settings are selected below.</span>
+                    </WarningBanner>
+                )}
 
                 <StepperContainer>
                     <StepperInner>
@@ -883,6 +935,22 @@ const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>` font-
 const StepInProgress = styled.p` font-size: 10px; color: #8c52ff; margin: 0; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } `;
 const StepSeparatorLine = styled.div` flex: 1; height: 2px; margin: 0 16px; background-color: rgba(255, 255, 255, 0.1); position: relative; `;
 const StepProgress = styled.div<{ $isCompleted: boolean }>` position: absolute; inset: 0; background-color: #10b981; width: ${props => props.$isCompleted ? '100%' : '0%'}; transition: width 0.5s; `;
+const WarningBanner = styled.div`
+    background-color: rgba(234, 179, 8, 0.1);
+    border: 1px solid rgba(234, 179, 8, 0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 0 32px 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #facc15;
+    font-size: 13px;
+    
+    svg {
+        flex-shrink: 0;
+    }
+`;
 const ModalBody = styled.div` flex: 1; overflow-y: auto; padding: 32px; background-color: #040210; `;
 const ModalFooter = styled.div` padding: 24px; border-top: 1px solid rgba(255, 255, 255, 0.05); background-color: #0B0A15; display: flex; justify-content: space-between; align-items: center; `;
 const CancelButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: #9ca3af; background: transparent; border: none; border-radius: 8px; cursor: pointer; transition: color 0.2s; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); } `;
