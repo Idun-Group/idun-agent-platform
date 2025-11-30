@@ -6,49 +6,49 @@ const mapConfigFromApi = (type: AppType, config: any): any => {
     if (type === 'Langfuse') {
         return {
             host: config.host,
-            publicKey: config.public_key,
-            secretKey: config.secret_key,
-            runName: config.run_name
+            publicKey: config.public_key || config.publicKey,
+            secretKey: config.secret_key || config.secretKey,
+            runName: config.run_name || config.runName
         };
     }
     if (type === 'Phoenix') {
         return {
-            host: config.collector_endpoint,
-            projectName: config.project_name
+            host: config.collector_endpoint || config.collectorEndpoint,
+            projectName: config.project_name || config.projectName
         };
     }
     if (type === 'GoogleCloudLogging' || type === 'GoogleCloudTrace') {
         const res: any = {
-            gcpProjectId: config.project_id,
+            gcpProjectId: config.project_id || config.gcpProjectId || config.projectId,
             region: config.region
         };
         if (type === 'GoogleCloudLogging') {
-            res.logName = config.log_name;
-            res.resourceType = config.resource_type;
+            res.logName = config.log_name || config.logName;
+            res.resourceType = config.resource_type || config.resourceType;
             res.severity = config.severity;
             res.transport = config.transport;
         } else {
-            res.traceName = config.trace_name;
-            res.samplingRate = config.sampling_rate;
-            res.flushInterval = config.flush_interval;
-            res.ignoreUrls = config.ignore_urls;
+            res.traceName = config.trace_name || config.traceName;
+            res.samplingRate = config.sampling_rate || config.samplingRate;
+            res.flushInterval = config.flush_interval || config.flushInterval;
+            res.ignoreUrls = config.ignore_urls || config.ignoreUrls;
         }
         return res;
     }
     if (type === 'LangSmith') {
         return {
-            apiKey: config.api_key,
-            projectId: config.project_id,
-            projectName: config.project_name,
+            apiKey: config.api_key || config.apiKey,
+            projectId: config.project_id || config.projectId,
+            projectName: config.project_name || config.projectName,
             endpoint: config.endpoint,
-            traceName: config.trace_name,
-            tracingEnabled: String(config.tracing_enabled),
-            captureInputsOutputs: String(config.capture_inputs_outputs)
+            traceName: config.trace_name || config.traceName,
+            tracingEnabled: String(config.tracing_enabled || config.tracingEnabled),
+            captureInputsOutputs: String(config.capture_inputs_outputs || config.captureInputsOutputs)
         };
     }
     if (type === 'PostgreSQL' || type === 'SQLite') {
         return {
-            connectionString: config.db_url
+            connectionString: config.db_url || config.dbUrl
         };
     }
     return config;
@@ -157,7 +157,7 @@ export const mapConfigToApi = (type: AppType, config: any, name?: string): any =
         }
         return mcpConfig;
     }
-    
+
     // Guardrails mapping
     if (type === 'ModelArmor') {
         return {
@@ -264,7 +264,7 @@ export const mapConfigToApi = (type: AppType, config: any, name?: string): any =
             allowed_languages: config.allowed_languages ? config.allowed_languages.split('\n').filter((s: string) => s.trim()) : []
         };
     }
-    
+
     return config;
 };
 
@@ -737,7 +737,7 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
     } catch (e) {
         console.error("Failed to fetch guardrail apps", e);
     }
-    
+
     return [...observabilityApps, ...memoryApps, ...mcpApps, ...guardrailApps];
 };
 
@@ -775,11 +775,11 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
     }
 
     if (app.category === 'Guardrails') {
-        const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck', 
-            'CompetitionCheck', 'CorrectLanguage', 'DetectPII', 
+        const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck',
+            'CompetitionCheck', 'CorrectLanguage', 'DetectPII',
             'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic',
             'PromptInjection', 'RagHallucination', 'ToxicLanguage', 'CodeScanner'];
-        
+
         if (supportedTypes.includes(app.type)) {
             const configPayload = mapConfigToApi(app.type, app.config, app.name);
             const payload: components["schemas"]["ManagedGuardrailCreate"] = {
@@ -790,7 +790,7 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
             return mapGuardrailToApp(res);
         }
     }
-    
+
     throw new Error(`Application type ${app.type} is not supported by API yet.`);
 };
 
@@ -847,8 +847,8 @@ export const updateApplication = async (id: string, updates: Partial<Application
             const apiGuard = await getJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`);
             const currentApp = mapGuardrailToApp(apiGuard);
             const type = updates.type || currentApp.type;
-            const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck', 
-                'CompetitionCheck', 'CorrectLanguage', 'DetectPII', 
+            const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck',
+                'CompetitionCheck', 'CorrectLanguage', 'DetectPII',
                 'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic',
                 'PromptInjection', 'RagHallucination', 'ToxicLanguage', 'CodeScanner'];
 
@@ -917,8 +917,8 @@ export const updateApplication = async (id: string, updates: Partial<Application
         if (apiGuard) {
             const currentApp = mapGuardrailToApp(apiGuard);
             const type = updates.type || currentApp.type;
-            const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck', 
-                'CompetitionCheck', 'CorrectLanguage', 'DetectPII', 
+            const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck',
+                'CompetitionCheck', 'CorrectLanguage', 'DetectPII',
                 'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic',
                 'PromptInjection', 'RagHallucination', 'ToxicLanguage', 'CodeScanner'];
 
@@ -942,7 +942,7 @@ export const deleteApplication = async (id: string): Promise<void> => {
     try { await deleteRequest(`/api/v1/memory/${id}`); return; } catch (e) { /* ignore */ }
     try { await deleteRequest(`/api/v1/mcp-servers/${id}`); return; } catch (e) { /* ignore */ }
     try { await deleteRequest(`/api/v1/guardrails/${id}`); return; } catch (e) { /* ignore */ }
-    
+
     // If we reached here, it means we couldn't delete from any API
     // throw new Error('Failed to delete application from any source');
 };

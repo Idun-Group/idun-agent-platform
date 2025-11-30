@@ -23,6 +23,10 @@ class ObservabilityProvider(str, Enum):
 
 class ObservabilityConfig(BaseModel):
     """Observability configuration."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     provider: ObservabilityProvider = Field(default=ObservabilityProvider.LANGFUSE)
     enabled: bool = Field(default=True)

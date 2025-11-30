@@ -18,13 +18,13 @@ class AgentConfig(BaseModel):
 
     type: AgentFramework
     config: (
-        BaseAgentConfig
-        | LangGraphAgentConfig
+        LangGraphAgentConfig
         | HaystackAgentConfig
         | AdkAgentConfig
         | TranslationAgentConfig
         | CorrectionAgentConfig
         | DeepResearchAgentConfig
+        | BaseAgentConfig
     )
     @model_validator(mode="after")
     def _validate_framework_config(self) -> "AgentConfig":
@@ -52,7 +52,7 @@ class AgentConfig(BaseModel):
             expected_type = CorrectionAgentConfig
         elif self.type == AgentFramework.DEEP_RESEARCH_AGENT:
             expected_type = DeepResearchAgentConfig
-        elif self.type in {AgentFramework.ADK, AgentFramework.CREWAI, AgentFramework.CUSTOM}:
+        elif self.type in {AgentFramework.CREWAI, AgentFramework.CUSTOM}:
             expected_type = BaseAgentConfig
 
         if expected_type is not None and not isinstance(self.config, expected_type):
