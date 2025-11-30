@@ -134,6 +134,45 @@ class AdkAgent(agent_base.BaseAgent):
             if infos:
                 self._infos["observability"] = infos
 
+        if observability_config:
+            try:
+                # Check if langfuse is enabled in any of the observability configs
+                def _is_langfuse_provider(c: Any) -> bool:
+                    provider = getattr(c, "provider", None)
+                    if provider is None and isinstance(c, dict):
+                        provider = c.get("provider")
+
+                    if provider is not None and hasattr(provider, "value"):
+                        provider = provider.value
+
+                    return str(provider).lower() == "langfuse"
+
+                is_langfuse_enabled = any(
+                    _is_langfuse_provider(config) for config in observability_config
+                )
+
+                if is_langfuse_enabled:
+                    import os
+                    langfuse_pk = os.environ.get("LANGFUSE_PUBLIC_KEY")
+                    langfuse_host = os.environ.get("LANGFUSE_BASE_URL")
+                    print(f"LANGFUSE_PUBLIC_KEY: {langfuse_pk}")
+                    print(f"LANGFUSE_BASE_URL: {langfuse_host}")
+                    try:
+                        from openinference.instrumentation.google_adk import (
+                            GoogleADKInstrumentor,
+                        )
+
+                        GoogleADKInstrumentor().instrument()
+                        print("GoogleADKInstrumentor instrumented successfully.")
+                    except ImportError:
+                        print(
+                            "openinference-instrumentation-google-adk not installed, skipping Google ADK instrumentation."
+                        )
+                    except Exception as e:
+                        print(f"Failed to instrument Google ADK: {e}")
+            except Exception as e:
+                print(f"Error checking observability config for ADK instrumentation: {e}")
+
         # Initialize Session Service
         await self._initialize_session_service()
 

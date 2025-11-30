@@ -91,13 +91,14 @@ class GCPTraceHandler(ObservabilityHandlerBase):
         except ImportError:
             pass
 
+        # TODO: GCP GoogleADKInstrumentor is n conflist with langfuse, so we don't need to instrument it here
         # Instrument Google ADK
-        try:
-            from openinference.instrumentation.google_adk import GoogleADKInstrumentor
+        # try:
+        #     from openinference.instrumentation.google_adk import GoogleADKInstrumentor
 
-            GoogleADKInstrumentor().instrument(tracer_provider=tracer_provider)
-        except ImportError:
-            pass
+        #     GoogleADKInstrumentor().instrument(tracer_provider=tracer_provider)
+        # except ImportError:
+        #     pass
 
         # Instrument MCP
         try:

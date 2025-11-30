@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
@@ -1949,6 +1949,7 @@ dependencies = [
     { name = "deepagents" },
     { name = "fastapi" },
     { name = "google-adk" },
+    { name = "google-cloud-logging" },
     { name = "guardrails-ai" },
     { name = "httpx" },
     { name = "idun-agent-schema" },
@@ -1967,6 +1968,7 @@ dependencies = [
     { name = "openinference-instrumentation-mcp" },
     { name = "openinference-instrumentation-vertexai" },
     { name = "opentelemetry-exporter-gcp-trace" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "sqlalchemy" },
@@ -1988,6 +1990,7 @@ requires-dist = [
     { name = "deepagents", specifier = ">=0.2.8,<0.3.0" },
     { name = "fastapi", specifier = ">=0.115.0,<0.116.0" },
     { name = "google-adk", specifier = ">=1.19.0,<2.0.0" },
+    { name = "google-cloud-logging", specifier = ">=3.10.0,<4.0.0" },
     { name = "guardrails-ai", specifier = ">=0.7.0,<0.8.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "idun-agent-schema", specifier = ">=0.2.7,<0.3.0" },
@@ -2006,6 +2009,7 @@ requires-dist = [
     { name = "openinference-instrumentation-mcp", specifier = ">=1.0.0,<2.0.0" },
     { name = "openinference-instrumentation-vertexai", specifier = ">=0.1.0,<1.0.0" },
     { name = "opentelemetry-exporter-gcp-trace", specifier = ">=1.6.0,<2.0.0" },
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.22.0,<2.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "sqlalchemy", specifier = ">=2.0.36,<3.0.0" },

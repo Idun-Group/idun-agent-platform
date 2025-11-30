@@ -27,8 +27,8 @@ observability:
     enabled: true
     config:
       host: "https://cloud.langfuse.com"
-      public_key: "pk-lf-867f8de6-c5db-4b01-a5eb-4879f1f7f913"
-      secret_key: "sk-lf-7ba48215-fbdc-4e6c-a194-5e2d9fb5725f"
+      public_key: "pk-FAKE"
+      secret_key: "sk-lf-FAKE"
       run_name: "idun-langgraph-run"
 
   - provider: "GCP_TRACE"
