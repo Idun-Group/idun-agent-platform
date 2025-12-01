@@ -47,7 +47,7 @@ dependencies = [
   "structlog>=23.2.0,<24.0.0",
 
   # Idun schemas
-  "idun-agent-schema>=0.2.7,<1.0.0",
+  "idun-agent-schema>=0.3.1,<1.0.0",
 ]
 
 
