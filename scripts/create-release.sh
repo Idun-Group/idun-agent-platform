@@ -36,7 +36,7 @@ git pull origin main
 # Get version from user
 echo ""
 echo -e "${GREEN}Enter the version number (without 'v' prefix):${NC}"
-echo -e "${YELLOW}Examples: 0.2.1, 1.0.0, 0.3.0-beta${NC}"
+echo -e "${YELLOW}Examples: 0.2.1, 1.0.0, 0.3.1-beta${NC}"
 read -p "Version: " VERSION
 
 # Validate version format
