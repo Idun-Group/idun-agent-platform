@@ -38,7 +38,7 @@ COPY pyproject.toml ./
 # --no-dev: skip development dependencies
 # Reproducible build flag (commented out for fresh installs):
 # --frozen: use exact versions from lockfile
-RUN uv sync --no-dev
+RUN uv sync --no-dev --python 3.12
 
 # ============================================================================
 # Stage 2: Runtime - Minimal production image
