@@ -154,4 +154,7 @@ export async function deleteAgent(agentId: string): Promise<void> {
     await deleteRequest(`/api/v1/agents/${agentId}`);
 }
 
-
+export function restartAgent(baseUrl: string): Promise<unknown> {
+    const url = baseUrl.endsWith('/') ? `${baseUrl}reload` : `${baseUrl}/reload`;
+    return postJson(url, {});
+}

@@ -6,18 +6,19 @@ import { useAuth } from '../../hooks/use-auth';
 import {
     getAgent,
     patchAgent,
+    restartAgent,
     type BackendAgent,
 } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
 import AgentFormModal from '../../components/agent-form-modal/component';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
-import { 
-    ArrowLeft, 
-    RotateCcw, 
-    Edit3, 
-    LayoutDashboard, 
-    Webhook, 
-    Settings, 
+import {
+    ArrowLeft,
+    RotateCcw,
+    Edit3,
+    LayoutDashboard,
+    Webhook,
+    Settings,
     Activity,
     Layers
 } from 'lucide-react';
@@ -42,7 +43,7 @@ export default function AgentDetailPage() {
     const [agent, setAgent] = useState<BackendAgent | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    
+
     const { isLoading: isAuthLoading } = useAuth();
 
     const loadAgent = () => {
@@ -69,8 +70,8 @@ export default function AgentDetailPage() {
 
     const handleTabClick = (tabId: string) => {
         if (tabId === 'logs') {
-            // For logs, we might want to open external link or show tab. 
-            // Original code opened external link. Let's keep it if that's the intention, 
+            // For logs, we might want to open external link or show tab.
+            // Original code opened external link. Let's keep it if that's the intention,
             // OR show the LogsTab. The new design doesn't explicitly show Logs tab in TABS list but I'll keep it.
             // If we want to replicate the target exactly, maybe we should hide it or move it.
             // Let's show the tab for now as it exists in components.
@@ -89,6 +90,20 @@ export default function AgentDetailPage() {
             toast.success('Agent updated successfully!');
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to update agent';
+            toast.error(errorMsg);
+        }
+    };
+
+    const handleRestart = async () => {
+        if (!agent?.base_url) {
+            toast.error('Agent URL is not available');
+            return;
+        }
+        try {
+            await restartAgent(agent.base_url);
+            toast.success('Agent restart triggered successfully');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to restart agent';
             toast.error(errorMsg);
         }
     };
@@ -141,7 +156,7 @@ export default function AgentDetailPage() {
                 </div>
 
                 <Actions>
-                    <HeaderButton>
+                    <HeaderButton onClick={handleRestart}>
                         <RotateCcw size={16} /> Restart
                     </HeaderButton>
                     <HeaderButton $primary onClick={() => setIsEditModalOpen(true)}>
@@ -155,8 +170,8 @@ export default function AgentDetailPage() {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
                     return (
-                        <TabButton 
-                            key={tab.id} 
+                        <TabButton
+                            key={tab.id}
                             $active={isActive}
                             onClick={() => handleTabClick(tab.id)}
                         >
@@ -298,15 +313,15 @@ const HeaderButton = styled.button<{ $primary?: boolean }>`
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    
-    ${props => props.$primary 
+
+    ${props => props.$primary
         ? `
             background-color: #8c52ff;
             color: white;
             border: none;
             box-shadow: 0 0 15px rgba(140, 82, 255, 0.3);
             &:hover { background-color: #7c3aed; box-shadow: 0 0 20px rgba(140, 82, 255, 0.5); }
-        ` 
+        `
         : `
             background-color: rgba(255, 255, 255, 0.05);
             color: #d1d5db;
@@ -334,9 +349,9 @@ const TabButton = styled.button<{ $active: boolean }>`
     cursor: pointer;
     position: relative;
     transition: all 0.2s;
-    
-    ${props => props.$active 
-        ? `color: white;` 
+
+    ${props => props.$active
+        ? `color: white;`
         : `color: #9ca3af; &:hover { color: #d1d5db; }`
     }
 
@@ -351,12 +366,12 @@ const TabButton = styled.button<{ $active: boolean }>`
         opacity: ${props => props.$active ? 1 : 0};
         transition: opacity 0.2s;
     }
-    
+
     svg {
         color: ${props => props.$active ? '#8c52ff' : 'currentColor'};
         transition: color 0.2s;
     }
-    
+
     &:hover svg {
         color: ${props => props.$active ? '#8c52ff' : '#d1d5db'};
     }
