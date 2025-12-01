@@ -48,7 +48,7 @@ FROM python:3.12-slim AS runtime
 # Metadata
 LABEL maintainer="Idun Group <contact@idun-group.com>" \
       description="Idun Agent Manager - FastAPI service for managing AI agents" \
-      version="0.3.4"
+      version="0.3.5"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -83,7 +83,7 @@ RUN groupadd -r appuser --gid 1000 && \
 USER appuser
 
 # Expose default port
-EXPOSE 8080
+EXPOSE 8000
 
 # Health check endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \

@@ -19,10 +19,10 @@ services:
       - idun_network
 
   manager:
-    image: freezaa9/idun-ai:latest
+    image: freezaa9/idun-ai:0.3.5
     container_name: idun-manager
     ports:
-      - "8080:8080"
+      - "8000:8000"
     volumes:
       - ./services/idun_agent_manager/alembic:/app/alembic
       - ./services/idun_agent_manager/src:/app/src
@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: freezaa9/idun-ai-web:latest
+    image: freezaa9/idun-ai-web:0.3.5
     container_name: idun-web
     ports:
       - "3000:3000"
@@ -73,7 +73,7 @@ services:
       dockerfile: Dockerfile
     container_name: idun-agent
     ports:
-      - "8000:8000"
+      - "8001:8001"
       - "6006:6006" # For Phoenix local
     environment:
       IDUN_AGENT_API_KEY: 5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733
