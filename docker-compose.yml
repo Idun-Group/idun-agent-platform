@@ -23,6 +23,9 @@ services:
     container_name: idun-manager
     ports:
       - "8080:8080"
+    volumes:
+      - ./services/idun_agent_manager/alembic:/app/alembic
+      - ./services/idun_agent_manager/src:/app/src
     environment:
       # Database connection
       DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents

@@ -7,9 +7,9 @@ requires-python = ">=3.12,<3.14"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "idun-agent-engine",
+    "idun-agent-engine>=0.3.1,<0.4.0",
     "idun-agent-manager",
-    "idun-agent-schema",
+    "idun-agent-schema>=0.3.1,<0.4.0",
     "setuptools>=80.9.0",
 ]
 
