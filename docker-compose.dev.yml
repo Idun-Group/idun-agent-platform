@@ -18,8 +18,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - idun_dev_network
 
   manager:
     stdin_open: true
@@ -50,8 +48,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - idun_dev_network
 
   web:
     image: node:lts-alpine
@@ -65,9 +61,26 @@ services:
       - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:8000 # http://host.docker.internal:8000
+      - VITE_COPILOT_RUNTIME_URL=http://copilot-runtime:8001
       - CHOKIDAR_USEPOLLING=true
-    networks:
-      - idun_dev_network
+    depends_on:
+      - manager
+
+  copilot-runtime:
+    image: node:20-alpine
+    container_name: idun-copilot-runtime-dev
+    working_dir: /app
+    command: sh -lc "npm install --legacy-peer-deps && npm run dev"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./services/copilot_runtime:/app
+      - /app/node_modules
+    environment:
+      - PORT=8001
+      - MANAGER_URL=http://manager:8000
     depends_on:
       - manager
 
@@ -84,14 +97,8 @@ services:
   #   environment:
   #     - VITE_API_URL=http://localhost:8000 # http://host.docker.internal:8000
   #     - CHOKIDAR_USEPOLLING=true
-  #   networks:
-  #     - idun_dev_network
   #   depends_on:
   #     - manager
 
 volumes:
   postgres_data:
-
-networks:
-  idun_dev_network:
-    driver: bridge

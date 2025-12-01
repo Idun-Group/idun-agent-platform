@@ -1,0 +1,63 @@
+{
+  "name": "abort-controller-x",
+  "version": "0.5.0",
+  "description": "Abortable async function helpers",
+  "keywords": [
+    "abort",
+    "abortable",
+    "cancel",
+    "cancelable",
+    "cancellable",
+    "abort-controller",
+    "async",
+    "coroutine"
+  ],
+  "repository": "deeplay-io/abort-controller-x",
+  "sideEffects": false,
+  "main": "lib/index.js",
+  "module": "es/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "src",
+    "lib",
+    "es"
+  ],
+  "scripts": {
+    "clean": "rimraf lib es",
+    "test": "npm run test:node",
+    "test:node": "mocha --require ts-node/register --timeout 10000 \"src/**/*.test.ts\"",
+    "test:browser": "npm run test:browser:chrome",
+    "test:browser:chrome": "cross-env WDIO_BROWSER=chrome wdio run ./wdio.browser.conf.ts",
+    "test:browser:firefox": "cross-env WDIO_BROWSER=firefox wdio run ./wdio.browser.conf.ts",
+    "test:browser:safari": "cross-env WDIO_BROWSER=safari wdio run ./wdio.browser.conf.ts",
+    "build:lib": "tsc -P tsconfig.build.json",
+    "build:es": "tsc -P tsconfig.es.json",
+    "build": "npm run build:lib && npm run build:es",
+    "prepublishOnly": "npm test && npm run clean && npm run build"
+  },
+  "author": "Daniel Lytkin <aikoven@deeplay.io>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/defer-promise": "^1.0.0",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^14.17.0",
+    "@wdio/browser-runner": "^9.0.8",
+    "@wdio/cli": "^9.0.8",
+    "@wdio/local-runner": "^9.0.8",
+    "@wdio/mocha-framework": "^9.0.8",
+    "@wdio/spec-reporter": "^9.0.8",
+    "chromedriver": "^141.0.0",
+    "cross-env": "^7.0.3",
+    "defer-promise": "^2.0.1",
+    "expect": "^29.7.0",
+    "mocha": "^10.7.3",
+    "prettier": "^2.1.2",
+    "rimraf": "^2.6.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^4.7.4",
+    "wdio-chromedriver-service": "^8.1.1",
+    "wdio-geckodriver-service": "^5.0.2",
+    "wdio-safaridriver-service": "^2.1.1",
+    "webdriverio": "^9.0.8"
+  }
+}
