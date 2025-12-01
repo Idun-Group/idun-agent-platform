@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.12-slim
 RUN apt-get update && pip install uv
 # TODO: use fixed version from PyPI
 # RUN uv pip install --system --no-cache-dir --index-url https://test.pypi.org/simple/ \

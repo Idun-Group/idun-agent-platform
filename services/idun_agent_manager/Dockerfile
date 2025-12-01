@@ -7,7 +7,7 @@
 # ============================================================================
 # Stage 1: Builder - Install dependencies
 # ============================================================================
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -42,7 +42,7 @@ RUN uv sync --no-dev
 # ============================================================================
 # Stage 2: Runtime - Minimal production image
 # ============================================================================
-FROM python:3.13-slim AS runtime
+FROM python:3.12-slim AS runtime
 
 # Metadata
 LABEL maintainer="Idun Group <contact@idun-group.com>" \

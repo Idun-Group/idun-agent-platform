@@ -36,7 +36,7 @@ def generate_dockerfile(dependency: Dependency) -> str:
         return ""  # Unreachable, but satisfies type checker
     if dependency == Dependency.REQUIREMENT:
         # TODO: use from file
-        requirements_dockerfile = f"""FROM python:3.13-slim
+        requirements_dockerfile = f"""FROM python:3.12-slim
 RUN apt-get update && pip install uv
 
 RUN uv pip install idun-agent-schema==0.3.0 --system
