@@ -6,7 +6,7 @@ description = "Modern FastAPI backend for managing AI agents with PostgreSQL, SQ
 readme = "README.md"
 license = { text = "MIT" }
 authors = [ { name = "Idun Group", email = "contact@idun-group.com" } ]
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12,<3.13"
 
 dependencies = [
   # Core web framework

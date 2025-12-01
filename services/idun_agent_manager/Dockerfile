@@ -12,7 +12,8 @@ FROM python:3.12-slim AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    UV_PYTHON_DOWNLOADS=never
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -47,7 +48,7 @@ FROM python:3.12-slim AS runtime
 # Metadata
 LABEL maintainer="Idun Group <contact@idun-group.com>" \
       description="Idun Agent Manager - FastAPI service for managing AI agents" \
-      version="0.3.2"
+      version="0.3.3"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

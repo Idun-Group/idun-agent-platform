@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'win32'",
@@ -1934,7 +1934,7 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
-version = "0.3.1"
+version = "0.3.3"
 source = { editable = "libs/idun_agent_engine" }
 dependencies = [
     { name = "ag-ui-adk" },
@@ -2172,7 +2172,7 @@ dev = [
 
 [[package]]
 name = "idun-agent-schema"
-version = "0.3.1"
+version = "0.3.3"
 source = { editable = "libs/idun_agent_schema" }
 dependencies = [
     { name = "pydantic" },
