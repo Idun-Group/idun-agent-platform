@@ -54,9 +54,7 @@ async def configure_app(app: FastAPI, engine_config):
 
     # Use ConfigBuilder's centralized agent initialization, passing the registry
     try:
-        agent_instance = await ConfigBuilder.initialize_agent_from_config(
-            engine_config
-        )
+        agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config)
     except Exception as e:
         raise ValueError(
             f"Error retrieving agent instance from ConfigBuilder: {e}"
@@ -66,7 +64,7 @@ async def configure_app(app: FastAPI, engine_config):
     app.state.config = engine_config
     app.state.engine_config = engine_config
 
-    app.state.guardrails = guardrails  # TODO: to reactivate
+    app.state.guardrails = guardrails
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
 
@@ -87,7 +85,6 @@ async def configure_app(app: FastAPI, engine_config):
     # if app.state.mcp_registry.enabled:
     #     servers = ", ".join(app.state.mcp_registry.available_servers())
     #     print(f"🔌 MCP servers ready: {servers}")
-
 
 
 @asynccontextmanager

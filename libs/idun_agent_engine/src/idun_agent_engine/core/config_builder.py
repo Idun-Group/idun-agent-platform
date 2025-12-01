@@ -53,6 +53,7 @@ class ConfigBuilder:
         self._mcp_servers: list[MCPServer] | None = None
         self._observability: list[ObservabilityConfig] | None = None
         self._guardrails: Guardrails | None = None
+
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """Set the API port for the server.
 
@@ -126,15 +127,20 @@ class ConfigBuilder:
                 raise YAMLError(f"Failed to parse yaml file for Guardrails: {e}") from e
 
             try:
-                observability_list = yaml_config.get("engine_config", {}).get("observability")
+                observability_list = yaml_config.get("engine_config", {}).get(
+                    "observability"
+                )
                 if observability_list:
                     self._observability = [
-                        ObservabilityConfig.model_validate(obs) for obs in observability_list
+                        ObservabilityConfig.model_validate(obs)
+                        for obs in observability_list
                     ]
                 else:
                     self._observability = None
             except Exception as e:
-                raise YAMLError(f"Failed to parse yaml file for Observability: {e}") from e
+                raise YAMLError(
+                    f"Failed to parse yaml file for Observability: {e}"
+                ) from e
             # try:
             #     mcp_servers_list = yaml_config.get("engine_config", {}).get("mcp_servers") or yaml_config.get("engine_config", {}).get("mcpServers") # TODO to fix camelcase issues
             #     if mcp_servers_list:
@@ -310,7 +316,8 @@ class ConfigBuilder:
         if agent_type == AgentFramework.LANGGRAPH:
             from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
             import os
-            print("Current directory: ", os.getcwd()) # TODO remove
+
+            print("Current directory: ", os.getcwd())  # TODO remove
             try:
                 validated_config = LangGraphAgentConfig.model_validate(agent_config_obj)
 
@@ -423,14 +430,17 @@ class ConfigBuilder:
             try:
                 validated_config = AdkAgentConfig.model_validate(agent_config_obj)
             except Exception as e:
-                raise ValueError(f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}") from e
+                raise ValueError(
+                    f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}"
+                ) from e
             agent_instance = AdkAgent()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration
         await agent_instance.initialize(
-            validated_config, observability_config#, mcp_registry=mcp_registry
+            validated_config,
+            observability_config,  # , mcp_registry=mcp_registry
         )  # type: ignore[arg-type]
         return agent_instance
 

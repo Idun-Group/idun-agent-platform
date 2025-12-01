@@ -3,6 +3,10 @@
 import logging
 from typing import Annotated
 
+from ag_ui.core.types import RunAgentInput
+from ag_ui.encoder import EventEncoder
+from ag_ui_adk import ADKAgent as ADKAGUIAgent
+from copilotkit import LangGraphAGUIAgent
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
@@ -10,11 +14,6 @@ from idun_agent_schema.engine.guardrails import Guardrail
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.dependencies import get_agent, get_copilotkit_agent
-
-from ag_ui.core.types import RunAgentInput
-from ag_ui.encoder import EventEncoder
-from copilotkit import LangGraphAGUIAgent
-from ag_ui_adk import ADKAgent as ADKAGUIAgent
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s",
@@ -26,14 +25,23 @@ logger = logging.getLogger(__name__)
 agent_router = APIRouter()
 
 
+def _format_deep_agent_response(response_content: list[dict[str, str]]) -> str:
+    """Deep Research Agent responds with a list contaning a single dict: {'type': 'text', 'text': 'Your text'}."""
+    try:
+        response = response_content[0]["text"]
+        return response
+    except KeyError as k:
+        raise ValueError("Cannot parse Deep Research Agent's response") from k
+
+
 def _run_guardrails(
     guardrails: list[Guardrail], message: dict[str, str] | str, position: str
 ) -> None:
     """Validates the request's message, by running it on given guardrails. If input is a dict -> input, else its an output guardrails."""
     text = message["query"] if isinstance(message, dict) else message
     for guard in guardrails:
-        if guard.position == position and not guard.validate(text): # type: ignore[attr-defined]
-            raise HTTPException(status_code=429, detail=guard.reject_message) # type: ignore[attr-defined]
+        if guard.position == position and not guard.validate(text):  # type: ignore[attr-defined]
+            raise HTTPException(status_code=429, detail=guard.reject_message)  # type: ignore[attr-defined]
 
 
 @agent_router.get("/config")
@@ -60,7 +68,7 @@ async def invoke(
     """Process a chat message with the agent without streaming."""
     try:
         message = {"query": chat_request.query, "session_id": chat_request.session_id}
-        guardrails = getattr(request.app.state, 'guardrails', [])
+        guardrails = getattr(request.app.state, "guardrails", [])
         if guardrails:
             _run_guardrails(guardrails, message, position="input")
         response_content = await agent.invoke(
@@ -68,7 +76,14 @@ async def invoke(
         )
         if guardrails:
             _run_guardrails(guardrails, response_content, position="output")
+
+        if agent.name == "Deep Research Agent":
+            return ChatResponse(
+                session_id=message["session_id"],
+                response=_format_deep_agent_response(response_content),
+            )
         return ChatResponse(session_id=message["session_id"], response=response_content)
+
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
 
@@ -88,6 +103,7 @@ async def stream(
         return StreamingResponse(event_stream(), media_type="text/event-stream")
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @agent_router.post("/copilotkit/stream")
 async def copilotkit_stream(
@@ -140,7 +156,7 @@ async def copilotkit_stream(
                                 exc_info=True,
                             )
                             # Create a RunErrorEvent for encoding failures
-                            from ag_ui.core import RunErrorEvent, EventType
+                            from ag_ui.core import EventType, RunErrorEvent
 
                             error_event = RunErrorEvent(
                                 type=EventType.RUN_ERROR,
@@ -163,7 +179,7 @@ async def copilotkit_stream(
                     # ADKAgent should have yielded a RunErrorEvent, but if something went wrong
                     # in the async generator itself, we need to handle it
                     try:
-                        from ag_ui.core import RunErrorEvent, EventType
+                        from ag_ui.core import EventType, RunErrorEvent
 
                         error_event = RunErrorEvent(
                             type=EventType.RUN_ERROR,

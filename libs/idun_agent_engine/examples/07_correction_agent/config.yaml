@@ -7,7 +7,3 @@ agent:
     name: "French Text Corrector"
     model_name: "gemini-2.5-flash"
     language: "French"
-    graph_definition: "libs/idun_agent_engine/src/idun_agent_engine/templates/correction.py:graph"
-    checkpointer:
-      type: "sqlite"
-      db_url: "sqlite:///correction_agent.db"
