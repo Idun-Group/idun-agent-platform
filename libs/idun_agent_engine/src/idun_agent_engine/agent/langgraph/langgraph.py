@@ -96,7 +96,9 @@ class LanggraphAgent(agent_base.BaseAgent):
             RuntimeError: If the CopilotKit agent is not yet initialized.
         """
         if self._copilotkit_agent_instance is None:
-            raise RuntimeError("CopilotKit agent not initialized. Call initialize() first.")
+            raise RuntimeError(
+                "CopilotKit agent not initialized. Call initialize() first."
+            )
         return self._copilotkit_agent_instance
 
     @property
@@ -134,7 +136,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         # Observability (provider-agnostic)
         if observability_config:
             handlers, infos = observability.create_observability_handlers(
-                observability_config # type: ignore[arg-type]
+                observability_config  # type: ignore[arg-type]
             )
             self._obs_callbacks = []
             for handler in handlers:
@@ -205,7 +207,7 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         self._copilotkit_agent_instance = LangGraphAGUIAgent(
             name=self._name,
-            description="Agent description", # TODO: add agent description
+            description="Agent description",  # TODO: add agent description
             graph=self._agent_instance,
             config={"callbacks": self._obs_callbacks} if self._obs_callbacks else None,
         )
@@ -292,7 +294,8 @@ class LanggraphAgent(agent_base.BaseAgent):
         # Try loading as a file path first
         try:
             import os
-            print("Current directory: ", os.getcwd()) # TODO remove
+
+            print("Current directory: ", os.getcwd())  # TODO remove
             from pathlib import Path
 
             resolved_path = Path(module_path).resolve()
@@ -310,16 +313,23 @@ class LanggraphAgent(agent_base.BaseAgent):
             spec.loader.exec_module(module)
 
             graph_builder = getattr(module, graph_variable_name)
-            return self._validate_graph_builder(graph_builder, module_path, graph_variable_name)
+            return self._validate_graph_builder(
+                graph_builder, module_path, graph_variable_name
+            )
 
         except (FileNotFoundError, ImportError):
             # Fallback: try loading as a python module
             try:
-                module = importlib.import_module(module_path)
+                module_import_path = (
+                    module_path[:-3] if module_path.endswith(".py") else module_path
+                )
+                module = importlib.import_module(module_import_path)
                 graph_builder = getattr(module, graph_variable_name)
-                return self._validate_graph_builder(graph_builder, module_path, graph_variable_name)
+                return self._validate_graph_builder(
+                    graph_builder, module_path, graph_variable_name
+                )
             except ImportError as e:
-                 raise ValueError(
+                raise ValueError(
                     f"Failed to load agent from {graph_definition}. Checked file path and python module: {e}"
                 ) from e
             except AttributeError as e:
@@ -327,19 +337,21 @@ class LanggraphAgent(agent_base.BaseAgent):
                     f"Variable '{graph_variable_name}' not found in module {module_path}: {e}"
                 ) from e
         except Exception as e:
-             raise ValueError(
+            raise ValueError(
                 f"Failed to load agent from {graph_definition}: {e}"
             ) from e
 
-    def _validate_graph_builder(self, graph_builder: Any, module_path: str, graph_variable_name: str) -> StateGraph:
-         # TODO to remove, dirty fix for template deepagent langgraph
+    def _validate_graph_builder(
+        self, graph_builder: Any, module_path: str, graph_variable_name: str
+    ) -> StateGraph:
+        # TODO to remove, dirty fix for template deepagent langgraph
         if not isinstance(graph_builder, StateGraph) and not isinstance(
             graph_builder, CompiledStateGraph
         ):
             raise TypeError(
                 f"The variable '{graph_variable_name}' from {module_path} is not a StateGraph instance."
             )
-        return graph_builder # type: ignore[return-value]
+        return graph_builder  # type: ignore[return-value]
 
     async def invoke(self, message: Any) -> Any:
         """Process a single input to chat with the agent.
