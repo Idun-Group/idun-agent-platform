@@ -405,7 +405,7 @@ const mapMCPServerToApp = (mcp: components["schemas"]["ManagedMCPServerRead"]): 
         createdAt: mcp.created_at,
         updatedAt: mcp.updated_at,
         config,
-        imageUrl: '/img/agent-icon.svg'
+        imageUrl: '/img/mcp.svg'
     };
 };
 
@@ -510,7 +510,7 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
         createdAt: guard.created_at,
         updatedAt: guard.updated_at,
         config,
-        imageUrl: '/img/agent-icon.svg'
+        imageUrl: '/img/guardrail.svg'
     };
 };
 
@@ -629,7 +629,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'MCPServer',
         category: 'MCP',
         description: 'Connect to an MCP Server.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/mcp.svg',
         by: 'Anthropic'
     },
     {
@@ -638,7 +638,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'ModelArmor',
         category: 'Guardrails',
         description: 'Protect your AI models with Model Armor.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Model Armor'
     },
     {
@@ -647,7 +647,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'CustomLLM',
         category: 'Guardrails',
         description: 'Define custom LLM guardrails.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -656,7 +656,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'BanList',
         category: 'Guardrails',
         description: 'Prevents the model from generating or accepting specific forbidden words or phrases.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -665,7 +665,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'BiasCheck',
         category: 'Guardrails',
         description: 'Detects and mitigates content that promotes stereotypes or discrimination.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -674,7 +674,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'CompetitionCheck',
         category: 'Guardrails',
         description: 'Ensures the model does not mention specific competitor brand names.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -683,7 +683,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'CorrectLanguage',
         category: 'Guardrails',
         description: 'Verifies that the input or output is written in the expected language.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -692,7 +692,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'DetectPII',
         category: 'Guardrails',
         description: 'Ensures that any given text does not contain PII.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -701,7 +701,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'GibberishText',
         category: 'Guardrails',
         description: 'Filters out nonsensical, incoherent, or repetitive output.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -710,7 +710,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'NSFWText',
         category: 'Guardrails',
         description: 'Blocks content that is sexually explicit, violent, or unsafe.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -719,7 +719,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'DetectJailbreak',
         category: 'Guardrails',
         description: 'Identifies attempts to manipulate the model into bypassing safety guidelines.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -728,7 +728,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'RestrictTopic',
         category: 'Guardrails',
         description: 'Keeps the conversation strictly within a defined subject area.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -737,7 +737,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'PromptInjection',
         category: 'Guardrails',
         description: 'Detects prompt injection attempts.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -746,7 +746,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'RagHallucination',
         category: 'Guardrails',
         description: 'Detects hallucinations in RAG outputs.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -755,7 +755,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'ToxicLanguage',
         category: 'Guardrails',
         description: 'Detects toxic language.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     },
     {
@@ -764,7 +764,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'CodeScanner',
         category: 'Guardrails',
         description: 'Scan code for allowed languages.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/guardrail.svg',
         by: 'Idun'
     }
 ];
