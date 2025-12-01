@@ -38,7 +38,7 @@ COPY pyproject.toml ./
 # --no-dev: skip development dependencies
 # Reproducible build flag (commented out for fresh installs):
 # --frozen: use exact versions from lockfile
-RUN uv sync --no-dev
+RUN uv sync --no-dev --python 3.12
 
 # ============================================================================
 # Stage 2: Runtime - Minimal production image
@@ -48,7 +48,7 @@ FROM python:3.12-slim AS runtime
 # Metadata
 LABEL maintainer="Idun Group <contact@idun-group.com>" \
       description="Idun Agent Manager - FastAPI service for managing AI agents" \
-      version="0.3.3"
+      version="0.3.4"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
