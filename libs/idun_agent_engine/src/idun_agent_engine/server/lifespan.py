@@ -22,7 +22,7 @@ def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
 
     from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
 
-    if not guardrails_obj.enabled:
+    if not guardrails_obj:
         return []
 
     return [GHGuard(guard, position="input") for guard in guardrails_obj.input] + [

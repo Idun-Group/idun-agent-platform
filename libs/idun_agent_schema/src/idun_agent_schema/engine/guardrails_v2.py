@@ -53,17 +53,40 @@ class CustomLLMConfig(BaseModel):
 
     config_id: Literal[GuardrailConfigId.CUSTOM_LLM] = GuardrailConfigId.CUSTOM_LLM
     name: str = Field(description="Name of the custom LLM config")
-    model: CustomLLMModel = Field(description="Specific underlying Large Language Model")
+    model: CustomLLMModel = Field(
+        description="Specific underlying Large Language Model"
+    )
     prompt: str = Field(description="System instruction prompt")
 
 
-class BanListConfig(BaseModel):
+class GuardrailConfig(BaseModel):
+    pass
+
+
+class BanListConfig(GuardrailConfig):
     """Ban List configuration."""
 
+    """
+    - type: GUARDRAILS_HUB
+        config_id: BAN_LIST
+        guard_url: "hub://guardrails/ban_list"
+        api_key:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnaXRodWJ8MTQzNDYzMzEiLCJhcGlLZXlJZCI6IjNhMWMyYmY2LTMwNzYtNDY1OC1hMjRhLTA5MjZjNWI2ZDM4NyIsInNjb3BlIjoicmVhZDpwYWNrYWdlcyIsInBlcm1pc3Npb25zIjpbXSwiaWF0IjoxNzY0NTg5MzIyLCJleHAiOjE3NzIzNjUzMjJ9.4KUsAXEQ8mGN_iVz46HGXIUQeBbZQLEAzOOfIL_ZYQA
+        reject_message: "ban!!"
+        banned_words:
+            - hello
+            - bye
+    """
+
+    class BanListParams(BaseModel):
+        banned_words: list[str] = Field(
+            description="A list of strings (words or phrases) to block"
+        )
+
     config_id: Literal[GuardrailConfigId.BAN_LIST] = GuardrailConfigId.BAN_LIST
-    banned_words: list[str] = Field(
-        description="A list of strings (words or phrases) to block"
-    )
+    api_key: str
+    reject_message: str = "ban!!"
+    guard_url: str = "hub://guardrails/ban_list"
+    guard_params: BanListParams = Field()
 
 
 class BiasCheckConfig(BaseModel):
@@ -111,9 +134,7 @@ class DetectPIIConfig(BaseModel):
     """Detect PII configuration."""
 
     config_id: Literal[GuardrailConfigId.DETECT_PII] = GuardrailConfigId.DETECT_PII
-    pii_entities: list[PIIEntity] = Field(
-        description="List of PII entities to detect"
-    )
+    pii_entities: list[PIIEntity] = Field(description="List of PII entities to detect")
 
 
 class GibberishTextConfig(BaseModel):
@@ -192,31 +213,13 @@ class ToxicLanguageConfig(BaseModel):
 class CodeScannerConfig(BaseModel):
     """Code Scanner configuration."""
 
-    config_id: Literal[GuardrailConfigId.CODE_SCANNER] = (
-        GuardrailConfigId.CODE_SCANNER
-    )
+    config_id: Literal[GuardrailConfigId.CODE_SCANNER] = GuardrailConfigId.CODE_SCANNER
     allowed_languages: list[str] = Field(
         description="List of allowed programming languages"
     )
 
 
-GuardrailConfig = (
-    ModelArmorConfig
-    | CustomLLMConfig
-    | BanListConfig
-    | BiasCheckConfig
-    | CompetitionCheckConfig
-    | CorrectLanguageConfig
-    | DetectPIIConfig
-    | GibberishTextConfig
-    | NSFWTextConfig
-    | DetectJailbreakConfig
-    | PromptInjectionConfig
-    | RagHallucinationConfig
-    | RestrictToTopicConfig
-    | ToxicLanguageConfig
-    | CodeScannerConfig
-)
+GuardrailConfig = BanListConfig
 
 
 class GuardrailsV2(BaseModel):

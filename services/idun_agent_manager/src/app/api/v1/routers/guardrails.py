@@ -5,22 +5,23 @@ managed guardrail configurations.
 """
 
 import logging
+import os
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from idun_agent_schema.engine.guardrails_v2 import GuardrailConfig, GuardrailsV2
+from idun_agent_schema.manager.managed_guardrail import (
+    ManagedGuardrailCreate,
+    ManagedGuardrailPatch,
+    ManagedGuardrailRead,
+)
 from pydantic import TypeAdapter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_session
 from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
-from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2, GuardrailConfig
-from idun_agent_schema.manager.managed_guardrail import (
-    ManagedGuardrailCreate,
-    ManagedGuardrailPatch,
-    ManagedGuardrailRead,
-)
 
 router = APIRouter()
 
@@ -30,6 +31,47 @@ logger = logging.getLogger(__name__)
 # Constants
 PAGINATION_MAX_LIMIT = 1000
 PAGINATION_DEFAULT_LIMIT = 100
+
+
+def _enrich_old_guardrail_config(guardrail_dict: dict) -> dict:
+    if guardrail_dict.get("config_id") == "ban_list":
+        top_level_banned_words = guardrail_dict.get("banned_words", [])
+
+        if top_level_banned_words:
+            if (
+                isinstance(top_level_banned_words[0], str)
+                and "," in top_level_banned_words[0]
+            ):
+                top_level_banned_words = [
+                    word.strip()
+                    for word in top_level_banned_words[0].split(",")
+                    if word.strip()
+                ]
+
+        if "api_key" in guardrail_dict:
+            if top_level_banned_words:
+                if "guard_params" not in guardrail_dict:
+                    guardrail_dict["guard_params"] = {}
+                guardrail_dict["guard_params"]["banned_words"] = top_level_banned_words
+            return guardrail_dict
+
+        api_key = os.getenv("GUARDRAILS_API_KEY")
+        if not api_key:
+            raise ValueError("GUARDRAILS_API_KEY not found in environment")
+
+        reject_message = os.getenv(
+            "GUARDRAILS_DEFAULT_REJECT_MESSAGE", "Content blocked by guardrails"
+        )
+
+        return {
+            "config_id": "ban_list",
+            "api_key": api_key,
+            "guard_url": "hub://guardrails/ban_list",
+            "reject_message": reject_message,
+            "guard_params": {"banned_words": top_level_banned_words},
+        }
+
+    return guardrail_dict
 
 
 async def _get_guardrail(id: str, session: AsyncSession) -> ManagedGuardrailModel:
@@ -70,18 +112,21 @@ def _model_to_schema(model: ManagedGuardrailModel) -> ManagedGuardrailRead:
     summary="Create managed guardrail config",
 )
 async def create_guardrail(
-    request: ManagedGuardrailCreate,
+    request_body: dict,
     session: AsyncSession = Depends(get_session),
 ) -> ManagedGuardrailRead:
     """Create a new managed guardrail configuration."""
     now = datetime.now(UTC)
 
-    # Validate config
-    guardrail_config = request.guardrail
+    guardrail_dict = _enrich_old_guardrail_config(request_body.get("guardrail", {}))
+    guardrail_config = TypeAdapter(GuardrailConfig).validate_python(guardrail_dict)
 
+    import pdb
+
+    pdb.set_trace()
     model = ManagedGuardrailModel(
         id=uuid4(),
-        name=request.name,
+        name=request_body.get("name"),
         guardrail_config=guardrail_config.model_dump(),
         created_at=now,
         updated_at=now,
@@ -158,14 +203,15 @@ async def delete_guardrail(
 )
 async def patch_guardrail(
     id: str,
-    request: ManagedGuardrailPatch,
+    request_body: dict,
     session: AsyncSession = Depends(get_session),
 ) -> ManagedGuardrailRead:
     """Update a guardrail configuration."""
     model = await _get_guardrail(id, session)
 
-    model.name = request.name
-    guardrail_config = request.guardrail
+    model.name = request_body.get("name")
+    guardrail_dict = _enrich_old_guardrail_config(request_body.get("guardrail", {}))
+    guardrail_config = TypeAdapter(GuardrailConfig).validate_python(guardrail_dict)
     model.guardrail_config = guardrail_config.model_dump()
     model.updated_at = datetime.now(UTC)
 
