@@ -25,7 +25,7 @@ const LoginPage = () => {
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : t('login.error');
             // Optionally show, but still redirect
-            try { toast.error(message); } catch {}
+            // try { toast.error(message); } catch {}
         }
         // Always redirect to app
         navigate('/agents');
