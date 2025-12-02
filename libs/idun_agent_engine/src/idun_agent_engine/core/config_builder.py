@@ -4,6 +4,7 @@ This module provides a fluent API for building configuration objects using Pydan
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ from yaml import YAMLError
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
+from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 
 
 class ConfigBuilder:
@@ -119,10 +121,14 @@ class ConfigBuilder:
                     f"Failed to parse yaml file for Engine config: {e}"
                 ) from e
             try:
-                guardrails = yaml_config.get("engine_config", {}).get("guardrails", "")
-                if not guardrails:
-                    # self._guardrails = Guardrails(enabled=False)
+                guardrails_data = yaml_config.get("engine_config", {}).get("guardrails")
+
+                if not guardrails_data:
                     self._guardrails = None
+                else:
+                    converted_data = convert_guardrail(guardrails_data)
+                    self._guardrails = Guardrails.model_validate(converted_data)
+
             except Exception as e:
                 raise YAMLError(f"Failed to parse yaml file for Guardrails: {e}") from e
 

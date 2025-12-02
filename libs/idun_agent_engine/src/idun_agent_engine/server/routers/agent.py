@@ -95,6 +95,7 @@ async def stream(
 ):
     """Process a message with the agent, streaming ag-ui events."""
     try:
+
         async def event_stream():
             message = {"query": request.query, "session_id": request.session_id}
             async for event in agent.stream(message):
@@ -114,6 +115,11 @@ async def copilotkit_stream(
     ],
 ):
     """Process a message with the agent, streaming ag-ui events."""
+    guardrails = getattr(request.app.state, "guardrails", [])
+    if guardrails:
+        _run_guardrails(
+            guardrails, message=input_data.messages[-1].content, position="input"
+        )
     if isinstance(copilotkit_agent, LangGraphAGUIAgent):
         try:
             # Get the accept header from the request

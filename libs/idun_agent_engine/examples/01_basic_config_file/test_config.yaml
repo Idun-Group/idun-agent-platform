@@ -1,6 +1,6 @@
 server:
   api:
-    port: 8000
+    port: 8010
 agent:
   type: "LANGGRAPH"
   config:
@@ -10,48 +10,12 @@ agent:
       enabled: false
 
 guardrails:
-  enabled: true
-
   input:
-    - type: GUARDRAILS_HUB
-      config:
-        guard: BAN_LIST
-        guard_url: "hub://guardrails/ban_list"
-        api_key: eyXXX
-        reject_message: "ban!!"
-        guard_config:
-          banned_words:
-            - hello
-            - bye
-
-    - type: GUARDRAILS_HUB
-      config:
-        guard: COMPETITOR_CHECK
-        guard_url: "hub://guardrails/competitor_check"
-        api_key: eyXXX
-        reject_message: "comp!!!"
-        guard_config:
-          competitors:
-            - spheir
-            - bob
-
-
-    - type: GUARDRAILS_HUB
-      config:
-        guard: NSFW
-        guard_url: "hub://guardrails/nsfw_text"
-        api_key: eyXXX
-        reject_message: "nsfw!!!"
-        guard_config:
-          on_fail: exception
-  output:
-    - type: GUARDRAILS_HUB
-      config:
-        guard: BAN_LIST
-        guard_url: "hub://guardrails/ban_list"
-        api_key: eyXXX
-        reject_message: "aaaa"
-        guard_config:
-          banned_words:
-              - idun
-              - group
+    - config_id: "ban_list"
+      api_key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnaXRodWJ8MTQzNDYzMzEiLCJhcGlLZXlJZCI6IjNhMWMyYmY2LTMwNzYtNDY1OC1hMjRhLTA5MjZjNWI2ZDM4NyIsInNjb3BlIjoicmVhZDpwYWNrYWdlcyIsInBlcm1pc3Npb25zIjpbXSwiaWF0IjoxNzY0NTg5MzIyLCJleHAiOjE3NzIzNjUzMjJ9.4KUsAXEQ8mGN_iVz46HGXIUQeBbZQLEAzOOfIL_ZYQA
+      guard_url: "hub://guardrails/ban_list"
+      reject_message: "ban!!"
+      guard_params:
+        banned_words:
+          - hello
+          - bye

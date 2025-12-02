@@ -5,6 +5,7 @@
       "name": "Docker: Attach to Manager",
       "type": "debugpy",
       "request": "attach",
+      "sudo": true,
       "connect": {
         "host": "localhost",
         "port": 5678
@@ -39,7 +40,9 @@
       "cwd": "${workspaceFolder}/services/idun_agent_manager/src",
       "envFile": "${workspaceFolder}/services/idun_agent_manager/.env",
       "justMyCode": false,
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "sudo": true,
+
     },
     {
       "name": "Idun Engine (Exemple 1)",
@@ -79,7 +82,7 @@
       ],
       "cwd": "${workspaceFolder}/libs/idun_agent_engine",
       "justMyCode": false,
-      "envFile": "${workspaceFolder}/libs/idun_agent_engine/.env",
+      "envFile": "${workspaceFolder}/.env",
       "env": {
         "IDUN_MANAGER_HOST": "http://0.0.0.0:8000",
         "IDUN_AGENT_API_KEY": "${input:agentApiKey}"

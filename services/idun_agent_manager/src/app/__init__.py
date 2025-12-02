@@ -1,3 +1,3 @@
 """Idun Agent Manager - Modern FastAPI Backend for the Idun Engine."""
 
-__version__ = "0.3.5"
+__version__ = "0.3.6"
