@@ -1,7 +1,7 @@
 """Guardrails V2 configuration schema."""
 
 from enum import Enum
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field
 
@@ -120,21 +120,18 @@ class CorrectLanguageConfig(BaseModel):
     )
 
 
-class PIIEntity(str, Enum):
-    """Personally Identifiable Information entities."""
-
-    EMAIL = "Email"
-    PHONE_NUMBER = "Phone Number"
-    CREDIT_CARD = "Credit Card"
-    SSN = "SSN"
-    LOCATION = "Location"
-
-
-class DetectPIIConfig(BaseModel):
-    """Detect PII configuration."""
+class DetectPIIConfig(GuardrailConfig):
+    class PIIParams(BaseModel):
+        pii_entities: list[str] = Field(
+            description="List of PII entity types to detect"
+        )
+        on_fail: str = Field(default="exception")
 
     config_id: Literal[GuardrailConfigId.DETECT_PII] = GuardrailConfigId.DETECT_PII
-    pii_entities: list[PIIEntity] = Field(description="List of PII entities to detect")
+    api_key: str
+    reject_message: str = "PII detected"
+    guard_url: str = "hub://guardrails/detect_pii"
+    guard_params: PIIParams = Field()
 
 
 class GibberishTextConfig(BaseModel):
@@ -219,7 +216,7 @@ class CodeScannerConfig(BaseModel):
     )
 
 
-GuardrailConfig = BanListConfig
+GuardrailConfig = Union[BanListConfig, DetectPIIConfig]
 
 
 class GuardrailsV2(BaseModel):

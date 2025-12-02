@@ -22,12 +22,11 @@ Endpoints:
 """
 
 import logging
-import os
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.manager import (
     AgentStatus,
@@ -36,6 +35,7 @@ from idun_agent_schema.manager import (
     ManagedAgentPatch,
     ManagedAgentRead,
 )
+from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,62 +54,6 @@ logger = logging.getLogger(__file__)
 PAGINATION_MAX_LIMIT = 1000
 PAGINATION_DEFAULT_LIMIT = 100
 API_KEY_PREFIX = "idun-"
-
-
-def _translate_guardrails_config(engine_config_dict: dict) -> dict:
-    if "guardrails" in engine_config_dict and engine_config_dict["guardrails"]:
-        guardrails = engine_config_dict["guardrails"]
-
-        if "input" in guardrails and guardrails["input"]:
-            guardrails["input"] = [
-                _enrich_old_guardrail_config(g) for g in guardrails["input"]
-            ]
-        if "output" in guardrails and guardrails["output"]:
-            guardrails["output"] = [
-                _enrich_old_guardrail_config(g) for g in guardrails["output"]
-            ]
-    return engine_config_dict
-
-
-def _enrich_old_guardrail_config(guardrail_dict: dict) -> dict:
-    if guardrail_dict.get("config_id") == "ban_list":
-        top_level_banned_words = guardrail_dict.get("banned_words", [])
-
-        if top_level_banned_words:
-            if (
-                isinstance(top_level_banned_words[0], str)
-                and "," in top_level_banned_words[0]
-            ):
-                top_level_banned_words = [
-                    word.strip()
-                    for word in top_level_banned_words[0].split(",")
-                    if word.strip()
-                ]
-
-        if "api_key" in guardrail_dict:
-            if top_level_banned_words:
-                if "guard_params" not in guardrail_dict:
-                    guardrail_dict["guard_params"] = {}
-                guardrail_dict["guard_params"]["banned_words"] = top_level_banned_words
-            return guardrail_dict
-
-        api_key = os.getenv("GUARDRAILS_API_KEY")
-        if not api_key:
-            raise ValueError("GUARDRAILS_API_KEY not found in environment")
-
-        reject_message = os.getenv(
-            "GUARDRAILS_DEFAULT_REJECT_MESSAGE", "Content blocked by guardrails"
-        )
-
-        return {
-            "config_id": "ban_list",
-            "api_key": api_key,
-            "guard_url": "hub://guardrails/ban_list",
-            "reject_message": reject_message,
-            "guard_params": {"banned_words": top_level_banned_words},
-        }
-
-    return guardrail_dict
 
 
 async def _get_agent(agent_id: str, session: AsyncSession) -> ManagedAgentModel:
@@ -140,17 +84,15 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
     Returns:
         ManagedAgentRead: Pydantic response model
     """
-
-    engine_config_dict = _translate_guardrails_config(model.engine_config.copy())
-    engine_config = EngineConfig(**engine_config_dict)
+    engine_config = EngineConfig(**model.engine_config)
 
     return ManagedAgentRead(
-        id=model.id,
+        id=model.id,  # type: ignore
         base_url=model.base_url,
         name=model.name,
         status=AgentStatus(model.status),
         version=model.version,
-        engine_config=engine_config.model_dump(),
+        engine_config=engine_config.model_dump(),  # type: ignore
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -187,10 +129,7 @@ async def create_agent(
 
     # Validate engine config
 
-    engine_config_dict = _translate_guardrails_config(
-        request.engine_config.model_dump()
-    )
-    engine_config = EngineConfig(**engine_config_dict)
+    engine_config = EngineConfig(**request.engine_config.model_dump())
 
     # Create database model instance (status persisted as string)
     model = ManagedAgentModel(
@@ -439,24 +378,42 @@ async def delete_agent(
     description="Partially update an agent's configuration. Only the name andengine_config field can be updated if provided.",
 )
 async def patch_agent(
+    #    client_key: str,
     id: str,
-    request_body: dict,
+    raw_request: Request,
+    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> ManagedAgentRead:
-    """Partially update an agent's configuration."""
+    """Partially update an agent's configuration.
+
+    Only updates fields that are explicitly provided in the request.
+    Currently supports updating engine_config. If engine_config is provided,
+    it replaces the existing configuration and updates the updated_at timestamp.
+
+    Args:
+        id: Agent UUID
+        request: Partial update containing optional engine_config
+        session: Database session (injected)
+
+    Returns:
+        ManagedAgentCreate: The updated agent
+
+    Raises:
+        HTTPException 400: Invalid agent ID format
+        HTTPException 404: Agent not found
+    """
     model = await _get_agent(id, session)
 
-    model.name = request_body.get("name")
-    model.base_url = request_body.get("base_url")
+    body = await raw_request.json()
 
-    engine_config_dict = _translate_guardrails_config(
-        request_body.get("engine_config", {})
-    )
-    import pdb
+    if "engine_config" in body and "guardrails" in body["engine_config"]:
+        body["engine_config"]["guardrails"] = convert_guardrail(body["engine_config"]["guardrails"])
 
-    pdb.set_trace()
-    engine_config = EngineConfig(**engine_config_dict)
+    request = ManagedAgentPatch(**body)
 
+    model.name = request.name
+    model.base_url = request.base_url
+    engine_config = EngineConfig(**request.engine_config.model_dump())
     model.engine_config = engine_config.model_dump()
     model.updated_at = datetime.now(UTC)
 

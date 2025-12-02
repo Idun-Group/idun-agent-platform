@@ -14,6 +14,11 @@ def get_guard_instance(name: GuardrailConfigId) -> Guard:
 
         return BanList
 
+    elif name.value == "detect_pii":
+        from guardrails.hub import DetectPII
+
+        return DetectPII
+
     elif name.value == "nsfw":
         from guardrails.hub import NSFWText
 
@@ -89,9 +94,6 @@ class GuardrailsHubGuard(BaseGuardrail):
         guard_instance = guard(**guard_instance_params)
         for param, value in guard_instance_params.items():
             setattr(guard_instance, param, value)
-        import pdb
-
-        pdb.set_trace()
         return guard_instance
 
     def validate(self, input: str) -> bool:
