@@ -18,6 +18,7 @@ import SigninPage from './pages/signin/page';
 import { useEffect } from 'react';
 import { useAuth } from './hooks/use-auth';
 import ApplicationPage from './pages/application-page/page';
+import MemoryPage from './pages/memory-page/page';
 import Loader from './components/general/loader/component';
 import { useLoader } from './hooks/use-loader';
 import ObservationPage from './pages/observation/page';
@@ -154,7 +155,7 @@ function App() {
                             <ContentLayout>
                                 <SideBar />
                                 <MainContent>
-                                    <ApplicationPage category="Memory" />
+                                    <MemoryPage />
                                 </MainContent>
                             </ContentLayout>
                         </AppLayout>

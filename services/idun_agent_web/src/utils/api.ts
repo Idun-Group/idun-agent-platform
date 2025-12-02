@@ -46,7 +46,9 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
         });
         if (!hasNotifiedOn401) {
             hasNotifiedOn401 = true;
-            try { toast.error('Unauthorized (401). Please check your access.'); } catch {}
+            try { 
+                // toast.error('Unauthorized (401). Please check your access.'); 
+            } catch {}
             setTimeout(() => { hasNotifiedOn401 = false; }, 2000);
         }
         throw new Error('unauthorized');
