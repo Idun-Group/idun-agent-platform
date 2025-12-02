@@ -82,7 +82,7 @@
       ],
       "cwd": "${workspaceFolder}/libs/idun_agent_engine",
       "justMyCode": false,
-      "envFile": "${workspaceFolder}/libs/idun_agent_engine/.env",
+      "envFile": "${workspaceFolder}/.env",
       "env": {
         "IDUN_MANAGER_HOST": "http://0.0.0.0:8000",
         "IDUN_AGENT_API_KEY": "${input:agentApiKey}"
