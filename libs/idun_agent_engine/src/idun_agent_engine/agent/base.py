@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from idun_agent_schema.engine.agent import BaseAgentConfig
+from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 
 
 class BaseAgent[ConfigType: BaseAgentConfig](ABC):
@@ -63,13 +64,18 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
         pass
 
     @abstractmethod
-    async def initialize(self, config: dict[str, Any]) -> None:
+    async def initialize(
+        self,
+        config: dict[str, Any],
+        observability: list[ObservabilityConfig] | None = None,
+    ) -> None:
         """Initialize the agent with a given configuration.
 
         This method should set up the underlying agent framework instance.
 
         Args:
             config: A dictionary containing the agent's configuration.
+            observability: Optional list of observability configurations.
         """
         pass
 

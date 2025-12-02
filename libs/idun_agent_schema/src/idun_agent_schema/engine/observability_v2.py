@@ -5,7 +5,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+from pydantic.alias_generators import to_camel
 
 from enum import Enum
 
@@ -22,6 +23,10 @@ class ObservabilityProvider(str, Enum):
 
 class ObservabilityConfig(BaseModel):
     """Observability configuration."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     provider: ObservabilityProvider = Field(default=ObservabilityProvider.LANGFUSE)
     enabled: bool = Field(default=True)
@@ -29,6 +34,10 @@ class ObservabilityConfig(BaseModel):
 
 class LangfuseConfig(BaseModel):
     """Langfuse configuration."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     host: str = Field(default="https://cloud.langfuse.com")
     public_key: str = Field(default="")
@@ -37,21 +46,30 @@ class LangfuseConfig(BaseModel):
 
 class PhoenixConfig(BaseModel):
     """Phoenix configuration."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     collector_endpoint: str = Field(default="https://collector.phoenix.com")
     project_name: str = Field(default="")
 
 # class PhoenixLocalConfig(BaseModel):
 #     """Phoenix Local configuration."""
-
+#
 #     collector_endpoint: str = Field(default="http://0.0.0.0:6006")
 #     project_name: str = Field(default="")
 
 class GCPLoggingConfig(BaseModel):
     """GCP Logging configuration."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     project_id: str = Field(
         default="",
+        alias="gcpProjectId",
         description="The project identifier where logs and traces will be sent."
     )
     region: str = Field(
@@ -77,9 +95,14 @@ class GCPLoggingConfig(BaseModel):
 
 class GCPTraceConfig(BaseModel):
     """GCP Trace configuration."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     project_id: str = Field(
         default="",
+        alias="gcpProjectId",
         description="The project identifier where logs and traces will be sent."
     )
     region: str = Field(
@@ -108,6 +131,10 @@ class GCPTraceConfig(BaseModel):
 
 class LangsmithConfig(BaseModel):
     """Langsmith configuration."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     api_key: str = Field(
         default="",

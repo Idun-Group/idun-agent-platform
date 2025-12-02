@@ -145,7 +145,9 @@ export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps)
                 <FrameworkBadge>{agent.framework}</FrameworkBadge>
             </TableCell>
             <TableCell data-column="a2a" style={{ textAlign: getColumnAlignment('a2a') }}>
-                <A2ABadge>Activé</A2ABadge>
+                <A2ABadge>
+                    Activé
+                </A2ABadge>
             </TableCell>
             <ActionsContainer
                 data-column="actions"
@@ -217,9 +219,9 @@ const FrameworkBadge = styled.span`
     border: 1px solid rgba(140, 82, 255, 0.3);
 `;
 
-const A2ABadge = styled.span`
-    background: rgba(16, 185, 129, 0.2);
-    color: #34d399;
+const A2ABadge = styled.span<{ $active?: boolean }>`
+    background: ${props => props.$active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.2)'};
+    color: ${props => props.$active ? '#34d399' : '#9ca3af'};
     padding: 4px 8px;
     border-radius: 16px;
     font-size: 12px;
@@ -229,5 +231,5 @@ const A2ABadge = styled.span`
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    border: 1px solid ${props => props.$active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(107, 114, 128, 0.3)'};
 `;

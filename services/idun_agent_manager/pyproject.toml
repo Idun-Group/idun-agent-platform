@@ -6,7 +6,7 @@ description = "Modern FastAPI backend for managing AI agents with PostgreSQL, SQ
 readme = "README.md"
 license = { text = "MIT" }
 authors = [ { name = "Idun Group", email = "contact@idun-group.com" } ]
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12,<3.13"
 
 dependencies = [
   # Core web framework
@@ -28,6 +28,7 @@ dependencies = [
   # Security & Auth
   "python-jose[cryptography]>=3.3.0,<4.0.0",
   "passlib[bcrypt]>=1.7.4,<2.0.0",
+  "authlib",
 
   # HTTP & Utilities
   "httpx>=0.28.1,<0.29.0",
@@ -46,8 +47,9 @@ dependencies = [
   "structlog>=23.2.0,<24.0.0",
 
   # Idun schemas
-  "idun-agent-schema>=0.2.0,<0.3.0",
+  "idun-agent-schema>=0.3.1,<1.0.0",
 ]
+
 
 ## uv configuration
 [tool.uv]
@@ -74,6 +76,7 @@ dev = [
   "types-passlib==1.7.7",
 
   "psycopg2-binary>=2.9.10,<3.0.0",  # Sync PostgreSQL driver (required by Alembic)
+  "debugpy>=1.8.0",
 ]
 
 [build-system]
@@ -91,7 +94,7 @@ packages = [
 ]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py312"
 line-length = 88
 extend-exclude = ["migrations", "alembic"]
 
@@ -113,11 +116,11 @@ ignore = [
 
 [tool.black]
 line-length = 88
-target-version = ["py313"]
+target-version = ["py312"]
 include = '\.pyi?$'
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

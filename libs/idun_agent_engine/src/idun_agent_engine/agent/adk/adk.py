@@ -23,9 +23,11 @@ from idun_agent_schema.engine.adk import (
     AdkVertexAiMemoryConfig,
     AdkVertexAiSessionConfig,
 )
+from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 
 from ag_ui_adk import ADKAgent as ADKAGUIAgent
 from idun_agent_engine.agent import base as agent_base
+from idun_agent_engine import observability
 
 
 class AdkAgent(agent_base.BaseAgent):
@@ -46,6 +48,8 @@ class AdkAgent(agent_base.BaseAgent):
         }
         self._session_service: Any = None
         self._memory_service: Any = None
+        # Observability (provider-agnostic)
+        self._obs_callbacks: list[Any] | None = None
 
     @property
     def id(self) -> str:
@@ -105,12 +109,69 @@ class AdkAgent(agent_base.BaseAgent):
         )
         return self._infos
 
-    async def initialize(self, config: AdkAgentConfig) -> None:
+    async def initialize(
+        self,
+        config: AdkAgentConfig,
+        observability_config: list[ObservabilityConfig] | None = None,
+    ) -> None:
         """Initialize the ADK agent asynchronously."""
         self._configuration = AdkAgentConfig.model_validate(config)
 
         self._name = self._configuration.app_name or "Unnamed ADK Agent"
         self._infos["name"] = self._name
+
+        # Observability (provider-agnostic)
+        if observability_config:
+            handlers, infos = observability.create_observability_handlers(
+                observability_config # type: ignore[arg-type]
+            )
+            self._obs_callbacks = []
+            for handler in handlers:
+                # Even if callbacks aren't used by ADK directly, instantiating the handler
+                # might set up global instrumentation (e.g. Phoenix, Langfuse env vars).
+                self._obs_callbacks.extend(handler.get_callbacks())
+
+            if infos:
+                self._infos["observability"] = infos
+
+        if observability_config:
+            try:
+                # Check if langfuse is enabled in any of the observability configs
+                def _is_langfuse_provider(c: Any) -> bool:
+                    provider = getattr(c, "provider", None)
+                    if provider is None and isinstance(c, dict):
+                        provider = c.get("provider")
+
+                    if provider is not None and hasattr(provider, "value"):
+                        provider = provider.value
+
+                    return str(provider).lower() == "langfuse"
+
+                is_langfuse_enabled = any(
+                    _is_langfuse_provider(config) for config in observability_config
+                )
+
+                if is_langfuse_enabled:
+                    import os
+                    langfuse_pk = os.environ.get("LANGFUSE_PUBLIC_KEY")
+                    langfuse_host = os.environ.get("LANGFUSE_BASE_URL")
+                    print(f"LANGFUSE_PUBLIC_KEY: {langfuse_pk}")
+                    print(f"LANGFUSE_BASE_URL: {langfuse_host}")
+                    try:
+                        from openinference.instrumentation.google_adk import (
+                            GoogleADKInstrumentor,
+                        )
+
+                        GoogleADKInstrumentor().instrument()
+                        print("GoogleADKInstrumentor instrumented successfully.")
+                    except ImportError:
+                        print(
+                            "openinference-instrumentation-google-adk not installed, skipping Google ADK instrumentation."
+                        )
+                    except Exception as e:
+                        print(f"Failed to instrument Google ADK: {e}")
+            except Exception as e:
+                print(f"Error checking observability config for ADK instrumentation: {e}")
 
         # Initialize Session Service
         await self._initialize_session_service()

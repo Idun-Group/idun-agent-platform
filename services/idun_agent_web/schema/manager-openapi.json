@@ -1,995 +1,3378 @@
 {
-  "openapi": "3.1.0",
-  "info": {
-    "title": "Idun Agent Manager API",
-    "description": "Idun service for managing AI agents",
-    "version": "0.1.0"
-  },
-  "paths": {
-    "/api/v1/agents/": {
-      "post": {
-        "tags": [
-          "Agents"
-        ],
-        "summary": "Create managed agent",
-        "description": "Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
-        "operationId": "create_agent_api_v1_agents__post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ManagedAgentCreate-Input"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ManagedAgentCreate-Output"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Agents"
-        ],
-        "summary": "List managed agents",
-        "description": "List all managed agents with pagination.",
-        "operationId": "list_agents_api_v1_agents__get",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 0,
-              "title": "Offset"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ManagedAgentRead"
-                  },
-                  "title": "Response List Agents Api V1 Agents  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Idun Agent Manager API",
+        "description": "Idun service for managing AI agents",
+        "version": "0.2.7"
     },
-    "/api/v1/agents/key": {
-      "get": {
-        "tags": [
-          "Agents"
-        ],
-        "summary": "Generate agent API key",
-        "description": "Generate a unique API key (hash) for an agent to authenticate API requests.",
-        "operationId": "generate_key_api_v1_agents_key_get",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiKeyResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/agents/config": {
-      "get": {
-        "tags": [
-          "Agents"
-        ],
-        "summary": "Get agent config by API key",
-        "description": "Retrieve agent configuration using API key authentication (Bearer token).",
-        "operationId": "config_api_v1_agents_config_get",
-        "parameters": [
-          {
-            "name": "auth",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Auth"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/agents/{id}": {
-      "get": {
-        "tags": [
-          "Agents"
-        ],
-        "summary": "Get managed agent by ID",
-        "description": "Retrieve a specific managed agent by its UUID with complete configuration details.",
-        "operationId": "get_agent_api_v1_agents__id__get",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ManagedAgentRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Agents"
-        ],
-        "summary": "Delete managed agent",
-        "description": "Permanently delete a managed agent and all its configuration data.",
-        "operationId": "delete_agent_api_v1_agents__id__delete",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Agents"
-        ],
-        "summary": "Partially update agent (PATCH)",
-        "description": "Partially update an agent's configuration. Only the name andengine_config field can be updated if provided.",
-        "operationId": "patch_agent_api_v1_agents__id__patch",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ManagedAgentPatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ManagedAgentRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/healthz": {
-      "get": {
-        "tags": [
-          "Health"
-        ],
-        "summary": "Health Check",
-        "description": "Basic health check.",
-        "operationId": "health_check_api_v1_healthz_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Health Check Api V1 Healthz Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/readyz": {
-      "get": {
-        "tags": [
-          "Health"
-        ],
-        "summary": "Readiness Check",
-        "description": "Readiness check including database connectivity.",
-        "operationId": "readiness_check_api_v1_readyz_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Readiness Check Api V1 Readyz Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/version": {
-      "get": {
-        "tags": [
-          "Health"
-        ],
-        "summary": "Version",
-        "description": "Get application version and name from FastAPI app metadata.",
-        "operationId": "version_api_v1_version_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Version Api V1 Version Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/": {
-      "get": {
-        "summary": "Root",
-        "description": "Root endpoint.",
-        "operationId": "root__get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Root  Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "schemas": {
-      "AgentConfig-Input": {
-        "properties": {
-          "type": {
-            "$ref": "#/components/schemas/AgentFramework"
-          },
-          "config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BaseAgentConfig"
-              },
-              {
-                "$ref": "#/components/schemas/LangGraphAgentConfig"
-              },
-              {
-                "$ref": "#/components/schemas/HaystackAgentConfig"
-              }
-            ],
-            "title": "Config"
-          }
-        },
-        "type": "object",
-        "required": [
-          "type",
-          "config"
-        ],
-        "title": "AgentConfig",
-        "description": "Configuration for agent specification and settings."
-      },
-      "AgentConfig-Output": {
-        "properties": {
-          "type": {
-            "$ref": "#/components/schemas/AgentFramework"
-          },
-          "config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BaseAgentConfig"
-              },
-              {
-                "$ref": "#/components/schemas/LangGraphAgentConfig"
-              },
-              {
-                "$ref": "#/components/schemas/HaystackAgentConfig"
-              }
-            ],
-            "title": "Config"
-          }
-        },
-        "type": "object",
-        "required": [
-          "type",
-          "config"
-        ],
-        "title": "AgentConfig",
-        "description": "Configuration for agent specification and settings."
-      },
-      "AgentFramework": {
-        "type": "string",
-        "enum": [
-          "LANGGRAPH",
-          "ADK",
-          "CREWAI",
-          "HAYSTACK",
-          "CUSTOM"
-        ],
-        "title": "AgentFramework",
-        "description": "Supported agent frameworks for engine."
-      },
-      "AgentStatus": {
-        "type": "string",
-        "enum": [
-          "draft",
-          "active",
-          "inactive",
-          "deprecated",
-          "error"
-        ],
-        "title": "AgentStatus",
-        "description": "Agent status enumeration."
-      },
-      "ApiKeyResponse": {
-        "properties": {
-          "api_key": {
-            "type": "string",
-            "title": "Api Key"
-          }
-        },
-        "type": "object",
-        "required": [
-          "api_key"
-        ],
-        "title": "ApiKeyResponse",
-        "description": "Response shape for a single agent resource."
-      },
-      "BaseAgentConfig": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "input_schema_definition": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Input Schema Definition"
-          },
-          "output_schema_definition": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Output Schema Definition"
-          },
-          "observability": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ObservabilityConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "BaseAgentConfig",
-        "description": "Base model for agent configurations. Extend for specific frameworks."
-      },
-      "EngineConfig-Input": {
-        "properties": {
-          "server": {
-            "$ref": "#/components/schemas/ServerConfig"
-          },
-          "agent": {
-            "$ref": "#/components/schemas/AgentConfig-Input"
-          }
-        },
-        "type": "object",
-        "required": [
-          "agent"
-        ],
-        "title": "EngineConfig",
-        "description": "Main engine configuration model for the entire Idun Agent Engine."
-      },
-      "EngineConfig-Output": {
-        "properties": {
-          "server": {
-            "$ref": "#/components/schemas/ServerConfig"
-          },
-          "agent": {
-            "$ref": "#/components/schemas/AgentConfig-Output"
-          }
-        },
-        "type": "object",
-        "required": [
-          "agent"
-        ],
-        "title": "EngineConfig",
-        "description": "Main engine configuration model for the entire Idun Agent Engine."
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
-      "HaystackAgentConfig": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "input_schema_definition": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Input Schema Definition"
-          },
-          "output_schema_definition": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Output Schema Definition"
-          },
-          "observability": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ObservabilityConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "type": {
-            "type": "string",
-            "const": "haystack",
-            "title": "Type",
-            "default": "haystack"
-          },
-          "component_type": {
-            "type": "string",
-            "enum": [
-              "pipeline",
-              "agent"
-            ],
-            "title": "Component Type"
-          },
-          "component_definition": {
-            "type": "string",
-            "title": "Component Definition"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "component_type",
-          "component_definition"
-        ],
-        "title": "HaystackAgentConfig",
-        "description": "Configuration model for Haystack Agents."
-      },
-      "LangGraphAgentConfig": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "input_schema_definition": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Input Schema Definition"
-          },
-          "output_schema_definition": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Output Schema Definition"
-          },
-          "observability": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ObservabilityConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "graph_definition": {
-            "type": "string",
-            "title": "Graph Definition"
-          },
-          "checkpointer": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SqliteCheckpointConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "store": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Store"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "graph_definition"
-        ],
-        "title": "LangGraphAgentConfig",
-        "description": "Configuration model for LangGraph agents."
-      },
-      "ManagedAgentCreate-Input": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version",
-            "description": "Agent version"
-          },
-          "engine_config": {
-            "$ref": "#/components/schemas/EngineConfig-Input",
-            "description": "Idun Agent Engine configuration"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "engine_config"
-        ],
-        "title": "ManagedAgentCreate",
-        "description": "Create managed agent model for requests."
-      },
-      "ManagedAgentCreate-Output": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version",
-            "description": "Agent version"
-          },
-          "engine_config": {
-            "$ref": "#/components/schemas/EngineConfig-Output",
-            "description": "Idun Agent Engine configuration"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "engine_config"
-        ],
-        "title": "ManagedAgentCreate",
-        "description": "Create managed agent model for requests."
-      },
-      "ManagedAgentPatch": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "engine_config": {
-            "$ref": "#/components/schemas/EngineConfig-Input",
-            "description": "Idun Agent Engine configuration"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "engine_config"
-        ],
-        "title": "ManagedAgentPatch",
-        "description": "Full replacement schema for PUT of a managed agent."
-      },
-      "ManagedAgentRead": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "status": {
-            "$ref": "#/components/schemas/AgentStatus",
-            "description": "Agent status",
-            "default": "draft"
-          },
-          "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version",
-            "description": "Agent version"
-          },
-          "engine_config": {
-            "$ref": "#/components/schemas/EngineConfig-Output",
-            "description": "Idun Agent Engine configuration"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "engine_config",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "ManagedAgentRead",
-        "description": "Complete managed agent model for responses."
-      },
-      "ObservabilityConfig": {
-        "properties": {
-          "provider": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Provider"
-          },
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled",
-            "default": false
-          },
-          "options": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Options"
-          }
-        },
-        "type": "object",
-        "title": "ObservabilityConfig",
-        "description": "Provider-agnostic observability configuration based on Pydantic.\n\nExample YAML:\n  observability:\n    provider: \"langfuse\"  # or \"phoenix\"\n    enabled: true\n    options:\n      host: ${LANGFUSE_HOST}\n      public_key: ${LANGFUSE_PUBLIC_KEY}\n      secret_key: ${LANGFUSE_SECRET_KEY}\n      run_name: \"my-run\""
-      },
-      "ServerAPIConfig": {
-        "properties": {
-          "port": {
-            "type": "integer",
-            "title": "Port",
-            "default": 8000
-          }
-        },
-        "type": "object",
-        "title": "ServerAPIConfig",
-        "description": "API server configuration."
-      },
-      "ServerConfig": {
-        "properties": {
-          "api": {
-            "$ref": "#/components/schemas/ServerAPIConfig"
-          }
-        },
-        "type": "object",
-        "title": "ServerConfig",
-        "description": "Configuration for the Engine's universal settings."
-      },
-      "SqliteCheckpointConfig": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "sqlite",
-            "title": "Type"
-          },
-          "db_url": {
-            "type": "string",
-            "title": "Db Url"
-          }
-        },
-        "type": "object",
-        "required": [
-          "type",
-          "db_url"
-        ],
-        "title": "SqliteCheckpointConfig",
-        "description": "Configuration for SQLite checkpointer."
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
+    "paths": {
+        "/api/v1/agents/": {
+            "post": {
+                "tags": ["Agents"],
+                "summary": "Create managed agent",
+                "description": "Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
+                "operationId": "create_agent_api_v1_agents__post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedAgentCreate-Input"
+                            }
+                        }
+                    }
                 },
-                {
-                  "type": "integer"
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedAgentCreate-Output"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
                 }
-              ]
             },
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          }
+            "get": {
+                "tags": ["Agents"],
+                "summary": "List managed agents",
+                "description": "List all managed agents with pagination.",
+                "operationId": "list_agents_api_v1_agents__get",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Offset"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ManagedAgentRead"
+                                    },
+                                    "title": "Response List Agents Api V1 Agents  Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         },
-        "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
-      }
+        "/api/v1/agents/key": {
+            "get": {
+                "tags": ["Agents"],
+                "summary": "Generate agent API key",
+                "description": "Generate a unique API key (hash) for an agent to authenticate API requests.",
+                "operationId": "generate_key_api_v1_agents_key_get",
+                "parameters": [
+                    {
+                        "name": "agent_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Agent Id" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiKeyResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/agents/config": {
+            "get": {
+                "tags": ["Agents"],
+                "summary": "Get agent config by API key",
+                "description": "Retrieve agent configuration using API key authentication (Bearer token).",
+                "operationId": "config_api_v1_agents_config_get",
+                "parameters": [
+                    {
+                        "name": "auth",
+                        "in": "header",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Auth" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": { "application/json": { "schema": {} } }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/agents/{id}": {
+            "get": {
+                "tags": ["Agents"],
+                "summary": "Get managed agent by ID",
+                "description": "Retrieve a specific managed agent by its UUID with complete configuration details.",
+                "operationId": "get_agent_api_v1_agents__id__get",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedAgentRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Agents"],
+                "summary": "Delete managed agent",
+                "description": "Permanently delete a managed agent and all its configuration data.",
+                "operationId": "delete_agent_api_v1_agents__id__delete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "204": { "description": "Successful Response" },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": ["Agents"],
+                "summary": "Partially update agent (PATCH)",
+                "description": "Partially update an agent's configuration. Only the name andengine_config field can be updated if provided.",
+                "operationId": "patch_agent_api_v1_agents__id__patch",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedAgentPatch"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedAgentRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/healthz": {
+            "get": {
+                "tags": ["Health"],
+                "summary": "Health Check",
+                "description": "Basic health check.",
+                "operationId": "health_check_api_v1_healthz_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    },
+                                    "type": "object",
+                                    "title": "Response Health Check Api V1 Healthz Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/readyz": {
+            "get": {
+                "tags": ["Health"],
+                "summary": "Readiness Check",
+                "description": "Readiness check including database connectivity.",
+                "operationId": "readiness_check_api_v1_readyz_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    },
+                                    "type": "object",
+                                    "title": "Response Readiness Check Api V1 Readyz Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/version": {
+            "get": {
+                "tags": ["Health"],
+                "summary": "Version",
+                "description": "Get application version and name from FastAPI app metadata.",
+                "operationId": "version_api_v1_version_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    },
+                                    "type": "object",
+                                    "title": "Response Version Api V1 Version Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mcp-servers/": {
+            "post": {
+                "tags": ["MCP Servers"],
+                "summary": "Create managed MCP server",
+                "description": "Create a new managed MCP server configuration.",
+                "operationId": "create_mcp_server_api_v1_mcp_servers__post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedMCPServerCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedMCPServerRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": ["MCP Servers"],
+                "summary": "List managed MCP servers",
+                "description": "List managed MCP server configurations with pagination.",
+                "operationId": "list_mcp_servers_api_v1_mcp_servers__get",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Offset"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ManagedMCPServerRead"
+                                    },
+                                    "title": "Response List Mcp Servers Api V1 Mcp Servers  Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/mcp-servers/{id}": {
+            "get": {
+                "tags": ["MCP Servers"],
+                "summary": "Get managed MCP server by ID",
+                "description": "Get a managed MCP server configuration by ID.",
+                "operationId": "get_mcp_server_api_v1_mcp_servers__id__get",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedMCPServerRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["MCP Servers"],
+                "summary": "Delete managed MCP server",
+                "description": "Delete a managed MCP server configuration permanently.",
+                "operationId": "delete_mcp_server_api_v1_mcp_servers__id__delete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "204": { "description": "Successful Response" },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": ["MCP Servers"],
+                "summary": "Update managed MCP server",
+                "description": "Update an MCP server configuration.",
+                "operationId": "patch_mcp_server_api_v1_mcp_servers__id__patch",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedMCPServerPatch"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedMCPServerRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/observability/": {
+            "post": {
+                "tags": ["Observability"],
+                "summary": "Create managed observability config",
+                "description": "Create a new managed observability configuration.",
+                "operationId": "create_observability_api_v1_observability__post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedObservabilityCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedObservabilityRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": ["Observability"],
+                "summary": "List managed observability configs",
+                "description": "List managed observability configurations with pagination.",
+                "operationId": "list_observabilities_api_v1_observability__get",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Offset"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ManagedObservabilityRead"
+                                    },
+                                    "title": "Response List Observabilities Api V1 Observability  Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/observability/{id}": {
+            "get": {
+                "tags": ["Observability"],
+                "summary": "Get managed observability config by ID",
+                "description": "Get a managed observability configuration by ID.",
+                "operationId": "get_observability_api_v1_observability__id__get",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedObservabilityRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Observability"],
+                "summary": "Delete managed observability config",
+                "description": "Delete a managed observability configuration permanently.",
+                "operationId": "delete_observability_api_v1_observability__id__delete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "204": { "description": "Successful Response" },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": ["Observability"],
+                "summary": "Update managed observability config",
+                "description": "Update an observability configuration.",
+                "operationId": "patch_observability_api_v1_observability__id__patch",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedObservabilityPatch"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedObservabilityRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/memory/": {
+            "post": {
+                "tags": ["Memory"],
+                "summary": "Create managed memory config",
+                "description": "Create a new managed memory configuration.",
+                "operationId": "create_memory_api_v1_memory__post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedMemoryCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedMemoryRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": ["Memory"],
+                "summary": "List managed memory configs",
+                "description": "List managed memory configurations with pagination.",
+                "operationId": "list_memories_api_v1_memory__get",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Offset"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ManagedMemoryRead"
+                                    },
+                                    "title": "Response List Memories Api V1 Memory  Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/memory/{id}": {
+            "get": {
+                "tags": ["Memory"],
+                "summary": "Get managed memory config by ID",
+                "description": "Get a managed memory configuration by ID.",
+                "operationId": "get_memory_api_v1_memory__id__get",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedMemoryRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Memory"],
+                "summary": "Delete managed memory config",
+                "description": "Delete a managed memory configuration permanently.",
+                "operationId": "delete_memory_api_v1_memory__id__delete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "204": { "description": "Successful Response" },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": ["Memory"],
+                "summary": "Update managed memory config",
+                "description": "Update a memory configuration.",
+                "operationId": "patch_memory_api_v1_memory__id__patch",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedMemoryPatch"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedMemoryRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/agent-frameworks/": {
+            "get": {
+                "tags": ["Agent Frameworks"],
+                "summary": "List available agent frameworks",
+                "description": "Retrieve the list of supported agent frameworks in the platform.",
+                "operationId": "list_agent_frameworks_api_v1_agent_frameworks__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": { "type": "string" },
+                                    "type": "array",
+                                    "title": "Response List Agent Frameworks Api V1 Agent Frameworks  Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/guardrails/": {
+            "post": {
+                "tags": ["Guardrails"],
+                "summary": "Create managed guardrail config",
+                "description": "Create a new managed guardrail configuration.",
+                "operationId": "create_guardrail_api_v1_guardrails__post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedGuardrailCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedGuardrailRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": ["Guardrails"],
+                "summary": "List managed guardrail configs",
+                "description": "List managed guardrail configurations with pagination.",
+                "operationId": "list_guardrails_api_v1_guardrails__get",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Offset"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ManagedGuardrailRead"
+                                    },
+                                    "title": "Response List Guardrails Api V1 Guardrails  Get"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/guardrails/{id}": {
+            "get": {
+                "tags": ["Guardrails"],
+                "summary": "Get managed guardrail config by ID",
+                "description": "Get a managed guardrail configuration by ID.",
+                "operationId": "get_guardrail_api_v1_guardrails__id__get",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedGuardrailRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Guardrails"],
+                "summary": "Delete managed guardrail config",
+                "description": "Delete a managed guardrail configuration permanently.",
+                "operationId": "delete_guardrail_api_v1_guardrails__id__delete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "responses": {
+                    "204": { "description": "Successful Response" },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": ["Guardrails"],
+                "summary": "Update managed guardrail config",
+                "description": "Update a guardrail configuration.",
+                "operationId": "patch_guardrail_api_v1_guardrails__id__patch",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "title": "Id" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ManagedGuardrailPatch"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ManagedGuardrailRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/": {
+            "get": {
+                "summary": "Root",
+                "description": "Root endpoint.",
+                "operationId": "root__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    },
+                                    "type": "object",
+                                    "title": "Response Root  Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AdkAgentConfig": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "input_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Input Schema Definition"
+                    },
+                    "output_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Output Schema Definition"
+                    },
+                    "observability": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/idun_agent_schema__engine__observability__ObservabilityConfig"
+                            },
+                            { "type": "null" }
+                        ]
+                    },
+                    "agent": {
+                        "type": "string",
+                        "title": "Agent",
+                        "description": "Agent definition (e.g. module.path:agent_instance)"
+                    },
+                    "app_name": {
+                        "type": "string",
+                        "title": "App Name",
+                        "description": "Application name for the agent"
+                    },
+                    "session_service": {
+                        "anyOf": [
+                            {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/AdkInMemorySessionConfig"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/AdkVertexAiSessionConfig"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/AdkDatabaseSessionConfig"
+                                    }
+                                ],
+                                "discriminator": {
+                                    "propertyName": "type",
+                                    "mapping": {
+                                        "database": "#/components/schemas/AdkDatabaseSessionConfig",
+                                        "in_memory": "#/components/schemas/AdkInMemorySessionConfig",
+                                        "vertex_ai": "#/components/schemas/AdkVertexAiSessionConfig"
+                                    }
+                                }
+                            },
+                            { "type": "null" }
+                        ],
+                        "title": "Session Service",
+                        "description": "Session service configuration"
+                    },
+                    "memory_service": {
+                        "anyOf": [
+                            {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/AdkInMemoryMemoryConfig"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/AdkVertexAiMemoryConfig"
+                                    }
+                                ],
+                                "discriminator": {
+                                    "propertyName": "type",
+                                    "mapping": {
+                                        "in_memory": "#/components/schemas/AdkInMemoryMemoryConfig",
+                                        "vertex_ai": "#/components/schemas/AdkVertexAiMemoryConfig"
+                                    }
+                                }
+                            },
+                            { "type": "null" }
+                        ],
+                        "title": "Memory Service",
+                        "description": "Memory service configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "agent", "app_name"],
+                "title": "AdkAgentConfig",
+                "description": "Configuration model for ADK agents."
+            },
+            "AdkDatabaseSessionConfig": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "database",
+                        "title": "Type",
+                        "default": "database"
+                    },
+                    "db_url": {
+                        "type": "string",
+                        "title": "Db Url",
+                        "description": "Database URL (e.g. postgresql://...)"
+                    }
+                },
+                "type": "object",
+                "required": ["db_url"],
+                "title": "AdkDatabaseSessionConfig",
+                "description": "Configuration for Database Session Service."
+            },
+            "AdkInMemoryMemoryConfig": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "in_memory",
+                        "title": "Type",
+                        "default": "in_memory"
+                    }
+                },
+                "type": "object",
+                "title": "AdkInMemoryMemoryConfig",
+                "description": "Configuration for In-Memory Memory Service."
+            },
+            "AdkInMemorySessionConfig": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "in_memory",
+                        "title": "Type",
+                        "default": "in_memory"
+                    }
+                },
+                "type": "object",
+                "title": "AdkInMemorySessionConfig",
+                "description": "Configuration for In-Memory Session Service."
+            },
+            "AdkVertexAiMemoryConfig": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "vertex_ai",
+                        "title": "Type",
+                        "default": "vertex_ai"
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "title": "Project Id",
+                        "description": "Google Cloud Project ID"
+                    },
+                    "location": {
+                        "type": "string",
+                        "title": "Location",
+                        "description": "Google Cloud Location"
+                    },
+                    "memory_bank_id": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }],
+                        "title": "Memory Bank Id",
+                        "description": "Vertex AI Memory Bank Resource ID"
+                    }
+                },
+                "type": "object",
+                "required": ["project_id", "location"],
+                "title": "AdkVertexAiMemoryConfig",
+                "description": "Configuration for Vertex AI Memory Service."
+            },
+            "AdkVertexAiSessionConfig": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "vertex_ai",
+                        "title": "Type",
+                        "default": "vertex_ai"
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "title": "Project Id",
+                        "description": "Google Cloud Project ID"
+                    },
+                    "location": {
+                        "type": "string",
+                        "title": "Location",
+                        "description": "Google Cloud Location (e.g. us-central1)"
+                    },
+                    "reasoning_engine_app_name": {
+                        "type": "string",
+                        "title": "Reasoning Engine App Name",
+                        "description": "Reasoning Engine Application Name or ID"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "project_id",
+                    "location",
+                    "reasoning_engine_app_name"
+                ],
+                "title": "AdkVertexAiSessionConfig",
+                "description": "Configuration for Vertex AI Session Service."
+            },
+            "AgentConfig-Input": {
+                "properties": {
+                    "type": { "$ref": "#/components/schemas/AgentFramework" },
+                    "config": {
+                        "anyOf": [
+                            { "$ref": "#/components/schemas/BaseAgentConfig" },
+                            {
+                                "$ref": "#/components/schemas/LangGraphAgentConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/HaystackAgentConfig"
+                            },
+                            { "$ref": "#/components/schemas/AdkAgentConfig" },
+                            {
+                                "$ref": "#/components/schemas/TranslationAgentConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/CorrectionAgentConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/DeepResearchAgentConfig"
+                            }
+                        ],
+                        "title": "Config"
+                    }
+                },
+                "type": "object",
+                "required": ["type", "config"],
+                "title": "AgentConfig",
+                "description": "Configuration for agent specification and settings."
+            },
+            "AgentConfig-Output": {
+                "properties": {
+                    "type": { "$ref": "#/components/schemas/AgentFramework" },
+                    "config": {
+                        "anyOf": [
+                            { "$ref": "#/components/schemas/BaseAgentConfig" },
+                            {
+                                "$ref": "#/components/schemas/LangGraphAgentConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/HaystackAgentConfig"
+                            },
+                            { "$ref": "#/components/schemas/AdkAgentConfig" },
+                            {
+                                "$ref": "#/components/schemas/TranslationAgentConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/CorrectionAgentConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/DeepResearchAgentConfig"
+                            }
+                        ],
+                        "title": "Config"
+                    }
+                },
+                "type": "object",
+                "required": ["type", "config"],
+                "title": "AgentConfig",
+                "description": "Configuration for agent specification and settings."
+            },
+            "AgentFramework": {
+                "type": "string",
+                "enum": [
+                    "LANGGRAPH",
+                    "ADK",
+                    "CREWAI",
+                    "HAYSTACK",
+                    "CUSTOM",
+                    "TRANSLATION_AGENT",
+                    "CORRECTION_AGENT",
+                    "DEEP_RESEARCH_AGENT"
+                ],
+                "title": "AgentFramework",
+                "description": "Supported agent frameworks for engine."
+            },
+            "AgentStatus": {
+                "type": "string",
+                "enum": ["draft", "active", "inactive", "deprecated", "error"],
+                "title": "AgentStatus",
+                "description": "Agent status enumeration."
+            },
+            "ApiKeyResponse": {
+                "properties": {
+                    "api_key": { "type": "string", "title": "Api Key" }
+                },
+                "type": "object",
+                "required": ["api_key"],
+                "title": "ApiKeyResponse",
+                "description": "Response shape for a single agent resource."
+            },
+            "BanListConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "ban_list",
+                        "title": "Config Id",
+                        "default": "ban_list"
+                    },
+                    "banned_words": {
+                        "items": { "type": "string" },
+                        "type": "array",
+                        "title": "Banned Words",
+                        "description": "A list of strings (words or phrases) to block"
+                    }
+                },
+                "type": "object",
+                "required": ["banned_words"],
+                "title": "BanListConfig",
+                "description": "Ban List configuration."
+            },
+            "BaseAgentConfig": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "input_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Input Schema Definition"
+                    },
+                    "output_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Output Schema Definition"
+                    },
+                    "observability": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/idun_agent_schema__engine__observability__ObservabilityConfig"
+                            },
+                            { "type": "null" }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": ["name"],
+                "title": "BaseAgentConfig",
+                "description": "Base model for agent configurations. Extend for specific frameworks."
+            },
+            "BiasCheckConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "bias_check",
+                        "title": "Config Id",
+                        "default": "bias_check"
+                    },
+                    "threshold": {
+                        "type": "number",
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Threshold",
+                        "description": "Sensitivity level for bias detection"
+                    }
+                },
+                "type": "object",
+                "required": ["threshold"],
+                "title": "BiasCheckConfig",
+                "description": "Bias Check configuration."
+            },
+            "CodeScannerConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "code_scanner",
+                        "title": "Config Id",
+                        "default": "code_scanner"
+                    },
+                    "allowed_languages": {
+                        "items": { "type": "string" },
+                        "type": "array",
+                        "title": "Allowed Languages",
+                        "description": "List of allowed programming languages"
+                    }
+                },
+                "type": "object",
+                "required": ["allowed_languages"],
+                "title": "CodeScannerConfig",
+                "description": "Code Scanner configuration."
+            },
+            "CompetitionCheckConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "competition_check",
+                        "title": "Config Id",
+                        "default": "competition_check"
+                    },
+                    "competitors": {
+                        "items": { "type": "string" },
+                        "type": "array",
+                        "title": "Competitors",
+                        "description": "Names of competitor companies or products"
+                    }
+                },
+                "type": "object",
+                "required": ["competitors"],
+                "title": "CompetitionCheckConfig",
+                "description": "Competition Check configuration."
+            },
+            "CorrectLanguageConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "correct_language",
+                        "title": "Config Id",
+                        "default": "correct_language"
+                    },
+                    "expected_languages": {
+                        "items": { "type": "string" },
+                        "type": "array",
+                        "title": "Expected Languages",
+                        "description": "Valid ISO language codes (e.g., en, fr, es)"
+                    }
+                },
+                "type": "object",
+                "required": ["expected_languages"],
+                "title": "CorrectLanguageConfig",
+                "description": "Correct Language configuration."
+            },
+            "CorrectionAgentConfig": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "input_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Input Schema Definition"
+                    },
+                    "output_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Output Schema Definition"
+                    },
+                    "observability": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/idun_agent_schema__engine__observability__ObservabilityConfig"
+                            },
+                            { "type": "null" }
+                        ]
+                    },
+                    "language": {
+                        "type": "string",
+                        "title": "Language",
+                        "description": "Language to correct text in",
+                        "default": "French"
+                    },
+                    "model_name": {
+                        "type": "string",
+                        "title": "Model Name",
+                        "description": "LLM model to use",
+                        "default": "gemini-2.5-flash"
+                    },
+                    "checkpointer": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SqliteCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/InMemoryCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/PostgresCheckpointConfig"
+                            },
+                            { "type": "null" }
+                        ],
+                        "title": "Checkpointer"
+                    }
+                },
+                "type": "object",
+                "required": ["name"],
+                "title": "CorrectionAgentConfig",
+                "description": "Configuration model for the Correction Agent Template."
+            },
+            "CustomLLMConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "custom_llm",
+                        "title": "Config Id",
+                        "default": "custom_llm"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "Name of the custom LLM config"
+                    },
+                    "model": {
+                        "$ref": "#/components/schemas/CustomLLMModel",
+                        "description": "Specific underlying Large Language Model"
+                    },
+                    "prompt": {
+                        "type": "string",
+                        "title": "Prompt",
+                        "description": "System instruction prompt"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "model", "prompt"],
+                "title": "CustomLLMConfig",
+                "description": "Custom LLM configuration."
+            },
+            "CustomLLMModel": {
+                "type": "string",
+                "enum": [
+                    "Gemini 2.5 flash lite",
+                    "Gemini 2.5 flash",
+                    "Gemini 2.5 pro",
+                    "Gemini 3 pro",
+                    "OpenAi GPT-5.1",
+                    "OpenAi GPT-5 mini",
+                    "OpenAi GPT-5 nano"
+                ],
+                "title": "CustomLLMModel",
+                "description": "Supported models for Custom LLM guardrail."
+            },
+            "DeepResearchAgentConfig": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "input_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Input Schema Definition"
+                    },
+                    "output_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Output Schema Definition"
+                    },
+                    "observability": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/idun_agent_schema__engine__observability__ObservabilityConfig"
+                            },
+                            { "type": "null" }
+                        ]
+                    },
+                    "model_name": {
+                        "type": "string",
+                        "title": "Model Name",
+                        "description": "LLM model to use",
+                        "default": "gemini-2.5-flash"
+                    },
+                    "project": {
+                        "type": "string",
+                        "title": "Project",
+                        "description": "Project identifier"
+                    },
+                    "region": {
+                        "type": "string",
+                        "title": "Region",
+                        "description": "Region identifier"
+                    },
+                    "tavily_api_key": {
+                        "type": "string",
+                        "title": "Tavily Api Key",
+                        "description": "Tavily API key for web search"
+                    },
+                    "system_prompt": {
+                        "type": "string",
+                        "title": "System Prompt",
+                        "description": "System prompt for the agent",
+                        "default": "Conduct research and write a polished report."
+                    },
+                    "checkpointer": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SqliteCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/InMemoryCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/PostgresCheckpointConfig"
+                            },
+                            { "type": "null" }
+                        ],
+                        "title": "Checkpointer"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "project", "region", "tavily_api_key"],
+                "title": "DeepResearchAgentConfig",
+                "description": "Configuration model for the Deep Research Agent Template."
+            },
+            "DetectJailbreakConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "detect_jailbreak",
+                        "title": "Config Id",
+                        "default": "detect_jailbreak"
+                    },
+                    "threshold": {
+                        "type": "number",
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Threshold",
+                        "description": "Sensitivity level for jailbreak detection"
+                    }
+                },
+                "type": "object",
+                "required": ["threshold"],
+                "title": "DetectJailbreakConfig",
+                "description": "Detect Jailbreak configuration."
+            },
+            "DetectPIIConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "detect_pii",
+                        "title": "Config Id",
+                        "default": "detect_pii"
+                    },
+                    "pii_entities": {
+                        "items": { "$ref": "#/components/schemas/PIIEntity" },
+                        "type": "array",
+                        "title": "Pii Entities",
+                        "description": "List of PII entities to detect"
+                    }
+                },
+                "type": "object",
+                "required": ["pii_entities"],
+                "title": "DetectPIIConfig",
+                "description": "Detect PII configuration."
+            },
+            "EngineConfig-Input": {
+                "properties": {
+                    "server": { "$ref": "#/components/schemas/ServerConfig" },
+                    "agent": {
+                        "$ref": "#/components/schemas/AgentConfig-Input"
+                    },
+                    "mcp_servers": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "$ref": "#/components/schemas/MCPServer"
+                                },
+                                "type": "array"
+                            },
+                            { "type": "null" }
+                        ],
+                        "title": "Mcp Servers"
+                    },
+                    "guardrails": {
+                        "anyOf": [
+                            { "$ref": "#/components/schemas/Guardrails-Input" },
+                            { "type": "null" }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": ["agent"],
+                "title": "EngineConfig",
+                "description": "Main engine configuration model for the entire Idun Agent Engine."
+            },
+            "EngineConfig-Output": {
+                "properties": {
+                    "server": { "$ref": "#/components/schemas/ServerConfig" },
+                    "agent": {
+                        "$ref": "#/components/schemas/AgentConfig-Output"
+                    },
+                    "mcp_servers": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "$ref": "#/components/schemas/MCPServer"
+                                },
+                                "type": "array"
+                            },
+                            { "type": "null" }
+                        ],
+                        "title": "Mcp Servers"
+                    },
+                    "guardrails": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Guardrails-Output"
+                            },
+                            { "type": "null" }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": ["agent"],
+                "title": "EngineConfig",
+                "description": "Main engine configuration model for the entire Idun Agent Engine."
+            },
+            "GCPLoggingConfig": {
+                "properties": {
+                    "project_id": {
+                        "type": "string",
+                        "title": "Project Id",
+                        "description": "The project identifier where logs and traces will be sent.",
+                        "default": ""
+                    },
+                    "region": {
+                        "type": "string",
+                        "title": "Region",
+                        "description": "(Optional) The specific region/zone associated with the resource (e.g., us-central1).",
+                        "default": ""
+                    },
+                    "log_name": {
+                        "type": "string",
+                        "title": "Log Name",
+                        "description": "The identifier for the log stream (e.g., application-log).",
+                        "default": ""
+                    },
+                    "resource_type": {
+                        "type": "string",
+                        "title": "Resource Type",
+                        "description": "The resource type label (e.g., global, gce_instance, cloud_run_revision).",
+                        "default": ""
+                    },
+                    "severity": {
+                        "type": "string",
+                        "title": "Severity",
+                        "description": "Minimum level to record (e.g., INFO, WARNING, ERROR, CRITICAL).",
+                        "default": "INFO"
+                    },
+                    "transport": {
+                        "type": "string",
+                        "title": "Transport",
+                        "description": "Selection for delivery method (e.g., BackgroundThread vs Synchronous).",
+                        "default": "BackgroundThread"
+                    }
+                },
+                "type": "object",
+                "title": "GCPLoggingConfig",
+                "description": "GCP Logging configuration."
+            },
+            "GCPTraceConfig": {
+                "properties": {
+                    "project_id": {
+                        "type": "string",
+                        "title": "Project Id",
+                        "description": "The project identifier where logs and traces will be sent.",
+                        "default": ""
+                    },
+                    "region": {
+                        "type": "string",
+                        "title": "Region",
+                        "description": "(Optional) The specific region/zone associated with the resource (e.g., us-central1).",
+                        "default": ""
+                    },
+                    "trace_name": {
+                        "type": "string",
+                        "title": "Trace Name",
+                        "description": "The name for the trace or tracing session.",
+                        "default": ""
+                    },
+                    "sampling_rate": {
+                        "type": "number",
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Sampling Rate",
+                        "description": "A number between 0.0 and 1.0 indicating the probability of a request being traced (e.g., 1.0 for 100%, 0.1 for 10%).",
+                        "default": 1.0
+                    },
+                    "flush_interval": {
+                        "type": "integer",
+                        "minimum": 0.0,
+                        "title": "Flush Interval",
+                        "description": "Time in seconds to wait before sending buffered traces to the cloud.",
+                        "default": 5
+                    },
+                    "ignore_urls": {
+                        "type": "string",
+                        "title": "Ignore Urls",
+                        "description": "A list or comma-separated string of URL paths to exclude from tracing (e.g., /health, /metrics).",
+                        "default": ""
+                    }
+                },
+                "type": "object",
+                "title": "GCPTraceConfig",
+                "description": "GCP Trace configuration."
+            },
+            "GibberishTextConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "gibberish_text",
+                        "title": "Config Id",
+                        "default": "gibberish_text"
+                    },
+                    "threshold": {
+                        "type": "number",
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Threshold",
+                        "description": "Sensitivity level for gibberish detection"
+                    }
+                },
+                "type": "object",
+                "required": ["threshold"],
+                "title": "GibberishTextConfig",
+                "description": "Gibberish Text configuration."
+            },
+            "Guardrail": {
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/GuardrailType",
+                        "description": "Type of guardrail to use"
+                    },
+                    "config": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Config",
+                        "description": "Configuration for the specific guardrail type"
+                    }
+                },
+                "type": "object",
+                "required": ["type", "config"],
+                "title": "Guardrail",
+                "description": "Base class for defining guardrails."
+            },
+            "GuardrailType": {
+                "type": "string",
+                "enum": ["CUSTOM_LLM", "GUARDRAILS_HUB"],
+                "title": "GuardrailType",
+                "description": "Enum for different guardrails."
+            },
+            "Guardrails-Input": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "title": "Enabled",
+                        "description": "enable/disable guardrails"
+                    },
+                    "input": {
+                        "items": { "$ref": "#/components/schemas/Guardrail" },
+                        "type": "array",
+                        "title": "Input",
+                        "description": "List of guardrails to apply to input messages"
+                    },
+                    "output": {
+                        "items": { "$ref": "#/components/schemas/Guardrail" },
+                        "type": "array",
+                        "title": "Output",
+                        "description": "List of guardrails to apply to output messages"
+                    }
+                },
+                "type": "object",
+                "required": ["enabled"],
+                "title": "Guardrails",
+                "description": "Class for specifying the engine's Guardrails configuration."
+            },
+            "Guardrails-Output": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "title": "Enabled",
+                        "description": "enable/disable guardrails"
+                    },
+                    "input": {
+                        "items": { "$ref": "#/components/schemas/Guardrail" },
+                        "type": "array",
+                        "title": "Input",
+                        "description": "List of guardrails to apply to input messages"
+                    },
+                    "output": {
+                        "items": { "$ref": "#/components/schemas/Guardrail" },
+                        "type": "array",
+                        "title": "Output",
+                        "description": "List of guardrails to apply to output messages"
+                    }
+                },
+                "type": "object",
+                "required": ["enabled"],
+                "title": "Guardrails",
+                "description": "Class for specifying the engine's Guardrails configuration."
+            },
+            "GuardrailsV2-Input": {
+                "properties": {
+                    "input": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/ModelArmorConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CustomLLMConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BanListConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BiasCheckConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CompetitionCheckConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CorrectLanguageConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/DetectPIIConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/GibberishTextConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/NSFWTextConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/DetectJailbreakConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/PromptInjectionConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/RagHallucinationConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/RestrictToTopicConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ToxicLanguageConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CodeScannerConfig"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Input",
+                        "description": "List of input guardrails"
+                    },
+                    "output": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/ModelArmorConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CustomLLMConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BanListConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BiasCheckConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CompetitionCheckConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CorrectLanguageConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/DetectPIIConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/GibberishTextConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/NSFWTextConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/DetectJailbreakConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/PromptInjectionConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/RagHallucinationConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/RestrictToTopicConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ToxicLanguageConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CodeScannerConfig"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Output",
+                        "description": "List of output guardrails"
+                    }
+                },
+                "type": "object",
+                "title": "GuardrailsV2",
+                "description": "Guardrails V2 configuration."
+            },
+            "GuardrailsV2-Output": {
+                "properties": {
+                    "input": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/ModelArmorConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CustomLLMConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BanListConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BiasCheckConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CompetitionCheckConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CorrectLanguageConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/DetectPIIConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/GibberishTextConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/NSFWTextConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/DetectJailbreakConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/PromptInjectionConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/RagHallucinationConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/RestrictToTopicConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ToxicLanguageConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CodeScannerConfig"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Input",
+                        "description": "List of input guardrails"
+                    },
+                    "output": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/ModelArmorConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CustomLLMConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BanListConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BiasCheckConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CompetitionCheckConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CorrectLanguageConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/DetectPIIConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/GibberishTextConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/NSFWTextConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/DetectJailbreakConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/PromptInjectionConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/RagHallucinationConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/RestrictToTopicConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ToxicLanguageConfig"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CodeScannerConfig"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Output",
+                        "description": "List of output guardrails"
+                    }
+                },
+                "type": "object",
+                "title": "GuardrailsV2",
+                "description": "Guardrails V2 configuration."
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "HaystackAgentConfig": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "input_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Input Schema Definition"
+                    },
+                    "output_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Output Schema Definition"
+                    },
+                    "observability": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/idun_agent_schema__engine__observability__ObservabilityConfig"
+                            },
+                            { "type": "null" }
+                        ]
+                    },
+                    "type": {
+                        "type": "string",
+                        "const": "haystack",
+                        "title": "Type",
+                        "default": "haystack"
+                    },
+                    "component_type": {
+                        "type": "string",
+                        "enum": ["pipeline", "agent"],
+                        "title": "Component Type"
+                    },
+                    "component_definition": {
+                        "type": "string",
+                        "title": "Component Definition"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "component_type", "component_definition"],
+                "title": "HaystackAgentConfig",
+                "description": "Configuration model for Haystack Agents."
+            },
+            "InMemoryCheckpointConfig": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "memory",
+                        "title": "Type"
+                    }
+                },
+                "type": "object",
+                "required": ["type"],
+                "title": "InMemoryCheckpointConfig",
+                "description": "Configuration for In-Memory checkpointer."
+            },
+            "LangGraphAgentConfig": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "input_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Input Schema Definition"
+                    },
+                    "output_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Output Schema Definition"
+                    },
+                    "observability": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/idun_agent_schema__engine__observability__ObservabilityConfig"
+                            },
+                            { "type": "null" }
+                        ]
+                    },
+                    "graph_definition": {
+                        "type": "string",
+                        "title": "Graph Definition"
+                    },
+                    "checkpointer": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SqliteCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/InMemoryCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/PostgresCheckpointConfig"
+                            },
+                            { "type": "null" }
+                        ],
+                        "title": "Checkpointer"
+                    },
+                    "store": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Store"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "graph_definition"],
+                "title": "LangGraphAgentConfig",
+                "description": "Configuration model for LangGraph agents."
+            },
+            "LangfuseConfig": {
+                "properties": {
+                    "host": {
+                        "type": "string",
+                        "title": "Host",
+                        "default": "https://cloud.langfuse.com"
+                    },
+                    "public_key": {
+                        "type": "string",
+                        "title": "Public Key",
+                        "default": ""
+                    },
+                    "secret_key": {
+                        "type": "string",
+                        "title": "Secret Key",
+                        "default": ""
+                    },
+                    "run_name": {
+                        "type": "string",
+                        "title": "Run Name",
+                        "default": ""
+                    }
+                },
+                "type": "object",
+                "title": "LangfuseConfig",
+                "description": "Langfuse configuration."
+            },
+            "LangsmithConfig": {
+                "properties": {
+                    "api_key": {
+                        "type": "string",
+                        "title": "Api Key",
+                        "description": "The unique authentication key from the LangSmith settings page.",
+                        "default": ""
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "title": "Project Id",
+                        "description": "The project identifier (corresponds to project id in LangSmith).",
+                        "default": ""
+                    },
+                    "project_name": {
+                        "type": "string",
+                        "title": "Project Name",
+                        "description": "The name of the project in LangSmith to bucket these traces under (e.g., prod-chatbot-v1).",
+                        "default": ""
+                    },
+                    "endpoint": {
+                        "type": "string",
+                        "title": "Endpoint",
+                        "description": "The URL endpoint, used primarily if you are self-hosting LangSmith or using a specific enterprise instance. (e.g., https://api.smith.langchain.com)",
+                        "default": ""
+                    },
+                    "trace_name": {
+                        "type": "string",
+                        "title": "Trace Name",
+                        "description": "The name for the trace or tracing session.",
+                        "default": ""
+                    },
+                    "tracing_enabled": {
+                        "type": "boolean",
+                        "title": "Tracing Enabled",
+                        "description": "A toggle to globally turn tracing on or off.",
+                        "default": false
+                    },
+                    "capture_inputs_outputs": {
+                        "type": "boolean",
+                        "title": "Capture Inputs Outputs",
+                        "description": "A toggle to decide if the full text of LLM inputs and outputs should be logged.",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "title": "LangsmithConfig",
+                "description": "Langsmith configuration."
+            },
+            "MCPServer": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "Unique identifier for this MCP server."
+                    },
+                    "transport": {
+                        "type": "string",
+                        "enum": [
+                            "stdio",
+                            "sse",
+                            "streamable_http",
+                            "websocket"
+                        ],
+                        "title": "Transport",
+                        "description": "Transport type used to reach the MCP server.",
+                        "default": "streamable_http"
+                    },
+                    "url": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }],
+                        "title": "Url",
+                        "description": "Endpoint URL for HTTP/S based transports (SSE, streamable_http, websocket)."
+                    },
+                    "command": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }],
+                        "title": "Command",
+                        "description": "Executable to run when using stdio transport."
+                    },
+                    "args": {
+                        "items": { "type": "string" },
+                        "type": "array",
+                        "title": "Args",
+                        "description": "Arguments to pass to the command for stdio transport."
+                    },
+                    "headers": {
+                        "additionalProperties": { "type": "string" },
+                        "type": "object",
+                        "title": "Headers",
+                        "description": "Optional headers for HTTP/S transports."
+                    },
+                    "env": {
+                        "additionalProperties": { "type": "string" },
+                        "type": "object",
+                        "title": "Env",
+                        "description": "Environment variables to set when spawning stdio servers."
+                    },
+                    "cwd": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }],
+                        "title": "Cwd",
+                        "description": "Working directory for stdio transports."
+                    },
+                    "encoding": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }],
+                        "title": "Encoding",
+                        "description": "Encoding used for stdio transport."
+                    },
+                    "encoding_error_handler": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "enum": ["strict", "ignore", "replace"]
+                            },
+                            { "type": "null" }
+                        ],
+                        "title": "Encoding Error Handler",
+                        "description": "Encoding error handler for stdio transport."
+                    },
+                    "timeout_seconds": {
+                        "anyOf": [{ "type": "number" }, { "type": "null" }],
+                        "title": "Timeout Seconds",
+                        "description": "Timeout in seconds for HTTP/S transports (maps to `timeout`)."
+                    },
+                    "sse_read_timeout_seconds": {
+                        "anyOf": [{ "type": "number" }, { "type": "null" }],
+                        "title": "Sse Read Timeout Seconds",
+                        "description": "Timeout in seconds waiting for SSE events (maps to `sse_read_timeout`)."
+                    },
+                    "terminate_on_close": {
+                        "anyOf": [{ "type": "boolean" }, { "type": "null" }],
+                        "title": "Terminate On Close",
+                        "description": "Whether to terminate Streamable HTTP sessions on close."
+                    },
+                    "session_kwargs": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Session Kwargs",
+                        "description": "Extra keyword arguments forwarded to MCP ClientSession."
+                    }
+                },
+                "type": "object",
+                "required": ["name"],
+                "title": "MCPServer",
+                "description": "Configuration for a single MCP server connection."
+            },
+            "ManagedAgentCreate-Input": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "version": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }],
+                        "title": "Version",
+                        "description": "Agent version"
+                    },
+                    "engine_config": {
+                        "$ref": "#/components/schemas/EngineConfig-Input",
+                        "description": "Idun Agent Engine configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "engine_config"],
+                "title": "ManagedAgentCreate",
+                "description": "Create managed agent model for requests."
+            },
+            "ManagedAgentCreate-Output": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "version": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }],
+                        "title": "Version",
+                        "description": "Agent version"
+                    },
+                    "engine_config": {
+                        "$ref": "#/components/schemas/EngineConfig-Output",
+                        "description": "Idun Agent Engine configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "engine_config"],
+                "title": "ManagedAgentCreate",
+                "description": "Create managed agent model for requests."
+            },
+            "ManagedAgentPatch": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "engine_config": {
+                        "$ref": "#/components/schemas/EngineConfig-Input",
+                        "description": "Idun Agent Engine configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "engine_config"],
+                "title": "ManagedAgentPatch",
+                "description": "Full replacement schema for PUT of a managed agent."
+            },
+            "ManagedAgentRead": {
+                "properties": {
+                    "id": { "type": "string", "format": "uuid", "title": "Id" },
+                    "name": { "type": "string", "title": "Name" },
+                    "status": {
+                        "$ref": "#/components/schemas/AgentStatus",
+                        "description": "Agent status",
+                        "default": "draft"
+                    },
+                    "version": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }],
+                        "title": "Version",
+                        "description": "Agent version"
+                    },
+                    "engine_config": {
+                        "$ref": "#/components/schemas/EngineConfig-Output",
+                        "description": "Idun Agent Engine configuration"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Updated At",
+                        "description": "Last update timestamp"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "engine_config",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "ManagedAgentRead",
+                "description": "Complete managed agent model for responses."
+            },
+            "ManagedGuardrailCreate": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "guardrail": {
+                        "$ref": "#/components/schemas/GuardrailsV2-Input",
+                        "description": "Guardrail configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "guardrail"],
+                "title": "ManagedGuardrailCreate",
+                "description": "Create managed guardrail model for requests."
+            },
+            "ManagedGuardrailPatch": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "guardrail": {
+                        "$ref": "#/components/schemas/GuardrailsV2-Input",
+                        "description": "Guardrail configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "guardrail"],
+                "title": "ManagedGuardrailPatch",
+                "description": "Full replacement schema for PUT of a managed guardrail."
+            },
+            "ManagedGuardrailRead": {
+                "properties": {
+                    "id": { "type": "string", "format": "uuid", "title": "Id" },
+                    "name": { "type": "string", "title": "Name" },
+                    "guardrail": {
+                        "$ref": "#/components/schemas/GuardrailsV2-Output",
+                        "description": "Guardrail configuration"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Updated At",
+                        "description": "Last update timestamp"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "guardrail",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "ManagedGuardrailRead",
+                "description": "Complete managed guardrail model for responses."
+            },
+            "ManagedMCPServerCreate": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "mcp_server": {
+                        "$ref": "#/components/schemas/MCPServer",
+                        "description": "MCP server configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "mcp_server"],
+                "title": "ManagedMCPServerCreate",
+                "description": "Create managed MCP server model for requests."
+            },
+            "ManagedMCPServerPatch": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "mcp_server": {
+                        "$ref": "#/components/schemas/MCPServer",
+                        "description": "MCP server configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "mcp_server"],
+                "title": "ManagedMCPServerPatch",
+                "description": "Full replacement schema for PUT of a managed MCP server."
+            },
+            "ManagedMCPServerRead": {
+                "properties": {
+                    "id": { "type": "string", "format": "uuid", "title": "Id" },
+                    "name": { "type": "string", "title": "Name" },
+                    "mcp_server": {
+                        "$ref": "#/components/schemas/MCPServer",
+                        "description": "MCP server configuration"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Updated At",
+                        "description": "Last update timestamp"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "mcp_server",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "ManagedMCPServerRead",
+                "description": "Complete managed MCP server model for responses."
+            },
+            "ManagedMemoryCreate": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "agent_framework": {
+                        "$ref": "#/components/schemas/AgentFramework",
+                        "description": "Agent framework"
+                    },
+                    "memory": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SqliteCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/InMemoryCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/PostgresCheckpointConfig"
+                            }
+                        ],
+                        "title": "Memory",
+                        "description": "Memory (checkpoint) configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "agent_framework", "memory"],
+                "title": "ManagedMemoryCreate",
+                "description": "Create managed memory model for requests."
+            },
+            "ManagedMemoryPatch": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "agent_framework": {
+                        "$ref": "#/components/schemas/AgentFramework",
+                        "description": "Agent framework"
+                    },
+                    "memory": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SqliteCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/InMemoryCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/PostgresCheckpointConfig"
+                            }
+                        ],
+                        "title": "Memory",
+                        "description": "Memory (checkpoint) configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "agent_framework", "memory"],
+                "title": "ManagedMemoryPatch",
+                "description": "Full replacement schema for PUT of a managed memory."
+            },
+            "ManagedMemoryRead": {
+                "properties": {
+                    "id": { "type": "string", "format": "uuid", "title": "Id" },
+                    "name": { "type": "string", "title": "Name" },
+                    "agent_framework": {
+                        "$ref": "#/components/schemas/AgentFramework",
+                        "description": "Agent framework"
+                    },
+                    "memory": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SqliteCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/InMemoryCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/PostgresCheckpointConfig"
+                            }
+                        ],
+                        "title": "Memory",
+                        "description": "Memory (checkpoint) configuration"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Updated At",
+                        "description": "Last update timestamp"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "agent_framework",
+                    "memory",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "ManagedMemoryRead",
+                "description": "Complete managed memory model for responses."
+            },
+            "ManagedObservabilityCreate": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "observability": {
+                        "$ref": "#/components/schemas/idun_agent_schema__engine__observability_v2__ObservabilityConfig",
+                        "description": "Observability configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "observability"],
+                "title": "ManagedObservabilityCreate",
+                "description": "Create managed observability model for requests."
+            },
+            "ManagedObservabilityPatch": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "observability": {
+                        "$ref": "#/components/schemas/idun_agent_schema__engine__observability_v2__ObservabilityConfig",
+                        "description": "Observability configuration"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "observability"],
+                "title": "ManagedObservabilityPatch",
+                "description": "Full replacement schema for PUT of a managed observability."
+            },
+            "ManagedObservabilityRead": {
+                "properties": {
+                    "id": { "type": "string", "format": "uuid", "title": "Id" },
+                    "name": { "type": "string", "title": "Name" },
+                    "observability": {
+                        "$ref": "#/components/schemas/idun_agent_schema__engine__observability_v2__ObservabilityConfig",
+                        "description": "Observability configuration"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Updated At",
+                        "description": "Last update timestamp"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "observability",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "ManagedObservabilityRead",
+                "description": "Complete managed observability model for responses."
+            },
+            "ModelArmorConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "model_armor",
+                        "title": "Config Id",
+                        "default": "model_armor"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "Name of the armor config"
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "title": "Project Id",
+                        "description": "ID of the project the model belongs to"
+                    },
+                    "location": {
+                        "type": "string",
+                        "title": "Location",
+                        "description": "Location of the model"
+                    },
+                    "template_id": {
+                        "type": "string",
+                        "title": "Template Id",
+                        "description": "ID of the template"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "project_id", "location", "template_id"],
+                "title": "ModelArmorConfig",
+                "description": "Model Armor configuration."
+            },
+            "NSFWTextConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "nsfw_text",
+                        "title": "Config Id",
+                        "default": "nsfw_text"
+                    },
+                    "threshold": {
+                        "type": "number",
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Threshold",
+                        "description": "Sensitivity level for NSFW content"
+                    }
+                },
+                "type": "object",
+                "required": ["threshold"],
+                "title": "NSFWTextConfig",
+                "description": "NSFW Text configuration."
+            },
+            "ObservabilityProvider": {
+                "type": "string",
+                "enum": [
+                    "LANGFUSE",
+                    "PHOENIX",
+                    "GCP_LOGGING",
+                    "GCP_TRACE",
+                    "LANGSMITH"
+                ],
+                "title": "ObservabilityProvider",
+                "description": "Supported observability providers."
+            },
+            "PIIEntity": {
+                "type": "string",
+                "enum": [
+                    "Email",
+                    "Phone Number",
+                    "Credit Card",
+                    "SSN",
+                    "Location"
+                ],
+                "title": "PIIEntity",
+                "description": "Personally Identifiable Information entities."
+            },
+            "PhoenixConfig": {
+                "properties": {
+                    "collector_endpoint": {
+                        "type": "string",
+                        "title": "Collector Endpoint",
+                        "default": "https://collector.phoenix.com"
+                    },
+                    "project_name": {
+                        "type": "string",
+                        "title": "Project Name",
+                        "default": ""
+                    }
+                },
+                "type": "object",
+                "title": "PhoenixConfig",
+                "description": "Phoenix configuration."
+            },
+            "PostgresCheckpointConfig": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "postgres",
+                        "title": "Type"
+                    },
+                    "db_url": { "type": "string", "title": "Db Url" }
+                },
+                "type": "object",
+                "required": ["type", "db_url"],
+                "title": "PostgresCheckpointConfig",
+                "description": "Configuration for Postgres checkpointer."
+            },
+            "PromptInjectionConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "prompt_injection",
+                        "title": "Config Id",
+                        "default": "prompt_injection"
+                    },
+                    "threshold": {
+                        "type": "number",
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Threshold",
+                        "description": "Sensitivity level for prompt injection"
+                    }
+                },
+                "type": "object",
+                "required": ["threshold"],
+                "title": "PromptInjectionConfig",
+                "description": "Prompt Injection configuration."
+            },
+            "RagHallucinationConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "rag_hallucination",
+                        "title": "Config Id",
+                        "default": "rag_hallucination"
+                    },
+                    "threshold": {
+                        "type": "number",
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Threshold",
+                        "description": "Sensitivity level for hallucination detection"
+                    }
+                },
+                "type": "object",
+                "required": ["threshold"],
+                "title": "RagHallucinationConfig",
+                "description": "RAG Hallucination configuration."
+            },
+            "RestrictToTopicConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "restrict_to_topic",
+                        "title": "Config Id",
+                        "default": "restrict_to_topic"
+                    },
+                    "topics": {
+                        "items": { "type": "string" },
+                        "type": "array",
+                        "title": "Topics",
+                        "description": "List of allowed topics"
+                    }
+                },
+                "type": "object",
+                "required": ["topics"],
+                "title": "RestrictToTopicConfig",
+                "description": "Restrict To Topic configuration."
+            },
+            "ServerAPIConfig": {
+                "properties": {
+                    "port": {
+                        "type": "integer",
+                        "title": "Port",
+                        "default": 8000
+                    }
+                },
+                "type": "object",
+                "title": "ServerAPIConfig",
+                "description": "API server configuration."
+            },
+            "ServerConfig": {
+                "properties": {
+                    "api": { "$ref": "#/components/schemas/ServerAPIConfig" }
+                },
+                "type": "object",
+                "title": "ServerConfig",
+                "description": "Configuration for the Engine's universal settings."
+            },
+            "SqliteCheckpointConfig": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "sqlite",
+                        "title": "Type"
+                    },
+                    "db_url": { "type": "string", "title": "Db Url" }
+                },
+                "type": "object",
+                "required": ["type", "db_url"],
+                "title": "SqliteCheckpointConfig",
+                "description": "Configuration for SQLite checkpointer."
+            },
+            "ToxicLanguageConfig": {
+                "properties": {
+                    "config_id": {
+                        "type": "string",
+                        "const": "toxic_language",
+                        "title": "Config Id",
+                        "default": "toxic_language"
+                    },
+                    "threshold": {
+                        "type": "number",
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Threshold",
+                        "description": "Sensitivity level for toxic language"
+                    }
+                },
+                "type": "object",
+                "required": ["threshold"],
+                "title": "ToxicLanguageConfig",
+                "description": "Toxic Language configuration."
+            },
+            "TranslationAgentConfig": {
+                "properties": {
+                    "name": { "type": "string", "title": "Name" },
+                    "input_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Input Schema Definition"
+                    },
+                    "output_schema_definition": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Output Schema Definition"
+                    },
+                    "observability": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/idun_agent_schema__engine__observability__ObservabilityConfig"
+                            },
+                            { "type": "null" }
+                        ]
+                    },
+                    "graph_definition": {
+                        "type": "string",
+                        "title": "Graph Definition"
+                    },
+                    "checkpointer": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SqliteCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/InMemoryCheckpointConfig"
+                            },
+                            {
+                                "$ref": "#/components/schemas/PostgresCheckpointConfig"
+                            },
+                            { "type": "null" }
+                        ],
+                        "title": "Checkpointer"
+                    },
+                    "store": {
+                        "anyOf": [
+                            { "additionalProperties": true, "type": "object" },
+                            { "type": "null" }
+                        ],
+                        "title": "Store"
+                    },
+                    "source_lang": {
+                        "type": "string",
+                        "title": "Source Lang",
+                        "description": "Source language to translate from",
+                        "default": "English"
+                    },
+                    "target_lang": {
+                        "type": "string",
+                        "title": "Target Lang",
+                        "description": "Target language to translate to",
+                        "default": "French"
+                    },
+                    "model_name": {
+                        "type": "string",
+                        "title": "Model Name",
+                        "description": "LLM model to use",
+                        "default": "gpt-3.5-turbo"
+                    }
+                },
+                "type": "object",
+                "required": ["name", "graph_definition"],
+                "title": "TranslationAgentConfig",
+                "description": "Configuration model for the Translation Agent Template."
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                { "type": "string" },
+                                { "type": "integer" }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": { "type": "string", "title": "Message" },
+                    "type": { "type": "string", "title": "Error Type" }
+                },
+                "type": "object",
+                "required": ["loc", "msg", "type"],
+                "title": "ValidationError"
+            },
+            "idun_agent_schema__engine__observability__ObservabilityConfig": {
+                "properties": {
+                    "provider": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }],
+                        "title": "Provider"
+                    },
+                    "enabled": {
+                        "type": "boolean",
+                        "title": "Enabled",
+                        "default": false
+                    },
+                    "options": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Options"
+                    }
+                },
+                "type": "object",
+                "title": "ObservabilityConfig",
+                "description": "Provider-agnostic observability configuration based on Pydantic.\n\nExample YAML:\n  observability:\n    provider: \"langfuse\"  # or \"phoenix\"\n    enabled: true\n    options:\n      host: ${LANGFUSE_HOST}\n      public_key: ${LANGFUSE_PUBLIC_KEY}\n      secret_key: ${LANGFUSE_SECRET_KEY}\n      run_name: \"my-run\""
+            },
+            "idun_agent_schema__engine__observability_v2__ObservabilityConfig": {
+                "properties": {
+                    "provider": {
+                        "$ref": "#/components/schemas/ObservabilityProvider",
+                        "default": "LANGFUSE"
+                    },
+                    "enabled": {
+                        "type": "boolean",
+                        "title": "Enabled",
+                        "default": true
+                    },
+                    "config": {
+                        "anyOf": [
+                            { "$ref": "#/components/schemas/LangfuseConfig" },
+                            { "$ref": "#/components/schemas/PhoenixConfig" },
+                            { "$ref": "#/components/schemas/GCPLoggingConfig" },
+                            { "$ref": "#/components/schemas/GCPTraceConfig" },
+                            { "$ref": "#/components/schemas/LangsmithConfig" }
+                        ],
+                        "title": "Config"
+                    }
+                },
+                "type": "object",
+                "required": ["config"],
+                "title": "ObservabilityConfig",
+                "description": "Observability configuration."
+            }
+        }
     }
-  }
 }

@@ -1,0 +1,3 @@
+import { Plugin } from './types.cjs';
+export declare function useAllowedResponseHeaders(allowedHeaders: string[]): Plugin;
+export declare function useAllowedRequestHeaders(allowedHeaders: string[]): Plugin;

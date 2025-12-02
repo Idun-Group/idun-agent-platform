@@ -10,7 +10,7 @@ const meta: Meta<typeof SideBar> = {
         docs: {
             description: {
                 component:
-                    'Navigation sidebar with menu items for the Idun Engine dashboard. Features active state management and routing integration.',
+                    'Navigation sidebar with menu items for the Idun Agent Platform dashboard. Features active state management and routing integration.',
             },
         },
     },

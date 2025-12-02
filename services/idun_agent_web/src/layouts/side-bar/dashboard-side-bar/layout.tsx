@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
 import { useState, useEffect, type ComponentType } from 'react';
-import { UserIcon, Settings } from 'lucide-react';
+import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
@@ -45,27 +45,33 @@ const SideBar = ({}: SideBarProps) => {
             path: '/agents',
             onClick: () => navigate('/agents'),
         },
-        // {
-        //     // leave users icon as-is per request
-        //     icon: UserIcon,
-        //     label: t('sidebar.users'),
-        //     key: 'users',
-        //     path: '/users',
-        //     onClick: () => navigate('/users'),
-        // },
         {
-            iconSrc: '/img/tools.svg',
-            label: t('sidebar.tools'),
-            key: 'tools',
-            path: '/tools',
-            onClick: () => navigate('/tools'),
+            icon: Activity,
+            label: t('sidebar.observability', 'Observability'),
+            key: 'observability',
+            path: '/observability',
+            onClick: () => navigate('/observability'),
         },
         {
-            iconSrc: '/img/guardrail.svg',
+            icon: Database,
+            label: t('sidebar.memory', 'Memory'),
+            key: 'memory',
+            path: '/memory',
+            onClick: () => navigate('/memory'),
+        },
+        {
+            icon: Wrench,
+            label: t('sidebar.mcp', 'MCP'),
+            key: 'mcp',
+            path: '/mcp',
+            onClick: () => navigate('/mcp'),
+        },
+        {
+            icon: ShieldCheck,
             label: t('sidebar.guard'),
             key: 'guard',
-            path: '/guard',
-            onClick: () => navigate('/guard'),
+            path: '/guardrails',
+            onClick: () => navigate('/guardrails'),
         },
     ];
 
@@ -160,7 +166,7 @@ const SideBarContainer = styled.aside<{ $collapsed?: boolean }>`
     flex-shrink: 0;
     transition: width 300ms ease, background-color 300ms ease, color 300ms ease;
     position: relative;
-    z-index: 10;
+    z-index: 10; /* Lower z-index */
     padding-bottom: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')}; /* reserve space for fixed user area */
 `;
 
@@ -171,17 +177,7 @@ const SideBarNav = styled.nav<{ $collapsed?: boolean }>`
     flex-direction: column;
     ${({ $collapsed }) =>
         !$collapsed && `
-        /* Separator only for the top 4 items, only when expanded */
-        > button:nth-child(-n + 4) { position: relative; }
-        > button:nth-child(-n + 4)::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 1px;
-            background: rgb(130, 111, 149);
-        }
+        /* No separators currently applied */
     `}
 `;
 

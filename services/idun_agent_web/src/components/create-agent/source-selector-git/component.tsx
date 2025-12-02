@@ -67,7 +67,7 @@ const SourceSelectorGithub = ({
             ) : (
                 <>
                     <p>
-                        github n'est pas installer sur votre Idun Engine,
+                        Github n'est pas installé sur votre Idun Agent Platform,
                         veuillez l'installer ou contacter votre administrateur
                     </p>
                     <Button

@@ -8,6 +8,7 @@ setting up routes, dependencies, and lifecycle management behind the scenes.
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from ..server.lifespan import lifespan
 from ..server.routers.agent import agent_router
@@ -52,6 +53,14 @@ def create_app(
         version=__version__,
         docs_url="/docs",
         redoc_url="/redoc",
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     # Store configuration in app state for lifespan to use

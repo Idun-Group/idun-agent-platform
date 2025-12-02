@@ -4,10 +4,11 @@ This module provides a fluent API for building configuration objects using Pydan
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
-from idun_agent_schema.engine.guardrails import Guardrails
+from idun_agent_schema.engine.guardrails import Guardrails as GuardrailsV1
 import yaml
 from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.haystack import HaystackAgentConfig
@@ -15,12 +16,16 @@ from idun_agent_schema.engine.langgraph import (
     LangGraphAgentConfig,
     SqliteCheckpointConfig,
 )
-
+from idun_agent_schema.engine.adk import AdkAgentConfig
+from idun_agent_schema.engine.mcp_server import MCPServer
+from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2 as Guardrails
 from idun_agent_engine.server.server_config import ServerAPIConfig
 from yaml import YAMLError
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
+from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 
 
 class ConfigBuilder:
@@ -47,7 +52,8 @@ class ConfigBuilder:
         self._server_config = ServerConfig()
         self._agent_config: AgentConfig | None = None
         # TODO: add mcp_servers config
-
+        self._mcp_servers: list[MCPServer] | None = None
+        self._observability: list[ObservabilityConfig] | None = None
         self._guardrails: Guardrails | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
@@ -95,30 +101,62 @@ class ConfigBuilder:
 
         headers = {"auth": f"Bearer {agent_api_key}"}
         try:
-            response = requests.get(url=url, headers=headers)
+            print(f"Fetching config from {url + '/api/v1/agents/config'}")
+            response = requests.get(url=url + "/api/v1/agents/config", headers=headers)
             if response.status_code != 200:
                 raise ValueError(
                     f"Error sending retrieving config from url. response : {response.json()}"
                 )
             yaml_config = yaml.safe_load(response.text)
             try:
-                self._server_config = yaml_config["engine_config"]["server"]
+                self._server_config = yaml_config.get("engine_config", {}).get("server")
             except Exception as e:
                 raise YAMLError(
                     f"Failed to parse yaml file for  ServerConfig: {e}"
                 ) from e
             try:
-                self._agent_config = yaml_config["engine_config"]["agent"]
+                self._agent_config = yaml_config.get("engine_config", {}).get("agent")
             except Exception as e:
                 raise YAMLError(
-                    f"Failed to parse yaml file for AgentConfig: {e}"
+                    f"Failed to parse yaml file for Engine config: {e}"
                 ) from e
             try:
-                guardrails = yaml_config.get("guardrails", "")
-                if not guardrails:
-                    self._guardrails = Guardrails(enabled=False)
+                guardrails_data = yaml_config.get("engine_config", {}).get("guardrails")
+
+                if not guardrails_data:
+                    self._guardrails = None
+                else:
+                    converted_data = convert_guardrail(guardrails_data)
+                    self._guardrails = Guardrails.model_validate(converted_data)
+
             except Exception as e:
                 raise YAMLError(f"Failed to parse yaml file for Guardrails: {e}") from e
+
+            try:
+                observability_list = yaml_config.get("engine_config", {}).get(
+                    "observability"
+                )
+                if observability_list:
+                    self._observability = [
+                        ObservabilityConfig.model_validate(obs)
+                        for obs in observability_list
+                    ]
+                else:
+                    self._observability = None
+            except Exception as e:
+                raise YAMLError(
+                    f"Failed to parse yaml file for Observability: {e}"
+                ) from e
+            # try:
+            #     mcp_servers_list = yaml_config.get("engine_config", {}).get("mcp_servers") or yaml_config.get("engine_config", {}).get("mcpServers") # TODO to fix camelcase issues
+            #     if mcp_servers_list:
+            #         self._mcp_servers = [
+            #             MCPServer.model_validate(server) for server in mcp_servers_list
+            #         ]
+            #     else:
+            #         self._mcp_servers = None
+            # except Exception as e:
+            #     raise YAMLError(f"Failed to parse yaml file for MCP Servers: {e}") from e
 
             return self
 
@@ -218,6 +256,8 @@ class ConfigBuilder:
             server=self._server_config,
             agent=self._agent_config,
             guardrails=self._guardrails,
+            observability=self._observability,
+            mcp_servers=self._mcp_servers,
         )
 
     def build_dict(self) -> dict[str, Any]:
@@ -241,7 +281,9 @@ class ConfigBuilder:
         with open(file_path, "w") as f:
             yaml.dump(config, f, default_flow_style=False, indent=2)
 
-    async def build_and_initialize_agent(self) -> BaseAgent:
+    async def build_and_initialize_agent(
+        self, mcp_registry: Any | None = None
+    ) -> BaseAgent:
         """Build configuration and initialize the agent in one step.
 
         Returns:
@@ -251,14 +293,19 @@ class ConfigBuilder:
             ValueError: If agent type is unsupported or configuration is invalid
         """
         engine_config = self.build()
-        return await self.initialize_agent_from_config(engine_config)
+        return await self.initialize_agent_from_config(
+            engine_config, mcp_registry=mcp_registry
+        )
 
     @staticmethod
-    async def initialize_agent_from_config(engine_config: EngineConfig) -> BaseAgent:
+    async def initialize_agent_from_config(
+        engine_config: EngineConfig, mcp_registry: Any | None = None
+    ) -> BaseAgent:
         """Initialize an agent instance from a validated EngineConfig.
 
         Args:
             engine_config: Validated configuration object
+            mcp_registry: Optional MCP registry client.
 
         Returns:
             BaseAgent: Initialized agent instance
@@ -268,12 +315,15 @@ class ConfigBuilder:
         """
         agent_config_obj = engine_config.agent.config
         agent_type = engine_config.agent.type
-
+        observability_config = engine_config.observability
+        # mcp_servers = engine_config.mcp_servers
         # Initialize the appropriate agent
         agent_instance = None
         if agent_type == AgentFramework.LANGGRAPH:
             from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+            import os
 
+            print("Current directory: ", os.getcwd())  # TODO remove
             try:
                 validated_config = LangGraphAgentConfig.model_validate(agent_config_obj)
 
@@ -356,7 +406,7 @@ class ConfigBuilder:
                 ) from e
 
             os.environ["DEEP_RESEARCH_MODEL"] = deep_research_config.model_name
-            os.environ["DEEP_RESEARCH_PROMPT"] = deep_research_config.prompt
+            os.environ["DEEP_RESEARCH_PROMPT"] = deep_research_config.system_prompt
             os.environ["TAVILY_API_KEY"] = deep_research_config.tavily_api_key
 
             validated_config = LangGraphAgentConfig(
@@ -380,11 +430,24 @@ class ConfigBuilder:
                     f"Cannot validate into a HaystackAgentConfig model. Got {agent_config_obj}"
                 ) from e
             agent_instance = HaystackAgent()
+        elif agent_type == AgentFramework.ADK:
+            from idun_agent_engine.agent.adk.adk import AdkAgent
+
+            try:
+                validated_config = AdkAgentConfig.model_validate(agent_config_obj)
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot validate into a AdkAgentConfig model. Got {agent_config_obj}"
+                ) from e
+            agent_instance = AdkAgent()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration
-        await agent_instance.initialize(validated_config)  # type: ignore[arg-type]
+        await agent_instance.initialize(
+            validated_config,
+            observability_config,  # , mcp_registry=mcp_registry
+        )  # type: ignore[arg-type]
         return agent_instance
 
     @staticmethod
@@ -402,6 +465,7 @@ class ConfigBuilder:
         """
         if (
             agent_type == "langgraph"
+            or agent_type == AgentFramework.LANGGRAPH
             or agent_type == AgentFramework.TRANSLATION_AGENT
             or agent_type == AgentFramework.CORRECTION_AGENT
             or agent_type == AgentFramework.DEEP_RESEARCH_AGENT
@@ -477,17 +541,21 @@ class ConfigBuilder:
     @staticmethod
     async def load_and_initialize_agent(
         config_path: str = "config.yaml",
+        mcp_registry: Any | None = None,
     ) -> tuple[EngineConfig, BaseAgent]:
         """Load configuration and initialize agent in one step.
 
         Args:
             config_path: Path to the configuration YAML file
+            mcp_registry: Optional MCP registry client.
 
         Returns:
             tuple[EngineConfig, BaseAgent]: Configuration and initialized agent
         """
         engine_config = ConfigBuilder.load_from_file(config_path)
-        agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+        agent = await ConfigBuilder.initialize_agent_from_config(
+            engine_config, mcp_registry=mcp_registry
+        )
         return engine_config, agent
 
     @staticmethod
@@ -558,7 +626,8 @@ class ConfigBuilder:
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
         builder._guardrails = engine_config.guardrails
-
+        builder._observability = engine_config.observability
+        builder._mcp_servers = engine_config.mcp_servers
         return builder
 
     @classmethod
@@ -588,5 +657,7 @@ class ConfigBuilder:
         builder._server_config = engine_config.server
         builder._agent_config = engine_config.agent
         builder._guardrails = engine_config.guardrails
+        builder._observability = engine_config.observability
+        builder._mcp_servers = engine_config.mcp_servers
 
         return builder
