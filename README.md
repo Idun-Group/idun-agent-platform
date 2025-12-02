@@ -74,7 +74,7 @@ The manager UI will be available at `http://localhost:3000`
 
 ### 4. Create an Agent
 
-![Create Image]("images/create.png")
+![Create Image](images/create.png)
 Navigate to `http://localhost:3000` and create a new agent through the web interface. When creating your agent:
 - Specify the correct path to your agent's entrypoint in the graph definition field (e.g., for a LangGraph CompiledGraph, use `./agent.py:graph`)
 - Use an unused port in the base URL and ensure the same port is configured in the runtime settings
@@ -104,7 +104,7 @@ IDUN_MANAGER_HOST="http://localhost:3000" IDUN_AGENT_API_KEY=<YOUR-API_KEY> idun
 ### 7. Interact with Your Agent
 
 
-![Chat with agent]("images/chat.png")
+![Chat with agent](images/chat.png)
 
 Navigate to the API Info tab of your agent in the manager UI to communicate with your agent.
 
