@@ -1716,7 +1716,7 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
-version = "0.2.7"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "ag-ui-adk" },
@@ -1743,12 +1743,14 @@ dependencies = [
     { name = "langgraph" },
     { name = "langgraph-checkpoint-postgres" },
     { name = "langgraph-checkpoint-sqlite" },
+    { name = "mcp" },
     { name = "openinference-instrumentation-google-adk" },
     { name = "openinference-instrumentation-guardrails" },
     { name = "openinference-instrumentation-langchain" },
     { name = "openinference-instrumentation-mcp" },
     { name = "openinference-instrumentation-vertexai" },
     { name = "opentelemetry-exporter-gcp-trace" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "sqlalchemy" },
@@ -1779,13 +1781,13 @@ requires-dist = [
     { name = "arize-phoenix-otel", specifier = ">=0.2.0,<1.0.0" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "copilotkit", specifier = ">=0.1.72,<0.2.0" },
-    { name = "deepagents", specifier = ">=0.2.8,<0.3.0" },
+    { name = "deepagents", specifier = ">=0.2.8,<1.0.0" },
     { name = "fastapi", specifier = ">=0.115.0,<0.116.0" },
     { name = "google-adk", specifier = ">=1.19.0,<2.0.0" },
     { name = "google-cloud-logging", specifier = ">=3.10.0,<4.0.0" },
     { name = "guardrails-ai", specifier = ">=0.7.0,<0.8.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
-    { name = "idun-agent-schema", specifier = ">=0.2.7,<0.3.0" },
+    { name = "idun-agent-schema", specifier = ">=0.2.7,<1.0.0" },
     { name = "langchain", specifier = ">=1.0.0,<2.0.0" },
     { name = "langchain-core", specifier = ">=1.0.0,<2.0.0" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<4.0.0" },
@@ -1795,12 +1797,14 @@ requires-dist = [
     { name = "langgraph", specifier = ">=1.0.0,<2.0.0" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=3.0.0,<4.0.0" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0.0,<4.0.0" },
+    { name = "mcp", specifier = ">=1.0.0,<2.0.0" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.0,<1.0.0" },
     { name = "openinference-instrumentation-guardrails", specifier = ">=0.1.0,<1.0.0" },
     { name = "openinference-instrumentation-langchain", specifier = ">=0.1.13,<1.0.0" },
     { name = "openinference-instrumentation-mcp", specifier = ">=1.0.0,<2.0.0" },
     { name = "openinference-instrumentation-vertexai", specifier = ">=0.1.0,<1.0.0" },
     { name = "opentelemetry-exporter-gcp-trace", specifier = ">=1.6.0,<2.0.0" },
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.22.0,<2.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "sqlalchemy", specifier = ">=2.0.36,<3.0.0" },

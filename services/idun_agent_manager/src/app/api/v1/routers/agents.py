@@ -23,10 +23,10 @@ Endpoints:
 
 import logging
 from datetime import UTC, datetime
-from uuid import UUID, uuid4
 from typing import Any
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.manager import (
     AgentStatus,
@@ -35,11 +35,12 @@ from idun_agent_schema.manager import (
     ManagedAgentPatch,
     ManagedAgentRead,
 )
+from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_session, allow_user
+from app.api.v1.deps import allow_user, get_session
 from app.api.v1.routers.auth import encrypt_payload
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 
@@ -105,7 +106,7 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
     description="Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
 )
 async def create_agent(
-    request: ManagedAgentCreate,
+    raw_request: Request,
     #    client_key: str,
     #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
@@ -123,10 +124,14 @@ async def create_agent(
         HTTPException 400: Invalid agent id format
     """
 
-    # Set timestamps
-    now = datetime.now(UTC)
+    body = await raw_request.json()
 
-    # Validate engine config
+    if "engine_config" in body and "guardrails" in body["engine_config"]:
+        body["engine_config"]["guardrails"] = convert_guardrail(body["engine_config"]["guardrails"])
+
+    request = ManagedAgentCreate(**body)
+
+    now = datetime.now(UTC)
 
     engine_config = EngineConfig(**request.engine_config.model_dump())
 
@@ -379,7 +384,7 @@ async def delete_agent(
 async def patch_agent(
     #    client_key: str,
     id: str,
-    request: ManagedAgentPatch,
+    raw_request: Request,
     #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
 ) -> ManagedAgentRead:
@@ -403,18 +408,19 @@ async def patch_agent(
     """
     model = await _get_agent(id, session)
 
-    # Update name
+    body = await raw_request.json()
+
+    if "engine_config" in body and "guardrails" in body["engine_config"]:
+        body["engine_config"]["guardrails"] = convert_guardrail(body["engine_config"]["guardrails"])
+
+    request = ManagedAgentPatch(**body)
+
     model.name = request.name
-    # Update base url
     model.base_url = request.base_url
-    # Validate engine config
     engine_config = EngineConfig(**request.engine_config.model_dump())
-    # Update engine config
     model.engine_config = engine_config.model_dump()
-    # Update updated_at timestamp
     model.updated_at = datetime.now(UTC)
 
-    # Persist changes
     await session.flush()
     await session.refresh(model)
 

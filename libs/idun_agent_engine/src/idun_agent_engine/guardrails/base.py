@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from idun_agent_schema.engine.guardrails import Guardrail
+from idun_agent_schema.engine.guardrails_v2 import GuardrailConfig as Guardrail
 
 
 class BaseGuardrail(ABC):
