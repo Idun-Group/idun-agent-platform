@@ -43,35 +43,69 @@ The platform solves the fragmentation problem in the AI agent ecosystem—each f
 - **Centralized Management** – Control all your agents via CLI or web dashboard from one place
 - **Simple Configuration** – YAML-based configs that define agent setup and packaging requirements
 
-## Quick Start
+## Getting Started
 
-### 1. Clone The Repo
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Idun-Group/idun-agent-platform.git
+cd idun-agent-platform
 ```
 
-### 2. Start The Services 
-For conveniance, you can run the docker-compose file, which will spin-up the `idun-agent-manager`, and an example agent from `libs/idun_agent_engine/examples/01_basic_config_file` configured with the `idun-agent-engine`. It will load a saved config from the manager:
+### 2. Configure Environment Variables
+
+Copy the `.env` file and configure it with your settings:
 
 ```bash
-docker compose -f docker-compose.prod.yml up --build
+cp .env .env.local
 ```
 
-### 3. Chat With Your Agent
-You can now either use the `swagger-ui` by going to: ```http://localhost:8000/docs``` and using the `invoke` or `stream` endpoints, or via `curl`: 
+Update the required values in `.env.local` as needed. OIDC authentication is supported for both Okta and Auth0. Configure the `AUTH__` variables to match your authentication provider setup.
+
+### 3. Start the Platform
+
+Launch the Docker containers:
+
 ```bash
-curl -X POST "http://localhost:8000/agent/invoke" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Hello!", "session_id": "user-123"}'
+docker compose -f docker-compose.dev.yml up --build
 ```
 
-### 4. Manage your agents: 
-Now, head to the manager at `localhost:8080/docs` and start managing your agent! 
+The manager UI will be available at `http://localhost:3000`
 
+### 4. Create an Agent
+
+Navigate to `http://localhost:3000` and create a new agent through the web interface. When creating your agent:
+- Specify the correct path to your agent's entrypoint in the graph definition field (e.g., for a LangGraph CompiledGraph, use `./agent.py:graph`)
+- Use an unused port in the base URL and ensure the same port is configured in the runtime settings
+- Optionally add guardrails: Ban List (to block specific words/phrases) or PII Detector (to detect sensitive information). More guardrails will be supported soon.
+
+You can use this example agent as a reference: [https://github.com/Idun-Group/demo-adk-idun-agent](https://github.com/Idun-Group/demo-adk-idun-agent)
+
+### 5. Get the Agent API Key
+
+In the UI, go to the API Info tab for your agent and click the button to generate an API key. Copy this key.
+
+### 6. Launch the Agent Server
+
+Open a new terminal and set up the environment:
+
+```bash
+uv sync
+source .venv/bin/activate
+```
+
+Start the agent server with your API key:
+
+```bash
+IDUN_MANAGER_HOST="http://localhost:3000" IDUN_AGENT_API_KEY=<YOUR-API_KEY> idun agent serve --source=manager
+```
+
+### 7. Interact with Your Agent
+
+Navigate to the API Info tab of your agent in the manager UI to communicate with your agent.
 
 > [!TIP]
-> 📖 See the [full documentation](https://idun-group.github.io/idun-agent-platform/) for detailed guides and examples.
+> See the [full documentation](https://idun-group.github.io/idun-agent-platform/) for detailed guides and examples.
 
 ---
 
