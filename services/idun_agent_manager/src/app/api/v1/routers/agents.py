@@ -106,7 +106,7 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
     description="Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
 )
 async def create_agent(
-    request: ManagedAgentCreate,
+    raw_request: Request,
     #    client_key: str,
     #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
@@ -124,10 +124,14 @@ async def create_agent(
         HTTPException 400: Invalid agent id format
     """
 
-    # Set timestamps
-    now = datetime.now(UTC)
+    body = await raw_request.json()
 
-    # Validate engine config
+    if "engine_config" in body and "guardrails" in body["engine_config"]:
+        body["engine_config"]["guardrails"] = convert_guardrail(body["engine_config"]["guardrails"])
+
+    request = ManagedAgentCreate(**body)
+
+    now = datetime.now(UTC)
 
     engine_config = EngineConfig(**request.engine_config.model_dump())
 

@@ -25,6 +25,12 @@ def convert_guardrail(guardrails_data: dict) -> dict:
     if not guardrails_data:
         return guardrails_data
 
+    api_key = os.getenv("GUARDRAILS_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "GUARDRAILS_API_KEY environment variable must be set to use guardrails"
+        )
+
     converted = {"input": [], "output": []}
 
     for position in ["input", "output"]:
@@ -37,12 +43,19 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 and "banned_words" in guardrail
                 and "api_key" not in guardrail
             ):
+                banned_words = []
+                for word in guardrail["banned_words"]:
+                    if "," in word:
+                        banned_words.extend([w.strip() for w in word.split(",")])
+                    else:
+                        banned_words.append(word.strip())
+
                 migrated_guardrail = {
                     "config_id": "ban_list",
-                    "api_key": os.getenv("GUARDRAILS_API_KEY", ""),
+                    "api_key": api_key,
                     "reject_message": "ban!!",
                     "guard_url": "hub://guardrails/ban_list",
-                    "guard_params": {"banned_words": guardrail["banned_words"]},
+                    "guard_params": {"banned_words": banned_words},
                 }
                 converted[position].append(migrated_guardrail)
 
@@ -66,7 +79,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
 
                 migrated_guardrail = {
                     "config_id": "detect_pii",
-                    "api_key": os.getenv("GUARDRAILS_API_KEY", ""),
+                    "api_key": api_key,
                     "reject_message": "PII detected",
                     "guard_url": "hub://guardrails/detect_pii",
                     "guard_params": {
