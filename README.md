@@ -61,7 +61,8 @@ cd idun-agent-platform
 
 ### 2. Start the Platform
 
-> **Tip:** Make sure you start the docker daemon before running the container
+> [!TIP]
+> Make sure you start the docker daemon before running the container
 
 Launch the Docker containers:
 
@@ -98,7 +99,8 @@ source .venv/bin/activate
 
 Start the agent server with your API key:
 
-> **Note:** Before running the command below, make sure the agent source path that you defined when creating your agent, matches the path you're running the command from.
+> [!NOTE]
+> Before running the command below, make sure the agent source path that you defined when creating your agent, matches the path you're running the command from.
 
 ```bash
 IDUN_MANAGER_HOST="http://localhost:8000" IDUN_AGENT_API_KEY=<YOUR-API_KEY> idun agent serve --source=manager

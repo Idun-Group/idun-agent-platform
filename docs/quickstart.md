@@ -18,8 +18,9 @@ cd idun-agent-platform
 
 ## 2. Start the Platform
 
-!!! tip:
+!!! tip
     Make sure you start the docker daemon before running the container
+
 Launch the Docker containers:
 
 ```bash
