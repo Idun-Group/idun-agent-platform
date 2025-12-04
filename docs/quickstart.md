@@ -6,7 +6,7 @@ This guide will walk you through setting up the Idun Agent Platform and deployin
 
 Before you begin, make sure you have the following installed:
 
-- **Docker** and **Docker Compose** - Required for running the platform containers
+- **Docker** and **Docker Compose** - Required for running the platform containers. [Steps to install docker](https://docs.docker.com/get-started).
 - **Git** - For cloning the repository
 
 ## 1. Clone the Repository
@@ -18,6 +18,8 @@ cd idun-agent-platform
 
 ## 2. Start the Platform
 
+!!! tip:
+    Make sure you start the docker daemon before running the container
 Launch the Docker containers:
 
 ```bash
