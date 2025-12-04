@@ -1,31 +1,84 @@
 # Getting Started
 
-## Quickstart
+This guide will walk you through setting up the Idun Agent Platform and deploying your first agent.
 
-This guide will help you get started with Idun Agent Platform in minutes.
+## Prerequisites
 
-### Prerequisites
+Before you begin, make sure you have the following installed:
 
-You'll need Docker and Docker Compose installed on your system, with the correct environment variables.
+- **Docker** and **Docker Compose** - Required for running the platform containers
+- **Git** - For cloning the repository
 
-### Idun Manager + UI in Local
-
-Start the Idun Manager and UI using Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
-The UI will be available at `http://localhost:8080`.
-
-### Run Your First Agent
-
-Execute a simple agent to verify your installation:
+## 1. Clone the Repository
 
 ```bash
-idun serve .
+git clone https://github.com/Idun-Group/idun-agent-platform.git
+cd idun-agent-platform
 ```
 
-### Next Steps
+## 2. Configure Environment Variables
 
-Explore the Concepts section to learn more about the platform architecture and capabilities.
+Copy the `.env` file and configure it with your settings:
+
+```bash
+cp .env .env.local
+```
+
+Update the required values in `.env.local` as needed. OIDC authentication is supported for both Okta and Auth0. Configure the `AUTH__` variables to match your authentication provider setup.
+
+## 3. Start the Platform
+
+Launch the Docker containers:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+The manager UI will be available at `http://localhost:3000`
+
+## 4. Create an Agent
+
+![Create Image](images/create.png)
+
+Navigate to `http://localhost:3000` and create a new agent through the web interface. When creating your agent:
+
+- Specify the correct path to your agent's entrypoint in the graph definition field (e.g., for a LangGraph CompiledGraph, use `./agent.py:graph`)
+- Use an unused port in the base URL and ensure the same port is configured in the runtime settings
+- Optionally add guardrails: Ban List (to block specific words/phrases) or PII Detector (to detect sensitive information). More guardrails will be supported soon.
+
+You can use this example agent as a reference: [https://github.com/Idun-Group/demo-adk-idun-agent](https://github.com/Idun-Group/demo-adk-idun-agent)
+
+## 5. Get the Agent API Key
+
+In the UI, go to the API Info tab for your agent and click the button to generate an API key. Copy this key.
+
+## 6. Launch the Agent Server
+
+Open a new terminal and set up the environment:
+
+```bash
+uv sync
+source .venv/bin/activate
+```
+
+Start the agent server with your API key:
+
+```bash
+IDUN_MANAGER_HOST="http://localhost:3000" IDUN_AGENT_API_KEY=<YOUR-API_KEY> idun agent serve --source=manager
+```
+
+## 7. Interact with Your Agent
+
+![Chat with agent](images/chat.png)
+
+Navigate to the API Info tab of your agent in the manager UI to communicate with your agent.
+
+!!! tip
+    See the [full documentation](https://idun-group.github.io/idun-agent-platform/) for detailed guides and examples.
+
+## Next Steps
+
+- Explore the [Concepts](concepts/overview.md) section to understand the platform architecture
+- Check out the [Guides](guides/01-basic-configuration.md) for detailed walkthroughs
+- Read about [Observability & Checkpointing](guides/02-observability-checkpointing.md) to enhance your agents
+- Learn how to use the [CLI](guides/03-cli-setup.md) for advanced workflows
