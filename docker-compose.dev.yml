@@ -22,8 +22,6 @@ services:
   manager:
     stdin_open: true
     tty: true
-    env_file:
-      - .env
     build:
       context: ./services/idun_agent_manager
       dockerfile: Dockerfile.dev

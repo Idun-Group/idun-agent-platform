@@ -16,17 +16,7 @@ git clone https://github.com/Idun-Group/idun-agent-platform.git
 cd idun-agent-platform
 ```
 
-## 2. Configure Environment Variables
-
-Copy the `.env` file and configure it with your settings:
-
-```bash
-cp .env .env.local
-```
-
-Update the required values in `.env.local` as needed. OIDC authentication is supported for both Okta and Auth0. Configure the `AUTH__` variables to match your authentication provider setup.
-
-## 3. Start the Platform
+## 2. Start the Platform
 
 Launch the Docker containers:
 
@@ -36,11 +26,12 @@ docker compose -f docker-compose.dev.yml up --build
 
 The manager UI will be available at `http://localhost:3000`
 
-## 4. Create an Agent
+## 3. Create an Agent
+
 
 ![Create Image](images/create.png)
 
-Navigate to `http://localhost:3000` and create a new agent through the web interface. When creating your agent:
+Navigate to `http://localhost:3000`, press login (with specifying credentials) and create a new agent through the web interface. When creating your agent:
 
 - Specify the correct path to your agent's entrypoint in the graph definition field (e.g., for a LangGraph CompiledGraph, use `./agent.py:graph`)
 - Use an unused port in the base URL and ensure the same port is configured in the runtime settings
@@ -48,11 +39,11 @@ Navigate to `http://localhost:3000` and create a new agent through the web inter
 
 You can use this example agent as a reference: [https://github.com/Idun-Group/demo-adk-idun-agent](https://github.com/Idun-Group/demo-adk-idun-agent)
 
-## 5. Get the Agent API Key
+## 4. Get the Agent API Key
 
 In the UI, go to the API Info tab for your agent and click the button to generate an API key. Copy this key.
 
-## 6. Launch the Agent Server
+## 5. Launch the Agent Server
 
 Open a new terminal and set up the environment:
 
@@ -70,7 +61,7 @@ Start the agent server with your API key:
 IDUN_MANAGER_HOST="http://localhost:8000" IDUN_AGENT_API_KEY=<YOUR-API_KEY> idun agent serve --source=manager
 ```
 
-## 7. Interact with Your Agent
+## 6. Interact with Your Agent
 
 ![Chat with agent](images/chat.png)
 
