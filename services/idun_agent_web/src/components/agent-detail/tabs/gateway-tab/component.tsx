@@ -29,7 +29,7 @@ import {
 import { CopilotKit } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 // We removed the default CSS import to ensure our custom styles take full precedence
-// import "@copilotkit/react-ui/styles.css"; 
+// import "@copilotkit/react-ui/styles.css";
 
 // --- Keyframes for Animations ---
 const bounce = keyframes`
@@ -60,7 +60,7 @@ const Grid = styled.div`
     display: grid;
     grid-template-columns: 1fr;
     gap: 24px;
-    
+
     @media (min-width: 1024px) {
         grid-template-columns: 1fr 1fr;
     }
@@ -85,7 +85,7 @@ const CardTitleIcon = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    
+
     h3 {
         margin: 0;
         font-size: 16px;
@@ -144,7 +144,7 @@ const CopyButton = styled.button`
     display: flex;
     align-items: center;
     position: relative;
-    
+
     &:hover {
         color: white;
         background-color: rgba(255, 255, 255, 0.05);
@@ -249,7 +249,7 @@ const MethodBadge = styled.span<{ $method: string }>`
     border-radius: 4px;
     border: 1px solid;
     ${props => {
-        switch(props.$method) {
+        switch (props.$method) {
             case 'POST': return 'background: rgba(59, 130, 246, 0.1); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2);';
             case 'GET': return 'background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2);';
             case 'DELETE': return 'background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2);';
@@ -304,7 +304,7 @@ const CodeSnippet = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    
+
     pre {
         margin: 0;
         color: #9ca3af;
@@ -364,7 +364,7 @@ const RouteActions = styled.div`
     margin-bottom: 12px;
     padding-bottom: 12px;
     border-bottom: 1px solid rgba(255,255,255,0.05);
-    
+
     button {
         background: none;
         border: 1px solid rgba(255,255,255,0.1);
@@ -416,8 +416,8 @@ const ModalButton = styled.button<{ $primary?: boolean }>`
     cursor: pointer;
     border: none;
     transition: all 0.2s;
-    
-    ${props => props.$primary 
+
+    ${props => props.$primary
         ? `background-color: #8c52ff; color: white; &:hover { background-color: #7c3aed; }`
         : `background-color: transparent; color: #9ca3af; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); }`
     }
@@ -436,8 +436,8 @@ const StyledCopilotChat = styled(CopilotChat)`
     background: transparent;
     position: relative;
     overflow: hidden;
-    
-    /* Target the container that holds the messages. 
+
+    /* Target the container that holds the messages.
        CopilotKit often uses a specific class or the first child div for messages. */
     & > div:first-of-type,
     & .copilotKitMessages,
@@ -463,7 +463,7 @@ const StyledCopilotChat = styled(CopilotChat)`
             background: rgba(255, 255, 255, 0.2);
         }
     }
-    
+
     & .copilot-chat-input {
         display: none; /* We use our own custom input */
     }
@@ -578,7 +578,7 @@ const StyledInput = styled.input`
     &:focus {
         border-color: #8c52ff;
     }
-    
+
     &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
@@ -613,78 +613,78 @@ const StyledSendButton = styled.button`
 // --- Custom Chat Components ---
 
 const CustomUserMessage = (props: any) => {
-  return (
-    <UserMessageWrapper>
-      <UserMessageBubble>{props.message?.content}</UserMessageBubble>
-    </UserMessageWrapper>
-  );
+    return (
+        <UserMessageWrapper>
+            <UserMessageBubble>{props.message?.content}</UserMessageBubble>
+        </UserMessageWrapper>
+    );
 };
 
 const CustomAssistantMessage = (props: any) => {
-  const { message, isLoading } = props;
-  const isTyping = isLoading && !message?.content;
+    const { message, isLoading } = props;
+    const isTyping = isLoading && !message?.content;
 
-  return (
-    <AssistantMessageWrapper>
-      <AssistantAvatarWrapper>
-          <AgentAvatar name="Agent" size={28} />
-      </AssistantAvatarWrapper>
-      <AssistantContent>
-        <AssistantBubble>
-           {message?.content && <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>}
-           
-           {/* Fallback to show raw message if content is empty or for debugging */}
-           {(!message?.content && !isTyping && message) && (
-               <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#9ca3af', marginTop: '4px', overflowX: 'auto' }}>
-                   {JSON.stringify(message, null, 2)}
-               </div>
-           )}
+    return (
+        <AssistantMessageWrapper>
+            <AssistantAvatarWrapper>
+                <AgentAvatar name="Agent" size={28} />
+            </AssistantAvatarWrapper>
+            <AssistantContent>
+                <AssistantBubble>
+                    {message?.content && <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>}
 
-           {isTyping && (
-               <TypingContainer>
-                   <TypingDot $delay="0ms" />
-                   <TypingDot $delay="150ms" />
-                   <TypingDot $delay="300ms" />
-               </TypingContainer>
-           )}
-        </AssistantBubble>
-      </AssistantContent>
-    </AssistantMessageWrapper>
-  );
+                    {/* Fallback to show raw message if content is empty or for debugging */}
+                    {(!message?.content && !isTyping && message) && (
+                        <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#9ca3af', marginTop: '4px', overflowX: 'auto' }}>
+                            {JSON.stringify(message, null, 2)}
+                        </div>
+                    )}
+
+                    {isTyping && (
+                        <TypingContainer>
+                            <TypingDot $delay="0ms" />
+                            <TypingDot $delay="150ms" />
+                            <TypingDot $delay="300ms" />
+                        </TypingContainer>
+                    )}
+                </AssistantBubble>
+            </AssistantContent>
+        </AssistantMessageWrapper>
+    );
 };
 
 const CustomInput = ({ inProgress, onSend }: any) => {
-  const handleSubmit = (value: string) => {
-    if (value.trim()) onSend(value);
-  };
+    const handleSubmit = (value: string) => {
+        if (value.trim()) onSend(value);
+    };
 
-  return (
-    <InputContainer>
-      <InputWrapper>
-        <StyledInput
-          disabled={inProgress}
-          placeholder="Type a message to test..."
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit(e.currentTarget.value);
-              e.currentTarget.value = '';
-            }
-          }}
-        />
-        <StyledSendButton 
-          disabled={inProgress}
-          onClick={(e) => {
-            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-            handleSubmit(input.value);
-            input.value = '';
-          }}
-        >
-          <Send size={16} />
-        </StyledSendButton>
-      </InputWrapper>
-    </InputContainer>
-  );
+    return (
+        <InputContainer>
+            <InputWrapper>
+                <StyledInput
+                    disabled={inProgress}
+                    placeholder="Type a message to test..."
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSubmit(e.currentTarget.value);
+                            e.currentTarget.value = '';
+                        }
+                    }}
+                />
+                <StyledSendButton
+                    disabled={inProgress}
+                    onClick={(e) => {
+                        const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                        handleSubmit(input.value);
+                        input.value = '';
+                    }}
+                >
+                    <Send size={16} />
+                </StyledSendButton>
+            </InputWrapper>
+        </InputContainer>
+    );
 };
 
 // --- Interfaces ---
@@ -749,7 +749,7 @@ const NewRouteForm: React.FC<NewRouteFormProps> = ({ onCancel, onCreate }) => {
                     onChange={(e) => setDescription(e.target.value)}
                 />
             </div>
-            
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
                 <ModalButton onClick={onCancel}>
                     {t('gateway.cancel', 'Cancel')}
@@ -781,7 +781,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
     const [expandedEndpoint, setExpandedEndpoint] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { t } = useTranslation();
-    
+
     // Auth Token State
     const [authToken, setAuthToken] = useState<string | null>(null);
     const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -794,15 +794,15 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
 
     // The agent's real AG-UI endpoint
     let agentEndpoint = `${cleanBaseUrl}/agent/copilotkit/stream`;
-    
-    // If we are in a local dev environment (accessing via localhost), 
-    // and the agent URL is also localhost, we need to rewrite it to 'manager' 
+
+    // If we are in a local dev environment (accessing via localhost),
+    // and the agent URL is also localhost, we need to rewrite it to 'manager'
     // so the dockerized copilot-runtime service can reach it.
-            // If running locally, rewrite localhost/127.0.0.1 to host.docker.internal
-            // so the Docker container can reach services running on the host machine (like the agent on port 8005)
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                agentEndpoint = agentEndpoint.replace('localhost', 'host.docker.internal').replace('127.0.0.1', 'host.docker.internal');
-            }
+    // If running locally, rewrite localhost/127.0.0.1 to host.docker.internal
+    // so the Docker container can reach services running on the host machine (like the agent on port 8005)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        agentEndpoint = agentEndpoint.replace('localhost', 'host.docker.internal').replace('127.0.0.1', 'host.docker.internal');
+    }
 
     // Setup the client-side adapter when the agent endpoint changes
     useEffect(() => {
@@ -845,15 +845,15 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
 
     const handleFetchAuthToken = async () => {
         if (!agent?.id) return;
-        
+
         setIsAuthLoading(true);
         try {
-            // Using relative URL since frontend is proxied or same origin usually, 
-            // but request asked for specific curl structure. 
+            // Using relative URL since frontend is proxied or same origin usually,
+            // but request asked for specific curl structure.
             // Assuming this runs in browser, we call the API endpoint.
             // Adjust port/host if needed or use relative path if proxy is set up.
             // Using relative path /api/v1... which is standard in this project setup
-            const response = await fetch(`http://0.0.0.0:8000/api/v1/agents/key?agent_id=${agent.id}`);
+            const response = await fetch(`http://localhost:8000/api/v1/agents/key?agent_id=${agent.id}`);
             if (response.ok) {
                 const data = await response.json();
                 // Assuming the response returns { key: "..." } or similar, or just the string.
@@ -871,7 +871,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
             setIsAuthLoading(false);
         }
     };
-    
+
     const handleCopyToken = () => {
         if (authToken) {
             navigator.clipboard.writeText(authToken);
@@ -915,19 +915,19 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                     <AuthBlock>
                                         <Key size={16} color="#eab308" style={{ marginRight: '12px', flexShrink: 0 }} />
                                         <TokenText>
-                                            {authToken && showAuthToken 
-                                                ? authToken 
+                                            {authToken && showAuthToken
+                                                ? authToken
                                                 : "••••••••••••••••••••••••••••••••"
                                             }
                                         </TokenText>
                                     </AuthBlock>
-                                    
+
                                     {authToken && showAuthToken && (
-                                         <CopyButton 
+                                        <CopyButton
                                             onClick={handleCopyToken}
                                             style={{ borderLeft: '1px solid rgba(255,255,255,0.1)' }}
                                             title="Copy Token"
-                                         >
+                                        >
                                             <Copy size={14} />
                                             {isTokenCopied && <CopiedTooltip>Copied!</CopiedTooltip>}
                                         </CopyButton>
@@ -935,11 +935,11 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
 
                                     <div style={{ borderLeft: '1px solid rgba(255,255,255,0.1)', height: '24px' }} />
 
-                                    <ActionButton 
+                                    <ActionButton
                                         onClick={() => {
                                             if (authToken && showAuthToken) {
                                                 setShowAuthToken(false);
-                                                setAuthToken(null); 
+                                                setAuthToken(null);
                                             } else {
                                                 handleFetchAuthToken();
                                             }
@@ -977,7 +977,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                         <Plus size={12} /> Add
                                     </AddButton>
                                 </div>
-                                
+
                                 <EndpointsList>
                                     {routes.map((ep) => (
                                         <EndpointItem key={ep.id}>
@@ -991,11 +991,11 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                                     <ChevronDown size={14} style={{ transform: expandedEndpoint === ep.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#6b7280' }} />
                                                 </div>
                                             </EndpointHeader>
-                                            
+
                                             {expandedEndpoint === ep.id && (
                                                 <EndpointDetails>
                                                     <Description>{ep.description}</Description>
-                                                    
+
                                                     {/* Quick Actions for Route */}
                                                     <RouteActions>
                                                         <button onClick={() => {
