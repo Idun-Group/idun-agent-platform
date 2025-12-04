@@ -51,6 +51,7 @@ Before you begin, make sure you have the following installed:
 
 - **Docker** and **Docker Compose** - Required for running the platform containers. [Steps to install docker](https://docs.docker.com/get-started).
 - **Git** - For cloning the repository
+- uv - For python package management. [Steps to instal uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### 1. Clone the Repository
 
@@ -78,15 +79,22 @@ The manager UI will be available at `http://localhost:3000`
 
 Navigate to `http://localhost:3000`, press login (without specifying credentials) and create a new agent through the web interface. When creating your agent:
 
+- Specify your agent's info
+- Use an unused port in the base URL and ensure the same port is configured in the runtime settings. You can choose any available port except for `8000` (used by the manager) and `8001` used by copilot-kit.
+- Press Next
 - Specify the correct path to your agent's entrypoint in the graph definition field (e.g., for a LangGraph CompiledGraph, use `./agent.py:graph`)
-- Use an unused port in the base URL and ensure the same port is configured in the runtime settings
-- Optionally add guardrails: Ban List (to block specific words/phrases) or PII Detector (to detect sensitive information). More guardrails will be supported soon.
+- Optional: Add your checkpointing (ADK or Langgraph) and your observability platform of your choice, and fill out each required field. Press Next
+- Skip the guardrails and MCP section for now, and press Next.
+> [!NOTE]
+For guardrails you can only choose from: Ban List (to block specific words/phrases) or PII Detector (to detect sensitive information).
+More guardrails will be supported soon.
+This requires setting the GUARDRAILS_API_KEY env var
 
 You can use this example agent as a reference: [https://github.com/Idun-Group/demo-adk-idun-agent](https://github.com/Idun-Group/demo-adk-idun-agent)
 
 ### 4. Get the Agent API Key
 
-In the UI, go to the API Info tab for your agent and click the button to generate an API key. Copy this key.
+In the Agent Dashboard, click on your agent, then API Integration, and press Show Key. Copy your agent's KEY. We will use it in the next step
 
 ### 5. Launch the Agent Server
 
@@ -100,7 +108,7 @@ source .venv/bin/activate
 Start the agent server with your API key:
 
 > [!NOTE]
-> Before running the command below, make sure the agent source path that you defined when creating your agent, matches the path you're running the command from.
+> Before running the command below, make sure the agent source path that you defined when creating your agent, matches the path you're running the command from. For example: if your entrypoint is this: `agents/agent.py:graph`, your current working directory needs to be `agents`
 
 ```bash
 IDUN_MANAGER_HOST="http://localhost:8000" IDUN_AGENT_API_KEY=<YOUR-API_KEY> idun agent serve --source=manager
