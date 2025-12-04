@@ -18,7 +18,6 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.sections
-    - navigation.expand
     - navigation.path
     - navigation.indexes
     - navigation.top
@@ -98,27 +97,26 @@ watch:
   - libs/idun_agent_engine/src
 
 nav:
-  - Home:
-      - Home: index.md
-      - Getting Started: quickstart.md
-      - Concepts:
-          - Overview: concepts/overview.md
-          - Architecture: concepts/architecture.md
-          - Agent Frameworks: concepts/agent-frameworks.md
-          - Configuration: concepts/configuration.md
-          - Engine: concepts/engine.md
-          - Manager: concepts/manager.md
-          - Observability: concepts/observability.md
-          - Guardrails: concepts/guardrails.md
-          - Deployment: concepts/deployment.md
-  - Deployment:
-      - Self-Hosted: deployment/self-hosted.md
-      - Idun Cloud: deployment/idun-cloud.md
+  - Home: index.md
+  - Getting Started: quickstart.md
+  - Concepts:
+      - Overview: concepts/overview.md
+      - Architecture: concepts/architecture.md
+      - Agent Frameworks: concepts/agent-frameworks.md
+      - Configuration: concepts/configuration.md
+      - Engine: concepts/engine.md
+      - Manager: concepts/manager.md
+      - Observability: concepts/observability.md
+      - Guardrails: concepts/guardrails.md
+      - Deployment: concepts/deployment.md
   - Guides:
       - Basic Configuration: guides/01-basic-configuration.md
       - Observability & Checkpointing: guides/02-observability-checkpointing.md
       - CLI Setup: guides/03-cli-setup.md
-      - Guardrails: guides/05-guardrails.md
+      - Guardrails: guides/04-guardrails.md
+  - Deployment:
+      - Self-Hosted: deployment/self-hosted.md
+      - Idun Cloud: deployment/idun-cloud.md
   - Reference:
       - API: reference/api.md
       - REST API: reference/rest-api.md
@@ -126,12 +124,12 @@ nav:
       - CLI: reference/cli.md
       - Environment Variables: reference/environment.md
       - Observability: reference/observability.md
-  - Idun Agent Manager:
+  - Agent Manager:
       - Overview: agent-manager/overview.md
       - Quickstart: agent-manager/quickstart.md
       - API: agent-manager/api.md
       - Authentication: agent-manager/authentication.md
-  - Idun Agent Schema: idun-schema/index.md
+  - Agent Schema: idun-schema/index.md
   - More:
       - Roadmap: more/roadmap.md
       - Contributing: more/contributing.md

@@ -19,3 +19,8 @@ Input and output validation ensures agents operate within defined boundaries and
 ## Monitoring
 
 Track guardrail activations and violations to understand agent behavior patterns and refine constraints.
+
+## Next Steps
+
+- [Guardrails Setup Guide →](../guides/04-guardrails.md) - Complete guide to setting up guardrails
+- [Configuration Reference →](../reference/configuration.md#guardrails-configuration) - Detailed configuration options
