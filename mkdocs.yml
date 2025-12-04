@@ -118,7 +118,7 @@ nav:
       - Basic Configuration: guides/01-basic-configuration.md
       - Observability & Checkpointing: guides/02-observability-checkpointing.md
       - CLI Setup: guides/03-cli-setup.md
-      - Manager Walkthrough: guides/04-manager-walkthrough.md
+      - Guardrails: guides/05-guardrails.md
   - Reference:
       - API: reference/api.md
       - REST API: reference/rest-api.md

@@ -96,12 +96,11 @@ Start the agent server with your API key:
 
 Navigate to the API Info tab of your agent in the manager UI to communicate with your agent.
 
-!!! tip
-    See the [full documentation](https://idun-group.github.io/idun-agent-platform/) for detailed guides and examples.
+**Next →** [Add Observability](guides/02-observability-checkpointing.md)
 
 ## Next Steps
 
-- Explore the [Concepts](concepts/overview.md) section to understand the platform architecture
-- Check out the [Guides](guides/01-basic-configuration.md) for detailed walkthroughs
-- Read about [Observability & Checkpointing](guides/02-observability-checkpointing.md) to enhance your agents
-- Learn how to use the [CLI](guides/03-cli-setup.md) for advanced workflows
+- [Observability & Checkpointing](guides/02-observability-checkpointing.md) - Monitor your agent's performance and add checkpointing
+- [Concepts](concepts/overview.md) - Understand the platform architecture
+- [Guides](guides/01-basic-configuration.md) - Detailed walkthroughs
+- [CLI](guides/03-cli-setup.md) - Advanced workflows
