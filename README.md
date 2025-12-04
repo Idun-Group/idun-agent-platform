@@ -107,30 +107,30 @@ uv sync
 
 Activate the virtual environment:
 
-=== "Mac/Linux"
-    ```bash
-    source .venv/bin/activate
-    ```
+**Mac/Linux:**
+```bash
+source .venv/bin/activate
+```
 
-=== "Windows (PowerShell)"
-    ```powershell
-    .venv\Scripts\Activate.ps1
-    ```
+**Windows (PowerShell):**
+```powershell
+.venv\Scripts\Activate.ps1
+```
 
 Start the agent server with your API key:
 
 > [!NOTE]
 > Before running the command below, make sure the agent source path that you defined when creating your agent, matches the path you're running the command from. For example: if your entrypoint is this: `agents/agent.py:graph`, your current working directory needs to be `agents`
 
-=== "Mac/Linux"
-    ```bash
-    IDUN_MANAGER_HOST="http://localhost:8000" IDUN_AGENT_API_KEY=<YOUR-API_KEY> idun agent serve --source=manager
-    ```
+**Mac/Linux:**
+```bash
+IDUN_MANAGER_HOST="http://localhost:8000" IDUN_AGENT_API_KEY=<YOUR-API_KEY> idun agent serve --source=manager
+```
 
-=== "Windows (PowerShell)"
-    ```powershell
-    $env:IDUN_MANAGER_HOST="http://localhost:8000"; $env:IDUN_AGENT_API_KEY="<YOUR-API_KEY>"; idun agent serve --source=manager
-    ```
+**Windows (PowerShell):**
+```powershell
+$env:IDUN_MANAGER_HOST="http://localhost:8000"; $env:IDUN_AGENT_API_KEY="<YOUR-API_KEY>"; idun agent serve --source=manager
+```
 
 ### 6. Interact with Your Agent
 
