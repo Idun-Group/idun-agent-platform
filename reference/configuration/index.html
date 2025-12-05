@@ -1,0 +1,3292 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Unified platform for building, deploying, and operating AI agents">
+      
+      
+      
+        <link rel="canonical" href="https://idun-group.github.io/idun-agent-platform/reference/configuration/">
+      
+      
+        <link rel="prev" href="../rest-api/">
+      
+      
+        <link rel="next" href="../cli/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Configuration - Idun Agent Platform</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#configuration-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Idun Agent Platform" class="md-header__button md-logo" aria-label="Idun Agent Platform" data-md-component="logo">
+      
+  <img src="../../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Idun Agent Platform
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Configuration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Idun-Group/idun-agent-platform" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Idun-Group/idun-agent-platform
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../concepts/overview/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/01-basic-configuration/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../deployment/self-hosted/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Deployment
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../agent-manager/overview/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Agent Manager
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../idun-schema/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Agent Schema
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../more/roadmap/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  More
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Idun Agent Platform" class="md-nav__button md-logo" aria-label="Idun Agent Platform" data-md-component="logo">
+      
+  <img src="../../images/logo.png" alt="logo">
+
+    </a>
+    Idun Agent Platform
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Idun-Group/idun-agent-platform" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Idun-Group/idun-agent-platform
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/agent-frameworks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Frameworks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/engine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/guardrails/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/01-basic-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/02-observability-checkpointing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability & Checkpointing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/03-cli-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/04-guardrails/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/05-mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/self-hosted/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Hosted
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/idun-cloud/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Idun Cloud
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#top-level-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-Level Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#server-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Server Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#serverapiport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        server.api.port
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Agent Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agenttype" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#langgraph-agent-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LangGraph Agent Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LangGraph Agent Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agentconfigname" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentconfiggraph_definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.graph_definition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentconfigcheckpointer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.checkpointer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#haystack-agent-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Haystack Agent Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Haystack Agent Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agentconfigcomponent_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.component_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentconfigcomponent_definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.component_definition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentconfigobservability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.observability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adk-agent-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADK Agent Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ADK Agent Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agentconfigapp_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.app_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentconfigagent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentconfigsession_service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.session_service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentconfigmemory_service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.config.memory_service
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#template-agent-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template Agent Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Template Agent Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#translation-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Translation Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correction-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Correction Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deep-research-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deep Research Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observability-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Observability Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        observability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provider-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#langfuse-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Langfuse Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phoenix-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phoenix Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcp-logging-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GCP Logging Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcp-trace-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GCP Trace Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#langsmith-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LangSmith Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guardrails-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Guardrails Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Guardrails Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#guardrailsinput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        guardrails.input
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#guardrailsoutput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        guardrails.output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#guardrail-configuration-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Guardrail Configuration Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Configurations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-servers-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Servers Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCP Servers Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mcp_servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mcp_servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-server-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Server Fields
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCP Server Fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        transport
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        command
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#args" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        args
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        env
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        url
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variable-substitution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variable Substitution
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment Variable Substitution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#syntax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Syntax
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#variable-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable Resolution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Manager
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Agent Manager
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-manager/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-manager/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-manager/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-manager/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../idun-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    More
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    More
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../more/roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../more/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../more/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../more/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../more/support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../more/known-bugs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Known Bugs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../api/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Reference
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="configuration-reference">Configuration Reference<a class="headerlink" href="#configuration-reference" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>This reference provides detailed documentation for all configuration fields available in Idun Agent Platform YAML configuration files. Use this as a complete field-by-field reference when building or modifying agent configurations.</p>
+<p>For conceptual information and examples, see the <a href="../../concepts/configuration/">Configuration Guide</a>.</p>
+<hr />
+<h2 id="top-level-structure">Top-Level Structure<a class="headerlink" href="#top-level-structure" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="nt">server</span><span class="p">:</span><span class="w">          </span><span class="c1"># API server configuration</span>
+<span class="nt">agent</span><span class="p">:</span><span class="w">           </span><span class="c1"># Agent framework and settings</span>
+<span class="nt">observability</span><span class="p">:</span><span class="w">   </span><span class="c1"># Monitoring and tracing (optional)</span>
+<span class="nt">guardrails</span><span class="p">:</span><span class="w">      </span><span class="c1"># Safety constraints (optional)</span>
+<span class="nt">mcp_servers</span><span class="p">:</span><span class="w">     </span><span class="c1"># MCP server integrations (optional)</span>
+</code></pre></div>
+<hr />
+<h2 id="server-configuration">Server Configuration<a class="headerlink" href="#server-configuration" title="Permanent link">&para;</a></h2>
+<p>Configure the agent's REST API server.</p>
+<h3 id="serverapiport"><code>server.api.port</code><a class="headerlink" href="#serverapiport" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>integer</code>
+<strong>Default:</strong> <code>8000</code>
+<strong>Required:</strong> No</p>
+<p>Port number for the REST API server.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">server</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">api</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+</code></pre></div>
+<hr />
+<h2 id="agent-configuration">Agent Configuration<a class="headerlink" href="#agent-configuration" title="Permanent link">&para;</a></h2>
+<p>Core agent framework and behavior configuration.</p>
+<h3 id="agenttype"><code>agent.type</code><a class="headerlink" href="#agenttype" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> Yes
+<strong>Options:</strong> <code>LANGGRAPH</code>, <code>HAYSTACK</code>, <code>ADK</code>, <code>TRANSLATION_AGENT</code>, <code>CORRECTION_AGENT</code>, <code>DEEP_RESEARCH_AGENT</code></p>
+<p>Specifies which agent framework to use.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LANGGRAPH&quot;</span>
+</code></pre></div>
+<h3 id="agentconfig"><code>agent.config</code><a class="headerlink" href="#agentconfig" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>object</code>
+<strong>Required:</strong> Yes</p>
+<p>Framework-specific configuration. Contents vary based on <code>agent.type</code>.</p>
+<hr />
+<h2 id="langgraph-agent-configuration">LangGraph Agent Configuration<a class="headerlink" href="#langgraph-agent-configuration" title="Permanent link">&para;</a></h2>
+<p>Configuration for LangGraph-based agents.</p>
+<h3 id="agentconfigname"><code>agent.config.name</code><a class="headerlink" href="#agentconfigname" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> Yes</p>
+<p>Display name for the agent.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;My</span><span class="nv"> </span><span class="s">LangGraph</span><span class="nv"> </span><span class="s">Agent&quot;</span>
+</code></pre></div>
+<h3 id="agentconfiggraph_definition"><code>agent.config.graph_definition</code><a class="headerlink" href="#agentconfiggraph_definition" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> Yes
+<strong>Format:</strong> <code>"path/to/file.py:variable_name"</code></p>
+<p>Python path to the compiled LangGraph.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">graph_definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./agent.py:graph&quot;</span>
+</code></pre></div>
+<h3 id="agentconfigcheckpointer"><code>agent.config.checkpointer</code><a class="headerlink" href="#agentconfigcheckpointer" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>object</code>
+<strong>Required:</strong> No</p>
+<p>Persistence configuration for conversation state.</p>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>type</code> (string, required): <code>"sqlite"</code> or <code>"postgres"</code></li>
+<li><code>db_url</code> (string, required): Database connection URL or path</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">checkpointer</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sqlite&quot;</span>
+<span class="w">      </span><span class="nt">db_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;checkpoints.db&quot;</span>
+</code></pre></div>
+<p><strong>PostgreSQL Example:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">checkpointer</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postgres&quot;</span>
+<span class="w">      </span><span class="nt">db_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postgresql://user:pass@localhost:5432/dbname&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="haystack-agent-configuration">Haystack Agent Configuration<a class="headerlink" href="#haystack-agent-configuration" title="Permanent link">&para;</a></h2>
+<p>Configuration for Haystack-based agents.</p>
+<h3 id="agentconfigcomponent_type"><code>agent.config.component_type</code><a class="headerlink" href="#agentconfigcomponent_type" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> Yes
+<strong>Options:</strong> <code>"pipeline"</code>, <code>"agent"</code></p>
+<p>Type of Haystack component.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">component_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pipeline&quot;</span>
+</code></pre></div>
+<h3 id="agentconfigcomponent_definition"><code>agent.config.component_definition</code><a class="headerlink" href="#agentconfigcomponent_definition" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> Yes
+<strong>Format:</strong> <code>"path/to/file.py:variable_name"</code></p>
+<p>Python path to the Haystack component.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">component_definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./pipeline.py:search_pipeline&quot;</span>
+</code></pre></div>
+<h3 id="agentconfigobservability"><code>agent.config.observability</code><a class="headerlink" href="#agentconfigobservability" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>object</code>
+<strong>Required:</strong> No</p>
+<p>Haystack-specific observability configuration.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">observability</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<hr />
+<h2 id="adk-agent-configuration">ADK Agent Configuration<a class="headerlink" href="#adk-agent-configuration" title="Permanent link">&para;</a></h2>
+<p>Configuration for Google Agent Development Kit agents.</p>
+<h3 id="agentconfigapp_name"><code>agent.config.app_name</code><a class="headerlink" href="#agentconfigapp_name" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> Yes</p>
+<p>Application identifier for the ADK agent.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_app&quot;</span>
+</code></pre></div>
+<h3 id="agentconfigagent"><code>agent.config.agent</code><a class="headerlink" href="#agentconfigagent" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> Yes
+<strong>Format:</strong> <code>"path/to/file.py:variable_name"</code></p>
+<p>Python path to the ADK agent instance.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">agent</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./agent.py:agent&quot;</span>
+</code></pre></div>
+<h3 id="agentconfigsession_service"><code>agent.config.session_service</code><a class="headerlink" href="#agentconfigsession_service" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>object</code>
+<strong>Required:</strong> No</p>
+<p>Session management configuration.</p>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>type</code> (string): <code>"in_memory"</code> or <code>"firestore"</code></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">session_service</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;in_memory&quot;</span>
+</code></pre></div>
+<h3 id="agentconfigmemory_service"><code>agent.config.memory_service</code><a class="headerlink" href="#agentconfigmemory_service" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>object</code>
+<strong>Required:</strong> No</p>
+<p>Memory service configuration.</p>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>type</code> (string): <code>"in_memory"</code> or <code>"firestore"</code></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">memory_service</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;in_memory&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="template-agent-configuration">Template Agent Configuration<a class="headerlink" href="#template-agent-configuration" title="Permanent link">&para;</a></h2>
+<p>Pre-built agent templates with simplified configuration.</p>
+<h3 id="translation-agent">Translation Agent<a class="headerlink" href="#translation-agent" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TRANSLATION_AGENT&quot;</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Translator&quot;</span>
+<span class="w">    </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gemini-2.5-flash&quot;</span>
+<span class="w">    </span><span class="nt">source_lang</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;English&quot;</span>
+<span class="w">    </span><span class="nt">target_lang</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Spanish&quot;</span>
+<span class="w">    </span><span class="nt">graph_definition</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;idun_agent_engine.templates.translation:graph&quot;</span>
+</code></pre></div>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>model_name</code> (string, required): LLM model identifier</li>
+<li><code>source_lang</code> (string, required): Source language</li>
+<li><code>target_lang</code> (string, required): Target language</li>
+</ul>
+<h3 id="correction-agent">Correction Agent<a class="headerlink" href="#correction-agent" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CORRECTION_AGENT&quot;</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Grammar</span><span class="nv"> </span><span class="s">Checker&quot;</span>
+<span class="w">    </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gemini-2.5-flash&quot;</span>
+<span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;French&quot;</span>
+</code></pre></div>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>model_name</code> (string, required): LLM model identifier</li>
+<li><code>language</code> (string, required): Target language for corrections</li>
+</ul>
+<h3 id="deep-research-agent">Deep Research Agent<a class="headerlink" href="#deep-research-agent" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DEEP_RESEARCH_AGENT&quot;</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Research</span><span class="nv"> </span><span class="s">Assistant&quot;</span>
+<span class="w">    </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gemini-2.5-flash&quot;</span>
+<span class="w">    </span><span class="nt">tavily_api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${TAVILY_API_KEY}&quot;</span>
+<span class="w">    </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Research</span><span class="nv"> </span><span class="s">topic&quot;</span>
+<span class="w">    </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-gcp-project&quot;</span>
+<span class="w">    </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;us-central1&quot;</span>
+</code></pre></div>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>model_name</code> (string, required): LLM model identifier</li>
+<li><code>tavily_api_key</code> (string, required): Tavily search API key</li>
+<li><code>prompt</code> (string, required): Research prompt template</li>
+<li><code>project</code> (string, optional): GCP project ID</li>
+<li><code>region</code> (string, optional): GCP region</li>
+</ul>
+<hr />
+<h2 id="observability-configuration">Observability Configuration<a class="headerlink" href="#observability-configuration" title="Permanent link">&para;</a></h2>
+<p>Configure monitoring, tracing, and logging providers. Multiple providers can be enabled simultaneously.</p>
+<h3 id="observability"><code>observability</code><a class="headerlink" href="#observability" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>array</code>
+<strong>Required:</strong> No</p>
+<p>List of observability provider configurations.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">observability</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LANGFUSE&quot;</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nv">...</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PHOENIX&quot;</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nv">...</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<h3 id="provider-types">Provider Types<a class="headerlink" href="#provider-types" title="Permanent link">&para;</a></h3>
+<p><strong>Supported Values:</strong></p>
+<ul>
+<li><code>LANGFUSE</code> - Langfuse LLM observability platform</li>
+<li><code>PHOENIX</code> - Arize Phoenix ML observability</li>
+<li><code>GCP_LOGGING</code> - Google Cloud Logging</li>
+<li><code>GCP_TRACE</code> - Google Cloud Trace</li>
+<li><code>LANGSMITH</code> - LangSmith monitoring</li>
+</ul>
+<h3 id="common-fields">Common Fields<a class="headerlink" href="#common-fields" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>provider</code> (string, required): Provider type identifier</li>
+<li><code>enabled</code> (boolean, required): Enable/disable this provider</li>
+<li><code>config</code> (object, required): Provider-specific configuration</li>
+</ul>
+<h3 id="langfuse-configuration">Langfuse Configuration<a class="headerlink" href="#langfuse-configuration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">observability</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LANGFUSE&quot;</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://cloud.langfuse.com&quot;</span>
+<span class="w">      </span><span class="nt">public_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${LANGFUSE_PUBLIC_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">secret_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${LANGFUSE_SECRET_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">run_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;production-agent&quot;</span>
+</code></pre></div>
+<p><strong>Config Fields:</strong></p>
+<ul>
+<li><code>host</code> (string, required): Langfuse instance URL</li>
+<li><code>public_key</code> (string, required): Langfuse public API key</li>
+<li><code>secret_key</code> (string, required): Langfuse secret API key</li>
+<li><code>run_name</code> (string, optional): Run identifier for traces</li>
+</ul>
+<h3 id="phoenix-configuration">Phoenix Configuration<a class="headerlink" href="#phoenix-configuration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">observability</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PHOENIX&quot;</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://localhost:6006&quot;</span>
+</code></pre></div>
+<p><strong>Config Fields:</strong></p>
+<ul>
+<li><code>host</code> (string, required): Phoenix server URL</li>
+</ul>
+<h3 id="gcp-logging-configuration">GCP Logging Configuration<a class="headerlink" href="#gcp-logging-configuration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">observability</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GCP_LOGGING&quot;</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">project_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-project&quot;</span>
+<span class="w">      </span><span class="nt">log_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;agent-logs&quot;</span>
+</code></pre></div>
+<p><strong>Config Fields:</strong></p>
+<ul>
+<li><code>project_id</code> (string, required): GCP project ID</li>
+<li><code>log_name</code> (string, optional): Custom log name</li>
+</ul>
+<h3 id="gcp-trace-configuration">GCP Trace Configuration<a class="headerlink" href="#gcp-trace-configuration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">observability</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GCP_TRACE&quot;</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">project_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-project&quot;</span>
+</code></pre></div>
+<p><strong>Config Fields:</strong></p>
+<ul>
+<li><code>project_id</code> (string, required): GCP project ID</li>
+</ul>
+<h3 id="langsmith-configuration">LangSmith Configuration<a class="headerlink" href="#langsmith-configuration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">observability</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LANGSMITH&quot;</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${LANGSMITH_API_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">project_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-project&quot;</span>
+</code></pre></div>
+<p><strong>Config Fields:</strong></p>
+<ul>
+<li><code>api_key</code> (string, required): LangSmith API key</li>
+<li><code>project_name</code> (string, required): LangSmith project identifier</li>
+</ul>
+<hr />
+<h2 id="guardrails-configuration">Guardrails Configuration<a class="headerlink" href="#guardrails-configuration" title="Permanent link">&para;</a></h2>
+<p>Safety constraints and content validation rules powered by <a href="https://guardrailsai.com">Guardrails AI</a>.</p>
+<p>Guardrails can be applied to agent inputs and outputs to filter harmful content, enforce policies, and maintain safety standards.</p>
+<h3 id="configuration-structure">Configuration Structure<a class="headerlink" href="#configuration-structure" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">guardrails</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">input</span><span class="p">:</span><span class="w">    </span><span class="c1"># Applied to incoming requests</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">config_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ban_list&quot;</span>
+<span class="w">      </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${GUARDRAILS_API_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">guard_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hub://guardrails/ban_list&quot;</span>
+<span class="w">      </span><span class="nt">reject_message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Content</span><span class="nv"> </span><span class="s">blocked&quot;</span>
+<span class="w">      </span><span class="nt">guard_params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">banned_words</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">word1</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">word2</span>
+<span class="w">  </span><span class="nt">output</span><span class="p">:</span><span class="w">   </span><span class="c1"># Applied to agent responses</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">config_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pii_detector&quot;</span>
+<span class="w">      </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${GUARDRAILS_API_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">guard_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hub://guardrails/detect_pii&quot;</span>
+<span class="w">      </span><span class="nt">reject_message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PII</span><span class="nv"> </span><span class="s">detected&quot;</span>
+<span class="w">      </span><span class="nt">guard_params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">pii_entities</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EMAIL_ADDRESS</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PHONE_NUMBER</span>
+</code></pre></div>
+<h3 id="guardrailsinput"><code>guardrails.input</code><a class="headerlink" href="#guardrailsinput" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>array</code>
+<strong>Required:</strong> No</p>
+<p>List of guardrails applied to agent inputs (user requests).</p>
+<h3 id="guardrailsoutput"><code>guardrails.output</code><a class="headerlink" href="#guardrailsoutput" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>array</code>
+<strong>Required:</strong> No</p>
+<p>List of guardrails applied to agent outputs (responses).</p>
+<h3 id="guardrail-configuration-fields">Guardrail Configuration Fields<a class="headerlink" href="#guardrail-configuration-fields" title="Permanent link">&para;</a></h3>
+<p>Each guardrail in the <code>input</code> or <code>output</code> array has these fields:</p>
+<p><strong><code>config_id</code></strong> (string, required)</p>
+<p>Unique identifier for this guardrail configuration.</p>
+<p><strong><code>api_key</code></strong> (string, required)</p>
+<p>Guardrails AI API key. Use environment variable substitution: <code>"${GUARDRAILS_API_KEY}"</code></p>
+<p><strong><code>guard_url</code></strong> (string, required)</p>
+<p>URL to the Guardrails AI Hub validator. Format: <code>"hub://guardrails/{validator_name}"</code></p>
+<p>Available validators:
+- <code>hub://guardrails/ban_list</code> - Block specific words/phrases
+- <code>hub://guardrails/detect_pii</code> - Detect personally identifiable information</p>
+<p><strong><code>reject_message</code></strong> (string, optional)</p>
+<p>Custom message returned when content is blocked by this guardrail.</p>
+<p><strong><code>guard_params</code></strong> (object, required)</p>
+<p>Validator-specific configuration parameters.</p>
+<h3 id="example-configurations">Example Configurations<a class="headerlink" href="#example-configurations" title="Permanent link">&para;</a></h3>
+<p><strong>Ban List:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">guardrails</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">input</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">config_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;profanity_filter&quot;</span>
+<span class="w">      </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${GUARDRAILS_API_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">guard_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hub://guardrails/ban_list&quot;</span>
+<span class="w">      </span><span class="nt">reject_message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Inappropriate</span><span class="nv"> </span><span class="s">content</span><span class="nv"> </span><span class="s">detected&quot;</span>
+<span class="w">      </span><span class="nt">guard_params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">banned_words</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">profanity1</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">profanity2</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">competitor_name</span>
+</code></pre></div>
+<p><strong>PII Detection:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">guardrails</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">output</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">config_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pii_protection&quot;</span>
+<span class="w">      </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${GUARDRAILS_API_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">guard_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hub://guardrails/detect_pii&quot;</span>
+<span class="w">      </span><span class="nt">reject_message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Response</span><span class="nv"> </span><span class="s">contains</span><span class="nv"> </span><span class="s">sensitive</span><span class="nv"> </span><span class="s">information&quot;</span>
+<span class="w">      </span><span class="nt">guard_params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">pii_entities</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EMAIL_ADDRESS</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PHONE_NUMBER</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SSN</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LOCATION</span>
+</code></pre></div>
+<p><strong>Multiple Guardrails:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">guardrails</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">input</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">config_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ban_list&quot;</span>
+<span class="w">      </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${GUARDRAILS_API_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">guard_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hub://guardrails/ban_list&quot;</span>
+<span class="w">      </span><span class="nt">guard_params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">banned_words</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;badword1&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;badword2&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">output</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">config_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pii_detector&quot;</span>
+<span class="w">      </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${GUARDRAILS_API_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">guard_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;hub://guardrails/detect_pii&quot;</span>
+<span class="w">      </span><span class="nt">guard_params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">pii_entities</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;EMAIL_ADDRESS&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;PHONE_NUMBER&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<hr />
+<h2 id="mcp-servers-configuration">MCP Servers Configuration<a class="headerlink" href="#mcp-servers-configuration" title="Permanent link">&para;</a></h2>
+<p>Model Context Protocol servers extend agent capabilities with tools, resources, and prompts.</p>
+<h3 id="mcp_servers"><code>mcp_servers</code><a class="headerlink" href="#mcp_servers" title="Permanent link">&para;</a></h3>
+<p><strong>Type:</strong> <code>array</code>
+<strong>Required:</strong> No</p>
+<p>List of MCP server configurations.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">mcp_servers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;filesystem&quot;</span>
+<span class="w">    </span><span class="nt">transport</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stdio&quot;</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;npx&quot;</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-y&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;@modelcontextprotocol/server-filesystem&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/path/to/files&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;brave-search&quot;</span>
+<span class="w">    </span><span class="nt">transport</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stdio&quot;</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;npx&quot;</span>
+<span class="w">    </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-y&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;@modelcontextprotocol/server-brave-search&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">BRAVE_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${BRAVE_API_KEY}&quot;</span>
+</code></pre></div>
+<h3 id="mcp-server-fields">MCP Server Fields<a class="headerlink" href="#mcp-server-fields" title="Permanent link">&para;</a></h3>
+<h4 id="name"><code>name</code><a class="headerlink" href="#name" title="Permanent link">&para;</a></h4>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> Yes</p>
+<p>Unique identifier for this MCP server.</p>
+<h4 id="transport"><code>transport</code><a class="headerlink" href="#transport" title="Permanent link">&para;</a></h4>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> Yes
+<strong>Options:</strong> <code>stdio</code>, <code>http</code>, <code>websocket</code></p>
+<p>Communication transport mechanism.</p>
+<h4 id="command"><code>command</code><a class="headerlink" href="#command" title="Permanent link">&para;</a></h4>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> For <code>stdio</code> transport</p>
+<p>Executable command to start the MCP server.</p>
+<h4 id="args"><code>args</code><a class="headerlink" href="#args" title="Permanent link">&para;</a></h4>
+<p><strong>Type:</strong> <code>array of strings</code>
+<strong>Required:</strong> No</p>
+<p>Command-line arguments for the MCP server.</p>
+<h4 id="env"><code>env</code><a class="headerlink" href="#env" title="Permanent link">&para;</a></h4>
+<p><strong>Type:</strong> <code>object</code>
+<strong>Required:</strong> No</p>
+<p>Environment variables for the MCP server process.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">mcp_servers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;database&quot;</span>
+<span class="w">    </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">DB_URL</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${DATABASE_URL}&quot;</span>
+<span class="w">      </span><span class="nt">DB_USER</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${DATABASE_USER}&quot;</span>
+</code></pre></div>
+<h4 id="url"><code>url</code><a class="headerlink" href="#url" title="Permanent link">&para;</a></h4>
+<p><strong>Type:</strong> <code>string</code>
+<strong>Required:</strong> For <code>http</code> or <code>websocket</code> transport</p>
+<p>Server endpoint URL.</p>
+<hr />
+<h2 id="environment-variable-substitution">Environment Variable Substitution<a class="headerlink" href="#environment-variable-substitution" title="Permanent link">&para;</a></h2>
+<p>Configuration files support environment variable substitution for sensitive values.</p>
+<h3 id="syntax">Syntax<a class="headerlink" href="#syntax" title="Permanent link">&para;</a></h3>
+<p><strong>Standard format (recommended):</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${API_KEY}&quot;</span>
+</code></pre></div>
+<p><strong>Simple format:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$API_KEY&quot;</span>
+</code></pre></div>
+<h3 id="usage-examples">Usage Examples<a class="headerlink" href="#usage-examples" title="Permanent link">&para;</a></h3>
+<p><strong>API Keys:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">observability</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;LANGFUSE&quot;</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">public_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${LANGFUSE_PUBLIC_KEY}&quot;</span>
+<span class="w">      </span><span class="nt">secret_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${LANGFUSE_SECRET_KEY}&quot;</span>
+</code></pre></div>
+<p><strong>Database Credentials:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">checkpointer</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">db_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${DATABASE_URL}&quot;</span>
+</code></pre></div>
+<p><strong>MCP Server Environment:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">mcp_servers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;search&quot;</span>
+<span class="w">    </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${SEARCH_API_KEY}&quot;</span>
+</code></pre></div>
+<h3 id="variable-resolution">Variable Resolution<a class="headerlink" href="#variable-resolution" title="Permanent link">&para;</a></h3>
+<p>Variables are resolved at runtime when the agent starts. If a referenced environment variable is not set, the agent will fail to start with a clear error message.</p>
+<hr />
+<h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
+<p>All configuration files are validated against Pydantic schemas before the agent starts.</p>
+<p><strong>Validation checks:</strong></p>
+<ul>
+<li>Required fields are present</li>
+<li>Field types match schema definitions</li>
+<li>Enum values are valid</li>
+<li>Numeric values are within acceptable ranges</li>
+<li>Referenced files and modules exist</li>
+<li>Framework-specific requirements are met</li>
+</ul>
+<p><strong>Validation errors</strong> provide clear messages indicating which field failed validation and why.</p>
+<hr />
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../concepts/configuration/">Configuration Guide</a> - Conceptual overview and examples</li>
+<li><a href="../cli/">CLI Reference</a> - Using configurations with the CLI</li>
+<li><a href="../environment/">Environment Variables</a> - Environment variable reference</li>
+<li><a href="../observability/">Observability Reference</a> - Detailed observability configuration</li>
+</ul>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="December 5, 2025 22:14:00 UTC">December 5, 2025</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="November 5, 2025 16:11:04 UTC">November 5, 2025</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../rest-api/" class="md-footer__link md-footer__link--prev" aria-label="Previous: REST API">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                REST API
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../cli/" class="md-footer__link md-footer__link--next" aria-label="Next: CLI">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                CLI
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>
