@@ -23,3 +23,9 @@ Both interfaces support CRUD operations, configuration management, and real-time
 ## Access Control
 
 Role-based access control ensures secure multi-user access to agent management functions.
+
+## Next Steps
+
+- [CLI Setup Guide →](../guides/03-cli-setup.md) - Learn CLI commands for managing agents
+- [REST API Reference →](../reference/rest-api.md) - Complete API documentation
+- [Manager Quickstart →](../agent-manager/quickstart.md) - Get started with the Manager
