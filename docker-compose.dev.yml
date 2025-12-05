@@ -24,6 +24,7 @@ services:
       context: ./services/idun_agent_manager
       dockerfile: Dockerfile.dev
     container_name: idun-manager-dev
+    env_file: .env
     environment:
       # Database connection (use internal port 5432)
       DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
