@@ -5,20 +5,59 @@
 server:
   api:
     port: 8001 # Port where the server will run
+    port: 8001 # Port where the server will run
 
 # Agent Configuration - Defines which agent to load and how
 agent:
-  type: "LANGGRAPH"               # Agent framework type
+  type: "LANGGRAPH" # Agent framework type
   # Agent-specific configuration (passed to the LangGraph adapter)
   config:
     name: "My Example LangGraph Agent"
-    graph_definition: "examples/01_basic_config_file/example_agent.py:app"  # Path to your graph definition
+    graph_definition: "./examples/01_basic_config_file/example_agent.py:app" # Path to your graph definition
+    # Observability (provider-agnostic). Example with Langfuse or Phoenix
+    observability:
+      provider: langfuse #langfuse # or phoenix
+      enabled: true
+      options:
+        # Langfuse options
+        host: ${LANGFUSE_HOST}
+        public_key: ${LANGFUSE_PUBLIC_KEY}
+        secret_key: ${LANGFUSE_SECRET_KEY}
+        run_name: "idun-langgraph-run"
+        # Phoenix options (if provider: phoenix)
+        # api_key: ${PHOENIX_API_KEY}
+        # collector_endpoint: ${PHOENIX_COLLECTOR_ENDPOINT}
+        # project_name: "default"
+        # run_name: "idun-langgraph-run"
+        # Phoenix local options (if provider: phoenix-local)
+        # No configuration required for Phoenix local
+
+    # Optional: Enable conversation persistence
     checkpointer:
       type: "sqlite"
       db_url: "sqlite:///example_checkpoint.db"
-    # Observability (provider-agnostic). Example with Langfuse or Phoenix
+
     guardrails:
       enabled: false
 
-    observability:
-      enabled: false
+observability:
+  - provider: "LANGFUSE"
+    enabled: true
+    config:
+      host: "https://cloud.langfuse.com"
+      public_key: "pk-FAKE"
+      secret_key: "sk-lf-FAKE"
+      run_name: "idun-langgraph-run"
+
+  - provider: "GCP_TRACE"
+    enabled: true
+    config:
+      project_id: "idun-platform"
+      region: "europe-west1"
+
+  - provider: "GCP_LOGGING"
+    enabled: true
+    config:
+      project_id: "idun-platform"
+      resource_type: "global"
+      severity: "INFO"

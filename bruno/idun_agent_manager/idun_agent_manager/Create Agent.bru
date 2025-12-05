@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: http://0.0.0.0:8000/api/v1/agents/
+  url: http://0.0.0.0:8500/api/v1/agents/
   body: json
   auth: none
 }
@@ -17,21 +17,63 @@ headers {
 
 body:json {
   {
-    "name": "6example-managed-agent",
-    "version": "0.1.0",
+    "name": "AaAAAAAAA",
+    "version": "1.0.0",
+    "base_url": "rrrr",
     "engine_config": {
-      "server": { "api": { "port": 8000 } },
+      "server": {
+        "api": {
+          "port": 8000
+        }
+      },
       "agent": {
         "type": "LANGGRAPH",
         "config": {
-          "name": "6example-langgraph-agent",
-          "graph_definition": "/test/test:graph",
+          "name": "rrrrrrrrr",
+          "graph_definition": "r",
           "checkpointer": {
-            "type": "sqlite",
-            "db_url": "sqlite:///example_checkpoint.db"
+            "type": "memory"
           }
         }
-      }
+      },
+      "mcp_servers": null,
+      "guardrails": null,
+      "observability": [
+        {
+          "enabled": true,
+          "provider": "LANGFUSE",
+          "config": {
+            "host": "https://cloud.langfuse.com",
+            "publicKey": "pk-lf-7d816ded-b65a-4181-9a84-602a1c85cfde",
+            "secretKey": "sk-lf-795b26b5-ab6a-4525-a637-bcd90d817ff2",
+            "runName": "default"
+          }
+        },
+        {
+          "enabled": true,
+          "provider": "GCP_LOGGING",
+          "config": {
+            "gcpProjectId": "idun-platform",
+            "region": "europe-west1",
+            "logName": "application-log",
+            "resourceType": "global",
+            "severity": "INFO",
+            "transport": "BackgroundThread"
+          }
+        },
+        {
+          "enabled": true,
+          "provider": "GCP_TRACE",
+          "config": {
+            "gcpProjectId": "idun-platform",
+            "region": "europe-west1",
+            "traceName": "default",
+            "samplingRate": 1,
+            "flushInterval": 5,
+            "ignoreUrls": ""
+          }
+        }
+      ]
     }
   }
 }

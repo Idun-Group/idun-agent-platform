@@ -7,7 +7,7 @@ structure for integration with the Idun Agent Engine.
 import operator
 from typing import Annotated, TypedDict
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import END, StateGraph, MessagesState
 
 
@@ -25,6 +25,10 @@ def greeting_node(state):
 
     return {"messages": [("ai", response)]}
 
+def no_greeting_node(state: AgentState) -> AgentState:
+    """A simple node that returns a no greeting message."""
+    return {"messages": [AIMessage(content="No greeting for you!")]}
+
 
 def create_graph():
     """Create and return the LangGraph StateGraph."""
@@ -32,10 +36,13 @@ def create_graph():
 
     # Add our greeting node
     graph.add_node("greet", greeting_node)
+    graph.add_node("no_greeting", no_greeting_node)
 
     # Set entry point and end
     graph.set_entry_point("greet")
-    graph.add_edge("greet", END)
+    graph.add_edge("greet", "no_greeting")
+    graph.add_edge("no_greeting", END)
+
 
     return graph
 

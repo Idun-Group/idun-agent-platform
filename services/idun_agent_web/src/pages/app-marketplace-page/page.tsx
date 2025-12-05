@@ -3,215 +3,194 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import AppCard from '../../components/app-market-place/app-card/component';
 import { TextInput } from '../../components/general/form/component';
+import { MARKETPLACE_APPS } from '../../services/applications';
+import type { MarketplaceApp, AppCategory } from '../../types/application.types';
 
-export type AppType = {
-    id: number;
-    name: string;
-    by: string;
-    urlConnector: string;
-    description: string;
-    imageUrl: string;
-    tag: string;
-};
+interface AppMarketplaceProps {
+    onAppClick: (app: MarketplaceApp) => void;
+    category?: AppCategory; // Optional category filter
+}
 
-const AppMarketplacePage = () => {
+const AppMarketplacePage = ({ onAppClick, category }: AppMarketplaceProps) => {
     const { t } = useTranslation();
     const [search, setSearch] = React.useState('');
 
-    const AppList = [
-        {
-            id: 1,
-            name: 'Github',
-            by: 'Github',
-            urlConnector: 'https://www.github.com',
-            description:
-                "Importez directement des agents dans l'application depuis des dépôts Github.",
-            imageUrl:
-                'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Github-desktop-logo-symbol.svg/2048px-Github-desktop-logo-symbol.svg.png',
-            tag: 'Repository',
-        },
-        {
-            id: 2,
-            name: 'Gitlab',
-            by: 'Gitlab',
-            urlConnector: 'https://www.gitlab.com',
-            description:
-                "Importez directement des agents dans l'application depuis des dépôts Gitlab.",
-            imageUrl:
-                'https://images.icon-icons.com/2699/PNG/512/gitlab_logo_icon_169112.png',
-            tag: 'Repository',
-        },
-        {
-            id: 3,
-            name: 'Bitbucket',
-            by: 'Atlassian',
-            urlConnector: 'https://www.bitbucket.org',
-            description:
-                "Importez directement des agents dans l'application depuis des dépôts Bitbucket.",
-            imageUrl:
-                'https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/44_Bitbucket_logo_logos-512.png',
-            tag: 'Repository',
-        },
-        {
-            id: 4,
-            name: 'Azure Devops',
-            by: 'Microsoft',
-            urlConnector: 'https://www.azure.com',
-            description:
-                "Importez directement des agents dans l'application depuis des dépôts Azure Devops.",
-            imageUrl:
-                'https://www.datocms-assets.com/15783/1714031179-azure-devops-icon.svg?auto=format&fit=max&w=1200',
-            tag: 'Repository',
-        },
-        {
-            id: 5,
-            name: 'Google Cloud Plateform',
-            by: 'Google',
-            urlConnector: 'https://www.google.com/cloud',
-            description:
-                'Deployer vos agents directement sur votre Google Cloud Plateform.',
-            imageUrl:
-                'https://heroiclabs.com/images/pages/gcp/gcp-logo_hu408519032331794749.webp',
-            tag: 'Cloud',
-        },
-        {
-            id: 6,
-            name: 'Microsoft Azure',
-            by: 'Microsoft',
-            urlConnector: 'https://www.microsoft.com/en-us/azure',
-            description:
-                'Deployer vos agents directement sur votre Microsoft Azure.',
-            imageUrl:
-                'https://upload.wikimedia.org/wikipedia/fr/b/b6/Microsoft-Azure.png',
-            tag: 'Cloud',
-        },
-        {
-            id: 7,
-            name: 'Amazon Web Services',
-            by: 'Amazon',
-            urlConnector: 'https://aws.amazon.com/',
-            description:
-                'Deployer vos agents directement sur votre Amazon Web Services.',
-            imageUrl:
-                'https://logos-world.net/wp-content/uploads/2021/08/Amazon-Web-Services-AWS-Logo.png',
-            tag: 'Cloud',
-        },
-    ];
+    // If a category prop is provided, use it to filter. Otherwise, default to showing all or a default tab if we had tabs.
+    // Since the UI for tabs was removed based on previous instructions, we essentially filter by the passed category if present.
 
-    // Filtrage des applications selon la recherche
-    const filteredApps = AppList.filter((app) => {
-        const query = search.toLowerCase();
-        return (
-            app.name.toLowerCase().includes(query) ||
-            app.by.toLowerCase().includes(query) ||
-            app.description.toLowerCase().includes(query)
-        );
+    const filteredApps = MARKETPLACE_APPS.filter((app) => {
+        const matchesSearch = app.name.toLowerCase().includes(search.toLowerCase()) ||
+                              app.description.toLowerCase().includes(search.toLowerCase());
+        
+        // If category is provided, filter by it. If not, show all (or handle as needed).
+        // The previous logic used an internal activeTab state which forced 'Observability'.
+        // We now respect the passed category prop.
+        const matchesCategory = category ? app.category === category : true;
+        
+        return matchesSearch && matchesCategory;
     });
 
     return (
-        <Main>
+        <Container>
+            <MainLayout>
+                <ContentArea>
             <Header>
-                <h1>{t('connected-app.marketplace.title')}</h1>
-                <h2>{t('connected-app.marketplace.subtitle')}</h2>
+                        <Title>{t('connected-app.marketplace.title', 'Add New Configuration')}</Title>
+                        <Subtitle>{t('connected-app.marketplace.subtitle', 'Create persisted configurations to reuse across your agents')}</Subtitle>
                 <SearchInput
                     type="text"
-                    placeholder={t(
-                        'connected-app.marketplace.search.placeholder'
-                    )}
-                    name="app-search"
+                            placeholder={t('connected-app.marketplace.search.placeholder', 'Search apps...')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    style={{
-                        marginBottom: '16px',
-                        width: '60%',
-                    }}
                 />
             </Header>
-            <ResultSection>
-                <AppListTitle>
-                    {t('connected-app.marketplace.all-apps')}
-                </AppListTitle>
-                <ResultList>
-                    {filteredApps.length > 0 ? (
-                        filteredApps.map((app) => (
-                            <AppCard key={app.id} app={app} />
-                        ))
-                    ) : (
-                        <div
-                            style={{
-                                color: '#fff',
-                                fontSize: '18px',
-                                gridColumn: '1/-1',
-                                textAlign: 'center',
-                                padding: '32px 0',
-                            }}
-                        >
-                            {t(
-                                'connected-app.marketplace.search.noResults',
-                                'Aucune application trouvée.'
-                            )}
-                        </div>
+
+                    <Grid>
+                        {filteredApps.map((app) => (
+                            <CardWrapper key={app.id} onClick={() => onAppClick(app)}>
+                                <AppCard app={app} />
+                            </CardWrapper>
+                        ))}
+                        {filteredApps.length === 0 && (
+                            <NoResults>No applications found.</NoResults>
                     )}
-                </ResultList>
-            </ResultSection>
-        </Main>
+                    </Grid>
+                </ContentArea>
+            </MainLayout>
+        </Container>
     );
 };
+
 export default AppMarketplacePage;
 
-const Main = styled.main`
+const Container = styled.div`
     width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    max-width: 1400px;
+    margin: 0; /* Removed auto margins to align left */
 `;
 
-const Header = styled.header`
+const MainLayout = styled.div`
+    display: flex;
+    flex: 1;
+    gap: 32px;
     width: 100%;
+`;
+
+const Sidebar = styled.aside`
+    width: 280px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 32px 0;
-    background-color: #5050501c;
+    gap: 24px;
+    border-right: 1px solid #25325a;
+    padding-right: 24px;
+`;
+
+const ContentArea = styled.div`
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+`;
+
+const Header = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+`;
+
+const Title = styled.h1`
+    font-size: 28px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+`;
+
+const Subtitle = styled.h2`
+    font-size: 14px;
+    color: #a0a0a0;
+    font-weight: normal;
+    margin: 0;
 `;
 
 const SearchInput = styled(TextInput)`
-    width: 60%;
-    margin-bottom: 16px;
-
-    @media (max-width: 768px) {
-        width: 90%;
-    }
-`;
-const ResultSection = styled.section`
-    width: 70%;
-    margin-top: 32px;
-    padding: 16px;
-
-    @media (max-width: 768px) {
-        width: 95%;
+    width: 100%;
+    
+    input {
+        background: #0f1016;
     }
 `;
 
-const ResultList = styled.ul`
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
-    @media (max-width: 768px) {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    @media (max-width: 480px) {
-        grid-template-columns: 1fr;
-    }
+const FilterSection = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 `;
 
-const AppListTitle = styled.h3`
-    font-size: 24px;
+const FilterTitle = styled.h3`
+    font-size: 12px;
     font-weight: 600;
-    color: #ffffff;
-    margin-bottom: 18px;
+    text-transform: uppercase;
+    color: #64748b;
+    margin: 0;
+    padding-left: 8px;
+`;
+
+const FilterList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+`;
+
+const FilterItem = styled.button<{ $isActive: boolean }>`
+    background: ${props => props.$isActive ? '#8c52ff' : 'transparent'};
+    color: ${props => props.$isActive ? '#fff' : '#a0a0a0'};
+    border: none;
+    border-radius: 6px;
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+
+    &:hover {
+        background: ${props => props.$isActive ? '#8c52ff' : '#1a1a2e'};
+        color: #fff;
+    }
+`;
+
+const Grid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    width: 100%;
+    margin-bottom: 24px;
+`;
+
+const CardWrapper = styled.div`
+    cursor: pointer;
+    transition: transform 0.2s;
+
+    &:hover {
+        transform: translateY(-4px);
+    }
+
+    & > * {
+        pointer-events: none;
+    }
+`;
+
+const NoResults = styled.div`
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #a0a0a0;
+    padding: 40px;
+    background: #1a1a2e;
+    border-radius: 8px;
+    border: 1px dashed #25325a;
 `;

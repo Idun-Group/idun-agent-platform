@@ -1,0 +1,15 @@
+meta {
+  name: get config with api key
+  type: http
+  seq: 15
+}
+
+get {
+  url: http://0.0.0.0:8500/api/v1/agents/config
+  body: none
+  auth: none
+}
+
+headers {
+  auth: Bearer e82d57f469aec495951dba745b70ffc3ca64d904787d2a7372151d9ecaa18529
+}

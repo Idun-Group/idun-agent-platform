@@ -1,13 +1,17 @@
 """Observability package providing provider-agnostic tracing interfaces."""
 
 from .base import (
-    ObservabilityConfig,
+    ObservabilityConfigV1,
+    ObservabilityConfigV2,
     ObservabilityHandlerBase,
     create_observability_handler,
+    create_observability_handlers,
 )
 
 __all__ = [
-    "ObservabilityConfig",
+    "ObservabilityConfigV1",
+    "ObservabilityConfigV2",
     "ObservabilityHandlerBase",
     "create_observability_handler",
+    "create_observability_handlers",
 ]

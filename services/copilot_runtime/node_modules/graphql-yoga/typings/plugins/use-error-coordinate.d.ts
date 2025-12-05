@@ -1,0 +1,2 @@
+import { Plugin } from './types.js';
+export declare function useErrorCoordinate(): Plugin;

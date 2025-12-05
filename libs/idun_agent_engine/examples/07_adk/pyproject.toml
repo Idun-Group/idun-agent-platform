@@ -3,7 +3,7 @@
   version = "0.1.0"
   description = "Add your description here"
   readme = "README.md"
-  requires-python = "==3.13.*"
+  requires-python = "==3.12.*"
   dependencies = [
       "deepagents>=0.0.5",
       "idun-agent-engine==0.2.2.dev20251120201157",

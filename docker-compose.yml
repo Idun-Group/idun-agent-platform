@@ -15,14 +15,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - idun_network
+    # networks:
+    #   - idun_network
 
   manager:
-    image: freezaa9/idun-ai:latest
+    image: freezaa9/idun-ai:0.3.7
     container_name: idun-manager
     ports:
-      - "8080:8080"
+      - "8000:8000"
+    volumes:
+      - ./services/idun_agent_manager/alembic:/app/alembic
+      - ./services/idun_agent_manager/src:/app/src
     environment:
       # Database connection
       DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
@@ -30,7 +33,7 @@ services:
       AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
       ENVIRONMENT: production
       # Server configuration
-      PORT: 8080
+      PORT: 8000
       WORKERS: 2
 
       # Database tuning
@@ -46,23 +49,44 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-    networks:
-      - idun_network
+    # networks:
+    #   - idun_network
     restart: unless-stopped
 
   web:
-    image: freezaa9/idun-ai-web:latest
+    image: freezaa9/idun-ai-web:0.3.7
     container_name: idun-web
     ports:
       - "3000:3000"
     environment:
-      # From the browser, manager is exposed on host port 8080
-      - VITE_API_URL=http://localhost:8080
-    networks:
-      - idun_network
+      - VITE_API_URL=http://localhost:8000 # http://host.docker.internal:8000
+      - VITE_COPILOT_RUNTIME_URL=http://localhost:8001
+      - CHOKIDAR_USEPOLLING=true
+    # networks:
+    #   - idun_network
     depends_on:
-      manager:
-        condition: service_started
+      - manager
+      - copilot-runtime
+
+  copilot-runtime:
+    image: node:20-alpine
+    container_name: idun-copilot-runtime-dev
+    working_dir: /app
+    command: sh -lc "npm install --legacy-peer-deps && npm run dev"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./services/copilot_runtime:/app
+      - /app/node_modules
+    environment:
+      - PORT=8001
+      - MANAGER_URL=http://manager:8000
+    # networks:
+    #   - idun_network
+    depends_on:
+      - manager
 
   agent:
     build:
@@ -70,21 +94,21 @@ services:
       dockerfile: Dockerfile
     container_name: idun-agent
     ports:
-      - "8000:8000"
+      - "8002:8002"
       - "6006:6006" # For Phoenix local
     environment:
       IDUN_AGENT_API_KEY: 5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733
-      IDUN_MANAGER_HOST: http://manager:8080/api/v1/agents/config
+      IDUN_MANAGER_HOST: http://manager:8000
     depends_on:
       manager:
         condition: service_healthy
-    networks:
-      - idun_network
+    # networks:
+    #   - idun_network
     restart: unless-stopped
 
 volumes:
   postgres_data:
 
-networks:
-  idun_network:
-    driver: bridge
+# networks:
+#   idun_network:
+#     driver: bridge

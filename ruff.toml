@@ -1,7 +1,7 @@
 # Ruff configuration (repo-wide)
 # Centralized lint settings for the monorepo.
 
-target-version = "py313"
+target-version = "py312"
 line-length = 88
 
 extend-exclude = [

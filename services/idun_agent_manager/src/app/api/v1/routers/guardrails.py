@@ -9,17 +9,19 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.v1.deps import get_session
-from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
 from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2
+from idun_agent_schema.manager.guardrail_configs import ManagerGuardrailConfig as GuardrailConfig
 from idun_agent_schema.manager.managed_guardrail import (
     ManagedGuardrailCreate,
     ManagedGuardrailPatch,
     ManagedGuardrailRead,
 )
+from pydantic import TypeAdapter
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.v1.deps import get_session
+from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
 
 router = APIRouter()
 
@@ -52,7 +54,7 @@ async def _get_guardrail(id: str, session: AsyncSession) -> ManagedGuardrailMode
 
 def _model_to_schema(model: ManagedGuardrailModel) -> ManagedGuardrailRead:
     """Transform database model to response schema."""
-    guardrail = GuardrailsV2(**model.guardrail_config)
+    guardrail = TypeAdapter(GuardrailConfig).validate_python(model.guardrail_config)
     return ManagedGuardrailRead(
         id=model.id,  # type: ignore
         name=model.name,
@@ -76,7 +78,7 @@ async def create_guardrail(
     now = datetime.now(UTC)
 
     # Validate config
-    guardrail_config = GuardrailsV2(**request.guardrail.model_dump())
+    guardrail_config = request.guardrail
 
     model = ManagedGuardrailModel(
         id=uuid4(),
@@ -164,7 +166,7 @@ async def patch_guardrail(
     model = await _get_guardrail(id, session)
 
     model.name = request.name
-    guardrail_config = GuardrailsV2(**request.guardrail.model_dump())
+    guardrail_config = request.guardrail
     model.guardrail_config = guardrail_config.model_dump()
     model.updated_at = datetime.now(UTC)
 

@@ -1,0 +1,17 @@
+services:
+  manager:
+    ports:
+      - "5678:5678"
+    environment:
+      DEBUG: true
+    command: >
+      bash -c "
+      echo '=== Syncing manager dependencies (with debugpy) ===' &&
+      uv sync --project /app &&
+      echo '=== Removing PyPI schema from venv ===' &&
+      uv pip uninstall --python /app/.venv/bin/python idun-agent-schema &&
+      echo '=== Installing local schema into venv ===' &&
+      uv pip install --python /app/.venv/bin/python --no-deps -e /schema &&
+      echo '=== Starting uvicorn with debugpy ===' &&
+      /app/.venv/bin/python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "

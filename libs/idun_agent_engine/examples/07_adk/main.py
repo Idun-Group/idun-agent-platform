@@ -10,9 +10,9 @@ from idun_agent_engine.core.server_runner import run_server
 load_dotenv()
 
 import os
-os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "chat-appsheet-prd"
-os.environ["GOOGLE_CLOUD_LOCATION"] = "us-central1"  # e.g., us-central1
+# os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
+# os.environ["GOOGLE_CLOUD_PROJECT"] = "chat-appsheet-prd"
+# os.environ["GOOGLE_CLOUD_LOCATION"] = "us-central1"  # e.g., us-central1
 
 # Path to our configuration file
 config_path = str(Path(__file__).parent / "config.yaml")

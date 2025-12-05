@@ -3,7 +3,7 @@ services:
   idun-agent-web:
     image: node:lts-alpine
     working_dir: /app
-    command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 3000"
+    command: sh -lc "npm ci && npm run dev -- --host localhost --port 3000"
     volumes:
       - ./:/app
       - /app/node_modules
@@ -16,7 +16,7 @@ services:
       # - VITE_API_URL=http://localhost:8000
       - VITE_API_PROXY_TARGET=http://host.docker.internal:8000
       - CHOKIDAR_USEPOLLING=true
-  
+
 volumes:
   postgres_data:
   redis_data:
