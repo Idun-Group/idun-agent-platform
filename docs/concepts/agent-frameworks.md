@@ -27,3 +27,9 @@ Support for additional frameworks can be added through the plugin system.
 ## Framework Selection
 
 Modify the config.yaml file with the appropriate framework based on your use case, existing infrastructure, features...
+
+## Next Steps
+
+- [Basic Configuration Guide →](../guides/01-basic-configuration.md) - Set up your first agent
+- [CLI Setup Guide →](../guides/03-cli-setup.md) - Learn CLI commands for running agents
+- [Configuration Reference →](../reference/configuration.md) - Detailed configuration options for each framework

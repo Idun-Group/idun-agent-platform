@@ -10,7 +10,7 @@ from fastapi import FastAPI
 
 def run_server(
     app: FastAPI,
-    host: str = "0.0.0.0",
+    host: str = "localhost",
     port: int = 8000,
     reload: bool = False,
     log_level: str = "info",

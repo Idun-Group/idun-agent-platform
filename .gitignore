@@ -205,3 +205,6 @@ poetry.lock
 *.db-wal
 .DS_Store
 *.DS_Store
+
+# uv lock file
+uv.lock
