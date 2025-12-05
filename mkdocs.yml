@@ -114,6 +114,7 @@ nav:
       - Observability & Checkpointing: guides/02-observability-checkpointing.md
       - CLI Setup: guides/03-cli-setup.md
       - Guardrails: guides/04-guardrails.md
+      - MCP Setup: guides/05-mcp.md
   - Deployment:
       - Self-Hosted: deployment/self-hosted.md
       - Idun Cloud: deployment/idun-cloud.md
