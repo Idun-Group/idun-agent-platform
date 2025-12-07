@@ -56,10 +56,9 @@ pip install idun-agent-engine
 
 <div class="logo-slider">
   <div class="logo-track">
-    <img src="images/logo/langgraph-color.png class="logo-item" alt="LangGraph"/>
+    <img src="images/logo/langgraph-color.png" class="logo-item" alt="LangGraph"/>
     <img src="images/logo/agent-development-kit.png" class="logo-item" alt="Agent Development Kit"/>
     <img src="images/logo/langfuse-color.png" class="logo-item" alt="Langfuse"/>
-    <img src="images/logo/Postgresql_elephant.png" class="logo-item" alt="Postgres"/>
     <img src="images/logo/mcp.png" class="logo-item" alt="MCP"/>
     <img src="images/logo/A2A.png" class="logo-item" alt="A2A"/>
     <img src="images/logo/Postgresql_elephant.png" class="logo-item" alt="Postgres"/>
@@ -67,12 +66,11 @@ pip install idun-agent-engine
     <img src="images/logo/langsmith-color.png" class="logo-item" alt="LangSmith"/>
     <img src="images/logo/google-cloud.png" class="logo-item" alt="Google Cloud"/>
     <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
-    <img src="images/logo/langchain-color.png class="logo-item" alt="LangChain"/>
+    <img src="images/logo/langchain-color.png" class="logo-item" alt="LangChain"/>
     <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>
-    <img src="images/logo/langgraph-color.png class="logo-item" alt="LangGraph"/>
+    <img src="images/logo/langgraph-color.png" class="logo-item" alt="LangGraph"/>
     <img src="images/logo/agent-development-kit.png" class="logo-item" alt="Agent Development Kit"/>
     <img src="images/logo/langfuse-color.png" class="logo-item" alt="Langfuse"/>
-    <img src="images/logo/Postgresql_elephant.png" class="logo-item" alt="Postgres"/>
     <img src="images/logo/mcp.png" class="logo-item" alt="MCP"/>
     <img src="images/logo/A2A.png" class="logo-item" alt="A2A"/>
     <img src="images/logo/Postgresql_elephant.png" class="logo-item" alt="Postgres"/>
@@ -80,7 +78,7 @@ pip install idun-agent-engine
     <img src="images/logo/langsmith-color.png" class="logo-item" alt="LangSmith"/>
     <img src="images/logo/google-cloud.png" class="logo-item" alt="Google Cloud"/>
     <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
-    <img src="images/logo/langchain-color.png class="logo-item" alt="LangChain"/>
+    <img src="images/logo/langchain-color.png" class="logo-item" alt="LangChain"/>
     <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>
   </div>
 </div>
