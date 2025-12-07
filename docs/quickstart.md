@@ -33,7 +33,7 @@ The manager UI will be available at `http://localhost:3000`
 
 ## 3. Create an Agent configuration
 
-![Create agent](images/screenshots/create-agent.png)
+![Create agent](images/screenshots/create-agent-page.png)
 
 Navigate to `http://localhost:3000`, press login (without specifying credentials).
 
@@ -52,7 +52,7 @@ Navigate to `http://localhost:3000`, press login (without specifying credentials
 - Skip `MCP Server` and `Guardrails`. This will be addressed later.
 - Click `Create Agent`.
 
-![Create agent](images/screenshots/create-agent-2.png)
+![Create agent](images/screenshots/create-agent-page-2.png)
 
 !!! Congratulation
     Your agent's configuration is created
