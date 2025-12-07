@@ -99,38 +99,34 @@ watch:
 nav:
   - Home: index.md
   - Getting Started: quickstart.md
-  - Concepts:
-      - Overview: concepts/overview.md
-      - Architecture: concepts/architecture.md
-      - Agent Frameworks: concepts/agent-frameworks.md
-      - Configuration: concepts/configuration.md
-      - Engine: concepts/engine.md
-      - Manager: concepts/manager.md
-      - Observability: concepts/observability.md
-      - Guardrails: concepts/guardrails.md
-      - Deployment: concepts/deployment.md
+  - Observability:
+      - Overview: concepts/observability.md
+      - Setup Guide: guides/02-observability-checkpointing.md
+      - Reference: reference/observability.md
+  - Memory:
+      - Overview: memory/index.md
+      - Checkpointing Guide: guides/02-observability-checkpointing.md#checkpointing
+  - MCP:
+      - Setup Guide: guides/05-mcp.md
+      - Configuration: concepts/configuration.md#mcp-servers
+  - A2A:
+      - Overview: a2a/index.md
+  - Guardrails:
+      - Overview: concepts/guardrails.md
+      - Setup Guide: guides/04-guardrails.md
   - Guides:
       - Basic Configuration: guides/01-basic-configuration.md
-      - Observability & Checkpointing: guides/02-observability-checkpointing.md
       - CLI Setup: guides/03-cli-setup.md
-      - Guardrails: guides/04-guardrails.md
-      - MCP Setup: guides/05-mcp.md
   - Deployment:
       - Self-Hosted: deployment/self-hosted.md
       - Idun Cloud: deployment/idun-cloud.md
+      - Concepts: concepts/deployment.md
   - Reference:
       - API: reference/api.md
       - REST API: reference/rest-api.md
       - Configuration: reference/configuration.md
       - CLI: reference/cli.md
       - Environment Variables: reference/environment.md
-      - Observability: reference/observability.md
-  - Agent Manager:
-      - Overview: agent-manager/overview.md
-      - Quickstart: agent-manager/quickstart.md
-      - API: agent-manager/api.md
-      - Authentication: agent-manager/authentication.md
-  - Agent Schema: idun-schema/index.md
   - More:
       - Roadmap: more/roadmap.md
       - Contributing: more/contributing.md
