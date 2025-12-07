@@ -1,7 +1,7 @@
 ## Project metadata and dependencies (PEP 621)
 [project]
 name = "idun-agent-manager"
-version = "0.3.8"
+version = "0.3.9"
 description = "Modern FastAPI backend for managing AI agents with PostgreSQL, SQLAlchemy, and observability"
 readme = "README.md"
 license = { text = "MIT" }
@@ -47,7 +47,7 @@ dependencies = [
   "structlog>=23.2.0,<24.0.0",
 
   # Idun schemas
-  "idun-agent-schema>=0.3.6,<1.0.0",
+  "idun-agent-schema>=0.3.8,<1.0.0",
 ]
 
 
