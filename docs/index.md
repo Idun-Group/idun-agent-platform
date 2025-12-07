@@ -2,7 +2,11 @@
   <img src="images/logo.png" alt="Idun Agent Platform" width="65"/>
   <h1 style="font-size: 2em; margin: 0.3em 0;">Idun Agent Platform</h1>
   <p style="font-size: 1.05em; color: #666; max-width: 650px; margin: 0.4em auto 1em auto; line-height: 1.5;">
-    Build, deploy, and manage AI agents across multiple frameworks
+From AI prototypes to governed agent fleets.
+
+Idun Agent Platform is an open source, sovereign platform that makes it easy to put generative AI agents in production and operate them at scale, on your own infrastructure.
+
+It is built and battle tested with large enterprises that need strong security, observability, MCP and guardrails management with EU level compliance.
   </p>
 
   <div style="display: inline-block; max-width: 400px;">
@@ -52,21 +56,22 @@ pip install idun-agent-engine
 
 <div class="logo-slider">
   <div class="logo-track">
-    <img src="images/haystack.png" class="logo-item" alt="Haystack"/>
-    <img src="images/langgraph.png" class="logo-item" alt="LangGraph"/>
-    <img src="images/crew.png" class="logo-item" alt="CrewAI"/>
-    <img src="images/langfuse.jpg" class="logo-item" alt="Langfuse"/>
-    <img src="images/phoenix.jpg" class="logo-item" alt="Phoenix"/>
-    <img src="images/aws.png" class="logo-item" alt="AWS"/>
-    <img src="images/gcp.png" class="logo-item" alt="GCP"/>
-    <img src="images/azure.jpg" class="logo-item" alt="Azure"/>
-    <img src="images/haystack.png" class="logo-item" alt="Haystack"/>
-    <img src="images/langgraph.png" class="logo-item" alt="LangGraph"/>
-    <img src="images/crew.png" class="logo-item" alt="CrewAI"/>
-    <img src="images/langfuse.jpg" class="logo-item" alt="Langfuse"/>
-    <img src="images/aws.png" class="logo-item" alt="AWS"/>
-    <img src="images/gcp.png" class="logo-item" alt="GCP"/>
-    <img src="images/azure.jpg" class="logo-item" alt="Azure"/>
+    <img src="images/logo/langgraph-color.svg" class="logo-item" alt="LangGraph"/>
+    <img src="images/logo/agent-development-kit.png" class="logo-item" alt="Agent Development Kit"/>
+    <img src="images/logo/langfuse-color.svg" class="logo-item" alt="Langfuse"/>
+    <img src="images/logo/phoenix.svg" class="logo-item" alt="Phoenix"/>
+    <img src="images/logo/langsmith-color.svg" class="logo-item" alt="LangSmith"/>
+    <img src="images/logo/google-cloud.png" class="logo-item" alt="Google Cloud"/>
+    <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
+    <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>
+    <img src="images/logo/langgraph-color.svg" class="logo-item" alt="LangGraph"/>
+    <img src="images/logo/agent-development-kit.png" class="logo-item" alt="Agent Development Kit"/>
+    <img src="images/logo/langfuse-color.svg" class="logo-item" alt="Langfuse"/>
+    <img src="images/logo/phoenix.svg" class="logo-item" alt="Phoenix"/>
+    <img src="images/logo/langsmith-color.svg" class="logo-item" alt="LangSmith"/>
+    <img src="images/logo/google-cloud.png" class="logo-item" alt="Google Cloud"/>
+    <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
+    <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>
   </div>
 </div>
 
@@ -105,9 +110,18 @@ pip install idun-agent-engine
 }
 </style>
 
-<h2 style="color: #7c3aed;">Why Idun?</h2>
+<h2 style="color: #7c3aed;">Choose your profile</h2>
 
-The AI agent ecosystem is fragmented. Each framework has its own deployment patterns and monitoring solutions. Idun provides a consistent layer over different agent frameworks—configure once, deploy anywhere. We handle deployment, observability, and scaling so you can focus on building better agents.
+<h3 style="color: #7c3aed;">I am a GenAI developer</h3>
+
+You want to focus on agents logic and ship agents, not rebuild infrastructure.
+
+With Idun Agent Platform you can:
+
+- Wrap your agent framework (LangGraph, ADK, Haystack) in a production ready FastAPI service with AG-UI endpoint.
+- Add tracing, feedback and metrics without rewriting your code.
+- Run the same agent in local, staging and production environments.
+- Access over tools and set memory instead of hard coding.
 
 <div class="feature-grid">
   <div class="feature-card">
@@ -131,6 +145,7 @@ The AI agent ecosystem is fragmented. Each framework has its own deployment patt
   </div>
 </div>
 
+**Start here:** [[Full Quickstart Guide →](quickstart.md)
 ---
 
 ## What is Idun?
