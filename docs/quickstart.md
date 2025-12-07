@@ -6,7 +6,7 @@ This guide will walk you through setting up the Idun Agent Platform and deployin
 
 Before you begin, make sure you have the following installed:
 
-- **Python 3.12+** - Required for running the agent platform [Install Python](https://www.python.org/downloads/){:target="_blank"}
+- **Python 3.12** - Required for running the agent platform [Install Python](https://www.python.org/downloads/){:target="_blank"}
 - **Docker** and **Docker Compose** - Required for running the platform containers. [Steps to install Docker](https://docs.docker.com/get-started){:target="_blank"}.
 - **Git** - For cloning the repository
 - **uv** - For Python package management. [Steps to install uv](https://docs.astral.sh/uv/getting-started/installation/){:target="_blank"}
