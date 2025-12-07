@@ -93,6 +93,10 @@ Follow the ADK Agent python getting started tutorial:
     ```bash
     gcloud auth application-default login
     ```
+    Keep using gemini 2.5 instead of gemini 3 pro preview if you didn't activate gemini preview or if you don't use us-central1 as locatoon
+    ```bash
+    gemini-2.5-flash
+    ```
     When running ADK web use a different port because port 8000 is used by the platform
     ```bash
     adk web --port 8010
