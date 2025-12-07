@@ -46,7 +46,7 @@ Navigate to `http://localhost:3000`, press login (without specifying credentials
 - Name: Specify your agent's name, set it to `My first agent`.
 - Agent Definition Path: Specify where your agent code will be located, set it to `my_agent/agent.py:root_agent`
 - App Name: ADK require a app name so set it to `firstagent`
-- Skip `session service` and `observablity`. This will be addressed later (By default agent memory is set to `InMemory`).
+- For `session service` and `observablity` keep default value. This will be addressed later (By default agent memory is set to `AdkInMemory`).
 - Click `Next`.
 - Skip `MCP Server` and `Guardrails`. This will be addressed later.
 - Click `Create Agent`.
