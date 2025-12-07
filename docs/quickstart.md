@@ -33,7 +33,7 @@ The manager UI will be available at `http://localhost:3000`
 
 ## 3. Create an Agent configuration
 
-![Create Image](images/create.png)
+![Create agent](images/screenshots/create-agent.png)
 
 Navigate to `http://localhost:3000`, press login (without specifying credentials).
 
@@ -51,6 +51,8 @@ Navigate to `http://localhost:3000`, press login (without specifying credentials
 - Click `Next`.
 - Skip `MCP Server` and `Guardrails`. This will be addressed later.
 - Click `Create Agent`.
+
+![Create agent](images/screenshots/create-agent-2.png)
 
 !!! Congratulation
     Your agent's configuration is created
@@ -131,8 +133,6 @@ idun agent serve --source manager
     Your ADK agent is up and running with idun agent platform !
 
 ## 6. Test your agent
-
-![Chat with agent](images/chat.png)
 
 Navigate to the API Info tab of your agent in the manager UI to communicate with your agent.
 
