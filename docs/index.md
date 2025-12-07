@@ -118,6 +118,8 @@ pip install idun-agent-engine
 }
 </style>
 
+![Homepage](images/screenshots/homepage.png)
+
 <h2 style="color: #7c3aed;">For GenAI developer and IA data platform company team</h2>
 
 <h3 style="color: #7c3aed;">I am a GenAI developer</h3>
@@ -277,7 +279,7 @@ Supported backends:
 ### Local Development
 
 ```bash
-idun agent serve --source=file --path=./config.yaml
+idun agent serve --source=manager
 ```
 
 Run agents locally with hot reload, SQLite checkpointing, and local observability.
