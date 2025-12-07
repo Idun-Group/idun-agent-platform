@@ -39,8 +39,7 @@ Navigate to `http://localhost:3000`, press login (without specifying credentials
 
 - Click on "Create an agent"
 - Name: Specify your agent's name, set it to `My first agent`.
-- Base url: Add the url your agents will be accessed from.
-  - For local development, set it to `http://localhost:8008`.
+- Base url: Add the url your agents will be accessed from, set it to `http://localhost:8008`.
 - Server Port: For local development, set it to `8008`.
 - Agent framwork: Select `ADK` (Agent development kit by Google).
 - Click `Next`.
@@ -54,7 +53,7 @@ Navigate to `http://localhost:3000`, press login (without specifying credentials
 
 ![Create agent](images/screenshots/create-agent-page-2.png)
 
-!!! Congratulation
+!!! success "Congratulation"
     Your agent's configuration is created
 
 ## 4. Get the Agent API Key
@@ -129,7 +128,7 @@ Run the agent with the following command
 idun agent serve --source manager
 ```
 
-!!! Congratulation
+!!! success "Congratulation"
     Your ADK agent is up and running with idun agent platform !
 
 ## 6. Test your agent
@@ -144,7 +143,7 @@ What time is it in Paris ?
 
 ![Get agent api key](images/screenshots/chat-with-agent.png)
 
-!!! Congratulation
+!!! success "Congratulation"
     You're all done !
 
 **Next →** [Add Observability](guides/02-observability-checkpointing.md)
