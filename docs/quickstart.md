@@ -6,10 +6,10 @@ This guide will walk you through setting up the Idun Agent Platform and deployin
 
 Before you begin, make sure you have the following installed:
 
-- **Python 3.12+** - Required for running the agent platform
-- **Docker** and **Docker Compose** - Required for running the platform containers. [Steps to install docker](https://docs.docker.com/get-started).
+- **Python 3.12+** - Required for running the agent platform [Install python](https://www.python.org/downloads/){:target="_blank"}
+- **Docker** and **Docker Compose** - Required for running the platform containers. [Steps to install docker](https://docs.docker.com/get-started){:target="_blank"}.
 - **Git** - For cloning the repository
-- **uv** - For python package management. [Steps to install uv](https://docs.astral.sh/uv/getting-started/installation/)
+- **uv** - For python package management. [Steps to install uv](https://docs.astral.sh/uv/getting-started/installation/){:target="_blank"}
 
 ## 1. Clone the Repository
 
@@ -18,17 +18,7 @@ git clone https://github.com/Idun-Group/idun-agent-platform.git
 cd idun-agent-platform
 ```
 
-## 2. Configure Environment Variables
-
-Copy the `.env` file and configure it with your settings:
-
-```bash
-cp .env .env.local
-```
-
-Update the required values in `.env.local` as needed. OIDC authentication is supported for both Okta and Auth0. Configure the `AUTH__` variables to match your authentication provider setup.
-
-## 3. Start the Platform
+## 2. Start the Platform
 
 !!! tip
     Make sure you start the docker daemon before running the container
@@ -41,70 +31,121 @@ docker compose -f docker-compose.dev.yml up --build
 
 The manager UI will be available at `http://localhost:3000`
 
-## 4. Create an Agent
+## 3. Create an Agent configuration
 
 ![Create Image](images/create.png)
 
-Navigate to `http://localhost:3000`, press login (without specifying credentials) and create a new agent through the web interface. When creating your agent:
+Navigate to `http://localhost:3000`, press login (without specifying credentials).
 
-- Specify your agent's info
-- Use an unused port in the base URL and ensure the same port is configured in the runtime settings. You can choose any available port except for `8000` (used by the manager) and `8001` used by copilot-kit.
-- Press Next
-- Specify the correct path to your agent's entrypoint in the graph definition field (e.g., for a LangGraph CompiledGraph, use `./agent.py:graph`)
-- Optional: Add your checkpointing (ADK or Langgraph) and your observability platform of your choice, and fill out each required field.
-- Skip the guardrails and MCP section for now, and press Next.
+- Click on "Create an agent"
+- Name: Specify your agent's name, set it to `My first agent`.
+- Base url: Add the url your agents will be accessed from.
+  - For local development, set it to `http://localhost:8008`.
+- Server Port: For local development, set it to `8008`.
+- Agent framwork: Select `ADK` (Agent development kit by Google).
+- Click `Next`.
+- Name: Specify your agent's name, set it to `My first agent`.
+- Agent Definition Path: Specify where your agent code will be located, set it to `my_agent/agent.py:root_agent`
+- App Name: ADK require a app name so set it to `firstagent`
+- Skip `session service` and `observablity`. This will be addressed later (By default agent memory is set to `InMemory`).
+- Click `Next`.
+- Skip `MCP Server` and `Guardrails`. This will be addressed later.
+- Click `Create Agent`.
 
-!!! note
-    For guardrails you can only choose from: Ban List (to block specific words/phrases) or PII Detector (to detect sensitive information).
-    More guardrails will be supported soon.
-    This requires setting the GUARDRAILS_API_KEY env var
+!!! Congratulation
+    Your agent's configuration is created
 
-You can use this example agent as a reference: [https://github.com/Idun-Group/demo-adk-idun-agent](https://github.com/Idun-Group/demo-adk-idun-agent)
+## 4. Get the Agent API Key
 
-## 5. Get the Agent API Key
+In the Agent Dashboard, click on your agent, then `API Integration`, and press `Show Key`. Copy your agent's KEY. We will use it in the next step
 
-In the Agent Dashboard, click on your agent, then API Integration, and press Show Key. Copy your agent's KEY. We will use it in the next step
+![Get agent api key](images/screenshots/getting-started-get-api-key.png)
 
-## 6. Launch the Agent Server
+## 5. Create your Agent
 
-Open a new terminal and set up the environment:
+In a separate folder create an ADK agent.
+
+### Step 1: Create the Project Directory
 
 ```bash
-uv sync
+mkdir demo-adk-idun-agent
+cd demo-adk-idun-agent
 ```
 
-Activate the virtual environment:
+### Step 2: Init ADK agent
 
-=== "Mac/Linux"
+In your code editor setup a Python 3.12 environment.
+
+Follow the ADK Agent python getting started tutorial:
+[Python Quickstart for ADK](https://google.github.io/adk-docs/get-started/python/#next-build-your-agent){:target="_blank"}
+
+!!! Tips
+    If you using Vertex AI model don't forget to authentificate your gcloud account:
     ```bash
-    source .venv/bin/activate
+    gcloud auth application-default login
     ```
-
-=== "Windows (PowerShell)"
-    ```powershell
-    .venv\Scripts\Activate.ps1
-    ```
-
-Start the agent server with your API key:
-
-!!! note
-    Before running the command below, make sure the agent source path that you defined when creating your agent, matches the path you're running the command from. For example: if your entrypoint is this: `agents/agent.py:graph`, your current working directory needs to be `agents`
-
-=== "Mac/Linux"
+    When running adk web use a different port because port 8000 is used by the platform
     ```bash
-    IDUN_MANAGER_HOST="http://localhost:8000" IDUN_AGENT_API_KEY=<YOUR-API_KEY> idun agent serve --source=manager
+    adk web --port 8010
     ```
 
-=== "Windows (PowerShell)"
-    ```powershell
-    $env:IDUN_MANAGER_HOST="http://localhost:8000"; $env:IDUN_AGENT_API_KEY="<YOUR-API_KEY>"; idun agent serve --source=manager
-    ```
+### Step 3: Setup idun platform access
 
-## 7. Interact with Your Agent
+Install idun-agent-engine package:
+
+```bash
+pip install idun-agent-engine
+```
+
+Copy the following key in your agent .env file.
+
+```bash
+IDUN_MANAGER_HOST=http://localhost:8000
+IDUN_AGENT_API_KEY=<COPY THE AGENT IDUN KEY FROM PREVIOUS STEP 4>
+```
+
+or export them in your terminal
+
+```bash
+export IDUN_MANAGER_HOST=http://localhost:8000
+export IDUN_AGENT_API_KEY=<COPY THE AGENT IDUN KEY FROM PREVIOUS STEP 4>
+```
+
+### Step 4: Run your agent
+
+Export the env variable from the .env in your terminal
+
+```bash
+set -o allexport
+source ./my_agent/.env
+set +o allexport
+```
+
+Run the agent with the following command
+
+```bash
+idun agent serve --source manager
+```
+
+!!! Congratulation
+    Your ADK agent is up and running with idun agent platform !
+
+## 6. Test your agent
 
 ![Chat with agent](images/chat.png)
 
 Navigate to the API Info tab of your agent in the manager UI to communicate with your agent.
+
+Test the following question:
+
+```bash
+What time is it in Paris ?
+```
+
+![Get agent api key](images/screenshots/chat-with-agent.png)
+
+!!! Congratulation
+    You're all done !
 
 **Next →** [Add Observability](guides/02-observability-checkpointing.md)
 
