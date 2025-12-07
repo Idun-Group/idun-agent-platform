@@ -93,7 +93,7 @@ Follow the ADK Agent python getting started tutorial:
     ```bash
     gcloud auth application-default login
     ```
-    Keep using gemini 2.5 instead of gemini 3 pro preview if you didn't activate gemini preview or if you don't use us-central1 as locatoon
+    Keep using gemini 2.5 instead of gemini 3 pro preview if you didn't activate gemini preview or if you don't use us-central1 as location
     ```bash
     gemini-2.5-flash
     ```
@@ -101,6 +101,7 @@ Follow the ADK Agent python getting started tutorial:
     ```bash
     adk web --port 8010
     ```
+    ADK does not support folder paths that contain spaces.
 
 ### Step 3: Setup Idun platform access
 
@@ -115,13 +116,6 @@ Copy the following key in your agent .env file.
 ```bash
 IDUN_MANAGER_HOST=http://localhost:8000
 IDUN_AGENT_API_KEY=<COPY THE AGENT IDUN KEY FROM PREVIOUS STEP 5>
-```
-
-or export them in your terminal
-
-```bash
-export IDUN_MANAGER_HOST=http://localhost:8000
-export IDUN_AGENT_API_KEY=<COPY THE AGENT IDUN KEY FROM PREVIOUS STEP 5>
 ```
 
 ### Step 4: Run your agent
@@ -145,7 +139,7 @@ idun agent serve --source manager
 
 ## 7. Test your agent
 
-Navigate to the API Info tab of your agent in the manager UI to communicate with your agent.
+Navigate to the API Integration tab of your agent in the manager UI to communicate with your agent.
 
 Test the following question:
 
