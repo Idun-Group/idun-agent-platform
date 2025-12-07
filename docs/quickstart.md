@@ -39,9 +39,9 @@ The manager UI will be available at `http://localhost:3000`
 
 ## 4. Create an Agent configuration
 
-![Create agent](images/screenshots/create-agent-page.png)
-
 Navigate to `http://localhost:3000`, press login (without specifying credentials).
+
+![Create agent](images/screenshots/create-agent-page.png)
 
 - Click on "Create an agent"
 - Name: Specify your agent's name, set it to `My first agent`.
