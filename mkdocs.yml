@@ -116,13 +116,12 @@ nav:
       - Overview: a2a/overview.md
   - Guardrails:
       - Overview: guardrails/overview.md
-      - Setup Guide: guardrails/setup-guide.md
   - SSO/RBAC:
       - Overview: sso-rbac/overview.md
   - Deployment:
+      - Overview: deployment/overview.md
       - Self-Hosted: deployment/self-hosted.md
       - Idun Cloud: deployment/idun-cloud.md
-      - Concepts: deployment/concepts.md
   - Guides:
       - Basic Configuration: guides/basic-configuration.md
       - CLI Setup: guides/cli-setup.md

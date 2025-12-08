@@ -1,6 +1,9 @@
 # Idun Cloud
 
 ## Coming Soon
+!!! warning
+    The guide for this feature is coming soon.
+    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
 
 Idun Cloud is a fully managed platform for deploying and operating AI agents with zero infrastructure management.
 
