@@ -30,6 +30,6 @@ Modify the config.yaml file with the appropriate framework based on your use cas
 
 ## Next Steps
 
-- [Basic Configuration Guide →](../guides/01-basic-configuration.md) - Set up your first agent
-- [CLI Setup Guide →](../guides/03-cli-setup.md) - Learn CLI commands for running agents
+- [Basic Configuration Guide →](../guides/basic-configuration.md) - Set up your first agent
+- [CLI Setup Guide →](../guides/cli-setup.md) - Learn CLI commands for running agents
 - [Configuration Reference →](../reference/configuration.md) - Detailed configuration options for each framework

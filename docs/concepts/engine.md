@@ -386,6 +386,6 @@ The engine manages resources efficiently:
 ## Next Steps
 
 - [Learn about Agent Frameworks →](agent-frameworks.md)
-- [Explore Configuration Options →](configuration.md)
-- [Set Up Observability →](observability.md)
-- [Deploy Your Agent →](deployment.md)
+- [Explore Configuration Options →](../mcp/configuration.md)
+- [Set Up Observability →](../observability/overview.md)
+- [Deploy Your Agent →](../deployment/concepts.md)

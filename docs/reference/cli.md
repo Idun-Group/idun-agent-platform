@@ -347,7 +347,7 @@ The CLI uses standard exit codes:
 
 ## See Also
 
-- [CLI Setup Guide](../guides/03-cli-setup.md) - Detailed setup instructions
+- [CLI Setup Guide](../guides/cli-setup.md) - Detailed setup instructions
 - [Configuration Reference](configuration.md) - Complete configuration field documentation
 - [Environment Variables](environment.md) - Environment variable reference
 - [REST API Reference](rest-api.md) - Agent server API documentation

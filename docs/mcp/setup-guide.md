@@ -413,7 +413,7 @@ Ready to explore more? Check out these resources:
 
     **[ADK Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/adk)** - Explore Google's Agent Development Kit features and capabilities
 
-    **[Observability Guide](./02-observability-checkpointing.md)** - Set up monitoring and tracing for your agents
+    **[Observability Guide](../observability/setup-guide.md)** - Set up monitoring and tracing for your agents
 
     **[Configuration Reference](../reference/configuration.md#mcp-servers)** - Detailed documentation on all MCP configuration options
 

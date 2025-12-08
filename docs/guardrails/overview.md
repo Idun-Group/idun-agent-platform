@@ -22,5 +22,5 @@ Track guardrail activations and violations to understand agent behavior patterns
 
 ## Next Steps
 
-- [Guardrails Setup Guide →](../guides/04-guardrails.md) - Complete guide to setting up guardrails
+- [Guardrails Setup Guide →](setup-guide.md) - Complete guide to setting up guardrails
 - [Configuration Reference →](../reference/configuration.md#guardrails-configuration) - Detailed configuration options

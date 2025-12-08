@@ -12,5 +12,5 @@ Included platforms:
 
 ## Next Steps
 
-- [Observability Setup Guide →](../guides/02-observability-checkpointing.md) - Complete guide to setting up observability
-- [Observability Reference →](../reference/observability.md) - Detailed provider configurations
+- [Observability Setup Guide →](setup-guide.md) - Complete guide to setting up observability
+- [Observability Reference →](reference.md) - Detailed provider configurations

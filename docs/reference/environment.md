@@ -518,5 +518,5 @@ Get-ChildItem Env:
 
 - [Configuration Reference](configuration.md) - Configuration file structure and fields
 - [CLI Reference](cli.md) - CLI commands and usage
-- [Observability Guide](../guides/02-observability-checkpointing.md) - Setting up observability
+- [Observability Guide](../observability/setup-guide.md) - Setting up observability
 - [Guardrails Guide](../guides/05-guardrails.md) - Configuring guardrails

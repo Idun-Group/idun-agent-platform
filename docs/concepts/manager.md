@@ -26,6 +26,6 @@ Role-based access control ensures secure multi-user access to agent management f
 
 ## Next Steps
 
-- [CLI Setup Guide →](../guides/03-cli-setup.md) - Learn CLI commands for managing agents
+- [CLI Setup Guide →](../guides/cli-setup.md) - Learn CLI commands for managing agents
 - [REST API Reference →](../reference/rest-api.md) - Complete API documentation
 - [Manager Quickstart →](../agent-manager/quickstart.md) - Get started with the Manager

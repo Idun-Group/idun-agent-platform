@@ -11,9 +11,7 @@ It is built and battle tested with large enterprises that need strong security, 
 
   <div style="display: inline-block; max-width: 400px;">
 
-```bash
-pip install idun-agent-engine
-```
+[Quickstart Guide →](getting-started/quickstart.md){ .md-button .md-button--primary }
 
   </div>
 </div>
@@ -68,6 +66,7 @@ pip install idun-agent-engine
     <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
     <img src="images/logo/langchain-color.png" class="logo-item" alt="LangChain"/>
     <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>
+    <img src="images/logo/ag-ui.png" class="logo-item" alt="AG-UI"/>
     <img src="images/logo/langgraph-color.png" class="logo-item" alt="LangGraph"/>
     <img src="images/logo/agent-development-kit.png" class="logo-item" alt="Agent Development Kit"/>
     <img src="images/logo/langfuse-color.png" class="logo-item" alt="Langfuse"/>
@@ -80,6 +79,7 @@ pip install idun-agent-engine
     <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
     <img src="images/logo/langchain-color.png" class="logo-item" alt="LangChain"/>
     <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>
+    <img src="images/logo/ag-ui.png" class="logo-item" alt="AG-UI"/>
   </div>
 </div>
 
@@ -150,7 +150,7 @@ With Idun Agent Platform you can:
   </div>
 </div>
 
-**Start here:** [Full Quickstart Guide →](quickstart.md)
+**Start here:** [Full Quickstart Guide →](getting-started/quickstart.md)
 ---
 
 <h3 style="color: #7c3aed;">I represent a IA data platform company team</h3>
@@ -191,7 +191,7 @@ With Idun Agent Platform you can:
   </div>
 </div>
 
-**Start here:** [Full Quickstart Guide →](quickstart.md)
+**Start here:** [Full Quickstart Guide →](getting-started/quickstart.md)
 ---
 
 ## What is Idun?
@@ -233,7 +233,7 @@ Supported providers:
 - **GCP Logging/Trace** - Cloud-native logging and distributed tracing
 - **LangSmith** - LangChain ecosystem monitoring
 
-[Observability Guide →](guides/02-observability-checkpointing.md)
+[Observability Guide →](observability/setup-guide.md)
 
 ### Guardrails
 
@@ -246,7 +246,7 @@ Available validators:
 
 Configure input validation (before processing) and output validation (before returning responses).
 
-[Guardrails Guide →](guides/04-guardrails.md)
+[Guardrails Guide →](guardrails/setup-guide.md)
 
 ### MCP Servers
 
@@ -260,7 +260,7 @@ Common integrations:
 - API integrations
 - Git repositories
 
-[MCP Configuration →](concepts/configuration.md#mcp-servers)
+[MCP Configuration →](mcp/configuration.md#mcp-servers)
 
 ### Checkpointing
 
@@ -272,7 +272,7 @@ Supported backends:
 - PostgreSQL (production)
 - In-memory (stateless testing)
 
-[Checkpointing Guide →](guides/02-observability-checkpointing.md)
+[Checkpointing Guide →](observability/setup-guide.md)
 
 ## Deployment Options
 
@@ -346,7 +346,7 @@ The platform consists of three main layers:
 ## Getting Help
 
 !!! question "Questions & Support"
-    **Documentation** - [Guides](quickstart.md), [Concepts](concepts/overview.md), [Reference](reference/configuration.md)
+    **Documentation** - [Guides](getting-started/quickstart.md), [Concepts](concepts/overview.md), [Reference](reference/configuration.md)
 
     **Community** - [GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions)
 
@@ -358,7 +358,7 @@ The platform consists of three main layers:
 
 Ready to build your first agent?
 
-[Quickstart Guide →](quickstart.md){ .md-button .md-button--primary }
+[Quickstart Guide →](getting-started/quickstart.md){ .md-button .md-button--primary }
 
 Want to understand the platform better?
 

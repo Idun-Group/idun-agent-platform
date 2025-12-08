@@ -4,7 +4,7 @@
 
 This reference provides detailed documentation for all configuration fields available in Idun Agent Platform YAML configuration files. Use this as a complete field-by-field reference when building or modifying agent configurations.
 
-For conceptual information and examples, see the [Configuration Guide](../concepts/configuration.md).
+For conceptual information and examples, see the [Configuration Guide](../mcp/configuration.md).
 
 ---
 
@@ -710,7 +710,7 @@ All configuration files are validated against Pydantic schemas before the agent 
 
 ## See Also
 
-- [Configuration Guide](../concepts/configuration.md) - Conceptual overview and examples
+- [Configuration Guide](../mcp/configuration.md) - Conceptual overview and examples
 - [CLI Reference](cli.md) - Using configurations with the CLI
 - [Environment Variables](environment.md) - Environment variable reference
-- [Observability Reference](observability.md) - Detailed observability configuration
+- [Observability Reference](../observability/reference.md) - Detailed observability configuration
