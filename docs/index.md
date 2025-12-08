@@ -16,6 +16,8 @@ It is built and battle tested with large enterprises that need strong security, 
   </div>
 </div>
 
+![Platform workflow](images/platform-workflow.png)
+
 <style>
 @keyframes scroll {
   0% { transform: translateX(0); }

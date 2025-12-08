@@ -16,13 +16,13 @@
   If you find this project useful, please ⭐️ <b>star the repository</b> and join our <b>Discord community</b>!
 </p>
 
+![Platform Workflow](docs/images/platform-workflow.png)
+
 <p align="center">
   Made in 🇫🇷 with ❤️
 </p>
 
 ---
-
-![Homepage](docs/images/screenshots/homepage.png)
 
 # Idun Agent Platform
 **From AI prototypes to governed agent fleets.**
@@ -34,6 +34,9 @@ It is built and battle tested with large enterprises that need strong security, 
 ```bash
 pip install idun-agent-engine
 ```
+
+![Homepage](docs/images/screenshots/homepage.png)
+
 <p align="center">
   <img src="docs/images/logo/langgraph-color.png"   alt="LangGraph"             style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/agent-development-kit.png" alt="Agent Development Kit" style="height:36px; margin:6px; vertical-align:middle;" />
