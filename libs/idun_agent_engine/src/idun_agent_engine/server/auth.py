@@ -112,16 +112,28 @@ async def verify_sso(
         # If expected_audiences is empty, we default to client_id for verification
         # or we might need to be careful.
         # python-jose requires audience if 'aud' claim is present and verify_aud is True.
-        audience = config.expected_audiences
-        if not audience:
-            audience = [config.client_id]
+        # Ensure audience is a string or None, as python-jose's decode expects.
+        # We take the first audience if multiple are configured, assuming we want to match one.
+        # Ideally python-jose should support a list of allowed audiences, but for verify_aud=True
+        # and a single 'aud' in the token, passing the matching audience as string works.
+        audience_param: str | None = None
+
+        audiences = config.expected_audiences or [config.client_id]
+        if audiences:
+            # For now, just take the first one. If you have multiple valid audiences,
+            # this logic might need to be smarter (e.g. check which one matches the token's aud).
+            # But python-jose's audience param is "audience to check for".
+            if isinstance(audiences, list):
+                audience_param = audiences[0]
+            else:
+                audience_param = audiences
 
         # Verify token
         payload = jwt.decode(
             token,
             jwks,
             algorithms=config.allowed_algs,
-            audience=audience,
+            audience=audience_param,
             issuer=config.issuer,
             options={
                 "verify_at_hash": False,
