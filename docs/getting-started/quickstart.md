@@ -156,7 +156,8 @@ What time is it in Paris ?
 
 ## Next Steps
 
-- [Observability & Checkpointing](../observability/setup-guide.md) - Monitor your agent's performance and add checkpointing
-- [Concepts](../concepts/overview.md) - Understand the platform architecture
-- [Guides](../guides/basic-configuration.md) - Detailed walkthroughs
-- [CLI](../guides/cli-setup.md) - Advanced workflows
+- [Observability](../observability/overview.md.md) - Monitor your agent's performance and add checkpointing
+- [Memory](../memory/overview.md) - Add memory to your agents
+- [MCP](../mcp/configuration.md) - Give MCP tools to your agents
+- [Guardrails](../guardrails/overview.md) - Protect your agents with Guardrails
+- [A2A](../a2a/overview.md) - Enable A2A (Agent-to-Agent) capabilities to your agents
