@@ -117,13 +117,15 @@ nav:
   - Guardrails:
       - Overview: guardrails/overview.md
       - Setup Guide: guardrails/setup-guide.md
-  - Guides:
-      - Basic Configuration: guides/basic-configuration.md
-      - CLI Setup: guides/cli-setup.md
+  - SSO/RBAC:
+      - Overview: sso-rbac/overview.md
   - Deployment:
       - Self-Hosted: deployment/self-hosted.md
       - Idun Cloud: deployment/idun-cloud.md
       - Concepts: deployment/concepts.md
+  - Guides:
+      - Basic Configuration: guides/basic-configuration.md
+      - CLI Setup: guides/cli-setup.md
   - Reference:
       - API: reference/api.md
       - REST API: reference/rest-api.md

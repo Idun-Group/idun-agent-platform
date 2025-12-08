@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="../images/logo/phoenix.svg" alt="Arize Phoenix logo" width="120"/>
-</p>
+  ![Arize Phoenix logo](../images/logo/phoenix.svg){ width=120 }
 
 # Observability with Arize Phoenix
 

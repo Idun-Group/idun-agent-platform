@@ -63,6 +63,7 @@ It is built and battle tested with large enterprises that need strong security, 
     <img src="images/logo/phoenix.svg" class="logo-item" alt="Phoenix"/>
     <img src="images/logo/langsmith-color.png" class="logo-item" alt="LangSmith"/>
     <img src="images/logo/google-cloud.png" class="logo-item" alt="Google Cloud"/>
+    <img src="images/logo/Okta-Logo.png" class="logo-item" alt="Okta"/>
     <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
     <img src="images/logo/langchain-color.png" class="logo-item" alt="LangChain"/>
     <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>
@@ -76,6 +77,7 @@ It is built and battle tested with large enterprises that need strong security, 
     <img src="images/logo/phoenix.svg" class="logo-item" alt="Phoenix"/>
     <img src="images/logo/langsmith-color.png" class="logo-item" alt="LangSmith"/>
     <img src="images/logo/google-cloud.png" class="logo-item" alt="Google Cloud"/>
+    <img src="images/logo/Okta-Logo.png" class="logo-item" alt="Okta"/>
     <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
     <img src="images/logo/langchain-color.png" class="logo-item" alt="LangChain"/>
     <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>

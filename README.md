@@ -44,6 +44,7 @@ pip install idun-agent-engine
   <img src="docs/images/logo/phoenix.svg"           alt="Phoenix"               style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/langsmith-color.png"   alt="LangSmith"             style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/google-cloud.png"      alt="Google Cloud"          style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logo/Okta-Logo.png"         alt="Okta"                  style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/guardrails-ai.png"     alt="Guardrails AI"         style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/langchain-color.png"   alt="LangChain"             style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/haystack.png"          alt="Haystack"              style="height:36px; margin:6px; vertical-align:middle;" />

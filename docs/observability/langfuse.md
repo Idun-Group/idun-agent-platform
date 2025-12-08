@@ -1,6 +1,5 @@
-<p align="center">
-  <img src="../images/logo/langfuse-color.png" alt="Langfuse logo" width="120"/>
-</p>
+
+  ![Langfuse logo](../images/logo/langfuse-color.png){ width=120 }
 
 # Observability with Langfuse
 
