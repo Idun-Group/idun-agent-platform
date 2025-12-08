@@ -198,7 +198,7 @@ observability:
 - **GCP_TRACE**: Google Cloud Trace
 - **LANGSMITH**: LangSmith monitoring
 
-Each provider has specific configuration requirements. See the [Observability Reference](../reference/observability.md) for details.
+Each provider has specific configuration requirements. See the [Observability Reference](../observability/reference.md) for details.
 
 ## Guardrails
 
@@ -226,7 +226,7 @@ guardrails:
 - `ban_list` - Block specific words/phrases
 - `detect_pii` - Detect personally identifiable information
 
-Guardrails are powered by [Guardrails AI](https://guardrailsai.com). See the [Guardrails Guide](../guides/04-guardrails.md) for setup instructions.
+Guardrails are powered by [Guardrails AI](https://guardrailsai.com). See the [Guardrails Guide](../guardrails/setup-guide.md) for setup instructions.
 
 ## MCP Servers
 
@@ -321,5 +321,5 @@ Complete configuration examples are available in the `libs/idun_agent_engine/exa
 ## Next Steps
 
 - [Configuration Reference](../reference/configuration.md) - Detailed field documentation
-- [CLI Setup](../guides/03-cli-setup.md) - Using configuration with the CLI
-- [Observability Guide](../guides/02-observability-checkpointing.md) - Setting up monitoring
+- [CLI Setup](../guides/cli-setup.md) - Using configuration with the CLI
+- [Observability Guide](../observability/setup-guide.md) - Setting up monitoring

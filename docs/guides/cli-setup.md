@@ -230,5 +230,5 @@ If the configured port is already in use:
 ## Next Steps
 
 - [Configuration Reference](../reference/configuration.md) - Complete configuration field documentation
-- [Observability Setup](02-observability-checkpointing.md) - Add monitoring and tracing
+- [Observability Setup](../observability/setup-guide.md) - Add monitoring and tracing
 - [Guardrails](05-guardrails.md) - Configure safety constraints

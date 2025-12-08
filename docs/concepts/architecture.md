@@ -437,4 +437,4 @@ Fully managed platform with zero infrastructure management. Automatic scaling, b
 
 - [Engine Concepts →](engine.md) - Deep dive into the runtime engine
 - [Manager Concepts →](manager.md) - Learn about the control plane
-- [Basic Configuration Guide →](../guides/01-basic-configuration.md) - Start building agents
+- [Basic Configuration Guide →](../guides/basic-configuration.md) - Start building agents

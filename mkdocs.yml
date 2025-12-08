@@ -98,29 +98,29 @@ watch:
 
 nav:
   - Home: index.md
-  - Getting Started: quickstart.md
+  - Getting Started: getting-started/quickstart.md
   - Observability:
-      - Overview: concepts/observability.md
-      - Setup Guide: guides/02-observability-checkpointing.md
-      - Reference: reference/observability.md
+      - Overview: observability/overview.md
+      - Setup Guide: observability/setup-guide.md
+      - Reference: observability/reference.md
   - Memory:
-      - Overview: memory/index.md
-      - Checkpointing Guide: guides/02-observability-checkpointing.md#checkpointing
+      - Overview: memory/overview.md
+      - Checkpointing Guide: observability/setup-guide.md#checkpointing
   - MCP:
-      - Setup Guide: guides/05-mcp.md
-      - Configuration: concepts/configuration.md#mcp-servers
+      - Setup Guide: mcp/setup-guide.md
+      - Configuration: mcp/configuration.md#mcp-servers
   - A2A:
-      - Overview: a2a/index.md
+      - Overview: a2a/overview.md
   - Guardrails:
-      - Overview: concepts/guardrails.md
-      - Setup Guide: guides/04-guardrails.md
+      - Overview: guardrails/overview.md
+      - Setup Guide: guardrails/setup-guide.md
   - Guides:
-      - Basic Configuration: guides/01-basic-configuration.md
-      - CLI Setup: guides/03-cli-setup.md
+      - Basic Configuration: guides/basic-configuration.md
+      - CLI Setup: guides/cli-setup.md
   - Deployment:
       - Self-Hosted: deployment/self-hosted.md
       - Idun Cloud: deployment/idun-cloud.md
-      - Concepts: concepts/deployment.md
+      - Concepts: deployment/concepts.md
   - Reference:
       - API: reference/api.md
       - REST API: reference/rest-api.md

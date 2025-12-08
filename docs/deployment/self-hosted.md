@@ -104,6 +104,6 @@ observability:
 
 ## Next Steps
 
-- [Full Configuration Guide →](../guides/01-basic-configuration.md)
-- [Set Up Observability →](../guides/02-observability-checkpointing.md)
-- [Add Guardrails →](../guides/04-guardrails.md)
+- [Full Configuration Guide →](../guides/basic-configuration.md)
+- [Set Up Observability →](../observability/setup-guide.md)
+- [Add Guardrails →](../guardrails/setup-guide.md)

@@ -8,6 +8,8 @@
 <p align="center">
   <b><a href="https://idun-group.github.io/idun-agent-platform/">Documentation</a></b> |
   <b><a href="https://discord.gg/tcwH4z7R">Discord Server</a></b>
+  <br/>
+  <b><a href="quickstart.md" class="md-button md-button--primary">Quickstart Guide</a></b>
 </p>
 
 <p align="center">
@@ -45,6 +47,7 @@ pip install idun-agent-engine
   <img src="docs/images/logo/guardrails-ai.png"     alt="Guardrails AI"         style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/langchain-color.png"   alt="LangChain"             style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/haystack.png"          alt="Haystack"              style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logo/ag-ui.png"          alt="AG-UI"              style="height:36px; margin:6px; vertical-align:middle;" />
 </p>
 
 ## For GenAI developer and IA data platform company team

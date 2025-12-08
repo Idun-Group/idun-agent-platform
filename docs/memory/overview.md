@@ -27,7 +27,7 @@ Checkpointing saves your agent's state during execution, enabling recovery from 
 - Resume conversations after failures or restarts
 - Concurrent conversation support
 
-[Checkpointing Setup Guide →](../guides/02-observability-checkpointing.md#checkpointing)
+[Checkpointing Setup Guide →](../observability/setup-guide.md#checkpointing)
 
 ## Session Services (ADK)
 
@@ -89,6 +89,6 @@ agent:
 
 ## Related Documentation
 
-- [Observability & Checkpointing Guide](../guides/02-observability-checkpointing.md)
+- [Observability & Checkpointing Guide](../observability/setup-guide.md)
 - [Configuration Reference](../reference/configuration.md)
 - [Architecture Overview](../concepts/architecture.md#state-management)

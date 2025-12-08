@@ -81,10 +81,10 @@ Features will include:
 - Managed PostgreSQL for checkpointing
 - Custom domains and SSL
 
-**Learn more:** [Idun Cloud Documentation →](../deployment/idun-cloud.md)
+**Learn more:** [Idun Cloud Documentation →](idun-cloud.md)
 
 ## Next Steps
 
-- [Quick Start Guide →](../quickstart.md)
+- [Quick Start Guide →](../getting-started/quickstart.md)
 - [Configuration Reference →](../reference/configuration.md)
-- [Set Up Observability →](../guides/02-observability-checkpointing.md)
+- [Set Up Observability →](../observability/setup-guide.md)

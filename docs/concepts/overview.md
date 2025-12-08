@@ -198,6 +198,6 @@ Switching between frameworks without infrastructure changes:
 
 ## Next Steps
 
-- [Quick Start →](../quickstart.md) - Build your first agent in minutes
-- [Basic Configuration →](../guides/01-basic-configuration.md) - Learn configuration fundamentals
-- [CLI Setup →](../guides/03-cli-setup.md) - Master the CLI
+- [Quick Start →](../getting-started/quickstart.md) - Build your first agent in minutes
+- [Basic Configuration →](../guides/basic-configuration.md) - Learn configuration fundamentals
+- [CLI Setup →](../guides/cli-setup.md) - Master the CLI

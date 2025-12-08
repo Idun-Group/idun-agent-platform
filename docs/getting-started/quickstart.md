@@ -41,7 +41,7 @@ The manager UI will be available at `http://localhost:3000`
 
 Navigate to `http://localhost:3000`, press login (without specifying credentials).
 
-![Create agent](images/screenshots/create-agent-page.png)
+![Create agent](../images/screenshots/create-agent-page.png)
 
 - Click on "Create an agent"
 - Name: Specify your agent's name, set it to `My first agent`.
@@ -57,7 +57,7 @@ Navigate to `http://localhost:3000`, press login (without specifying credentials
 - Skip `MCP Server` and `Guardrails`. This will be addressed later.
 - Click `Create Agent`.
 
-![Create agent](images/screenshots/create-agent-page-2.png)
+![Create agent](../images/screenshots/create-agent-page-2.png)
 
 !!! success "Congratulations"
     Your agent's configuration is created
@@ -66,7 +66,7 @@ Navigate to `http://localhost:3000`, press login (without specifying credentials
 
 In the Agent Dashboard, click on your agent, then `API Integration`, and press `Show Key`. Copy your agent's KEY. We will use it in the next step
 
-![Get agent api key](images/screenshots/getting-started-get-api-key.png)
+![Get agent api key](../images/screenshots/getting-started-get-api-key.png)
 
 ## 6. Create your Agent
 
@@ -147,16 +147,16 @@ Test the following question:
 What time is it in Paris ?
 ```
 
-![Get agent api key](images/screenshots/chat-with-agent.png)
+![Get agent api key](../images/screenshots/chat-with-agent.png)
 
 !!! success "Congratulations"
     You're all done !
 
-**Next →** [Add Observability](guides/02-observability-checkpointing.md)
+**Next →** [Add Observability](../observability/setup-guide.md)
 
 ## Next Steps
 
-- [Observability & Checkpointing](guides/02-observability-checkpointing.md) - Monitor your agent's performance and add checkpointing
-- [Concepts](concepts/overview.md) - Understand the platform architecture
-- [Guides](guides/01-basic-configuration.md) - Detailed walkthroughs
-- [CLI](guides/03-cli-setup.md) - Advanced workflows
+- [Observability & Checkpointing](../observability/setup-guide.md) - Monitor your agent's performance and add checkpointing
+- [Concepts](../concepts/overview.md) - Understand the platform architecture
+- [Guides](../guides/basic-configuration.md) - Detailed walkthroughs
+- [CLI](../guides/cli-setup.md) - Advanced workflows
