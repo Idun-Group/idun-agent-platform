@@ -11,7 +11,7 @@ It is built and battle tested with large enterprises that need strong security, 
 
   <div style="display: inline-block; max-width: 400px;">
 
-<a href="getting-started/quickstart.md">Quickstart Guide &rarr;</a>&nbsp; &nbsp; <a href="https://discord.gg/tcwH4z7R">Join our Discord &rarr;</a>
+<a href="https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/">Quickstart Guide &rarr;</a>&nbsp; &nbsp; <a href="https://discord.gg/tcwH4z7R">Join our Discord &rarr;</a>
 
   </div>
 </div>
