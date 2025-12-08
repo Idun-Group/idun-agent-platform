@@ -9,7 +9,7 @@
   <b><a href="https://idun-group.github.io/idun-agent-platform/">Documentation</a></b> |
   <b><a href="https://discord.gg/tcwH4z7R">Discord Server</a></b>
   <br/>
-  <b><a href="quickstart.md" class="md-button md-button--primary">Quickstart Guide</a></b>
+  <b><a href="docs/getting-started/quickstart.md" class="md-button md-button--primary">Quickstart Guide</a></b>
 </p>
 
 <p align="center">
