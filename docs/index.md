@@ -11,7 +11,7 @@ It is built and battle tested with large enterprises that need strong security, 
 
   <div style="display: inline-block; max-width: 400px;">
 
-[Quickstart Guide →](getting-started/quickstart.md){ .md-button .md-button--primary }
+[Quickstart Guide →](getting-started/quickstart.md) &nbsp; &nbsp; [Join our Discord →](https://discord.gg/tcwH4z7R)
 
   </div>
 </div>
@@ -150,7 +150,8 @@ With Idun Agent Platform you can:
   </div>
 </div>
 
-**Start here:** [Full Quickstart Guide →](getting-started/quickstart.md)
+**Start here:**
+[Full Quickstart Guide →](getting-started/quickstart.md)
 ---
 
 <h3 style="color: #7c3aed;">I represent a IA data platform company team</h3>
@@ -191,7 +192,8 @@ With Idun Agent Platform you can:
   </div>
 </div>
 
-**Start here:** [Full Quickstart Guide →](getting-started/quickstart.md)
+**Start here:**
+[Full Quickstart Guide →](getting-started/quickstart.md)
 ---
 
 ## What is Idun?

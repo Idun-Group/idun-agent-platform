@@ -101,8 +101,11 @@ nav:
   - Getting Started: getting-started/quickstart.md
   - Observability:
       - Overview: observability/overview.md
-      - Setup Guide: observability/setup-guide.md
-      - Reference: observability/reference.md
+      - Langfuse: observability/langfuse.md
+      - Arize Phoenix: observability/arize-phoenix.md
+      - LangSmith: observability/langsmith.md
+      - Google Cloud Trace: observability/gcp-trace.md
+      - Google Cloud Logging: observability/gcp-logging.md
   - Memory:
       - Overview: memory/overview.md
       - Checkpointing Guide: observability/setup-guide.md#checkpointing
