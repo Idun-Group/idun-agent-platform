@@ -1,6 +1,5 @@
-<p align="center">
-  <img src="../images/logo/google-cloud.png" alt="Google Cloud logo" width="120"/>
-</p>
+
+  ![Google Cloud logo](../images/logo/google-cloud.png){ width=120 }
 
 # Observability with Google Cloud Trace
 

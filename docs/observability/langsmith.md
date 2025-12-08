@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="../images/logo/langsmith-color.png" alt="LangSmith logo" width="120"/>
-</p>
+  ![LangSmith logo](../images/logo/langsmith-color.png){ width=120 }
 
 # Observability with LangSmith
 

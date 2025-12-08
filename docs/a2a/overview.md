@@ -5,7 +5,7 @@
 Agent-to-Agent (A2A) communication enables agents to interact with each other, creating multi-agent systems where agents can collaborate, delegate tasks, and share information.
 
 !!! warning
-    The guide for this feature is not available yet.
+    The guide for this feature is coming soon.
     If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
 
 
