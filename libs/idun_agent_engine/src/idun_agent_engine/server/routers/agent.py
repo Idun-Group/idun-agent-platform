@@ -1,7 +1,7 @@
 """Agent routes for invoking and streaming agent responses."""
 
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 
 from ag_ui.core.types import RunAgentInput
 from ag_ui.encoder import EventEncoder
@@ -14,6 +14,7 @@ from idun_agent_schema.engine.guardrails import Guardrail
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.dependencies import get_agent, get_copilotkit_agent
+from idun_agent_engine.server.auth import verify_sso
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s",
@@ -64,6 +65,7 @@ async def invoke(
     chat_request: ChatRequest,
     request: Request,
     agent: Annotated[BaseAgent, Depends(get_agent)],
+    sso_payload: Annotated[dict[str, Any] | None, Depends(verify_sso)],
 ):
     """Process a chat message with the agent without streaming."""
     try:
@@ -92,6 +94,7 @@ async def invoke(
 async def stream(
     request: ChatRequest,
     agent: Annotated[BaseAgent, Depends(get_agent)],
+    sso_payload: Annotated[dict[str, Any] | None, Depends(verify_sso)],
 ):
     """Process a message with the agent, streaming ag-ui events."""
     try:
@@ -113,6 +116,7 @@ async def copilotkit_stream(
     copilotkit_agent: Annotated[
         LangGraphAGUIAgent | ADKAGUIAgent, Depends(get_copilotkit_agent)
     ],
+    sso_payload: Annotated[dict[str, Any] | None, Depends(verify_sso)],
 ):
     """Process a message with the agent, streaming ag-ui events."""
     guardrails = getattr(request.app.state, "guardrails", [])
