@@ -196,7 +196,7 @@ With Idun Agent Platform you can:
   </div>
 </div>
 
-**Start here:**
+**Get Started Now:**
 [Full Quickstart Guide →](getting-started/quickstart.md)
 ---
 
@@ -252,7 +252,7 @@ Available validators:
 
 Configure input validation (before processing) and output validation (before returning responses).
 
-[Guardrails Guide →](guardrails/setup-guide.md)
+[Guardrails Guide →](guardrails/overview.md)
 
 ### MCP Servers
 
@@ -268,7 +268,7 @@ Common integrations:
 
 [MCP Configuration →](mcp/configuration.md#mcp-servers)
 
-### Checkpointing
+### Memory & Checkpointing
 
 Persist conversation state across requests. Resume conversations after failures or restarts. Support multiple concurrent conversations with thread isolation.
 
@@ -277,8 +277,9 @@ Supported backends:
 - SQLite (local development)
 - PostgreSQL (production)
 - In-memory (stateless testing)
+- Vertex AI (Google Cloud production)
 
-[Checkpointing Guide →](observability/setup-guide.md)
+[Memory Overview →](memory/overview.md)
 
 ## Deployment Options
 
@@ -298,7 +299,10 @@ Deploy with Docker Compose or Kubernetes to your own infrastructure. Includes Po
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-[Self-Hosted Deployment →](deployment/self-hosted.md)
+- [GCP Self-Hosted →](deployment/gcp-self-hosted.md)
+- [AWS Self-Hosted →](deployment/aws-self-hosted.md)
+- [Azure Self-Hosted →](deployment/azure-self-hosted.md)
+- [Kubernetes →](deployment/k8s-self-hosted.md)
 
 ### Idun Cloud
 
