@@ -9,7 +9,7 @@
   <b><a href="https://idun-group.github.io/idun-agent-platform/">Documentation</a></b> |
   <b><a href="https://discord.gg/tcwH4z7R">Discord Server</a></b>
   <br/>
-  <b><a href="docs/getting-started/quickstart.md" class="md-button md-button--primary">Quickstart Guide</a></b>
+  <b><a href="https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/" class="md-button md-button--primary">Quickstart Guide</a></b>
 </p>
 
 <p align="center">
@@ -25,6 +25,7 @@
 ---
 
 # Idun Agent Platform
+
 **From AI prototypes to governed agent fleets.**
 
 Idun Agent Platform is an open source, sovereign platform that makes it easy to put generative AI agents in production and operate them at scale, on your own infrastructure.
@@ -132,7 +133,7 @@ Common integrations:
 - API integrations
 - Git repositories
 
-### Checkpointing
+### Memory & Checkpointing
 
 Persist conversation state across requests. Resume conversations after failures or restarts. Support multiple concurrent conversations with thread isolation.
 
@@ -141,13 +142,14 @@ Supported backends:
 - SQLite (local development)
 - PostgreSQL (production)
 - In-memory (stateless testing)
+- Vertex AI (Google Cloud production)
 
 ## Deployment Options
 
 ### Local Development
 
 ```bash
-idun agent serve --source=file --path=./config.yaml
+idun agent serve --source=manager
 ```
 
 Run agents locally with hot reload, SQLite checkpointing, and local observability.
@@ -288,6 +290,7 @@ Follow the ADK Agent python getting started tutorial: [Python Quickstart for ADK
 > **Tips**:
 >
 > - If you are using Vertex AI model don't forget to authenticate your gcloud account:
+>
 >   ```bash
 >   gcloud auth application-default login
 >   ```
