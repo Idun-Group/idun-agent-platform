@@ -1,6 +1,7 @@
 # Idun Cloud
 
 ## Coming Soon
+
 !!! warning
     The guide for this feature is coming soon.
     If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
@@ -20,15 +21,6 @@ Idun Cloud is a fully managed platform for deploying and operating AI agents wit
 
 ## Get Notified
 
-Interested in Idun Cloud? Follow our [GitHub repository](https://github.com/Idun-Group/idun-agent-platform) for updates.
-
-## Current Alternative
-
-Deploy locally using the Idun CLI:
-
-```bash
-pip install idun-agent-engine
-idun agent serve --source=file --path=./config.yaml
-```
+Interested in Idun Cloud? Follow our [GitHub repository](https://github.com/Idun-Group/idun-agent-platform) for updates, reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
 
 [Local Deployment Guide →](self-hosted.md)

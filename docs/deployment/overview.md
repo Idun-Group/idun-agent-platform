@@ -1,42 +1,26 @@
-# Deployment
-!!! warning
-    Coming Soon
-    - Terraform ready deployment for GCP (Later for AWS and Azure)
-    - Docker compose and Helm deployment
-    - Github Actions ready to use deployment
+# Deployment Overview
 
+Idun Agent Platform is designed to be flexible and deployable in various environments, from local development machines to enterprise cloud infrastructure.
 
-## Overview
+Select the deployment model that best fits your needs.
 
-Idun Agent Platform supports two deployment options:
+## Local Development
 
-**Local Development** - Run agents on your local machine using the CLI. This is the primary way to run agents currently.
+Ideal for testing, development, and trying out the platform.
 
-**Idun Cloud** - Fully managed hosting (coming soon).
+- **[Local Deployment (Docker Compose)](local.md)**: Run the entire platform on your machine with a single command.
 
-## Local Deployment
+## Self-Hosted (Cloud Providers)
 
-!!! warning
-    The guide for this feature is coming soon.
-    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
+Deploy the platform on your own cloud infrastructure for production use cases.
 
-## Idun Cloud
+- **[Google Cloud Platform (GCP)](gcp-self-hosted.md)**: Serverless deployment using Cloud Run and Cloud SQL.
+- **[Amazon Web Services (AWS)](aws-self-hosted.md)**: Deployment options for AWS environment.
+- **[Microsoft Azure](azure-self-hosted.md)**: Deployment options for Azure environment.
+- **[Kubernetes (Helm)](k8s-self-hosted.md)**: Deploy using Helm charts on any K8s cluster.
 
-Fully managed platform for deploying AI agents with zero infrastructure management.
+## Idun Cloud (Managed)
 
-**Status:** Coming soon
+A fully managed SaaS solution for deploying AI agents with zero infrastructure management.
 
-Features will include:
-- One-click deployment from Git repositories
-- Automatic scaling and high availability
-- Built-in observability dashboards
-- Managed PostgreSQL for checkpointing
-- Custom domains and SSL
-
-**Learn more:** [Idun Cloud Documentation →](idun-cloud.md)
-
-## Next Steps
-
-- [Quick Start Guide →](../getting-started/quickstart.md)
-- [Configuration Reference →](../reference/configuration.md)
-- [Set Up Observability →](../observability/setup-guide.md)
+- **[Idun Cloud](idun-cloud.md)**: Learn about our upcoming managed platform.
