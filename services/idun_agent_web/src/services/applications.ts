@@ -766,12 +766,52 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         description: 'Scan code for allowed languages.',
         imageUrl: '/img/guardrail.svg',
         by: 'Idun'
+    },
+    {
+        id: 'sso-generic',
+        name: 'SSO Configuration',
+        type: 'SSO',
+        category: 'SSO',
+        description: 'Configure Single Sign-On (SSO) settings.',
+        imageUrl: '/img/sso.svg',
+        by: 'Idun'
     }
 ];
 
 const getFrameworkForType = (type: AppType): string => {
     const app = MARKETPLACE_APPS.find(a => a.type === type);
     return app?.framework || 'LANGGRAPH';
+};
+
+// Helper to map API SSO to ApplicationConfig
+const mapSSOToApp = (sso: components["schemas"]["ManagedSSORead"]): ApplicationConfig => {
+    return {
+        id: sso.id,
+        name: sso.name,
+        type: 'SSO',
+        category: 'SSO',
+        owner: 'admin',
+        createdAt: sso.created_at,
+        updatedAt: sso.updated_at,
+        config: {
+            providerType: sso.sso.providerType,
+            issuer: sso.sso.issuer,
+            clientId: sso.sso.clientId,
+            clientSecret: sso.sso.clientSecret,
+            redirectUri: sso.sso.redirectUri,
+            scopes: sso.sso.scopes,
+            allowedAlgs: sso.sso.allowedAlgs,
+            jwksCacheTtl: sso.sso.jwksCacheTtl,
+            clockSkewSeconds: sso.sso.clockSkewSeconds,
+            expectedAudiences: sso.sso.expectedAudiences,
+            claimUserIdPath: sso.sso.claimUserIdPath,
+            claimEmailPath: sso.sso.claimEmailPath,
+            claimRolesPaths: sso.sso.claimRolesPaths,
+            claimGroupsPaths: sso.sso.claimGroupsPaths,
+            claimWorkspaceIdsPaths: sso.sso.claimWorkspaceIdsPaths
+        },
+        imageUrl: '/img/sso.svg'
+    };
 };
 
 export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
@@ -807,7 +847,15 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
         console.error("Failed to fetch guardrail apps", e);
     }
 
-    return [...observabilityApps, ...memoryApps, ...mcpApps, ...guardrailApps];
+    let ssoApps: ApplicationConfig[] = [];
+    try {
+        const apiApps = await getJson<components["schemas"]["ManagedSSORead"][]>('/api/v1/sso/');
+        ssoApps = apiApps.map(mapSSOToApp);
+    } catch (e) {
+        console.error("Failed to fetch SSO apps", e);
+    }
+
+    return [...observabilityApps, ...memoryApps, ...mcpApps, ...guardrailApps, ...ssoApps];
 };
 
 export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'createdAt' | 'updatedAt' | 'owner'>): Promise<ApplicationConfig> => {
@@ -858,6 +906,31 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
             const res = await postJson<components["schemas"]["ManagedGuardrailRead"]>('/api/v1/guardrails/', payload);
             return mapGuardrailToApp(res);
         }
+    }
+
+    if (app.category === 'SSO') {
+        const payload: components["schemas"]["ManagedSSOCreate"] = {
+            name: app.name,
+            sso: {
+                providerType: app.config.providerType,
+                issuer: app.config.issuer,
+                clientId: app.config.clientId,
+                clientSecret: app.config.clientSecret,
+                redirectUri: app.config.redirectUri,
+                scopes: app.config.scopes,
+                allowedAlgs: app.config.allowedAlgs,
+                jwksCacheTtl: app.config.jwksCacheTtl,
+                clockSkewSeconds: app.config.clockSkewSeconds,
+                expectedAudiences: app.config.expectedAudiences,
+                claimUserIdPath: app.config.claimUserIdPath,
+                claimEmailPath: app.config.claimEmailPath,
+                claimRolesPaths: app.config.claimRolesPaths,
+                claimGroupsPaths: app.config.claimGroupsPaths,
+                claimWorkspaceIdsPaths: app.config.claimWorkspaceIdsPaths
+            }
+        };
+        const res = await postJson<components["schemas"]["ManagedSSORead"]>('/api/v1/sso/', payload);
+        return mapSSOToApp(res);
     }
 
     throw new Error(`Application type ${app.type} is not supported by API yet.`);
@@ -934,6 +1007,23 @@ export const updateApplication = async (id: string, updates: Partial<Application
             console.warn(`Failed to update Guardrail app ${id} via API.`, e);
             throw e;
         }
+    } else if (updates.category === 'SSO') {
+        try {
+            const apiSSO = await getJson<components["schemas"]["ManagedSSORead"]>(`/api/v1/sso/${id}`);
+            const currentApp = mapSSOToApp(apiSSO);
+            const payload: components["schemas"]["ManagedSSOPatch"] = {
+                name: updates.name || apiSSO.name,
+                sso: {
+                    ...apiSSO.sso,
+                    ...(updates.config || {})
+                } as any
+            };
+            const res = await patchJson<components["schemas"]["ManagedSSORead"]>(`/api/v1/sso/${id}`, payload);
+            return mapSSOToApp(res);
+        } catch (e) {
+            console.warn(`Failed to update SSO app ${id} via API.`, e);
+            throw e;
+        }
     }
 
     // Fallback logic if category not provided, trying sequentially
@@ -1003,6 +1093,21 @@ export const updateApplication = async (id: string, updates: Partial<Application
         }
     } catch (e) { /* ignore, try next */ }
 
+    try {
+        const apiSSO = await getJson<components["schemas"]["ManagedSSORead"]>(`/api/v1/sso/${id}`);
+        if (apiSSO) {
+            const payload: components["schemas"]["ManagedSSOPatch"] = {
+                name: updates.name || apiSSO.name,
+                sso: {
+                    ...apiSSO.sso,
+                    ...(updates.config || {})
+                } as any
+            };
+            const res = await patchJson<components["schemas"]["ManagedSSORead"]>(`/api/v1/sso/${id}`, payload);
+            return mapSSOToApp(res);
+        }
+    } catch (e) { /* ignore, try next */ }
+
     throw new Error('App not found or update failed');
 };
 
@@ -1011,6 +1116,7 @@ export const deleteApplication = async (id: string): Promise<void> => {
     try { await deleteRequest(`/api/v1/memory/${id}`); return; } catch (e) { /* ignore */ }
     try { await deleteRequest(`/api/v1/mcp-servers/${id}`); return; } catch (e) { /* ignore */ }
     try { await deleteRequest(`/api/v1/guardrails/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/sso/${id}`); return; } catch (e) { /* ignore */ }
 
     // If we reached here, it means we couldn't delete from any API
     // throw new Error('Failed to delete application from any source');

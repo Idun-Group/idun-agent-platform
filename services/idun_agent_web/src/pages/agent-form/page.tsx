@@ -100,10 +100,12 @@ export default function AgentFormPage() {
     const [memoryApps, setMemoryApps] = useState<ApplicationConfig[]>([]);
     const [mcpApps, setMcpApps] = useState<ApplicationConfig[]>([]);
     const [guardApps, setGuardApps] = useState<ApplicationConfig[]>([]);
+    const [ssoApps, setSsoApps] = useState<ApplicationConfig[]>([]);
 
     // Selection State
     const [selectedMemoryType, setSelectedMemoryType] = useState<string>('InMemoryCheckpointConfig');
     const [selectedMemoryAppId, setSelectedMemoryAppId] = useState<string>('');
+    const [selectedSSOAppId, setSelectedSSOAppId] = useState<string>('');
 
     const [selectedObservabilityTypes, setSelectedObservabilityTypes] = useState<string[]>([]);
     const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({}); // Type -> AppID
@@ -133,6 +135,7 @@ export default function AgentFormPage() {
             setMemoryApps(apps.filter(a => a.category === 'Memory'));
             setMcpApps(apps.filter(a => a.category === 'MCP'));
             setGuardApps(apps.filter(a => a.category === 'Guardrails'));
+            setSsoApps(apps.filter(a => a.category === 'SSO'));
         });
     };
 
@@ -374,7 +377,7 @@ export default function AgentFormPage() {
                 // finalAgentConfig.observability = []; // Removed from agent config
             }
 
-            // 3. Handle MCP & Guardrails
+            // 3. Handle MCP, Guardrails & SSO
             // Map MCP IDs to actual config objects
             const mcpConfigs = selectedMCPIds.map(id => {
                 const app = mcpApps.find(a => a.id === id);
@@ -394,6 +397,15 @@ export default function AgentFormPage() {
                 output: []
             } : null;
 
+            // Handle SSO
+            let ssoConfig = null;
+            if (selectedSSOAppId) {
+                const ssoApp = ssoApps.find(a => a.id === selectedSSOAppId);
+                if (ssoApp) {
+                    ssoConfig = ssoApp.config;
+                }
+            }
+
             const payload = {
                 name: name.trim(),
                 version: version.trim() || '1.0.0',
@@ -403,7 +415,8 @@ export default function AgentFormPage() {
                     agent: { type: agentType, config: finalAgentConfig },
                     mcp_servers: mcpConfigs.length > 0 ? mcpConfigs : null,
                     guardrails: guardrailsConfig,
-                    observability: observabilityConfigs
+                    observability: observabilityConfigs,
+                    sso: ssoConfig
                 }
             };
 
@@ -622,6 +635,34 @@ export default function AgentFormPage() {
                                                             <CardMeta>{formatDate(app.updatedAt)}</CardMeta>
                                                         </ConfigCard>
                                                     ))}
+                                                </CardGrid>
+                                            )}
+                                        </FieldWrapper>
+
+                                        {/* SSO Section */}
+                                        <FieldWrapper>
+                                            <InputLabel><ShieldCheck size={14} style={{ marginRight: '6px' }} />Single Sign-On (SSO)</InputLabel>
+                                            <StyledSelect value={selectedSSOAppId} onChange={e => setSelectedSSOAppId(e.target.value)}>
+                                                <option value="">No SSO</option>
+                                                {ssoApps.map(app => <option key={app.id} value={app.id}>{app.name}</option>)}
+                                            </StyledSelect>
+                                            {ssoApps.length === 0 && (
+                                                <AddButton onClick={() => handleCreateApp('SSO' as AppType, 'SSO')} style={{ marginTop: '8px' }}>
+                                                    <Plus size={14} style={{ marginRight: '4px' }} />Configure SSO
+                                                </AddButton>
+                                            )}
+                                            {selectedSSOAppId && (
+                                                <CardGrid>
+                                                    <ConfigCard key={selectedSSOAppId} $selected={true} onClick={() => {}}>
+                                                        <CardHeader>
+                                                            <CardTitle>{ssoApps.find(a => a.id === selectedSSOAppId)?.name}</CardTitle>
+                                                            <MiniIconButton onClick={(e) => {
+                                                                const app = ssoApps.find(a => a.id === selectedSSOAppId);
+                                                                if(app) handleViewApp(e, app);
+                                                            }}><Eye size={12} /></MiniIconButton>
+                                                        </CardHeader>
+                                                        <CardMeta>{ssoApps.find(a => a.id === selectedSSOAppId)?.config.providerType}</CardMeta>
+                                                    </ConfigCard>
                                                 </CardGrid>
                                             )}
                                         </FieldWrapper>

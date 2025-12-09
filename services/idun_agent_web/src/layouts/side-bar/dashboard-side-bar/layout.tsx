@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
 import { useState, useEffect, type ComponentType } from 'react';
-import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck } from 'lucide-react';
+import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, Key } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
@@ -68,10 +68,17 @@ const SideBar = ({}: SideBarProps) => {
         },
         {
             icon: ShieldCheck,
-            label: t('sidebar.guard'),
+            label: t('sidebar.guard', 'Guardrails'),
             key: 'guard',
             path: '/guardrails',
             onClick: () => navigate('/guardrails'),
+        },
+        {
+            icon: Key,
+            label: t('sidebar.sso', 'SSO'),
+            key: 'sso',
+            path: '/sso',
+            onClick: () => navigate('/sso'),
         },
     ];
 

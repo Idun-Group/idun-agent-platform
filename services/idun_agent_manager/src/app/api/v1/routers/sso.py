@@ -16,7 +16,7 @@ from idun_agent_schema.manager.managed_sso import (
 )
 from idun_agent_schema.engine.sso import SSOConfiguration
 
-router = APIRouter(prefix="/sso", tags=["Managed SSO"])
+router = APIRouter()
 
 
 @router.post(

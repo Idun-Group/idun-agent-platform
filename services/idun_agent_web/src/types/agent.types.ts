@@ -67,6 +67,7 @@ export interface Agent {
     langgraph_config: LangGraphConfig | null;
     obervability: AgentObservability;
     tools: string[];
+    sso_config_id?: string;
 }
 
 // Type pour les colonnes du tableau

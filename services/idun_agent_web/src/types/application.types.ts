@@ -1,7 +1,7 @@
 
-export type AppCategory = 'Observability' | 'Memory' | 'MCP' | 'Guardrails';
+export type AppCategory = 'Observability' | 'Memory' | 'MCP' | 'Guardrails' | 'SSO';
 
-export type AppType = 'Langfuse' | 'Phoenix' | 'PostgreSQL' | 'SQLite' | 'GoogleCloudLogging' | 'GoogleCloudTrace' | 'LangSmith' | 'MCPServer' | 'Guard' | 'ModelArmor' | 'CustomLLM' | 'BanList' | 'BiasCheck' | 'CompetitionCheck' | 'CorrectLanguage' | 'DetectPII' | 'GibberishText' | 'NSFWText' | 'DetectJailbreak' | 'RestrictTopic' | 'PromptInjection' | 'RagHallucination' | 'ToxicLanguage' | 'CodeScanner' | 'AdkInMemory' | 'AdkVertexAi' | 'AdkDatabase';
+export type AppType = 'Langfuse' | 'Phoenix' | 'PostgreSQL' | 'SQLite' | 'GoogleCloudLogging' | 'GoogleCloudTrace' | 'LangSmith' | 'MCPServer' | 'Guard' | 'ModelArmor' | 'CustomLLM' | 'BanList' | 'BiasCheck' | 'CompetitionCheck' | 'CorrectLanguage' | 'DetectPII' | 'GibberishText' | 'NSFWText' | 'DetectJailbreak' | 'RestrictTopic' | 'PromptInjection' | 'RagHallucination' | 'ToxicLanguage' | 'CodeScanner' | 'AdkInMemory' | 'AdkVertexAi' | 'AdkDatabase' | 'SSO';
 
 export interface MarketplaceApp {
     id: string;

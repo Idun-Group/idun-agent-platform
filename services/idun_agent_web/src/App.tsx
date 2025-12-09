@@ -189,6 +189,20 @@ function App() {
                     }
                 />
                 <Route
+                    path="/sso"
+                    element={
+                        <AppLayout>
+                            <Header />
+                            <ContentLayout>
+                                <SideBar />
+                                <MainContent>
+                                    <ApplicationPage category="SSO" />
+                                </MainContent>
+                            </ContentLayout>
+                        </AppLayout>
+                    }
+                />
+                <Route
                     path="/observation"
                     element={
                         <AppLayout>

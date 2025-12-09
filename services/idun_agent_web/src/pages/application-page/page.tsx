@@ -86,10 +86,10 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
                     ) : filteredApps.length > 0 ? (
                         <AppsGrid>
                             {filteredApps.map(app => (
-                                <ConfiguredAppCard 
-                                    key={app.id} 
-                                    app={app} 
-                                    onClick={() => handleConfiguredAppClick(app)} 
+                                <ConfiguredAppCard
+                                    key={app.id}
+                                    app={app}
+                                    onClick={() => handleConfiguredAppClick(app)}
                                 />
                             ))}
                         </AppsGrid>
@@ -133,8 +133,8 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
             }
 
             return (
-                <AppMarketplacePage 
-                    onAppClick={handleMarketplaceAppClick} 
+                <AppMarketplacePage
+                    onAppClick={handleMarketplaceAppClick}
                     category={category}
                 />
             );
@@ -146,7 +146,8 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
         Observability: t('connected-app.categories.observability', 'Observability'),
         Memory: t('connected-app.categories.memory', 'Memory'),
         MCP: t('connected-app.categories.mcp', 'MCP'),
-        Guardrails: t('connected-app.categories.guard', 'Guardrails')
+        Guardrails: t('connected-app.categories.guard', 'Guardrails'),
+        SSO: t('connected-app.categories.sso', 'SSO')
     };
     const pageTitle = pageTitleMap[category] ?? '';
 
@@ -178,7 +179,7 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
                 {renderContent()}
             </Content>
 
-            <ApplicationModal 
+            <ApplicationModal
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
                 onSuccess={handleSuccess}
@@ -227,7 +228,7 @@ const TopContainer = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    
+
     h1 {
         font-size: 24px;
         font-weight: 600;
@@ -242,7 +243,7 @@ const NavButton = styled(Button)<{ isSelected: boolean }>`
     border-radius: 0;
     color: ${props => props.isSelected ? '#fff' : '#a0a0a0'};
     background: transparent !important;
-    
+
     &:hover {
         color: #fff;
     }
@@ -291,11 +292,11 @@ const LoaderContainer = styled.div`
     display: flex;
     justify-content: center;
     padding: 40px;
-    
+
     .animate-spin {
         animation: spin 1s linear infinite;
     }
-    
+
     @keyframes spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
