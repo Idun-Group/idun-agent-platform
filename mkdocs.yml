@@ -108,7 +108,8 @@ nav:
       - Google Cloud Logging: observability/gcp-logging.md
   - Memory:
       - Overview: memory/overview.md
-      - Checkpointing Guide: observability/setup-guide.md#checkpointing
+      - Langgraph memory: memory/memory-langgraph.md
+      - ADK memory: memory/memory-adk.md
   - MCP:
       - Setup Guide: mcp/setup-guide.md
       - Configuration: mcp/configuration.md#mcp-servers
