@@ -1,7 +1,9 @@
 # Getting Started
 
 This guide will walk you through setting up the Idun Agent Platform and deploying your first agent.
-
+<div align="center" style="margin: 2em 0;">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/1QJbSrfz5tU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="max-width: 100%; border-radius: 8px;"></iframe>
+</div>
 ## Prerequisites
 
 Before you begin, make sure you have the following installed:
