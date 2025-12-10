@@ -17,7 +17,9 @@
 </p>
 
 <div align="center" style="margin: 2em 0;">
-  <iframe width="560" height="315" src="https://www.youtube.com/embed/1QJbSrfz5tU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="max-width: 100%; border-radius: 8px;"></iframe>
+  <a href="https://www.youtube.com/watch?v=1QJbSrfz5tU">
+    <img src="https://img.youtube.com/vi/1QJbSrfz5tU/maxresdefault.jpg" alt="Idun Agent Platform Demo" style="max-width: 100%; border-radius: 8px; width: 560px;">
+  </a>
 </div>
 
 ![Platform Workflow](docs/images/platform-workflow.png)
