@@ -18,7 +18,7 @@
 
 <div align="center" style="margin: 2em 0;">
   <a href="https://www.youtube.com/watch?v=1QJbSrfz5tU">
-    <img src="https://img.youtube.com/vi/1QJbSrfz5tU/maxresdefault.jpg" alt="Idun Agent Platform Demo" style="max-width: 100%; border-radius: 8px; width: 560px;">
+    <img src="docs/images/screenshots/screen-youtube-quickstart.png" alt="Idun Agent Platform Demo" style="max-width: 100%; border-radius: 8px; width: 560px;">
   </a>
 </div>
 
