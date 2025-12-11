@@ -13,11 +13,6 @@
   </p>
   <p style="margin: 0.6em 0 1.2em 0;">
     <a href="https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/" class="md-button md-button--primary">Quickstart in 5 minutes</a>
-    -
-    <a href="https://idun-group.github.io/idun-agent-platform/architecture/overview/" class="md-button">Architecture overview</a>
-    -
-    <a href="https://idun-group.github.io/idun-agent-platform/roadmap/roadmap/" class="md-button">Roadmap</a>
-    -
     <a href="https://discord.gg/tcwH4z7R" class="md-button">Join the Discord</a>
   </p>
 </div>
