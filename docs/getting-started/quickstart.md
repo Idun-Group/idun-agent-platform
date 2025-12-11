@@ -48,8 +48,8 @@ Login, if you didn't setup any login methiod yet just press **Login**.
     You can now start to plug your agents and set Observabily, Memory, MCP, Guardrails and production grade API.
 
 **Next →**
-[Use a ADK Agent](../agent-framworks/adk.md)
-[Use a LanGraph Agent](../agent-framworks/langgraph.md)
+[Use a ADK Agent](../agent-frameworks/adk.md)
+[Use a LanGraph Agent](../agent-frameworks/langgraph.md)
 
 ## Next Steps
 

@@ -12,11 +12,11 @@
     <b>AI and data platform teams</b> who need governance, auditability and sovereignty.
   </p>
   <p style="margin: 0.6em 0 1.2em 0;">
-    <a href="getting-started/quickstart.md" class="md-button md-button--primary">Quickstart in 5 minutes</a>
+    <a href="https://idun-group.github.io/idun-agent-platform/getting-started/quickstart.md" class="md-button md-button--primary">Quickstart in 5 minutes</a>
     -
-    <a href="concepts/overview.md" class="md-button">Concepts overview</a>
+    <a href="https://idun-group.github.io/idun-agent-platform/architecture/overview.md" class="md-button">Architecture overview</a>
     -
-    <a href="more/roadmap.md" class="md-button">Roadmap</a>
+    <a href="https://idun-group.github.io/idun-agent-platform/roadmap/roadmap.md" class="md-button">Roadmap</a>
     -
     <a href="https://discord.gg/tcwH4z7R" class="md-button">Join the Discord</a>
   </p>
@@ -157,20 +157,20 @@ For a deeper architecture overview, see the **[Technical whitepaper](concepts/ar
 
 ## Key capabilities at a glance
 
-- **Observability**  
-  Plug Langfuse, Phoenix, LangSmith or GCP, get tracing and metrics for every call.  
+- **Observability**
+  Plug Langfuse, Phoenix, LangSmith or GCP, get tracing and metrics for every call.
   → [Observability overview](observability/overview.md)
 
-- **Guardrails**  
-  Add content safety, PII detection and prompt injection protection in front of any agent.  
+- **Guardrails**
+  Add content safety, PII detection and prompt injection protection in front of any agent.
   → [Guardrails overview](guardrails/overview.md)
 
-- **MCP integration**  
-  Extend agents with Model Context Protocol servers; Idun manages server lifecycle and tool registration.  
+- **MCP integration**
+  Extend agents with Model Context Protocol servers; Idun manages server lifecycle and tool registration.
   → [MCP configuration](mcp/configuration.md#mcp-servers)
 
-- **Memory and session persistence**  
-  Persist conversations and state across calls with backends like SQLite or Postgres.  
+- **Memory and session persistence**
+  Persist conversations and state across calls with backends like SQLite or Postgres.
   → [Memory overview](memory/overview.md)
 
 ---
@@ -179,16 +179,16 @@ For a deeper architecture overview, see the **[Technical whitepaper](concepts/ar
 
 Idun Agent Platform is structured in four layers:
 
-- **Web dashboard**  
+- **Web dashboard**
   UI to create, configure and monitor agents.
 
-- **Manager API**  
+- **Manager API**
   Control plane that stores configurations, handles auth, observability and guardrails settings.
 
-- **Engine runtime**  
+- **Engine runtime**
   Executes agents via adapters for LangGraph, ADK, Haystack and others, exposes AG-UI compatible FastAPI endpoints.
 
-- **Data layer**  
+- **Data layer**
   PostgreSQL for checkpointing and configuration, MCP servers for external tools and data.
 
 For more, see **[Architecture](concepts/architecture.md)** and **[Deployment options](deployment/overview.md)**.
@@ -230,7 +230,7 @@ The platform is under active development and already used in production in real 
 - 🚧 More agent frameworks and MCP integrations, environment management (DEV/STG/PRD), and expanded observability & evaluation
 - 🚧 Deployment templates (Terraform, Helm/Kubernetes), ready-to-use agents & MCP tools, and Idun Cloud managed offering
 
-See the detailed **[Roadmap](more/roadmap.md)** for up-to-date status.
+See the detailed **[Roadmap](roadmap/roadmap.md)** for up-to-date status.
 
 ---
 

@@ -135,7 +135,7 @@ nav:
   - Architecture:
       - Overview: architecture/overview.md
   - Roadmap:
-      - Overview: roadmap/overview.md
+      - Overview: roadmap/roadmap.md
   - Reference:
       - API: reference/api.md
       - REST API: reference/rest-api.md
