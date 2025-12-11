@@ -202,7 +202,7 @@ class LanggraphAgent(agent_base.BaseAgent):
             self._agent_instance = graph_builder.compile(
                 checkpointer=self._checkpointer, store=self._store
             )
-        elif isinstance(graph_builder, CompiledStateGraph):
+        elif isinstance(graph_builder, CompiledStateGraph): # TODO: to remove, dirty fix for template deepagent langgraph
             self._agent_instance = graph_builder
 
         self._copilotkit_agent_instance = LangGraphAGUIAgent(
