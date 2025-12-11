@@ -1,0 +1,21 @@
+server:
+  api:
+    port: 8001
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "LangGraph MCP Agent"
+    graph_definition: "./examples/09_langgraph_mcp/agent.py:app"
+    checkpointer:
+      type: "memory"
+
+mcp_servers:
+  - name: "time-reference"
+    transport: "stdio"
+    command: "docker"
+    args:
+      - "run"
+      - "-i"
+      - "--rm"
+      - "mcp/time"

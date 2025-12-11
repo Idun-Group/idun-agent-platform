@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: http://0.0.0.0:8001/agent/copilotkit/stream
+  url: http://localhost:8001/agent/copilotkit/stream
   body: json
   auth: none
 }
@@ -15,5 +15,5 @@ headers {
 }
 
 body:json {
-  {"threadId":"thread-001","runId":"run-001","state":{},"messages":[{"id":"msg-001","role":"user","content":"Hello! boss"}],"tools":[],"context":[],"forwardedProps":{}}
+  {"threadId":"thread-009","runId":"run-001","state":{},"messages":[{"id":"msg-002","role":"user","content":"Tell me TOKYO JAPAN time when it is 12AM in PARIS FRANCE"}],"tools":[],"context":[],"forwardedProps":{}}
 }

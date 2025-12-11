@@ -70,6 +70,31 @@
       "envFile": "${workspaceFolder}/libs/idun_agent_engine/.env"
     },
     {
+      "name": "Idun Engine (Exemple Langchain MCP)",
+      "type": "debugpy",
+      "request": "launch",
+      "console": "integratedTerminal",
+      "module": "idun_platform_cli.main",
+      // "args": [
+      //   "main:app",
+      //   "--host",
+      //   "0.0.0.0",
+      //   "--port",
+      //   "8100",
+      //   "--reload"
+      // ],
+      "args": [
+        "agent", "serve",
+        "--source",
+        "file",
+        "--path",
+        "${workspaceFolder}/libs/idun_agent_engine/examples/09_langgraph_mcp/config.yaml",
+      ],
+      "cwd": "${workspaceFolder}/libs/idun_agent_engine",
+      "justMyCode": false,
+      "envFile": "${workspaceFolder}/libs/idun_agent_engine/.env"
+    },
+    {
       "name": "Idun Engine (Manager Source)",
       "type": "debugpy",
       "request": "launch",
