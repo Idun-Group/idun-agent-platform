@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>index.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<div align="center">
+  <img src="images/logo.png" alt="Idun Agent Platform" width="65"/>
+  <h1 style="font-size: 2em; margin: 0.3em 0;">Idun Agent Platform</h1>
+  <p style="font-size: 1.05em; color: #666; max-width: 650px; margin: 0.4em auto 1em auto; line-height: 1.5;">
+From AI prototypes to governed agent fleets.<br><br>
+<p>Idun Agent Platform is an open source, sovereign platform that makes it easy to put generative AI agents in production and operate them at scale, on your own infrastructure.<br><br></p>
+<p>It is built and battle tested with large enterprises that need strong security, observability, MCP and guardrails management with EU level compliance.</p>
+  </p>
+  <div style="display: inline-block; max-width: 400px;">
+<pre class="hljs"><code><div>pip install idun-agent-engine
+</div></code></pre>
+  </div>
+</div>
+<style>
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.logo-slider {
+  overflow: hidden;
+  padding: 0.6em 0;
+  background: linear-gradient(to bottom, #fafafa, #ffffff);
+  margin: 1em 0;
+  max-width: 100%;
+}
+.logo-track {
+  display: flex;
+  width: max-content;
+  animation: scroll 20s linear infinite;
+  align-items: center;
+}
+.logo-item {
+  height: 45px;
+  width: auto;
+  max-width: 120px;
+  max-height: 45px;
+  object-fit: contain;
+  margin: 0 1.8em;
+  opacity: 0.6;
+  transition: all 0.3s;
+  filter: grayscale(80%);
+}
+.logo-item:hover {
+  opacity: 1;
+  filter: grayscale(0%);
+  transform: scale(1.1);
+}
+</style>
+<div class="logo-slider">
+  <div class="logo-track">
+    <img src="images/logo/langgraph-color.png" class="logo-item" alt="LangGraph"/>
+    <img src="images/logo/agent-development-kit.png" class="logo-item" alt="Agent Development Kit"/>
+    <img src="images/logo/langfuse-color.png" class="logo-item" alt="Langfuse"/>
+    <img src="images/logo/mcp.png" class="logo-item" alt="MCP"/>
+    <img src="images/logo/A2A.png" class="logo-item" alt="A2A"/>
+    <img src="images/logo/Postgresql_elephant.png" class="logo-item" alt="Postgres"/>
+    <img src="images/logo/phoenix.svg" class="logo-item" alt="Phoenix"/>
+    <img src="images/logo/langsmith-color.png" class="logo-item" alt="LangSmith"/>
+    <img src="images/logo/google-cloud.png" class="logo-item" alt="Google Cloud"/>
+    <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
+    <img src="images/logo/langchain-color.png" class="logo-item" alt="LangChain"/>
+    <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>
+    <img src="images/logo/ag-ui.png" class="logo-item" alt="AG-UI"/>
+    <img src="images/logo/langgraph-color.png" class="logo-item" alt="LangGraph"/>
+    <img src="images/logo/agent-development-kit.png" class="logo-item" alt="Agent Development Kit"/>
+    <img src="images/logo/langfuse-color.png" class="logo-item" alt="Langfuse"/>
+    <img src="images/logo/mcp.png" class="logo-item" alt="MCP"/>
+    <img src="images/logo/A2A.png" class="logo-item" alt="A2A"/>
+    <img src="images/logo/Postgresql_elephant.png" class="logo-item" alt="Postgres"/>
+    <img src="images/logo/phoenix.svg" class="logo-item" alt="Phoenix"/>
+    <img src="images/logo/langsmith-color.png" class="logo-item" alt="LangSmith"/>
+    <img src="images/logo/google-cloud.png" class="logo-item" alt="Google Cloud"/>
+    <img src="images/logo/guardrails-ai.png" class="logo-item" alt="Guardrails AI"/>
+    <img src="images/logo/langchain-color.png" class="logo-item" alt="LangChain"/>
+    <img src="images/logo/haystack.png" class="logo-item" alt="Haystack"/>
+    <img src="images/logo/ag-ui.jpg" class="logo-item" alt="AG-UI"/>
+  </div>
+</div>
+<hr>
+<style>
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.2em;
+  margin: 1.5em 0 2em 0;
+}
+.feature-card {
+  background: #ffffff;
+  border: 1px solid #e9d5ff;
+  border-radius: 8px;
+  padding: 1.3em;
+  transition: all 0.3s ease;
+}
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(147, 51, 234, 0.15);
+  border-color: #d8b4fe;
+}
+.feature-title {
+  color: #7c3aed;
+  font-size: 1em;
+  font-weight: 600;
+  margin: 0 0 0.5em 0;
+}
+.feature-desc {
+  color: #666;
+  font-size: 0.88em;
+  line-height: 1.5;
+  margin: 0;
+}
+</style>
+<p><img src="images/screenshots/homepage.png" alt="Homepage"></p>
+<h2 style="color: #7c3aed;">For GenAI developer and IA data platform company team</h2>
+<h3 style="color: #7c3aed;">I am a GenAI developer</h3>
+<p>You want to focus on agents logic and ship agents, not rebuild infrastructure.</p>
+<p>With Idun Agent Platform you can:</p>
+<div class="feature-grid">
+  <div class="feature-card">
+    <div class="feature-title">Production AG-UI FastAPI Service</div>
+    <p class="feature-desc">Wrap your agent framework (LangGraph, ADK, Haystack) in a production ready FastAPI service with AG-UI endpoint.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-title">Observability</div>
+    <p class="feature-desc">Add tracing, feedback and metrics without rewriting your code.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-title">Multi-Environment Support</div>
+    <p class="feature-desc">Run the same agent in local, staging and production environments.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-title">Flexible Tools & Memory</div>
+    <p class="feature-desc">Access over tools and set memory instead of hard coding.</p>
+  </div>
+</div>
+<h2 id="start-here-full-quickstart-guide-%E2%86%92"><strong>Start here:</strong> <a href="quickstart.md">Full Quickstart Guide →</a></h2>
+<h3 style="color: #7c3aed;">I represent a IA data platform company team</h3>
+<p>You want control, govern and give your developers everything to focus on agents logic.</p>
+<p>With Idun Agent Platform you can:</p>
+<div class="feature-grid">
+  <div class="feature-card">
+    <div class="feature-title">Agent Catalog & Ownership</div>
+    <p class="feature-desc">Maintain a catalog of approved agents with clear owners and environments.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-title">Access Control & Security</div>
+    <p class="feature-desc">Enforce SSO, RBAC and per-tenant isolation, integrated with your identity provider.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-title">Model & Tool Governance</div>
+    <p class="feature-desc">Decide which models, tools and data sources with MCP each agent can use.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-title">Enforce Guardrails</div>
+    <p class="feature-desc">Enforce guardrails on agents for compliance and safety.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-title">Self-Hosting Flexibility</div>
+    <p class="feature-desc">Host everything on your own infrastructure, in the cloud, or on-premises.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-title">Audit & Monitoring</div>
+    <p class="feature-desc">Monitor, log, and evaluate agent behavior for audit and regulation readiness.</p>
+  </div>
+</div>
+<h2 id="start-here-full-quickstart-guide-%E2%86%92"><strong>Start here:</strong> <a href="quickstart.md">Full Quickstart Guide →</a></h2>
+<h2 id="what-is-idun">What is Idun?</h2>
+<p>Idun Agent Platform solves the fragmentation problem in AI agent development. Each framework (LangGraph, Haystack, ADK) has its own deployment patterns, observability solutions, and operational requirements. Idun provides:</p>
+<p><strong>A unified configuration interface</strong> - Define agents using YAML files that work across all supported frameworks</p>
+<p><strong>Production-ready infrastructure</strong> - Built-in checkpointing, observability, guardrails, and MCP server integration</p>
+<p><strong>Flexible deployment</strong> - Run locally for development, deploy to self-hosted infrastructure, or use managed cloud</p>
+<p><strong>Framework-agnostic tooling</strong> - CLI and web dashboard work consistently across all agent types</p>
+<h2 id="why-choose-idun">Why Choose Idun?</h2>
+<p>!!! success &quot;Multi-Framework Support&quot;
+Deploy LangGraph graphs, Haystack pipelines, and ADK agents through a single unified interface. Switch frameworks without changing your deployment pipeline or tooling.</p>
+<p>!!! success &quot;Production-Ready Features&quot;
+Checkpointing for conversation persistence, observability with Langfuse/Phoenix/GCP, guardrails for content safety, and MCP servers for tool integration—all configured through YAML.</p>
+<p>!!! success &quot;Simple Configuration&quot;
+Define your agent, observability, guardrails, and tools. No complex setup scripts or framework-specific deployment code required.</p>
+<p>!!! success &quot;Centralized Management&quot;
+Control multiple agents through a web dashboard or CLI. Create, configure, deploy, and monitor agents from one place.</p>
+<h2 id="key-features">Key Features</h2>
+<h3 id="observability">Observability</h3>
+<p>Integrate with multiple observability providers simultaneously. Track LLM calls, measure costs, monitor performance, and debug agent behavior.</p>
+<p>Supported providers:</p>
+<ul>
+<li><strong>Langfuse</strong> - LLM-specific tracing with cost tracking</li>
+<li><strong>Phoenix</strong> - OpenTelemetry-based ML observability</li>
+<li><strong>GCP Logging/Trace</strong> - Cloud-native logging and distributed tracing</li>
+<li><strong>LangSmith</strong> - LangChain ecosystem monitoring</li>
+</ul>
+<p><a href="guides/02-observability-checkpointing.md">Observability Guide →</a></p>
+<h3 id="guardrails">Guardrails</h3>
+<p>Add safety constraints to filter harmful content and enforce compliance. Powered by Guardrails AI Hub.</p>
+<p>Available validators:</p>
+<ul>
+<li><strong>Ban List</strong> - Block specific words or phrases</li>
+<li><strong>PII Detector</strong> - Detect and handle personally identifiable information</li>
+</ul>
+<p>Configure input validation (before processing) and output validation (before returning responses).</p>
+<p><a href="guides/04-guardrails.md">Guardrails Guide →</a></p>
+<h3 id="mcp-servers">MCP Servers</h3>
+<p>Extend agent capabilities with Model Context Protocol servers. Idun manages server lifecycle, connection management, and tool registration automatically.</p>
+<p>Common integrations:</p>
+<ul>
+<li>Filesystem access</li>
+<li>Web search (Brave, Google)</li>
+<li>Database connections</li>
+<li>API integrations</li>
+<li>Git repositories</li>
+</ul>
+<p><a href="concepts/configuration.md#mcp-servers">MCP Configuration →</a></p>
+<h3 id="checkpointing">Checkpointing</h3>
+<p>Persist conversation state across requests. Resume conversations after failures or restarts. Support multiple concurrent conversations with thread isolation.</p>
+<p>Supported backends:</p>
+<ul>
+<li>SQLite (local development)</li>
+<li>PostgreSQL (production)</li>
+<li>In-memory (stateless testing)</li>
+</ul>
+<p><a href="guides/02-observability-checkpointing.md">Checkpointing Guide →</a></p>
+<h2 id="deployment-options">Deployment Options</h2>
+<h3 id="local-development">Local Development</h3>
+<pre class="hljs"><code><div>idun agent serve --<span class="hljs-built_in">source</span>=manager
+</div></code></pre>
+<p>Run agents locally with hot reload, SQLite checkpointing, and local observability.</p>
+<h3 id="self-hosted">Self-Hosted</h3>
+<p>Deploy with Docker Compose or Kubernetes to your own infrastructure. Includes PostgreSQL database, Manager API, and web dashboard.</p>
+<pre class="hljs"><code><div>docker compose -f docker-compose.dev.yml up --build
+</div></code></pre>
+<p><a href="deployment/self-hosted.md">Self-Hosted Deployment →</a></p>
+<h3 id="idun-cloud">Idun Cloud</h3>
+<p>Managed hosting with zero infrastructure management. Automatic scaling, built-in high availability, and integrated observability.</p>
+<p>Coming Soon</p>
+<h2 id="use-cases">Use Cases</h2>
+<h3 id="conversational-ai">Conversational AI</h3>
+<p>Build chatbots and virtual assistants with:</p>
+<ul>
+<li>Persistent conversation history through checkpointing</li>
+<li>Multi-turn context management</li>
+<li>Tool calling for external integrations (via MCP servers)</li>
+<li>Content safety through guardrails</li>
+</ul>
+<h3 id="research--analysis">Research &amp; Analysis</h3>
+<p>Deploy research agents that:</p>
+<ul>
+<li>Search and analyze information from multiple sources</li>
+<li>Process documents with Haystack pipelines</li>
+<li>Synthesize findings into structured reports</li>
+<li>Track research provenance through observability</li>
+</ul>
+<h3 id="workflow-automation">Workflow Automation</h3>
+<p>Create automation agents that:</p>
+<ul>
+<li>Handle complex multi-step workflows</li>
+<li>Integrate with external tools via MCP servers</li>
+<li>Make autonomous decisions based on business logic</li>
+<li>Provide audit trails through observability</li>
+</ul>
+<h2 id="architecture">Architecture</h2>
+<p>The platform consists of three main layers:</p>
+<p><strong>Web Dashboard</strong> - User interface for creating and managing agents</p>
+<p><strong>Manager (Control Plane)</strong> - REST API for agent CRUD operations, configuration management, and authentication. Handles observability and guardrails configuration.</p>
+<p><strong>Engine (Runtime)</strong> - Loads and executes agents through framework-specific adapters (LangGraph, Haystack, ADK). Manages observability, guardrails, MCP servers, and provides REST API access.</p>
+<p><strong>Data Layer</strong> - PostgreSQL for checkpointing and configuration storage. MCP servers for tool integrations.</p>
+<p><a href="concepts/architecture.md">Architecture Details →</a></p>
+<h2 id="getting-help">Getting Help</h2>
+<p>!!! question &quot;Questions &amp; Support&quot;
+<strong>Documentation</strong> - <a href="quickstart.md">Guides</a>, <a href="concepts/overview.md">Concepts</a>, <a href="reference/configuration.md">Reference</a></p>
+<pre><code>**Community** - [GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions)
+
+**Issues** - [Report bugs and request features](https://github.com/Idun-Group/idun-agent-platform/issues)
+
+**Discord** - [Discuss with us](https://discord.gg/N6ppGPrw)
+</code></pre>
+<h2 id="next-steps">Next Steps</h2>
+<p>Ready to build your first agent?</p>
+<p><a href="quickstart.md">Quickstart Guide →</a>{ .md-button .md-button--primary }</p>
+<p>Want to understand the platform better?</p>
+<p><a href="concepts/overview.md">Concepts Overview →</a>{ .md-button }</p>
+<p>Need detailed reference documentation?</p>
+<p><a href="reference/configuration.md">Configuration Reference →</a>{ .md-button }</p>
+
+</body>
+</html>
