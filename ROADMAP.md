@@ -13,7 +13,6 @@ The platform is under active development and this document tracks major mileston
 - [x] Observability integrations (Langfuse, LangSmith, Phoenix, GCP Trace)
 - [x] SSO access to Manager UI
 
-
 ## In progress / planned
 
 - [ ] More agent frameworks and MCP integrations
