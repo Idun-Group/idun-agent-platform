@@ -49,7 +49,7 @@ Login, if you didn't setup any login methiod yet just press **Login**.
 
 **Next →** [Use a ADK Agent](../agent-frameworks/adk.md)
 
-**Next →** [Use a LanGraph Agent](../agent-frameworks/langgraph.md)
+**Next →** [Use a LangGraph Agent](../agent-frameworks/langgraph.md)
 
 ## Next Steps
 
