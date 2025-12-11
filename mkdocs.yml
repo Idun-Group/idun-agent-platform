@@ -121,7 +121,7 @@ nav:
       - Overview: a2a/overview.md
   - Guardrails:
       - Overview: guardrails/overview.md
-  - SSO/RBAC:
+  - SSO:
       - Overview: sso-rbac/overview.md
   - Deployment:
       - Overview: deployment/overview.md
@@ -136,15 +136,3 @@ nav:
       - Overview: architecture/overview.md
   - Roadmap:
       - Overview: roadmap/roadmap.md
-  - Reference:
-      - API: reference/api.md
-      - REST API: reference/rest-api.md
-      - Configuration: reference/configuration.md
-      - CLI: reference/cli.md
-      - Environment Variables: reference/environment.md
-  - More:
-      - Contributing: more/contributing.md
-      - Changelog: more/changelog.md
-      - FAQ: more/faq.md
-      - Support: more/support.md
-      - Known Bugs: more/known-bugs.md
