@@ -5,45 +5,37 @@
 
 </div>
 
-<p align="center">
-  <b><a href="https://idun-group.github.io/idun-agent-platform/">Documentation</a></b> |
-  <b><a href="https://discord.gg/tcwH4z7R">Discord Server</a></b>
-  <br/>
-  <b><a href="https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/" class="md-button md-button--primary">Quickstart Guide</a></b>
-</p>
+# Idun Agent Platform
 
-<p align="center">
-  <b>From AI prototypes to governed agent fleets.</b>
-</p>
+**From AI prototypes to governed agent fleets on your own infrastructure.**
+
+Idun Agent Platform is an open source control plane for generative AI agents.  
+It turns LangGraph, ADK or Haystack agents into **production ready services** with
+
+- Unified deployment across frameworks
+- Observability and tracing
+- Memory and session persistence
+- Guardrails and MCP integration
+- Multi environment and access control
+
+**Who is this for**
+
+- **GenAI developers**, who want to ship agents without rebuilding infra each time  
+- **AI and data platform teams**, who need governance, auditability and sovereignty
+
+```bash
+pip install idun-agent-engine
+```
+
+👉 **[Quickstart in 5 minutes](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)**  
+👉 **[Full documentation](https://idun-group.github.io/idun-agent-platform/)**  
+👉 **[Join the Discord](https://discord.gg/tcwH4z7R)**
 
 <div align="center" style="margin: 2em 0;">
   <a href="https://www.youtube.com/watch?v=1QJbSrfz5tU">
     <img src="docs/images/screenshots/screen-youtube-quickstart.png" alt="Idun Agent Platform Demo" style="max-width: 100%; border-radius: 8px; width: 560px;">
   </a>
 </div>
-
-![Platform Workflow](docs/images/platform-workflow.png)
-
-<p align="center">
-  If you find this project useful, please ⭐️ <b>star the repository</b> and join our <b>Discord community</b>!
-</p>
-<p align="center">
-  Made in 🇫🇷 with ❤️
-</p>
-
----
-
-# Idun Agent Platform
-
-**From AI prototypes to governed agent fleets.**
-
-Idun Agent Platform is an open source, sovereign platform that makes it easy to put generative AI agents in production and operate them at scale, on your own infrastructure.
-
-It is built and battle tested with large enterprises that need strong security, observability, MCP and guardrails management with EU level compliance.
-
-```bash
-pip install idun-agent-engine
-```
 
 ![Homepage](docs/images/screenshots/homepage.png)
 
@@ -61,302 +53,259 @@ pip install idun-agent-engine
   <img src="docs/images/logo/guardrails-ai.png"     alt="Guardrails AI"         style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/langchain-color.png"   alt="LangChain"             style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="docs/images/logo/haystack.png"          alt="Haystack"              style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="docs/images/logo/ag-ui.png"          alt="AG-UI"              style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logo/ag-ui.png"             alt="AG-UI"                 style="height:36px; margin:6px; vertical-align:middle;" />
 </p>
 
-## For GenAI developer and IA data platform company team
-
-### I am a GenAI developer
-
-You want to focus on agents logic and ship agents, not rebuild infrastructure.
-
-With Idun Agent Platform you can:
-
-- **Production AG-UI FastAPI Service**: Wrap your agent framework (LangGraph, ADK, Haystack) in a production ready FastAPI service with AG-UI endpoint.
-- **Observability**: Add tracing, feedback and metrics without rewriting your code.
-- **Multi-Environment Support**: Run the same agent in local, staging and production environments.
-- **Flexible Tools & Memory**: Access over tools and set memory instead of hard coding.
-
-### I represent a IA data platform company team
-
-You want control, govern and give your developers everything to focus on agents logic.
-
-With Idun Agent Platform you can:
-
-- **Agent Catalog & Ownership**: Maintain a catalog of approved agents with clear owners and environments.
-- **Access Control & Security**: Enforce SSO, RBAC and per-tenant isolation, integrated with your identity provider.
-- **Model & Tool Governance**: Decide which models, tools and data sources with MCP each agent can use.
-- **Enforce Guardrails**: Enforce guardrails on agents for compliance and safety.
-- **Self-Hosting Flexibility**: Host everything on your own infrastructure, in the cloud, or on-premises.
-- **Audit & Monitoring**: Monitor, log, and evaluate agent behavior for audit and regulation readiness.
-
-## What is Idun?
-
-Idun Agent Platform solves the fragmentation problem in AI agent development. Each framework (LangGraph, Haystack, ADK) has its own deployment patterns, observability solutions, and operational requirements. Idun provides:
-
-- **A unified configuration interface** - Define agents using YAML files that work across all supported frameworks
-- **Production-ready infrastructure** - Built-in checkpointing, observability, guardrails, and MCP server integration
-- **Flexible deployment** - Run locally for development, deploy to self-hosted infrastructure, or use managed cloud
-- **Framework-agnostic tooling** - CLI and web dashboard work consistently across all agent types
-
-## Why Choose Idun?
-
-- **Multi-Framework Support**: Deploy LangGraph graphs, Haystack pipelines, and ADK agents through a single unified interface. Switch frameworks without changing your deployment pipeline or tooling.
-- **Production-Ready Features**: Checkpointing for conversation persistence, observability with Langfuse/Phoenix/GCP, guardrails for content safety, and MCP servers for tool integration—all configured through YAML.
-- **Simple Configuration**: Define your agent, observability, guardrails, and tools. No complex setup scripts or framework-specific deployment code required.
-- **Centralized Management**: Control multiple agents through a web dashboard or CLI. Create, configure, deploy, and monitor agents from one place.
-
-## Key Features
-
-### Observability
-
-Integrate with multiple observability providers simultaneously. Track LLM calls, measure costs, monitor performance, and debug agent behavior.
-
-Supported providers:
-
-- **Langfuse** - LLM-specific tracing with cost tracking
-- **Phoenix** - OpenTelemetry-based ML observability
-- **GCP Logging/Trace** - Cloud-native logging and distributed tracing
-- **LangSmith** - LangChain ecosystem monitoring
-
-### Guardrails
-
-Add safety constraints to filter harmful content and enforce compliance. Powered by Guardrails AI Hub.
-
-Available validators:
-
-- **Ban List** - Block specific words or phrases
-- **PII Detector** - Detect and handle personally identifiable information
-
-Configure input validation (before processing) and output validation (before returning responses).
-
-### MCP Servers
-
-Extend agent capabilities with Model Context Protocol servers. Idun manages server lifecycle, connection management, and tool registration automatically.
-
-Common integrations:
-
-- Filesystem access
-- Web search (Brave, Google)
-- Database connections
-- API integrations
-- Git repositories
-
-### Memory & Checkpointing
-
-Persist conversation state across requests. Resume conversations after failures or restarts. Support multiple concurrent conversations with thread isolation.
-
-Supported backends:
-
-- SQLite (local development)
-- PostgreSQL (production)
-- In-memory (stateless testing)
-- Vertex AI (Google Cloud production)
-
-## Deployment Options
-
-### Local Development
-
-```bash
-idun agent serve --source=manager
-```
-
-Run agents locally with hot reload, SQLite checkpointing, and local observability.
-
-### Self-Hosted
-
-Deploy with Docker Compose or Kubernetes to your own infrastructure. Includes PostgreSQL database, Manager API, and web dashboard.
-
-```bash
-docker compose -f docker-compose.dev.yml up --build
-```
-
-### Idun Cloud
-
-Managed hosting with zero infrastructure management. Automatic scaling, built-in high availability, and integrated observability. (Coming Soon)
-
-## Use Cases
-
-### Conversational AI
-
-Build chatbots and virtual assistants with:
-
-- Persistent conversation history through checkpointing
-- Multi-turn context management
-- Tool calling for external integrations (via MCP servers)
-- Content safety through guardrails
-
-### Research & Analysis
-
-Deploy research agents that:
-
-- Search and analyze information from multiple sources
-- Process documents with Haystack pipelines
-- Synthesize findings into structured reports
-- Track research provenance through observability
-
-### Workflow Automation
-
-Create automation agents that:
-
-- Handle complex multi-step workflows
-- Integrate with external tools via MCP servers
-- Make autonomous decisions based on business logic
-- Provide audit trails through observability
-
-## Architecture
-
-The platform consists of three main layers:
-
-- **Web Dashboard**: User interface for creating and managing agents
-- **Manager (Control Plane)**: REST API for agent CRUD operations, configuration management, and authentication. Handles observability and guardrails configuration.
-- **Engine (Runtime)**: Loads and executes agents through framework-specific adapters (LangGraph, Haystack, ADK). Manages observability, guardrails, MCP servers, and provides REST API access.
-- **Data Layer**: PostgreSQL for checkpointing and configuration storage. MCP servers for tool integrations.
+<p align="center">
+  If you find this project useful, please ⭐️ <b>star the repository</b> and join our <b>Discord community</b>!
+</p>
+<p align="center">
+  Made in 🇫🇷 with ❤️
+</p>
 
 ---
 
-# Getting Started
+## Should you use Idun Agent Platform
 
-This guide will walk you through setting up the Idun Agent Platform and deploying your first agent.
+You probably should if:
 
-## Prerequisites
+- You have or plan multiple agents built with LangGraph, ADK, Haystack or similar
+- You care about observability, guardrails, security, and AI regulation
+- You want to self host or run on your own cloud, not depend on a vendor black box
 
-Before you begin, make sure you have the following installed:
+You probably should not if:
 
-- **Python 3.12** - Required for running the agent platform [Install Python](https://www.python.org/downloads/)
-- **Docker** and **Docker Compose** - Required for running the platform containers. [Steps to install Docker](https://docs.docker.com/get-started).
-- **Git** - For cloning the repository
-- **uv** - For Python package management. [Steps to install uv](https://docs.astral.sh/uv/getting-started/installation/)
+- You are just experimenting with a single toy chatbot
+- You do not need observability, governance or multi environment setups yet
 
-## 1. Clone the Repository
+## For GenAI developers
+
+You want to spend time on agent logic, not boilerplate infra.
+
+With Idun you can:
+
+- Wrap your LangGraph, ADK or Haystack agent as a FastAPI service in minutes
+- Get tracing, feedback and metrics without rewriting your code
+- Run the same agent locally, on staging and in production with the same config
+- Plug tools and memory through configuration instead of hard coding everything
+
+## For AI and data platform teams
+
+You want to standardize how agents run in production and stay compliant.
+
+With Idun you can:
+
+- Maintain a catalog of approved agents with clear ownership and environments
+- Enforce SSO, RBAC and per tenant isolation, integrated with your IdP
+- Control which models, tools and data sources each agent can use with MCP
+- Enforce guardrails for safety and compliance, with full audit and monitoring
+
+## Why Idun exists
+![Platform Workflow](docs/images/platform-workflow.png)
+Today, each agent framework comes with its own way to deploy, observe and govern agents.  
+The result is a zoo of one off POCs, custom servers and ad hoc dashboards.
+
+Idun Agent Platform gives you:
+
+- **One configuration model**, define agents configurations in one central hub  that works across frameworks
+- **Production features by default**, memory, observability, guardrails, MCP, SSO access
+- **Flexible deployment**, run locally, self host on your own cloud or integrate in your platform
+- **Centralized control**, manage agents, environments and access from one dashboard or CLI
+
+👉 **[Read the technical whitepaper](#technical-whitepaper)** for a deeper architecture overview.
+
+## Key capabilities at a glance
+
+- **Observability**  
+  Plug Langfuse, Phoenix, LangSmith or GCP, get tracing and metrics for every call.
+
+- **Guardrails**  
+  Add content safety, PII detection and prompt injection protection in front of any agent.
+
+- **MCP integration**  
+  Extend agents with Model Context Protocol servers, Idun manages server lifecycle and tool registration.
+
+- **Memory and session persistence**  
+  Persist conversations and state across calls with backends like SQLite or Postgres.
+
+## High level architecture
+
+Idun Agent Platform is structured in four layers:
+
+- **Web dashboard**  
+  UI to create, configure and monitor agents.
+
+- **Manager API**  
+  Control plane that stores configurations, handles auth, observability and guardrails settings.
+
+- **Engine runtime**  
+  Executes agents via adapters for LangGraph, ADK, Haystack and others, exposes AG-UI FastAPI endpoints.
+
+- **Data layer**  
+  PostgreSQL for checkpointing and configuration, MCP servers for external tools and data.
+
+
+
+## Quickstart
+
+You need Python 3.12, Docker and Git.
+
+1. Clone the repo
 
 ```bash
 git clone https://github.com/Idun-Group/idun-agent-platform.git
 cd idun-agent-platform
 ```
 
-## 2. Copy env file
+2. Start the platform locally
 
 ```bash
 cp .env.example .env
-```
 
-## 3. Start the Platform
-
-> **Tip**: Make sure you start the Docker daemon before running the container
-
-Launch the Docker containers:
-
-```bash
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-The manager UI will be available at `http://localhost:3000`
+3. Open the dashboard at `http://localhost:3000` and create your first agent.
 
-## 4. Create an Agent configuration
-
-Navigate to `http://localhost:3000`, press login (without specifying credentials).
-
-1. Click on "Create an agent"
-2. **Name**: Specify your agent's name, set it to `My first agent`.
-3. **Base url**: Add the URL your agents will be accessed from, set it to `http://localhost:8008`.
-4. **Server Port**: For local development, set it to `8008`.
-5. **Agent framework**: Select `ADK` (Agent development kit by Google).
-6. Click `Next`.
-7. **Name**: Specify your agent's name, set it to `My first agent` (if asked again).
-8. **Agent Definition Path**: Specify where your agent code will be located, set it to `my_agent/agent.py:root_agent`
-9. **App Name**: ADK requires an app name so set it to `firstagent`
-10. For `session service` and `observability` keep default value. This will be addressed later (By default agent memory is set to `AdkInMemory`).
-11. Click `Next`.
-12. Skip `MCP Server` and `Guardrails`. This will be addressed later.
-13. Click `Create Agent`.
-
-> **Success**: Your agent's configuration is created
-
-## 5. Get the Agent API Key
-
-In the Agent Dashboard, click on your agent, then `API Integration`, and press `Show Key`. Copy your agent's KEY. We will use it in the next step.
-
-## 6. Create your Agent
-
-Now the idun agent platform is ready. You can start developing agents and connect them to the platform.
-Start a new agent project with your favorite code editor in a separate folder like you're starting a new agent project.
-In this example we will start with a simple ADK agent.
-
-### Step 1: Create the Project Directory
-
-```bash
-mkdir demo-adk-idun-agent
-cd demo-adk-idun-agent
-```
-
-### Step 2: Init ADK agent
-
-In your code editor setup a Python 3.12 environment.
-
-Follow the ADK Agent python getting started tutorial: [Python Quickstart for ADK](https://google.github.io/adk-docs/get-started/python/#next-build-your-agent)
-
-> **Tips**:
->
-> - If you are using Vertex AI model don't forget to authenticate your gcloud account:
->
->   ```bash
->   gcloud auth application-default login
->   ```
-> - Keep using gemini 2.5 instead of gemini 3 pro preview if you didn't activate gemini preview or if you don't use us-central1 as location: `gemini-2.5-flash`
-> - When running ADK web use a different port because port 8000 is used by the platform: `adk web --port 8010`
-> - ADK does not support folder paths that contain spaces.
-
-### Step 3: Setup Idun platform access
-
-Install idun-agent-engine package:
-
-```bash
-pip install idun-agent-engine
-```
-
-Copy the following key in your agent .env file.
-
-```bash
-IDUN_MANAGER_HOST=http://localhost:8000
-IDUN_AGENT_API_KEY=<COPY THE AGENT IDUN KEY FROM PREVIOUS STEP 5>
-```
-
-### Step 4: Run your agent
-
-Export the env variable from the .env in your terminal
-
-```bash
-set -o allexport
-source ./my_agent/.env
-set +o allexport
-```
-
-Run the agent with the following command
-
-```bash
-idun agent serve --source manager
-```
-
-> **Success**: Your ADK agent is up and running with Idun agent platform!
-
-## 7. Test your agent
-
-Navigate to the API Integration tab of your agent in the manager UI to communicate with your agent.
-
-Test the following question:
-
-```text
-What time is it in Paris ?
-```
-
-> **Success**: You're all done!
+👉 For a complete step by step tutorial, including ADK example code, see the  
+**[Quickstart guide](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)**.
 
 ---
 
-## Getting Help
+## Technical whitepaper
 
-- **Documentation**: [Guides, Concepts, Reference](https://idun-group.github.io/idun-agent-platform/)
-- **Community**: [GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions)
-- **Issues**: [Report bugs and request features](https://github.com/Idun-Group/idun-agent-platform/issues)
-- **Discord**: [Discuss with us](https://discord.gg/N6ppGPrw)
+### 1) System Overview
+
+**Objective:** Provide a **unified, production-grade runtime** for heterogeneous agent frameworks with **centralized configuration, security, and observability**. Components:
+
+- **Idun Agent Engine** — wraps LangGraph/ADK/Haystack agents into a **FastAPI** service with unified API using AG-UI protocol, memory, guardrails, and tracing. Works **standalone** (YAML) or **managed** (fetches config from Manager).
+- **Idun Agent Manager** — **FastAPI + PostgreSQL** service for CRUD on engine configs; serves signed configs to Engines; enforces SSO/RBAC and tenancy.
+- **Idun Agent UI** — **Next.js** admin for creating, deploying, observing, and governing agents.
+- **Idun Agent Schema** — shared **Pydantic** models (EngineConfig, ManagedAgent, API contracts) ensuring type-safe interoperability across services.
+
+**Non-functional pillars:** **Sovereignty (EU/on-prem), Security (guardrails, SSO/RBAC, air-gap), Observability (Langfuse/Phoenix/OpenTelemetry), Scalability (rate limiting, LB), Interoperability (multi-LLM, multi-framework).**
+
+### 2) Reference Architecture
+
+```mermaid
+flowchart LR
+  subgraph Client_Apps["Client / Apps"]
+    UI["Business Apps / Chat UIs"]
+    Dev["Dev Tools / CI/CD"]
+  end
+
+  subgraph Idun_Platform["Idun Platform"]
+    MGR["Agent Manager (Configs, SSO, RBAC, Templates)"]
+    ENG["Agent Engines (FastAPI)"]
+    OBS["Observability (Langfuse • Phoenix • OTel)"]
+    VDB[(Vector DB / Memory)]
+    CFGDB[(PostgreSQL Config DB)]
+  end
+
+  subgraph Models_Tools["Models & Tools"]
+    LLMlocal["LLM Local / vLLM"]
+    LLMext["LLM External"]
+    TOOLS["Tools: MCP, APIs, DBs, SaaS"]
+  end
+
+  UI --> ENG
+  Dev --> MGR
+  MGR --> CFGDB
+  MGR --> ENG
+  ENG --> OBS
+  ENG --> VDB
+  ENG --> LLMlocal
+  ENG --> LLMext
+  ENG --> TOOLS
+```
+
+**Topologies:**
+
+- **On-prem / EU cloud** with air-gapped LLMs and private data planes.
+- **Hybrid** with local Engines and managed UI/Manager.
+
+### 3) Managed Mode: Control-Plane Flow
+
+```mermaid
+sequenceDiagram
+  participant Dev as Developer
+  participant UI as Idun Agent UI
+  participant MGR as Agent Manager
+  participant ENG as Agent Engine
+  participant OBS as Observability
+
+  Dev->>UI: Create/Update Agent Template
+  UI->>MGR: POST /agents (EngineConfig, RBAC, secrets refs)
+  ENG->>MGR: GET /agents/{id}/config (API key/OIDC)
+  MGR-->>ENG: Signed EngineConfig + secrets bindings
+  ENG->>OBS: Stream traces/metrics
+  Client->>ENG: /v1/chat request
+  ENG-->>Client: Response + trace_id
+```
+
+**Benefits:** central policy enforcement, versioned configs, and uniform telemetry across heterogeneous frameworks.
+
+### 4) Security & Compliance
+
+- **Identity & Access:** **SSO/OIDC**, **RBAC**, per-tenant isolation; API keys for service-to-service.
+- **Data Residency:** EU/on-prem deployment; optional **air-gap** with local LLMs.
+- **Guardrails:** input/output filters, tool-use allowlists, prompt policy; **LLM-as-a-judge** evaluation paths.
+- **Auditability:** full tracing of prompts, tools, and model calls (**OTel + Langfuse/Phoenix**).
+
+### 5) Observability & Evaluation
+
+- **Tracing:** spans across retrieval, function/tool calls, and model steps.
+- **Feedback loops:** user scores + auto-eval ("LLM as a judge"); connect to regression dashboards.
+- **Budgeting:** per-tenant usage/alerts; latency/error SLIs.
+
+### 6) Interoperability
+
+- **Frameworks:** LangGraph, CrewAI, ADK, Haystack (plug-in via adapters).
+- **LLMs:** local (vLLM) and external (OpenAI/Anthropic/Mistral) behind a single gateway; **RAG & memory via Vector DB**.
+- **Protocols:** **MCP**/**A2A** for tool and agent-to-agent collaboration.
+
+### 7) Monorepo Layout
+
+```text
+libs/
+  idun_agent_engine/     # runtime + adapters + FastAPI
+  idun_agent_schema/     # Pydantic models (single source of truth)
+services/
+  idun_agent_manager/    # control plane (FastAPI + PostgreSQL)
+  idun_agent_ui/         # Next.js admin
+```
+
+---
+
+## Community and support
+
+- Questions and help, [join the Discord](https://discord.gg/tcwH4z7R)
+- Proposals and ideas, [GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions)
+- Bugs and feature requests, [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues)
+
+## Commercial support
+
+Idun Agent Platform is maintained by Idun Group.  
+We can help with:
+
+- Design and review of your agent platform architecture
+- Secure deployment on your infrastructure
+- Integration with your IdP, observability stack and compliance workflows
+
+Contact us at contact@idun-group.com for enterprise support.
+
+## Project status and roadmap
+
+The platform is under active development and already used in production in real projects.
+
+- ✅ Core runtime on PyPI as `idun-agent-engine`, with adapters for LangGraph and ADK
+- ✅ Local and self-hosted deployment with Docker
+- ✅ AG-UI compatible CopilotKit endpoint, MCP server support, Guardrails AI, observability (Langfuse, LangSmith, Phoenix, GCP Trace), SSO access to Manager UI
+- 🚧 More agent frameworks and MCP integrations, environment management (DEV/STG/PRD), and expanded observability & evaluation
+- 🚧 Deployment templates (Terraform, Helm/Kubernetes), ready-to-use agents & MCP tools, and Idun Cloud managed offering
+
+See **[ROADMAP.md](./ROADMAP.md)** for details and planned features.
+
+## Contributing
+
+Contributions are welcome. Please see **[CONTRIBUTING.md](./CONTRIBUTING.md)** for guidelines.
