@@ -4,7 +4,7 @@
   <p style="font-size: 1.05em; color: #666; max-width: 650px; margin: 0.4em auto 1em auto; line-height: 1.5;">
     <b>From AI prototypes to governed agent fleets on your own infrastructure.</b><br/><br/>
     Idun Agent Platform is an open source control plane for generative AI agents. It turns LangGraph, ADK or Haystack agents into
-    <b>production ready services</b> with unified deployment, observability, memory, guardrails and access control.
+    <b>production-ready services</b> with unified deployment, observability, memory, guardrails and access control.
   </p>
   <p style="font-size: 0.98em; color: #444; max-width: 620px; margin: 0.4em auto 1em auto; line-height: 1.5;">
     <b>Who is this for</b><br/>
@@ -16,6 +16,13 @@
     <a href="https://discord.gg/tcwH4z7R" class="md-button">Join the Discord</a>
   </p>
 </div>
+
+**Start here**
+
+- **Time to first working agent:** ~10–15 minutes → [Getting Started](getting-started/quickstart.md)
+- **Want the “why” first?** ~7 minutes → [Architecture Overview](architecture/overview.md)
+- **Already have an agent?** ~10 minutes → [Agent Frameworks](agent-frameworks/overview.md)
+- **Deploying to production?** ~5 minutes → [Deployment Overview](deployment/overview.md)
 
 ![Platform workflow](images/platform-workflow.png)
 

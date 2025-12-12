@@ -50,7 +50,13 @@ theme:
 plugins:
   - search
   - autorefs
-  - redirects
+  - redirects:
+      redirect_maps:
+        # Canonical URL fixes (typos / older paths)
+        agent-framworks/overview.md: agent-frameworks/overview.md
+        agent-framworks/langgraph.md: agent-frameworks/langgraph.md
+        agent-framworks/adk.md: agent-frameworks/adk.md
+        quickstart.md: getting-started/quickstart.md
   - include-markdown
   - section-index
   - gen-files:
@@ -116,7 +122,7 @@ nav:
       - ADK memory: memory/memory-adk.md
   - MCP:
       - Setup Guide: mcp/setup-guide.md
-      - Configuration: mcp/configuration.md#mcp-servers
+      - Configuration: mcp/configuration.md
   - A2A:
       - Overview: a2a/overview.md
   - Guardrails:

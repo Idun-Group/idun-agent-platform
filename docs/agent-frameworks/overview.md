@@ -1,5 +1,7 @@
 # Agent Frameworks
 
+**Time to complete:** ~10 minutes to run your first agent with Idun.
+
 Idun Agent Platform allows you to bring your own agents built with popular **agent frameworks** and run them as **production-grade services** with observability, memory, and guardrails.
 
 Today, Idun supports:
@@ -27,4 +29,4 @@ To get started with a specific framework, follow one of the guides below:
 - [ADK agents with Idun](adk.md)
 - [LangGraph agents with Idun](langgraph.md)
 
-For a broader architecture view, see the [Architecture Overview](../architecture/overview.md) and [Concepts → Agent Frameworks](../concepts/agent-frameworks.md) (when available).
+For a broader architecture view, see the [Architecture Overview](../architecture/overview.md) and [Concepts → Agent Frameworks](../concepts/agent-frameworks.md).

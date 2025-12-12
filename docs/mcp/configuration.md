@@ -226,7 +226,7 @@ guardrails:
 - `ban_list` - Block specific words/phrases
 - `detect_pii` - Detect personally identifiable information
 
-Guardrails are powered by [Guardrails AI](https://guardrailsai.com). See the [Guardrails Guide](../guardrails/setup-guide.md) for setup instructions.
+Guardrails are powered by [Guardrails AI](https://guardrailsai.com). See the [Guardrails overview](../guardrails/overview.md) for setup and configuration options.
 
 ## MCP Servers
 
