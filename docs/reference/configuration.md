@@ -13,3 +13,4 @@ This page is the stable entry point for configuration documentation.
 For MCP-specific configuration details, see:
 
 - [MCP servers](../mcp/overview.md)
+
