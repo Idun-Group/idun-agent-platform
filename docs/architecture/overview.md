@@ -2,6 +2,8 @@
 
 This page provides a high-level view of the Idun Agent Platform architecture. It complements the conceptual guides under [Concepts](../concepts/overview.md) and focuses on how the main services fit together in production.
 
+**Time to read:** ~7 minutes.
+
 Idun Agent Platform is designed as a **unified, production-grade runtime** for heterogeneous agent frameworks (LangGraph, ADK, Haystack, and others) with **centralized configuration, security, and observability**.
 
 ## Core Components

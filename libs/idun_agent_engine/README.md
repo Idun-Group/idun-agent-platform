@@ -10,7 +10,7 @@ Idun Agent Engine is a lightweight runtime and SDK that wraps your agent with a 
 pip install idun-agent-engine
 ```
 
-- Requires Python 3.13
+- Requires Python 3.12+
 - Ships with FastAPI, Uvicorn, LangGraph, SQLite checkpointing, and optional observability hooks
 
 ## Quickstart
@@ -257,9 +257,9 @@ from idun_agent_engine import (
 
 Issues and PRs are welcome. See the repository:
 
-- Repo: `https://github.com/geoffreyharrazi/idun-agent-platform`
+- Repo: `https://github.com/Idun-Group/idun-agent-platform`
 - Package path: `libs/idun_agent_engine`
-- Open an issue: `https://github.com/geoffreyharrazi/idun-agent-platform/issues`
+- Open an issue: `https://github.com/Idun-Group/idun-agent-platform/issues`
 
 Run locally:
 

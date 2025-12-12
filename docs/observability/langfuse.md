@@ -5,7 +5,7 @@
 
 This guide shows you how to set up Langfuse to add observability to your agents for monitoring, tracing, and debugging. With observability enabled, you can track agent execution, view traces, and analyze performance in real-time using Langfuse.
 
-Before starting this guide make sure to follow the [Quickstart Guide](getting-started/quickstart.md) to have your First Agent running on Idun Agent Platform.
+Before starting this guide, follow the [Quickstart guide](../getting-started/quickstart.md) to have your first agent running on Idun Agent Platform.
 
 ## Setting Up Observability
 
@@ -32,7 +32,7 @@ If you don't have Langfuse API keys yet:
     - **Host URL**: Your Langfuse instance URL (e.g., `https://cloud.langfuse.com` or your self-hosted URL)
     - **Public Key**: Your Langfuse public key (starts with `pk-lf-...`)
     - **Secret Key**: Your Langfuse secret key (starts with `sk-lf-...`)
-6. Finnaly, click **Create configuration**
+6. Finally, click **Create configuration**
 
 ![Add configuration](../images/screenshots/observability-conf.png)
 ![Add langfuse configuration 2](../images/screenshots/observability-add-langfuse-conf.png)

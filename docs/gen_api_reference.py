@@ -56,7 +56,9 @@ for module, is_package in iter_python_modules(root_package):
     else:
         doc_file = Path("reference", *module.split(".")).with_suffix(".md")
 
-    nav[module] = doc_file.as_posix()  # type: ignore[index]
+    # The SUMMARY.md file lives under "reference/". Links inside it must be relative
+    # to that directory, otherwise MkDocs resolves them as "reference/reference/...".
+    nav[module] = doc_file.relative_to("reference").as_posix()  # type: ignore[index]
 
     with mkdocs_gen_files.open(doc_file, "w") as fd:
         print(f"# {module}", file=fd)

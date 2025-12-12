@@ -2,6 +2,8 @@
 
 Idun Agent Platform is designed to be flexible and deployable in various environments, from local development machines to enterprise cloud infrastructure.
 
+**Time to decide:** ~5 minutes.
+
 Select the deployment model that best fits your needs.
 
 ## Local Development

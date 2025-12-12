@@ -184,7 +184,10 @@ Navigate to the agent directory and start the engine:
 
 ```bash
 cd demo-adk-idun-agent
-idun agent serve --source=manager --api-key=YOUR_AGENT_API_KEY
+export IDUN_MANAGER_HOST="http://localhost:8080"
+export IDUN_AGENT_API_KEY="YOUR_AGENT_API_KEY"
+
+idun agent serve --source manager
 ```
 
 ### Initialization Process

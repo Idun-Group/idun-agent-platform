@@ -4,6 +4,8 @@
 
 Idun Agent Platform is a comprehensive framework designed to simplify the development and deployment of AI agents across multiple frameworks. The platform solves the fragmentation problem in the AI agent ecosystem where each framework (LangGraph, Haystack, ADK) has its own deployment patterns, observability solutions, and operational requirements.
 
+**Time to read:** ~10 minutes.
+
 By providing a unified abstraction layer, Idun enables developers to work with different agent frameworks through a consistent interface, making it easy to build, deploy, and manage production-ready AI agents without framework lock-in.
 
 ## Platform Goals
@@ -62,7 +64,7 @@ Observability and guardrails are first-class features, not afterthoughts. Config
 - **Event Streaming**: Real-time execution events for responsive UIs
 - **MCP Server Integration**: Extend agent capabilities with Model Context Protocol servers
 
-**Deployment:** Install with `pip install idun-agent-engine`, then run `idun agent serve --source=file --path=./config.yaml`
+**Deployment:** Install with `pip install idun-agent-engine`, then run `idun agent serve --source file --path ./config.yaml`
 
 ### Idun Agent Manager
 

@@ -7,29 +7,32 @@
 
 # Idun Agent Platform
 
-**From AI prototypes to governed agent fleets on your own infrastructure.**
+**Productionize and govern generative-AI agents on your own infrastructure.**
 
-Idun Agent Platform is an open source control plane for generative AI agents.  
-It turns LangGraph, ADK or Haystack agents into **production ready services** with
+Idun Agent Platform is an open source control plane for generative AI agents.
+It turns LangGraph, ADK or Haystack agents into **production-ready services** with
 
 - Unified deployment across frameworks
 - Observability and tracing
 - Memory and session persistence
 - Guardrails and MCP integration
-- Multi environment and access control
+- Multi-environment and access control
 
 **Who is this for**
 
-- **GenAI developers**, who want to ship agents without rebuilding infra each time  
+- **GenAI developers**, who want to ship agents without rebuilding infra each time
 - **AI and data platform teams**, who need governance, auditability and sovereignty
 
 ```bash
 pip install idun-agent-engine
 ```
 
-👉 **[Quickstart in 5 minutes](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)**  
-👉 **[Full documentation](https://idun-group.github.io/idun-agent-platform/)**  
-👉 **[Join the Discord](https://discord.gg/tcwH4z7R)**
+**Links**
+
+- **[Quickstart](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)** (platform in Docker Compose)
+- **[Documentation](https://idun-group.github.io/idun-agent-platform/)**
+- **[Discord](https://discord.gg/tcwH4z7R)**
+- **[Contributing](./CONTRIBUTING.md)** and **[Code of Conduct](./CODE_OF_CONDUCT.md)**
 
 <div align="center" style="margin: 2em 0;">
   <a href="https://www.youtube.com/watch?v=1QJbSrfz5tU">
@@ -57,13 +60,26 @@ pip install idun-agent-engine
 </p>
 
 <p align="center">
-  If you find this project useful, please ⭐️ <b>star the repository</b> and join our <b>Discord community</b>!
+  If you find this project useful, please <b>star the repository</b> and join our <b>Discord community</b>.
 </p>
 <p align="center">
-  Made in 🇫🇷 with ❤️
+  Built by Idun Group (France).
 </p>
 
 ---
+
+## Table of contents
+
+- [Should you use Idun Agent Platform](#should-you-use-idun-agent-platform)
+- [Quickstart (Engine only, 10 minutes)](#quickstart-engine-only-10-minutes)
+- [Quickstart (Platform, Docker Compose)](#quickstart)
+- [Key capabilities at a glance](#key-capabilities-at-a-glance)
+- [High level architecture](#high-level-architecture)
+- [Enterprise and regulated environments](#enterprise-and-regulated-environments)
+- [Community and support](#community-and-support)
+- [Commercial support](#commercial-support)
+- [Project status and roadmap](#project-status-and-roadmap)
+- [Contributing](#contributing)
 
 ## Should you use Idun Agent Platform
 
@@ -102,7 +118,7 @@ With Idun you can:
 
 ## Why Idun exists
 ![Platform Workflow](docs/images/platform-workflow.png)
-Today, each agent framework comes with its own way to deploy, observe and govern agents.  
+Today, each agent framework comes with its own way to deploy, observe and govern agents.
 The result is a zoo of one off POCs, custom servers and ad hoc dashboards.
 
 Idun Agent Platform gives you:
@@ -116,32 +132,88 @@ Idun Agent Platform gives you:
 
 ## Key capabilities at a glance
 
-- **Observability**  
+- **Observability**
   Plug Langfuse, Phoenix, LangSmith or GCP, get tracing and metrics for every call.
 
-- **Guardrails**  
+- **Guardrails**
   Add content safety, PII detection and prompt injection protection in front of any agent.
 
-- **MCP integration**  
+- **MCP integration**
   Extend agents with Model Context Protocol servers, Idun manages server lifecycle and tool registration.
 
-- **Memory and session persistence**  
+- **Memory and session persistence**
   Persist conversations and state across calls with backends like SQLite or Postgres.
+
+## Quickstart (Engine only, 10 minutes)
+
+If you just want to run an agent API (without the full platform UI/Manager), you can run the **Idun Agent Engine** standalone.
+
+1. Install:
+
+```bash
+pip install idun-agent-engine
+```
+
+2. Create a minimal LangGraph agent (`example_agent.py`):
+
+```python
+import operator
+from typing import Annotated, TypedDict
+
+from langgraph.graph import END, StateGraph
+
+
+class AgentState(TypedDict):
+    messages: Annotated[list, operator.add]
+
+
+def greet_node(state: AgentState):
+    user_message = state["messages"][-1] if state.get("messages") else ""
+    return {"messages": [("ai", f"Hello! You said: '{user_message}'")]}
+
+
+graph = StateGraph(AgentState)
+graph.add_node("greet", greet_node)
+graph.set_entry_point("greet")
+graph.add_edge("greet", END)
+
+app = graph
+```
+
+3. Point the engine to it (`config.yaml`) and run:
+
+```yaml
+server:
+  api:
+    port: 8000
+
+agent:
+  type: "langgraph"
+  config:
+    name: "Hello World Agent"
+    graph_definition: "./example_agent.py:app"
+```
+
+```bash
+python -c "from idun_agent_engine.core.server_runner import run_server_from_config; run_server_from_config('config.yaml')"
+```
+
+Then open `http://localhost:8000/docs`.
 
 ## High level architecture
 
 Idun Agent Platform is structured in four layers:
 
-- **Web dashboard**  
+- **Web dashboard**
   UI to create, configure and monitor agents.
 
-- **Manager API**  
+- **Manager API**
   Control plane that stores configurations, handles auth, observability and guardrails settings.
 
-- **Engine runtime**  
+- **Engine runtime**
   Executes agents via adapters for LangGraph, ADK, Haystack and others, exposes AG-UI FastAPI endpoints.
 
-- **Data layer**  
+- **Data layer**
   PostgreSQL for checkpointing and configuration, MCP servers for external tools and data.
 
 
@@ -167,10 +239,21 @@ docker compose -f docker-compose.dev.yml up --build
 
 3. Open the dashboard at `http://localhost:3000` and create your first agent.
 
-👉 For a complete step by step tutorial, including ADK example code, see the  
+👉 For a complete step by step tutorial, including ADK example code, see the
 **[Quickstart guide](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)**.
 
 ---
+
+## Enterprise and regulated environments
+
+Idun is built for teams that need production governance and data control:
+
+- **Data sovereignty**: run on-prem or in your own cloud (including EU-only deployments).
+- **Security**: SSO/OIDC, multi-tenant RBAC, API keys, and guardrails.
+- **Auditability**: end-to-end observability across prompts, tools, and model calls.
+- **Platform standardization**: consistent runtime and policy enforcement across frameworks.
+
+If you’re evaluating Idun for enterprise use, contact us at `contact@idun-group.com`.
 
 ## Technical whitepaper
 
@@ -285,7 +368,7 @@ services/
 
 ## Commercial support
 
-Idun Agent Platform is maintained by Idun Group.  
+Idun Agent Platform is maintained by Idun Group.
 We can help with:
 
 - Design and review of your agent platform architecture
