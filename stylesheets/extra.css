@@ -1,0 +1,16 @@
+/* Make the content container narrower */
+.md-grid {
+  max-width: 1200px;
+}
+
+/* Make the header narrower */
+.md-header__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Adjust tabs container */
+.md-tabs {
+  max-width: 1200px;
+  margin: 0 auto;
+}
