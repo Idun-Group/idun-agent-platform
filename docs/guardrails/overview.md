@@ -1,10 +1,28 @@
 # Guardrails
 
 ## Overview
+Guardrails are an essential components before releasing an agent to users.
 
-Guardrails add safety constraints and validation to your agents, ensuring they operate within defined boundaries. They monitor agent behavior in real-time to protect sensitive data, enforce content policies, and maintain compliance with regulatory requirements.
-
+Guardrails à crucial when an agent is exposed to users. It allow to scan the input and output of an agent, ensuring they operate within defined boundaries.
 The Idun Agent Platform's guardrails implementation uses [Guardrails AI](https://guardrailsai.com) under the hood to provide production-ready safety mechanisms for your agents.
+
+### List of guardrails:
+
+- **Ban List**: Prevents the model from generating or accepting specific forbidden words or phrases.
+- **Bias Check**: Prevents the model from generating or accepting specific forbidden words or phrases.
+- **Detect PII**: Ensures that any given text does not contain PII.
+- **Correct Language**: Verifies that the input or output is written in the expected language.
+- **Competition Check**: Prevents the model from generating or accepting specific forbidden words or phrases.
+- **Gibberish Text**: Filters out nonsensical, incoherent, or repetitive output.
+- **NSFW Text**: Blocks content that is sexually explicit, violent, or unsafe.
+- **Detect Jailbreak**: Identifies attempts to manipulate the model into bypassing safety guidelines.
+- **Restrict Topic**: Keeps the conversation strictly within a defined subject area.
+- **Prompt Injection**: Detects prompt injection attempts.
+- **RAG Hallucination**: Detects hallucinations in RAG outputs.
+- **Toxic Language**: Detects toxic language.
+- **Code Scanner**: Scan code for allowed languages.
+- **Model Armor**: Google Cloud Model Armor
+- **Custom LLM**: Define custom LLM guardrails.
 
 !!! warning "Work in Progress"
     Output guardrails are currently a work in progress. Only input guardrails are fully supported at this time.
