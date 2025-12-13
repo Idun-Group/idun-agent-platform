@@ -163,8 +163,8 @@ For a deeper architecture overview, see the **[Technical whitepaper](concepts/ar
   → [Guardrails overview](guardrails/overview.md)
 
 - **MCP integration**
-  Extend agents with Model Context Protocol servers; Idun manages server lifecycle and tool registration.
-  → [MCP configuration](mcp/configuration.md#mcp-servers)
+  Give to your agent access to tools from any MCP Server.
+  → [MCP](mcp/overview.md)
 
 - **Memory and session persistence**
   Persist conversations and state across calls with backends like SQLite or Postgres.

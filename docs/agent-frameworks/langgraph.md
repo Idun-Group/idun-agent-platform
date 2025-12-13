@@ -144,6 +144,6 @@ From here you can enrich your LangGraph agent with more platform capabilities:
 
 - [Observability](../observability/overview.md) – Monitor your agent’s performance and traces.
 - [Memory](../memory/overview.md) – Add conversation and state persistence.
-- [MCP](../mcp/configuration.md) – Attach MCP tools to your agent.
+- [MCP](../mcp/overview.md) – Attach MCP tools to your agent.
 - [Guardrails](../guardrails/overview.md) – Protect your agents with safety and policy checks.
 - [A2A](../a2a/overview.md) – Enable agent-to-agent collaboration.

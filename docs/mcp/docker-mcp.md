@@ -1,20 +1,12 @@
-# MCP Setup
+# Docker MCP Toolkit
 
-This guide demonstrates how to integrate Model Context Protocol (MCP) servers with your agents using the Idun platform's web interface. We'll use the Fetch MCP server from Model Context Protocol with an ADK agent.
+Docker MCP toolkit TODO Explain what it is.
 
+This guide demonstrates how to integrate add MCP server from Docker CMP toolkit and then give access to any Docker MCP tool to yout agent.
 ---
 
-## Overview
-
-MCP (Model Context Protocol) extends agent capabilities by providing external tools through a standardized interface. The Fetch MCP server allows your agent to retrieve and process web content, enabling capabilities like:
-
-- Fetching content from URLs
-- Processing web pages
-- Extracting information from websites
-- Summarizing web content
-
 !!! info "What You'll Learn"
-    By the end of this guide, you'll have a fully functional ADK agent with web fetching capabilities, able to retrieve and analyze content from any URL through a simple chat interface.
+    By the end of this guide, you'll have a fully functional ADK agent that use the web fetching MCP server from Docker toolkit. The agent will be able to retrieve and analyze content from any URL through a simple chat interface.
 
 ---
 
@@ -22,6 +14,8 @@ MCP (Model Context Protocol) extends agent capabilities by providing external to
 
 !!! warning "Before You Begin"
     Ensure all prerequisites are met before proceeding with the setup.
+
+TODO add as pre Prerequisites to follow quickstart and agent-frameworks/adk.md or agent-frameworks/langgraph.md
 
 ### Docker Desktop
 
@@ -42,50 +36,9 @@ docker pull mcp/fetch
 !!! success "Image Ready"
     Once pulled, the image will be available in Docker Desktop's Images section.
 
-### Google Vertex AI Credentials
-
-The ADK agent requires Google Cloud credentials. Choose one authentication method:
-
-=== "Service Account Key"
-
-    ```bash
-    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
-    ```
-
-=== "Application Default Credentials"
-
-    ```bash
-    gcloud auth application-default login
-    ```
-
-### Idun Platform
-
-Install the Idun Agent Engine:
-
-```bash
-pip install idun-agent-engine
-```
-
-!!! note "Manager Service"
-    Ensure the Manager service is running and accessible at `http://localhost:8080` (or your configured URL).
-
 ---
 
-## Step 1: Clone the Demo ADK Agent
-
-Clone the demo ADK agent repository from GitHub:
-
-```bash
-git clone https://github.com/Idun-Group/demo-adk-idun-agent.git
-cd demo-adk-idun-agent
-```
-
-!!! tip "Repository Contents"
-    This repository contains a fully configured ADK agent that we'll enhance with MCP capabilities.
-
----
-
-## Step 2: Configure Docker Desktop
+## Step 1: Configure Docker Desktop
 
 Open Docker Desktop and verify the following:
 
@@ -97,10 +50,14 @@ Open Docker Desktop and verify the following:
     With Docker Desktop running and the image available, you're ready to configure the MCP server.
 
 ---
+TODO: Change the tutorial
+So the user create an MCP configuration in the MCP tab in the UI (I dont want to show how to create an MCP server in the "modifying agent" screen)
+And then modify an agent and add the mcp server.
+
 
 ## Step 3: Configure MCP in Manager UI
 
-Access the Idun Manager web interface at `http://localhost:8080`
+Access the Idun Manager web interface at `http://localhost:3000`
 
 ### Create Your Agent
 
@@ -154,31 +111,10 @@ Click **Save** to create the agent with MCP integration.
     Your agent is now configured with the Fetch MCP server and ready to launch.
 
 ---
+ TODO: it misses a step here. We don't want the user to clone the demo adk repo. We wqnt him to use mcp server in his hown agent. So explain that he should add the 2 env var and them import from idun_agent_engine.mcp import get_langchain_tools or from idun_agent_engine.mcp import get_adk_tools. And then use this to get the array of tools. Then give a code snippet to show how to add tolls to adk and langgraph.
 
-## Step 4: Verify Credentials
 
-Before launching, verify your Google Cloud credentials:
-
-```bash
-# Check credentials path
-echo $GOOGLE_APPLICATION_CREDENTIALS
-
-# Test credentials
-gcloud auth application-default print-access-token
-```
-
-!!! warning "Credentials Required"
-    The ADK agent cannot initialize without valid Google Cloud credentials. Ensure this step succeeds before proceeding.
-
-If credentials aren't configured:
-
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your-service-account-key.json"
-```
-
----
-
-## Step 5: Launch Your Agent
+## Step 4: Launch Your Agent
 
 Navigate to the agent directory and start the engine:
 
@@ -325,19 +261,6 @@ Enhance your agent with additional MCP servers by adding more configurations in 
     - Check image exists: `docker images | grep mcp/fetch`
     - Test container manually: `docker run -i --rm mcp/fetch`
     - Review Docker Desktop logs
-
-### Authentication Issues
-
-!!! failure "Vertex AI Authentication Failed"
-
-    **Symptoms:** Agent fails to initialize with authentication errors
-
-    **Solutions:**
-
-    - Verify credentials: `echo $GOOGLE_APPLICATION_CREDENTIALS`
-    - Test credentials: `gcloud auth application-default print-access-token`
-    - Re-authenticate: `gcloud auth application-default login`
-    - Ensure service account has required permissions
 
 ### MCP Tool Not Working
 

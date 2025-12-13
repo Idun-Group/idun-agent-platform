@@ -190,5 +190,5 @@ The `VertexAiMemoryService` provides cloud-backed memory with long-term storage 
 ## Next Steps
 
 - [Configure guardrails](../concepts/guardrails.md) to add safety constraints to your agent
-- [Explore MCP servers](../mcp/configuration.md) to extend your agent's capabilities
+- [Explore MCP servers](../mcp/overview.md) to extend your agent's capabilities
 - [Learn about deployment](../concepts/deployment.md) options for production

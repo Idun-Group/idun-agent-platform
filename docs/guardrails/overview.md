@@ -101,6 +101,6 @@ After configuration, test your guardrails before production:
 
 ## Next Steps
 
-- [Add MCP servers](../mcp/configuration.md) to extend agent capabilities
+- [Add MCP servers](../mcp/overview.md) to extend agent capabilities
 - [Deploy your agent](../deployment/concepts.md) to production
 - [Learn about CLI](../guides/cli-setup.md) for advanced workflows
