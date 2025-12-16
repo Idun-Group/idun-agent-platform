@@ -55,7 +55,7 @@ class Serve:
 
         except Exception as e:
             raise ValueError(
-                f"[ERROR]: Cannot fetch config from {self._path}: {e} "
+                f"[ERROR]: Cannot parse config from {self._path}: {e} "
             ) from e
 
     def _fetch_from_manager(self) -> EngineConfig | None:

@@ -89,35 +89,47 @@ class BanListConfig(GuardrailConfig):
     guard_params: BanListParams = Field()
 
 
-class BiasCheckConfig(BaseModel):
+class BiasCheckConfig(GuardrailConfig):
     """Bias Check configuration."""
 
+    class BiasCheckParams(BaseModel):
+        model_config = {"extra": "allow"}
+
     config_id: Literal[GuardrailConfigId.BIAS_CHECK] = GuardrailConfigId.BIAS_CHECK
-    threshold: float = Field(
-        ge=0.0, le=1.0, description="Sensitivity level for bias detection"
-    )
+    api_key: str
+    reject_message: str = "Bias detected"
+    guard_url: str = "hub://guardrails/bias_check"
+    guard_params: BiasCheckParams = Field()
 
 
-class CompetitionCheckConfig(BaseModel):
+class CompetitionCheckConfig(GuardrailConfig):
     """Competition Check configuration."""
+
+    class CompetitionCheckParams(BaseModel):
+        model_config = {"extra": "allow"}
 
     config_id: Literal[GuardrailConfigId.COMPETITION_CHECK] = (
         GuardrailConfigId.COMPETITION_CHECK
     )
-    competitors: list[str] = Field(
-        description="Names of competitor companies or products"
-    )
+    api_key: str
+    reject_message: str = "Competitor mentioned"
+    guard_url: str = "hub://guardrails/competitor_check"
+    guard_params: CompetitionCheckParams = Field()
 
 
-class CorrectLanguageConfig(BaseModel):
+class CorrectLanguageConfig(GuardrailConfig):
     """Correct Language configuration."""
+
+    class CorrectLanguageParams(BaseModel):
+        model_config = {"extra": "allow"}
 
     config_id: Literal[GuardrailConfigId.CORRECT_LANGUAGE] = (
         GuardrailConfigId.CORRECT_LANGUAGE
     )
-    expected_languages: list[str] = Field(
-        description="Valid ISO language codes (e.g., en, fr, es)"
-    )
+    api_key: str
+    reject_message: str = "Invalid language"
+    guard_url: str = "hub://scb-10x/correct_language"
+    guard_params: CorrectLanguageParams = Field()
 
 
 class DetectPIIConfig(GuardrailConfig):
@@ -134,35 +146,47 @@ class DetectPIIConfig(GuardrailConfig):
     guard_params: PIIParams = Field()
 
 
-class GibberishTextConfig(BaseModel):
+class GibberishTextConfig(GuardrailConfig):
     """Gibberish Text configuration."""
+
+    class GibberishTextParams(BaseModel):
+        model_config = {"extra": "allow"}
 
     config_id: Literal[GuardrailConfigId.GIBBERISH_TEXT] = (
         GuardrailConfigId.GIBBERISH_TEXT
     )
-    threshold: float = Field(
-        ge=0.0, le=1.0, description="Sensitivity level for gibberish detection"
-    )
+    api_key: str
+    reject_message: str = "Gibberish text detected"
+    guard_url: str = "hub://guardrails/gibberish_text"
+    guard_params: GibberishTextParams = Field()
 
 
-class NSFWTextConfig(BaseModel):
+class NSFWTextConfig(GuardrailConfig):
     """NSFW Text configuration."""
 
+    class NSFWTextParams(BaseModel):
+        model_config = {"extra": "allow"}
+
     config_id: Literal[GuardrailConfigId.NSFW_TEXT] = GuardrailConfigId.NSFW_TEXT
-    threshold: float = Field(
-        ge=0.0, le=1.0, description="Sensitivity level for NSFW content"
-    )
+    api_key: str
+    reject_message: str = "NSFW content detected"
+    guard_url: str = "hub://guardrails/nsfw_text"
+    guard_params: NSFWTextParams = Field()
 
 
-class DetectJailbreakConfig(BaseModel):
+class DetectJailbreakConfig(GuardrailConfig):
     """Detect Jailbreak configuration."""
+
+    class DetectJailbreakParams(BaseModel):
+        model_config = {"extra": "allow"}
 
     config_id: Literal[GuardrailConfigId.DETECT_JAILBREAK] = (
         GuardrailConfigId.DETECT_JAILBREAK
     )
-    threshold: float = Field(
-        ge=0.0, le=1.0, description="Sensitivity level for jailbreak detection"
-    )
+    api_key: str
+    reject_message: str = "Jailbreak attempt detected"
+    guard_url: str = "hub://guardrails/detect_jailbreak"
+    guard_params: DetectJailbreakParams = Field()
 
 
 class PromptInjectionConfig(BaseModel):
@@ -187,24 +211,34 @@ class RagHallucinationConfig(BaseModel):
     )
 
 
-class RestrictToTopicConfig(BaseModel):
+class RestrictToTopicConfig(GuardrailConfig):
     """Restrict To Topic configuration."""
+
+    class RestrictToTopicParams(BaseModel):
+        model_config = {"extra": "allow"}
 
     config_id: Literal[GuardrailConfigId.RESTRICT_TO_TOPIC] = (
         GuardrailConfigId.RESTRICT_TO_TOPIC
     )
-    topics: list[str] = Field(description="List of allowed topics")
+    api_key: str
+    reject_message: str = "Off-topic content"
+    guard_url: str = "hub://tryolabs/restricttotopic"
+    guard_params: RestrictToTopicParams = Field()
 
 
-class ToxicLanguageConfig(BaseModel):
+class ToxicLanguageConfig(GuardrailConfig):
     """Toxic Language configuration."""
+
+    class ToxicLanguageParams(BaseModel):
+        model_config = {"extra": "allow"}
 
     config_id: Literal[GuardrailConfigId.TOXIC_LANGUAGE] = (
         GuardrailConfigId.TOXIC_LANGUAGE
     )
-    threshold: float = Field(
-        ge=0.0, le=1.0, description="Sensitivity level for toxic language"
-    )
+    api_key: str
+    reject_message: str = "Toxic language detected"
+    guard_url: str = "hub://guardrails/toxic_language"
+    guard_params: ToxicLanguageParams = Field()
 
 
 class CodeScannerConfig(BaseModel):
@@ -216,7 +250,18 @@ class CodeScannerConfig(BaseModel):
     )
 
 
-GuardrailConfig = Union[BanListConfig, DetectPIIConfig]
+GuardrailConfig = Union[
+    BanListConfig,
+    DetectPIIConfig,
+    BiasCheckConfig,
+    CompetitionCheckConfig,
+    CorrectLanguageConfig,
+    GibberishTextConfig,
+    NSFWTextConfig,
+    DetectJailbreakConfig,
+    RestrictToTopicConfig,
+    ToxicLanguageConfig,
+]
 
 
 class GuardrailsV2(BaseModel):

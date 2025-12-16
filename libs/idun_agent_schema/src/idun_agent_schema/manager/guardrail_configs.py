@@ -18,7 +18,70 @@ class SimplePIIConfig(BaseModel):
     pii_entities: list[str] = Field(description="List of PII entity types to detect")
 
 
-ManagerGuardrailConfig = Union[SimpleBanListConfig, SimplePIIConfig]
+class SimpleBiasCheckConfig(BaseModel):
+    config_id: Literal[GuardrailConfigId.BIAS_CHECK] = GuardrailConfigId.BIAS_CHECK
+    threshold: float = Field(ge=0.0, le=1.0)
+
+
+class SimpleCompetitionCheckConfig(BaseModel):
+    config_id: Literal[GuardrailConfigId.COMPETITION_CHECK] = (
+        GuardrailConfigId.COMPETITION_CHECK
+    )
+    competitors: list[str]
+
+
+class SimpleCorrectLanguageConfig(BaseModel):
+    config_id: Literal[GuardrailConfigId.CORRECT_LANGUAGE] = (
+        GuardrailConfigId.CORRECT_LANGUAGE
+    )
+    expected_languages: list[str]
+
+
+class SimpleGibberishTextConfig(BaseModel):
+    config_id: Literal[GuardrailConfigId.GIBBERISH_TEXT] = (
+        GuardrailConfigId.GIBBERISH_TEXT
+    )
+    threshold: float = Field(ge=0.0, le=1.0)
+
+
+class SimpleNSFWTextConfig(BaseModel):
+    config_id: Literal[GuardrailConfigId.NSFW_TEXT] = GuardrailConfigId.NSFW_TEXT
+    threshold: float = Field(ge=0.0, le=1.0)
+
+
+class SimpleDetectJailbreakConfig(BaseModel):
+    config_id: Literal[GuardrailConfigId.DETECT_JAILBREAK] = (
+        GuardrailConfigId.DETECT_JAILBREAK
+    )
+    threshold: float = Field(ge=0.0, le=1.0)
+
+
+class SimpleRestrictToTopicConfig(BaseModel):
+    config_id: Literal[GuardrailConfigId.RESTRICT_TO_TOPIC] = (
+        GuardrailConfigId.RESTRICT_TO_TOPIC
+    )
+    topics: list[str]
+
+
+class SimpleToxicLanguageConfig(BaseModel):
+    config_id: Literal[GuardrailConfigId.TOXIC_LANGUAGE] = (
+        GuardrailConfigId.TOXIC_LANGUAGE
+    )
+    threshold: float = Field(ge=0.0, le=1.0)
+
+
+ManagerGuardrailConfig = Union[
+    SimpleBanListConfig,
+    SimplePIIConfig,
+    SimpleBiasCheckConfig,
+    SimpleCompetitionCheckConfig,
+    SimpleCorrectLanguageConfig,
+    SimpleGibberishTextConfig,
+    SimpleNSFWTextConfig,
+    SimpleDetectJailbreakConfig,
+    SimpleRestrictToTopicConfig,
+    SimpleToxicLanguageConfig,
+]
 
 
 def convert_guardrail(guardrails_data: dict) -> dict:
@@ -88,6 +151,47 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                     },
                 }
                 converted[position].append(migrated_guardrail)
+
+            elif "api_key" not in guardrail:
+                config_id = guardrail.get("config_id")
+
+                guard_url_map = {
+                    "bias_check": "hub://guardrails/bias_check",
+                    "competition_check": "hub://guardrails/competitor_check",
+                    "correct_language": "hub://scb-10x/correct_language",
+                    "gibberish_text": "hub://guardrails/gibberish_text",
+                    "nsfw_text": "hub://guardrails/nsfw_text",
+                    "detect_jailbreak": "hub://guardrails/detect_jailbreak",
+                    "restrict_to_topic": "hub://tryolabs/restricttotopic",
+                    "toxic_language": "hub://guardrails/toxic_language",
+                }
+
+                reject_message_map = {
+                    "bias_check": "Bias detected",
+                    "competition_check": "Competitor mentioned",
+                    "correct_language": "Invalid language",
+                    "gibberish_text": "Gibberish text detected",
+                    "nsfw_text": "NSFW content detected",
+                    "detect_jailbreak": "Jailbreak attempt detected",
+                    "restrict_to_topic": "Off-topic content",
+                    "toxic_language": "Toxic language detected",
+                }
+
+                if config_id in guard_url_map:
+                    guard_params = {
+                        k: v for k, v in guardrail.items() if k != "config_id"
+                    }
+
+                    migrated_guardrail = {
+                        "config_id": config_id,
+                        "api_key": api_key,
+                        "reject_message": reject_message_map[config_id],
+                        "guard_url": guard_url_map[config_id],
+                        "guard_params": guard_params,
+                    }
+                    converted[position].append(migrated_guardrail)
+                else:
+                    converted[position].append(guardrail)
 
             else:
                 converted[position].append(guardrail)

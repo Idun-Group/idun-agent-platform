@@ -1,0 +1,41 @@
+server:
+  api:
+    port: 8001
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "Guardrails Example Agent"
+    graph_definition: "agent.py:app"
+
+guardrails:
+  input:
+    - config_id: "bias_check"
+      threshold: 0.8
+
+    - config_id: "competition_check"
+      competitors:
+        - OpenAI
+        - Google
+
+    - config_id: "correct_language"
+      threshold: 0.9
+      expected_language_iso: "en"
+
+    - config_id: "gibberish_text"
+      threshold: 0.95
+
+    - config_id: "nsfw_text"
+      threshold: 0.9
+
+    - config_id: "detect_jailbreak"
+      threshold: 0.9
+
+    - config_id: "restrict_to_topic"
+      valid_topics:
+        - technology
+        - science
+      disable_llm: true
+
+    - config_id: "toxic_language"
+      threshold: 0.9

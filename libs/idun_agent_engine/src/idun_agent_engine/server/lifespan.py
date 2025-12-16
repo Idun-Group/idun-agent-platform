@@ -4,6 +4,7 @@ Initializes the agent at startup and cleans up resources on shutdown.
 """
 
 import inspect
+import time
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 
@@ -25,9 +26,21 @@ def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
     if not guardrails_obj:
         return []
 
-    return [GHGuard(guard, position="input") for guard in guardrails_obj.input] + [
-        GHGuard(guard, position="output") for guard in guardrails_obj.output
-    ]
+    guardrails = []
+
+    for guard in guardrails_obj.input:
+        try:
+            guardrails.append(GHGuard(guard, position="input"))
+        except Exception as e:
+            print(f"Error adding guardrail: {guard.config_id}. Error: {e}")
+
+    for guard in guardrails_obj.output:
+        try:
+            guardrails.append(GHGuard(guard, position="output"))
+        except Exception as e:
+            print(f"Error adding guardrail: {guard.config_id}. Error: {e}")
+
+    return guardrails
 
 
 async def cleanup_agent(app: FastAPI):
@@ -43,10 +56,12 @@ async def cleanup_agent(app: FastAPI):
 
 async def configure_app(app: FastAPI, engine_config):
     """Initialize the agent, MCP registry, guardrails, and app state with the given engine config."""
-    guardrails_obj = engine_config.guardrails
-    guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
+    from ..guardrails.utils import install_guardrails
 
-    print("guardrails: ", guardrails)
+    guardrails_obj = engine_config.guardrails
+
+    if guardrails_obj:
+        install_guardrails(guardrails_obj)
 
     # # Initialize MCP Registry first
     # mcp_registry = MCPClientRegistry(engine_config.mcp_servers)
@@ -63,6 +78,10 @@ async def configure_app(app: FastAPI, engine_config):
     app.state.agent = agent_instance
     app.state.config = engine_config
     app.state.engine_config = engine_config
+
+    guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
+
+    print("guardrails: ", guardrails)
 
     app.state.guardrails = guardrails
     agent_name = getattr(agent_instance, "name", "Unknown")

@@ -19,15 +19,45 @@ def get_guard_instance(name: GuardrailConfigId) -> Guard:
 
         return DetectPII
 
-    elif name.value == "nsfw":
+    elif name.value == "nsfw_text":
         from guardrails.hub import NSFWText
 
         return NSFWText
 
-    elif name.value == "competitor_check":
+    elif name.value == "competition_check":
         from guardrails.hub import CompetitorCheck
 
         return CompetitorCheck
+
+    elif name.value == "bias_check":
+        from guardrails.hub import BiasCheck
+
+        return BiasCheck
+
+    elif name.value == "gibberish_text":
+        from guardrails.hub import GibberishText
+
+        return GibberishText
+
+    elif name.value == "detect_jailbreak":
+        from guardrails.hub import DetectJailbreak
+
+        return DetectJailbreak
+
+    elif name.value == "correct_language":
+        from guardrails.hub import CorrectLanguage
+
+        return CorrectLanguage
+
+    elif name.value == "restrict_to_topic":
+        from guardrails.hub import RestrictToTopic
+
+        return RestrictToTopic
+
+    elif name.value == "toxic_language":
+        from guardrails.hub import ToxicLanguage
+
+        return ToxicLanguage
 
     else:
         raise ValueError(f"Guard {name} not found.")
@@ -45,44 +75,8 @@ class GuardrailsHubGuard(BaseGuardrail):
         self._guard: Guard | None = self.setup_guard()
         self.position: str = position
 
-    def _install_model(self) -> None:
-        import subprocess
-
-        from guardrails import install
-
-        try:
-            api_key = self._guardrail_config.api_key
-
-            print("Configuring guardrails with token...")
-            result = subprocess.run(
-                [
-                    "guardrails",
-                    "configure",
-                    "--token",
-                    api_key,
-                    "--disable-remote-inferencing",
-                    "--disable-metrics",
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            print(f"Configure output: {result.stdout}")
-            if result.stderr:
-                print(f"Configure stderr: {result.stderr}")
-            print(f"Installing model: {self._guard_url}..")
-            install(self._guard_url, quiet=False, install_local_models=True)
-            print(f"Successfully installed: {self._guard_url}")
-        except subprocess.CalledProcessError as e:
-            raise OSError(
-                f"Cannot configure guardrails: stdout={e.stdout}, stderr={e.stderr}"
-            ) from e
-        except Exception as e:
-            raise e
-
     def setup_guard(self) -> Guard | None:
-        """Installs and configures the guard based on its yaml config."""
-        self._install_model()
+        """Configures the guard based on its yaml config."""
         guard_name = self.guard_id
         guard = get_guard_instance(guard_name)
         if guard is None:
@@ -98,7 +92,7 @@ class GuardrailsHubGuard(BaseGuardrail):
 
     def validate(self, input: str) -> bool:
         """TODO."""
-        main_guard = Guard().use(self._guard)
+        main_guard = Guard().use(self._guard, on_fail="exception")
         try:
             main_guard.validate(input)
             return True
