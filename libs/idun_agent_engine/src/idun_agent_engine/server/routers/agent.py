@@ -44,17 +44,6 @@ def _run_guardrails(
             raise HTTPException(status_code=429, detail=guard.reject_message)  # type: ignore[attr-defined]
 
 
-@agent_router.on_event("startup")
-async def setup_log_file():
-    file_handler = logging.FileHandler("server.log")
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(formatter)
-    loggers = ["uvicorn", "uvicorn.access", "uvicorn.error"]
-    for logger_name in loggers:
-        logger = logging.getLogger(logger_name)
-        logger.addHandler(file_handler)
-
-
 @agent_router.get("/config")
 async def get_config(request: Request):
     """Get the current agent configuration."""

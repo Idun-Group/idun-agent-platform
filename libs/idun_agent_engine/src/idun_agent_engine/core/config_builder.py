@@ -25,7 +25,6 @@ from yaml import YAMLError
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
-from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 
 
 class ConfigBuilder:
@@ -125,8 +124,8 @@ class ConfigBuilder:
                 if not guardrails_data:
                     self._guardrails = None
                 else:
-                    converted_data = convert_guardrail(guardrails_data)
-                    self._guardrails = Guardrails.model_validate(converted_data)
+                    self._guardrails = Guardrails.model_validate(guardrails_data)
+                    self._guardrails.hydrate_api_keys()
 
             except Exception as e:
                 raise YAMLError(f"Failed to parse yaml file for Guardrails: {e}") from e
@@ -535,14 +534,12 @@ class ConfigBuilder:
         with open(path) as f:
             config_data = yaml.safe_load(f)
 
-        # convert to guardrails v2 schema
-        if config_data and "guardrails" in config_data:
-            try:
-                config_data["guardrails"] = convert_guardrail(config_data["guardrails"])
-            except Exception as e:
-                raise yaml.YAMLError(f"Failed to convert guardrails configuration: {e}") from e
+        engine_config = EngineConfig.model_validate(config_data)
 
-        return EngineConfig.model_validate(config_data)
+        if engine_config.guardrails:
+            engine_config.guardrails.hydrate_api_keys()
+
+        return engine_config
 
     @staticmethod
     async def load_and_initialize_agent(

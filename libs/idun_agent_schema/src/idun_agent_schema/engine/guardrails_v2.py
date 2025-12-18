@@ -1,9 +1,10 @@
 """Guardrails V2 configuration schema."""
 
+import os
 from enum import Enum
-from typing import Annotated, Literal, Union
+from typing import Annotated, Any, Literal, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class GuardrailConfigId(str, Enum):
@@ -64,129 +65,81 @@ class GuardrailConfig(BaseModel):
 
 
 class BanListConfig(GuardrailConfig):
-    """Ban List configuration."""
-
-    """
-    - type: GUARDRAILS_HUB
-        config_id: BAN_LIST
-        guard_url: "hub://guardrails/ban_list"
-        api_key:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnaXRodWJ8MTQzNDYzMzEiLCJhcGlLZXlJZCI6IjNhMWMyYmY2LTMwNzYtNDY1OC1hMjRhLTA5MjZjNWI2ZDM4NyIsInNjb3BlIjoicmVhZDpwYWNrYWdlcyIsInBlcm1pc3Npb25zIjpbXSwiaWF0IjoxNzY0NTg5MzIyLCJleHAiOjE3NzIzNjUzMjJ9.4KUsAXEQ8mGN_iVz46HGXIUQeBbZQLEAzOOfIL_ZYQA
-        reject_message: "ban!!"
-        banned_words:
-            - hello
-            - bye
-    """
-
-    class BanListParams(BaseModel):
-        banned_words: list[str] = Field(
-            description="A list of strings (words or phrases) to block"
-        )
-
     config_id: Literal[GuardrailConfigId.BAN_LIST] = GuardrailConfigId.BAN_LIST
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "ban!!"
     guard_url: str = "hub://guardrails/ban_list"
-    guard_params: BanListParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=lambda: {"max_l_dist": 0})
+
+    @model_validator(mode="after")
+    def set_default_max_l_dist(self):
+        if "max_l_dist" not in self.guard_params:
+            self.guard_params["max_l_dist"] = 0
+        return self
 
 
 class BiasCheckConfig(GuardrailConfig):
-    """Bias Check configuration."""
-
-    class BiasCheckParams(BaseModel):
-        model_config = {"extra": "allow"}
-
     config_id: Literal[GuardrailConfigId.BIAS_CHECK] = GuardrailConfigId.BIAS_CHECK
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "Bias detected"
     guard_url: str = "hub://guardrails/bias_check"
-    guard_params: BiasCheckParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class CompetitionCheckConfig(GuardrailConfig):
-    """Competition Check configuration."""
-
-    class CompetitionCheckParams(BaseModel):
-        model_config = {"extra": "allow"}
-
     config_id: Literal[GuardrailConfigId.COMPETITION_CHECK] = (
         GuardrailConfigId.COMPETITION_CHECK
     )
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "Competitor mentioned"
     guard_url: str = "hub://guardrails/competitor_check"
-    guard_params: CompetitionCheckParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class CorrectLanguageConfig(GuardrailConfig):
-    """Correct Language configuration."""
-
-    class CorrectLanguageParams(BaseModel):
-        model_config = {"extra": "allow"}
-
     config_id: Literal[GuardrailConfigId.CORRECT_LANGUAGE] = (
         GuardrailConfigId.CORRECT_LANGUAGE
     )
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "Invalid language"
     guard_url: str = "hub://scb-10x/correct_language"
-    guard_params: CorrectLanguageParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class DetectPIIConfig(GuardrailConfig):
-    class PIIParams(BaseModel):
-        pii_entities: list[str] = Field(
-            description="List of PII entity types to detect"
-        )
-        on_fail: str = Field(default="exception")
-
     config_id: Literal[GuardrailConfigId.DETECT_PII] = GuardrailConfigId.DETECT_PII
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "PII detected"
     guard_url: str = "hub://guardrails/detect_pii"
-    guard_params: PIIParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class GibberishTextConfig(GuardrailConfig):
-    """Gibberish Text configuration."""
-
-    class GibberishTextParams(BaseModel):
-        model_config = {"extra": "allow"}
-
     config_id: Literal[GuardrailConfigId.GIBBERISH_TEXT] = (
         GuardrailConfigId.GIBBERISH_TEXT
     )
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "Gibberish text detected"
     guard_url: str = "hub://guardrails/gibberish_text"
-    guard_params: GibberishTextParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class NSFWTextConfig(GuardrailConfig):
-    """NSFW Text configuration."""
-
-    class NSFWTextParams(BaseModel):
-        model_config = {"extra": "allow"}
-
     config_id: Literal[GuardrailConfigId.NSFW_TEXT] = GuardrailConfigId.NSFW_TEXT
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "NSFW content detected"
     guard_url: str = "hub://guardrails/nsfw_text"
-    guard_params: NSFWTextParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class DetectJailbreakConfig(GuardrailConfig):
-    """Detect Jailbreak configuration."""
-
-    class DetectJailbreakParams(BaseModel):
-        model_config = {"extra": "allow"}
-
     config_id: Literal[GuardrailConfigId.DETECT_JAILBREAK] = (
         GuardrailConfigId.DETECT_JAILBREAK
     )
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "Jailbreak attempt detected"
     guard_url: str = "hub://guardrails/detect_jailbreak"
-    guard_params: DetectJailbreakParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class PromptInjectionConfig(BaseModel):
@@ -212,33 +165,23 @@ class RagHallucinationConfig(BaseModel):
 
 
 class RestrictToTopicConfig(GuardrailConfig):
-    """Restrict To Topic configuration."""
-
-    class RestrictToTopicParams(BaseModel):
-        model_config = {"extra": "allow"}
-
     config_id: Literal[GuardrailConfigId.RESTRICT_TO_TOPIC] = (
         GuardrailConfigId.RESTRICT_TO_TOPIC
     )
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "Off-topic content"
     guard_url: str = "hub://tryolabs/restricttotopic"
-    guard_params: RestrictToTopicParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class ToxicLanguageConfig(GuardrailConfig):
-    """Toxic Language configuration."""
-
-    class ToxicLanguageParams(BaseModel):
-        model_config = {"extra": "allow"}
-
     config_id: Literal[GuardrailConfigId.TOXIC_LANGUAGE] = (
         GuardrailConfigId.TOXIC_LANGUAGE
     )
-    api_key: str
+    api_key: str | None = None
     reject_message: str = "Toxic language detected"
     guard_url: str = "hub://guardrails/toxic_language"
-    guard_params: ToxicLanguageParams = Field()
+    guard_params: dict[str, Any] = Field(default_factory=dict)
 
 
 class CodeScannerConfig(BaseModel):
@@ -273,3 +216,14 @@ class GuardrailsV2(BaseModel):
     output: list[GuardrailConfig] = Field(
         default_factory=list, description="List of output guardrails"
     )
+
+    def hydrate_api_keys(self) -> "GuardrailsV2":
+        api_key = os.getenv("GUARDRAILS_API_KEY")
+        if not api_key:
+            raise ValueError("GUARDRAILS_API_KEY environment variable not set")
+
+        for guard in self.input + self.output:
+            if hasattr(guard, "api_key") and guard.api_key is None:
+                guard.api_key = api_key
+
+        return self

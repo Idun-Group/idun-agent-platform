@@ -35,7 +35,6 @@ from idun_agent_schema.manager import (
     ManagedAgentPatch,
     ManagedAgentRead,
 )
-from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -126,14 +125,14 @@ async def create_agent(
 
     body = await raw_request.json()
 
-    if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(body["engine_config"]["guardrails"])
-
     request = ManagedAgentCreate(**body)
 
     now = datetime.now(UTC)
 
     engine_config = EngineConfig(**request.engine_config.model_dump())
+
+    if engine_config.guardrails:
+        engine_config.guardrails.hydrate_api_keys()
 
     # Create database model instance (status persisted as string)
     model = ManagedAgentModel(
@@ -410,14 +409,15 @@ async def patch_agent(
 
     body = await raw_request.json()
 
-    if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(body["engine_config"]["guardrails"])
-
     request = ManagedAgentPatch(**body)
 
     model.name = request.name
     model.base_url = request.base_url
     engine_config = EngineConfig(**request.engine_config.model_dump())
+
+    if engine_config.guardrails:
+        engine_config.guardrails.hydrate_api_keys()
+
     model.engine_config = engine_config.model_dump()
     model.updated_at = datetime.now(UTC)
 
