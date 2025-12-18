@@ -535,6 +535,13 @@ class ConfigBuilder:
         with open(path) as f:
             config_data = yaml.safe_load(f)
 
+        # convert to guardrails v2 schema
+        if config_data and "guardrails" in config_data:
+            try:
+                config_data["guardrails"] = convert_guardrail(config_data["guardrails"])
+            except Exception as e:
+                raise yaml.YAMLError(f"Failed to convert guardrails configuration: {e}") from e
+
         return EngineConfig.model_validate(config_data)
 
     @staticmethod
