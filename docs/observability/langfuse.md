@@ -90,7 +90,7 @@ You'll see detailed traces showing:
 
 !!! warning
     ADK does not currently support simultaneous tracing with both Langfuse and GCP tracing.
-    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
+    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/KCZ6nW2jQe).
 
 ### Observability not working?
 
