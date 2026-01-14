@@ -31,11 +31,7 @@ pip install idun-agent-engine
 
 - **[Quickstart](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)** (platform in Docker Compose)
 - **[Documentation](https://idun-group.github.io/idun-agent-platform/)**
-<<<<<<< HEAD
 - **[Discord](https://discord.gg/KCZ6nW2jQe)**
-=======
-- **[Discord](https://discord.gg/jvJ7dGs2)**
->>>>>>> cbbf0c92 (Fix Discord link in README)
 - **[Contributing](./CONTRIBUTING.md)** and **[Code of Conduct](./CODE_OF_CONDUCT.md)**
 
 <div align="center" style="margin: 2em 0;">
