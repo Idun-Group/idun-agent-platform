@@ -29,4 +29,4 @@ Agents continue to be deployed using your standard CI/CD pipelines (e.g., GitHub
 We offer **Terraform modules** to automate this entire deployment process, ensuring a production-ready setup with best practices (IAM, networking, security).
 
 !!! info "Get Terraform Code"
-    The Terraform code is available upon request. If you are interested in automating your GCP deployment, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
+    The Terraform code is available upon request. If you are interested in automating your GCP deployment, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/KCZ6nW2jQe).

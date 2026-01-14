@@ -12,4 +12,4 @@ No. For many use cases you can run the **Idun Agent Engine** standalone from a l
 ## I found a bug or missing doc—where should I report it?
 
 - Bugs / feature requests: [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues)
-- Questions: [Discord](https://discord.gg/tcwH4z7R)
+- Questions: [Discord](https://discord.gg/KCZ6nW2jQe)
