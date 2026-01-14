@@ -6,7 +6,7 @@ Agent-to-Agent (A2A) communication enables agents to interact with each other, c
 
 !!! warning
     The guide for this feature is coming soon.
-    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
+    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/KCZ6nW2jQe).
 
 
 ## Features

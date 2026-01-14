@@ -4,11 +4,11 @@
 
 !!! warning
     The guide for this feature is coming soon.
-    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
+    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/KCZ6nW2jQe).
 
 !!! warning
     The guide for this feature is coming soon.
-    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
+    If you are interested by this feature, please reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/KCZ6nW2jQe).
 
 Idun Cloud is a fully managed platform for deploying and operating AI agents with zero infrastructure management.
 
@@ -25,6 +25,6 @@ Idun Cloud is a fully managed platform for deploying and operating AI agents wit
 
 ## Get Notified
 
-Interested in Idun Cloud? Follow our [GitHub repository](https://github.com/Idun-Group/idun-agent-platform) for updates, reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/tcwH4z7R).
+Interested in Idun Cloud? Follow our [GitHub repository](https://github.com/Idun-Group/idun-agent-platform) for updates, reach out via [GitHub issues](https://github.com/Idun-Group/idun-agent-platform/issues) or join our [Discord Server](https://discord.gg/KCZ6nW2jQe).
 
 [Deployment overview →](overview.md)

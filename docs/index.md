@@ -13,7 +13,7 @@
   </p>
   <p style="margin: 0.6em 0 1.2em 0;">
     <a href="https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/" class="md-button md-button--primary">Quickstart in 5 minutes</a>
-    <a href="https://discord.gg/tcwH4z7R" class="md-button">Join the Discord</a>
+    <a href="https://discord.gg/KCZ6nW2jQe" class="md-button">Join the Discord</a>
   </p>
 </div>
 
@@ -186,7 +186,7 @@ For a deeper architecture overview, see the **[Technical whitepaper](concepts/ar
 
 ## Community and support
 
-- Questions and help: **[Discord](https://discord.gg/tcwH4z7R)**
+- Questions and help: **[Discord](https://discord.gg/KCZ6nW2jQe)**
 - Proposals and ideas: **[GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions)**
 - Bugs and feature requests: **[GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues)**
 
