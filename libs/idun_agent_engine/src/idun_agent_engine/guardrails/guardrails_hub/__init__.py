@@ -1,5 +1,5 @@
 """Guardrails Hub integration module."""
 
-from .guardrails_hub import GuardrailsHubGuardrail
+from .guardrails_hub import GuardrailsHubGuard
 
-__all__ = ["GuardrailsHubGuardrail"]
+__all__ = ["GuardrailsHubGuard"]
