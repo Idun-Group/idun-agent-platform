@@ -92,6 +92,7 @@ class IdentityWidget(Widget):
     def on_mount(self) -> None:
         option_list = self.query_one("#framework_select", OptionList)
         option_list.highlighted = 0
+        self._update_section_labels()
 
     def watch_full_definition(self, value: str) -> None:
         self.query_one("#full_definition", Static).update(
@@ -142,6 +143,23 @@ class IdentityWidget(Widget):
     ) -> None:
         if event.option_list.id == "variable_list":
             self._update_full_definition()
+        elif event.option_list.id == "framework_select":
+            self._update_section_labels()
+
+    def _update_section_labels(self) -> None:
+        framework_select = self.query_one("#framework_select", OptionList)
+        if framework_select.highlighted is not None:
+            framework_option = framework_select.get_option_at_index(framework_select.highlighted)
+            framework = str(framework_option.id)
+
+            graph_section = self.query_one(".graph-definition-section", Vertical)
+
+            if framework == "LANGGRAPH":
+                graph_section.border_title = "Graph Definition"
+            elif framework == "ADK":
+                graph_section.border_title = "Agent Definition"
+            elif framework == "HAYSTACK":
+                graph_section.border_title = "Pipeline Definition"
 
     def _update_full_definition(self) -> None:
         if not self.selected_file_path:

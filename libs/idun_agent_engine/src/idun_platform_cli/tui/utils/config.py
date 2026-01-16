@@ -82,19 +82,12 @@ class ConfigManager:
                     existing_config = yaml.safe_load(f) or {}
 
             if section == "identity":
-                port = data.get("port", 8000)
-                if isinstance(port, str):
-                    port = int(port)
-                existing_config["server"] = {"api": {"port": port}}
-                existing_config["agent"] = {
-                    "type": data.get("framework", "LANGGRAPH"),
-                    "config": {
-                        "name": data.get("name", ""),
-                        AGENT_SOURCE_KEY_MAPPING[
-                            data.get("framework", "LANGGRAPH")
-                        ]: data.get("graph_definition", ""),
-                    },
-                }
+                from idun_platform_cli.tui.schemas.create_agent import TUIAgentConfig
+
+                tui_config = TUIAgentConfig.model_validate(data)
+                engine_config_dict = tui_config.to_engine_config()
+                existing_config["server"] = engine_config_dict["server"]
+                existing_config["agent"] = engine_config_dict["agent"]
             elif section == "observability":
                 if isinstance(data, ObservabilityConfig):
                     obs_dict = {
@@ -120,6 +113,21 @@ class ConfigManager:
                     existing_config["guardrails"] = guardrails_dict
                 else:
                     existing_config["guardrails"] = data
+            elif section == "mcp_servers":
+                if isinstance(data, list):
+                    mcp_servers_list = []
+                    for server in data:
+                        if hasattr(server, "model_dump"):
+                            mcp_servers_list.append(
+                                server.model_dump(
+                                    by_alias=True, mode="json", exclude_none=True
+                                )
+                            )
+                        else:
+                            mcp_servers_list.append(server)
+                    existing_config["mcp_servers"] = mcp_servers_list
+                else:
+                    existing_config["mcp_servers"] = data
             else:
                 existing_config[section] = data
 

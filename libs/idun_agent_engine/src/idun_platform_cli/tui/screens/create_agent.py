@@ -7,7 +7,7 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Label, RichLog
+from textual.widgets import Button, Footer, Label, RichLog, Static
 
 from idun_platform_cli.tui.css.create_agent import CREATE_AGENT_CSS
 from idun_platform_cli.tui.schemas.create_agent import TUIAgentConfig
@@ -84,106 +84,104 @@ class CreateAgentScreen(Screen):
         app_container = Container(classes="app-container")
         app_container.border_title = "Creating a New Agent"
 
-        with app_container:
-            with Horizontal(classes="main-layout"):
-                nav_container = Vertical(classes="nav-container")
-                nav_container.border_title = "Sections"
+        with app_container, Horizontal(classes="main-layout"):
+            nav_container = Vertical(classes="nav-container")
+            nav_container.border_title = "Sections"
 
-                with nav_container:
-                    nav_identity = Vertical(
-                        Label(
-                            "Configure agent\nname, framework,\nand port",
-                            id="nav-identity-label",
-                        ),
-                        classes="nav-pane nav-pane-active",
-                        id="nav-identity",
-                    )
-                    nav_identity.border_title = "Agent Information"
-                    nav_identity.can_focus = True
-                    yield nav_identity
+            with nav_container:
+                nav_identity = Vertical(
+                    Label(
+                        "Configure agent\nname, framework,\nand port",
+                        id="nav-identity-label",
+                    ),
+                    classes="nav-pane nav-pane-active",
+                    id="nav-identity",
+                )
+                nav_identity.border_title = "Agent Information"
+                nav_identity.can_focus = True
+                yield nav_identity
 
-                    nav_observability = Vertical(
-                        Label(
-                            "Setup monitoring\nand tracing",
-                            id="nav-observability-label",
-                        ),
-                        classes="nav-pane",
-                        id="nav-observability",
-                    )
-                    nav_observability.border_title = "Observability"
-                    nav_observability.can_focus = True
-                    yield nav_observability
+                nav_observability = Vertical(
+                    Label(
+                        "Setup monitoring\nand tracing",
+                        id="nav-observability-label",
+                    ),
+                    classes="nav-pane",
+                    id="nav-observability",
+                )
+                nav_observability.border_title = "Observability"
+                nav_observability.can_focus = True
+                yield nav_observability
 
-                    nav_guardrails = Vertical(
-                        Label("Define rules and\nvalidation"),
-                        classes="nav-pane",
-                        id="nav-guardrails",
-                    )
-                    nav_guardrails.border_title = "Guardrails"
-                    nav_guardrails.can_focus = True
-                    yield nav_guardrails
+                nav_guardrails = Vertical(
+                    Label("Define rules and\nvalidation"),
+                    classes="nav-pane",
+                    id="nav-guardrails",
+                )
+                nav_guardrails.border_title = "Guardrails"
+                nav_guardrails.can_focus = True
+                yield nav_guardrails
 
-                    nav_mcps = Vertical(
-                        Label("Add tools and\nresources"),
-                        classes="nav-pane",
-                        id="nav-mcps",
-                    )
-                    nav_mcps.border_title = "MCPs"
-                    nav_mcps.can_focus = True
-                    yield nav_mcps
+                nav_mcps = Vertical(
+                    Label("Add tools and\nresources"),
+                    classes="nav-pane",
+                    id="nav-mcps",
+                )
+                nav_mcps.border_title = "MCPs"
+                nav_mcps.can_focus = True
+                yield nav_mcps
 
-                    nav_serve = Vertical(
-                        Label("Review and start\nagent"),
-                        classes="nav-pane",
-                        id="nav-serve",
-                    )
-                    nav_serve.border_title = "Validate & Run"
-                    nav_serve.can_focus = True
-                    yield nav_serve
+                nav_serve = Vertical(
+                    Label("Review and start\nagent"),
+                    classes="nav-pane",
+                    id="nav-serve",
+                )
+                nav_serve.border_title = "Validate & Run"
+                nav_serve.can_focus = True
+                yield nav_serve
 
-                    with Horizontal(classes="action-buttons"):
-                        yield Button("Back", id="back_button", classes="action-btn")
-                        yield Button("Next", id="next_button", classes="action-btn")
+                with Horizontal(classes="action-buttons"):
+                    yield Button("Back", id="back_button", classes="action-btn")
+                    yield Button("Next", id="next_button", classes="action-btn")
 
-                with Vertical(classes="content-area"):
-                    identity = IdentityWidget(id="widget-identity", classes="section")
+            with Vertical(classes="content-area"):
+                identity = IdentityWidget(id="widget-identity", classes="section")
 
-                    observability = ObservabilityWidget(
-                        id="widget-observability", classes="section"
-                    )
-                    observability.border_title = "Observability"
+                observability = ObservabilityWidget(
+                    id="widget-observability", classes="section"
+                )
+                observability.border_title = "Observability"
 
-                    guardrails = GuardrailsWidget(
-                        id="widget-guardrails", classes="section"
-                    )
-                    guardrails.border_title = "Guardrails"
+                guardrails = GuardrailsWidget(id="widget-guardrails", classes="section")
+                guardrails.border_title = "Guardrails"
 
-                    mcps = MCPsWidget(id="widget-mcps", classes="section")
-                    mcps.border_title = "MCPs"
+                mcps = MCPsWidget(id="widget-mcps", classes="section")
+                mcps.border_title = "MCPs"
 
-                    serve = ServeWidget(id="widget-serve", classes="section")
-                    serve.border_title = "Validate & Run"
+                serve = ServeWidget(id="widget-serve", classes="section")
+                serve.border_title = "Validate & Run"
 
-                    self.widgets_map = {
-                        "identity": identity,
-                        "observability": observability,
-                        "guardrails": guardrails,
-                        "mcps": mcps,
-                        "serve": serve,
-                    }
+                self.widgets_map = {
+                    "identity": identity,
+                    "observability": observability,
+                    "guardrails": guardrails,
+                    "mcps": mcps,
+                    "serve": serve,
+                }
 
-                    observability.display = False
-                    guardrails.display = False
-                    mcps.display = False
-                    serve.display = False
+                observability.display = False
+                guardrails.display = False
+                mcps.display = False
+                serve.display = False
 
-                    yield identity
-                    yield observability
-                    yield guardrails
-                    yield mcps
-                    yield serve
+                yield identity
+                yield observability
+                yield guardrails
+                yield mcps
+                yield serve
 
-        yield Footer()
+        footer = Static("💡 Press Next to save section", classes="custom-footer")
+        yield footer
 
     def on_mount(self) -> None:
         nav_pane = self.query_one("#nav-identity")
@@ -301,8 +299,9 @@ class CreateAgentScreen(Screen):
                         "identity", data, agent_name=agent_name
                     )
                     if not success:
+                        error_msg = str(msg).replace("[", "").replace("]", "")
                         self.notify(
-                            f"Save failed: {msg}",
+                            f"Save failed: {error_msg[:200]}",
                             severity="error",
                         )
                         return
@@ -348,8 +347,28 @@ class CreateAgentScreen(Screen):
                     self._update_nav_checkmark("guardrails")
 
             elif section == "mcps":
-                self.validated_sections.add(section)
-                self._update_nav_checkmark(section)
+                from idun_platform_cli.tui.validators.mcps import validate_mcp_servers
+
+                data = widget.get_data()
+                if data is None:
+                    self.notify("Invalid MCP configuration", severity="error")
+                    return
+
+                validated_servers, msg = validate_mcp_servers(data)
+                if validated_servers is None:
+                    error_msg = str(msg).replace("[", "").replace("]", "")
+                    self.notify(f"MCP validation failed: {error_msg[:200]}", severity="error")
+                    return
+
+                success, save_msg = self.config_manager.save_partial(
+                    "mcp_servers", validated_servers
+                )
+                if not success:
+                    self.notify(f"Failed to save: {save_msg}", severity="error")
+                    return
+
+                self.validated_sections.add("mcps")
+                self._update_nav_checkmark("mcps")
 
             current_index = self.current_nav_index
             if current_index < len(self.nav_panes) - 1:
@@ -399,16 +418,13 @@ class CreateAgentScreen(Screen):
             rich_log.write(f"Starting server for agent: {agent_name}")
             rich_log.write(f"Config: {config_path}")
 
-            command = f"idun agent serve --source=file --path={config_path}"
-
-            import subprocess
-            import os
             import fcntl
+            import os
+            import subprocess
 
             try:
                 process = subprocess.Popen(
-                    command,
-                    shell=True,
+                    ["idun", "agent", "serve", "--source=file", f"--path={config_path}"],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,

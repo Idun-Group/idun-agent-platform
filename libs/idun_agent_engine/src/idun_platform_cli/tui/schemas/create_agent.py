@@ -23,7 +23,7 @@ AGENT_SOURCE_KEY_MAPPING: dict[str, str] = dict(
     {
         "HAYSTACK": "pipeline_definition",
         "LANGGRAPH": "graph_definition",
-        "ADK": "agent_definition",
+        "ADK": "agent",
     }
 )
 
@@ -41,13 +41,20 @@ class TUIAgentConfig(BaseModel):
         return value
 
     def to_engine_config(self) -> dict[str, Any]:
+        agent_config = {
+            "name": self.name,
+            AGENT_SOURCE_KEY_MAPPING[self.framework]: self.graph_definition,
+        }
+
+        if self.framework == "ADK":
+            agent_config["app_name"] = self.name.replace("-", "_").replace(" ", "_")
+            agent_config["session_service"] = {"type": "in_memory"}
+            agent_config["memory_service"] = {"type": "in_memory"}
+
         return {
             "server": {"api": {"port": self.port}},
             "agent": {
                 "type": self.framework,
-                "config": {
-                    "name": self.name,
-                    AGENT_SOURCE_KEY_MAPPING[self.framework]: self.graph_definition,
-                },
+                "config": agent_config,
             },
         }

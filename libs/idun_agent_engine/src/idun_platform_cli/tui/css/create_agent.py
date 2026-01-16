@@ -650,4 +650,140 @@ RadioButton {
 Switch {
     width: 10;
 }
+
+.mcps-templates-section {
+    width: 100%;
+    height: auto;
+    border: round yellow;
+    padding: 1;
+    margin-bottom: 1;
+}
+
+.templates-row {
+    width: 100%;
+    height: auto;
+}
+
+.template-selector {
+    width: 1fr;
+    height: 6;
+    margin-right: 1;
+}
+
+.add-template-btn {
+    width: 20;
+    height: 3;
+    background: transparent;
+    border: round cyan;
+    color: cyan;
+}
+
+.add-template-btn:hover {
+    background: cyan;
+    color: black;
+}
+
+.add-custom-btn {
+    width: 100%;
+    height: 3;
+    background: transparent;
+    border: round green;
+    color: green;
+    margin-bottom: 1;
+}
+
+.add-custom-btn:hover {
+    background: green;
+    color: white;
+}
+
+.mcps-container {
+    width: 100%;
+    height: auto;
+}
+
+.mcp-card {
+    width: 100%;
+    height: auto;
+    border: round cyan;
+    padding: 1;
+    margin-bottom: 1;
+}
+
+.mcp-header {
+    width: 100%;
+    height: auto;
+    margin-bottom: 1;
+}
+
+.mcp-name-display {
+    width: 1fr;
+    color: yellow;
+    text-style: bold;
+}
+
+.remove-mcp-btn {
+    width: 15;
+    height: 3;
+    background: transparent;
+    border: round red;
+    color: red;
+}
+
+.remove-mcp-btn:hover {
+    background: red;
+    color: white;
+}
+
+.mcp-field-row {
+    width: 100%;
+    height: auto;
+    margin-bottom: 1;
+}
+
+.mcp-label {
+    width: 15;
+    color: gray;
+}
+
+.mcp-input {
+    width: 1fr;
+    height: 3;
+    border: round white;
+    background: transparent;
+}
+
+.mcp-input:focus {
+    border: round cyan;
+}
+
+.mcp-textarea {
+    width: 1fr;
+    height: 4;
+    border: round white;
+    background: transparent;
+    padding: 0 1;
+}
+
+.mcp-textarea:focus {
+    border: round cyan;
+}
+
+.http-fields-container, .stdio-fields-container {
+    width: 100%;
+    height: auto;
+    padding: 1;
+    border: round yellow;
+    margin-top: 1;
+}
+
+.custom-footer {
+    dock: bottom;
+    width: 100%;
+    height: 1;
+    background: $surface;
+    color: yellow;
+    text-align: center;
+    text-style: bold;
+}
 """
