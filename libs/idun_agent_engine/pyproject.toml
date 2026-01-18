@@ -1,11 +1,11 @@
 [project]
 name = "idun-agent-engine"
-version = "0.3.9"
+version = "0.4.0"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.12,<3.14"
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-only"
 keywords = [
     "agents",
     "langgraph",
@@ -15,7 +15,7 @@ keywords = [
     "observability",
 ]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
@@ -50,6 +50,7 @@ dependencies = [
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
     "langchain>=1.0.0,<2.0.0",
+    "textual>=7.3.0,<7.4.0",  
     # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
     "arize-phoenix>=11.22.0,<12.0.0",
     "idun-agent-schema>=0.3.8,<1.0.0",
@@ -71,6 +72,9 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-http>=1.22.0,<2.0.0",
     "mcp>=1.0.0,<2.0.0",
     "psycopg-binary>=3.3.0,<4.0.0",
+    "platformdirs>=4.0.0,<5.0.0",
+    "posthog>=7.0.0,<8.0.0",
+    "PyYAML>=6.0.0,<7.0.0",
 ]
 
 
@@ -104,7 +108,15 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/idun_agent_engine", "src/idun_platform_cli"]
+include = [
+  "src/idun_agent_engine",
+  "src/idun_agent_engine/py.typed",
+  "src/idun_platform_cli",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/idun_agent_engine" = "idun_agent_engine"
+"src/idun_platform_cli" = "idun_platform_cli"
 
 [build-system]
 requires = ["hatchling"]

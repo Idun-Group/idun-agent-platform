@@ -35,4 +35,3 @@ Documentation for A2A features is coming soon. For now, check out:
 
 - [Agent Frameworks](../concepts/agent-frameworks.md) - Learn about supported frameworks
 - [Architecture](../concepts/architecture.md) - Understand the platform architecture
-- [Configuration](../mcp/configuration.md) - Configure your agents

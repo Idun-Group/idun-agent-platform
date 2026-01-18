@@ -33,4 +33,3 @@ idun agent serve --source manager
 ## Next steps
 
 - [Getting started](../getting-started/quickstart.md)
-- [Configuration reference](../mcp/configuration.md)

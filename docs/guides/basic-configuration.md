@@ -11,5 +11,4 @@ This guide helps you understand the shape of an Idun agent configuration and whe
 
 ## Next steps
 
-- [Configuration reference](../mcp/configuration.md)
 - [Getting started](../getting-started/quickstart.md)

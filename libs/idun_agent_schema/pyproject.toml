@@ -1,14 +1,14 @@
 [project]
 name = "idun-agent-schema"
-version = "0.3.9"
+version = "0.4.0"
 description = "Centralized Pydantic schema library for Idun Agent Engine and Manager"
 authors = [{ name = "Idun Group", email = "contact@idun-group.com" }]
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-only"
 requires-python = ">=3.12,<3.14"
 keywords = ["pydantic", "schemas", "fastapi", "langgraph", "idun"]
 classifiers = [
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.12",

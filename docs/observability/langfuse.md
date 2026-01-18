@@ -102,5 +102,5 @@ You'll see detailed traces showing:
 ## Next Steps
 
 - [Configure guardrails](../guardrails/overview.md) to add safety constraints to your agent
-- [Explore MCP servers](../mcp/configuration.md) to extend your agent's capabilities
+- [Add MCP server](../mcp/overview.md) to extend your agent's capabilities add any MCP server tools to your agents
 - [Learn about deployment](../deployment/concepts.md) options for production

@@ -5,7 +5,7 @@ description = "Monorepo for Idun Agent Platform"
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.12,<3.14"
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-only"
 dependencies = [
     "idun-agent-engine>=0.3.8,<0.4.0",
     "idun-agent-manager",
@@ -41,7 +41,6 @@ package = false
 idun-agent-engine = { path = "libs/idun_agent_engine", editable = true }
 idun-agent-manager = { path = "services/idun_agent_manager", editable = true }
 idun-agent-schema = { path = "libs/idun_agent_schema", editable = true }
-idun-platform-cli = { path = "libs/idun_platform_cli", editable = true }
 
 [build-system]
 requires = ["hatchling"]

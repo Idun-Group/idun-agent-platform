@@ -20,6 +20,5 @@ Idun is **configuration-driven**: you describe your agent runtime, observability
 
 ## Next steps
 
-- [Configuration reference](../mcp/configuration.md)
 - [Architecture overview](../architecture/overview.md)
 - [Getting started](../getting-started/quickstart.md)

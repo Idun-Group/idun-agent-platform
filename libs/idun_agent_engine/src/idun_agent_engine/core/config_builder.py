@@ -4,28 +4,27 @@ This module provides a fluent API for building configuration objects using Pydan
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
 """
 
-import os
 from pathlib import Path
 from typing import Any
 
-from idun_agent_schema.engine.guardrails import Guardrails as GuardrailsV1
 import yaml
+from idun_agent_schema.engine.adk import AdkAgentConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
+from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2 as Guardrails
 from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_schema.engine.langgraph import (
     LangGraphAgentConfig,
     SqliteCheckpointConfig,
 )
-from idun_agent_schema.engine.adk import AdkAgentConfig
 from idun_agent_schema.engine.mcp_server import MCPServer
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
-from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2 as Guardrails
-from idun_agent_engine.server.server_config import ServerAPIConfig
+from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from yaml import YAMLError
+
+from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
-from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 
 
 class ConfigBuilder:

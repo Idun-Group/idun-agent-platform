@@ -124,5 +124,5 @@ During agent creation:
 ## Next Steps
 
 - [Configure guardrails](../guardrails/overview.md) to add safety constraints to your agent
-- [Explore MCP servers](../mcp/configuration.md) to extend your agent's capabilities
+- [Explore MCP servers](../mcp/overview.md) to extend your agent's capabilities
 - [Learn about deployment](../deployment/concepts.md) options for production
