@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import sys
 import threading
 import uuid
@@ -27,6 +28,66 @@ _POSTHOG_PROJECT_API_KEY = "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw"
 _DISTINCT_ID_ENV = "IDUN_TELEMETRY_DISTINCT_ID"
 _CACHE_APP_NAME = "idun"
 _CACHE_DISTINCT_ID_FILE = "telemetry_user_id"
+_MAX_VALUE_LENGTH = 200
+_SENSITIVE_KEY_FRAGMENTS = (
+    "api_key",
+    "apikey",
+    "access_key",
+    "accesskey",
+    "private_key",
+    "privatekey",
+    "secret",
+    "token",
+    "password",
+    "passphrase",
+    "client_secret",
+    "clientsecret",
+    "bearer",
+    "authorization",
+)
+
+
+def _is_sensitive_key(key: str) -> bool:
+    normalized = re.sub(r"[^a-z0-9]+", "_", key.lower())
+    return any(fragment in normalized for fragment in _SENSITIVE_KEY_FRAGMENTS)
+
+
+def _is_private_key_value(value: str) -> bool:
+    upper_value = value.upper()
+    return "PRIVATE KEY" in upper_value or "BEGIN OPENSSH PRIVATE KEY" in upper_value
+
+
+def _truncate_value(value: str) -> str:
+    if len(value) <= _MAX_VALUE_LENGTH:
+        return value
+    return value[:_MAX_VALUE_LENGTH]
+
+
+def sanitize_telemetry_config(value: Any) -> Any:
+    """Return a telemetry-safe copy of config objects."""
+    if hasattr(value, "model_dump") and callable(value.model_dump):
+        value = value.model_dump()  # type: ignore[assignment]
+    elif hasattr(value, "dict") and callable(value.dict):
+        value = value.dict()  # type: ignore[assignment]
+
+    if isinstance(value, dict):
+        sanitized: dict[str, Any] = {}
+        for key, item in value.items():
+            if isinstance(key, str) and _is_sensitive_key(key):
+                sanitized[key] = "[redacted]"
+            else:
+                sanitized[key] = sanitize_telemetry_config(item)
+        return sanitized
+
+    if isinstance(value, (list, tuple, set)):
+        return [sanitize_telemetry_config(item) for item in value]
+
+    if isinstance(value, str):
+        if _is_private_key_value(value):
+            return "[redacted]"
+        return _truncate_value(value)
+
+    return value
 
 
 def _safe_read_text(path: Path) -> str | None:

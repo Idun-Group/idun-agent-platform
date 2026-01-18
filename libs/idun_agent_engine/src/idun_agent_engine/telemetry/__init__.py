@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .telemetry import IdunTelemetry
+from .telemetry import IdunTelemetry, sanitize_telemetry_config
 
 _telemetry_singleton: IdunTelemetry | None = None
 
@@ -16,4 +16,4 @@ def get_telemetry() -> IdunTelemetry:
     return _telemetry_singleton
 
 
-__all__ = ["IdunTelemetry", "get_telemetry"]
+__all__ = ["IdunTelemetry", "get_telemetry", "sanitize_telemetry_config"]

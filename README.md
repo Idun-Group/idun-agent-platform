@@ -377,6 +377,10 @@ We can help with:
 
 Contact us at contact@idun-group.com for enterprise support.
 
+**Telemetry**
+
+We collect anonymous usage data to improve the product. Disable telemetry by setting `IDUN_TELEMETRY_ENABLED=false`.
+
 ## Project status and roadmap
 
 The platform is under active development and already used in production in real projects.

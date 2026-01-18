@@ -15,7 +15,7 @@ from ..mcp import MCPClientRegistry
 from idun_agent_schema.engine.guardrails import Guardrails, Guardrail
 
 from ..guardrails.base import BaseGuardrail
-from ..telemetry import get_telemetry
+from ..telemetry import get_telemetry, sanitize_telemetry_config
 
 
 def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
@@ -99,16 +99,21 @@ async def lifespan(app: FastAPI):
 
     await configure_app(app, app.state.engine_config)
 
-    telemetry = get_telemetry()
-    app.state.telemetry = telemetry
-    agent = getattr(app.state, "agent", None)
-    telemetry.capture(
-        "engine started",
-        properties={
-            "agent_type": type(agent).__name__ if agent is not None else None,
-            "has_agent": agent is not None,
-        },
-    )
+    try:
+        telemetry = get_telemetry()
+        app.state.telemetry = telemetry
+        agent = getattr(app.state, "agent", None)
+        telemetry.capture(
+            "engine started",
+            properties={
+                "agent_type": type(agent).__name__ if agent is not None else None,
+                "has_agent": agent is not None,
+                "engine_config": sanitize_telemetry_config(app.state.engine_config),
+            },
+        )
+    except Exception as e:
+        print(f"⚠️ Warning: Failed to start telemetry: {e}")
+        app.state.telemetry = None
 
     yield
 
