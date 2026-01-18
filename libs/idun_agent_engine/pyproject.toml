@@ -50,6 +50,7 @@ dependencies = [
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
     "langchain>=1.0.0,<2.0.0",
+    "textual>=7.3.0,<7.4.0",  
     # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
     "arize-phoenix>=11.22.0,<12.0.0",
     "idun-agent-schema>=0.3.8,<1.0.0",
@@ -107,7 +108,15 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/idun_agent_engine", "src/idun_platform_cli"]
+include = [
+  "src/idun_agent_engine",
+  "src/idun_agent_engine/py.typed",
+  "src/idun_platform_cli",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/idun_agent_engine" = "idun_agent_engine"
+"src/idun_platform_cli" = "idun_platform_cli"
 
 [build-system]
 requires = ["hatchling"]
