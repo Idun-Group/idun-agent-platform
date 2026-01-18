@@ -10,12 +10,12 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .._version import __version__
 from ..server.lifespan import lifespan
 from ..server.routers.agent import agent_router
 from ..server.routers.base import base_router
 from .config_builder import ConfigBuilder
 from .engine_config import EngineConfig
-from .._version import __version__
 
 
 def create_app(
