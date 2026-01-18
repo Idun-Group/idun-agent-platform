@@ -6,6 +6,7 @@ from textual.containers import Container, Horizontal, VerticalScroll
 from textual.widget import Widget
 from textual.widgets import Button, Footer, Link, Static
 
+from idun_agent_engine._version import __version__
 from idun_platform_cli.tui.css.main import CSS
 from idun_platform_cli.tui.screens.create_agent import CreateAgentScreen
 from idun_platform_cli.tui.utils.config import ConfigManager
@@ -24,8 +25,8 @@ class MainPageActions(Widget):
     def compose(self) -> ComposeResult:
         with VerticalScroll(classes="actions"):
             yield Button("✨ Configure a new Agent", id="new_agent")
-            yield Button("🔨 Modify an existing Agent", id="update_agent")
-            yield Button("🔍 Tour Idun Agent Platform", id="tour")
+            # yield Button("🔨 Modify an existing Agent", id="update_agent")
+            # yield Button("🔍 Tour Idun Agent Platform", id="tour")
             yield Button("🚪 Exit", id="exit")
 
     def on_mount(self):
@@ -60,7 +61,7 @@ class IdunApp(App):
             yield Static("IDUN AGENT PLATFORM", classes="platform")
             yield Static("Deploy, guard and monitor any agent", classes="tagline")
             yield Static("Built with ❤️ by Idun Group", classes="built-by")
-            yield Static("v0.3.9", classes="version")
+            yield Static(f"v{__version__}", classes="version")
             with Horizontal(classes="link-container"):
                 yield Link("⭐️ Github", url=self.REPO, classes="links")
                 yield Link("📚 Docs", url=self.DOCS, classes="links")
