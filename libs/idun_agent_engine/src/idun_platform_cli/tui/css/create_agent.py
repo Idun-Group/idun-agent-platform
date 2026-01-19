@@ -470,7 +470,7 @@ Footer > .footer--description {
 .serve-yaml-display {
     width: 100%;
     height: auto;
-    max-height: 25;
+    max-height: 15;
     border: round white;
     border-title-color: yellow;
     border-title-style: bold;
