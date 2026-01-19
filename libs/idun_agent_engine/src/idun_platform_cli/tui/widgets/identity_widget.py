@@ -135,8 +135,8 @@ class IdentityWidget(Widget):
             else:
                 var_list.add_option(Option("No variables found", id="none"))
 
-        except Exception as e:
-            self.app.notify(f"Error parsing file: {str(e)}", severity="error")
+        except Exception:
+            self.app.notify("Error parsing file. Make sure it's a valid Python file.", severity="error")
 
     def on_option_list_option_highlighted(
         self, event: OptionList.OptionHighlighted

@@ -1,9 +1,10 @@
 """Widget components for the agent configuration screens."""
 
-from .identity_widget import IdentityWidget
-from .observability_widget import ObservabilityWidget
+from .chat_widget import ChatWidget
 from .guardrails_widget import GuardrailsWidget
+from .identity_widget import IdentityWidget
 from .mcps_widget import MCPsWidget
+from .observability_widget import ObservabilityWidget
 from .serve_widget import ServeWidget
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "GuardrailsWidget",
     "MCPsWidget",
     "ServeWidget",
+    "ChatWidget",
 ]

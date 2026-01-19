@@ -306,9 +306,9 @@ class GuardrailsWidget(Widget):
 
         try:
             return GuardrailsV2(input=input_guardrails, output=output_guardrails)
-        except Exception as e:
+        except Exception:
             self.app.notify(
-                f"Error creating guardrails configuration: {str(e)}",
+                "Error validating Guardrails: make sure all fields are correct.",
                 severity="error",
                 timeout=10
             )

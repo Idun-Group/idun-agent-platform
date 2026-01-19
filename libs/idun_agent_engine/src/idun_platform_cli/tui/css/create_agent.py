@@ -782,4 +782,74 @@ Switch {
     text-align: center;
     text-style: bold;
 }
+
+#widget-chat {
+    padding: 2;
+}
+
+.chat-history-container {
+    width: 100%;
+    height: 1fr;
+    border: round white;
+    border-title-color: yellow;
+    border-title-style: bold;
+    padding: 1;
+    margin-bottom: 2;
+}
+
+#chat_history {
+    width: 100%;
+    height: 100%;
+    background: black;
+    color: white;
+}
+
+.chat-input-container {
+    width: 100%;
+    height: 5;
+    align: left middle;
+}
+
+.chat-input {
+    width: 1fr;
+    height: 3;
+    color: white;
+    background: transparent;
+    border: round white;
+    padding: 0 1;
+    margin-right: 1;
+}
+
+.chat-input:focus {
+    border: round cyan;
+}
+
+.chat-input:disabled {
+    opacity: 0.5;
+}
+
+.send-btn {
+    width: 12;
+    height: 3;
+    background: green;
+    color: white;
+    text-style: bold;
+    border: round white;
+}
+
+.send-btn:hover {
+    background: cyan;
+    color: black;
+}
+
+.send-btn:focus {
+    background: cyan;
+    color: black;
+    border: round yellow;
+}
+
+.send-btn:disabled {
+    background: gray;
+    opacity: 0.5;
+}
 """
