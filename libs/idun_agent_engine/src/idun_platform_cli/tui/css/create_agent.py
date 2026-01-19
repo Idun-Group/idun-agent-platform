@@ -467,26 +467,22 @@ Footer > .footer--description {
     padding: 2;
 }
 
-.serve-summary {
+.serve-yaml-display {
     width: 100%;
+    height: auto;
+    max-height: 25;
     border: round white;
     border-title-color: yellow;
     border-title-style: bold;
-    padding: 2;
-    margin-bottom: 2;
-}
-
-.summary-box {
-    width: 100%;
-    border: round cyan;
-    border-title-color: cyan;
-    border-title-style: bold;
     padding: 1;
-    margin-bottom: 1;
+    margin-bottom: 2;
+    overflow-y: auto;
 }
 
-.summary-box:last-child {
-    margin-bottom: 0;
+#yaml_content {
+    width: 100%;
+    height: auto;
+    color: white;
 }
 
 .validate-run-btn {

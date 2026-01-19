@@ -123,7 +123,7 @@ class AdkAgent(agent_base.BaseAgent):
         # Observability (provider-agnostic)
         if observability_config:
             handlers, infos = observability.create_observability_handlers(
-                observability_config # type: ignore[arg-type]
+                observability_config  # type: ignore[arg-type]
             )
             self._obs_callbacks = []
             for handler in handlers:
@@ -153,6 +153,7 @@ class AdkAgent(agent_base.BaseAgent):
 
                 if is_langfuse_enabled:
                     import os
+
                     langfuse_pk = os.environ.get("LANGFUSE_PUBLIC_KEY")
                     langfuse_host = os.environ.get("LANGFUSE_BASE_URL")
                     print(f"LANGFUSE_PUBLIC_KEY: {langfuse_pk}")
@@ -171,7 +172,9 @@ class AdkAgent(agent_base.BaseAgent):
                     except Exception as e:
                         print(f"Failed to instrument Google ADK: {e}")
             except Exception as e:
-                print(f"Error checking observability config for ADK instrumentation: {e}")
+                print(
+                    f"Error checking observability config for ADK instrumentation: {e}"
+                )
 
         # Initialize Session Service
         await self._initialize_session_service()

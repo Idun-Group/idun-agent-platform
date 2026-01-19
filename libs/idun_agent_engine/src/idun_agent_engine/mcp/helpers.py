@@ -6,6 +6,7 @@ import os
 from idun_agent_engine.mcp.registry import MCPClientRegistry
 from idun_agent_schema.engine.mcp_server import MCPServer
 
+
 def _extract_mcp_configs(config_data: dict[str, Any]) -> list[MCPServer]:
     """Parse MCP server configs from a config dictionary."""
     mcp_configs_data = config_data.get("mcp_servers") or config_data.get("mcpServers")
@@ -86,6 +87,7 @@ def _fetch_config_from_api() -> dict[str, Any]:
     except yaml.YAMLError as e:
         raise ValueError(f"Failed to parse config YAML: {e}") from e
 
+
 def get_adk_tools_from_file(config_path: str | Path) -> list[Any]:
     """
     Loads MCP configurations from a YAML file and returns a list of ADK toolsets.
@@ -98,6 +100,7 @@ def get_adk_tools_from_file(config_path: str | Path) -> list[Any]:
     """
     config_data = _load_config_from_file(config_path)
     return _get_toolsets_from_data(config_data)
+
 
 def get_adk_tools_from_api() -> list[Any]:
     """

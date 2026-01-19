@@ -1,5 +1,8 @@
 """Serve configuration widget."""
 
+from typing import Any
+
+from rich.syntax import Syntax
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.widget import Widget
@@ -14,19 +17,11 @@ class ServeWidget(Widget):
         self.shell_id = None
 
     def compose(self) -> ComposeResult:
-        summary_container = Vertical(classes="serve-summary")
-        summary_container.border_title = "Configuration Summary"
+        yaml_container = Vertical(classes="serve-yaml-display")
+        yaml_container.border_title = "Agent Configuration"
 
-        with summary_container:
-            agent_box = Vertical(classes="summary-box", id="agent_summary")
-            agent_box.border_title = "Agent"
-            with agent_box:
-                yield Static("Loading...", id="agent_summary_text")
-
-            obs_box = Vertical(classes="summary-box", id="obs_summary")
-            obs_box.border_title = "Observability"
-            with obs_box:
-                yield Static("Loading...", id="obs_summary_text")
+        with yaml_container:
+            yield Static("Loading configuration...", id="yaml_content")
 
         yield Button(
             "Validate & Run", id="validate_run_button", classes="validate-run-btn"
@@ -40,37 +35,41 @@ class ServeWidget(Widget):
 
     def load_config(self, config: dict) -> None:
         self.config_data = config
-        self._update_summary()
+        self._update_yaml_display()
 
-    def _update_summary(self) -> None:
-        from idun_platform_cli.tui.schemas.create_agent import AGENT_SOURCE_KEY_MAPPING
+    def _update_yaml_display(self) -> None:
+        import yaml
 
-        agent_info = self.config_data.get("agent", {})
-        agent_config = agent_info.get("config", {})
-        agent_type = agent_info.get("type")
-        agent_name = agent_config.get("name")
+        if not self.config_data:
+            self.query_one("#yaml_content", Static).update(
+                "[yellow]No configuration loaded yet.[/yellow]\n"
+                "[dim]Complete the previous sections to generate configuration.[/dim]"
+            )
+            return
 
-        server_info = self.config_data.get("server", {})
-        port = server_info.get("api", {}).get("port")
+        try:
+            yaml_string = yaml.dump(
+                self.config_data,
+                default_flow_style=False,
+                sort_keys=False,
+                allow_unicode=True
+            )
 
-        graph_def_key = AGENT_SOURCE_KEY_MAPPING.get(agent_type, "graph_definition")
-        graph_def = agent_config.get(graph_def_key)
+            syntax = Syntax(
+                yaml_string,
+                "yaml",
+                theme="monokai",
+                line_numbers=True,
+                word_wrap=False,
+                indent_guides=True,
+                background_color="default"
+            )
 
-        agent_text = f"Name: {agent_name}\nFramework: {agent_type}\nPort: {port}\nGraph: {graph_def}"
+            self.query_one("#yaml_content", Static).update(syntax)
 
-        self.query_one("#agent_summary_text", Static).update(agent_text)
-
-        obs_list = self.config_data.get("observability", [])
-        if obs_list:
-            obs_data = obs_list[0]
-            provider = obs_data.get("provider")
-            enabled = obs_data.get("enabled", False)
-            status = "Enabled" if enabled else "Disabled"
-            obs_text = f"Provider: {provider}\nStatus: {status}"
-        else:
-            obs_text = "Not configured"
-
-        self.query_one("#obs_summary_text", Static).update(obs_text)
+        except Exception as e:
+            error_msg = f"[red]Error displaying configuration:[/red]\n{str(e)}"
+            self.query_one("#yaml_content", Static).update(error_msg)
 
     def get_agent_name(self) -> str:
         agent_info = self.config_data.get("agent", {})

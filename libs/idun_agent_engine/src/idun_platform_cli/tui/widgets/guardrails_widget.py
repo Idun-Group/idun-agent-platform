@@ -304,7 +304,15 @@ class GuardrailsWidget(Widget):
             if applies_to in ["output", "both"]:
                 output_guardrails.append(validated_config)
 
-        return GuardrailsV2(input=input_guardrails, output=output_guardrails)
+        try:
+            return GuardrailsV2(input=input_guardrails, output=output_guardrails)
+        except Exception as e:
+            self.app.notify(
+                f"Error creating guardrails configuration: {str(e)}",
+                severity="error",
+                timeout=10
+            )
+            return None
 
     def _extract_config(self, guardrail_id: str) -> dict:
         config = {}

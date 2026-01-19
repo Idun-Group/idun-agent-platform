@@ -1,7 +1,7 @@
 """Guardrails V2 configuration schema."""
 
 from enum import Enum
-from typing import Annotated, Literal, Union
+from typing import Literal, Union
 
 from pydantic import BaseModel, Field
 
@@ -65,17 +65,6 @@ class GuardrailConfig(BaseModel):
 
 class BanListConfig(GuardrailConfig):
     """Ban List configuration."""
-
-    """
-    - type: GUARDRAILS_HUB
-        config_id: BAN_LIST
-        guard_url: "hub://guardrails/ban_list"
-        api_key:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnaXRodWJ8MTQzNDYzMzEiLCJhcGlLZXlJZCI6IjNhMWMyYmY2LTMwNzYtNDY1OC1hMjRhLTA5MjZjNWI2ZDM4NyIsInNjb3BlIjoicmVhZDpwYWNrYWdlcyIsInBlcm1pc3Npb25zIjpbXSwiaWF0IjoxNzY0NTg5MzIyLCJleHAiOjE3NzIzNjUzMjJ9.4KUsAXEQ8mGN_iVz46HGXIUQeBbZQLEAzOOfIL_ZYQA
-        reject_message: "ban!!"
-        banned_words:
-            - hello
-            - bye
-    """
 
     class BanListParams(BaseModel):
         banned_words: list[str] = Field(
@@ -216,7 +205,21 @@ class CodeScannerConfig(BaseModel):
     )
 
 
-GuardrailConfig = Union[BanListConfig, DetectPIIConfig]
+GuardrailConfig = Union[
+    BanListConfig,
+    DetectPIIConfig,
+    BiasCheckConfig,
+    CompetitionCheckConfig,
+    CorrectLanguageConfig,
+    GibberishTextConfig,
+    NSFWTextConfig,
+    DetectJailbreakConfig,
+    PromptInjectionConfig,
+    RagHallucinationConfig,
+    RestrictToTopicConfig,
+    ToxicLanguageConfig,
+    CodeScannerConfig,
+]
 
 
 class GuardrailsV2(BaseModel):
