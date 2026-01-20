@@ -147,6 +147,10 @@ Idun Agent Platform gives you:
 
 ## Quickstart (CLI, 5 minutes)
 
+<div align="center">
+  <img src="docs/images/tui.png" alt="Idun CLI Interface" width="100%"/>
+</div>
+
 The easiest way to configure and run an agent is with the interactive CLI:
 
 1. Install:
@@ -161,18 +165,6 @@ pip install idun-agent-engine
 idun init
 ```
 
-<div align="center">
-  <table>
-    <tr>
-      <td><img src="docs/images/tui-1.png" alt="CLI Main Menu" width="600"/></td>
-      <td><img src="docs/images/tui-2.png" alt="CLI Configuration" width="600"/></td>
-    </tr>
-    <tr>
-      <td><img src="docs/images/tui-3.png" alt="CLI Server Logs" width="600"/></td>
-      <td><img src="docs/images/tui-4.png" alt="CLI Chat Interface" width="600"/></td>
-    </tr>
-  </table>
-</div>
 
 3. Configure your agent through the interactive TUI:
    - Agent framework (LangGraph/ADK)
