@@ -164,12 +164,12 @@ idun init
 <div align="center">
   <table>
     <tr>
-      <td><img src="docs/images/tui-1.png" alt="CLI Main Menu" width="400"/></td>
-      <td><img src="docs/images/tui-2.png" alt="CLI Configuration" width="400"/></td>
+      <td><img src="docs/images/tui-1.png" alt="CLI Main Menu" width="600"/></td>
+      <td><img src="docs/images/tui-2.png" alt="CLI Configuration" width="600"/></td>
     </tr>
     <tr>
-      <td><img src="docs/images/tui-3.png" alt="CLI Server Logs" width="400"/></td>
-      <td><img src="docs/images/tui-4.png" alt="CLI Chat Interface" width="400"/></td>
+      <td><img src="docs/images/tui-3.png" alt="CLI Server Logs" width="600"/></td>
+      <td><img src="docs/images/tui-4.png" alt="CLI Chat Interface" width="600"/></td>
     </tr>
   </table>
 </div>
@@ -193,19 +193,6 @@ idun agent serve --source=file --path=.idun/agent_name.yaml
 ```
 
 All from one terminal interface, no manual YAML editing required.
-
-<div align="center">
-  <table>
-    <tr>
-      <td><img src="docs/images/tui-1.png" alt="CLI Main Menu" width="400"/></td>
-      <td><img src="docs/images/tui-2.png" alt="CLI Configuration" width="400"/></td>
-    </tr>
-    <tr>
-      <td><img src="docs/images/tui-3.png" alt="CLI Server Logs" width="400"/></td>
-      <td><img src="docs/images/tui-4.png" alt="CLI Chat Interface" width="400"/></td>
-    </tr>
-  </table>
-</div>
 
 ## Quickstart (Engine only, 10 minutes)
 
