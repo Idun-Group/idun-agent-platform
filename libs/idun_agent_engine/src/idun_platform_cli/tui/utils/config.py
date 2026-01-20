@@ -7,7 +7,6 @@ from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 from pydantic import ValidationError
 
 from idun_platform_cli.tui.schemas.create_agent import (
-    AGENT_SOURCE_KEY_MAPPING,
     TUIAgentConfig,
 )
 
@@ -128,6 +127,28 @@ class ConfigManager:
                     existing_config["mcp_servers"] = mcp_servers_list
                 else:
                     existing_config["mcp_servers"] = data
+            elif section == "memory":
+                from idun_agent_schema.engine.langgraph import CheckpointConfig
+
+                if "agent" not in existing_config:
+                    return False, "Agent configuration not found. Save identity first."
+
+                agent_type = existing_config.get("agent", {}).get("type")
+                if agent_type != "LANGGRAPH":
+                    return (
+                        True,
+                        "Checkpoint configuration skipped for non-LANGGRAPH agents",
+                    )
+
+                if isinstance(data, CheckpointConfig):
+                    checkpoint_dict = data.model_dump(by_alias=False, mode="json")
+
+                    if "config" not in existing_config["agent"]:
+                        existing_config["agent"]["config"] = {}
+
+                    existing_config["agent"]["config"]["checkpointer"] = checkpoint_dict
+                else:
+                    return False, "Invalid checkpoint configuration type"
             else:
                 existing_config[section] = data
 

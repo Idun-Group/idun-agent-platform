@@ -4,7 +4,7 @@ from idun_agent_schema.engine.observability_v2 import (
 )
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Static, Input, Switch, RadioSet, RadioButton
+from textual.widgets import Static, Input, RadioSet, RadioButton, Switch
 from textual.widget import Widget
 from textual.reactive import reactive
 
@@ -12,21 +12,18 @@ from idun_platform_cli.tui.validators.observability import validate_observabilit
 
 
 class ObservabilityWidget(Widget):
-    selected_provider = reactive("LANGFUSE")
+    selected_provider = reactive("OFF")
 
     def compose(self) -> ComposeResult:
         main_section = Vertical(classes="observability-main")
         main_section.border_title = "Observability"
 
         with main_section:
-            with Horizontal(classes="field-row"):
-                yield Static("Enabled:", classes="field-label")
-                yield Switch(value=True, id="enabled_toggle")
-
             with Horizontal(classes="field-row framework-row"):
                 yield Static("Provider:", classes="field-label")
                 with RadioSet(id="provider_select"):
-                    yield RadioButton("LANGFUSE", id="LANGFUSE", value=True)
+                    yield RadioButton("Off", id="OFF", value=True)
+                    yield RadioButton("LANGFUSE", id="LANGFUSE")
                     yield RadioButton("PHOENIX", id="PHOENIX")
                     yield RadioButton("GCP LOGGING", id="GCP_LOGGING")
                     yield RadioButton("GCP TRACE", id="GCP_TRACE")
@@ -49,7 +46,9 @@ class ObservabilityWidget(Widget):
         config_container = self.query_one("#provider_config", Vertical)
         config_container.remove_children()
 
-        if self.selected_provider == "LANGFUSE":
+        if self.selected_provider == "OFF":
+            pass
+        elif self.selected_provider == "LANGFUSE":
             self._render_langfuse_config(config_container)
         elif self.selected_provider == "PHOENIX":
             self._render_phoenix_config(config_container)
@@ -305,15 +304,14 @@ class ObservabilityWidget(Widget):
     def get_data(self) -> ObservabilityConfig | None:
         radio_set = self.query_one("#provider_select", RadioSet)
 
-        provider = ObservabilityProvider.LANGFUSE
+        provider = "OFF"
         if radio_set.pressed_button:
             provider = str(radio_set.pressed_button.id)
 
-        enabled = self.query_one("#enabled_toggle", Switch).value
-        config = {}
-
-        if not enabled:
+        if provider == "OFF":
             return None
+
+        config = {}
 
         match provider:
             case "LANGFUSE":

@@ -852,4 +852,33 @@ Switch {
     background: gray;
     opacity: 0.5;
 }
+
+#widget-memory {
+    padding: 2;
+}
+
+.memory-main {
+    width: 100%;
+    height: auto;
+    border: round white;
+    border-title-color: yellow;
+    border-title-style: bold;
+    padding: 1;
+    margin-bottom: 1;
+}
+
+.checkpoint-config-container {
+    width: 100%;
+    height: auto;
+    margin-top: 1;
+}
+
+.checkpoint-fields-section {
+    width: 100%;
+    height: auto;
+    border: round white;
+    border-title-color: yellow;
+    border-title-style: bold;
+    padding: 1;
+}
 """

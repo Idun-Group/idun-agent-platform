@@ -17,6 +17,7 @@ from idun_platform_cli.tui.widgets import (
     GuardrailsWidget,
     IdentityWidget,
     MCPsWidget,
+    MemoryWidget,
     ObservabilityWidget,
     ServeWidget,
 )
@@ -33,6 +34,7 @@ class CreateAgentScreen(Screen):
     active_section = reactive("identity")
     nav_panes = [
         "nav-identity",
+        "nav-memory",
         "nav-observability",
         "nav-guardrails",
         "nav-mcps",
@@ -106,6 +108,7 @@ class CreateAgentScreen(Screen):
 
         for pane_id in [
             "nav-identity",
+            "nav-memory",
             "nav-observability",
             "nav-guardrails",
             "nav-mcps",
@@ -138,6 +141,18 @@ class CreateAgentScreen(Screen):
                 nav_identity.border_title = "Agent Information"
                 nav_identity.can_focus = True
                 yield nav_identity
+
+                nav_memory = Vertical(
+                    Label(
+                        "Configure agent\ncheckpointing",
+                        id="nav-memory-label",
+                    ),
+                    classes="nav-pane",
+                    id="nav-memory",
+                )
+                nav_memory.border_title = "Memory"
+                nav_memory.can_focus = True
+                yield nav_memory
 
                 nav_observability = Vertical(
                     Label(
@@ -194,6 +209,9 @@ class CreateAgentScreen(Screen):
             with Vertical(classes="content-area"):
                 identity = IdentityWidget(id="widget-identity", classes="section")
 
+                memory = MemoryWidget(id="widget-memory", classes="section")
+                memory.border_title = "Memory & Checkpointing"
+
                 observability = ObservabilityWidget(
                     id="widget-observability", classes="section"
                 )
@@ -213,6 +231,7 @@ class CreateAgentScreen(Screen):
 
                 self.widgets_map = {
                     "identity": identity,
+                    "memory": memory,
                     "observability": observability,
                     "guardrails": guardrails,
                     "mcps": mcps,
@@ -220,6 +239,7 @@ class CreateAgentScreen(Screen):
                     "chat": chat,
                 }
 
+                memory.display = False
                 observability.display = False
                 guardrails.display = False
                 mcps.display = False
@@ -227,6 +247,7 @@ class CreateAgentScreen(Screen):
                 chat.display = False
 
                 yield identity
+                yield memory
                 yield observability
                 yield guardrails
                 yield mcps
@@ -254,7 +275,7 @@ class CreateAgentScreen(Screen):
             if active_widget:
                 try:
                     focusable = active_widget.query(
-                        "Input, OptionList, DirectoryTree, Button"
+                        "Input, OptionList, DirectoryTree, Button, RadioSet"
                     ).first()
                     if focusable:
                         focusable.focus()
@@ -365,6 +386,21 @@ class CreateAgentScreen(Screen):
                         "Error validating Identity: make sure all fields are correct.",
                         severity="error",
                     )
+                    return
+
+            elif section == "memory":
+                data = widget.get_data()
+                if data is not None:
+                    success, msg = self.config_manager.save_partial("memory", data)
+                    if not success:
+                        self.notify(
+                            "Memory configuration is invalid", severity="error"
+                        )
+                        return
+                    self.validated_sections.add("memory")
+                    self._update_nav_checkmark("memory")
+                else:
+                    self.notify("Please configure checkpoint settings", severity="error")
                     return
 
             elif section == "observability":

@@ -71,6 +71,7 @@ pip install idun-agent-engine
 ## Table of contents
 
 - [Should you use Idun Agent Platform](#should-you-use-idun-agent-platform)
+- [Quickstart (CLI, 5 minutes)](#quickstart-cli-5-minutes)
 - [Quickstart (Engine only, 10 minutes)](#quickstart-engine-only-10-minutes)
 - [Quickstart (Platform, Docker Compose)](#quickstart)
 - [Key capabilities at a glance](#key-capabilities-at-a-glance)
@@ -143,6 +144,68 @@ Idun Agent Platform gives you:
 
 - **Memory and session persistence**
   Persist conversations and state across calls with backends like SQLite or Postgres.
+
+## Quickstart (CLI, 5 minutes)
+
+The easiest way to configure and run an agent is with the interactive CLI:
+
+1. Install:
+
+```bash
+pip install idun-agent-engine
+```
+
+2. Run the CLI:
+
+```bash
+idun init
+```
+
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="docs/images/tui-1.png" alt="CLI Main Menu" width="400"/></td>
+      <td><img src="docs/images/tui-2.png" alt="CLI Configuration" width="400"/></td>
+    </tr>
+    <tr>
+      <td><img src="docs/images/tui-3.png" alt="CLI Server Logs" width="400"/></td>
+      <td><img src="docs/images/tui-4.png" alt="CLI Chat Interface" width="400"/></td>
+    </tr>
+  </table>
+</div>
+
+3. Configure your agent through the interactive TUI:
+   - Agent framework (LangGraph/ADK)
+   - Memory/checkpointing (In-Memory, SQLite, PostgreSQL)
+   - Observability (Langfuse, Phoenix, LangSmith, GCP)
+   - Guardrails and MCP servers
+
+4. The CLI offers to:
+   - Deploy the agent locally
+   - Show live server logs
+   - Open a chat interface to test your agent
+   - View the Swagger docs at `http://localhost:8000/docs`
+
+Or run the agent separately:
+
+```bash
+idun agent serve --source=file --path=.idun/agent_name.yaml
+```
+
+All from one terminal interface, no manual YAML editing required.
+
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="docs/images/tui-1.png" alt="CLI Main Menu" width="400"/></td>
+      <td><img src="docs/images/tui-2.png" alt="CLI Configuration" width="400"/></td>
+    </tr>
+    <tr>
+      <td><img src="docs/images/tui-3.png" alt="CLI Server Logs" width="400"/></td>
+      <td><img src="docs/images/tui-4.png" alt="CLI Chat Interface" width="400"/></td>
+    </tr>
+  </table>
+</div>
 
 ## Quickstart (Engine only, 10 minutes)
 
