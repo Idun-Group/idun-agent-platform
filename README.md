@@ -165,23 +165,28 @@ pip install idun-agent-engine
 idun init
 ```
 
-
 3. Configure your agent through the interactive TUI:
    - Agent framework (LangGraph/ADK)
    - Memory/checkpointing (In-Memory, SQLite, PostgreSQL)
    - Observability (Langfuse, Phoenix, LangSmith, GCP)
-   - Guardrails and MCP servers
+   - Guardrails (Currently we only support [guardrails-ai](https://guardrailsai.com/docs). More integrations to come soon..)
+   - MCP servers
+
+> [!TIP]
+  > You can press **Next** to save a section, or skip it. On every Next button press, the state of your config is saved to **.idun/agent_name.yaml**. You can then run your agent directly without having to launch it via the tui.
+
 
 4. The CLI offers to:
    - Deploy the agent locally
    - Show live server logs
    - Open a chat interface to test your agent
-   - View the Swagger docs at `http://localhost:8000/docs`
 
-Or run the agent separately:
+You can view the Swagger docs at `http://localhost:YOUR_AGENT_PORT/docs`
+
+Or write your own config.yaml file, and run the agent separately:
 
 ```bash
-idun agent serve --source=file --path=.idun/agent_name.yaml
+idun agent serve --source=file --path=path/to/your/agent_config.yaml
 ```
 
 All from one terminal interface, no manual YAML editing required.
@@ -260,7 +265,7 @@ Idun Agent Platform is structured in four layers:
 
 
 
-## Quickstart
+## Manager Quickstart
 
 You need Python 3.12, Docker and Git.
 
