@@ -147,11 +147,11 @@ Idun Agent Platform gives you:
 
 ## Quickstart (CLI, 5 minutes)
 
+The easiest way to configure and run an agent is with the interactive CLI:
+
 <div align="center">
   <img src="docs/images/tui.png" alt="Idun CLI Interface" width="100%"/>
 </div>
-
-The easiest way to configure and run an agent is with the interactive CLI:
 
 1. Install:
 
@@ -188,8 +188,6 @@ Or write your own config.yaml file, and run the agent separately:
 ```bash
 idun agent serve --source=file --path=path/to/your/agent_config.yaml
 ```
-
-All from one terminal interface, no manual YAML editing required.
 
 ## Quickstart (Engine only, 10 minutes)
 
