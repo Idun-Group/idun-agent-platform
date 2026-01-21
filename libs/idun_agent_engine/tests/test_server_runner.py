@@ -15,7 +15,7 @@ def test_run_server_from_config_uses_yaml_port(mock_create_app, mock_uvicorn, tm
     config_data = {
         "server": {"api": {"port": 3333}},
         "agent": {
-            "type": "langgraph",
+            "type": "LANGGRAPH",
             "config": {
                 "name": "Port Test Agent",
                 "graph_definition": "./agent.py:graph",

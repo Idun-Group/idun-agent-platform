@@ -11,7 +11,7 @@ def test_health_and_root_routes(tmp_path) -> None:
         config_dict={
             "server": {"api": {"port": 0}},
             "agent": {
-                "type": "langgraph",
+                "type": "LANGGRAPH",
                 "config": {
                     "name": "Test Agent",
                     "graph_definition": str(tmp_path / "agent.py:graph"),

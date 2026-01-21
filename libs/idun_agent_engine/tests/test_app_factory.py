@@ -9,7 +9,7 @@ def test_create_app_with_yaml_config(tmp_path):
     config_data = {
         "server": {"api": {"port": 8888}},
         "agent": {
-            "type": "langgraph",
+            "type": "LANGGRAPH",
             "config": {
                 "name": "YAML Test Agent",
                 "graph_definition": "./test/graph.py:app",
@@ -36,7 +36,7 @@ def test_create_app_config_priority_order(tmp_path):
     file_config = {
         "server": {"api": {"port": 7777}},
         "agent": {
-            "type": "langgraph",
+            "type": "LANGGRAPH",
             "config": {"name": "File Agent", "graph_definition": "file.py:graph"},
         },
     }
@@ -44,7 +44,7 @@ def test_create_app_config_priority_order(tmp_path):
     dict_config = {
         "server": {"api": {"port": 8888}},
         "agent": {
-            "type": "langgraph",
+            "type": "LANGGRAPH",
             "config": {"name": "Dict Agent", "graph_definition": "dict.py:graph"},
         },
     }
@@ -53,7 +53,7 @@ def test_create_app_config_priority_order(tmp_path):
         {
             "server": {"api": {"port": 9999}},
             "agent": {
-                "type": "langgraph",
+                "type": "LANGGRAPH",
                 "config": {
                     "name": "Engine Agent",
                     "graph_definition": "engine.py:graph",
@@ -79,7 +79,7 @@ def test_create_app_with_checkpointer_config(tmp_path):
     config_with_checkpointer = {
         "server": {"api": {"port": 8000}},
         "agent": {
-            "type": "langgraph",
+            "type": "LANGGRAPH",
             "config": {
                 "name": "Persistent Agent",
                 "graph_definition": "./agent.py:graph",

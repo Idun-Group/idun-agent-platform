@@ -8,7 +8,7 @@ async def test_lifespan_with_yaml_config(tmp_path):
     config_data = {
         "server": {"api": {"port": 8000}},
         "agent": {
-            "type": "langgraph",
+            "type": "LANGGRAPH",
             "config": {
                 "name": "Lifecycle Agent",
                 "graph_definition": "./agent.py:graph",

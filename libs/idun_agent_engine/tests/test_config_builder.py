@@ -23,5 +23,5 @@ def test_with_langgraph_agent_builds_engine_config(tmp_path: Path) -> None:
     )
     engine_config = builder.build()
     assert engine_config.server.api.port == 9000
-    assert engine_config.agent.type == "langgraph"
+    assert engine_config.agent.type == "LANGGRAPH"
     assert engine_config.agent.config.name == "UT Agent"

@@ -7,7 +7,7 @@ from idun_agent_engine.server.server_config import ServerConfig
 def test_engine_config_with_defaults():
     config = EngineConfig(
         agent=AgentConfig(
-            type="langgraph",
+            type="LANGGRAPH",
             config=LangGraphAgentConfig(
                 name="TestAgent", graph_definition="test.py:graph"
             ),
@@ -15,32 +15,38 @@ def test_engine_config_with_defaults():
     )
 
     assert config.server.api.port == 8000
-    assert config.agent.type == "langgraph"
+    assert config.agent.type == "LANGGRAPH"
 
 
 def test_agent_config_default_type():
-    config = AgentConfig(config={"name": "Test", "graph_definition": "test.py:graph"})
+    config = AgentConfig(
+        type="LANGGRAPH",
+        config={"name": "Test", "graph_definition": "test.py:graph"},
+    )
 
-    assert config.type == "langgraph"
+    assert config.type == "LANGGRAPH"
 
 
 def test_engine_config_from_dict():
     config_dict = {
         "server": {"api": {"port": 9000}},
-        "agent": {"type": "langgraph", "config": {"name": "LangGraphAgent"}},
+        "agent": {
+            "type": "LANGGRAPH",
+            "config": {"name": "LangGraphAgent", "graph_definition": "test.py:graph"},
+        },
     }
 
     config = EngineConfig.model_validate(config_dict)
 
     assert config.server.api.port == 9000
-    assert config.agent.type == "langgraph"
+    assert config.agent.type == "LANGGRAPH"
 
 
 def test_engine_config_model_dump():
     config = EngineConfig(
         server=ServerConfig(),
         agent=AgentConfig(
-            type="langgraph",
+            type="LANGGRAPH",
             config={"name": "Test", "graph_definition": "test.py:graph"},
         ),
     )
@@ -49,4 +55,4 @@ def test_engine_config_model_dump():
 
     assert isinstance(dumped, dict)
     assert dumped["server"]["api"]["port"] == 8000
-    assert dumped["agent"]["type"] == "langgraph"
+    assert dumped["agent"]["type"] == "LANGGRAPH"
