@@ -4,7 +4,7 @@ from typing import Any
 
 from rich.syntax import Syntax
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import Horizontal, Vertical
 from textual.widget import Widget
 from textual.widgets import Button, RichLog, Static
 
@@ -23,9 +23,14 @@ class ServeWidget(Widget):
         with yaml_container:
             yield Static("Loading configuration...", id="yaml_content")
 
-        yield Button(
-            "Validate & Run", id="validate_run_button", classes="validate-run-btn"
-        )
+        button_container = Horizontal(classes="serve-button-container")
+        with button_container:
+            yield Button(
+                "Save and Exit", id="save_exit_button", classes="validate-run-btn"
+            )
+            yield Button(
+                "Save and Run", id="save_run_button", classes="validate-run-btn"
+            )
 
         logs_container = Vertical(classes="serve-logs", id="logs_container")
         logs_container.border_title = "Server Logs"

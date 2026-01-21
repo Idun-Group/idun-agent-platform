@@ -485,13 +485,20 @@ Footer > .footer--description {
     color: white;
 }
 
-.validate-run-btn {
+.serve-button-container {
     width: 100%;
+    height: auto;
+    align: center middle;
+}
+
+.validate-run-btn {
+    width: 1fr;
     height: 3;
     background: green;
     color: white;
     text-style: bold;
     border: round white;
+    margin: 0 1;
 }
 
 .validate-run-btn:hover {
@@ -505,16 +512,16 @@ Footer > .footer--description {
     border: round yellow;
 }
 
-Button#validate_run_button.kill-mode {
+Button#save_run_button.kill-mode {
     background: red;
 }
 
-Button#validate_run_button.kill-mode:hover {
+Button#save_run_button.kill-mode:hover {
     background: darkred;
     color: white;
 }
 
-Button#validate_run_button.kill-mode:focus {
+Button#save_run_button.kill-mode:focus {
     background: darkred;
     color: white;
     border: round yellow;
@@ -802,6 +809,27 @@ Switch {
     height: 100%;
     background: black;
     color: white;
+}
+
+.chat-thinking-container {
+    width: 100%;
+    height: 2;
+    align: left middle;
+    padding: 0 1;
+}
+
+#chat_spinner {
+    width: auto;
+    height: auto;
+    color: yellow;
+}
+
+#thinking_label {
+    width: auto;
+    height: auto;
+    color: yellow;
+    margin-left: 1;
+    text-style: italic;
 }
 
 .chat-input-container {

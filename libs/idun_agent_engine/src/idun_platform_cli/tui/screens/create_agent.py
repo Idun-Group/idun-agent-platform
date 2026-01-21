@@ -254,7 +254,7 @@ class CreateAgentScreen(Screen):
                 yield serve
                 yield chat
 
-        footer = Static("💡 Press Next to save section", classes="custom-footer")
+        footer = Static("💡 Press Next to save section | Press Ctrl+Q to exit", classes="custom-footer")
         yield footer
 
     def on_mount(self) -> None:
@@ -362,6 +362,8 @@ class CreateAgentScreen(Screen):
                 return
 
             if section == "identity":
+                if not widget.validate():
+                    return
                 data = widget.get_data()
                 if data is None:
                     self.notify("Please complete all required fields", severity="error")
@@ -466,7 +468,14 @@ class CreateAgentScreen(Screen):
                 section = self.nav_panes[self.current_nav_index].replace("nav-", "")
                 self.active_section = section
 
-        elif event.button.id == "validate_run_button":
+        elif event.button.id == "save_exit_button":
+            if self.server_running and self.server_process:
+                self.notify("Kill Server before exiting", severity="warning")
+                return
+            self.notify("Configuration saved. Exiting...", severity="information")
+            self.app.exit()
+
+        elif event.button.id == "save_run_button":
             if self.server_running and self.server_process:
                 import os
                 import signal
@@ -516,8 +525,8 @@ class CreateAgentScreen(Screen):
                 self.server_process = None
                 self.server_running = False
 
-                button = self.query_one("#validate_run_button", Button)
-                button.label = "Validate & Run"
+                button = self.query_one("#save_run_button", Button)
+                button.label = "Save and Run"
                 button.remove_class("kill-mode")
 
                 rich_log.write("\n[red]Server stopped[/red]")
@@ -569,7 +578,7 @@ class CreateAgentScreen(Screen):
                 self.server_process = process
                 self.server_running = True
 
-                button = self.query_one("#validate_run_button", Button)
+                button = self.query_one("#save_run_button", Button)
                 button.label = "Kill Server"
                 button.add_class("kill-mode")
 
@@ -600,8 +609,8 @@ class CreateAgentScreen(Screen):
 
                 self.server_running = False
                 self.server_process = None
-                button = self.query_one("#validate_run_button", Button)
-                button.label = "Validate & Run"
+                button = self.query_one("#save_run_button", Button)
+                button.label = "Save and Run"
                 button.remove_class("kill-mode")
                 rich_log.write("\n[yellow]Server exited[/yellow]")
                 break

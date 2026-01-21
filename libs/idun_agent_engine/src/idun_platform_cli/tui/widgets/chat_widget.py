@@ -4,7 +4,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Button, Input, RichLog
+from textual.widgets import Button, Input, Label, LoadingIndicator, RichLog
 
 
 class ChatWidget(Widget):
@@ -20,7 +20,13 @@ class ChatWidget(Widget):
         chat_container = Vertical(classes="chat-history-container")
         chat_container.border_title = "Conversation"
         with chat_container:
-            yield RichLog(id="chat_history", highlight=True, markup=True)
+            yield RichLog(id="chat_history", highlight=True, markup=True, wrap=True)
+
+        thinking_container = Horizontal(classes="chat-thinking-container", id="chat_thinking")
+        thinking_container.display = False
+        with thinking_container:
+            yield LoadingIndicator(id="chat_spinner")
+            yield Label("Thinking...", id="thinking_label")
 
         input_container = Horizontal(classes="chat-input-container")
         with input_container:
@@ -73,12 +79,16 @@ class ChatWidget(Widget):
         chat_log = self.query_one("#chat_history", RichLog)
         chat_log.write(f"[cyan]You:[/cyan] {message}")
 
+        thinking_container = self.query_one("#chat_thinking")
+        thinking_container.display = True
+
         self.run_worker(self._send_message(message))
 
     async def _send_message(self, message: str) -> None:
         import httpx
 
         chat_log = self.query_one("#chat_history", RichLog)
+        thinking_container = self.query_one("#chat_thinking")
 
         try:
             url = f"http://localhost:{self.server_port}/agent/invoke"
@@ -91,17 +101,21 @@ class ChatWidget(Widget):
                 agent_response = result.get(
                     "output", result.get("response", "No response")
                 )
+                thinking_container.display = False
                 chat_log.write(f"[green]{self.agent_name}:[/green] {agent_response}")
 
         except httpx.ConnectError:
+            thinking_container.display = False
             chat_log.write("[red]Error:[/red] Cannot connect to server. Is it running?")
             self.app.notify(
                 "Server not reachable. Start it from the Serve page.", severity="error"
             )
         except httpx.TimeoutException:
+            thinking_container.display = False
             chat_log.write("[red]Error:[/red] Request timed out")
             self.app.notify("Request timed out", severity="error")
         except Exception as e:
+            thinking_container.display = False
             chat_log.write(f"[red]Error:[/red] Failed to send message: {e}")
             self.app.notify(
                 "Failed to send message. Check server connection.", severity="error"
