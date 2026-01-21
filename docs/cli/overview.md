@@ -2,7 +2,7 @@
 
 The Idun CLI provides an interactive Terminal User Interface (TUI) for configuring, deploying, and testing AI agents without writing any code. It's the fastest way to get started with the Idun Agent Platform.
 
-![CLI Main Menu](../images/tui-home.png)
+![CLI Main Menu](../images/tui-all.png)
 
 ## Why Use the CLI?
 
