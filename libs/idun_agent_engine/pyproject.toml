@@ -207,6 +207,7 @@ omit = [
     "*/_version.py",
     "*/idun_agent_engine_ui/*",
     "*/idun_platform_cli/*",
+    "*/mcp/*",  # CHANGED: MCP has Pydantic compatibility issues with coverage
 ]
 
 [tool.coverage.report]

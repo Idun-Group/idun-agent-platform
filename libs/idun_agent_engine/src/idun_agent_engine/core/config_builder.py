@@ -259,7 +259,7 @@ class ConfigBuilder:
             mcp_servers=self._mcp_servers,
         )
 
-    def build_dict(self) -> dict[str, Any]:
+    def build_dict(self) -> dict[str, Any]:  # NOT USED
         """Build and return the configuration as a dictionary.
 
         This is a convenience method for backward compatibility.
@@ -268,17 +268,24 @@ class ConfigBuilder:
             Dict[str, Any]: The complete configuration dictionary
         """
         engine_config = self.build()
-        return engine_config.model_dump()
+        return engine_config.model_dump(mode="python")
 
-    def save_to_file(self, file_path: str) -> None:
+    def save_to_file(
+        self, file_path: str
+    ) -> None:  # FIXED: old method doesn't serialize enums correctly
         """Save the configuration to a YAML file.
 
         Args:
             file_path: Path where to save the configuration file
         """
-        config = self.build_dict()
+        engine_model = self.build()
         with open(file_path, "w") as f:
-            yaml.dump(config, f, default_flow_style=False, indent=2)
+            yaml.dump(
+                engine_model.model_dump(mode="json"),
+                f,
+                default_flow_style=False,
+                indent=2,
+            )
 
     async def build_and_initialize_agent(
         self, mcp_registry: Any | None = None
@@ -319,8 +326,9 @@ class ConfigBuilder:
         # Initialize the appropriate agent
         agent_instance = None
         if agent_type == AgentFramework.LANGGRAPH:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
             import os
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             print("Current directory: ", os.getcwd())  # TODO remove
             try:
@@ -334,9 +342,11 @@ class ConfigBuilder:
             agent_instance = LanggraphAgent()
 
         elif agent_type == AgentFramework.TRANSLATION_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import TranslationAgentConfig
             import os
+
+            from idun_agent_schema.engine.templates import TranslationAgentConfig
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
                 translation_config = TranslationAgentConfig.model_validate(
@@ -364,9 +374,11 @@ class ConfigBuilder:
             agent_instance = LanggraphAgent()
 
         elif agent_type == AgentFramework.CORRECTION_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import CorrectionAgentConfig
             import os
+
+            from idun_agent_schema.engine.templates import CorrectionAgentConfig
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
                 correction_config = CorrectionAgentConfig.model_validate(
@@ -391,9 +403,11 @@ class ConfigBuilder:
             agent_instance = LanggraphAgent()
 
         elif agent_type == AgentFramework.DEEP_RESEARCH_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
             import os
+
+            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
                 deep_research_config = DeepResearchAgentConfig.model_validate(

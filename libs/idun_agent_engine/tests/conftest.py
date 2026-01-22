@@ -4,6 +4,8 @@ This module provides reusable fixtures for testing the idun_agent_engine library
 Fixtures are designed to be composable and easy to customize for specific test needs.
 """
 
+from __future__ import annotations
+
 from collections.abc import AsyncGenerator, Callable, Generator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -14,7 +16,6 @@ from fastapi.testclient import TestClient
 
 from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.engine_config import EngineConfig
-
 
 # -----------------------------------------------------------------------------
 # Configuration Fixtures
@@ -110,6 +111,8 @@ def engine_config_factory() -> Callable[..., EngineConfig]:
         agent_type: str = "LANGGRAPH",
         **extra_agent_config: Any,
     ) -> EngineConfig:
+        from idun_agent_engine.core.engine_config import EngineConfig
+
         config_dict = {
             "server": {"api": {"port": port}},
             "agent": {
@@ -230,6 +233,8 @@ def app_factory(
         config_dict: dict[str, Any] | None = None,
         **config_overrides: Any,
     ) -> FastAPI:
+        from idun_agent_engine.core.app_factory import create_app
+
         if config_dict is None:
             config_dict = sample_langgraph_config.copy()
 
@@ -254,6 +259,8 @@ def test_app(sample_langgraph_config: dict[str, Any]) -> FastAPI:
     Returns:
         A configured FastAPI application.
     """
+    from idun_agent_engine.core.app_factory import create_app
+
     return create_app(config_dict=sample_langgraph_config)
 
 

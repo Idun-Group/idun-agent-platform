@@ -10,7 +10,6 @@ from typing import Annotated, Any, TypedDict
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 
-
 # -----------------------------------------------------------------------------
 # State Definitions
 # -----------------------------------------------------------------------------
@@ -45,7 +44,11 @@ def echo_node(state: SimpleState) -> dict[str, Any]:
         return {"messages": [{"role": "assistant", "content": "No message received"}]}
 
     last_message = messages[-1]
-    content = last_message.get("content", "") if isinstance(last_message, dict) else str(last_message)
+    content = (
+        last_message.get("content", "")
+        if isinstance(last_message, dict)
+        else str(last_message)
+    )
 
     return {
         "messages": [
@@ -90,7 +93,9 @@ def metadata_node(state: StatefulState) -> dict[str, Any]:
     # Track last interaction
     if messages:
         last_msg = messages[-1]
-        metadata["last_role"] = last_msg.get("role", "unknown") if isinstance(last_msg, dict) else "unknown"
+        metadata["last_role"] = (
+            last_msg.get("role", "unknown") if isinstance(last_msg, dict) else "unknown"
+        )
 
     return {"metadata": metadata}
 
