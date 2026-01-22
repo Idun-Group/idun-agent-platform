@@ -127,7 +127,9 @@ async def create_agent(
     body = await raw_request.json()
 
     if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(body["engine_config"]["guardrails"])
+        body["engine_config"]["guardrails"] = convert_guardrail(
+            body["engine_config"]["guardrails"]
+        )
 
     request = ManagedAgentCreate(**body)
 
@@ -411,7 +413,9 @@ async def patch_agent(
     body = await raw_request.json()
 
     if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(body["engine_config"]["guardrails"])
+        body["engine_config"]["guardrails"] = convert_guardrail(
+            body["engine_config"]["guardrails"]
+        )
 
     request = ManagedAgentPatch(**body)
 

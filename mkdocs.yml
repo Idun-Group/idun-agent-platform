@@ -122,8 +122,9 @@ nav:
       - Langgraph memory: memory/memory-langgraph.md
       - ADK memory: memory/memory-adk.md
   - MCP:
-      - Setup Guide: mcp/setup-guide.md
-      - Configuration: mcp/configuration.md
+      - Overview: mcp/overview.md
+      - Docker MCP: mcp/docker-mcp.md
+      - MCP server: mcp/mcp-server.md
   - A2A:
       - Overview: a2a/overview.md
   - Guardrails:

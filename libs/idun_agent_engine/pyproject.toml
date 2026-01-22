@@ -1,11 +1,11 @@
 [project]
 name = "idun-agent-engine"
-version = "0.3.9"
+version = "0.4.0"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.12,<3.14"
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-only"
 keywords = [
     "agents",
     "langgraph",
@@ -15,7 +15,7 @@ keywords = [
     "observability",
 ]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
@@ -72,6 +72,9 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-http>=1.22.0,<2.0.0",
     "mcp>=1.0.0,<2.0.0",
     "psycopg-binary>=3.3.0,<4.0.0",
+    "platformdirs>=4.0.0,<5.0.0",
+    "posthog>=7.0.0,<8.0.0",
+    "PyYAML>=6.0.0,<7.0.0",
 ]
 
 

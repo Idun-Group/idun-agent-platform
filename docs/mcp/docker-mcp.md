@@ -1,20 +1,19 @@
-# MCP Setup
+# Docker MCP Toolkit
 
-This guide demonstrates how to integrate Model Context Protocol (MCP) servers with your agents using the Idun platform's web interface. We'll use the Fetch MCP server from Model Context Protocol with an ADK agent.
+The Docker MCP Toolkit is a collection of pre-built Model Context Protocol (MCP) servers packaged as Docker containers. These ready-to-use servers provide common functionality like web fetching, file system access, and database operations without requiring you to write or maintain custom MCP server code.
 
+**Key Benefits:**
+
+- **Zero Setup** - Pull and run pre-configured MCP servers
+- **Isolation** - Each server runs in its own container with controlled resource limits
+- **Standardized** - Community-maintained implementations following MCP specifications
+- **Portable** - Works consistently across development and production environments
+
+This guide demonstrates how to integrate MCP servers from the Docker MCP toolkit and give your agents access to Docker MCP tools.
 ---
 
-## Overview
-
-MCP (Model Context Protocol) extends agent capabilities by providing external tools through a standardized interface. The Fetch MCP server allows your agent to retrieve and process web content, enabling capabilities like:
-
-- Fetching content from URLs
-- Processing web pages
-- Extracting information from websites
-- Summarizing web content
-
 !!! info "What You'll Learn"
-    By the end of this guide, you'll have a fully functional ADK agent with web fetching capabilities, able to retrieve and analyze content from any URL through a simple chat interface.
+    By the end of this guide, you'll have a fully functional ADK agent that use the web fetching MCP server from Docker toolkit. The agent will be able to retrieve and analyze content from any URL through a simple chat interface.
 
 ---
 
@@ -22,6 +21,15 @@ MCP (Model Context Protocol) extends agent capabilities by providing external to
 
 !!! warning "Before You Begin"
     Ensure all prerequisites are met before proceeding with the setup.
+
+Before following this guide, you should have completed:
+
+1. **[Quickstart Guide](../quickstart.md)** - Set up the Idun Agent Platform and verify it's running
+2. **Agent Framework Setup** - Complete one of these guides:
+    - **[ADK Agent Setup](../agent-frameworks/adk.md)** - If using Google's Agent Development Kit
+    - **[LangGraph Agent Setup](../agent-frameworks/langgraph.md)** - If using LangGraph
+
+You should have a working agent before adding MCP integration.
 
 ### Docker Desktop
 
@@ -42,50 +50,9 @@ docker pull mcp/fetch
 !!! success "Image Ready"
     Once pulled, the image will be available in Docker Desktop's Images section.
 
-### Google Vertex AI Credentials
-
-The ADK agent requires Google Cloud credentials. Choose one authentication method:
-
-=== "Service Account Key"
-
-    ```bash
-    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
-    ```
-
-=== "Application Default Credentials"
-
-    ```bash
-    gcloud auth application-default login
-    ```
-
-### Idun Platform
-
-Install the Idun Agent Engine:
-
-```bash
-pip install idun-agent-engine
-```
-
-!!! note "Manager Service"
-    Ensure the Manager service is running and accessible at `http://localhost:8080` (or your configured URL).
-
 ---
 
-## Step 1: Clone the Demo ADK Agent
-
-Clone the demo ADK agent repository from GitHub:
-
-```bash
-git clone https://github.com/Idun-Group/demo-adk-idun-agent.git
-cd demo-adk-idun-agent
-```
-
-!!! tip "Repository Contents"
-    This repository contains a fully configured ADK agent that we'll enhance with MCP capabilities.
-
----
-
-## Step 2: Configure Docker Desktop
+## Step 1: Configure Docker Desktop
 
 Open Docker Desktop and verify the following:
 
@@ -98,29 +65,18 @@ Open Docker Desktop and verify the following:
 
 ---
 
-## Step 3: Configure MCP in Manager UI
+## Step 2: Create MCP Server Configuration
 
-Access the Idun Manager web interface at `http://localhost:8080`
+Access the Idun Manager web interface at `http://localhost:3000`
 
-### Create Your Agent
+### Navigate to MCP Servers
 
-Navigate to **Agents** → **Create Agent**
+1. Click on **MCP Servers** in the main navigation
+2. Click **Create MCP Server** button
 
-Fill in the agent configuration:
+### Configure Fetch MCP Server
 
-| Setting | Value |
-|---------|-------|
-| **Agent Name** | `ADK Agent with Fetch MCP` |
-| **Agent Type** | `ADK` |
-| **Session Service** | `in_memory` |
-| **Memory Service** | `in_memory` |
-| **Agent Code Path** | `./agent.py:agent` |
-
-### Add MCP Server
-
-Scroll to the **MCP Servers** section and click **Add MCP Server**
-
-Configure the Fetch MCP server:
+Fill in the MCP server configuration:
 
 | Field | Value | Description |
 |-------|-------|-------------|
@@ -142,39 +98,141 @@ Configure the Fetch MCP server:
     - `--rm` - Automatically remove container when it stops
     - `mcp/fetch` - The Docker image to run
 
-### Save Your Configuration
+### Save MCP Configuration
 
 ![MCP Configuration Form](../images/mcp_input.png)
 
 *The MCP configuration form showing stdio transport, docker command, and args as a JSON array*
 
-Click **Save** to create the agent with MCP integration.
+Click **Save** to create the MCP server configuration.
 
-!!! success "Configuration Saved"
-    Your agent is now configured with the Fetch MCP server and ready to launch.
+!!! success "MCP Server Created"
+    Your Fetch MCP server configuration is now available and can be attached to any agent.
 
 ---
 
-## Step 4: Verify Credentials
+## Step 3: Attach MCP Server to Your Agent
 
-Before launching, verify your Google Cloud credentials:
+Now that the MCP server is configured, attach it to your existing agent.
+
+### Edit Your Agent
+
+1. Navigate to **Agents** in the main navigation
+2. Find your agent in the list
+3. Click **Edit** on your agent
+
+### Add MCP Server
+
+1. Scroll to the **MCP Servers** section
+2. Click **Add MCP Server**
+3. Select **fetch** from the dropdown of available MCP servers
+4. Click **Save** to update your agent configuration
+
+![Add MCP Server to Agent](../images/screenshots/modify_agent_add_mcp.png)
+
+*Selecting the Fetch MCP server from the dropdown when editing an agent*
+
+!!! success "Configuration Updated"
+    Your agent is now configured with the Fetch MCP server and ready to use MCP tools.
+
+---
+
+## Step 4: Integrate MCP Tools in Your Agent Code
+
+Now that your agent is configured with the MCP server, you need to integrate the MCP tools into your agent code.
+
+### Set Environment Variables
+
+The agent engine needs to know where to fetch the configuration and authenticate. Set these environment variables:
 
 ```bash
-# Check credentials path
-echo $GOOGLE_APPLICATION_CREDENTIALS
-
-# Test credentials
-gcloud auth application-default print-access-token
+export IDUN_MANAGER_HOST="http://localhost:8080"
+export IDUN_AGENT_API_KEY="YOUR_AGENT_API_KEY"
 ```
 
-!!! warning "Credentials Required"
-    The ADK agent cannot initialize without valid Google Cloud credentials. Ensure this step succeeds before proceeding.
+!!! tip "Finding Your API Key"
+    You can find your agent's API key in the Manager UI under the agent's details page.
 
-If credentials aren't configured:
+### Import MCP Tools
 
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your-service-account-key.json"
+The Idun Agent Engine provides helper functions to retrieve MCP tools configured for your agent. Choose the appropriate function based on your agent framework:
+
+#### For ADK Agents
+
+Use `get_adk_tools()` to retrieve tools in ADK format:
+
+```python
+from google.adk.agents import LlmAgent
+from idun_agent_engine.mcp import get_adk_tools
+from pathlib import Path
+import os
+
+os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
+os.environ["GOOGLE_CLOUD_PROJECT"] = "your-project-id"
+os.environ["GOOGLE_CLOUD_LOCATION"] = "us-central1"
+
+def get_current_time(city: str) -> dict:
+    """Returns the current time in a specified city."""
+    return {"status": "success", "city": city, "time": "10:30 AM"}
+
+idun_tools = get_adk_tools()
+tools = [get_current_time] + idun_tools
+
+root_agent = LlmAgent(
+    model='gemini-2.5-flash',
+    name='root_agent',
+    description="Tells the current time in a specified city.",
+    instruction="You are a helpful assistant that tells the current time in cities.",
+    tools=tools,
+)
 ```
+
+#### For LangGraph Agents
+
+Use `get_langchain_tools()` to retrieve tools in LangChain format:
+
+```python
+from idun_agent_engine.mcp import get_langchain_tools
+
+# Get MCP tools configured for this agent
+mcp_tools = await get_langchain_tools()
+
+# Add to your agent's tools list
+all_tools = [
+    *mcp_tools,  # MCP tools
+    # ... your other tools
+]
+
+# Bind tools to your model
+model_with_tools = model.bind_tools(all_tools)
+```
+
+**Complete LangGraph Example:**
+
+```python
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
+from idun_agent_engine.mcp import get_langchain_tools
+
+# Initialize your model
+model = ChatOpenAI(model="gpt-4")
+
+# Retrieve MCP tools
+mcp_tools = await get_langchain_tools()
+
+# Create agent with MCP tools
+agent = create_react_agent(
+    model=model,
+    tools=mcp_tools,
+    state_modifier="You are a helpful assistant with access to web content fetching."
+)
+```
+
+!!! info "Automatic Tool Discovery"
+    The `get_adk_tools()` and `get_langchain_tools()` functions automatically discover all MCP servers attached to your agent and make their tools available. You don't need to configure individual tools.
+
+!!! warning "Async Function"
+    `get_langchain_tools()` is an async function. Make sure to use `await` when calling it.
 
 ---
 
@@ -325,19 +383,6 @@ Enhance your agent with additional MCP servers by adding more configurations in 
     - Check image exists: `docker images | grep mcp/fetch`
     - Test container manually: `docker run -i --rm mcp/fetch`
     - Review Docker Desktop logs
-
-### Authentication Issues
-
-!!! failure "Vertex AI Authentication Failed"
-
-    **Symptoms:** Agent fails to initialize with authentication errors
-
-    **Solutions:**
-
-    - Verify credentials: `echo $GOOGLE_APPLICATION_CREDENTIALS`
-    - Test credentials: `gcloud auth application-default print-access-token`
-    - Re-authenticate: `gcloud auth application-default login`
-    - Ensure service account has required permissions
 
 ### MCP Tool Not Working
 

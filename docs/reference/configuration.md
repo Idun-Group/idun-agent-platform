@@ -6,11 +6,10 @@ This page is the stable entry point for configuration documentation.
 
 ## Reference
 
-- [Full configuration reference](../mcp/configuration.md)
 - [Configuration concepts](../concepts/configuration.md)
 
 ## MCP servers
 
 For MCP-specific configuration details, see:
 
-- [MCP servers](../mcp/configuration.md#mcp-servers)
+- [MCP servers](../mcp/overview.md)
