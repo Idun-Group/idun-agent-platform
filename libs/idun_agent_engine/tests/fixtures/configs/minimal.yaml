@@ -1,0 +1,10 @@
+# Minimal valid configuration for testing
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: Minimal Test Agent
+    graph_definition: tests.fixtures.agents.mock_graph:graph

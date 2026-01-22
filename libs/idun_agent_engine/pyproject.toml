@@ -183,8 +183,8 @@ show_error_codes = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "-ra -q --strict-markers"
-testpaths = ["tests"]
-pythonpath = ["src"]
+testpaths = ["tests/unit", "tests/integration"]
+pythonpath = ["src", "tests"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
@@ -193,6 +193,9 @@ markers = [
     "unit: Unit tests (fast, no external dependencies)",
     "integration: Integration tests (may require external services)",
     "slow: Slow tests (marked for optional skipping)",
+    "requires_langfuse: Test requires Langfuse service",
+    "requires_phoenix: Test requires Phoenix service",
+    "requires_postgres: Test requires PostgreSQL",
 ]
 
 [tool.coverage.run]

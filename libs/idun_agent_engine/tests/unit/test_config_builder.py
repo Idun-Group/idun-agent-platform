@@ -2,9 +2,12 @@
 
 from pathlib import Path
 
+import pytest
+
 from idun_agent_engine.core.config_builder import ConfigBuilder
 
 
+@pytest.mark.unit
 def test_with_langgraph_agent_builds_engine_config(tmp_path: Path) -> None:
     """EngineConfig is built with expected values for a LangGraph agent."""
     builder = (
