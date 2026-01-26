@@ -2,10 +2,12 @@ import sys
 
 import click
 
+from idun_platform_cli.telemetry import track_command
 from idun_platform_cli.tui.main import IdunApp
 
 
 @click.command("init")
+@track_command("init")
 def init_command() -> None:
     """Starts a terminal user interface that guides you through configuring and managing Idun agents."""
     try:

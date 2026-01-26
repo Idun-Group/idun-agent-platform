@@ -8,6 +8,7 @@ from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.config_builder import ConfigBuilder
 from idun_agent_engine.core.engine_config import EngineConfig
 from idun_agent_engine.core.server_runner import run_server
+from idun_platform_cli.telemetry import track_command
 
 
 class ServerSource(StrEnum):
@@ -84,6 +85,7 @@ class Serve:
 @click.command("serve")
 @click.option("--source", required=True)
 @click.option("--path")
+@track_command("agent serve")
 def serve_command(source: str, path: str | None):
     """Reads a config and exposes it's agent as an API. Config is either fetched from the manager, or from a path.
 
