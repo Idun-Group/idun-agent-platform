@@ -13,9 +13,11 @@ from idun_platform_cli.tui.css.create_agent import CREATE_AGENT_CSS
 from idun_platform_cli.tui.schemas.create_agent import TUIAgentConfig
 from idun_platform_cli.tui.utils.config import ConfigManager
 from idun_platform_cli.tui.widgets import (
+    ChatWidget,
     GuardrailsWidget,
     IdentityWidget,
     MCPsWidget,
+    MemoryWidget,
     ObservabilityWidget,
     ServeWidget,
 )
@@ -32,10 +34,12 @@ class CreateAgentScreen(Screen):
     active_section = reactive("identity")
     nav_panes = [
         "nav-identity",
+        "nav-memory",
         "nav-observability",
         "nav-guardrails",
         "nav-mcps",
         "nav-serve",
+        "nav-chat",
     ]
     current_nav_index = 0
     focus_on_nav = True  # Track if focus is on nav or content
@@ -47,6 +51,35 @@ class CreateAgentScreen(Screen):
         self.validated_sections = set()
         self.server_process = None
         self.server_running = False
+
+    def on_unmount(self) -> None:
+        if self.server_process:
+            import os
+            import signal
+            import subprocess
+
+            try:
+                pgid = os.getpgid(self.server_process.pid)
+                os.killpg(pgid, signal.SIGKILL)
+            except (ProcessLookupError, OSError, AttributeError, PermissionError):
+                try:
+                    self.server_process.kill()
+                except:
+                    pass
+
+            try:
+                config = self.config_manager.load_config()
+                if config:
+                    port = config.get("server", {}).get("api", {}).get("port", 8008)
+                    pids = subprocess.check_output(["lsof", "-ti", f":{port}"], text=True).strip().split("\n")
+                    for pid in pids:
+                        if pid:
+                            try:
+                                os.kill(int(pid), signal.SIGKILL)
+                            except:
+                                pass
+            except:
+                pass
 
     def watch_active_section(self, new_section: str) -> None:
         for section_id, widget in self.widgets_map.items():
@@ -67,12 +100,20 @@ class CreateAgentScreen(Screen):
                         severity="warning",
                     )
 
+        if new_section == "chat":
+            config = self.config_manager.load_config()
+            chat_widget = self.widgets_map.get("chat")
+            if chat_widget and config:
+                chat_widget.load_config(config)
+
         for pane_id in [
             "nav-identity",
+            "nav-memory",
             "nav-observability",
             "nav-guardrails",
             "nav-mcps",
             "nav-serve",
+            "nav-chat",
         ]:
             pane = self.query_one(f"#{pane_id}")
             if pane_id == f"nav-{new_section}":
@@ -100,6 +141,18 @@ class CreateAgentScreen(Screen):
                 nav_identity.border_title = "Agent Information"
                 nav_identity.can_focus = True
                 yield nav_identity
+
+                nav_memory = Vertical(
+                    Label(
+                        "Configure agent\ncheckpointing",
+                        id="nav-memory-label",
+                    ),
+                    classes="nav-pane",
+                    id="nav-memory",
+                )
+                nav_memory.border_title = "Memory"
+                nav_memory.can_focus = True
+                yield nav_memory
 
                 nav_observability = Vertical(
                     Label(
@@ -140,12 +193,24 @@ class CreateAgentScreen(Screen):
                 nav_serve.can_focus = True
                 yield nav_serve
 
+                nav_chat = Vertical(
+                    Label("Chat with your\nrunning agent"),
+                    classes="nav-pane",
+                    id="nav-chat",
+                )
+                nav_chat.border_title = "Chat"
+                nav_chat.can_focus = True
+                yield nav_chat
+
                 with Horizontal(classes="action-buttons"):
                     yield Button("Back", id="back_button", classes="action-btn")
                     yield Button("Next", id="next_button", classes="action-btn")
 
             with Vertical(classes="content-area"):
                 identity = IdentityWidget(id="widget-identity", classes="section")
+
+                memory = MemoryWidget(id="widget-memory", classes="section")
+                memory.border_title = "Memory & Checkpointing"
 
                 observability = ObservabilityWidget(
                     id="widget-observability", classes="section"
@@ -161,26 +226,35 @@ class CreateAgentScreen(Screen):
                 serve = ServeWidget(id="widget-serve", classes="section")
                 serve.border_title = "Validate & Run"
 
+                chat = ChatWidget(id="widget-chat", classes="section")
+                chat.border_title = "Chat"
+
                 self.widgets_map = {
                     "identity": identity,
+                    "memory": memory,
                     "observability": observability,
                     "guardrails": guardrails,
                     "mcps": mcps,
                     "serve": serve,
+                    "chat": chat,
                 }
 
+                memory.display = False
                 observability.display = False
                 guardrails.display = False
                 mcps.display = False
                 serve.display = False
+                chat.display = False
 
                 yield identity
+                yield memory
                 yield observability
                 yield guardrails
                 yield mcps
                 yield serve
+                yield chat
 
-        footer = Static("💡 Press Next to save section", classes="custom-footer")
+        footer = Static("💡 Press Next to save section | Press Ctrl+Q to exit", classes="custom-footer")
         yield footer
 
     def on_mount(self) -> None:
@@ -201,7 +275,7 @@ class CreateAgentScreen(Screen):
             if active_widget:
                 try:
                     focusable = active_widget.query(
-                        "Input, OptionList, DirectoryTree, Button"
+                        "Input, OptionList, DirectoryTree, Button, RadioSet"
                     ).first()
                     if focusable:
                         focusable.focus()
@@ -288,6 +362,8 @@ class CreateAgentScreen(Screen):
                 return
 
             if section == "identity":
+                if not widget.validate():
+                    return
                 data = widget.get_data()
                 if data is None:
                     self.notify("Please complete all required fields", severity="error")
@@ -307,11 +383,26 @@ class CreateAgentScreen(Screen):
                         return
                     self.validated_sections.add("identity")
                     self._update_nav_checkmark("identity")
-                except ValidationError as e:
+                except ValidationError:
                     self.notify(
-                        f"Validation error: {str(e)}",
+                        "Error validating Identity: make sure all fields are correct.",
                         severity="error",
                     )
+                    return
+
+            elif section == "memory":
+                data = widget.get_data()
+                if data is not None:
+                    success, msg = self.config_manager.save_partial("memory", data)
+                    if not success:
+                        self.notify(
+                            "Memory configuration is invalid", severity="error"
+                        )
+                        return
+                    self.validated_sections.add("memory")
+                    self._update_nav_checkmark("memory")
+                else:
+                    self.notify("Please configure checkpoint settings", severity="error")
                     return
 
             elif section == "observability":
@@ -356,15 +447,14 @@ class CreateAgentScreen(Screen):
 
                 validated_servers, msg = validate_mcp_servers(data)
                 if validated_servers is None:
-                    error_msg = str(msg).replace("[", "").replace("]", "")
-                    self.notify(f"MCP validation failed: {error_msg[:200]}", severity="error")
+                    self.notify("Error validating MCPs: make sure all fields are correct.", severity="error")
                     return
 
                 success, save_msg = self.config_manager.save_partial(
                     "mcp_servers", validated_servers
                 )
                 if not success:
-                    self.notify(f"Failed to save: {save_msg}", severity="error")
+                    self.notify("Error saving MCPs: make sure all fields are correct.", severity="error")
                     return
 
                 self.validated_sections.add("mcps")
@@ -378,19 +468,68 @@ class CreateAgentScreen(Screen):
                 section = self.nav_panes[self.current_nav_index].replace("nav-", "")
                 self.active_section = section
 
-        elif event.button.id == "validate_run_button":
+        elif event.button.id == "save_exit_button":
             if self.server_running and self.server_process:
-                self.server_process.terminate()
+                self.notify("Kill Server before exiting", severity="warning")
+                return
+            self.notify("Configuration saved. Exiting...", severity="information")
+            self.app.exit()
+
+        elif event.button.id == "save_run_button":
+            if self.server_running and self.server_process:
+                import os
+                import signal
+                import subprocess
+
+                rich_log = self.query_one("#server_logs", RichLog)
+                rich_log.write("\n[yellow]Stopping server...[/yellow]")
+
+                try:
+                    pgid = os.getpgid(self.server_process.pid)
+                    os.killpg(pgid, signal.SIGTERM)
+                    try:
+                        self.server_process.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        os.killpg(pgid, signal.SIGKILL)
+                        self.server_process.wait(timeout=1)
+                except (ProcessLookupError, OSError, PermissionError):
+                    try:
+                        self.server_process.terminate()
+                        self.server_process.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        self.server_process.kill()
+                        self.server_process.wait(timeout=1)
+                    except:
+                        pass
+
+                config = self.config_manager.load_config()
+                if config:
+                    port = config.get("server", {}).get("api", {}).get("port", 8008)
+                    try:
+                        subprocess.run(
+                            ["lsof", "-ti", f":{port}"],
+                            capture_output=True,
+                            text=True,
+                            check=True
+                        )
+                        pids = subprocess.check_output(["lsof", "-ti", f":{port}"], text=True).strip().split("\n")
+                        for pid in pids:
+                            if pid:
+                                try:
+                                    os.kill(int(pid), signal.SIGKILL)
+                                except:
+                                    pass
+                    except:
+                        pass
+
                 self.server_process = None
                 self.server_running = False
 
-                button = self.query_one("#validate_run_button", Button)
-                button.label = "Validate & Run"
+                button = self.query_one("#save_run_button", Button)
+                button.label = "Save and Run"
                 button.remove_class("kill-mode")
 
-                rich_log = self.query_one("#server_logs", RichLog)
                 rich_log.write("\n[red]Server stopped[/red]")
-
                 self.notify("Server stopped", severity="information")
                 return
 
@@ -429,6 +568,7 @@ class CreateAgentScreen(Screen):
                     stderr=subprocess.STDOUT,
                     text=True,
                     bufsize=1,
+                    start_new_session=True,
                 )
 
                 fd = process.stdout.fileno()
@@ -438,14 +578,14 @@ class CreateAgentScreen(Screen):
                 self.server_process = process
                 self.server_running = True
 
-                button = self.query_one("#validate_run_button", Button)
+                button = self.query_one("#save_run_button", Button)
                 button.label = "Kill Server"
                 button.add_class("kill-mode")
 
                 self.run_worker(self._stream_logs(process), exclusive=True)
 
-            except Exception as e:
-                self.notify(f"Failed to start server: {e}", severity="error")
+            except Exception:
+                self.notify("Failed to start server. Check your configuration.", severity="error")
 
     async def _stream_logs(self, process) -> None:
         import asyncio
@@ -469,8 +609,8 @@ class CreateAgentScreen(Screen):
 
                 self.server_running = False
                 self.server_process = None
-                button = self.query_one("#validate_run_button", Button)
-                button.label = "Validate & Run"
+                button = self.query_one("#save_run_button", Button)
+                button.label = "Save and Run"
                 button.remove_class("kill-mode")
                 rich_log.write("\n[yellow]Server exited[/yellow]")
                 break

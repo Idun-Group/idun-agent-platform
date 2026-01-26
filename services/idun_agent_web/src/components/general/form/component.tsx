@@ -380,7 +380,7 @@ const Tag = styled.div`
     border-radius: 4px;
     font-size: 14px;
     border: 1px solid rgba(140, 82, 255, 0.3);
-    
+
     .remove-icon {
         margin-left: 6px;
         cursor: pointer;
@@ -427,7 +427,7 @@ export const TagInput = ({
     const [inputValue, setInputValue] = useState('');
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const tags = value ? value.split('\n').filter(t => t.trim() !== '') : [];
-    
+
     // Add tag on Enter
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {

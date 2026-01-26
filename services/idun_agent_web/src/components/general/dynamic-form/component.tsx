@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import Editor from '@monaco-editor/react';
-import { 
+import {
     FormSelect,
     TextInput
 } from '../form/component';
@@ -108,20 +108,20 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         // Handle anyOf/oneOf
         if (prop.anyOf || prop.oneOf) {
             const variants = (prop.anyOf || prop.oneOf).filter((t: any) => t.type !== 'null');
-            
+
             // If multiple variants, check for discriminated union
             if (variants.length > 1) {
                 const resolvedVariants = variants.map((v: any) => v.$ref ? resolveRef(v.$ref, rootSchema) : v).filter(Boolean);
                 // Check if they look like objects with a 'type' property (discriminator)
-                const isDiscriminated = resolvedVariants.every((v: any) => 
+                const isDiscriminated = resolvedVariants.every((v: any) =>
                     (v.type === 'object' || v.properties) && v.properties?.type
                 );
-                
+
                 if (isDiscriminated) {
                      const label = prop.title || key.replace(/_/g, ' ');
                      const description = prop.description || '';
                      const isRequired = schema.required?.includes(key);
-                     
+
                      const options = resolvedVariants.map((v: any) => {
                         const typeEnum = v.properties?.type?.enum?.[0] || v.properties?.type?.const || v.properties?.type?.default;
                         return {
@@ -130,7 +130,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
                             schema: v
                         };
                      });
-                     
+
                      const currentValue = data[key];
                      const currentType = currentValue?.type || '';
                      const selectedOption = options.find((o: any) => o.value === currentType);
@@ -155,16 +155,16 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
                             </FormSelect>
-                            
+
                             {selectedOption && (
                                 <div style={{ marginTop: '12px' }}>
-                                    <DynamicForm 
-                                        schema={selectedOption.schema} 
-                                        rootSchema={rootSchema} 
-                                        data={currentValue || {}} 
+                                    <DynamicForm
+                                        schema={selectedOption.schema}
+                                        rootSchema={rootSchema}
+                                        data={currentValue || {}}
                                         onChange={(subData) => handleChange(key, subData)}
-                                        errors={errors} 
-                                        excludeFields={['type']} 
+                                        errors={errors}
+                                        excludeFields={['type']}
                                     />
                                 </div>
                             )}
@@ -189,7 +189,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         const isRequired = schema.required?.includes(key);
 
         // Special Handling based on key names or types
-        
+
         // 1. Enums -> Select
         if (prop.enum) {
             return (
@@ -234,7 +234,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
              // Determine if it's a specific object type we know how to render, or just a blob
              // For input/output schema and store, we want JSON editor
              const value = typeof data[key] === 'object' ? JSON.stringify(data[key], null, 2) : (data[key] || '');
-             
+
              return (
                 <FieldWrapper key={key}>
                     <InputLabel>{label} (JSON){isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
@@ -266,7 +266,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
                                     // However, for user experience, we might let them type until valid.
                                     // But here we are assuming if it's NOT a string type, it IS an object type (or anyOf object).
                                     // So we probably shouldn't set invalid string to object field unless we handle it.
-                                    // For now, let's keep previous behavior for non-string types: 
+                                    // For now, let's keep previous behavior for non-string types:
                                     // if it fails parse, it might not update or update as string (which will fail validation later).
                                     console.warn('Invalid JSON entered for object field');
                                 }
@@ -328,7 +328,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
     const renderObjectField = (key: string, schemaDef: any) => {
         // If it's a nested object like Checkpointer or Observability
         // We render a subsection
-        
+
         if (excludeFields.includes(key)) return null;
 
         if (key === 'observability') {
@@ -338,17 +338,17 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
         }
 
         const title = schemaDef.title || key;
-        
+
         return (
             <div key={key} style={{ width: '100%' }}>
                 <SectionTitle>
                     <SectionIndicator $color="emerald" /> {title}
                 </SectionTitle>
                 <div style={{ paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
-                    <DynamicForm 
-                        schema={schemaDef} 
-                        rootSchema={rootSchema} 
-                        data={data[key] || {}} 
+                    <DynamicForm
+                        schema={schemaDef}
+                        rootSchema={rootSchema}
+                        data={data[key] || {}}
                         onChange={(subData) => handleChange(key, subData)}
                         errors={errors} // Would need nested error handling
                         excludeFields={excludeFields}
@@ -361,18 +361,18 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
     // Prioritize required fields first, then name, then the rest
     const keys = Object.keys(schema.properties);
     const requiredFields = schema.required || [];
-    
+
     const orderedKeys = keys.sort((a, b) => {
         const aRequired = requiredFields.includes(a);
         const bRequired = requiredFields.includes(b);
-        
+
         // Both required or both optional - sort by name priority then alphabetically
         if (aRequired === bRequired) {
             if (a === 'name') return -1;
             if (b === 'name') return 1;
             return 0;
         }
-        
+
         // Required fields come first
         return aRequired ? -1 : 1;
     });

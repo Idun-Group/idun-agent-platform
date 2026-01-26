@@ -30,10 +30,16 @@ Container {
     margin-top: 1;
 }
 
+.features-subtle {
+    text-align: center;
+    color: $text-muted;
+    margin-top: 1;
+}
+
 .built-by {
     text-align: center;
     color: gray;
-    margin-top: 1;
+    margin-top: 2;
 }
 
 .version {
@@ -77,15 +83,6 @@ Container {
 .actions Button:focus {
     background: $surface;
     text-style: bold;
-}
-
-.question_prompt {
-    width: 100%;
-    height: auto;
-    text-align: center;
-    text-style: bold;
-    color: white;
-    margin-top: 2;
 }
 
 

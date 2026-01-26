@@ -105,6 +105,7 @@ watch:
 nav:
   - Home: index.md
   - Getting Started: getting-started/quickstart.md
+  - CLI Guide: cli/overview.md
   - Agent Frameworks:
       - Overview: agent-frameworks/overview.md
       - LangGraph: agent-frameworks/langgraph.md

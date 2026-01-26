@@ -1,19 +1,18 @@
 """Main FastAPI application - simplified for development."""
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from time import perf_counter
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
-
 from sqlalchemy import text
 
+from app import __version__
+from app.core.logging import get_logger, setup_logging
 from app.core.settings import get_settings
 from app.infrastructure.db.migrate import auto_migrate
 from app.infrastructure.db.session import close_engines, get_async_engine
-from app.core.logging import setup_logging, get_logger
-from app import __version__
 
 # Simple in-memory storage for development
 agents_db = []
@@ -34,7 +33,9 @@ async def lifespan(app: FastAPI):
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         elapsed_ms = (perf_counter() - start_time) * 1000
-        logger.info("Database connectivity OK", extra={"db_check_ms": round(elapsed_ms, 2)})
+        logger.info(
+            "Database connectivity OK", extra={"db_check_ms": round(elapsed_ms, 2)}
+        )
     except Exception:
         logger.exception("Database connectivity check failed")
         # Re-raise so the app fails fast if DB is not reachable
@@ -45,7 +46,12 @@ async def lifespan(app: FastAPI):
         logger.info("Starting Alembic migrations")
         settings = get_settings()
         project_root = Path(__file__).resolve().parents[2]
-        await auto_migrate(engine, async_db_url=settings.database.url, project_root=project_root, enable_migrate=True)
+        await auto_migrate(
+            engine,
+            async_db_url=settings.database.url,
+            project_root=project_root,
+            enable_migrate=True,
+        )
         logger.info("Alembic migrations completed")
     except Exception:
         logger.exception("Alembic migrations failed")
@@ -68,7 +74,6 @@ def create_app() -> FastAPI:
 
     # Import all DB models early so SQLAlchemy resolves relationships
     import app.infrastructure.db.models  # noqa: F401
-
 
     # Create FastAPI app
     app = FastAPI(
@@ -98,13 +103,13 @@ def create_app() -> FastAPI:
 def setup_routes(app: FastAPI) -> None:
     """Setup application routes."""
     # Import minimal routers
+    from app.api.v1.routers.agent_frameworks import router as agent_frameworks_router
     from app.api.v1.routers.agents import router as agents_router
+    from app.api.v1.routers.guardrails import router as guardrails_router
     from app.api.v1.routers.health import router as health_router
     from app.api.v1.routers.mcp_servers import router as mcp_servers_router
-    from app.api.v1.routers.observability import router as observability_router
     from app.api.v1.routers.memory import router as memory_router
-    from app.api.v1.routers.agent_frameworks import router as agent_frameworks_router
-    from app.api.v1.routers.guardrails import router as guardrails_router
+    from app.api.v1.routers.observability import router as observability_router
 
     # API v1 routes
     app.include_router(

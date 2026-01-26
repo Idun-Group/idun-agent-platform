@@ -71,6 +71,7 @@ pip install idun-agent-engine
 ## Table of contents
 
 - [Should you use Idun Agent Platform](#should-you-use-idun-agent-platform)
+- [Quickstart (CLI, 5 minutes)](#quickstart-cli-5-minutes)
 - [Quickstart (Engine only, 10 minutes)](#quickstart-engine-only-10-minutes)
 - [Quickstart (Platform, Docker Compose)](#quickstart)
 - [Key capabilities at a glance](#key-capabilities-at-a-glance)
@@ -143,6 +144,50 @@ Idun Agent Platform gives you:
 
 - **Memory and session persistence**
   Persist conversations and state across calls with backends like SQLite or Postgres.
+
+## Quickstart (CLI, 5 minutes)
+
+The easiest way to configure and run an agent is with the interactive CLI:
+
+<div align="center">
+  <img src="docs/images/tui.png" alt="Idun CLI Interface" width="100%"/>
+</div>
+
+1. Install:
+
+```bash
+pip install idun-agent-engine
+```
+
+2. Run the CLI:
+
+```bash
+idun init
+```
+
+3. Configure your agent through the interactive TUI:
+   - Agent framework (LangGraph/ADK)
+   - Memory/checkpointing (In-Memory, SQLite, PostgreSQL)
+   - Observability (Langfuse, Phoenix, LangSmith, GCP)
+   - Guardrails (Currently we only support [guardrails-ai](https://guardrailsai.com/docs). More integrations to come soon..)
+   - MCP servers
+
+> [!TIP]
+  > You can press **Next** to save a section, or skip it. On every Next button press, the state of your config is saved to **.idun/agent_name.yaml**. You can then run your agent directly without having to launch it via the tui.
+
+
+4. The CLI offers to:
+   - Deploy the agent locally
+   - Show live server logs
+   - Open a chat interface to test your agent
+
+You can view the Swagger docs at `http://localhost:YOUR_AGENT_PORT/docs`
+
+Or write your own config.yaml file, and run the agent separately:
+
+```bash
+idun agent serve --source=file --path=path/to/your/agent_config.yaml
+```
 
 ## Quickstart (Engine only, 10 minutes)
 
@@ -218,7 +263,7 @@ Idun Agent Platform is structured in four layers:
 
 
 
-## Quickstart
+## Manager Quickstart
 
 You need Python 3.12, Docker and Git.
 

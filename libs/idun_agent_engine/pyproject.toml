@@ -1,6 +1,6 @@
 [project]
 name = "idun-agent-engine"
-version = "0.4.0"
+version = "0.4.1"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.12,<3.14"
@@ -32,7 +32,7 @@ classifiers = [
 dependencies = [
     "tavily-python>=0.7.9,<0.8.0",
     "deepagents>=0.2.8,<1.0.0",
-    "guardrails-ai>=0.7.0, <0.8.0",
+    "guardrails-ai>=0.7.2, <0.8.0",
     "fastapi>=0.115.0,<0.116.0",
     "uvicorn>=0.35.0,<0.36.0",
     "langgraph>=1.0.0,<2.0.0",
@@ -50,7 +50,7 @@ dependencies = [
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "openinference-instrumentation-langchain>=0.1.13,<1.0.0",
     "langchain>=1.0.0,<2.0.0",
-    "textual>=7.3.0,<7.4.0",  
+    "textual>=7.3.0,<7.4.0",
     # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
     "arize-phoenix>=11.22.0,<12.0.0",
     "idun-agent-schema>=0.3.8,<1.0.0",

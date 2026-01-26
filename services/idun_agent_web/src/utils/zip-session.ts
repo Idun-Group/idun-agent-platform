@@ -153,14 +153,14 @@ export async function readFileFromZip(
             ? await file.arrayBuffer()
             : file;
     const contents = await zip.loadAsync(buffer);
-    
+
     // Remove leading ./ if present
     const normalizedPath = filePath.startsWith('./') ? filePath.slice(2) : filePath;
-    
+
     const fileEntry = contents.files[normalizedPath];
     if (!fileEntry || fileEntry.dir) {
         throw new Error(`File not found in ZIP: ${filePath}`);
     }
-    
+
     return await fileEntry.async('text');
 }

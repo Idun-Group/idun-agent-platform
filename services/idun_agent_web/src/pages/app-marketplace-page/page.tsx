@@ -21,12 +21,12 @@ const AppMarketplacePage = ({ onAppClick, category }: AppMarketplaceProps) => {
     const filteredApps = MARKETPLACE_APPS.filter((app) => {
         const matchesSearch = app.name.toLowerCase().includes(search.toLowerCase()) ||
                               app.description.toLowerCase().includes(search.toLowerCase());
-        
+
         // If category is provided, filter by it. If not, show all (or handle as needed).
         // The previous logic used an internal activeTab state which forced 'Observability'.
         // We now respect the passed category prop.
         const matchesCategory = category ? app.category === category : true;
-        
+
         return matchesSearch && matchesCategory;
     });
 
@@ -119,7 +119,7 @@ const Subtitle = styled.h2`
 
 const SearchInput = styled(TextInput)`
     width: 100%;
-    
+
     input {
         background: #0f1016;
     }

@@ -304,7 +304,15 @@ class GuardrailsWidget(Widget):
             if applies_to in ["output", "both"]:
                 output_guardrails.append(validated_config)
 
-        return GuardrailsV2(input=input_guardrails, output=output_guardrails)
+        try:
+            return GuardrailsV2(input=input_guardrails, output=output_guardrails)
+        except Exception:
+            self.app.notify(
+                "Error validating Guardrails: make sure all fields are correct.",
+                severity="error",
+                timeout=10
+            )
+            return None
 
     def _extract_config(self, guardrail_id: str) -> dict:
         config = {}
