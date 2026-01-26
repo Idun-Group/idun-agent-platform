@@ -10,19 +10,25 @@ repos:
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: check-json
         name: "📋 format · Check JSON syntax"
-        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__|package-lock\.json)/
+        # Note: VSCode launch configs and TS configs are JSONC (allow comments/trailing commas)
+        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)package-lock\.json$|(^|/)\.vscode/launch\.json$|(^|/)services/idun_agent_web/tsconfig\.(app|node)\.json$
     -   id: check-merge-conflict
         name: "🔀 merge · Check for merge conflicts"
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: check-yaml
         name: "📄 format · Check YAML syntax"
-        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
+        # mkdocs.yml can include PyYAML-specific tags (e.g. !!python/name:...)
+        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)mkdocs\.yml$
     -   id: end-of-file-fixer
         name: "📝 format · Fix end of files"
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: trailing-whitespace
         name: "✂️ format · Trim trailing whitespace"
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
+    -   id: detect-private-key
+        name: "🔑 security · Detect private keys"
+        # PostHog "project API key" (public) is embedded for telemetry; don't flag it as a private key.
+        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry\.py$
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.9
     hooks:
@@ -36,8 +42,9 @@ repos:
     hooks:
     -   id: pyright
         name: "🔍 types · Pyright static type checker"
-        entry: pyright
+        entry: uv run pyright
         language: system
+        stages: [manual]
         types: [python]
         args:
         - --project
@@ -49,4 +56,4 @@ repos:
     -   id: gitleaks
         name: "🔒 security · Detect hardcoded secrets"
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
-default_stages: [manual]
+default_stages: [commit]

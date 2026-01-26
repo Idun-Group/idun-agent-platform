@@ -5,18 +5,19 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2
 from .guardrail_configs import ManagerGuardrailConfig as GuardrailConfig
 
 
 class ManagedGuardrailCreate(BaseModel):
     """Create managed guardrail model for requests."""
+
     name: str
     guardrail: GuardrailConfig = Field(..., description="Guardrail configuration")
 
 
 class ManagedGuardrailRead(BaseModel):
     """Complete managed guardrail model for responses."""
+
     id: UUID
     name: str
     guardrail: GuardrailConfig = Field(..., description="Guardrail configuration")
@@ -26,5 +27,6 @@ class ManagedGuardrailRead(BaseModel):
 
 class ManagedGuardrailPatch(BaseModel):
     """Full replacement schema for PUT of a managed guardrail."""
+
     name: str
     guardrail: GuardrailConfig = Field(..., description="Guardrail configuration")

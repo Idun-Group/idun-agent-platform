@@ -5,6 +5,7 @@ import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
 
+from ag_ui_adk import ADKAgent as ADKAGUIAgent
 from google.adk.apps.app import App
 from google.adk.memory import (
     InMemoryMemoryService,
@@ -25,9 +26,8 @@ from idun_agent_schema.engine.adk import (
 )
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 
-from ag_ui_adk import ADKAgent as ADKAGUIAgent
-from idun_agent_engine.agent import base as agent_base
 from idun_agent_engine import observability
+from idun_agent_engine.agent import base as agent_base
 
 
 class AdkAgent(agent_base.BaseAgent):

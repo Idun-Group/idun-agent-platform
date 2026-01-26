@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.db.session import Base
 
+
 class ManagedMemoryModel(Base):
     __tablename__ = "managed_memories"
 

@@ -1,6 +1,7 @@
 """Deep Research Agent Template."""
 
 import os
+
 from deepagents import create_deep_agent
 from tavily import TavilyClient
 

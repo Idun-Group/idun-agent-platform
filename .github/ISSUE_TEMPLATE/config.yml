@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and help
+    url: https://github.com/Idun-Group/idun-agent-platform/discussions
+    about: Please use GitHub Discussions for questions and community support.
+  - name: Join Discord
+    url: https://discord.gg/KCZ6nW2jQe
+    about: Chat with the community and maintainers on Discord.

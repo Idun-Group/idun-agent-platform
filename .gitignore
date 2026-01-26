@@ -128,14 +128,23 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Environments
+# Environments / local config
 .env
-.venv
+.env.*
+!.env.example
+.venv/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Node / frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Spyder project settings
 .spyderproject
@@ -177,34 +186,15 @@ cython_debug/
 # Database files
 *.db
 *.db-shm
-*.db-wai
+*.db-wal
 *.db-journal*
 *.sqlite
 *.sqlite3
 agents.db
 checkpoint_async.db
 
-# Python virtual environment
-.venv/
-venv/
-ENV/
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Poetry
+# Poetry (unused in this repo)
 poetry.lock
 
-# Environment variables
-.env
-
-# Custom Gitignore for Idun
-*.db-wal
-.DS_Store
-*.DS_Store
-
-# uv lock file
-uv.lock
+# Editor / tool artifacts
+.specstory/

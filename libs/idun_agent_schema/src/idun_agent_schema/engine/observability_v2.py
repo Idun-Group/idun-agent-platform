@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import os
-from typing import Any
+from enum import Enum
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
-from enum import Enum
 
 class ObservabilityProvider(str, Enum):
     """Supported observability providers."""
@@ -23,6 +21,7 @@ class ObservabilityProvider(str, Enum):
 
 class ObservabilityConfig(BaseModel):
     """Observability configuration."""
+
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,
@@ -34,6 +33,7 @@ class ObservabilityConfig(BaseModel):
 
 class LangfuseConfig(BaseModel):
     """Langfuse configuration."""
+
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,
@@ -46,6 +46,7 @@ class LangfuseConfig(BaseModel):
 
 class PhoenixConfig(BaseModel):
     """Phoenix configuration."""
+
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,
@@ -62,6 +63,7 @@ class PhoenixConfig(BaseModel):
 
 class GCPLoggingConfig(BaseModel):
     """GCP Logging configuration."""
+
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,
@@ -95,6 +97,7 @@ class GCPLoggingConfig(BaseModel):
 
 class GCPTraceConfig(BaseModel):
     """GCP Trace configuration."""
+
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,
@@ -131,6 +134,7 @@ class GCPTraceConfig(BaseModel):
 
 class LangsmithConfig(BaseModel):
     """Langsmith configuration."""
+
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,

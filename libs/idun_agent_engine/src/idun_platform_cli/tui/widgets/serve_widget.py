@@ -1,6 +1,5 @@
 """Serve configuration widget."""
 
-from typing import Any
 
 from rich.syntax import Syntax
 from textual.app import ComposeResult

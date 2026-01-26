@@ -1,7 +1,7 @@
 """Translation Agent Template."""
 
 import os
-from typing import TypedDict, Annotated, List
+from typing import Annotated, TypedDict
 
 # Try importing init_chat_model, fallback if necessary
 try:
@@ -12,14 +12,14 @@ except ImportError:
     except ImportError:
         init_chat_model = None
 
-from langchain_core.messages import SystemMessage, BaseMessage
-from langgraph.graph import StateGraph, START, END
+from langchain_core.messages import BaseMessage, SystemMessage
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
 
 # Define the state
 class State(TypedDict):
-    messages: Annotated[List[BaseMessage], add_messages]
+    messages: Annotated[list[BaseMessage], add_messages]
 
 
 # Read configuration from environment variables

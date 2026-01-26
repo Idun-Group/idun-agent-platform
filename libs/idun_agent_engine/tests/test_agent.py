@@ -43,7 +43,7 @@ def test_stream_returns_event_stream_format():
             def model_dump_json(self):
                 return json.dumps({"event": "chunk", "data": "test"})
 
-        for i in range(3):
+        for _ in range(3):
             yield Event()
 
     mock_agent = AsyncMock()
