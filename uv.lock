@@ -1959,7 +1959,7 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "libs/idun_agent_engine" }
 dependencies = [
     { name = "ag-ui-adk" },
@@ -2068,7 +2068,7 @@ dev = [
 
 [[package]]
 name = "idun-agent-manager"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "services/idun_agent_manager" }
 dependencies = [
     { name = "alembic" },
@@ -2207,7 +2207,7 @@ dev = [
 
 [[package]]
 name = "idun-agent-schema"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "libs/idun_agent_schema" }
 dependencies = [
     { name = "pydantic" },

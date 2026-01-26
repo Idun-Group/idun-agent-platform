@@ -134,12 +134,12 @@ def get_adk_tools(config_path: str | Path | None = None) -> list[Any]:
     """
     if config_path:
         return get_adk_tools_from_file(config_path)
-    
+
     # Check for IDUN_CONFIG_PATH environment variable
     env_config_path = os.environ.get("IDUN_CONFIG_PATH")
     if env_config_path:
         return get_adk_tools_from_file(env_config_path)
-    
+
     return get_adk_tools_from_api()
 
 
@@ -180,10 +180,10 @@ async def get_langchain_tools(config_path: str | Path | None = None) -> list[Any
     """
     if config_path:
         return await get_langchain_tools_from_file(config_path)
-    
+
     # Check for IDUN_CONFIG_PATH environment variable
     env_config_path = os.environ.get("IDUN_CONFIG_PATH")
     if env_config_path:
         return await get_langchain_tools_from_file(env_config_path)
-    
+
     return await get_langchain_tools_from_api()

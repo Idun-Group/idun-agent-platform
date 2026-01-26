@@ -115,4 +115,3 @@ const Content = styled.div`
     gap: 20px;
     box-sizing: border-box;
 `;
-

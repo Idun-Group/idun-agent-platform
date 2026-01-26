@@ -4,18 +4,25 @@ repos:
     hooks:
     -   id: check-added-large-files
         name: "📏 files · Check for large files"
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: check-ast
         name: "🐍 syntax · Check Python AST"
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: check-json
         name: "📋 format · Check JSON syntax"
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__|package-lock\.json)/
     -   id: check-merge-conflict
         name: "🔀 merge · Check for merge conflicts"
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: check-yaml
         name: "📄 format · Check YAML syntax"
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: end-of-file-fixer
         name: "📝 format · Fix end of files"
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: trailing-whitespace
         name: "✂️ format · Trim trailing whitespace"
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.9
     hooks:
@@ -24,7 +31,7 @@ repos:
         args:
         - --fix
         - --no-cache
-        exclude: ^libs/idun_agent_engine/examples/|^bruno/
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__|libs/idun_agent_engine/examples|bruno)/
 -   repo: local
     hooks:
     -   id: pyright
@@ -35,10 +42,11 @@ repos:
         args:
         - --project
         - pyrightconfig.json
-        exclude: ^libs/idun_agent_engine/examples/
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__|libs/idun_agent_engine/examples)/
 -   repo: https://github.com/gitleaks/gitleaks
     rev: v8.28.0
     hooks:
     -   id: gitleaks
         name: "🔒 security · Detect hardcoded secrets"
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
 default_stages: [manual]
