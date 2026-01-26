@@ -35,7 +35,7 @@ class TUIAgentConfig(BaseModel):
     graph_definition: str
 
     @field_validator("*", mode="after")
-    def validate_not_null(cls, value: str | Any | None) -> str:
+    def validate_not_null(cls, value: str | Any | None) -> str:  # noqa: N805
         if value is None or value == "":
             raise ValueError("Cannot have empty fields!")
         return value

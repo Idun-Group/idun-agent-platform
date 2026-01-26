@@ -5,14 +5,15 @@ Provides an async wrapper to run Alembic migrations at app startup.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from time import perf_counter
-import logging
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine
 
 
 def _sync_url(async_url: str) -> str:
@@ -48,7 +49,7 @@ async def auto_migrate(
     max_wait_seconds = 30
     poll_interval_seconds = 0.5
 
-    from anyio import sleep, to_thread, fail_after
+    from anyio import fail_after, sleep, to_thread
 
     logger = logging.getLogger("app.migrate")
 

@@ -1,12 +1,12 @@
 """Guardrails validation logic."""
 
 from idun_agent_schema.engine.guardrails_v2 import (
-    GuardrailConfigId,
-    BiasCheckConfig,
-    ToxicLanguageConfig,
-    CompetitionCheckConfig,
     BanListConfig,
+    BiasCheckConfig,
+    CompetitionCheckConfig,
     DetectPIIConfig,
+    GuardrailConfigId,
+    ToxicLanguageConfig,
 )
 
 

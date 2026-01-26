@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a bug to help us improve Idun Agent Platform
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please provide as much detail as possible.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version(s) are affected? (tag, commit SHA, or package versions)
+      placeholder: e.g. v0.3.10 / 1a2b3c4 / idun-agent-engine==...
+    validations:
+      required: false
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Engine
+        - Manager
+        - Web
+        - CLI
+        - Docs
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: What did you expect to happen and what actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Please include minimal steps to reproduce the issue.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Paste logs or add screenshots (redact secrets).
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: I confirm I have removed/redacted any secrets (API keys, tokens, credentials).
+          required: true

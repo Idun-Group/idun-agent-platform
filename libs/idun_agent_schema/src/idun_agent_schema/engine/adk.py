@@ -1,6 +1,6 @@
 """Configuration models for ADK agents."""
 
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -32,7 +32,7 @@ class AdkDatabaseSessionConfig(BaseModel):
 
 
 SessionServiceConfig = Annotated[
-    Union[AdkInMemorySessionConfig, AdkVertexAiSessionConfig, AdkDatabaseSessionConfig],
+    AdkInMemorySessionConfig | AdkVertexAiSessionConfig | AdkDatabaseSessionConfig,
     Field(discriminator="type"),
 ]
 
@@ -55,13 +55,14 @@ class AdkVertexAiMemoryConfig(BaseModel):
 
 
 MemoryServiceConfig = Annotated[
-    Union[AdkInMemoryMemoryConfig, AdkVertexAiMemoryConfig],
+    AdkInMemoryMemoryConfig | AdkVertexAiMemoryConfig,
     Field(discriminator="type"),
 ]
 
 
 class AdkAgentConfig(BaseAgentConfig):
     """Configuration model for ADK agents."""
+
     agent: str = Field(
         ..., description="Agent definition (e.g. module.path:agent_instance)"
     )

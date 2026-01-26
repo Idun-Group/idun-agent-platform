@@ -178,5 +178,5 @@ class ConfigManager:
             with self.agent_path.open("r") as f:
                 return yaml.safe_load(f) or {}
 
-        except Exception as e:
+        except Exception:
             return {}

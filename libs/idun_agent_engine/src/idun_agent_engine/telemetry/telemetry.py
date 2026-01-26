@@ -113,7 +113,6 @@ def _get_or_create_distinct_id() -> str | None:
     - `IDUN_TELEMETRY_DISTINCT_ID` (if set)
     - A UUID persisted to `<cache_dir>/idun/telemetry_user_id`
     """
-
     raw = os.environ.get(_DISTINCT_ID_ENV)
     if raw and raw.strip():
         return raw.strip()
@@ -185,7 +184,6 @@ class IdunTelemetry:
 
     def capture(self, event: str, properties: dict[str, Any] | None = None) -> Future[None] | None:
         """Capture an event asynchronously (best-effort)."""
-
         if not self.enabled:
             return None
 
@@ -220,7 +218,6 @@ class IdunTelemetry:
 
     def shutdown(self, timeout_seconds: float = 1.0) -> None:
         """Best-effort flush/shutdown without blocking application shutdown."""
-
         executor = self._executor
         client = self._client
 
