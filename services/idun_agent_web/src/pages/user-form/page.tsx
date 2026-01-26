@@ -23,7 +23,7 @@ export default function UserFormPage() {
         lastName: '',
         email: '',
         password: '',
-        
+
         role: '',
         workspaces: [] as string[],
     });
@@ -200,12 +200,12 @@ export default function UserFormPage() {
                         ))}
                     </FormSelect>
 
-                    
+
                 </FormRow>
 
-                
 
-                
+
+
 
                 <ButtonContainer>
                     <CancelButton type="button" onClick={() => navigate('/users')}>

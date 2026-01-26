@@ -8,7 +8,7 @@ import { Button } from '../../components/general/button/component';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
- 
+
 
 const AgentDashboardPage = () => {
     const navigate = useNavigate();

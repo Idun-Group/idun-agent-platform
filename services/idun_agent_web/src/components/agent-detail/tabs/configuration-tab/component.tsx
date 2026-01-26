@@ -20,7 +20,7 @@ const ConfigurationTab = ({ agent }: ConfigurationTabProps) => {
                         </ConfigCardContent>
                     </ConfigCard>
                 )}
-                
+
                 {agent?.config ? (
                     <ConfigCard>
                         <ConfigCardHeader>

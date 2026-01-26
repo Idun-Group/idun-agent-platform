@@ -7,24 +7,24 @@ interface OverviewTabProps { agent: BackendAgent | null }
 
 const OverviewTab = ({ agent }: OverviewTabProps) => {
     const { t } = useTranslation();
-    
+
     // Extract observability provider from agent config
     const getObservabilityProviders = (): string[] => {
         if (!agent?.engine_config?.agent?.config) return [];
         const config = agent.engine_config.agent.config as any;
-        
+
         const providers: string[] = [];
         if (config.observability?.enabled && config.observability?.provider) {
             providers.push(config.observability.provider);
         }
         return providers;
     };
-    
-    
+
+
     return (
         <Container>
-            
-            
+
+
             <MainContent>
                 <DetailsCard>
                     <CardHeader>
@@ -35,30 +35,30 @@ const OverviewTab = ({ agent }: OverviewTabProps) => {
                             <DetailLabel>Name</DetailLabel>
                             <DetailValue>{agent?.name ?? 'N/A'}</DetailValue>
                         </DetailRow>
-                        
+
                         {agent?.description && (
                             <DetailRow>
                                 <DetailLabel>Description</DetailLabel>
                                 <DetailValue>{agent.description}</DetailValue>
                             </DetailRow>
                         )}
-                        
+
                         <DetailRow>
                             <DetailLabel>Status</DetailLabel>
                             <StatusBadge status={agent?.status ?? 'draft'}>
                                 {agent?.status ?? 'draft'}
                             </StatusBadge>
                         </DetailRow>
-                        
+
                         <DetailRow>
                             <DetailLabel>Version</DetailLabel>
                             <DetailValue>{agent?.version ?? 'N/A'}</DetailValue>
                         </DetailRow>
-                        
+
                         <DetailRow>
                             <DetailLabel>Created</DetailLabel>
                             <DetailValue>
-                                {agent?.created_at 
+                                {agent?.created_at
                                     ? new Date(agent.created_at).toLocaleString('en-US', {
                                         dateStyle: 'medium',
                                         timeStyle: 'short'
@@ -66,11 +66,11 @@ const OverviewTab = ({ agent }: OverviewTabProps) => {
                                     : 'N/A'}
                             </DetailValue>
                         </DetailRow>
-                        
+
                         <DetailRow>
                             <DetailLabel>Last Updated</DetailLabel>
                             <DetailValue>
-                                {agent?.updated_at 
+                                {agent?.updated_at
                                     ? new Date(agent.updated_at).toLocaleString('en-US', {
                                         dateStyle: 'medium',
                                         timeStyle: 'short'
@@ -80,7 +80,7 @@ const OverviewTab = ({ agent }: OverviewTabProps) => {
                         </DetailRow>
                     </CardContent>
                 </DetailsCard>
-                
+
                 {/* {agent?.engine_config?.server?.api?.port && (
                     <DetailsCard>
                         <CardHeader>
@@ -166,7 +166,7 @@ const DetailRow = styled.div`
     align-items: center;
     padding: 12px 0;
     border-bottom: 1px solid rgba(42, 63, 95, 0.3);
-    
+
     &:last-child {
         border-bottom: none;
     }
@@ -192,7 +192,7 @@ const StatusBadge = styled.span<{ status: string }>`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    
+
     ${(props) => {
         switch (props.status.toLowerCase()) {
             case 'active':

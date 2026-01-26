@@ -13,6 +13,3 @@ export function setupCopilotAdapter(agentEndpoint: string) {
 }
 
 export const COPILOT_VIRTUAL_ENDPOINT = '/copilotkit-virtual';
-
-
-

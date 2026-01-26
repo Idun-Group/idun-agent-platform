@@ -83,5 +83,3 @@ export async function patchJson<T = unknown, B = unknown>(path: string, body: B,
 export async function deleteRequest<T = unknown>(path: string, headers?: Record<string, string>): Promise<T> {
     return apiFetch<T>(path, { method: 'DELETE', headers });
 }
-
-

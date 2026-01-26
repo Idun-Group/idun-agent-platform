@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
-import { 
-  Bot, 
-  Brain, 
-  Sparkles, 
-  Cpu, 
-  Command, 
-  Zap, 
-  Terminal, 
+import {
+  Bot,
+  Brain,
+  Sparkles,
+  Cpu,
+  Command,
+  Zap,
+  Terminal,
   Database,
   Fingerprint,
   ScanFace,
@@ -31,13 +31,13 @@ const colorSchemes = [
 ];
 
 const icons = [
-  Bot, 
-  Brain, 
-  Sparkles, 
-  Cpu, 
-  Command, 
-  Zap, 
-  Terminal, 
+  Bot,
+  Brain,
+  Sparkles,
+  Cpu,
+  Command,
+  Zap,
+  Terminal,
   Database,
   Fingerprint,
   ScanFace,
@@ -53,14 +53,14 @@ export const AgentAvatar: React.FC<AgentAvatarProps> = ({ name, size = 40, class
 
   const scheme = colorSchemes[seed % colorSchemes.length];
   const IconComponent = icons[seed % icons.length];
-  
+
   // Calculate icon size relative to container (approx 50% of container)
   const iconSize = Math.max(16, Math.floor(size * 0.5));
 
   return (
-    <AvatarContainer 
-      size={size} 
-      $bg={scheme.bg} 
+    <AvatarContainer
+      size={size}
+      $bg={scheme.bg}
       $border={scheme.border}
       className={className}
     >
@@ -81,4 +81,3 @@ const AvatarContainer = styled.div<{ size: number; $bg: string; $border: string 
     flex-shrink: 0;
     transition: all 0.2s;
 `;
-
