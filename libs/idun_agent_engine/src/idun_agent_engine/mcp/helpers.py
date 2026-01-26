@@ -115,13 +115,31 @@ def get_adk_tools_from_api() -> list[Any]:
 
 def get_adk_tools(config_path: str | Path | None = None) -> list[Any]:
     """
-    Returns ADK toolsets using config from file when provided, otherwise from API.
+    Returns ADK toolsets using config from file when provided, from IDUN_CONFIG_PATH env var, or from API.
+
+    The function resolves configuration in the following order:
+    1. Uses the provided config_path if specified
+    2. Uses IDUN_CONFIG_PATH environment variable if set
+    3. Falls back to fetching from Idun Manager API
+
+    Args:
+        config_path: Optional path to configuration YAML file. If provided, takes precedence.
 
     Returns:
         List of initialized ADK McpToolset instances.
+
+    Raises:
+        ValueError: If no config source is available or API credentials are missing.
+        FileNotFoundError: If specified config file doesn't exist.
     """
     if config_path:
         return get_adk_tools_from_file(config_path)
+    
+    # Check for IDUN_CONFIG_PATH environment variable
+    env_config_path = os.environ.get("IDUN_CONFIG_PATH")
+    if env_config_path:
+        return get_adk_tools_from_file(env_config_path)
+    
     return get_adk_tools_from_api()
 
 
@@ -143,8 +161,29 @@ async def get_langchain_tools_from_api() -> list[Any]:
 
 async def get_langchain_tools(config_path: str | Path | None = None) -> list[Any]:
     """
-    Returns LangChain tool instances using config from file when provided, otherwise from API.
+    Returns LangChain tool instances using config from file when provided, from IDUN_CONFIG_PATH env var, or from API.
+
+    The function resolves configuration in the following order:
+    1. Uses the provided config_path if specified
+    2. Uses IDUN_CONFIG_PATH environment variable if set
+    3. Falls back to fetching from Idun Manager API
+
+    Args:
+        config_path: Optional path to configuration YAML file. If provided, takes precedence.
+
+    Returns:
+        List of initialized LangChain tool instances.
+
+    Raises:
+        ValueError: If no config source is available or API credentials are missing.
+        FileNotFoundError: If specified config file doesn't exist.
     """
     if config_path:
         return await get_langchain_tools_from_file(config_path)
+    
+    # Check for IDUN_CONFIG_PATH environment variable
+    env_config_path = os.environ.get("IDUN_CONFIG_PATH")
+    if env_config_path:
+        return await get_langchain_tools_from_file(env_config_path)
+    
     return await get_langchain_tools_from_api()
