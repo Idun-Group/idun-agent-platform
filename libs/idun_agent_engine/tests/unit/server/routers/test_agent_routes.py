@@ -1,77 +1,331 @@
-"""Tests for agent router endpoints with mocked agents."""
-
-import json
-from unittest.mock import AsyncMock
+"""Tests for agent router endpoints with real agents."""
 
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from idun_agent_engine.server.routers.agent import agent_router
+from idun_agent_engine.core.app_factory import create_app
+from idun_agent_engine.core.config_builder import ConfigBuilder
 
 
 @pytest.mark.unit
+@pytest.mark.asyncio
 class TestAgentInvokeRoute:
-    """Test the /invoke endpoint with mocked agents."""
+    """Test /agent/invoke endpoint."""
 
-    def test_invoke_with_payload(self):
-        """Invoke endpoint processes payload and returns response."""
-        app = FastAPI()
-        app.include_router(agent_router)
-
-        mock_agent = AsyncMock()
-        mock_agent.invoke = AsyncMock(return_value="Processed complex query")
-        app.state.agent = mock_agent
-
-        client = TestClient(app)
-
-        complex_query = {
-            "session_id": "complex-123",
-            "query": "Analyze this data: "
-            + json.dumps({"key": "value", "nested": {"data": [1, 2, 3]}}),
+    async def test_invoke_with_langgraph_agent(self):
+        """Invoke endpoint with LangGraph mock agent."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Test LangGraph Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:graph",
+                },
+            },
         }
 
-        response = client.post("/invoke", json=complex_query)
+        config = ConfigBuilder.from_dict(config_dict).build()
+        app = create_app(engine_config=config)
 
-        assert response.status_code == 200
-        assert response.json()["session_id"] == "complex-123"
-        mock_agent.invoke.assert_called_once()
+        with TestClient(app) as client:
+            response = client.post(
+                "/agent/invoke",
+                json={"session_id": "test-123", "query": "Hello"},
+            )
 
-        called_message = mock_agent.invoke.call_args[0][0]
-        assert "Analyze this data" in called_message["query"]
-        assert called_message["session_id"] == "complex-123"
+            assert response.status_code == 200
+            data = response.json()
+            assert data["session_id"] == "test-123"
+            assert "response" in data
+
+    async def test_invoke_with_haystack_agent(self):
+        """Invoke endpoint with Haystack mock agent."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "HAYSTACK",
+                "config": {
+                    "name": "Test Haystack Agent",
+                    "component_type": "pipeline",
+                    "component_definition": "tests/fixtures/agents/mock_haystack_pipeline.py:mock_haystack_pipeline",
+                },
+            },
+        }
+
+        config = ConfigBuilder.from_dict(config_dict).build()
+        app = create_app(engine_config=config)
+
+        with TestClient(app) as client:
+            response = client.post(
+                "/agent/invoke",
+                json={"session_id": "haystack-123", "query": "Test query"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["session_id"] == "haystack-123"
+            assert "response" in data
 
 
 @pytest.mark.unit
+@pytest.mark.asyncio
 class TestAgentStreamRoute:
-    """Test the /stream endpoint with mocked agents."""
+    """Test /agent/stream endpoint."""
 
-    def test_stream_returns_event_stream_format(self):
-        """Stream endpoint returns Server-Sent Events format."""
+    async def test_stream_with_langgraph_agent(self):
+        """Stream endpoint with LangGraph mock agent."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Test LangGraph Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:graph",
+                },
+            },
+        }
+
+        config = ConfigBuilder.from_dict(config_dict).build()
+        app = create_app(engine_config=config)
+
+        with TestClient(app) as client:
+            response = client.post(
+                "/agent/stream",
+                json={"session_id": "test-456", "query": "Stream test"},
+            )
+
+            assert response.status_code == 200
+            assert "text/event-stream" in response.headers["content-type"]
+            assert len(response.text) > 0
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestAgentConfigRoute:
+    """Test /agent/config endpoint."""
+
+    async def test_get_config(self):
+        """Config endpoint returns agent configuration."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Config Test Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:graph",
+                },
+            },
+        }
+
+        config = ConfigBuilder.from_dict(config_dict).build()
+        app = create_app(engine_config=config)
+
+        with TestClient(app) as client:
+            response = client.get("/agent/config")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "config" in data
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestAgentConfigRouteErrors:
+    """Test /agent/config endpoint error cases."""
+
+    async def test_get_config_not_available(self):
+        """Config endpoint returns 404 when engine_config not set."""
+        from fastapi import FastAPI
+        from idun_agent_engine.server.routers.agent import agent_router
+
         app = FastAPI()
         app.include_router(agent_router)
 
-        async def mock_stream(message):
-            class Event:
-                def model_dump_json(self):
-                    return json.dumps({"event": "chunk", "data": "test"})
+        with TestClient(app) as client:
+            response = client.get("/config")
 
-            for i in range(3):
-                yield Event()
+            assert response.status_code == 404
+            assert "Configuration not available" in response.json()["detail"]
 
-        mock_agent = AsyncMock()
-        mock_agent.stream = mock_stream
-        app.state.agent = mock_agent
 
-        client = TestClient(app)
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestAgentConfigRouteErrors:
+    """Test /agent/config endpoint error cases."""
 
-        response = client.post(
-            "/stream", json={"session_id": "stream-test", "query": "Stream this"}
-        )
+    async def test_get_config_not_available(self):
+        """Config endpoint returns 404 when engine_config not set."""
+        from fastapi import FastAPI
+        from idun_agent_engine.server.routers.agent import agent_router
 
-        assert response.status_code == 200
-        assert "text/event-stream" in response.headers["content-type"]
+        app = FastAPI()
+        app.include_router(agent_router)
 
-        content = response.text
-        assert "data: {" in content
-        assert content.count("data: ") >= 3
+        with TestClient(app) as client:
+            response = client.get("/config")
+
+            assert response.status_code == 404
+            assert "Configuration not available" in response.json()["detail"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestInvokeErrorHandling:
+    """Test error handling in invoke endpoint."""
+
+    async def test_invoke_error_handling(self):
+        """Invoke endpoint handles agent errors."""
+        from unittest.mock import AsyncMock, patch
+
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Test LangGraph Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:graph",
+                },
+            },
+        }
+
+        config = ConfigBuilder.from_dict(config_dict).build()
+        app = create_app(engine_config=config)
+
+        with TestClient(app) as client:
+            with patch.object(
+                app.state.agent,
+                "invoke",
+                AsyncMock(side_effect=Exception("Agent failure")),
+            ):
+                response = client.post(
+                    "/agent/invoke",
+                    json={"session_id": "error-test", "query": "Trigger error"},
+                )
+
+                assert response.status_code == 500
+                assert "Agent failure" in response.json()["detail"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestReloadEndpoint:
+    """Test /reload endpoint."""
+
+    async def test_reload_from_file(self, tmp_path):
+        """Reload endpoint loads new config from file."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Initial Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:graph",
+                },
+            },
+        }
+
+        config = ConfigBuilder.from_dict(config_dict).build()
+        app = create_app(engine_config=config)
+
+        new_config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Reloaded Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:graph",
+                },
+            },
+        }
+
+        config_file = tmp_path / "reload_config.yaml"
+        import yaml
+
+        config_file.write_text(yaml.dump(new_config_dict))
+
+        with TestClient(app) as client:
+            response = client.post("/reload", json={"path": str(config_file)})
+
+            assert response.status_code == 200
+            assert response.json()["status"] == "success"
+
+    async def test_reload_missing_env_vars(self):
+        """Reload endpoint returns 400 when env vars missing."""
+        import os
+        from unittest.mock import patch
+
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Test Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:graph",
+                },
+            },
+        }
+
+        config = ConfigBuilder.from_dict(config_dict).build()
+        app = create_app(engine_config=config)
+
+        with TestClient(app) as client:
+            with patch.dict(os.environ, {}, clear=True):
+                response = client.post("/reload", json={})
+
+                assert response.status_code == 400
+                assert "IDUN_AGENT_API_KEY" in response.json()["detail"]
+
+
+@pytest.mark.unit
+class TestBaseRoutes:
+    """Test base routes."""
+
+    def test_health_check(self):
+        """Health check endpoint returns status."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Health Test Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:graph",
+                },
+            },
+        }
+
+        config = ConfigBuilder.from_dict(config_dict).build()
+        app = create_app(engine_config=config)
+
+        with TestClient(app) as client:
+            response = client.get("/health")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "healthy"
+            assert "engine_version" in data
+
+    def test_root_endpoint(self):
+        """Root endpoint returns service information."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Root Test Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:graph",
+                },
+            },
+        }
+
+        config = ConfigBuilder.from_dict(config_dict).build()
+        app = create_app(engine_config=config)
+
+        with TestClient(app) as client:
+            response = client.get("/")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "message" in data
+            assert "docs" in data
+            assert "health" in data

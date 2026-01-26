@@ -23,6 +23,7 @@ async def get_agent(request: Request):
         agent = await ConfigBuilder.initialize_agent_from_config(app_config)
         return agent
 
+
 async def get_copilotkit_agent(request: Request):
     """Return the pre-initialized agent instance from the app state.
 
@@ -34,7 +35,9 @@ async def get_copilotkit_agent(request: Request):
         # This is a fallback for cases where the lifespan event did not run,
         # like in some testing scenarios.
         # Consider logging a warning here.
-        print("⚠️  CopilotKit agent not found in app state, initializing fallback agent...")
+        print(
+            "⚠️  CopilotKit agent not found in app state, initializing fallback agent..."
+        )
 
         app_config = ConfigBuilder.load_from_file()
         copilotkit_agent = await ConfigBuilder.initialize_agent_from_config(app_config)
@@ -43,7 +46,9 @@ async def get_copilotkit_agent(request: Request):
 
 def get_mcp_registry(request: Request) -> MCPClientRegistry:
     """Return the configured MCP registry if available."""
-    registry: MCPClientRegistry | None = getattr(request.app.state, "mcp_registry", None)
+    registry: MCPClientRegistry | None = getattr(
+        request.app.state, "mcp_registry", None
+    )
     if registry is None or not registry.enabled:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

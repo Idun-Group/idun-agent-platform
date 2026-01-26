@@ -5,9 +5,9 @@ from haystack.core.pipeline import Pipeline
 
 @component
 class MockGenerator:
-    @component.output_types(answer=str)
-    def run(self, prompt: str):
-        return {"answer": "Hello from mock Haystack!"}
+    @component.output_types(replies=list)
+    def run(self, query: str):
+        return {"replies": [f"Response to: {query}"]}
 
 
 mock_haystack_pipeline = Pipeline()

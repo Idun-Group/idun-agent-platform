@@ -202,20 +202,17 @@ class LanggraphAgent(agent_base.BaseAgent):
             self._agent_instance = graph_builder.compile(
                 checkpointer=self._checkpointer, store=self._store
             )
-        elif isinstance(graph_builder, CompiledStateGraph): # TODO: to remove, dirty fix for template deepagent langgraph
-            self._agent_instance = graph_builder
+        elif isinstance(graph_builder, CompiledStateGraph):
+            # TODO: this was made for supporting langgraph's DeepAgent, modernize.
+            raise TypeError(
+                "Expected StateGraph, Got CompiledStateGraph. Make sure not to run `compile` on your agent's graph."
+            )
 
         self._copilotkit_agent_instance = LangGraphAGUIAgent(
             name=self._name,
             description="Agent description",  # TODO: add agent description
             graph=self._agent_instance,
             config={"callbacks": self._obs_callbacks} if self._obs_callbacks else None,
-        )
-
-        self._copilotkit_agent_instance = LangGraphAGUIAgent(
-            name=self._name,
-            description="Agent description", # TODO: add agent description
-            graph=self._agent_instance,
         )
 
         if self._agent_instance:
@@ -252,9 +249,10 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         if self._configuration.checkpointer:
             if isinstance(self._configuration.checkpointer, SqliteCheckpointConfig):
-                self._connection = await aiosqlite.connect(
-                    self._configuration.checkpointer.db_path
+                db_path = self._configuration.checkpointer.db_url.replace(
+                    "sqlite:///", ""
                 )
+                self._connection = await aiosqlite.connect(db_path)
                 self._checkpointer = AsyncSqliteSaver(conn=self._connection)
                 self._infos["checkpointer"] = (
                     self._configuration.checkpointer.model_dump()
@@ -344,7 +342,6 @@ class LanggraphAgent(agent_base.BaseAgent):
     def _validate_graph_builder(
         self, graph_builder: Any, module_path: str, graph_variable_name: str
     ) -> StateGraph:
-        # TODO to remove, dirty fix for template deepagent langgraph
         if not isinstance(graph_builder, StateGraph) and not isinstance(
             graph_builder, CompiledStateGraph
         ):

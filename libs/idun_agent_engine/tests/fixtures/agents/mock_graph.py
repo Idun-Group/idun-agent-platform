@@ -8,6 +8,7 @@ needing real LLM calls.
 from typing import Annotated, Any, TypedDict
 
 from langgraph.graph import END, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.graph.message import add_messages
 
 # -----------------------------------------------------------------------------
@@ -105,7 +106,7 @@ def metadata_node(state: StatefulState) -> dict[str, Any]:
 # -----------------------------------------------------------------------------
 
 
-def create_echo_graph() -> StateGraph:
+def create_compiled_echo_graph() -> CompiledStateGraph:
     """Create a simple echo graph for basic testing.
 
     This graph just echoes back whatever message it receives.
@@ -120,6 +121,23 @@ def create_echo_graph() -> StateGraph:
     builder.add_edge("echo", END)
 
     return builder.compile()
+
+
+def create_echo_graph() -> StateGraph:
+    """Create a simple echo graph for basic testing.
+
+    This graph just echoes back whatever message it receives.
+
+    Returns:
+        A compiled LangGraph that echoes messages.
+    """
+    builder = StateGraph(SimpleState)
+
+    builder.add_node("echo", echo_node)
+    builder.set_entry_point("echo")
+    builder.add_edge("echo", END)
+
+    return builder
 
 
 def create_stateful_graph() -> StateGraph:
@@ -140,7 +158,7 @@ def create_stateful_graph() -> StateGraph:
     builder.add_edge("counter", "metadata")
     builder.add_edge("metadata", END)
 
-    return builder.compile()
+    return builder
 
 
 # -----------------------------------------------------------------------------
@@ -149,4 +167,6 @@ def create_stateful_graph() -> StateGraph:
 
 # This is the default graph that will be loaded by graph_definition
 # "tests.fixtures.agents.mock_graph:graph"
+# test TypeError
+compiled_graph = create_compiled_echo_graph()
 graph = create_echo_graph()

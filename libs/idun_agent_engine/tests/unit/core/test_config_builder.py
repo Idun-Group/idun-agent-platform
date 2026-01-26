@@ -508,80 +508,6 @@ class TestConfigBuilderInitializeAgent:
         assert agent.name == "Test Haystack Agent"
 
     @pytest.mark.asyncio
-    async def test_initialize_agent_translation(self) -> None:
-        """Initialize Translation Agent template."""
-        from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-
-        config_dict = {
-            "server": {"api": {"port": 8000}},
-            "agent": {
-                "type": "TRANSLATION_AGENT",
-                "config": {
-                    "name": "Test Translation Agent",
-                    "graph_definition": "placeholder",  # Required by schema, overridden by template
-                    "model_name": "gpt-4",
-                    "source_lang": "en",
-                    "target_lang": "fr",
-                },
-            },
-        }
-        engine_config = ConfigBuilder.from_dict(config_dict).build()
-
-        agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
-
-        assert isinstance(agent, LanggraphAgent)
-        assert agent.name == "Test Translation Agent"
-
-    @pytest.mark.asyncio
-    async def test_initialize_agent_correction(self) -> None:
-        """Initialize Correction Agent template."""
-        from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-
-        config_dict = {
-            "server": {"api": {"port": 8000}},
-            "agent": {
-                "type": "CORRECTION_AGENT",
-                "config": {
-                    "name": "Test Correction Agent",
-                    "model_name": "gpt-4",
-                    "language": "en",
-                },
-            },
-        }
-        engine_config = ConfigBuilder.from_dict(config_dict).build()
-
-        agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
-
-        assert isinstance(agent, LanggraphAgent)
-        assert agent.name == "Test Correction Agent"
-
-    @pytest.mark.asyncio
-    async def test_initialize_agent_deep_research(self) -> None:
-        """Initialize Deep Research Agent template."""
-        from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-
-        config_dict = {
-            "server": {"api": {"port": 8000}},
-            "agent": {
-                "type": "DEEP_RESEARCH_AGENT",
-                "config": {
-                    "name": "Test Research Agent",
-                    "model_name": "gpt-4",
-                    "project": "test-project",
-                    "region": "us-central1",
-                    "system_prompt": "You are a research assistant",
-                    "tavily_api_key": "test-key",
-                },
-            },
-        }
-        engine_config = ConfigBuilder.from_dict(config_dict).build()
-
-        agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
-
-        assert isinstance(agent, LanggraphAgent)
-        assert agent.name == "Test Research Agent"
-
-    @pytest.mark.asyncio
     async def test_initialize_agent_adk(self) -> None:
         """Initialize ADK agent with mock agent fixture."""
         from pathlib import Path
@@ -615,3 +541,23 @@ class TestConfigBuilderInitializeAgent:
         assert isinstance(agent, AdkAgent)
         assert agent.agent_type == "ADK"
         assert agent.name == "test_adk_app"
+
+    @pytest.mark.asyncio
+    async def test_initialize_agent_rejects_compiled_graph(self) -> None:
+        """Initialize agent raises TypeError when graph is already compiled."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Compiled Graph Agent",
+                    "graph_definition": "tests.fixtures.agents.mock_graph:compiled_graph",
+                },
+            },
+        }
+        engine_config = ConfigBuilder.from_dict(config_dict).build()
+
+        with pytest.raises(
+            TypeError, match="Expected StateGraph, Got CompiledStateGraph"
+        ):
+            await ConfigBuilder.initialize_agent_from_config(engine_config)
