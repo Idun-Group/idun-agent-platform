@@ -5,35 +5,31 @@
 
 </div>
 
-# Idun Agent Platform
+# 🟪 Idun Agent Platform
 
-**Productionize and govern generative-AI agents on your own infrastructure.**
+### **Own your agent stack**
+**open source, standards-based, avoid lock-in, sovereign by design.**
 
-Idun Agent Platform is an open source control plane for generative AI agents.
-It turns LangGraph, ADK or Haystack agents into **production-ready services** with
+The open source platform that turns any **LangGraph** or **ADK** agent into a **production-ready service**, with:
 
-- Unified deployment across frameworks
-- Observability and tracing
-- Memory and session persistence
-- Guardrails and MCP integration
-- Multi-environment and access control
+- 🔌 **Standardized API**: AG-UI and CopilotKit compatible endpoints
+- 🔍 **Observability and tracing**: OpenTelemetry, Langfuse, Arize Phoenix, LangSmith, and Google Cloud Trace integrations
+- 🧠 **Memory and session persistence**: Built-in memory backends for in-memory, SQLite, and PostgreSQL for production
+- 🛡️ **Guardrails**: Apply input and output policies across agents, including PII detection, prompt-injection defenses, topic restrictions, and allowlists or blocklists (competitors, forbidden terms, etc.)
+- 🧰 **MCP tool control**: Restrict agents to an approved set of MCP tools
+- 🔐 **Access control**: SSO-based authentication and authorization to manage who can use each agent
 
-**Who is this for**
+## Who is this for?
 
-- **GenAI developers**, who want to ship agents without rebuilding infra each time
-- **AI and data platform teams**, who need governance, auditability and sovereignty
-
-```bash
-pip install idun-agent-engine
-```
+- 🧑‍💻 **Solo developers**: Turn your LangGraph or ADK agent into a production service in minutes, without rebuilding the API, tracing, or memory layer.
+- 🏢 **AI, data, and platform teams**: Standardize production agents with governance, auditability, and sovereignty on your own infrastructure.
 
 **Links**
 
-- **[Quickstart](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)** (platform in Docker Compose)
+- **[Quickstart](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)**
 - **[Documentation](https://idun-group.github.io/idun-agent-platform/)**
 - **[Discord](https://discord.gg/KCZ6nW2jQe)**
 - **[Contributing](./CONTRIBUTING.md)** and **[Code of Conduct](./CODE_OF_CONDUCT.md)**
-- **[Security](./SECURITY.md)**
 
 <div align="center" style="margin: 2em 0;">
   <a href="https://www.youtube.com/watch?v=1QJbSrfz5tU">
@@ -64,7 +60,7 @@ pip install idun-agent-engine
   If you find this project useful, please <b>star the repository</b> and join our <b>Discord community</b>.
 </p>
 <p align="center">
-  Built by Idun Group (France).
+  Built by Idun Group with 💜
 </p>
 
 ---
@@ -75,7 +71,6 @@ pip install idun-agent-engine
 - [Quickstart (CLI, 5 minutes)](#quickstart-cli-5-minutes)
 - [Quickstart (Engine only, 10 minutes)](#quickstart-engine-only-10-minutes)
 - [Quickstart (Platform, Docker Compose)](#quickstart)
-- [Key capabilities at a glance](#key-capabilities-at-a-glance)
 - [High level architecture](#high-level-architecture)
 - [Enterprise and regulated environments](#enterprise-and-regulated-environments)
 - [Community and support](#community-and-support)
@@ -85,31 +80,12 @@ pip install idun-agent-engine
 
 ## Should you use Idun Agent Platform
 
-You probably should if:
+You should use Idun Agent Platform if:
 
-- You have or plan multiple agents built with LangGraph, ADK, Haystack or similar
-- You care about observability, guardrails, security, and AI regulation
-- You want to self host or run on your own cloud, not depend on a vendor black box
-
-You probably should not if:
-
-- You are just experimenting with a single toy chatbot
-- You do not need observability, governance or multi environment setups yet
-
-## For GenAI developers
-
-You want to spend time on agent logic, not boilerplate infra.
-
-With Idun you can:
-
-- Wrap your LangGraph, ADK or Haystack agent as a FastAPI service in minutes
-- Get tracing, feedback and metrics without rewriting your code
-- Run the same agent locally, on staging and in production with the same config
-- Plug tools and memory through configuration instead of hard coding everything
-
-## For AI and data platform teams
-
-You want to standardize how agents run in production and stay compliant.
+- You already run, or plan to run, multiple agents built with LangGraph, ADK, or similar frameworks
+- You want to take an existing agent and add production features without rewriting it (deploy, observe, secure, scale)
+- You care about observability, guardrails, security, governance, and compliance with AI regulations
+- You want to self host, run on your own cloud, and avoid relying on a vendor black box
 
 With Idun you can:
 
@@ -131,20 +107,6 @@ Idun Agent Platform gives you:
 - **Centralized control**, manage agents, environments and access from one dashboard or CLI
 
 👉 **[Read the technical whitepaper](#technical-whitepaper)** for a deeper architecture overview.
-
-## Key capabilities at a glance
-
-- **Observability**
-  Plug Langfuse, Phoenix, LangSmith or GCP, get tracing and metrics for every call.
-
-- **Guardrails**
-  Add content safety, PII detection and prompt injection protection in front of any agent.
-
-- **MCP integration**
-  Extend agents with Model Context Protocol servers, Idun manages server lifecycle and tool registration.
-
-- **Memory and session persistence**
-  Persist conversations and state across calls with backends like SQLite or Postgres.
 
 ## Quickstart (CLI, 5 minutes)
 
@@ -289,17 +251,6 @@ docker compose -f docker-compose.dev.yml up --build
 **[Quickstart guide](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)**.
 
 ---
-
-## Enterprise and regulated environments
-
-Idun is built for teams that need production governance and data control:
-
-- **Data sovereignty**: run on-prem or in your own cloud (including EU-only deployments).
-- **Security**: SSO/OIDC, multi-tenant RBAC, API keys, and guardrails.
-- **Auditability**: end-to-end observability across prompts, tools, and model calls.
-- **Platform standardization**: consistent runtime and policy enforcement across frameworks.
-
-If you’re evaluating Idun for enterprise use, contact us at `contact@idun-group.com`.
 
 ## Technical whitepaper
 
