@@ -4,6 +4,8 @@ from pathlib import Path
 
 import click
 
+from idun_platform_cli.telemetry import track_command
+
 
 class Dependency(StrEnum):
     """Dependency Enum."""
@@ -57,6 +59,7 @@ CMD ["idun", "agent", "serve", "--source=manager"]
 @click.command("package")
 @click.argument("path", default=".")
 @click.option("--target", required=False, default=".")
+@track_command("agent package")
 def package_command(path: str, target: str):
     """Packages the agent and it's dependencies into a Dockerfile. You can specifiy the input path and the destination. Defaults to current directory."""
     dependency = get_dependencies(path)
