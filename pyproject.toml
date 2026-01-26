@@ -7,9 +7,9 @@ requires-python = ">=3.12,<3.14"
 readme = "README.md"
 license = "GPL-3.0-only"
 dependencies = [
-    "idun-agent-engine>=0.3.8,<0.4.0",
+    "idun-agent-engine>=0.3.8,<0.4.1",
     "idun-agent-manager",
-    "idun-agent-schema>=0.3.8,<0.4.0",
+    "idun-agent-schema>=0.3.8,<0.4.1",
     "setuptools>=80.9.0",
 ]
 
