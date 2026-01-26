@@ -210,9 +210,9 @@ def assert_health_response(response: Any, expected_status: str = "healthy") -> N
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     data = response.json()
     assert "status" in data, "Response missing 'status' field"
-    assert (
-        data["status"] == expected_status
-    ), f"Expected '{expected_status}', got '{data['status']}'"
+    assert data["status"] == expected_status, (
+        f"Expected '{expected_status}', got '{data['status']}'"
+    )
 
 
 def assert_streaming_response(
@@ -232,9 +232,9 @@ def assert_streaming_response(
         AssertionError: If the response is invalid or has too few chunks.
     """
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-    assert "text/event-stream" in response.headers.get(
-        "content-type", ""
-    ), "Expected event-stream content type"
+    assert "text/event-stream" in response.headers.get("content-type", ""), (
+        "Expected event-stream content type"
+    )
 
     # Parse SSE events
     events = []
@@ -247,9 +247,9 @@ def assert_streaming_response(
                 except json.JSONDecodeError:
                     pass  # Skip non-JSON lines
 
-    assert (
-        len(events) >= min_chunks
-    ), f"Expected at least {min_chunks} chunks, got {len(events)}"
+    assert len(events) >= min_chunks, (
+        f"Expected at least {min_chunks} chunks, got {len(events)}"
+    )
 
     return events
 
@@ -274,9 +274,9 @@ def assert_agent_info_response(
     data = response.json()
 
     if expected_name is not None:
-        assert (
-            data.get("name") == expected_name
-        ), f"Expected name '{expected_name}', got '{data.get('name')}'"
+        assert data.get("name") == expected_name, (
+            f"Expected name '{expected_name}', got '{data.get('name')}'"
+        )
 
     return data
 
