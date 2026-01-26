@@ -28,7 +28,7 @@ class TestBanListConfig:
                     "guardrails",
                     "configure",
                     "--token",
-                    self.api_key,
+                    api_key,
                     "--disable-remote-inferencing",
                     "--disable-metrics",
                 ],
