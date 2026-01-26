@@ -223,8 +223,8 @@ class MCPsWidget(Widget):
 
                 servers_data.append(server_config)
 
-            except Exception as e:
-                self.app.notify(f"Error reading server {server_id + 1}: {str(e)}", severity="error")
+            except Exception:
+                self.app.notify(f"Error reading MCP server {server_id + 1}: check your configuration.", severity="error")
                 return None
 
         return servers_data

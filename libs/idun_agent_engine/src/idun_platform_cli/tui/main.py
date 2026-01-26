@@ -59,14 +59,14 @@ class IdunApp(App):
             )
 
             yield Static("IDUN AGENT PLATFORM", classes="platform")
-            yield Static("Deploy, guard and monitor any agent", classes="tagline")
-            yield Static("Built with ❤️ by Idun Group", classes="built-by")
+            yield Static("Deploy, guard and monitor your agents.", classes="tagline")
+            yield Static("Built with 💜 by Idun Group", classes="built-by")
             yield Static(f"v{__version__}", classes="version")
             with Horizontal(classes="link-container"):
                 yield Link("⭐️ Github", url=self.REPO, classes="links")
                 yield Link("📚 Docs", url=self.DOCS, classes="links")
+                yield Link("🌐 Website", url=self.DOCS, classes="links")
 
-            yield Static("What do you want to do?", classes="question_prompt")
             yield MainPageActions()
         yield Footer()
 

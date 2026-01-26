@@ -25,6 +25,7 @@ class IdentityWidget(Widget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.selected_file_path = ""
+        self.selected_variable = ""
 
     def compose(self) -> ComposeResult:
         agent_info_section = Horizontal(
@@ -115,7 +116,7 @@ class IdentityWidget(Widget):
         import ast
 
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 tree = ast.parse(f.read())
 
             variables = []
@@ -127,21 +128,28 @@ class IdentityWidget(Widget):
 
             var_list = self.query_one("#variable_list", OptionList)
             var_list.clear_options()
+            self.selected_variable = ""
 
             if variables:
                 for var in variables:
                     var_list.add_option(Option(var, id=var))
-                var_list.highlighted = 0
             else:
                 var_list.add_option(Option("No variables found", id="none"))
 
-        except Exception as e:
-            self.app.notify(f"Error parsing file: {str(e)}", severity="error")
+        except Exception:
+            self.app.notify(
+                "Error parsing file. Make sure it's a valid Python file.",
+                severity="error",
+            )
 
     def on_option_list_option_highlighted(
         self, event: OptionList.OptionHighlighted
     ) -> None:
         if event.option_list.id == "variable_list":
+            var_list = self.query_one("#variable_list", OptionList)
+            if var_list.highlighted is not None:
+                variable_option = var_list.get_option_at_index(var_list.highlighted)
+                self.selected_variable = str(variable_option.id)
             self._update_full_definition()
         elif event.option_list.id == "framework_select":
             self._update_section_labels()
@@ -149,7 +157,9 @@ class IdentityWidget(Widget):
     def _update_section_labels(self) -> None:
         framework_select = self.query_one("#framework_select", OptionList)
         if framework_select.highlighted is not None:
-            framework_option = framework_select.get_option_at_index(framework_select.highlighted)
+            framework_option = framework_select.get_option_at_index(
+                framework_select.highlighted
+            )
             framework = str(framework_option.id)
 
             graph_section = self.query_one(".graph-definition-section", Vertical)
@@ -192,14 +202,22 @@ class IdentityWidget(Widget):
             self.app.notify("Agent name and port are required!", severity="error")
             return False
 
-        var_list = self.query_one("#variable_list", OptionList)
-        var_index = var_list.highlighted
-
-        if not self.selected_file_path or var_index is None:
+        if not self.selected_file_path:
             self.query_one("#identity_error", Static).update(
-                "Please select a file and variable"
+                "Please select a Python file"
             )
-            self.app.notify("Graph definition incomplete!", severity="error")
+            self.app.notify(
+                "Graph definition incomplete! Select a file.", severity="error"
+            )
+            return False
+
+        if not self.selected_variable or self.selected_variable == "none":
+            self.query_one("#identity_error", Static).update(
+                "Please select a variable from the list"
+            )
+            self.app.notify(
+                "Graph definition incomplete! Select a variable.", severity="error"
+            )
             return False
 
         return True

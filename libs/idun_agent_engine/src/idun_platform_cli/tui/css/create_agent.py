@@ -467,35 +467,38 @@ Footer > .footer--description {
     padding: 2;
 }
 
-.serve-summary {
+.serve-yaml-display {
     width: 100%;
+    height: auto;
+    max-height: 15;
     border: round white;
     border-title-color: yellow;
     border-title-style: bold;
-    padding: 2;
-    margin-bottom: 2;
-}
-
-.summary-box {
-    width: 100%;
-    border: round cyan;
-    border-title-color: cyan;
-    border-title-style: bold;
     padding: 1;
-    margin-bottom: 1;
+    margin-bottom: 2;
+    overflow-y: auto;
 }
 
-.summary-box:last-child {
-    margin-bottom: 0;
+#yaml_content {
+    width: 100%;
+    height: auto;
+    color: white;
+}
+
+.serve-button-container {
+    width: 100%;
+    height: auto;
+    align: center middle;
 }
 
 .validate-run-btn {
-    width: 100%;
+    width: 1fr;
     height: 3;
     background: green;
     color: white;
     text-style: bold;
     border: round white;
+    margin: 0 1;
 }
 
 .validate-run-btn:hover {
@@ -509,16 +512,16 @@ Footer > .footer--description {
     border: round yellow;
 }
 
-Button#validate_run_button.kill-mode {
+Button#save_run_button.kill-mode {
     background: red;
 }
 
-Button#validate_run_button.kill-mode:hover {
+Button#save_run_button.kill-mode:hover {
     background: darkred;
     color: white;
 }
 
-Button#validate_run_button.kill-mode:focus {
+Button#save_run_button.kill-mode:focus {
     background: darkred;
     color: white;
     border: round yellow;
@@ -785,5 +788,125 @@ Switch {
     color: yellow;
     text-align: center;
     text-style: bold;
+}
+
+#widget-chat {
+    padding: 2;
+}
+
+.chat-history-container {
+    width: 100%;
+    height: 1fr;
+    border: round white;
+    border-title-color: yellow;
+    border-title-style: bold;
+    padding: 1;
+    margin-bottom: 2;
+}
+
+#chat_history {
+    width: 100%;
+    height: 100%;
+    background: black;
+    color: white;
+}
+
+.chat-thinking-container {
+    width: 100%;
+    height: 2;
+    align: left middle;
+    padding: 0 1;
+}
+
+#chat_spinner {
+    width: auto;
+    height: auto;
+    color: yellow;
+}
+
+#thinking_label {
+    width: auto;
+    height: auto;
+    color: yellow;
+    margin-left: 1;
+    text-style: italic;
+}
+
+.chat-input-container {
+    width: 100%;
+    height: 5;
+    align: left middle;
+}
+
+.chat-input {
+    width: 1fr;
+    height: 3;
+    color: white;
+    background: transparent;
+    border: round white;
+    padding: 0 1;
+    margin-right: 1;
+}
+
+.chat-input:focus {
+    border: round cyan;
+}
+
+.chat-input:disabled {
+    opacity: 0.5;
+}
+
+.send-btn {
+    width: 12;
+    height: 3;
+    background: green;
+    color: white;
+    text-style: bold;
+    border: round white;
+}
+
+.send-btn:hover {
+    background: cyan;
+    color: black;
+}
+
+.send-btn:focus {
+    background: cyan;
+    color: black;
+    border: round yellow;
+}
+
+.send-btn:disabled {
+    background: gray;
+    opacity: 0.5;
+}
+
+#widget-memory {
+    padding: 2;
+}
+
+.memory-main {
+    width: 100%;
+    height: auto;
+    border: round white;
+    border-title-color: yellow;
+    border-title-style: bold;
+    padding: 1;
+    margin-bottom: 1;
+}
+
+.checkpoint-config-container {
+    width: 100%;
+    height: auto;
+    margin-top: 1;
+}
+
+.checkpoint-fields-section {
+    width: 100%;
+    height: auto;
+    border: round white;
+    border-title-color: yellow;
+    border-title-style: bold;
+    padding: 1;
 }
 """

@@ -16,14 +16,20 @@ def validate_guardrail(guardrail_id: str, config: dict) -> tuple[any, str]:
             case "bias_check":
                 threshold = float(config.get("threshold", 0.5))
                 validated = BiasCheckConfig(
-                    config_id=GuardrailConfigId.BIAS_CHECK, threshold=threshold
+                    config_id=GuardrailConfigId.BIAS_CHECK,
+                    api_key=config.get("api_key", ""),
+                    reject_message=config.get("reject_message", "Bias detected"),
+                    threshold=threshold
                 )
                 return validated, "ok"
 
             case "toxic_language":
                 threshold = float(config.get("threshold", 0.5))
                 validated = ToxicLanguageConfig(
-                    config_id=GuardrailConfigId.TOXIC_LANGUAGE, threshold=threshold
+                    config_id=GuardrailConfigId.TOXIC_LANGUAGE,
+                    api_key=config.get("api_key", ""),
+                    reject_message=config.get("reject_message", "Toxic language detected"),
+                    threshold=threshold
                 )
                 return validated, "ok"
 
@@ -35,6 +41,8 @@ def validate_guardrail(guardrail_id: str, config: dict) -> tuple[any, str]:
                     ]
                 validated = CompetitionCheckConfig(
                     config_id=GuardrailConfigId.COMPETITION_CHECK,
+                    api_key=config.get("api_key", ""),
+                    reject_message=config.get("reject_message", "Competitor mentioned"),
                     competitors=competitors,
                 )
                 return validated, "ok"
@@ -73,4 +81,8 @@ def validate_guardrail(guardrail_id: str, config: dict) -> tuple[any, str]:
                 return None, f"Unknown guardrail type: {guardrail_id}"
 
     except Exception as e:
-        return None, f"Validation error for {guardrail_id}: {str(e)}"
+        error_msg = str(e)
+        if len(error_msg) > 100:
+            error_msg = error_msg[:100] + "..."
+        error_msg = error_msg.replace("<", "").replace(">", "")
+        return None, f"Validation error for {guardrail_id}: {error_msg}"

@@ -1,6 +1,5 @@
 from google.adk.agents import LlmAgent
 from idun_agent_engine.mcp import get_adk_tools
-from pathlib import Path
 import os
 
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
