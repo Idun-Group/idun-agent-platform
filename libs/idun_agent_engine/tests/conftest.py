@@ -6,6 +6,8 @@ Fixtures are designed to be composable and easy to customize for specific test n
 
 from __future__ import annotations
 
+import os
+import subprocess
 from collections.abc import AsyncGenerator, Callable, Generator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -14,12 +16,65 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.engine_config import EngineConfig
 
 # -----------------------------------------------------------------------------
 # Configuration Fixtures
 # -----------------------------------------------------------------------------
+
+
+def pytest_sessionstart(session):
+    """Runs BEFORE pytest collects or imports anything."""
+    api_key = os.getenv("GUARDRAILS_API_KEY")
+    if not api_key:
+        print("\n[Setup Skip] GUARDRAILS_API_KEY not found in environment.")
+        return
+
+    print("\n[Setup] Running guardrails configure...")
+
+    try:
+        out = subprocess.run(
+            [
+                "guardrails",
+                "configure",
+                "--disable-remote-inferencing",
+                "--disable-metrics",
+                "--token",
+                api_key,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        print(f"[Configure STDOUT]: {out.stdout}")
+    except subprocess.CalledProcessError as e:
+        print(f"[Configure FAILED]")
+        print(f"STDOUT: {e.stdout}")
+        print(f"STDERR: {e.stderr}")
+        return  # Don't bother with install if config fails
+
+    # 2. INSTALL
+    print("\n[Setup] Running guardrails hub install...")
+    try:
+        out_2 = subprocess.run(
+            [
+                "guardrails",
+                "hub",
+                "install",
+                "hub://guardrails/ban_list",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        print(f"[Install STDOUT]: {out_2.stdout}")
+        print("[Setup] Success. Proceeding to test collection.")
+    except subprocess.CalledProcessError as e:
+        print(f"[Install FAILED]")
+        print(f"STDOUT: {e.stdout}")
+        print(f"STDERR: {e.stderr}")
+    except Exception as e:
+        print(f"[Setup Error] Unexpected failure: {e}")
 
 
 @pytest.fixture

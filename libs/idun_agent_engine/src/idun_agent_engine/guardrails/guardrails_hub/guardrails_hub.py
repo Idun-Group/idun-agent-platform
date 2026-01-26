@@ -9,25 +9,50 @@ from ..base import BaseGuardrail
 
 def get_guard_instance(name: GuardrailConfigId) -> Guard:
     """Returns a map of guard type -> guard instance."""
-    if name.value == "ban_list":
+    if name == GuardrailConfigId.BAN_LIST:
         from guardrails.hub import BanList
 
         return BanList
 
-    elif name.value == "detect_pii":
+    elif name == GuardrailConfigId.DETECT_PII:
         from guardrails.hub import DetectPII
 
         return DetectPII
 
-    elif name.value == "nsfw":
+    elif name == GuardrailConfigId.NSFW_TEXT:
         from guardrails.hub import NSFWText
 
         return NSFWText
 
-    elif name.value == "competitor_check":
+    elif name == GuardrailConfigId.COMPETITION_CHECK:
         from guardrails.hub import CompetitorCheck
 
         return CompetitorCheck
+
+    elif name == GuardrailConfigId.BIAS_CHECK:
+        from guardrails.hub import BiasCheck
+
+        return BiasCheck
+
+    elif name == GuardrailConfigId.CORRECT_LANGUAGE:
+        from guardrails.hub import ValidLanguage
+
+        return ValidLanguage
+
+    elif name == GuardrailConfigId.GIBBERISH_TEXT:
+        from guardrails.hub import GibberishText
+
+        return GibberishText
+
+    elif name == GuardrailConfigId.TOXIC_LANGUAGE:
+        from guardrails.hub import ToxicLanguage
+
+        return ToxicLanguage
+
+    elif name == GuardrailConfigId.RESTRICT_TO_TOPIC:
+        from guardrails.hub import RestrictToTopic
+
+        return RestrictToTopic
 
     else:
         raise ValueError(f"Guard {name} not found.")

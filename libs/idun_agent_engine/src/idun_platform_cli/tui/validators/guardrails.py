@@ -19,7 +19,7 @@ def validate_guardrail(guardrail_id: str, config: dict) -> tuple[any, str]:
                     config_id=GuardrailConfigId.BIAS_CHECK,
                     api_key=config.get("api_key", ""),
                     reject_message=config.get("reject_message", "Bias detected"),
-                    threshold=threshold
+                    threshold=threshold,
                 )
                 return validated, "ok"
 
@@ -28,8 +28,10 @@ def validate_guardrail(guardrail_id: str, config: dict) -> tuple[any, str]:
                 validated = ToxicLanguageConfig(
                     config_id=GuardrailConfigId.TOXIC_LANGUAGE,
                     api_key=config.get("api_key", ""),
-                    reject_message=config.get("reject_message", "Toxic language detected"),
-                    threshold=threshold
+                    reject_message=config.get(
+                        "reject_message", "Toxic language detected"
+                    ),
+                    threshold=threshold,
                 )
                 return validated, "ok"
 

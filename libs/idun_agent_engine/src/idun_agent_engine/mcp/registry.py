@@ -88,7 +88,9 @@ class MCPClientRegistry:
     def get_adk_toolsets(self) -> list[Any]:
         """Return a list of Google ADK McpToolset instances for configured servers."""
         if McpToolset is None or StdioServerParameters is None:
-            raise ImportError("google-adk and mcp packages are required for ADK toolsets.")
+            raise ImportError(
+                "google-adk and mcp packages are required for ADK toolsets."
+            )
 
         toolsets = []
         for config in self._configs:

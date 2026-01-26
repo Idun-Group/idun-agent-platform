@@ -310,7 +310,7 @@ class GuardrailsWidget(Widget):
             self.app.notify(
                 "Error validating Guardrails: make sure all fields are correct.",
                 severity="error",
-                timeout=10
+                timeout=10,
             )
             return None
 

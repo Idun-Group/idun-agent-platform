@@ -71,7 +71,11 @@ class CreateAgentScreen(Screen):
                 config = self.config_manager.load_config()
                 if config:
                     port = config.get("server", {}).get("api", {}).get("port", 8008)
-                    pids = subprocess.check_output(["lsof", "-ti", f":{port}"], text=True).strip().split("\n")
+                    pids = (
+                        subprocess.check_output(["lsof", "-ti", f":{port}"], text=True)
+                        .strip()
+                        .split("\n")
+                    )
                     for pid in pids:
                         if pid:
                             try:
@@ -254,7 +258,10 @@ class CreateAgentScreen(Screen):
                 yield serve
                 yield chat
 
-        footer = Static("💡 Press Next to save section | Press Ctrl+Q to exit", classes="custom-footer")
+        footer = Static(
+            "💡 Press Next to save section | Press Ctrl+Q to exit",
+            classes="custom-footer",
+        )
         yield footer
 
     def on_mount(self) -> None:
@@ -395,14 +402,14 @@ class CreateAgentScreen(Screen):
                 if data is not None:
                     success, msg = self.config_manager.save_partial("memory", data)
                     if not success:
-                        self.notify(
-                            "Memory configuration is invalid", severity="error"
-                        )
+                        self.notify("Memory configuration is invalid", severity="error")
                         return
                     self.validated_sections.add("memory")
                     self._update_nav_checkmark("memory")
                 else:
-                    self.notify("Please configure checkpoint settings", severity="error")
+                    self.notify(
+                        "Please configure checkpoint settings", severity="error"
+                    )
                     return
 
             elif section == "observability":
@@ -447,14 +454,20 @@ class CreateAgentScreen(Screen):
 
                 validated_servers, msg = validate_mcp_servers(data)
                 if validated_servers is None:
-                    self.notify("Error validating MCPs: make sure all fields are correct.", severity="error")
+                    self.notify(
+                        "Error validating MCPs: make sure all fields are correct.",
+                        severity="error",
+                    )
                     return
 
                 success, save_msg = self.config_manager.save_partial(
                     "mcp_servers", validated_servers
                 )
                 if not success:
-                    self.notify("Error saving MCPs: make sure all fields are correct.", severity="error")
+                    self.notify(
+                        "Error saving MCPs: make sure all fields are correct.",
+                        severity="error",
+                    )
                     return
 
                 self.validated_sections.add("mcps")
@@ -510,9 +523,15 @@ class CreateAgentScreen(Screen):
                             ["lsof", "-ti", f":{port}"],
                             capture_output=True,
                             text=True,
-                            check=True
+                            check=True,
                         )
-                        pids = subprocess.check_output(["lsof", "-ti", f":{port}"], text=True).strip().split("\n")
+                        pids = (
+                            subprocess.check_output(
+                                ["lsof", "-ti", f":{port}"], text=True
+                            )
+                            .strip()
+                            .split("\n")
+                        )
                         for pid in pids:
                             if pid:
                                 try:
@@ -563,7 +582,13 @@ class CreateAgentScreen(Screen):
 
             try:
                 process = subprocess.Popen(
-                    ["idun", "agent", "serve", "--source=file", f"--path={config_path}"],
+                    [
+                        "idun",
+                        "agent",
+                        "serve",
+                        "--source=file",
+                        f"--path={config_path}",
+                    ],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
@@ -585,7 +610,10 @@ class CreateAgentScreen(Screen):
                 self.run_worker(self._stream_logs(process), exclusive=True)
 
             except Exception:
-                self.notify("Failed to start server. Check your configuration.", severity="error")
+                self.notify(
+                    "Failed to start server. Check your configuration.",
+                    severity="error",
+                )
 
     async def _stream_logs(self, process) -> None:
         import asyncio

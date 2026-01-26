@@ -57,7 +57,7 @@ class ServeWidget(Widget):
                 self.config_data,
                 default_flow_style=False,
                 sort_keys=False,
-                allow_unicode=True
+                allow_unicode=True,
             )
 
             syntax = Syntax(
@@ -67,7 +67,7 @@ class ServeWidget(Widget):
                 line_numbers=True,
                 word_wrap=False,
                 indent_guides=True,
-                background_color="default"
+                background_color="default",
             )
 
             self.query_one("#yaml_content", Static).update(syntax)

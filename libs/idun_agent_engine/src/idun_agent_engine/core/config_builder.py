@@ -50,7 +50,6 @@ class ConfigBuilder:
         """Initialize a new configuration builder with default values."""
         self._server_config = ServerConfig()
         self._agent_config: AgentConfig | None = None
-        # TODO: add mcp_servers config
         self._mcp_servers: list[MCPServer] | None = None
         self._observability: list[ObservabilityConfig] | None = None
         self._guardrails: Guardrails | None = None

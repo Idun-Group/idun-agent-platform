@@ -45,7 +45,10 @@ class TestEngineConfigValidation:
             "server": {"api": {"port": 9000}},
             "agent": {
                 "type": "LANGGRAPH",
-                "config": {"name": "LangGraphAgent", "graph_definition": "test.py:graph"},
+                "config": {
+                    "name": "LangGraphAgent",
+                    "graph_definition": "test.py:graph",
+                },
             },
         }
 

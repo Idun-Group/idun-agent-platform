@@ -145,9 +145,13 @@ class TestServerRunner:
         mock_app = MagicMock()
         mock_create_app.return_value = mock_app
 
-        builder = ConfigBuilder().with_api_port(7777).with_langgraph_agent(
-            name="Built Config Agent",
-            graph_definition="./agent.py:graph",
+        builder = (
+            ConfigBuilder()
+            .with_api_port(7777)
+            .with_langgraph_agent(
+                name="Built Config Agent",
+                graph_definition="./agent.py:graph",
+            )
         )
 
         engine_config = builder.build()
