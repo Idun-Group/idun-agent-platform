@@ -1,9 +1,9 @@
 """Guardrails V2 configuration schema."""
 
 from enum import Enum
-from typing import Literal, Union
+from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Discriminator, Field
 
 
 class GuardrailConfigId(str, Enum):
@@ -238,20 +238,23 @@ class CodeScannerConfig(BaseModel):
     )
 
 
-GuardrailConfig = Union[
-    BanListConfig,
-    DetectPIIConfig,
-    BiasCheckConfig,
-    CompetitionCheckConfig,
-    CorrectLanguageConfig,
-    GibberishTextConfig,
-    NSFWTextConfig,
-    DetectJailbreakConfig,
-    PromptInjectionConfig,
-    RagHallucinationConfig,
-    RestrictToTopicConfig,
-    ToxicLanguageConfig,
-    CodeScannerConfig,
+GuardrailConfig = Annotated[
+    Union[
+        BanListConfig,
+        DetectPIIConfig,
+        BiasCheckConfig,
+        CompetitionCheckConfig,
+        CorrectLanguageConfig,
+        GibberishTextConfig,
+        NSFWTextConfig,
+        DetectJailbreakConfig,
+        PromptInjectionConfig,
+        RagHallucinationConfig,
+        RestrictToTopicConfig,
+        ToxicLanguageConfig,
+        CodeScannerConfig,
+    ],
+    Discriminator("config_id"),
 ]
 
 
