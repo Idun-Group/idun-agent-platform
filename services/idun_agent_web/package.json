@@ -38,7 +38,7 @@
     "@storybook/addon-docs": "^9.1.4",
     "@storybook/addon-onboarding": "^9.1.4",
     "@storybook/addon-themes": "^9.1.4",
-    "@storybook/addon-vitest": "^9.1.4",
+    "@storybook/addon-vitest": "^10.2.0",
     "@storybook/react-vite": "^9.1.4",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
