@@ -7,7 +7,7 @@ from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Label, RichLog, Static
+from textual.widgets import Button, Label, RichLog, Static
 
 from idun_platform_cli.tui.css.create_agent import CREATE_AGENT_CSS
 from idun_platform_cli.tui.schemas.create_agent import TUIAgentConfig

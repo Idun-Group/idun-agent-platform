@@ -1,8 +1,7 @@
 """Application settings schemas using Pydantic Settings v2."""
 
-from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

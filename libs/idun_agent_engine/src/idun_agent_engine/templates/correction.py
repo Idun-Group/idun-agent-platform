@@ -1,7 +1,7 @@
 """Correction Agent Template."""
 
 import os
-from typing import TypedDict, Annotated, List, Any
+from typing import Annotated, Any, TypedDict
 
 try:
     from langchain.chat_models import init_chat_model
@@ -11,13 +11,13 @@ except ImportError:
     except ImportError:
         init_chat_model = None
 
-from langchain_core.messages import SystemMessage, BaseMessage
-from langgraph.graph import StateGraph, START, END
+from langchain_core.messages import BaseMessage, SystemMessage
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
 
 class State(TypedDict):
-    messages: Annotated[List[BaseMessage], add_messages]
+    messages: Annotated[list[BaseMessage], add_messages]
 
 
 MODEL_NAME = os.getenv("CORRECTION_MODEL", "gemini-2.5-flash")

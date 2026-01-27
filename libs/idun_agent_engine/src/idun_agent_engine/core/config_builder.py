@@ -320,8 +320,9 @@ class ConfigBuilder:
         # Initialize the appropriate agent
         agent_instance = None
         if agent_type == AgentFramework.LANGGRAPH:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
             import os
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             print("Current directory: ", os.getcwd())  # TODO remove
             try:
@@ -335,9 +336,11 @@ class ConfigBuilder:
             agent_instance = LanggraphAgent()
 
         elif agent_type == AgentFramework.TRANSLATION_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import TranslationAgentConfig
             import os
+
+            from idun_agent_schema.engine.templates import TranslationAgentConfig
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
                 translation_config = TranslationAgentConfig.model_validate(
@@ -365,9 +368,11 @@ class ConfigBuilder:
             agent_instance = LanggraphAgent()
 
         elif agent_type == AgentFramework.CORRECTION_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import CorrectionAgentConfig
             import os
+
+            from idun_agent_schema.engine.templates import CorrectionAgentConfig
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
                 correction_config = CorrectionAgentConfig.model_validate(
@@ -392,9 +397,11 @@ class ConfigBuilder:
             agent_instance = LanggraphAgent()
 
         elif agent_type == AgentFramework.DEEP_RESEARCH_AGENT:
-            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
-            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
             import os
+
+            from idun_agent_schema.engine.templates import DeepResearchAgentConfig
+
+            from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
             try:
                 deep_research_config = DeepResearchAgentConfig.model_validate(

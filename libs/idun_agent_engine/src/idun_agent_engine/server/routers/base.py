@@ -1,8 +1,8 @@
 """Base routes for service health and landing info."""
 
 import os
-from typing import Optional
-from fastapi import APIRouter, Request, HTTPException
+
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from ..._version import __version__
@@ -15,7 +15,7 @@ base_router = APIRouter()
 class ReloadRequest(BaseModel):
     """Request body for reload endpoint."""
 
-    path: Optional[str] = None
+    path: str | None = None
 
 
 @base_router.get("/health")
@@ -25,9 +25,8 @@ def health_check():
 
 
 @base_router.post("/reload")
-async def reload_config(request: Request, body: Optional[ReloadRequest] = None):
+async def reload_config(request: Request, body: ReloadRequest | None = None):
     """Reload the agent configuration from the manager or a file."""
-
     try:
         if body and body.path:
             print(f"🔄 Reloading configuration from file: {body.path}...")

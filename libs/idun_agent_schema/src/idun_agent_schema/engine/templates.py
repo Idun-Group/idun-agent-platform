@@ -1,12 +1,10 @@
 """Configuration models for Agent Templates."""
 
-from typing import Literal
 
 from pydantic import Field
 
-from .langgraph import LangGraphAgentConfig
 from .base_agent import BaseAgentConfig
-from .langgraph import CheckpointConfig
+from .langgraph import CheckpointConfig, LangGraphAgentConfig
 
 
 class TranslationAgentConfig(LangGraphAgentConfig):

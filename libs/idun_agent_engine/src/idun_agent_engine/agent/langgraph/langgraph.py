@@ -1,7 +1,7 @@
 """LangGraph agent adapter implementing the BaseAgent protocol."""
 
-import importlib.util
 import importlib
+import importlib.util
 import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -9,6 +9,7 @@ from typing import Any
 import aiosqlite
 from ag_ui.core import events as ag_events
 from ag_ui.core import types as ag_types
+from copilotkit import LangGraphAGUIAgent
 from idun_agent_schema.engine.langgraph import (
     InMemoryCheckpointConfig,
     LangGraphAgentConfig,
@@ -24,7 +25,6 @@ from langgraph.graph.state import CompiledStateGraph
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
-from copilotkit import LangGraphAGUIAgent
 
 
 class LanggraphAgent(agent_base.BaseAgent):

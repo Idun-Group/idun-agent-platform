@@ -1,19 +1,15 @@
 """FastAPI dependencies for dependency injection."""
 
+import os
+import secrets
 from collections.abc import AsyncIterator
-from typing import Annotated
-from uuid import UUID
 
-from fastapi import Depends, HTTPException, Request, Query
-
+from fastapi import HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # from app.application.services.agent_service import AgentService
 from app.core.settings import Settings, get_settings_dependency
 from app.infrastructure.db.session import get_async_session
-
-import secrets
-import os
 
 
 # Database session dependency

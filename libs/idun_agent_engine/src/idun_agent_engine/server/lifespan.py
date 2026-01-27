@@ -8,19 +8,15 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from idun_agent_schema.engine.guardrails import Guardrails
 
 from ..core.config_builder import ConfigBuilder
-from ..mcp import MCPClientRegistry
-
-from idun_agent_schema.engine.guardrails import Guardrails, Guardrail
-
 from ..guardrails.base import BaseGuardrail
 from ..telemetry import get_telemetry, sanitize_telemetry_config
 
 
 def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
     """Adds the position of the guardrails (input/output) and returns the lift of updated guardrails."""
-
     from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
 
     if not guardrails_obj:
@@ -70,8 +66,8 @@ async def configure_app(app: FastAPI, engine_config):
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
 
     # Setup AGUI routes if the agent is a LangGraph agent
-    from ..agent.langgraph.langgraph import LanggraphAgent
     from ..agent.adk.adk import AdkAgent
+    from ..agent.langgraph.langgraph import LanggraphAgent
     # from ..server.routers.agui import setup_agui_router
 
     if isinstance(agent_instance, (LanggraphAgent, AdkAgent)):
@@ -91,7 +87,6 @@ async def configure_app(app: FastAPI, engine_config):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context to initialize and teardown the agent."""
-
     # Load config and initialize agent on startup
     print("Server starting up...")
     if not app.state.engine_config:

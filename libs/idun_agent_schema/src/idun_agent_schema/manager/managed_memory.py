@@ -5,16 +5,16 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from idun_agent_schema.engine.langgraph import CheckpointConfig
-from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.adk import SessionServiceConfig
-
+from idun_agent_schema.engine.agent_framework import AgentFramework
+from idun_agent_schema.engine.langgraph import CheckpointConfig
 
 MemoryConfig = CheckpointConfig | SessionServiceConfig
 
 
 class ManagedMemoryCreate(BaseModel):
     """Create managed memory model for requests."""
+
     name: str
     agent_framework: AgentFramework = Field(..., description="Agent framework")
     memory: MemoryConfig = Field(..., description="Memory (checkpoint) configuration")
@@ -22,6 +22,7 @@ class ManagedMemoryCreate(BaseModel):
 
 class ManagedMemoryRead(BaseModel):
     """Complete managed memory model for responses."""
+
     id: UUID
     name: str
     agent_framework: AgentFramework = Field(..., description="Agent framework")
@@ -32,6 +33,7 @@ class ManagedMemoryRead(BaseModel):
 
 class ManagedMemoryPatch(BaseModel):
     """Full replacement schema for PUT of a managed memory."""
+
     name: str
     agent_framework: AgentFramework = Field(..., description="Agent framework")
     memory: MemoryConfig = Field(..., description="Memory (checkpoint) configuration")
