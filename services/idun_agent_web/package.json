@@ -52,7 +52,7 @@
     "globals": "^16.3.0",
     "openapi-typescript": "^7.4.3",
     "playwright": "^1.54.1",
-    "plop": "^4.0.1",
+    "plop": "^4.0.5",
     "storybook": "^9.1.4",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.3",
