@@ -169,7 +169,7 @@ jobs:
           sleep 30
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./services/idun_agent_manager
           file: ./services/idun_agent_manager/Dockerfile
@@ -224,7 +224,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./services/idun_agent_web
           file: ./services/idun_agent_web/Dockerfile
