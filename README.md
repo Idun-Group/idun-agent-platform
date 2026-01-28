@@ -241,12 +241,11 @@ Then open `http://localhost:8000/docs`
 # Technical architecture
 
 
-- **Idun Agent Engine** — wraps LangGraph/ADK agents into a **FastAPI** service with a unified API using the AG-UI protocol, memory, guardrails, and tracing. Use a local YAML config or fetch it from Manager.
-- **Idun Agent CLI** - easy CLI to create a YAML config for the Engine.
-- **Idun Agent Manager** — **FastAPI + PostgreSQL** service for CRUD on engine configs; serves signed configs to Engines; enforces SSO/RBAC and tenancy.
-- **Idun Agent UI** — **Next.js** admin UI to govern agents by creating and modifying agent configs.
-- **Idun Agent Schema** — shared **Pydantic** models ensuring type-safe interoperability across services.
-
+- **🟪 Engine** — wraps LangGraph/ADK agents into a **FastAPI** service with a unified API using the AG-UI protocol, memory, guardrails, and tracing. Use a local YAML config or fetch it from Manager.
+  - **CLI** - easy CLI to create a YAML config for the Engine.
+  - **Schema** — shared **Pydantic** models ensuring type-safe interoperability across services.
+- **🟩 Manager** — **FastAPI + PostgreSQL** service for CRUD on engine configs; serves signed configs to Engines; enforces SSO/RBAC and tenancy.
+- **🟨 UI** — **Next.js** admin UI to govern agents by creating and modifying agent configs.
 
 ```mermaid
 flowchart LR
@@ -258,12 +257,12 @@ flowchart LR
 
   subgraph Idun_Platform["Idun Agent Platform"]
     direction TB
-    UI["UI (Admin Dashboard)"]
-    MGR["Manager (API, Auth, Policy)"]
+    UI["🟨 UI (Admin Dashboard)"]
+    MGR["🟩 Manager (API, Auth, Policy)"]
 
     subgraph Agents["Agent Deployment"]
-      ENG1["Engine (LangGraph Agent)"]
-      ENG2["Engine (ADK Agent)"]
+      ENG1["🟪 Engine (LangGraph Agent)"]
+      ENG2["🟪 Engine (ADK Agent)"]
     end
 
     CFGDB[(PostgreSQL Config DB)]
