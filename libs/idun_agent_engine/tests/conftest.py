@@ -24,16 +24,13 @@ from idun_agent_engine.core.engine_config import EngineConfig
 
 
 def pytest_sessionstart(session):
-    """Runs BEFORE pytest collects or imports anything."""
     api_key = os.getenv("GUARDRAILS_API_KEY")
     if not api_key:
-        print("\n[Setup Skip] GUARDRAILS_API_KEY not found in environment.")
+        print("GUARDRAILS_API_KEY not set, skipping guardrails setup")
         return
 
-    print("\n[Setup] Running guardrails configure...")
-
     try:
-        out = subprocess.run(
+        subprocess.run(
             [
                 "guardrails",
                 "configure",
@@ -45,36 +42,36 @@ def pytest_sessionstart(session):
             check=True,
             capture_output=True,
             text=True,
+            env={**os.environ},
         )
-        print(f"[Configure STDOUT]: {out.stdout}")
     except subprocess.CalledProcessError as e:
-        print(f"[Configure FAILED]")
-        print(f"STDOUT: {e.stdout}")
-        print(f"STDERR: {e.stderr}")
-        return  # Don't bother with install if config fails
+        print(f"Guardrails configure failed: {e.stderr}")
+        return
 
-    # 2. INSTALL
-    print("\n[Setup] Running guardrails hub install...")
-    try:
-        out_2 = subprocess.run(
-            [
-                "guardrails",
-                "hub",
-                "install",
-                "hub://guardrails/ban_list",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        print(f"[Install STDOUT]: {out_2.stdout}")
-        print("[Setup] Success. Proceeding to test collection.")
-    except subprocess.CalledProcessError as e:
-        print(f"[Install FAILED]")
-        print(f"STDOUT: {e.stdout}")
-        print(f"STDERR: {e.stderr}")
-    except Exception as e:
-        print(f"[Setup Error] Unexpected failure: {e}")
+    guardrails_to_install = [
+        "hub://guardrails/ban_list",
+        "hub://guardrails/detect_pii",
+        "hub://guardrails/nsfw_text",
+        "hub://guardrails/toxic_language",
+        "hub://tryolabs/restricttotopic",
+        "hub://guardrails/bias_check",
+        "hub://guardrails/competitor_check",
+        "hub://guardrails/gibberish_text",
+        "hub://scb-10x/correct_language",
+    ]
+
+    for guard_url in guardrails_to_install:
+        try:
+            result = subprocess.run(
+                ["guardrails", "hub", "install", guard_url, "--quiet"],
+                check=True,
+                capture_output=True,
+                text=True,
+                env={**os.environ},
+            )
+            print(f"Installed {guard_url}")
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to install {guard_url}: {e.stderr}")
 
 
 @pytest.fixture

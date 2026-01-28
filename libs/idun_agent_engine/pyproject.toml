@@ -98,6 +98,7 @@ dev = [
     "pytest-cov>=5.0.0,<7",
     "types-PyYAML>=6.0.12.20240808,<7",
     "pytest-asyncio>=1.2.0",
+    "pytest-xdist>=3.8.0",
 ]
 
 [tool.hatch.build.targets.sdist]

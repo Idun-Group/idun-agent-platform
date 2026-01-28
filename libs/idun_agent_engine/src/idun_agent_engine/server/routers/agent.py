@@ -84,6 +84,8 @@ async def invoke(
             )
         return ChatResponse(session_id=message["session_id"], response=response_content)
 
+    except HTTPException:
+        raise
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
 

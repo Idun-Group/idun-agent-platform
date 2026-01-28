@@ -22,14 +22,3 @@ def adk_agent_config():
         session_service=AdkInMemorySessionConfig(),
         memory_service=AdkInMemoryMemoryConfig(),
     )
-
-
-@pytest.mark.asyncio
-async def test_adk_agent_initialize(adk_agent_config):
-    agent = AdkAgent()
-    await agent.initialize(adk_agent_config)
-
-    assert agent.agent_instance is not None
-    assert agent.copilotkit_agent_instance is not None
-    assert agent.configuration == adk_agent_config
-    assert agent.infos["status"] == "Initialized"

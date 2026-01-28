@@ -115,11 +115,26 @@ class GuardrailsHubGuard(BaseGuardrail):
                 f"Guard: {self.guard_id} is not yet supported, or does not exist."
             )
 
-        guard_instance_params = self._guardrail_config.guard_params.model_dump()
-        guard_instance = guard(**guard_instance_params)
-        for param, value in guard_instance_params.items():
-            setattr(guard_instance, param, value)
-        return guard_instance
+        if hasattr(self._guardrail_config, 'guard_params'):
+            guard_instance_params = self._guardrail_config.guard_params.model_dump()
+        else:
+            config_dict = self._guardrail_config.model_dump()
+            exclude_fields = {'config_id', 'api_key', 'reject_message', 'guard_url'}
+            guard_instance_params = {k: v for k, v in config_dict.items() if k not in exclude_fields}
+
+        try:
+            guard_instance = guard(**guard_instance_params)
+            for param, value in guard_instance_params.items():
+                setattr(guard_instance, param, value)
+            return guard_instance
+        except SystemError:
+            # sentencepiece mutex lock error when loading models in quick succession
+            import time
+            time.sleep(0.5)
+            guard_instance = guard(**guard_instance_params)
+            for param, value in guard_instance_params.items():
+                setattr(guard_instance, param, value)
+            return guard_instance
 
     def validate(self, input: str) -> bool:
         """TODO."""

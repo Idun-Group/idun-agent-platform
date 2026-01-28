@@ -476,12 +476,12 @@ class TestConfigBuilderInitializeAgent:
 
     @pytest.mark.asyncio
     async def test_initialize_agent_haystack_agent(self) -> None:
-        """Initialize Haystack agent with mock agent fixture."""
+        """Initialize Haystack agent with mock pipeline fixture."""
         from pathlib import Path
 
         from idun_agent_engine.agent.haystack.haystack import HaystackAgent
 
-        mock_agent_path = (
+        mock_pipeline_path = (
             Path(__file__).parent.parent.parent
             / "fixtures"
             / "agents"
@@ -494,8 +494,8 @@ class TestConfigBuilderInitializeAgent:
                 "type": "HAYSTACK",
                 "config": {
                     "name": "Test Haystack Agent",
-                    "component_type": "agent",
-                    "component_definition": f"{mock_agent_path}:mock_haystack_agent",
+                    "component_type": "pipeline",
+                    "component_definition": f"{mock_pipeline_path}:mock_haystack_pipeline",
                 },
             },
         }
