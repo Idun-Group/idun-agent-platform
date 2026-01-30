@@ -20,8 +20,7 @@ def langfuse_client(skip_if_no_langfuse_credentials):
     from langfuse import get_client
 
     client = get_client()
-    yield client
-    client.flush()
+    return client
 
 
 @pytest.fixture
@@ -89,34 +88,6 @@ def adk_config_with_langfuse():
     }
 
 
-@pytest.fixture
-def haystack_config_with_langfuse():
-    mock_pipeline_path = (
-        Path(__file__).parent.parent.parent
-        / "fixtures"
-        / "agents"
-        / "mock_haystack_pipeline.py"
-    )
-
-    return {
-        "agent": {
-            "type": "HAYSTACK",
-            "config": {
-                "name": "Test Haystack Agent",
-                "component_type": "pipeline",
-                "component_definition": f"{mock_pipeline_path}:mock_haystack_pipeline",
-            },
-        },
-        "observability": [
-            {
-                "enabled": True,
-                "provider": "LANGFUSE",
-                "config": {},
-            }
-        ],
-    }
-
-
 @pytest.mark.integration
 @pytest.mark.requires_langfuse
 @pytest.mark.asyncio
@@ -136,8 +107,6 @@ async def test_langgraph_agent_sends_trace_to_langfuse(
         35
     )  # langfuse-docs: New data is typically available for querying within 15-30 seconds of ingestion
 
-    langfuse_client.flush()
-
     trace = langfuse_client.api.trace.list(
         limit=1, name=engine_config.observability[0].config.run_name
     )
@@ -151,6 +120,8 @@ async def test_langgraph_agent_sends_trace_to_langfuse(
 async def test_adk_agent_sends_trace_to_langfuse(
     adk_config_with_langfuse, langfuse_client
 ):
+    from ag_ui.core import RunAgentInput, UserMessage
+
     from idun_agent_engine.core.config_builder import ConfigBuilder
 
     message = f"Test message for ADK {agent_hash}"
@@ -160,29 +131,32 @@ async def test_adk_agent_sends_trace_to_langfuse(
 
     copilotkit_agent = agent.copilotkit_agent_instance
 
-    res = copilotkit_agent.run(
-        input={
-            "threadId": "thread-009",
-            "runId": "run-001",
-            "state": {},
-            "messages": [{"id": "msg-002", "role": "user", "content": f"{message}"}],
-            "tools": [],
-            "context": [],
-            "forwardedProps": {},
-        }
+    input_data = RunAgentInput(
+        threadId="thread-009",
+        runId="run-001",
+        state={},
+        messages=[UserMessage(id="msg-002", role="user", content=message)],
+        tools=[],
+        context=[],
+        forwardedProps={},
     )
+
+    from datetime import datetime, timezone
+
+    start_time = datetime.now(timezone.utc)
+
+    async for event in copilotkit_agent.run(
+        input_data
+    ):  # consume async gen to produce otel traces
+        pass
+
+    end_time = datetime.now(timezone.utc)
 
     await asyncio.sleep(35)
-    langfuse_client.flush()
 
     trace = langfuse_client.api.trace.list(
-        limit=10, name=engine_config.observability[0].config.run_name
+        limit=10, from_timestamp=start_time, to_timestamp=end_time
     )
     assert trace is not None
-    import pdb
-
-    pdb.set_trace()
-    # assert message in str(trace.data[0].input) or message in str(trace.data[0].output)
-
-
-#   assert message == trace.data[0].input["messages"][0][1]
+    assert len(trace.data) > 0
+    assert message in str(trace.data[0].input)
