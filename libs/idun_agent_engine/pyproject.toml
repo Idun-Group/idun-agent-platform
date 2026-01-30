@@ -99,6 +99,7 @@ dev = [
     "types-PyYAML>=6.0.12.20240808,<7",
     "pytest-asyncio>=1.2.0",
     "pytest-xdist>=3.8.0",
+    "posthog>=7.5.1",
 ]
 
 [tool.hatch.build.targets.sdist]

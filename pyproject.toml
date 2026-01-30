@@ -11,6 +11,7 @@ dependencies = [
     "idun-agent-engine>=0.3.8,<0.4.0",
     "idun-agent-manager",
     "idun-agent-schema>=0.3.8,<0.4.0",
+    "posthog>=7.7.0",
     "setuptools>=80.9.0",
     "tokenizers<0.19",
     "transformers<4.40",

@@ -8,6 +8,8 @@ from fastapi.testclient import TestClient
 from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.config_builder import ConfigBuilder
 
+import os
+
 
 @pytest.mark.unit
 class TestAgentInvokeRoute:

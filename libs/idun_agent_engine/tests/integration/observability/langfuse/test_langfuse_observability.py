@@ -157,6 +157,4 @@ async def test_adk_agent_sends_trace_to_langfuse(
     trace = langfuse_client.api.trace.list(
         limit=10, from_timestamp=start_time, to_timestamp=end_time
     )
-    assert trace is not None
-    assert len(trace.data) > 0
     assert message in str(trace.data[0].input)

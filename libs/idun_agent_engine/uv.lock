@@ -1776,6 +1776,7 @@ dependencies = [
 dev = [
     { name = "black" },
     { name = "mypy" },
+    { name = "posthog" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -1836,6 +1837,7 @@ requires-dist = [
 dev = [
     { name = "black", specifier = ">=24.8.0,<26" },
     { name = "mypy", specifier = ">=1.10.0,<2" },
+    { name = "posthog", specifier = ">=7.5.1" },
     { name = "pre-commit", specifier = ">=3.8.0,<5" },
     { name = "pytest", specifier = ">=8.3.3,<9" },
     { name = "pytest-asyncio", specifier = ">=1.2.0" },
