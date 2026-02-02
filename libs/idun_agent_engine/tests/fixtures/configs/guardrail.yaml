@@ -1,0 +1,31 @@
+server:
+  api:
+    port: 8000
+agent:
+  type: LANGGRAPH
+  config:
+    name: Test Agent
+    graph_definition: "tests.fixtures.agents.mock_graph:graph"
+guardrails:
+  input:
+    - config_id: ban_list
+      api_key: ${API_KEY}
+      reject_message: "Banned word detected"
+      guard_url: "hub://guardrails/ban_list"
+      guard_params:
+        banned_words:
+          - badword
+          - spam
+    - config_id: detect_pii
+      api_key: ${API_KEY}
+      reject_message: "PII detected"
+      guard_url: "hub://guardrails/detect_pii"
+      guard_params:
+        pii_entities:
+          - EMAIL_ADDRESS
+        on_fail: exception
+    - config_id: toxic_language
+      api_key: ${API_KEY}
+      reject_message: "Toxic language detected"
+      guard_url: "hub://guardrails/toxic_language"
+      threshold: 0.5

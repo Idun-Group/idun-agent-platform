@@ -1,6 +1,5 @@
 """Application settings schemas using Pydantic Settings v2."""
 
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

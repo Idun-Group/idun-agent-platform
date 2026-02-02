@@ -44,11 +44,21 @@ class MCPsWidget(Widget):
         for template_name in MCP_TEMPLATES:
             option_list.add_option(Option(template_name.title(), id=template_name))
         templates_row.compose_add_child(option_list)
-        templates_row.compose_add_child(Button("Add from Template", id="add_from_template_button", classes="add-template-btn"))
+        templates_row.compose_add_child(
+            Button(
+                "Add from Template",
+                id="add_from_template_button",
+                classes="add-template-btn",
+            )
+        )
         templates_section.compose_add_child(templates_row)
         yield templates_section
 
-        yield Button("+ Add Custom MCP Server", id="add_custom_mcp_button", classes="add-custom-btn")
+        yield Button(
+            "+ Add Custom MCP Server",
+            id="add_custom_mcp_button",
+            classes="add-custom-btn",
+        )
 
         yield Vertical(id="mcps_container", classes="mcps-container")
 
@@ -74,7 +84,9 @@ class MCPsWidget(Widget):
     def _add_from_template(self) -> None:
         template_selector = self.query_one("#template_selector", OptionList)
         if template_selector.highlighted is not None:
-            option_id = template_selector.get_option_at_index(template_selector.highlighted).id
+            option_id = template_selector.get_option_at_index(
+                template_selector.highlighted
+            ).id
             if option_id and str(option_id) in MCP_TEMPLATES:
                 template_data = MCP_TEMPLATES[str(option_id)].copy()
                 self._add_mcp_server(template_data)
@@ -102,52 +114,109 @@ class MCPsWidget(Widget):
 
         header = Horizontal(classes="mcp-header")
         name_value = template_data.get("name", "") if template_data else ""
-        header.compose_add_child(Static(name_value or f"Server {index + 1}", id=f"mcp_name_display_{index}", classes="mcp-name-display"))
-        header.compose_add_child(Button("Remove", id=f"remove_mcp_{index}", classes="remove-mcp-btn"))
+        header.compose_add_child(
+            Static(
+                name_value or f"Server {index + 1}",
+                id=f"mcp_name_display_{index}",
+                classes="mcp-name-display",
+            )
+        )
+        header.compose_add_child(
+            Button("Remove", id=f"remove_mcp_{index}", classes="remove-mcp-btn")
+        )
         card.compose_add_child(header)
 
         name_row = Horizontal(classes="mcp-field-row")
         name_row.compose_add_child(Static("Name:", classes="mcp-label"))
-        name_row.compose_add_child(Input(value=name_value, placeholder="server-name", id=f"mcp_name_{index}", classes="mcp-input"))
+        name_row.compose_add_child(
+            Input(
+                value=name_value,
+                placeholder="server-name",
+                id=f"mcp_name_{index}",
+                classes="mcp-input",
+            )
+        )
         card.compose_add_child(name_row)
 
         transport_row = Horizontal(classes="mcp-field-row")
         transport_row.compose_add_child(Static("Transport:", classes="mcp-label"))
         radio_set = RadioSet(id=f"mcp_transport_{index}")
 
-        transport_value = template_data.get("transport", "streamable_http") if template_data else "streamable_http"
-        radio_set.compose_add_child(RadioButton("stdio", id="stdio", value=(transport_value == "stdio")))
-        radio_set.compose_add_child(RadioButton("sse", id="sse", value=(transport_value == "sse")))
-        radio_set.compose_add_child(RadioButton("streamable_http", id="streamable_http", value=(transport_value == "streamable_http")))
-        radio_set.compose_add_child(RadioButton("websocket", id="websocket", value=(transport_value == "websocket")))
+        transport_value = (
+            template_data.get("transport", "streamable_http")
+            if template_data
+            else "streamable_http"
+        )
+        radio_set.compose_add_child(
+            RadioButton("stdio", id="stdio", value=(transport_value == "stdio"))
+        )
+        radio_set.compose_add_child(
+            RadioButton("sse", id="sse", value=(transport_value == "sse"))
+        )
+        radio_set.compose_add_child(
+            RadioButton(
+                "streamable_http",
+                id="streamable_http",
+                value=(transport_value == "streamable_http"),
+            )
+        )
+        radio_set.compose_add_child(
+            RadioButton(
+                "websocket", id="websocket", value=(transport_value == "websocket")
+            )
+        )
         transport_row.compose_add_child(radio_set)
         card.compose_add_child(transport_row)
 
-        http_fields = Vertical(id=f"mcp_http_fields_{index}", classes="http-fields-container")
+        http_fields = Vertical(
+            id=f"mcp_http_fields_{index}", classes="http-fields-container"
+        )
         http_fields.border_title = "HTTP Configuration"
 
         url_row = Horizontal(classes="mcp-field-row")
         url_row.compose_add_child(Static("URL:", classes="mcp-label"))
         url_value = template_data.get("url", "") if template_data else ""
-        url_row.compose_add_child(Input(value=url_value, placeholder="https://api.example.com/mcp", id=f"mcp_url_{index}", classes="mcp-input"))
+        url_row.compose_add_child(
+            Input(
+                value=url_value,
+                placeholder="https://api.example.com/mcp",
+                id=f"mcp_url_{index}",
+                classes="mcp-input",
+            )
+        )
         http_fields.compose_add_child(url_row)
 
         headers_row = Horizontal(classes="mcp-field-row")
         headers_row.compose_add_child(Static("Headers (JSON):", classes="mcp-label"))
         headers_value = template_data.get("headers", "") if template_data else ""
-        headers_row.compose_add_child(TextArea(text=str(headers_value) if headers_value else "", id=f"mcp_headers_{index}", classes="mcp-textarea"))
+        headers_row.compose_add_child(
+            TextArea(
+                text=str(headers_value) if headers_value else "",
+                id=f"mcp_headers_{index}",
+                classes="mcp-textarea",
+            )
+        )
         http_fields.compose_add_child(headers_row)
 
         http_fields.display = transport_value in ["sse", "streamable_http", "websocket"]
         card.compose_add_child(http_fields)
 
-        stdio_fields = Vertical(id=f"mcp_stdio_fields_{index}", classes="stdio-fields-container")
+        stdio_fields = Vertical(
+            id=f"mcp_stdio_fields_{index}", classes="stdio-fields-container"
+        )
         stdio_fields.border_title = "Stdio Configuration"
 
         command_row = Horizontal(classes="mcp-field-row")
         command_row.compose_add_child(Static("Command:", classes="mcp-label"))
         command_value = template_data.get("command", "") if template_data else ""
-        command_row.compose_add_child(Input(value=command_value, placeholder="npx", id=f"mcp_command_{index}", classes="mcp-input"))
+        command_row.compose_add_child(
+            Input(
+                value=command_value,
+                placeholder="npx",
+                id=f"mcp_command_{index}",
+                classes="mcp-input",
+            )
+        )
         stdio_fields.compose_add_child(command_row)
 
         args_row = Horizontal(classes="mcp-field-row")
@@ -157,7 +226,9 @@ class MCPsWidget(Widget):
             args_list = template_data["args"]
             if isinstance(args_list, list):
                 args_value = "\n".join(args_list)
-        args_textarea = TextArea(text=args_value, id=f"mcp_args_{index}", classes="mcp-textarea")
+        args_textarea = TextArea(
+            text=args_value, id=f"mcp_args_{index}", classes="mcp-textarea"
+        )
         args_textarea.placeholder = "run\n-i\n--rm"
         args_row.compose_add_child(args_textarea)
         stdio_fields.compose_add_child(args_row)
@@ -167,8 +238,11 @@ class MCPsWidget(Widget):
         env_value = ""
         if template_data and "env" in template_data:
             import json
+
             env_value = json.dumps(template_data["env"], indent=2)
-        env_row.compose_add_child(TextArea(text=env_value, id=f"mcp_env_{index}", classes="mcp-textarea"))
+        env_row.compose_add_child(
+            TextArea(text=env_value, id=f"mcp_env_{index}", classes="mcp-textarea")
+        )
         stdio_fields.compose_add_child(env_row)
 
         stdio_fields.display = transport_value == "stdio"
@@ -196,7 +270,9 @@ class MCPsWidget(Widget):
                 name = name_input.value
 
                 if not name:
-                    self.app.notify(f"Server {server_id + 1}: Name is required", severity="error")
+                    self.app.notify(
+                        f"Server {server_id + 1}: Name is required", severity="error"
+                    )
                     return None
 
                 radio_set = self.query_one(f"#mcp_transport_{server_id}", RadioSet)
@@ -213,7 +289,9 @@ class MCPsWidget(Widget):
                     url_input = self.query_one(f"#mcp_url_{server_id}", Input)
                     server_config["url"] = url_input.value
 
-                    headers_textarea = self.query_one(f"#mcp_headers_{server_id}", TextArea)
+                    headers_textarea = self.query_one(
+                        f"#mcp_headers_{server_id}", TextArea
+                    )
                     if headers_textarea.text.strip():
                         server_config["headers"] = headers_textarea.text.strip()
 
@@ -231,7 +309,10 @@ class MCPsWidget(Widget):
                 servers_data.append(server_config)
 
             except Exception:
-                self.app.notify(f"Error reading MCP server {server_id + 1}: check your configuration.", severity="error")
+                self.app.notify(
+                    f"Error reading MCP server {server_id + 1}: check your configuration.",
+                    severity="error",
+                )
                 return None
 
         return servers_data

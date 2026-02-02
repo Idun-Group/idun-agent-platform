@@ -108,7 +108,9 @@ class GCPTraceHandler(ObservabilityHandlerBase):
         except ImportError:
             pass
 
-        logger.info("GCP Trace initialized for project: %s", project_id or "auto-detected")
+        logger.info(
+            "GCP Trace initialized for project: %s", project_id or "auto-detected"
+        )
 
     def get_callbacks(self) -> list[Any]:
         """Return callbacks."""

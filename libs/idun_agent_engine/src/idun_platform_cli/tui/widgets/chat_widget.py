@@ -22,7 +22,9 @@ class ChatWidget(Widget):
         with chat_container:
             yield RichLog(id="chat_history", highlight=True, markup=True, wrap=True)
 
-        thinking_container = Horizontal(classes="chat-thinking-container", id="chat_thinking")
+        thinking_container = Horizontal(
+            classes="chat-thinking-container", id="chat_thinking"
+        )
         thinking_container.display = False
         with thinking_container:
             yield LoadingIndicator(id="chat_spinner")

@@ -1,0 +1,15 @@
+# Configuration with observability enabled (Langfuse)
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: Observable Test Agent
+    graph_definition: tests.fixtures.agents.mock_graph:graph
+    observability:
+      provider: langfuse
+      enabled: true
+      options:
+        run_name: test-run

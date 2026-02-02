@@ -80,14 +80,15 @@ class MCPClientRegistry:
         return await self._client.get_tools(server_name=name)
 
     async def get_langchain_tools(self, name: str | None = None) -> list[Any]:
-        """Alias for get_tools to make intent explicit when using LangChain/LangGraph agents.
-        """
+        """Alias for get_tools to make intent explicit when using LangChain/LangGraph agents."""
         return await self.get_tools(name=name)
 
     def get_adk_toolsets(self) -> list[Any]:
         """Return a list of Google ADK McpToolset instances for configured servers."""
         if McpToolset is None or StdioServerParameters is None:
-            raise ImportError("google-adk and mcp packages are required for ADK toolsets.")
+            raise ImportError(
+                "google-adk and mcp packages are required for ADK toolsets."
+            )
 
         toolsets = []
         for config in self._configs:

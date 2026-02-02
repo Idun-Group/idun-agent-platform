@@ -31,7 +31,9 @@ PAGINATION_MAX_LIMIT = 1000
 PAGINATION_DEFAULT_LIMIT = 100
 
 
-async def _get_observability(id: str, session: AsyncSession) -> ManagedObservabilityModel:
+async def _get_observability(
+    id: str, session: AsyncSession
+) -> ManagedObservabilityModel:
     """Get observability config by ID."""
     try:
         uuid_id = UUID(id)

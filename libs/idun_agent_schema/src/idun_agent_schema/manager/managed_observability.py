@@ -12,7 +12,10 @@ class ManagedObservabilityCreate(BaseModel):
     """Create managed observability model for requests."""
 
     name: str
-    observability: ObservabilityConfig = Field(..., description="Observability configuration")
+    observability: ObservabilityConfig = Field(
+        ..., description="Observability configuration"
+    )
+
 
 class ManagedObservabilityRead(BaseModel):
     """Complete managed observability model for responses."""
@@ -21,12 +24,17 @@ class ManagedObservabilityRead(BaseModel):
 
     id: UUID
     name: str
-    observability: ObservabilityConfig = Field(..., description="Observability configuration")
+    observability: ObservabilityConfig = Field(
+        ..., description="Observability configuration"
+    )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
+
 
 class ManagedObservabilityPatch(BaseModel):
     """Full replacement schema for PUT of a managed observability."""
 
     name: str
-    observability: ObservabilityConfig = Field(..., description="Observability configuration")
+    observability: ObservabilityConfig = Field(
+        ..., description="Observability configuration"
+    )

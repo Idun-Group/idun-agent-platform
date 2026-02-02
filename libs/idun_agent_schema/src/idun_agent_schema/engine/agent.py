@@ -28,6 +28,7 @@ class AgentConfig(BaseModel):
         | DeepResearchAgentConfig
         | BaseAgentConfig
     )
+
     @model_validator(mode="after")
     def _validate_framework_config(self) -> "AgentConfig":
         """Ensure the `config` type matches the selected framework.

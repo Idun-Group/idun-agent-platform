@@ -1,6 +1,5 @@
 """Configuration models for Agent Templates."""
 
-
 from pydantic import Field
 
 from .base_agent import BaseAgentConfig
@@ -35,5 +34,8 @@ class DeepResearchAgentConfig(BaseAgentConfig):
     project: str = Field(description="Project identifier")
     region: str = Field(description="Region identifier")
     tavily_api_key: str = Field(description="Tavily API key for web search")
-    system_prompt: str = Field(description="System prompt for the agent", default="Conduct research and write a polished report.")
+    system_prompt: str = Field(
+        description="System prompt for the agent",
+        default="Conduct research and write a polished report.",
+    )
     checkpointer: CheckpointConfig | None = None

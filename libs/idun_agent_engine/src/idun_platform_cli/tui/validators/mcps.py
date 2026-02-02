@@ -30,7 +30,11 @@ def validate_mcp_servers(
                         None,
                         f"Server '{name}': command is required for stdio transport",
                     )
-            elif transport in ["sse", "streamable_http", "websocket"] and not server_data.get("url"):
+            elif transport in [
+                "sse",
+                "streamable_http",
+                "websocket",
+            ] and not server_data.get("url"):
                 return (
                     None,
                     f"Server '{name}': url is required for {transport} transport",

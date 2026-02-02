@@ -59,6 +59,9 @@ async def reload_config(request: Request, body: ReloadRequest | None = None):
             "message": "Agent configuration reloaded successfully",
         }
 
+    except HTTPException:
+        raise
+
     except Exception as e:
         print(f"❌ Error reloading configuration: {e}")
         raise HTTPException(

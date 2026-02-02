@@ -18,6 +18,7 @@ class AgentStatus(str, Enum):
     DEPRECATED = "deprecated"
     ERROR = "error"
 
+
 # class ManagedAgentBase(BaseModel):
 #     """Base model for managed agent configuration."""
 
@@ -30,13 +31,16 @@ class AgentStatus(str, Enum):
 #     updated_at: datetime = Field(..., description="Last update timestamp")
 #     agent_hash: str | None = Field(default=None, description="Agent hash")
 
+
 class ManagedAgentCreate(BaseModel):
     """Create managed agent model for requests."""
 
     name: str
     version: str | None = Field(None, description="Agent version")
     base_url: str | None = Field(None, description="Base URL")
-    engine_config: EngineConfig = Field(..., description="Idun Agent Engine configuration")
+    engine_config: EngineConfig = Field(
+        ..., description="Idun Agent Engine configuration"
+    )
 
 
 class ManagedAgentRead(BaseModel):
@@ -49,7 +53,9 @@ class ManagedAgentRead(BaseModel):
     status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
     version: str | None = Field(None, description="Agent version")
     base_url: str | None = Field(None, description="Base URL")
-    engine_config: EngineConfig = Field(..., description="Idun Agent Engine configuration")
+    engine_config: EngineConfig = Field(
+        ..., description="Idun Agent Engine configuration"
+    )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -59,4 +65,6 @@ class ManagedAgentPatch(BaseModel):
 
     name: str
     base_url: str | None = Field(None, description="Base URL")
-    engine_config: EngineConfig = Field(..., description="Idun Agent Engine configuration")
+    engine_config: EngineConfig = Field(
+        ..., description="Idun Agent Engine configuration"
+    )

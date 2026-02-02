@@ -53,7 +53,11 @@ def _normalize_config(
         if not config.enabled:
             return {"enabled": False}
 
-        provider = config.provider.value if hasattr(config.provider, "value") else config.provider
+        provider = (
+            config.provider.value
+            if hasattr(config.provider, "value")
+            else config.provider
+        )
         options = config.config.model_dump()
         return {
             "provider": provider,
@@ -155,6 +159,7 @@ def create_observability_handler(
         "provider": provider,
         "error": "Unsupported provider",
     }
+
 
 def create_observability_handlers(
     configs: list[ObservabilityConfigV2 | ObservabilityConfigV1] | None,
