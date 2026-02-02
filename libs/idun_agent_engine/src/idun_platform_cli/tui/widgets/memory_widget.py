@@ -92,7 +92,6 @@ class MemoryWidget(Widget):
 
     def get_data(self) -> CheckpointConfig | None:
         from idun_agent_schema.engine.langgraph import (
-            CheckpointConfig,
             InMemoryCheckpointConfig,
             PostgresCheckpointConfig,
             SqliteCheckpointConfig,

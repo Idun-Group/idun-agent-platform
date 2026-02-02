@@ -85,55 +85,6 @@ The open-source platform that turns any **LangGraph** or **ADK** agent into a **
 
 ---
 
-## Table of contents
-
-- [Should you use Idun Agent Platform](#should-you-use-idun-agent-platform)
-- [Quickstart (CLI, 5 minutes)](#quickstart-cli-5-minutes)
-- [Quickstart (Engine only, 10 minutes)](#quickstart-engine-only-10-minutes)
-- [Quickstart (Platform, Docker Compose)](#quickstart)
-- [Key capabilities at a glance](#key-capabilities-at-a-glance)
-- [High level architecture](#high-level-architecture)
-- [Enterprise and regulated environments](#enterprise-and-regulated-environments)
-- [Community and support](#community-and-support)
-- [Commercial support](#commercial-support)
-- [Project status and roadmap](#project-status-and-roadmap)
-- [Contributing](#contributing)
-
-## Should you use Idun Agent Platform
-
-You probably should if:
-
-- You have or plan multiple agents built with LangGraph, ADK, Haystack or similar
-- You care about observability, guardrails, security, and AI regulation
-- You want to self host or run on your own cloud, not depend on a vendor black box
-
-You probably should not if:
-
-- You are just experimenting with a single toy chatbot
-- You do not need observability, governance or multi environment setups yet
-
-## For GenAI developers
-
-You want to spend time on agent logic, not boilerplate infra.
-
-With Idun you can:
-
-- Wrap your LangGraph, ADK or Haystack agent as a FastAPI service in minutes
-- Get tracing, feedback and metrics without rewriting your code
-- Run the same agent locally, on staging and in production with the same config
-- Plug tools and memory through configuration instead of hard coding everything
-
-## For AI and data platform teams
-
-You want to standardize how agents run in production and stay compliant.
-
-With Idun you can:
-
-- Maintain a catalog of approved agents with clear ownership and environments
-- Enforce SSO, RBAC and per tenant isolation, integrated with your IdP
-- Control which models, tools and data sources each agent can use with MCP
-- Enforce guardrails for safety and compliance, with full audit and monitoring
-
 ## Why Idun exists
 ![Platform Workflow](docs/images/platform-workflow.png)
 
@@ -160,15 +111,43 @@ You can start using Idun Agent Platform in 3 ways:
 
 ## Manager
 
-## Quickstart (CLI, 5 minutes)
-
-The easiest way to configure and run an agent is with the interactive CLI:
+Full Idun Agent Platform with an admin UI to manage and govern multiple configs and agents.
 
 <div align="center">
-  <img src="docs/images/tui.png" alt="Idun CLI Interface" width="100%"/>
+  <img src="docs/images/screenshots/create-agent-style.png" alt="Manager create" width="100%"/>
 </div>
 
-1. Install:
+You need Python 3.12, Docker, and Git.
+
+1. Clone the repo.
+
+```bash
+git clone https://github.com/Idun-Group/idun-agent-platform.git
+cd idun-agent-platform
+```
+
+2. Start the platform locally.
+
+```bash
+cp .env.example .env
+
+docker compose -f docker-compose.dev.yml up --build
+```
+
+3. Open the dashboard at `http://localhost:3000` and create your first agent.
+
+👉 For a complete step-by-step tutorial, including ADK example code, see the
+**[Quickstart guide](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)**.
+
+## CLI
+
+Easy, interactive CLI to configure your agent:
+
+<div align="center">
+  <img src="docs/images/tui-all.png" alt="Idun CLI Interface" width="100%"/>
+</div>
+
+1. Install in your agent environment:
 
 ```bash
 pip install idun-agent-engine
@@ -180,20 +159,6 @@ pip install idun-agent-engine
 idun init
 ```
 
-<<<<<<< HEAD
-3. Configure your agent through the interactive TUI:
-   - Agent framework (LangGraph/ADK)
-   - Memory/checkpointing (In-Memory, SQLite, PostgreSQL)
-   - Observability (Langfuse, Phoenix, LangSmith, GCP)
-   - Guardrails (Currently we only support [guardrails-ai](https://guardrailsai.com/docs). More integrations to come soon..)
-   - MCP servers
-
-> [!TIP]
-  > You can press **Next** to save a section, or skip it. On every Next button press, the state of your config is saved to **.idun/agent_name.yaml**. You can then run your agent directly without having to launch it via the tui.
-
-
-4. The CLI offers to:
-=======
 3. Configure your agent through the interactive CLI:
    - Agent framework (LangGraph/ADK)
    - Memory/checkpointing (In-Memory, SQLite, PostgreSQL)
@@ -206,27 +171,16 @@ idun init
 
 
 4. The CLI lets you:
->>>>>>> origin/develop
    - Deploy the agent locally
    - Show live server logs
    - Open a chat interface to test your agent
 
 You can view the Swagger docs at `http://localhost:YOUR_AGENT_PORT/docs`
 
-<<<<<<< HEAD
-Or write your own config.yaml file, and run the agent separately:
-
-```bash
-idun agent serve --source=file --path=path/to/your/agent_config.yaml
-```
-
-## Quickstart (Engine only, 10 minutes)
-=======
 👉 For a complete step-by-step tutorial with the CLI, see the
 **[CLI guide](https://idun-group.github.io/idun-agent-platform/cli/overview/)**
 
 ## Manual config
->>>>>>> origin/develop
 
 If you just want to run an agent API (without the full platform UI/Manager), you can run the **Idun Agent Engine** standalone.
 
@@ -280,53 +234,7 @@ agent:
 python -c "from idun_agent_engine.core.server_runner import run_server_from_config; run_server_from_config('config.yaml')"
 ```
 
-<<<<<<< HEAD
-Then open `http://localhost:8000/docs`.
-
-## High level architecture
-
-Idun Agent Platform is structured in four layers:
-
-- **Web dashboard**
-  UI to create, configure and monitor agents.
-
-- **Manager API**
-  Control plane that stores configurations, handles auth, observability and guardrails settings.
-
-- **Engine runtime**
-  Executes agents via adapters for LangGraph, ADK, Haystack and others, exposes AG-UI FastAPI endpoints.
-
-- **Data layer**
-  PostgreSQL for checkpointing and configuration, MCP servers for external tools and data.
-
-
-
-## Manager Quickstart
-
-You need Python 3.12, Docker and Git.
-
-1. Clone the repo
-
-```bash
-git clone https://github.com/Idun-Group/idun-agent-platform.git
-cd idun-agent-platform
-```
-
-2. Start the platform locally
-
-```bash
-cp .env.example .env
-
-docker compose -f docker-compose.dev.yml up --build
-```
-
-3. Open the dashboard at `http://localhost:3000` and create your first agent.
-
-👉 For a complete step by step tutorial, including ADK example code, see the
-**[Quickstart guide](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/)**.
-=======
 Then open `http://localhost:8000/docs`
->>>>>>> origin/develop
 
 ---
 

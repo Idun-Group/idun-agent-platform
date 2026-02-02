@@ -4,8 +4,6 @@ from idun_agent_schema.engine.observability_v2 import (
 )
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Static, Input, RadioSet, RadioButton, Switch
-from textual.widget import Widget
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Input, RadioButton, RadioSet, Static, Switch

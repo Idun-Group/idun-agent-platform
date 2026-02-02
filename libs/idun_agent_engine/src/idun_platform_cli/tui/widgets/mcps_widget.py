@@ -2,15 +2,6 @@
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import (
-    Static,
-    Input,
-    Button,
-    RadioSet,
-    RadioButton,
-    TextArea,
-    OptionList,
-)
 from textual.widget import Widget
 from textual.widgets import (
     Button,
