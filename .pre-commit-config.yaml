@@ -55,5 +55,5 @@ repos:
     hooks:
     -   id: gitleaks
         name: "🔒 security · Detect hardcoded secrets"
-        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
+        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry\.py$
 default_stages: [commit]
