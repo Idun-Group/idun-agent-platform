@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main, develop]
 
 jobs:
   lint:
@@ -17,7 +17,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -45,7 +45,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -69,7 +69,10 @@ jobs:
 
       - name: Run tests (importing installed package)
         env:
-          PYTHONPATH: ''
+          PYTHONPATH: ""
+          GUARDRAILS_API_KEY: ${{ secrets.GUARDRAILS_API_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
         working-directory: libs/idun_agent_engine
         run: |
-          uv run pytest -q
+          uv run pytest tests --cov=src/idun_agent_engine --cov-report=term-missing
