@@ -99,7 +99,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
 
     const handleDelete = async () => {
         if (!appToEdit || !confirm('Are you sure you want to delete this application?')) return;
-        
+
         setIsSubmitting(true);
         setErrorMessage(null);
         try {
@@ -162,7 +162,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 return !!config.expected_languages;
             case 'DetectPII':
                 // Check if any PII entity is selected (stored as comma-separated string or handling logic)
-                return !!config.pii_entities; 
+                return !!config.pii_entities;
             case 'DetectJailbreak':
                 return !!(config.sensitivity && config.check_type);
             case 'RestrictTopic':
@@ -189,28 +189,28 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'Langfuse':
                 return (
                     <>
-                        <TextInput 
+                        <TextInput
                             label="Host"
                             tooltip="The host URL for Langfuse."
-                            value={config.host || ''} 
+                            value={config.host || ''}
                             onChange={e => setConfig({...config, host: e.target.value})}
                             disabled={!isEditing}
                             placeholder="https://cloud.langfuse.com"
                             required
                         />
-                        <TextInput 
+                        <TextInput
                             label="Public Key"
                             tooltip="The public key for Langfuse authentication."
-                            value={config.publicKey || ''} 
+                            value={config.publicKey || ''}
                             onChange={e => setConfig({...config, publicKey: e.target.value})}
                             disabled={!isEditing}
                             type={isEditing ? "text" : "password"}
                             required
                         />
-                        <TextInput 
+                        <TextInput
                             label="Secret Key"
                             tooltip="The secret key for Langfuse authentication."
-                            value={config.secretKey || ''} 
+                            value={config.secretKey || ''}
                             onChange={e => setConfig({...config, secretKey: e.target.value})}
                             disabled={!isEditing}
                             type={isEditing ? "text" : "password"}
@@ -221,10 +221,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'Phoenix':
                 return (
                     <>
-                        <TextInput 
+                        <TextInput
                             label="Host"
                             tooltip="The host URL for Phoenix."
-                            value={config.host || ''} 
+                            value={config.host || ''}
                             onChange={e => setConfig({...config, host: e.target.value})}
                             disabled={!isEditing}
                             placeholder="http://localhost:6006"
@@ -235,32 +235,32 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'GoogleCloudLogging':
                 return (
                     <>
-                        <TextInput 
+                        <TextInput
                             label="GCP Project ID"
                             tooltip="The project identifier where logs and traces will be sent."
-                            value={config.gcpProjectId || ''} 
+                            value={config.gcpProjectId || ''}
                             onChange={e => setConfig({...config, gcpProjectId: e.target.value})}
                             disabled={!isEditing}
                             required
                         />
-                        <TextInput 
+                        <TextInput
                             label="Region/Zone"
                             tooltip="(Optional) The specific region/zone associated with the resource (e.g., us-central1)."
-                            value={config.region || ''} 
+                            value={config.region || ''}
                             onChange={e => setConfig({...config, region: e.target.value})}
                             disabled={!isEditing}
                         />
-                        <TextInput 
+                        <TextInput
                             label="Log Name"
                             tooltip="The identifier for the log stream (e.g., application-log)."
-                            value={config.logName || ''} 
+                            value={config.logName || ''}
                             onChange={e => setConfig({...config, logName: e.target.value})}
                             disabled={!isEditing}
                         />
-                        <TextInput 
+                        <TextInput
                             label="Monitored Resource Type"
                             tooltip="The resource type label (e.g., global, gce_instance, cloud_run_revision)."
-                            value={config.resourceType || ''} 
+                            value={config.resourceType || ''}
                             onChange={e => setConfig({...config, resourceType: e.target.value})}
                             disabled={!isEditing}
                         />
@@ -292,25 +292,25 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'GoogleCloudTrace':
                  return (
                     <>
-                        <TextInput 
+                        <TextInput
                             label="GCP Project ID"
                             tooltip="The project identifier where logs and traces will be sent."
-                            value={config.gcpProjectId || ''} 
+                            value={config.gcpProjectId || ''}
                             onChange={e => setConfig({...config, gcpProjectId: e.target.value})}
                             disabled={!isEditing}
                             required
                         />
-                        <TextInput 
+                        <TextInput
                             label="Region/Zone"
                             tooltip="(Optional) The specific region/zone associated with the resource (e.g., us-central1)."
-                            value={config.region || ''} 
+                            value={config.region || ''}
                             onChange={e => setConfig({...config, region: e.target.value})}
                             disabled={!isEditing}
                         />
-                        <TextInput 
+                        <TextInput
                             label="Sampling Rate"
                             tooltip="A number between 0.0 and 1.0 indicating the probability of a request being traced (e.g., 1.0 for 100%, 0.1 for 10%)."
-                            value={config.samplingRate || '1.0'} 
+                            value={config.samplingRate || '1.0'}
                             onChange={e => setConfig({...config, samplingRate: e.target.value})}
                             disabled={!isEditing}
                             type="number"
@@ -318,18 +318,18 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             min="0"
                             max="1"
                         />
-                        <TextInput 
+                        <TextInput
                             label="Flush Interval (s)"
                             tooltip="Time in seconds to wait before sending buffered traces to the cloud."
-                            value={config.flushInterval || '5'} 
+                            value={config.flushInterval || '5'}
                             onChange={e => setConfig({...config, flushInterval: e.target.value})}
                             disabled={!isEditing}
                             type="number"
                         />
-                        <TextInput 
+                        <TextInput
                             label="Ignore URLs/Endpoints"
                             tooltip="A list or comma-separated string of URL paths to exclude from tracing (e.g., /health, /metrics)."
-                            value={config.ignoreUrls || ''} 
+                            value={config.ignoreUrls || ''}
                             onChange={e => setConfig({...config, ignoreUrls: e.target.value})}
                             disabled={!isEditing}
                         />
@@ -338,38 +338,38 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'LangSmith':
                 return (
                     <>
-                        <TextInput 
+                        <TextInput
                             label="LangChain API Key"
                             tooltip="The unique authentication key from the LangSmith settings page."
-                            value={config.apiKey || ''} 
+                            value={config.apiKey || ''}
                             onChange={e => setConfig({...config, apiKey: e.target.value})}
                             disabled={!isEditing}
                             type={isEditing ? "text" : "password"}
                             required
                         />
-                        <TextInput 
+                        <TextInput
                             label="LangChain Project Name"
                             tooltip="The name of the project in LangSmith to bucket these traces under (e.g., prod-chatbot-v1)."
-                            value={config.projectName || ''} 
+                            value={config.projectName || ''}
                             onChange={e => setConfig({...config, projectName: e.target.value})}
                             disabled={!isEditing}
                         />
-                        <TextInput 
+                        <TextInput
                             label="LangChain Endpoint"
                             tooltip="(Optional) The URL endpoint, used primarily if you are self-hosting LangSmith or using a specific enterprise instance."
-                            value={config.endpoint || ''} 
+                            value={config.endpoint || ''}
                             onChange={e => setConfig({...config, endpoint: e.target.value})}
                             disabled={!isEditing}
                             placeholder="https://api.smith.langchain.com"
                         />
-                        <Checkbox 
+                        <Checkbox
                             label="Tracing Enabled"
                             tooltip="A toggle/checkbox to globally turn tracing on or off."
                             checked={config.tracingEnabled === 'true'}
                             onChange={e => setConfig({...config, tracingEnabled: String(e.target.checked)})}
                             disabled={!isEditing}
                         />
-                        <Checkbox 
+                        <Checkbox
                             label="Capture Inputs/Outputs"
                             tooltip="A toggle to decide if the full text of LLM inputs and outputs should be logged."
                             checked={config.captureInputsOutputs === 'true'}
@@ -380,10 +380,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'PostgreSQL':
                 return (
-                    <TextInput 
+                    <TextInput
                         label="Connection String"
                         tooltip="Format: postgresql+asyncpg://user:password@host:port/dbname"
-                        value={config.connectionString || ''} 
+                        value={config.connectionString || ''}
                         onChange={e => setConfig({...config, connectionString: e.target.value})}
                         disabled={!isEditing}
                         placeholder="postgresql+asyncpg://user:password@host:port/dbname"
@@ -393,10 +393,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'SQLite':
                 return (
-                    <TextInput 
+                    <TextInput
                         label="Connection String"
                         tooltip="Format: sqlite+aiosqlite:///./data.db (Use 4 slashes for absolute path)"
-                        value={config.connectionString || ''} 
+                        value={config.connectionString || ''}
                         onChange={e => setConfig({...config, connectionString: e.target.value})}
                         disabled={!isEditing}
                         placeholder="sqlite+aiosqlite:///./data.db"
@@ -422,24 +422,24 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
 
                         {['sse', 'streamable_http', 'websocket'].includes(transport) && (
                             <>
-                                <TextInput 
+                                <TextInput
                                     label="URL"
                                     tooltip="Endpoint URL for HTTP/S based transports."
-                                    value={config.url || ''} 
+                                    value={config.url || ''}
                                     onChange={e => setConfig({...config, url: e.target.value})}
                                     disabled={!isEditing}
                                     required
                                 />
-                                <TextArea 
+                                <TextArea
                                     label="Headers (JSON)"
                                     tooltip='Optional headers for HTTP/S transports. E.g. {"Authorization": "Bearer token"}'
-                                    value={config.headers || ''} 
+                                    value={config.headers || ''}
                                     onChange={e => setConfig({...config, headers: e.target.value})}
                                     disabled={!isEditing}
                                     rows={3}
                                 />
                                 {transport === 'streamable_http' && (
-                                    <Checkbox 
+                                    <Checkbox
                                         label="Terminate on Close"
                                         tooltip="Whether to terminate Streamable HTTP sessions on close."
                                         checked={config.terminate_on_close === 'true'}
@@ -448,19 +448,19 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                                     />
                                 )}
                                 {transport === 'sse' && (
-                                    <TextInput 
+                                    <TextInput
                                         label="SSE Read Timeout (s)"
                                         tooltip="Timeout in seconds waiting for SSE events."
-                                        value={config.sse_read_timeout_seconds || ''} 
+                                        value={config.sse_read_timeout_seconds || ''}
                                         onChange={e => setConfig({...config, sse_read_timeout_seconds: e.target.value})}
                                         disabled={!isEditing}
                                         type="number"
                                     />
                                 )}
-                                <TextInput 
+                                <TextInput
                                     label="Timeout (s)"
                                     tooltip="Timeout in seconds for HTTP/S transports."
-                                    value={config.timeout_seconds || ''} 
+                                    value={config.timeout_seconds || ''}
                                     onChange={e => setConfig({...config, timeout_seconds: e.target.value})}
                                     disabled={!isEditing}
                                     type="number"
@@ -470,41 +470,41 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
 
                         {transport === 'stdio' && (
                             <>
-                                <TextInput 
+                                <TextInput
                                     label="Command"
                                     tooltip="Executable to run when using stdio transport."
-                                    value={config.command || ''} 
+                                    value={config.command || ''}
                                     onChange={e => setConfig({...config, command: e.target.value})}
                                     disabled={!isEditing}
                                     required
                                 />
-                                <TextArea 
+                                <TextArea
                                     label="Args (JSON Array)"
                                     tooltip='Arguments to pass to the command. E.g. ["--port", "8000"]'
-                                    value={config.args || ''} 
+                                    value={config.args || ''}
                                     onChange={e => setConfig({...config, args: e.target.value})}
                                     disabled={!isEditing}
                                     rows={3}
                                 />
-                                <TextArea 
+                                <TextArea
                                     label="Environment Variables (JSON)"
                                     tooltip='Environment variables to set. E.g. {"DEBUG": "true"}'
-                                    value={config.env || ''} 
+                                    value={config.env || ''}
                                     onChange={e => setConfig({...config, env: e.target.value})}
                                     disabled={!isEditing}
                                     rows={3}
                                 />
-                                <TextInput 
+                                <TextInput
                                     label="Working Directory"
                                     tooltip="Working directory for stdio transports."
-                                    value={config.cwd || ''} 
+                                    value={config.cwd || ''}
                                     onChange={e => setConfig({...config, cwd: e.target.value})}
                                     disabled={!isEditing}
                                 />
-                                <TextInput 
+                                <TextInput
                                     label="Encoding"
                                     tooltip="Encoding used for stdio transport."
-                                    value={config.encoding || ''} 
+                                    value={config.encoding || ''}
                                     onChange={e => setConfig({...config, encoding: e.target.value})}
                                     disabled={!isEditing}
                                 />
@@ -527,26 +527,26 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'ModelArmor':
                 return (
                     <>
-                        <TextInput 
+                        <TextInput
                             label="Project ID"
                             tooltip="ID du projet auquel appartient le modèle."
-                            value={config.projectId || ''} 
+                            value={config.projectId || ''}
                             onChange={e => setConfig({...config, projectId: e.target.value})}
                             disabled={!isEditing}
                             required
                         />
-                        <TextInput 
+                        <TextInput
                             label="Location"
                             tooltip="Emplacement du modèle."
-                            value={config.location || ''} 
+                            value={config.location || ''}
                             onChange={e => setConfig({...config, location: e.target.value})}
                             disabled={!isEditing}
                             required
                         />
-                        <TextInput 
+                        <TextInput
                             label="Template ID"
                             tooltip="ID du modèle."
-                            value={config.templateId || ''} 
+                            value={config.templateId || ''}
                             onChange={e => setConfig({...config, templateId: e.target.value})}
                             disabled={!isEditing}
                             required
@@ -573,10 +573,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             <option value="gpt-5-mini">OpenAi GPT-5 mini</option>
                             <option value="gpt-5-nano">OpenAi GPT-5 nano</option>
                         </Select>
-                        <TextArea 
+                        <TextArea
                             label="Prompt"
                             tooltip="Define the custom prompt."
-                            value={config.prompt || ''} 
+                            value={config.prompt || ''}
                             onChange={e => setConfig({...config, prompt: e.target.value})}
                             disabled={!isEditing}
                             rows={5}
@@ -586,10 +586,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'BanList':
                 return (
-                    <TagInput 
+                    <TagInput
                         label="Banned Words"
                         tooltip="Type a word and press Enter to add. Double click to edit."
-                        value={config.banned_words || ''} 
+                        value={config.banned_words || ''}
                         onChange={e => setConfig({...config, banned_words: e.target.value})}
                         disabled={!isEditing}
                         required
@@ -597,10 +597,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'BiasCheck':
                 return (
-                    <TextInput 
+                    <TextInput
                         label="Threshold"
                         tooltip="A number between 0.0 and 1.0 (sensitivity level)."
-                        value={config.threshold || ''} 
+                        value={config.threshold || ''}
                         onChange={e => setConfig({...config, threshold: e.target.value})}
                         disabled={!isEditing}
                         type="number"
@@ -612,10 +612,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'CompetitionCheck':
                 return (
-                    <TagInput 
+                    <TagInput
                         label="Competitors"
                         tooltip="Type a competitor name and press Enter to add. Double click to edit."
-                        value={config.competitors || ''} 
+                        value={config.competitors || ''}
                         onChange={e => setConfig({...config, competitors: e.target.value})}
                         disabled={!isEditing}
                         required
@@ -623,10 +623,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'CorrectLanguage':
                 return (
-                    <TagInput 
+                    <TagInput
                         label="Expected Languages"
                         tooltip="Type an ISO language code (e.g., en, fr) and press Enter to add. Double click to edit."
-                        value={config.expected_languages || ''} 
+                        value={config.expected_languages || ''}
                         onChange={e => setConfig({...config, expected_languages: e.target.value})}
                         disabled={!isEditing}
                         required
@@ -649,7 +649,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                             PII Entities <span style={{ color: '#ff4757', marginLeft: '4px' }}>*</span>
                         </label>
                         {piiList.map(entity => (
-                             <Checkbox 
+                             <Checkbox
                                 key={entity}
                                 label={entity}
                                 checked={(config.pii_entities || '').split(',').includes(entity)}
@@ -662,10 +662,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             }
             case 'GibberishText':
                 return (
-                    <TextInput 
+                    <TextInput
                         label="Threshold"
                         tooltip="A number between 0.0 and 1.0 (sensitivity level)."
-                        value={config.threshold || ''} 
+                        value={config.threshold || ''}
                         onChange={e => setConfig({...config, threshold: e.target.value})}
                         disabled={!isEditing}
                         type="number"
@@ -677,10 +677,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'NSFWText':
                 return (
-                    <TextInput 
+                    <TextInput
                         label="Threshold"
                         tooltip="A number between 0.0 and 1.0 (sensitivity level)."
-                        value={config.threshold || ''} 
+                        value={config.threshold || ''}
                         onChange={e => setConfig({...config, threshold: e.target.value})}
                         disabled={!isEditing}
                         type="number"
@@ -723,18 +723,18 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'RestrictTopic':
                 return (
                     <>
-                        <TagInput 
+                        <TagInput
                             label="Valid Topics"
                             tooltip="Type a topic and press Enter to add. Double click to edit."
-                            value={config.valid_topics || ''} 
+                            value={config.valid_topics || ''}
                             onChange={e => setConfig({...config, valid_topics: e.target.value})}
                             disabled={!isEditing}
                             required
                         />
-                        <TagInput 
+                        <TagInput
                             label="Invalid Topics"
                             tooltip="Type a topic and press Enter to add. Double click to edit."
-                            value={config.invalid_topics || ''} 
+                            value={config.invalid_topics || ''}
                             onChange={e => setConfig({...config, invalid_topics: e.target.value})}
                             disabled={!isEditing}
                         />
@@ -744,10 +744,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'RagHallucination':
             case 'ToxicLanguage':
                 return (
-                    <TextInput 
+                    <TextInput
                         label="Threshold"
                         tooltip="A number between 0.0 and 1.0 (sensitivity level)."
-                        value={config.threshold || ''} 
+                        value={config.threshold || ''}
                         onChange={e => setConfig({...config, threshold: e.target.value})}
                         disabled={!isEditing}
                         type="number"
@@ -759,10 +759,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'CodeScanner':
                 return (
-                    <TagInput 
+                    <TagInput
                         label="Allowed Languages"
                         tooltip="Type a language (e.g. python) and press Enter to add. Double click to edit."
-                        value={config.allowed_languages || ''} 
+                        value={config.allowed_languages || ''}
                         onChange={e => setConfig({...config, allowed_languages: e.target.value})}
                         disabled={!isEditing}
                         required
@@ -773,26 +773,26 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             case 'AdkVertexAi':
                 return (
                     <>
-                        <TextInput 
+                        <TextInput
                             label="Project ID"
                             tooltip="Google Cloud Project ID."
-                            value={config.project_id || ''} 
+                            value={config.project_id || ''}
                             onChange={e => setConfig({...config, project_id: e.target.value})}
                             disabled={!isEditing}
                             required
                         />
-                        <TextInput 
+                        <TextInput
                             label="Location"
                             tooltip="Google Cloud Location (e.g. us-central1)."
-                            value={config.location || ''} 
+                            value={config.location || ''}
                             onChange={e => setConfig({...config, location: e.target.value})}
                             disabled={!isEditing}
                             required
                         />
-                        <TextInput 
+                        <TextInput
                             label="Reasoning Engine App Name"
                             tooltip="Reasoning Engine Application Name or ID."
-                            value={config.reasoning_engine_app_name || ''} 
+                            value={config.reasoning_engine_app_name || ''}
                             onChange={e => setConfig({...config, reasoning_engine_app_name: e.target.value})}
                             disabled={!isEditing}
                             required
@@ -801,10 +801,10 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 );
             case 'AdkDatabase':
                 return (
-                    <TextInput 
+                    <TextInput
                         label="Database URL"
                         tooltip="The connection string (e.g. postgresql://user:password@host:port/db)."
-                        value={config.connectionString || ''} 
+                        value={config.connectionString || ''}
                         onChange={e => setConfig({...config, connectionString: e.target.value})}
                         disabled={!isEditing}
                         required
@@ -818,14 +818,14 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
     const isSubmitDisabled = isSubmitting || (isEditing && !isFormValid());
 
     return (
-        <Modal 
-            isOpen={isOpen} 
-            onClose={onClose} 
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
             title={mode === 'create' ? `Configure ${appName}` : `${appName} Details`}
         >
-            <TextInput 
+            <TextInput
                 label="Name"
-                value={name} 
+                value={name}
                 onChange={e => setName(e.target.value)}
                 disabled={!isEditing}
                 placeholder={mode === 'create' ? `My ${appToCreate?.name}` : ''}
@@ -858,18 +858,18 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                         </Button>
                     </>
                 )}
-                
+
                 {mode === 'create' && (
                     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                         <Button 
+                         <Button
                             type="button"
-                            $variants="base" 
-                            onClick={handleSubmit} 
-                            disabled={isSubmitDisabled} 
-                            style={{ 
-                                width: 'auto', 
-                                minWidth: '200px', 
-                                fontWeight: 600, 
+                            $variants="base"
+                            onClick={handleSubmit}
+                            disabled={isSubmitDisabled}
+                            style={{
+                                width: 'auto',
+                                minWidth: '200px',
+                                fontWeight: 600,
                                 textTransform: 'uppercase',
                                 opacity: isSubmitDisabled ? 0.5 : 1,
                                 cursor: isSubmitDisabled ? 'not-allowed' : 'pointer'

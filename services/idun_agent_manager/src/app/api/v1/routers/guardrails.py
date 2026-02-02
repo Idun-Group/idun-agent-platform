@@ -10,7 +10,9 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2
-from idun_agent_schema.manager.guardrail_configs import ManagerGuardrailConfig as GuardrailConfig
+from idun_agent_schema.manager.guardrail_configs import (
+    ManagerGuardrailConfig as GuardrailConfig,
+)
 from idun_agent_schema.manager.managed_guardrail import (
     ManagedGuardrailCreate,
     ManagedGuardrailPatch,

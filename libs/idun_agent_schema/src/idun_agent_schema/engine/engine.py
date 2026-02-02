@@ -13,6 +13,7 @@ from .guardrails_v2 import GuardrailsV2 as Guardrails
 
 class EngineConfig(BaseModel):
     """Main engine configuration model for the entire Idun Agent Engine."""
+
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,

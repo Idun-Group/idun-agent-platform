@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
+
 class ApiKeyResponse(BaseModel):
     """Response shape for a single agent resource."""
 

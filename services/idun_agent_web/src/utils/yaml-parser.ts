@@ -44,29 +44,29 @@ export function parseYamlConfig(yamlContent: string): AgentConfigYaml | null {
     try {
         const lines = yamlContent.split('\n');
         const config: AgentConfigYaml = {};
-        
+
         // Track the path through nested structures
         const path: string[] = [];
         const indentStack: number[] = [];
-        
+
         for (const line of lines) {
             if (!line.trim() || line.trim().startsWith('#')) continue;
-            
+
             const trimmed = line.trim();
             const indent = line.search(/\S/);
-            
+
             // Pop from stack if we've decreased indentation
             while (indentStack.length > 0 && indent <= indentStack[indentStack.length - 1]) {
                 indentStack.pop();
                 path.pop();
             }
-            
+
             // Check if it's a key without value (section header)
             if (trimmed.endsWith(':') && !trimmed.includes(': ')) {
                 const key = trimmed.slice(0, -1);
                 path.push(key);
                 indentStack.push(indent);
-                
+
                 // Initialize structures
                 if (path.length === 1 && key === 'agent') {
                     config.agent = {};
@@ -85,15 +85,15 @@ export function parseYamlConfig(yamlContent: string): AgentConfigYaml | null {
                 }
                 continue;
             }
-            
+
             // Parse key-value pairs
             const match = trimmed.match(/^(\w+):\s*(.*)$/);
             if (match) {
                 const [, key, value] = match;
                 const cleanValue = value.replace(/^["']|["']$/g, '').trim();
-                
+
                 const currentPath = path.join('.');
-                
+
                 if (currentPath === 'agent' && key === 'type') {
                     config.agent!.type = cleanValue;
                 } else if (currentPath === 'agent.config' && key === 'name') {
@@ -175,4 +175,3 @@ export function isFrameworkSupported(framework: string): boolean {
     const normalized = normalizeFrameworkName(framework);
     return SUPPORTED_FRAMEWORKS.includes(normalized as SupportedFramework);
 }
-

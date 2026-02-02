@@ -67,7 +67,7 @@ const AppIcon = styled.img`
     height: 40px;
     border-radius: 6px;
     object-fit: contain;
-    background: #fff; 
+    background: #fff;
     padding: 2px;
 `;
 
@@ -121,4 +121,3 @@ const StatusTag = styled.div`
     font-weight: 600;
     text-transform: uppercase;
 `;
-

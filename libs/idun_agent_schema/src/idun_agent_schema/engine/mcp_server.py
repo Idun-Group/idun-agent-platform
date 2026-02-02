@@ -9,8 +9,10 @@ from pydantic import BaseModel, Field, model_validator, ConfigDict
 
 from pydantic.alias_generators import to_camel
 
+
 class MCPServer(BaseModel):
     """Configuration for a single MCP server connection."""
+
     model_config = ConfigDict(
         alias_generator=to_camel,
         populate_by_name=True,
@@ -47,27 +49,29 @@ class MCPServer(BaseModel):
         default=None, description="Encoding used for stdio transport."
     )
     encoding_error_handler: Literal["strict", "ignore", "replace"] | None = Field(
-        default=None, description="Encoding error handler for stdio transport.", alias="encodingErrorHandler"
+        default=None,
+        description="Encoding error handler for stdio transport.",
+        alias="encodingErrorHandler",
     )
     timeout_seconds: float | None = Field(
         default=None,
         description="Timeout in seconds for HTTP/S transports (maps to `timeout`).",
-        alias="timeoutSeconds"
+        alias="timeoutSeconds",
     )
     sse_read_timeout_seconds: float | None = Field(
         default=None,
         description="Timeout in seconds waiting for SSE events (maps to `sse_read_timeout`).",
-        alias="sseReadTimeoutSeconds"
+        alias="sseReadTimeoutSeconds",
     )
     terminate_on_close: bool | None = Field(
         default=None,
         description="Whether to terminate Streamable HTTP sessions on close.",
-        alias="terminateOnClose"
+        alias="terminateOnClose",
     )
     session_kwargs: dict[str, Any] = Field(
         default_factory=dict,
         description="Extra keyword arguments forwarded to MCP ClientSession.",
-        alias="sessionKwargs"
+        alias="sessionKwargs",
     )
 
     @model_validator(mode="after")

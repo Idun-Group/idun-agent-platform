@@ -10,7 +10,11 @@ from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_schema.engine.base_agent import BaseAgentConfig
 from idun_agent_schema.engine.adk import AdkAgentConfig
 from pydantic import model_validator
-from idun_agent_schema.engine.templates import TranslationAgentConfig, CorrectionAgentConfig, DeepResearchAgentConfig
+from idun_agent_schema.engine.templates import (
+    TranslationAgentConfig,
+    CorrectionAgentConfig,
+    DeepResearchAgentConfig,
+)
 
 
 class AgentConfig(BaseModel):
@@ -26,6 +30,7 @@ class AgentConfig(BaseModel):
         | DeepResearchAgentConfig
         | BaseAgentConfig
     )
+
     @model_validator(mode="after")
     def _validate_framework_config(self) -> "AgentConfig":
         """Ensure the `config` type matches the selected framework.

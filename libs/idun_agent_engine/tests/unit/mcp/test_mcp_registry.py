@@ -404,6 +404,7 @@ async def test_mcp_registry_invokes_tool_from_live_server(aws_docs_mcp_config):
 
         text_content = result[0]["text"]
         import json
+
         response = json.loads(text_content)
 
         assert "search_results" in response

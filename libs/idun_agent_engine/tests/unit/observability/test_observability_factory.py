@@ -12,7 +12,6 @@ from idun_agent_schema.engine.observability_v2 import (
 
 @pytest.mark.unit
 class TestObservabilitySchemaValidation:
-
     def test_observability_config_invalid_provider(self):
         with pytest.raises(ValidationError):
             ObservabilityConfig(
@@ -39,7 +38,6 @@ class TestObservabilitySchemaValidation:
 
 @pytest.mark.unit
 class TestObservabilityFactory:
-
     def test_create_handler_returns_none_when_disabled(self):
         from idun_agent_engine.observability.base import create_observability_handler
 
@@ -105,7 +103,9 @@ class TestObservabilityFactory:
         assert info["project_name"] == "test-project"
         mock_handler_class.assert_called_once()
 
-    @patch("idun_agent_engine.observability.gcp_logging.gcp_logging_handler.GCPLoggingHandler")
+    @patch(
+        "idun_agent_engine.observability.gcp_logging.gcp_logging_handler.GCPLoggingHandler"
+    )
     def test_create_handler_gcp_logging(self, mock_handler_class):
         from idun_agent_engine.observability.base import create_observability_handler
         from idun_agent_schema.engine.observability_v2 import (
@@ -128,7 +128,9 @@ class TestObservabilityFactory:
         assert info["provider"] == "gcp_logging"
         mock_handler_class.assert_called_once()
 
-    @patch("idun_agent_engine.observability.gcp_trace.gcp_trace_handler.GCPTraceHandler")
+    @patch(
+        "idun_agent_engine.observability.gcp_trace.gcp_trace_handler.GCPTraceHandler"
+    )
     def test_create_handler_gcp_trace(self, mock_handler_class):
         from idun_agent_engine.observability.base import create_observability_handler
         from idun_agent_schema.engine.observability_v2 import (
@@ -185,7 +187,6 @@ class TestObservabilityFactory:
 
 @pytest.mark.unit
 class TestObservabilityMultipleHandlers:
-
     @patch("idun_agent_engine.observability.langfuse.langfuse_handler.LangfuseHandler")
     @patch("idun_agent_engine.observability.phoenix.phoenix_handler.PhoenixHandler")
     def test_create_multiple_handlers(self, mock_phoenix, mock_langfuse):
@@ -265,7 +266,6 @@ class TestObservabilityMultipleHandlers:
 
 @pytest.mark.unit
 class TestConfigNormalization:
-
     def test_normalize_v2_config_enabled(self):
         from idun_agent_engine.observability.base import _normalize_config
 
@@ -352,5 +352,3 @@ class TestConfigNormalization:
         assert normalized["enabled"] is False
         assert normalized["provider"] is None
         assert normalized["options"] == {}
-
-

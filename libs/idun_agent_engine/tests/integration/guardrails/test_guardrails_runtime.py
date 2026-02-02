@@ -223,14 +223,22 @@ async def test_multiple_guardrails_all_must_pass(skip_if_no_guardrails_api_key):
     clean_message = "This is a clean message"
 
     try:
-        _run_guardrails(guardrails, {"query": message_with_banned_word, "session_id": "test123"}, position="input")
+        _run_guardrails(
+            guardrails,
+            {"query": message_with_banned_word, "session_id": "test123"},
+            position="input",
+        )
         await agent.invoke({"query": message_with_banned_word, "session_id": "test123"})
         assert False, "Expected ban_list guardrail to block spam"
     except Exception:
         pass
 
     try:
-        _run_guardrails(guardrails, {"query": message_with_pii, "session_id": "test123"}, position="input")
+        _run_guardrails(
+            guardrails,
+            {"query": message_with_pii, "session_id": "test123"},
+            position="input",
+        )
         await agent.invoke({"query": message_with_pii, "session_id": "test123"})
         assert False, "Expected PII guardrail to block email"
     except Exception:

@@ -115,12 +115,14 @@ class GuardrailsHubGuard(BaseGuardrail):
                 f"Guard: {self.guard_id} is not yet supported, or does not exist."
             )
 
-        if hasattr(self._guardrail_config, 'guard_params'):
+        if hasattr(self._guardrail_config, "guard_params"):
             guard_instance_params = self._guardrail_config.guard_params.model_dump()
         else:
             config_dict = self._guardrail_config.model_dump()
-            exclude_fields = {'config_id', 'api_key', 'reject_message', 'guard_url'}
-            guard_instance_params = {k: v for k, v in config_dict.items() if k not in exclude_fields}
+            exclude_fields = {"config_id", "api_key", "reject_message", "guard_url"}
+            guard_instance_params = {
+                k: v for k, v in config_dict.items() if k not in exclude_fields
+            }
 
         try:
             guard_instance = guard(**guard_instance_params)
@@ -130,6 +132,7 @@ class GuardrailsHubGuard(BaseGuardrail):
         except SystemError:
             # sentencepiece mutex lock error when loading models in quick succession
             import time
+
             time.sleep(0.5)
             guard_instance = guard(**guard_instance_params)
             for param, value in guard_instance_params.items():

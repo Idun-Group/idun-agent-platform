@@ -29,11 +29,7 @@ def main() -> None:
     openapi = app.openapi()
 
     output_path = (
-        repo_root
-        / "services"
-        / "idun_agent_web"
-        / "schema"
-        / "manager-openapi.json"
+        repo_root / "services" / "idun_agent_web" / "schema" / "manager-openapi.json"
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(openapi, indent=2))
@@ -43,4 +39,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

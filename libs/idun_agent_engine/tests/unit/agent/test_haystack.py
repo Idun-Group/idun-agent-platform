@@ -7,7 +7,10 @@ async def test_haystack_agent_from_yaml():
     from idun_agent_engine.core.config_builder import ConfigBuilder
 
     mock_pipeline_path = (
-        Path(__file__).parent.parent.parent / "fixtures" / "agents" / "mock_haystack_pipeline.py"
+        Path(__file__).parent.parent.parent
+        / "fixtures"
+        / "agents"
+        / "mock_haystack_pipeline.py"
     )
 
     config = {

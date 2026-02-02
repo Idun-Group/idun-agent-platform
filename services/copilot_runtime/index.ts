@@ -14,7 +14,7 @@ const DEFAULT_MANAGER_URL = process.env.MANAGER_URL || 'http://manager:8000';
 const originalFetch = global.fetch;
 global.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const urlStr = input.toString();
-    
+
     // Only intercept POST requests to the agent stream endpoint
     if (urlStr.includes('/agent/copilotkit/stream') && init && init.method === 'POST') {
         console.log(`[Proxy] Intercepting agent request to: ${urlStr}`);
@@ -22,7 +22,7 @@ global.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
             if (init.body) {
                 const bodyStr = init.body.toString();
                 const originalBody = JSON.parse(bodyStr);
-                
+
                 console.log("[Proxy] Raw Copilot Payload:", JSON.stringify(originalBody, null, 2));
 
                 // Transform/Ensure the payload matches the exact structure required by the agent
@@ -37,7 +37,7 @@ global.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
                 };
 
                 console.log("[Proxy] Transformed Payload (Sending to Agent):", JSON.stringify(transformedBody, null, 2));
-                
+
                 // Update the body with the transformed JSON
                 init.body = JSON.stringify(transformedBody);
             }
@@ -45,12 +45,12 @@ global.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
             console.error("[Proxy] Error transforming payload:", e);
         }
     }
-    
+
     // Generate and log CURL command for debugging
     if (urlStr.includes('/agent/copilotkit/stream')) {
         try {
             let curlCmd = `curl -v -X ${init?.method || 'GET'} '${urlStr}'`;
-            
+
             // Handle headers
             if (init?.headers) {
                 let headers: Record<string, string> = {};
@@ -129,4 +129,3 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`Copilot Runtime running on port ${PORT}`);
 });
-

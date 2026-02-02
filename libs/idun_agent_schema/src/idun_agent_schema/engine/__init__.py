@@ -1,6 +1,6 @@
 """Engine-related schemas."""
 
-from .agent import BaseAgentConfig,AgentConfig  # noqa: F401
+from .agent import BaseAgentConfig, AgentConfig  # noqa: F401
 from .api import ChatRequest, ChatResponse  # noqa: F401
 from .agent_framework import AgentFramework  # noqa: F401
 from .engine import EngineConfig  # noqa: F401

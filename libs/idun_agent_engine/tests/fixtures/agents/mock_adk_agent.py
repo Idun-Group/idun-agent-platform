@@ -5,7 +5,7 @@ from google.genai.types import Content, Part
 
 class MockADKAgent(BaseAgent):
     async def _run_async_impl(self, ctx):
-        user_content = ctx.user_content if hasattr(ctx, 'user_content') else "test"
+        user_content = ctx.user_content if hasattr(ctx, "user_content") else "test"
         content_str = str(user_content) if user_content else "test"
 
         response_content = Content(parts=[Part(text=f"Response to: {content_str}")])
