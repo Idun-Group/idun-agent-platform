@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/microsoft/pyright/main/packages/vscode-pyright/schemas/pyrightconfig.schema.json",
   "include": [
     "libs/idun_agent_engine/src",
     "libs/idun_agent_engine/tests",
@@ -13,7 +12,7 @@
   ],
   "venvPath": ".",
   "venv": ".venv",
-  "pythonVersion": "3.13",
+  "pythonVersion": "3.12",
   "typeCheckingMode": "basic",
   "reportMissingImports": true,
   "reportMissingTypeStubs": false,

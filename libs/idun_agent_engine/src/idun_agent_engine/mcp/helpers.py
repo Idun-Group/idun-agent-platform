@@ -1,10 +1,12 @@
+import os
 from pathlib import Path
 from typing import Any
-import yaml
+
 import requests
-import os
-from idun_agent_engine.mcp.registry import MCPClientRegistry
+import yaml
 from idun_agent_schema.engine.mcp_server import MCPServer
+
+from idun_agent_engine.mcp.registry import MCPClientRegistry
 
 
 def _extract_mcp_configs(config_data: dict[str, Any]) -> list[MCPServer]:
@@ -89,8 +91,7 @@ def _fetch_config_from_api() -> dict[str, Any]:
 
 
 def get_adk_tools_from_file(config_path: str | Path) -> list[Any]:
-    """
-    Loads MCP configurations from a YAML file and returns a list of ADK toolsets.
+    """Loads MCP configurations from a YAML file and returns a list of ADK toolsets.
 
     Args:
         config_path: Path to the configuration YAML file.
@@ -103,8 +104,7 @@ def get_adk_tools_from_file(config_path: str | Path) -> list[Any]:
 
 
 def get_adk_tools_from_api() -> list[Any]:
-    """
-    Fetches configuration from the Idun Manager API and returns a list of ADK toolsets.
+    """Fetches configuration from the Idun Manager API and returns a list of ADK toolsets.
 
     Returns:
         List of initialized ADK McpToolset instances.
@@ -114,37 +114,72 @@ def get_adk_tools_from_api() -> list[Any]:
 
 
 def get_adk_tools(config_path: str | Path | None = None) -> list[Any]:
-    """
-    Returns ADK toolsets using config from file when provided, otherwise from API.
+    """Returns ADK toolsets using config from file when provided, from IDUN_CONFIG_PATH env var, or from API.
+
+    The function resolves configuration in the following order:
+    1. Uses the provided config_path if specified
+    2. Uses IDUN_CONFIG_PATH environment variable if set
+    3. Falls back to fetching from Idun Manager API
+
+    Args:
+        config_path: Optional path to configuration YAML file. If provided, takes precedence.
 
     Returns:
         List of initialized ADK McpToolset instances.
+
+    Raises:
+        ValueError: If no config source is available or API credentials are missing.
+        FileNotFoundError: If specified config file doesn't exist.
     """
     if config_path:
         return get_adk_tools_from_file(config_path)
+
+    # Check for IDUN_CONFIG_PATH environment variable
+    env_config_path = os.environ.get("IDUN_CONFIG_PATH")
+    if env_config_path:
+        return get_adk_tools_from_file(env_config_path)
+
     return get_adk_tools_from_api()
 
 
 async def get_langchain_tools_from_file(config_path: str | Path) -> list[Any]:
-    """
-    Loads MCP configurations from a YAML file and returns LangChain tool instances.
+    """Loads MCP configurations from a YAML file and returns LangChain tool instances.
     """
     config_data = _load_config_from_file(config_path)
     return await _get_langchain_tools_from_data(config_data)
 
 
 async def get_langchain_tools_from_api() -> list[Any]:
-    """
-    Fetches configuration from the Idun Manager API and returns LangChain tool instances.
+    """Fetches configuration from the Idun Manager API and returns LangChain tool instances.
     """
     config_data = _fetch_config_from_api()
     return await _get_langchain_tools_from_data(config_data)
 
 
 async def get_langchain_tools(config_path: str | Path | None = None) -> list[Any]:
-    """
-    Returns LangChain tool instances using config from file when provided, otherwise from API.
+    """Returns LangChain tool instances using config from file when provided, from IDUN_CONFIG_PATH env var, or from API.
+
+    The function resolves configuration in the following order:
+    1. Uses the provided config_path if specified
+    2. Uses IDUN_CONFIG_PATH environment variable if set
+    3. Falls back to fetching from Idun Manager API
+
+    Args:
+        config_path: Optional path to configuration YAML file. If provided, takes precedence.
+
+    Returns:
+        List of initialized LangChain tool instances.
+
+    Raises:
+        ValueError: If no config source is available or API credentials are missing.
+        FileNotFoundError: If specified config file doesn't exist.
     """
     if config_path:
         return await get_langchain_tools_from_file(config_path)
+
+    # Check for IDUN_CONFIG_PATH environment variable
+    env_config_path = os.environ.get("IDUN_CONFIG_PATH")
+    if env_config_path:
+        return await get_langchain_tools_from_file(env_config_path)
+
     return await get_langchain_tools_from_api()

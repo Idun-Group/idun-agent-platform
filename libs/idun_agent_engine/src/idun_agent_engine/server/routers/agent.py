@@ -144,7 +144,6 @@ async def copilotkit_stream(
         try:
             # Get the accept header from the request
             accept_header = request.headers.get("accept")
-            agent_id = request.url.path.lstrip("/")
 
             # Create an event encoder to properly format SSE events
             encoder = EventEncoder(accept=accept_header or "")

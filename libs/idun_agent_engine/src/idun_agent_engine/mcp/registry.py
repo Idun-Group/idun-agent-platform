@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import Connection
@@ -80,9 +80,7 @@ class MCPClientRegistry:
         return await self._client.get_tools(server_name=name)
 
     async def get_langchain_tools(self, name: str | None = None) -> list[Any]:
-        """
-        Alias for get_tools to make intent explicit when using LangChain/LangGraph agents.
-        """
+        """Alias for get_tools to make intent explicit when using LangChain/LangGraph agents."""
         return await self.get_tools(name=name)
 
     def get_adk_toolsets(self) -> list[Any]:

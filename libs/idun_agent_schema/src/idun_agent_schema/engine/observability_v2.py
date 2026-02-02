@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import os
-from typing import Any
-
-from pydantic import BaseModel, Field, ConfigDict
-from pydantic.alias_generators import to_camel
-
 from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
 
 
 class ObservabilityProvider(str, Enum):

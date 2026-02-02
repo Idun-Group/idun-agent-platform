@@ -14,6 +14,8 @@ from idun_agent_schema.engine.observability import (
 )
 from idun_agent_schema.engine.observability_v2 import (
     ObservabilityConfig as ObservabilityConfigV2,
+)
+from idun_agent_schema.engine.observability_v2 import (
     ObservabilityProvider,
 )
 

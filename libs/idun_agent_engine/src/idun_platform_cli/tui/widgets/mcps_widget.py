@@ -12,8 +12,16 @@ from textual.widgets import (
     OptionList,
 )
 from textual.widget import Widget
+from textual.widgets import (
+    Button,
+    Input,
+    OptionList,
+    RadioButton,
+    RadioSet,
+    Static,
+    TextArea,
+)
 from textual.widgets.option_list import Option
-
 
 MCP_TEMPLATES = {
     "time": {
@@ -42,7 +50,7 @@ class MCPsWidget(Widget):
         templates_row = Horizontal(classes="templates-row")
         templates_row.compose_add_child(Static("Select template:", classes="mcp-label"))
         option_list = OptionList(id="template_selector", classes="template-selector")
-        for template_name in MCP_TEMPLATES.keys():
+        for template_name in MCP_TEMPLATES:
             option_list.add_option(Option(template_name.title(), id=template_name))
         templates_row.compose_add_child(option_list)
         templates_row.compose_add_child(

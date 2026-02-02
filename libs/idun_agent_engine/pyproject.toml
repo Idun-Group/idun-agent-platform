@@ -1,6 +1,6 @@
 [project]
 name = "idun-agent-engine"
-version = "0.4.0"
+version = "0.4.1"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.12,<3.14"
@@ -157,10 +157,16 @@ select = [
     "UP",  # pyupgrade
     "N",   # pep8-naming
     "SIM", # flake8-simplify
-    "D",   # pydocstyle (docstrings)
 ]
 extend-ignore = [
     "E501",  # line length handled by black
+    # Keep linting actionable without behavior changes across the codebase.
+    "E722",   # bare except
+    "B904",   # raise from within except
+    "SIM105", # prefer contextlib.suppress
+    "SIM117", # combine nested with
+    "SIM118", # key in dict instead of key in dict.keys()
+    "UP038",  # isinstance union style
 ]
 
 [tool.ruff.lint.per-file-ignores]

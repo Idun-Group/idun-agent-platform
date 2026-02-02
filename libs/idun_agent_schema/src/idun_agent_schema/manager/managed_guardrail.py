@@ -5,7 +5,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2
 from .guardrail_configs import ManagerGuardrailConfig as GuardrailConfig
 
 

@@ -1,13 +1,11 @@
 """Main managed observability configuration model."""
 
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
-from enum import Enum
 
 
 class ManagedObservabilityCreate(BaseModel):

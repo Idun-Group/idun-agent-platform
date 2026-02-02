@@ -9,17 +9,17 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.v1.deps import get_session
-from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 from idun_agent_schema.manager.managed_observability import (
     ManagedObservabilityCreate,
     ManagedObservabilityPatch,
     ManagedObservabilityRead,
 )
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.v1.deps import get_session
+from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
 
 router = APIRouter()
 

@@ -5,7 +5,6 @@
 server:
   api:
     port: 8001 # Port where the server will run
-    port: 8001 # Port where the server will run
 
 # Agent Configuration - Defines which agent to load and how
 agent:

@@ -1,10 +1,6 @@
 """Pydantic schemas for Agent Manager API I/O."""
 
-from datetime import datetime
-from typing import Any
-from uuid import UUID
-
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel
 
 
 class ApiKeyResponse(BaseModel):

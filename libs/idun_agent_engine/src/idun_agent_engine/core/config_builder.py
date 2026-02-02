@@ -4,6 +4,7 @@ This module provides a fluent API for building configuration objects using Pydan
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -530,6 +531,9 @@ class ConfigBuilder:
     def load_from_file(config_path: str = "config.yaml") -> EngineConfig:
         """Load configuration from a YAML file and return a validated EngineConfig.
 
+        Sets IDUN_CONFIG_PATH environment variable to enable MCP helper functions
+        (get_adk_tools, get_langchain_tools) to automatically discover the config file.
+
         Args:
             config_path: Path to the configuration YAML file
 
@@ -544,6 +548,9 @@ class ConfigBuilder:
         if not path.is_absolute():
             # Resolve relative to the current working directory
             path = Path.cwd() / path
+
+        # Set IDUN_CONFIG_PATH for MCP helpers to discover
+        os.environ["IDUN_CONFIG_PATH"] = str(path)
 
         with open(path) as f:
             config_data = yaml.safe_load(f)

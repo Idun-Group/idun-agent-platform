@@ -41,7 +41,7 @@
       "envFile": "${workspaceFolder}/services/idun_agent_manager/.env",
       "justMyCode": false,
       "console": "integratedTerminal",
-      "sudo": true,
+      "sudo": "true",
 
     },
     {
@@ -50,14 +50,6 @@
       "request": "launch",
       "console": "integratedTerminal",
       "module": "idun_platform_cli.main",
-      // "args": [
-      //   "main:app",
-      //   "--host",
-      //   "0.0.0.0",
-      //   "--port",
-      //   "8100",
-      //   "--reload"
-      // ],
       "args": [
         "agent", "serve",
         "--source",
@@ -154,14 +146,6 @@
         "Idun Engine (FastAPI)"
       ]
     }
-    // {
-    //   "name": "Run Manager + Engine + Streamlit",
-    //   "configurations": [
-    //     "Idun Manager (FastAPI)",
-    //     "Idun Engine (FastAPI)",
-    //     "IdunEngine Streamlit (placeholder)"
-    //   ]
-    // }
   ],
   "inputs": [
     {

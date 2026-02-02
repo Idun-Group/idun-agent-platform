@@ -1,13 +1,12 @@
 """Main managed agent configuration model."""
 
 from datetime import datetime
-from typing import Any
+from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from idun_agent_schema.engine import EngineConfig
-from enum import Enum
 
 
 class AgentStatus(str, Enum):

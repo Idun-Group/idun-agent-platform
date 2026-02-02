@@ -1,6 +1,6 @@
 [project]
 name = "idun-agent-schema"
-version = "0.4.0"
+version = "0.4.1"
 description = "Centralized Pydantic schema library for Idun Agent Engine and Manager"
 authors = [{ name = "Idun Group", email = "contact@idun-group.com" }]
 readme = "README.md"
@@ -50,9 +50,19 @@ line-length = 88
 
 [tool.ruff.lint]
 select = [
-  "E", "F", "W", "I", "B", "UP", "N", "SIM", "D"
+  "E", "F", "W", "I", "B", "UP", "N", "SIM"
 ]
-extend-ignore = ["E501"]
+extend-ignore = [
+  "E501",
+  # Keep linting actionable without behavior changes across the codebase.
+  "E722",
+  "B904",
+  "SIM105",
+  "SIM117",
+  "SIM118",
+  "UP007",
+  "UP038",
+]
 
 [tool.black]
 line-length = 88

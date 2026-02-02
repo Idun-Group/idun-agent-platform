@@ -13,7 +13,6 @@ def telemetry_enabled(environ: dict[str, str] | None = None) -> bool:
     Telemetry is ON by default. Users can disable it by setting the environment
     variable `IDUN_TELEMETRY_ENABLED` to a falsy value (e.g. "false", "0", "no").
     """
-
     env = os.environ if environ is None else environ
     raw = env.get(IDUN_TELEMETRY_ENABLED_ENV)
     if raw is None:

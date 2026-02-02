@@ -1,12 +1,9 @@
-import os
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import ConfigDict
 from pydantic.alias_generators import to_camel
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class SharedBaseModel(BaseSettings):
-    """
-    Inherit from this if you want:
+    """Inherit from this if you want:
     1. CamelCase JSON support (Frontend friendly)
     2. Environment Variable fallback
     """

@@ -1,0 +1,17 @@
+name: Documentation issue
+description: Report missing/incorrect documentation
+labels: ["documentation"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What is wrong or missing?
+      description: Please include links to the relevant docs page(s).
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+    validations:
+      required: false

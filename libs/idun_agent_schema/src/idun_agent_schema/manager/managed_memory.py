@@ -5,10 +5,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from idun_agent_schema.engine.langgraph import CheckpointConfig
-from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.adk import SessionServiceConfig
-
+from idun_agent_schema.engine.agent_framework import AgentFramework
+from idun_agent_schema.engine.langgraph import CheckpointConfig
 
 MemoryConfig = CheckpointConfig | SessionServiceConfig
 

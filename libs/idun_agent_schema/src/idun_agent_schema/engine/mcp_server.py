@@ -5,8 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator, ConfigDict
-
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
 
@@ -75,7 +74,7 @@ class MCPServer(BaseModel):
     )
 
     @model_validator(mode="after")
-    def _validate_transport_fields(self) -> "MCPServer":
+    def _validate_transport_fields(self) -> MCPServer:
         """Ensure required fields are present for the selected transport."""
         if self.transport in {"sse", "streamable_http", "websocket"} and not self.url:
             raise ValueError(f"url is required for transport '{self.transport}'")

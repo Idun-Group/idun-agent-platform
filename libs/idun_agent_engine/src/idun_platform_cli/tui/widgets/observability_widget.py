@@ -7,6 +7,8 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Static, Input, RadioSet, RadioButton, Switch
 from textual.widget import Widget
 from textual.reactive import reactive
+from textual.widget import Widget
+from textual.widgets import Input, RadioButton, RadioSet, Static, Switch
 
 from idun_platform_cli.tui.validators.observability import validate_observability
 

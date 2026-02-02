@@ -1,11 +1,11 @@
 """Guardrails configuration widget."""
 
-from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical, Grid
-from textual.widgets import Static, Input, Switch, RadioSet, RadioButton, TextArea
-from textual.widget import Widget
-
 from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2
+from textual.app import ComposeResult
+from textual.containers import Grid, Horizontal, Vertical
+from textual.widget import Widget
+from textual.widgets import Input, RadioButton, RadioSet, Static, Switch, TextArea
+
 from idun_platform_cli.tui.validators.guardrails import validate_guardrail
 
 
