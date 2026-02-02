@@ -807,8 +807,33 @@ Switch {
 #chat_history {
     width: 100%;
     height: 100%;
-    background: black;
+    background: transparent;
     color: white;
+}
+
+#chat_history Markdown {
+    background: transparent;
+}
+
+#chat_history .em {
+    color: gray;
+}
+
+#chat_history .strong {
+    color: cyan;
+}
+
+#chat_history .code_inline {
+    color: yellow;
+    background: transparent;
+}
+
+#chat_history .h1, #chat_history .h2, #chat_history .h3 {
+    color: green;
+}
+
+#chat_history .link {
+    color: magenta;
 }
 
 .chat-thinking-container {

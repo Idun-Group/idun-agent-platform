@@ -1,10 +1,14 @@
 """Chat widget for interacting with running agent."""
 
+import json
+import uuid
+
+import httpx
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Button, Input, Label, LoadingIndicator, RichLog
+from textual.widgets import Button, Input, Label, LoadingIndicator, Markdown
 
 
 class ChatWidget(Widget):
@@ -20,7 +24,7 @@ class ChatWidget(Widget):
         chat_container = Vertical(classes="chat-history-container")
         chat_container.border_title = "Conversation"
         with chat_container:
-            yield RichLog(id="chat_history", highlight=True, markup=True, wrap=True)
+            yield Markdown(id="chat_history")
 
         thinking_container = Horizontal(
             classes="chat-thinking-container", id="chat_thinking"
@@ -51,11 +55,8 @@ class ChatWidget(Widget):
         self.run_worker(self._check_server_status())
 
     def on_mount(self) -> None:
-        chat_log = self.query_one("#chat_history", RichLog)
-        chat_log.write("[dim]Start chatting with your agent...[/dim]")
-        chat_log.write(
-            "[dim]Make sure the agent server is running from the Serve page.[/dim]"
-        )
+        chat_log = self.query_one("#chat_history", Markdown)
+        chat_log.update("*Start chatting with your agent...*\n\n*Make sure the agent server is running from the Serve page.*")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "send_button":
@@ -78,8 +79,8 @@ class ChatWidget(Widget):
 
         input_widget.value = ""
 
-        chat_log = self.query_one("#chat_history", RichLog)
-        chat_log.write(f"[cyan]You:[/cyan] {message}")
+        chat_log = self.query_one("#chat_history", Markdown)
+        self.run_worker(chat_log.append(f"\n\n**You:** {message}\n\n"))
 
         thinking_container = self.query_one("#chat_thinking")
         thinking_container.display = True
@@ -87,45 +88,114 @@ class ChatWidget(Widget):
         self.run_worker(self._send_message(message))
 
     async def _send_message(self, message: str) -> None:
-        import httpx
-
-        chat_log = self.query_one("#chat_history", RichLog)
+        chat_log = self.query_one("#chat_history", Markdown)
         thinking_container = self.query_one("#chat_thinking")
+        agent_response_text = ""
 
         try:
-            url = f"http://localhost:{self.server_port}/agent/invoke"
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post(
-                    url, json={"session_id": "123", "query": message}
-                )
-                result = response.json()
+            url = f"http://localhost:{self.server_port}/agent/copilotkit/stream"
 
-                agent_response = result.get(
-                    "output", result.get("response", "No response")
-                )
-                thinking_container.display = False
-                chat_log.write(f"[green]{self.agent_name}:[/green] {agent_response}")
+            payload = {
+                "threadId": str(uuid.uuid4()),
+                "runId": str(uuid.uuid4()),
+                "messages": [
+                    {"role": "user", "content": message, "id": str(uuid.uuid4())}
+                ],
+                "state": None,
+                "tools": [],
+                "context": [],
+                "forwardedProps": None,
+            }
+
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                async with client.stream(
+                    "POST", url, json=payload, headers={"Accept": "text/event-stream"}
+                ) as response:
+                    response.raise_for_status()
+
+                    first_content = True
+
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            json_str = line[6:]
+
+                            try:
+                                event = json.loads(json_str)
+                                event_type = event.get("type")
+
+                                if event_type == "TEXT_MESSAGE_CONTENT":
+                                    delta = event.get("delta", "")
+                                    if delta:
+                                        agent_response_text += delta
+
+                                        if first_content:
+                                            thinking_container.display = False
+                                            await chat_log.append(f"**{self.agent_name}:** ")
+                                            first_content = False
+
+                                        await chat_log.append(delta)
+
+                                elif event_type == "RAW":
+                                    raw_event = event.get("event", {})
+                                    if raw_event.get("event") == "on_chat_model_stream":
+                                        chunk = raw_event.get("data", {}).get("chunk", {})
+                                        content = chunk.get("content")
+
+                                        if content is None:
+                                            continue
+
+                                        text_to_append = ""
+                                        if isinstance(content, str):
+                                            text_to_append = content
+                                        elif isinstance(content, list):
+                                            for item in content:
+                                                if isinstance(item, dict):
+                                                    item_type = item.get("type")
+                                                    if item_type == "text":
+                                                        text_to_append += item.get("text", "")
+
+                                        if text_to_append:
+                                            agent_response_text += text_to_append
+
+                                            if first_content:
+                                                thinking_container.display = False
+                                                await chat_log.append(f"**{self.agent_name}:** ")
+                                                first_content = False
+
+                                            await chat_log.append(text_to_append)
+
+                            except json.JSONDecodeError:
+                                continue
+
+                    thinking_container.display = False
+                    if not agent_response_text:
+                        await chat_log.append("\n\n*Agent completed without text response*")
 
         except httpx.ConnectError:
             thinking_container.display = False
-            chat_log.write("[red]Error:[/red] Cannot connect to server. Is it running?")
+            await chat_log.append("\n\n**Error:** Cannot connect to server. Is it running?")
             self.app.notify(
                 "Server not reachable. Start it from the Serve page.", severity="error"
             )
         except httpx.TimeoutException:
             thinking_container.display = False
-            chat_log.write("[red]Error:[/red] Request timed out")
+            if agent_response_text:
+                await chat_log.append("\n\n**Warning:** Stream timed out (partial response shown)")
+            else:
+                await chat_log.append("\n\n**Error:** Request timed out")
             self.app.notify("Request timed out", severity="error")
+        except httpx.HTTPStatusError as e:
+            thinking_container.display = False
+            await chat_log.append(f"\n\n**Error:** Server error: {e.response.status_code}")
+            self.app.notify(f"Server error: {e.response.status_code}", severity="error")
         except Exception as e:
             thinking_container.display = False
-            chat_log.write(f"[red]Error:[/red] Failed to send message: {e}")
+            await chat_log.append(f"\n\n**Error:** Stream failed: {e}")
             self.app.notify(
                 "Failed to send message. Check server connection.", severity="error"
             )
 
     async def _check_server_status(self) -> None:
-        import httpx
-
         if not self.server_port:
             return
 
@@ -136,9 +206,9 @@ class ChatWidget(Widget):
                 self.server_running = response.status_code == 200
 
                 if self.server_running:
-                    chat_log = self.query_one("#chat_history", RichLog)
-                    chat_log.write(
-                        f"[green]✓ Connected to server on port {self.server_port}[/green]"
+                    chat_log = self.query_one("#chat_history", Markdown)
+                    await chat_log.append(
+                        f"\n\n✓ **Connected to server on port {self.server_port}**"
                     )
         except Exception:
             self.server_running = False
