@@ -51,7 +51,6 @@ class ConfigBuilder:
         """Initialize a new configuration builder with default values."""
         self._server_config = ServerConfig()
         self._agent_config: AgentConfig | None = None
-        # TODO: add mcp_servers config
         self._mcp_servers: list[MCPServer] | None = None
         self._observability: list[ObservabilityConfig] | None = None
         self._guardrails: Guardrails | None = None
@@ -260,7 +259,7 @@ class ConfigBuilder:
             mcp_servers=self._mcp_servers,
         )
 
-    def build_dict(self) -> dict[str, Any]:
+    def build_dict(self) -> dict[str, Any]:  # NOT USED
         """Build and return the configuration as a dictionary.
 
         This is a convenience method for backward compatibility.
@@ -269,17 +268,24 @@ class ConfigBuilder:
             Dict[str, Any]: The complete configuration dictionary
         """
         engine_config = self.build()
-        return engine_config.model_dump()
+        return engine_config.model_dump(mode="python")
 
-    def save_to_file(self, file_path: str) -> None:
+    def save_to_file(
+        self, file_path: str
+    ) -> None:  # FIXED: old method doesn't serialize enums correctly
         """Save the configuration to a YAML file.
 
         Args:
             file_path: Path where to save the configuration file
         """
-        config = self.build_dict()
+        engine_model = self.build()
         with open(file_path, "w") as f:
-            yaml.dump(config, f, default_flow_style=False, indent=2)
+            yaml.dump(
+                engine_model.model_dump(mode="json"),
+                f,
+                default_flow_style=False,
+                indent=2,
+            )
 
     async def build_and_initialize_agent(
         self, mcp_registry: Any | None = None

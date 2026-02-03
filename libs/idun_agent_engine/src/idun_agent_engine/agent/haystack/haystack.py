@@ -78,7 +78,9 @@ class HaystackAgent(BaseAgent):
         Raises:
             RuntimeError: If the CopilotKit agent is not yet initialized.
         """
-        raise NotImplementedError("CopilotKit agent instance not supported yet for Haystack agent.")
+        raise NotImplementedError(
+            "CopilotKit agent instance not supported yet for Haystack agent."
+        )
 
     @property
     def configuration(self) -> HaystackAgentConfig:
@@ -147,9 +149,10 @@ class HaystackAgent(BaseAgent):
             # TODO: await persistence haystack
             # TODO OBS block
 
-            # check if config has observability `enabled` or `disabled`, so that we adjust our component to
-            # either add a tracer or not
-            if self._configuration.observability.enabled:
+            if (
+                self._configuration.observability
+                and self._configuration.observability.enabled
+            ):  # FIXED: should also check for enabled
                 self._enable_tracing = True
                 logger.info("Enabling tracing...")
             component: Agent | Pipeline = self._load_component(

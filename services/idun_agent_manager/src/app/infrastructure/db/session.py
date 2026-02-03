@@ -49,7 +49,9 @@ def get_sync_engine():
         settings = get_settings()
 
         # Convert async URL to sync URL for migrations
-        sync_url = settings.database.url.replace("+asyncpg", "+psycopg").replace("+asyncio", "")
+        sync_url = settings.database.url.replace("+asyncpg", "+psycopg").replace(
+            "+asyncio", ""
+        )
 
         _sync_engine = create_engine(
             sync_url,

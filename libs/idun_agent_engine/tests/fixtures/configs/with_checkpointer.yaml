@@ -1,0 +1,13 @@
+# Configuration with SQLite checkpointer for persistence testing
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: Persistent Test Agent
+    graph_definition: tests.fixtures.agents.mock_graph:graph
+    checkpointer:
+      type: sqlite
+      db_url: sqlite:///test_checkpoints.db

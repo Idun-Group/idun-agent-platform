@@ -98,6 +98,8 @@ dev = [
     "pytest-cov>=5.0.0,<7",
     "types-PyYAML>=6.0.12.20240808,<7",
     "pytest-asyncio>=1.2.0",
+    "pytest-xdist>=3.8.0",
+    "posthog>=7.5.1",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -186,18 +188,45 @@ pretty = true
 show_error_codes = true
 
 [tool.pytest.ini_options]
-addopts = "-ra -q --strict-markers --disable-warnings"
-testpaths = [
-    "tests",
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests/unit", "tests/integration"]
+pythonpath = ["src", "tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
 ]
-pythonpath = [
-    "src",
+markers = [
+    "unit: Unit tests (fast, no external dependencies)",
+    "integration: Integration tests (may require external services)",
+    "slow: Slow tests (marked for optional skipping)",
+    "requires_langfuse: Test requires Langfuse service",
+    "requires_phoenix: Test requires Phoenix service",
+    "requires_postgres: Test requires PostgreSQL",
 ]
 
 [tool.coverage.run]
 branch = true
-source = ["src"]
+source = ["src/idun_agent_engine"]
+omit = [
+    "*/__init__.py",
+    "*/templates/*",
+    "*/_version.py",
+    "*/idun_agent_engine_ui/*",
+    "*/idun_platform_cli/*",
+    "*/mcp/*",  # CHANGED: MCP has Pydantic compatibility issues with coverage
+]
 
 [tool.coverage.report]
 show_missing = true
-skip_covered = true
+skip_covered = false
+fail_under = 0  # Start with 0, increase as coverage grows
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+    "pass",
+]

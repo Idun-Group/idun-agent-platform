@@ -1,1 +1,0 @@
-export * from '../../dist/utils/js-sha1/hash.js'

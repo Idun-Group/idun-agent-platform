@@ -59,9 +59,7 @@ class LangfuseHandler(ObservabilityHandlerBase):
             # Initialize callback handler
             # We pass the resolved credentials explicitly to ensure they are used
             # even if env vars were not successfully set or read.
-            self._callbacks = [
-                CallbackHandler()
-            ]
+            self._callbacks = [CallbackHandler()]
         except Exception as e:
             print(f"Failed to initialize Langfuse callback/client: {e}")
             self._callbacks = []

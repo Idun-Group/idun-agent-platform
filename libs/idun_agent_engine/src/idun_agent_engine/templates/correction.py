@@ -33,17 +33,14 @@ else:
     print("Warning: init_chat_model not found in langchain.")
 
 
-
 async def correct_text(state: State):
     """Correct the spelling, syntax, and grammar of the text."""
     if not llm:
-
         return {
             "messages": [
                 SystemMessage(content="Error: Model not initialized. Check logs.")
             ]
         }
-
 
     prompt = (
         f"You are a professional text corrector for {LANGUAGE}. "

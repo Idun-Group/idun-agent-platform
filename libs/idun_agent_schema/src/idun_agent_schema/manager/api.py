@@ -1,6 +1,5 @@
 """Pydantic schemas for Agent Manager API I/O."""
 
-
 from pydantic import BaseModel
 
 

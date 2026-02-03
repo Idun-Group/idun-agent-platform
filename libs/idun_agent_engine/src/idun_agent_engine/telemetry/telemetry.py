@@ -182,7 +182,9 @@ class IdunTelemetry:
             self._distinct_id = _get_or_create_distinct_id()
             return self._client
 
-    def capture(self, event: str, properties: dict[str, Any] | None = None) -> Future[None] | None:
+    def capture(
+        self, event: str, properties: dict[str, Any] | None = None
+    ) -> Future[None] | None:
         """Capture an event asynchronously (best-effort)."""
         if not self.enabled:
             return None
