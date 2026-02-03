@@ -19,7 +19,7 @@ services:
     #   - idun_network
 
   manager:
-    image: freezaa9/idun-ai:0.4.1
+    image: freezaa9/idun-ai:0.4.2
     container_name: idun-manager
     ports:
       - "8000:8000"
@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: freezaa9/idun-ai-web:0.4.1
+    image: freezaa9/idun-ai-web:0.4.2
     container_name: idun-web
     ports:
       - "3000:3000"
