@@ -1,15 +1,30 @@
-FROM node:lts-alpine
+FROM --platform=linux/amd64 node:lts-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies (same as docker-compose dev setup)
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copy application source
 COPY . .
 
-EXPOSE 3000
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
-# Run Vite dev server in the container, mirroring docker-compose.dev command
-CMD ["sh", "-lc", "npm run dev -- --host 0.0.0.0 --port 3000"]
+RUN npx vite build
+
+FROM --platform=linux/amd64 nginx:alpine
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+RUN echo 'server { \
+    listen 8080; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
+
+EXPOSE 8080
+
+CMD ["nginx", "-g", "daemon off;"]
