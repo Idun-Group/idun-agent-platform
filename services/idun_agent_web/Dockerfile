@@ -20,11 +20,20 @@ RUN echo 'server { \
     listen 8080; \
     root /usr/share/nginx/html; \
     index index.html; \
+    resolver 8.8.8.8 valid=30s; \
+    location /copilotkit-virtual/ { \
+        set $copilot_runtime "${COPILOT_RUNTIME_URL}"; \
+        rewrite ^/copilotkit-virtual(.*)$ /copilotkit$1 break; \
+        proxy_pass $copilot_runtime; \
+        proxy_http_version 1.1; \
+        proxy_set_header Host $proxy_host; \
+        proxy_buffering off; \
+    } \
     location / { \
         try_files $uri $uri/ /index.html; \
     } \
-}' > /etc/nginx/conf.d/default.conf
+}' > /etc/nginx/templates/default.conf.template
 
 EXPOSE 8080
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["sh", "-c", "envsubst '${COPILOT_RUNTIME_URL}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
