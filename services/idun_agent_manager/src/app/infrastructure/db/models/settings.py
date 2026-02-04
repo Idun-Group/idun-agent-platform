@@ -1,6 +1,8 @@
 """Application settings schemas using Pydantic Settings v2."""
 
-from pydantic import Field
+import json
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -48,6 +50,13 @@ class Settings(BaseSettings):
             "http://0.0.0.0:8000",
         ]
     )
+
+    @field_validator("cors_allow_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
 
