@@ -16,7 +16,7 @@ FROM --platform=linux/amd64 nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-RUN echo 'server { \
+RUN mkdir -p /etc/nginx/templates && echo 'server { \
     listen 8080; \
     root /usr/share/nginx/html; \
     index index.html; \
