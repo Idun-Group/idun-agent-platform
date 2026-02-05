@@ -101,7 +101,19 @@ global.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
 const serviceAdapter = new ExperimentalEmptyAdapter();
 
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+
 const server = http.createServer((req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] || '*');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   // Extract agent URL from request query params
   const parsedUrl = parse(req.url || '', true);
   const agentUrl = parsedUrl.query.agentUrl as string;

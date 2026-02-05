@@ -18,6 +18,7 @@ import {
     Check
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../../../../utils/api';
 import { AgentAvatar } from '../../../general/agent-avatar/component';
 import {
     FormSelect,
@@ -853,7 +854,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
             // Assuming this runs in browser, we call the API endpoint.
             // Adjust port/host if needed or use relative path if proxy is set up.
             // Using relative path /api/v1... which is standard in this project setup
-            const response = await fetch(`http://localhost:8000/api/v1/agents/key?agent_id=${agent.id}`);
+            const response = await fetch(`${API_BASE_URL}/api/v1/agents/key?agent_id=${agent.id}`);
             if (response.ok) {
                 const data = await response.json();
                 // Assuming the response returns { key: "..." } or similar, or just the string.
