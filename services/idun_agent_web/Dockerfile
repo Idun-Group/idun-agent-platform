@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 node:lts-alpine AS builder
+FROM node:lts-alpine AS builder
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ ENV VITE_COPILOT_RUNTIME_URL=$VITE_COPILOT_RUNTIME_URL
 
 RUN npx vite build
 
-FROM --platform=linux/amd64 nginx:alpine
+FROM nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
@@ -24,9 +24,9 @@ RUN echo 'server { \
     root /usr/share/nginx/html; \
     index index.html; \
     location / { \
-        try_files $uri $uri/ /index.html; \
+    try_files $uri $uri/ /index.html; \
     } \
-}' > /etc/nginx/conf.d/default.conf
+    }' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 8080
 
