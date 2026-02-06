@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "@ag-ui/client": "^0.0.41",
-    "@ag-ui/langgraph": "^0.0.19",
+    "@ag-ui/langgraph": "^0.0.24",
     "@copilotkit/runtime": "^1.10.6",
     "http": "0.0.1-security",
     "tsx": "^4.7.1"
