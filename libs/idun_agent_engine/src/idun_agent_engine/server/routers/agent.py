@@ -59,35 +59,52 @@ async def get_config(request: Request):
     return {"config": config}
 
 
-@agent_router.post("/invoke", response_model=ChatResponse)
+@agent_router.post("/invoke", response_model=ChatResponse | dict)
 async def invoke(
-    chat_request: ChatRequest,
     request: Request,
     agent: Annotated[BaseAgent, Depends(get_agent)],
 ):
     """Process a chat message with the agent without streaming."""
     try:
+        body = await request.json()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON body: {e}") from e
+
+    custom_input_model = getattr(request.app.state, "custom_input_model", None)
+
+    if custom_input_model:
+        try:
+            validated = custom_input_model.model_validate(body)
+        except Exception as e:
+            raise HTTPException(status_code=422, detail=f"Validation error: {e}") from e
+
+        try:
+            response_content = await agent.invoke(validated)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Agent invoke error: {e}") from e
+
+        return response_content
+
+    else:
+        try:
+            chat_request = ChatRequest.model_validate(body)
+        except Exception as e:
+            raise HTTPException(status_code=422, detail=f"Validation error: {e}") from e
+
         message = {"query": chat_request.query, "session_id": chat_request.session_id}
         guardrails = getattr(request.app.state, "guardrails", [])
         if guardrails:
             _run_guardrails(guardrails, message, position="input")
-        response_content = await agent.invoke(
-            {"query": message["query"], "session_id": message["session_id"]}
-        )
+
+        try:
+            response_content = await agent.invoke(message)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Agent invoke error: {e}") from e
+
         if guardrails:
             _run_guardrails(guardrails, response_content, position="output")
 
-        if agent.name == "Deep Research Agent":
-            return ChatResponse(
-                session_id=message["session_id"],
-                response=_format_deep_agent_response(response_content),
-            )
-        return ChatResponse(session_id=message["session_id"], response=response_content)
-
-    except HTTPException:
-        raise
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    return ChatResponse(session_id="structured", response=response_content)
 
 
 @agent_router.post("/stream")

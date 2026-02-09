@@ -8,8 +8,25 @@ needing real LLM calls.
 from typing import Annotated, Any, TypedDict
 
 from langgraph.graph import END, StateGraph
-from langgraph.graph.state import CompiledStateGraph
 from langgraph.graph.message import add_messages
+from langgraph.graph.state import CompiledStateGraph
+from pydantic import BaseModel
+
+# -----------------------------------------------------------------------------
+# Custom Input Models (for structured input testing)
+# -----------------------------------------------------------------------------
+
+
+class TaskRequest(BaseModel):
+    """Custom input model for testing structured input."""
+
+    task_name: str
+    description: str | None = None
+    priority: int = 1
+    tags: list[str] = []
+    assignee: str | None = None
+    due_date: str | None = None
+
 
 # -----------------------------------------------------------------------------
 # State Definitions
@@ -20,6 +37,13 @@ class SimpleState(TypedDict):
     """Simple state for basic testing."""
 
     messages: Annotated[list[dict[str, Any]], add_messages]
+
+
+class StructuredInputState(TypedDict):
+    """State with a custom Pydantic model field for structured input testing."""
+
+    request: TaskRequest
+    result: str | None
 
 
 class StatefulState(TypedDict):
@@ -101,6 +125,22 @@ def metadata_node(state: StatefulState) -> dict[str, Any]:
     return {"metadata": metadata}
 
 
+def process_task_node(state: StructuredInputState) -> dict[str, Any]:
+    """Process a structured task request.
+
+    Useful for testing custom input schema handling.
+    """
+    request = state.get("request")
+    if not request:
+        return {"result": "No request provided"}
+
+    result = f"Processed task: {request.task_name} (priority: {request.priority})"
+    if request.tags:
+        result += f" [tags: {', '.join(request.tags)}]"
+
+    return {"result": result}
+
+
 # -----------------------------------------------------------------------------
 # Graph Builders
 # -----------------------------------------------------------------------------
@@ -161,6 +201,23 @@ def create_stateful_graph() -> StateGraph:
     return builder
 
 
+def create_structured_input_graph() -> StateGraph:
+    """Create a graph for testing structured input handling.
+
+    This graph accepts a custom Pydantic model as input.
+
+    Returns:
+        A StateGraph that processes TaskRequest input.
+    """
+    builder = StateGraph(StructuredInputState)
+
+    builder.add_node("process", process_task_node)
+    builder.set_entry_point("process")
+    builder.add_edge("process", END)
+
+    return builder
+
+
 # -----------------------------------------------------------------------------
 # Default Graph Instance
 # -----------------------------------------------------------------------------
@@ -170,3 +227,4 @@ def create_stateful_graph() -> StateGraph:
 # test TypeError
 compiled_graph = create_compiled_echo_graph()
 graph = create_echo_graph()
+structured_input_graph = create_structured_input_graph()
