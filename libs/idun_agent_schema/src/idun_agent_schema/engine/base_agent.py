@@ -9,8 +9,8 @@ class BaseAgentConfig(BaseModel):
     """Base model for agent configurations. Extend for specific frameworks."""
 
     name: str
-    input_schema_definition: str | None = Field()
-    output_schema_definition: str | None = Field()
+    input_schema_definition: str | None = Field(default=None)
+    output_schema_definition: str | None = Field(default=None)
     observability: ObservabilityConfig | None = Field(
         default=None,
         description="(Deprecated) Observability config is deprecated and will be removed in a future release.",  # TODO: Remove this in a future release.
