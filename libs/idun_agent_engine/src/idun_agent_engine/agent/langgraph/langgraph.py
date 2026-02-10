@@ -234,16 +234,7 @@ class LanggraphAgent(agent_base.BaseAgent):
             self._input_schema = self._configuration.input_schema_definition
             self._output_schema = self._configuration.output_schema_definition
 
-        if self._configuration.input_schema_definition:
-            field_name = self._configuration.input_schema_definition
-            annotations = self._agent_instance.builder.state_schema.__annotations__
-            if field_name not in annotations:
-                raise ValueError(
-                    f"Field '{field_name}' not found in state schema. "
-                    f"Available fields: {list(annotations.keys())}"
-                )
-            self._input_state_key = field_name
-            self._custom_input_model = annotations[field_name]
+        self._setup_custom_input_schema()
 
         self._infos["status"] = "Initialized"
         self._infos["config_used"] = self._configuration.model_dump()
@@ -294,6 +285,23 @@ class LanggraphAgent(agent_base.BaseAgent):
     @property
     def custom_input_model(self) -> Any:
         return self._custom_input_model
+
+    def _setup_custom_input_schema(self) -> None:
+        """Configure custom input schema from state annotations if defined."""
+        if not self._configuration.input_schema_definition:
+            return
+
+        field_name = self._configuration.input_schema_definition
+        annotations = self._agent_instance.builder.state_schema.__annotations__
+
+        if field_name not in annotations:
+            raise ValueError(
+                f"Field '{field_name}' not found in state schema. "
+                f"Available fields: {list(annotations.keys())}"
+            )
+
+        self._input_state_key = field_name
+        self._custom_input_model = annotations[field_name]
 
     def _load_graph_builder(self, graph_definition: str) -> StateGraph:
         """Loads a StateGraph instance from a specified path."""
