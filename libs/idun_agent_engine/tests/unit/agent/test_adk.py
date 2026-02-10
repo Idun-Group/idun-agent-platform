@@ -1,11 +1,13 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 @pytest.mark.asyncio
 async def test_adk_agent_from_yaml():
-    from idun_agent_engine.core.config_builder import ConfigBuilder
     from ag_ui.core import RunAgentInput, UserMessage
+
+    from idun_agent_engine.core.config_builder import ConfigBuilder
 
     mock_agent_path = (
         Path(__file__).parent.parent.parent

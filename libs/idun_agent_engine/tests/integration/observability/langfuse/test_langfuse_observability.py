@@ -1,7 +1,7 @@
 import asyncio
 import os
-import time
 import uuid
+from datetime import UTC
 from pathlib import Path
 
 import pytest
@@ -141,16 +141,16 @@ async def test_adk_agent_sends_trace_to_langfuse(
         forwardedProps={},
     )
 
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    start_time = datetime.now(timezone.utc)
+    start_time = datetime.now(UTC)
 
-    async for event in copilotkit_agent.run(
+    async for _event in copilotkit_agent.run(
         input_data
     ):  # consume async gen to produce otel traces
         pass
 
-    end_time = datetime.now(timezone.utc)
+    end_time = datetime.now(UTC)
 
     await asyncio.sleep(35)
 

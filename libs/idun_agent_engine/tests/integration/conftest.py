@@ -14,7 +14,6 @@ from httpx import ASGITransport, AsyncClient
 from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.engine_config import EngineConfig
 
-
 # -----------------------------------------------------------------------------
 # Real App Fixtures
 # -----------------------------------------------------------------------------

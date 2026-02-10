@@ -1,11 +1,12 @@
 """Tests for CopilotKit streaming endpoint."""
 
-import pytest
-from fastapi.testclient import TestClient
 from pathlib import Path
 
-from idun_agent_engine.core.config_builder import ConfigBuilder
+import pytest
+from fastapi.testclient import TestClient
+
 from idun_agent_engine.core.app_factory import create_app
+from idun_agent_engine.core.config_builder import ConfigBuilder
 
 
 @pytest.mark.unit

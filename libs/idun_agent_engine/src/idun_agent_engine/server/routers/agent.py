@@ -25,15 +25,6 @@ logger = logging.getLogger(__name__)
 agent_router = APIRouter()
 
 
-def _format_deep_agent_response(response_content: list[dict[str, str]]) -> str:
-    """Deep Research Agent responds with a list contaning a single dict: {'type': 'text', 'text': 'Your text'}."""
-    try:
-        response = response_content[0]["text"]
-        return response
-    except KeyError as k:
-        raise ValueError("Cannot parse Deep Research Agent's response") from k
-
-
 def _run_guardrails(
     guardrails: list[Guardrail], message: dict[str, str] | str, position: str
 ) -> None:
@@ -61,6 +52,7 @@ async def get_config(request: Request):
 
 @agent_router.post("/invoke", response_model=ChatResponse | dict)
 async def invoke(
+    # input schema obj
     request: Request,
     agent: Annotated[BaseAgent, Depends(get_agent)],
 ):
@@ -81,7 +73,9 @@ async def invoke(
         try:
             response_content = await agent.invoke(validated)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Agent invoke error: {e}") from e
+            raise HTTPException(
+                status_code=500, detail=f"Agent invoke error: {e}"
+            ) from e
 
         return response_content
 
@@ -99,12 +93,14 @@ async def invoke(
         try:
             response_content = await agent.invoke(message)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Agent invoke error: {e}") from e
+            raise HTTPException(
+                status_code=500, detail=f"Agent invoke error: {e}"
+            ) from e
 
         if guardrails:
             _run_guardrails(guardrails, response_content, position="output")
 
-    return ChatResponse(session_id="structured", response=response_content)
+    return ChatResponse(session_id=chat_request.session_id, response=response_content)
 
 
 @agent_router.post("/stream")
