@@ -7,10 +7,11 @@ from ag_ui.core.types import RunAgentInput
 from ag_ui.encoder import EventEncoder
 from ag_ui_adk import ADKAgent as ADKAGUIAgent
 from copilotkit import LangGraphAGUIAgent
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
 from idun_agent_schema.engine.guardrails import Guardrail
+from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.dependencies import get_agent, get_copilotkit_agent
@@ -48,59 +49,6 @@ async def get_config(request: Request):
     config = request.app.state.engine_config.agent
     logger.info(f"Fetched config for agent: {request.app.state.engine_config}")
     return {"config": config}
-
-
-@agent_router.post("/invoke", response_model=ChatResponse | dict)
-async def invoke(
-    # input schema obj
-    request: Request,
-    agent: Annotated[BaseAgent, Depends(get_agent)],
-):
-    """Process a chat message with the agent without streaming."""
-    try:
-        body = await request.json()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON body: {e}") from e
-
-    custom_input_model = getattr(request.app.state, "custom_input_model", None)
-
-    if custom_input_model:
-        try:
-            validated = custom_input_model.model_validate(body)
-        except Exception as e:
-            raise HTTPException(status_code=422, detail=f"Validation error: {e}") from e
-
-        try:
-            response_content = await agent.invoke(validated)
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Agent invoke error: {e}"
-            ) from e
-
-        return response_content
-
-    else:
-        try:
-            chat_request = ChatRequest.model_validate(body)
-        except Exception as e:
-            raise HTTPException(status_code=422, detail=f"Validation error: {e}") from e
-
-        message = {"query": chat_request.query, "session_id": chat_request.session_id}
-        guardrails = getattr(request.app.state, "guardrails", [])
-        if guardrails:
-            _run_guardrails(guardrails, message, position="input")
-
-        try:
-            response_content = await agent.invoke(message)
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Agent invoke error: {e}"
-            ) from e
-
-        if guardrails:
-            _run_guardrails(guardrails, response_content, position="output")
-
-    return ChatResponse(session_id=chat_request.session_id, response=response_content)
 
 
 @agent_router.post("/stream")
@@ -222,3 +170,52 @@ async def copilotkit_stream(
             raise HTTPException(status_code=500, detail=str(e)) from e
     else:
         raise HTTPException(status_code=400, detail="Invalid agent type")
+
+
+def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
+    """Register the /invoke route dynamically with the given input model.
+
+    Called from create_app after config is resolved, so the route
+    uses the correct input model for OpenAPI schema generation.
+    """
+    is_custom = input_model is not ChatRequest
+
+    async def invoke(
+        request: Request,
+        input_data: input_model,  # type: ignore[valid-type]
+        agent: Annotated[BaseAgent, Depends(get_agent)],
+    ) -> ChatResponse | dict:
+        """Invoke the agent with a message and get a response."""
+        guardrails = getattr(request.app.state, "guardrails", [])
+        if guardrails:
+            if is_custom:
+                _run_guardrails(
+                    guardrails, message=input_data.model_dump(), position="input"
+                )
+            else:
+                _run_guardrails(
+                    guardrails, message={"query": input_data.query}, position="input"
+                )
+
+        try:
+            if is_custom:
+                response = await agent.invoke(input_data)
+                return response
+            else:
+                message = {
+                    "query": input_data.query,
+                    "session_id": input_data.session_id,
+                }
+                response = await agent.invoke(message)
+                return ChatResponse(session_id=input_data.session_id, response=response)
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Error invoking agent: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e)) from e
+
+    app.add_api_route(
+        "/agent/invoke",
+        invoke,
+        methods=["POST"],
+        response_model=ChatResponse | dict,
+        tags=["Agent"],
+    )

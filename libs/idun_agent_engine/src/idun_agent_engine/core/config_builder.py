@@ -680,3 +680,72 @@ class ConfigBuilder:
         builder._mcp_servers = engine_config.mcp_servers
 
         return builder
+
+    @staticmethod
+    def resolve_input_model(config: EngineConfig):
+        """Resolve custom input model from config."""
+        from idun_agent_schema.engine.api import ChatRequest
+
+        agent_config = config.agent.config
+        field_name = getattr(agent_config, "input_schema_definition", None)
+
+        if not field_name:
+            return ChatRequest
+
+        try:
+            graph = ConfigBuilder._load_graph(agent_config.graph_definition)
+        except Exception as e:
+            raise ValueError(f"Failed to load graph: {e}") from e
+
+        annotations = graph.state_schema.__annotations__
+        if field_name not in annotations:
+            raise ValueError(
+                f"Field '{field_name}' not found in state schema. "
+                f"Available: {list(annotations.keys())}"
+            )
+
+        return annotations[field_name]
+
+    @staticmethod
+    def _load_graph(graph_definition: str):
+        """Load graph from definition string (path:variable)."""
+        import importlib
+        import importlib.util
+
+        try:
+            module_path, var_name = graph_definition.rsplit(":", 1)
+        except ValueError:
+            raise ValueError(
+                f"Invalid graph_definition format: '{graph_definition}'. "
+                "Expected 'path/to/file.py:variable_name'"
+            )
+
+        if not module_path.endswith(".py"):
+            module_path += ".py"
+
+        resolved_path = Path(module_path).resolve()
+
+        if resolved_path.exists():
+            try:
+                spec = importlib.util.spec_from_file_location(
+                    var_name, str(resolved_path)
+                )
+                if spec is None or spec.loader is None:
+                    raise ImportError(f"Cannot load module from {resolved_path}")
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+            except Exception as e:
+                raise ImportError(f"Failed to load {resolved_path}: {e}") from e
+        else:
+            try:
+                module_import_path = module_path[:-3]  # remove .py
+                module = importlib.import_module(module_import_path)
+            except ImportError as e:
+                raise ImportError(
+                    f"Module not found as file ({resolved_path}) or package ({module_import_path}): {e}"
+                ) from e
+
+        try:
+            return getattr(module, var_name)
+        except AttributeError:
+            raise ValueError(f"Variable '{var_name}' not found in module")

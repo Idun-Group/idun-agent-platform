@@ -69,11 +69,12 @@ def echo_node(state: SimpleState) -> dict[str, Any]:
         return {"messages": [{"role": "assistant", "content": "No message received"}]}
 
     last_message = messages[-1]
-    content = (
-        last_message.get("content", "")
-        if isinstance(last_message, dict)
-        else str(last_message)
-    )
+    if isinstance(last_message, dict):
+        content = last_message.get("content", "")
+    elif hasattr(last_message, "content"):
+        content = last_message.content
+    else:
+        content = str(last_message)
 
     return {
         "messages": [
@@ -134,9 +135,18 @@ def process_task_node(state: StructuredInputState) -> dict[str, Any]:
     if not request:
         return {"result": "No request provided"}
 
-    result = f"Processed task: {request.task_name} (priority: {request.priority})"
-    if request.tags:
-        result += f" [tags: {', '.join(request.tags)}]"
+    if isinstance(request, dict):
+        task_name = request.get("task_name", "")
+        priority = request.get("priority", 1)
+        tags = request.get("tags", [])
+    else:
+        task_name = request.task_name
+        priority = request.priority
+        tags = request.tags
+
+    result = f"Processed task: {task_name} (priority: {priority})"
+    if tags:
+        result += f" [tags: {', '.join(tags)}]"
 
     return {"result": result}
 
