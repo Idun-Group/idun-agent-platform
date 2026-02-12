@@ -48,14 +48,14 @@ fastapi = [
 
 [[package]]
 name = "ag-ui-protocol"
-version = "0.1.10"
+version = "0.1.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/67/bb/5a5ec893eea5805fb9a3db76a9888c3429710dfb6f24bbb37568f2cf7320/ag_ui_protocol-0.1.10.tar.gz", hash = "sha256:3213991c6b2eb24bb1a8c362ee270c16705a07a4c5962267a083d0959ed894f4", size = 6945 }
+sdist = { url = "https://files.pythonhosted.org/packages/a2/c1/33ab11dc829c6c28d0d346988b2f394aa632d3ad63d1d2eb5f16eccd769b/ag_ui_protocol-0.1.11.tar.gz", hash = "sha256:b336dfebb5751e9cc2c676a3008a4bce4819004e6f6f8cba73169823564472ae", size = 6249 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/78/eb55fabaab41abc53f52c0918a9a8c0f747807e5306273f51120fd695957/ag_ui_protocol-0.1.10-py3-none-any.whl", hash = "sha256:c81e6981f30aabdf97a7ee312bfd4df0cd38e718d9fc10019c7d438128b93ab5", size = 7889 },
+    { url = "https://files.pythonhosted.org/packages/14/83/5c6f4cb24d27d9cbe0c31ba2f3b4d1ff42bc6f87ba9facfa9e9d44046c6b/ag_ui_protocol-0.1.11-py3-none-any.whl", hash = "sha256:b0cc25570462a8eba8e57a098e0a2d6892a1f571a7bea7da2d4b60efd5d66789", size = 8392 },
 ]
 
 [[package]]
@@ -4191,7 +4191,7 @@ wheels = [
 
 [[package]]
 name = "posthog"
-version = "7.8.5"
+version = "7.8.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -4201,9 +4201,9 @@ dependencies = [
     { name = "six" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b0/10/8e74a5e997c8286f0b63c69da522e503b1ab11627217ab76a06c7b62d647/posthog-7.8.5.tar.gz", hash = "sha256:e4f3796ce18323d8e05139bf419a04d318ccc4ad77b210f4d9d7c7546aea4f35", size = 169117 }
+sdist = { url = "https://files.pythonhosted.org/packages/21/c9/a7c67c039f23f16a0b87d17561ba2a1c863b01f054a226c92437c539a7b6/posthog-7.8.6.tar.gz", hash = "sha256:6f67e18b5f19bf20d7ef2e1a80fa1ad879a5cd309ca13cfb300f45a8105968c4", size = 169304 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/b3/59b61d4b90e2efd138abaa34d98c7a89a4a352850cc3a079a60a46780655/posthog-7.8.5-py3-none-any.whl", hash = "sha256:979d306f07e61a8e837746e5dc432aafc49827fecac91bd6c624dcf3a1967448", size = 194647 },
+    { url = "https://files.pythonhosted.org/packages/56/c7/41664398a838f52ddfc89141e4c38b88eaa01b9e9a269c5ac184bd8586c6/posthog-7.8.6-py3-none-any.whl", hash = "sha256:21809f73e8e8f09d2bc273b09582f1a9f997b66f51fc626ef5bd3c5bdffd8bcd", size = 194801 },
 ]
 
 [[package]]

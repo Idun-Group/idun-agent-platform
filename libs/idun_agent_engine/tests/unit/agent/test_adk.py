@@ -63,3 +63,70 @@ async def test_adk_agent_from_yaml():
     assert test_message in response_content
 
     await copilotkit_agent._session_manager.stop_cleanup_task()
+
+
+@pytest.mark.asyncio
+async def test_adk_invoke_with_dict():
+    from idun_agent_engine.core.config_builder import ConfigBuilder
+
+    mock_agent_path = (
+        Path(__file__).parent.parent.parent
+        / "fixtures"
+        / "agents"
+        / "mock_adk_agent.py"
+    )
+
+    config = {
+        "agent": {
+            "type": "ADK",
+            "config": {
+                "name": "test_adk_agent",
+                "app_name": "test_adk_agent",
+                "agent": f"{mock_agent_path}:mock_adk_agent_instance",
+            },
+        },
+    }
+
+    engine_config = ConfigBuilder.from_dict(config).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+
+    result = await agent.invoke({"query": "Hello ADK", "session_id": "test-session"})
+
+    assert result is not None
+    assert "Hello ADK" in result
+
+
+@pytest.mark.asyncio
+async def test_adk_invoke_with_pydantic_model():
+    from pydantic import BaseModel
+
+    from idun_agent_engine.core.config_builder import ConfigBuilder
+
+    class TestInput(BaseModel):
+        name: str
+        value: int
+
+    mock_agent_path = (
+        Path(__file__).parent.parent.parent
+        / "fixtures"
+        / "agents"
+        / "mock_adk_agent.py"
+    )
+
+    config = {
+        "agent": {
+            "type": "ADK",
+            "config": {
+                "name": "test_adk_agent",
+                "app_name": "test_adk_agent",
+                "agent": f"{mock_agent_path}:mock_adk_agent_instance",
+            },
+        },
+    }
+
+    engine_config = ConfigBuilder.from_dict(config).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+
+    result = await agent.invoke(TestInput(name="test", value=42))
+
+    assert result is not None

@@ -200,7 +200,9 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         try:
             if is_custom:
                 response = await agent.invoke(input_data)
-                return response
+                if isinstance(response, dict):
+                    return response
+                return {"result": response}
             else:
                 message = {
                     "query": input_data.query,
