@@ -388,7 +388,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         from pydantic import BaseModel
 
         if isinstance(message, BaseModel) and self._input_state_key:
-            graph_input = {self._input_state_key: message.model_dump()}
+            graph_input = {self._input_state_key: message}
             config = {"configurable": {"thread_id": "structured"}}
             if self._obs_callbacks:
                 config["callbacks"] = self._obs_callbacks
