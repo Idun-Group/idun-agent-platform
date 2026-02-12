@@ -407,7 +407,9 @@ class CreateAgentScreen(Screen):
                     self.validated_sections.add("memory")
                     self._update_nav_checkmark("memory")
                 else:
-                    self.notify("Please configure checkpoint settings", severity="error")
+                    self.notify(
+                        "Please configure checkpoint settings", severity="error"
+                    )
                     return
 
             elif section == "observability":

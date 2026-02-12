@@ -89,8 +89,8 @@ async def test_ban_list_guardrail_blocks_banned_words(
 
     try:
         _run_guardrails(guardrails, message, position="input")
-        response = await agent.invoke(message)
-        assert False, "Expected guardrail to block the message but it passed"
+        _response = await agent.invoke(message)
+        assert False, "Expected guardrail to block the message but it passed"  # noqa: B011
     except Exception as e:
         error_message = str(e)
         assert (
@@ -143,8 +143,8 @@ async def test_pii_guardrail_blocks_email_addresses(
 
     try:
         _run_guardrails(guardrails, message, position="input")
-        response = await agent.invoke(message)
-        assert False, "Expected PII guardrail to block email but it passed"
+        _response = await agent.invoke(message)
+        raise AssertionError("Expected PII guardrail to block email but it passed")
     except Exception as e:
         error_message = str(e)
         assert "pii" in error_message.lower() or "email" in error_message.lower()
@@ -229,7 +229,7 @@ async def test_multiple_guardrails_all_must_pass(skip_if_no_guardrails_api_key):
             position="input",
         )
         await agent.invoke({"query": message_with_banned_word, "session_id": "test123"})
-        assert False, "Expected ban_list guardrail to block spam"
+        raise AssertionError("Expected ban_list guardrail to block spam")
     except Exception:
         pass
 
@@ -240,7 +240,7 @@ async def test_multiple_guardrails_all_must_pass(skip_if_no_guardrails_api_key):
             position="input",
         )
         await agent.invoke({"query": message_with_pii, "session_id": "test123"})
-        assert False, "Expected PII guardrail to block email"
+        raise AssertionError("Expected PII guardrail to block email")
     except Exception:
         pass
 

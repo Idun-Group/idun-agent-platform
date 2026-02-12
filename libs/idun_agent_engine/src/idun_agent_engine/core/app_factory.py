@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .._version import __version__
 from ..server.lifespan import lifespan
-from ..server.routers.agent import agent_router
+from ..server.routers.agent import agent_router, register_invoke_route
 from ..server.routers.base import base_router
 from .config_builder import ConfigBuilder
 from .engine_config import EngineConfig
@@ -35,7 +35,7 @@ def create_app(
         config_dict: Optional dictionary containing configuration. If provided,
             takes precedence over config_path. Useful for programmatic configuration.
         engine_config: Pre-validated EngineConfig instance (from ConfigBuilder.build()).
-            Takes precedence over other options.
+        Takes precedence over other options.
 
     Returns:
         FastAPI: A configured FastAPI application ready to serve your agent.
@@ -44,6 +44,12 @@ def create_app(
     validated_config = ConfigBuilder.resolve_config(
         config_path=config_path, config_dict=config_dict, engine_config=engine_config
     )
+
+    # Resolve input model for /invoke endpoint
+    try:
+        input_model = ConfigBuilder.resolve_input_model(validated_config)
+    except Exception as e:
+        raise ValueError(f"Failed to resolve input model: {e}") from e
 
     # Create the FastAPI application
     app = FastAPI(
@@ -69,5 +75,7 @@ def create_app(
     # Include the routers
     app.include_router(agent_router, prefix="/agent", tags=["Agent"])
     app.include_router(base_router, tags=["Base"])
+
+    register_invoke_route(app, input_model)
 
     return app

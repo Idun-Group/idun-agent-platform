@@ -3,13 +3,15 @@ from unittest.mock import AsyncMock
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from idun_agent_schema.engine.api import ChatRequest
 
-from idun_agent_engine.server.routers.agent import agent_router
+from idun_agent_engine.server.routers.agent import agent_router, register_invoke_route
 
 
 def test_invoke_with_payload():
     app = FastAPI()
     app.include_router(agent_router)
+    register_invoke_route(app, ChatRequest)
 
     mock_agent = AsyncMock()
     mock_agent.invoke = AsyncMock(return_value="Processed complex query")
@@ -23,7 +25,7 @@ def test_invoke_with_payload():
         + json.dumps({"key": "value", "nested": {"data": [1, 2, 3]}}),
     }
 
-    response = client.post("/invoke", json=complex_query)
+    response = client.post("/agent/invoke", json=complex_query)
 
     assert response.status_code == 200
     assert response.json()["session_id"] == "complex-123"

@@ -1,6 +1,5 @@
 """Serve configuration widget."""
 
-
 from rich.syntax import Syntax
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical

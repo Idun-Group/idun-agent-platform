@@ -8,8 +8,6 @@ from fastapi.testclient import TestClient
 from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.config_builder import ConfigBuilder
 
-import os
-
 
 @pytest.mark.unit
 class TestAgentInvokeRoute:
@@ -144,6 +142,7 @@ class TestAgentConfigRouteErrors:
     def test_get_config_not_available(self):
         """Config endpoint returns 404 when engine_config not set."""
         from fastapi import FastAPI
+
         from idun_agent_engine.server.routers.agent import agent_router
 
         app = FastAPI()

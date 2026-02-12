@@ -143,15 +143,13 @@ def get_adk_tools(config_path: str | Path | None = None) -> list[Any]:
 
 
 async def get_langchain_tools_from_file(config_path: str | Path) -> list[Any]:
-    """Loads MCP configurations from a YAML file and returns LangChain tool instances.
-    """
+    """Loads MCP configurations from a YAML file and returns LangChain tool instances."""
     config_data = _load_config_from_file(config_path)
     return await _get_langchain_tools_from_data(config_data)
 
 
 async def get_langchain_tools_from_api() -> list[Any]:
-    """Fetches configuration from the Idun Manager API and returns LangChain tool instances.
-    """
+    """Fetches configuration from the Idun Manager API and returns LangChain tool instances."""
     config_data = _fetch_config_from_api()
     return await _get_langchain_tools_from_data(config_data)
 

@@ -7,15 +7,18 @@ from typing import Any
 
 from ag_ui_adk import ADKAgent as ADKAGUIAgent
 from google.adk.apps.app import App
+from google.adk.events import Event
 from google.adk.memory import (
     InMemoryMemoryService,
     VertexAiMemoryBankService,
 )
+from google.adk.runners import Runner
 from google.adk.sessions import (
     DatabaseSessionService,
     InMemorySessionService,
     VertexAiSessionService,
 )
+from google.genai import types
 from idun_agent_schema.engine.adk import (
     AdkAgentConfig,
     AdkDatabaseSessionConfig,
@@ -25,6 +28,7 @@ from idun_agent_schema.engine.adk import (
     AdkVertexAiSessionConfig,
 )
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from pydantic import BaseModel
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
@@ -274,15 +278,85 @@ class AdkAgent(agent_base.BaseAgent):
                 f"Failed to load agent from {agent_definition}: {e}"
             ) from e
 
+    def _get_text_from_message(self, message: Any) -> str:
+        if isinstance(message, BaseModel):
+            return message.model_dump_json()
+        if isinstance(message, dict) and "query" in message:
+            return message["query"]
+        raise ValueError(f"Unsupported message type: {type(message)}")
+
+    def _get_session_id_from_message(self, message: Any) -> str:
+        if isinstance(message, BaseModel):
+            return "structured"
+        if isinstance(message, dict) and "session_id" in message:
+            return message["session_id"]
+        return "default"
+
+    def _create_runner(self) -> Runner:
+        return Runner(
+            app=self._agent_instance,
+            session_service=self._session_service,
+            memory_service=self._memory_service,
+        )
+
+    def _extract_text_from_event(self, event: Event) -> str | None:
+        if not event.content or not event.content.parts:
+            return None
+        for part in event.content.parts:
+            if part.text:
+                return part.text
+        return None
+
+    async def _get_or_create_session(self, user_id: str, session_id: str) -> None:
+        session = await self._session_service.get_session(
+            app_name=self._name, user_id=user_id, session_id=session_id
+        )
+        if not session:
+            await self._session_service.create_session(
+                app_name=self._name, user_id=user_id, session_id=session_id
+            )
+
     async def invoke(self, message: Any) -> Any:
-        """Process a single input to chat with the agent."""
         if self._agent_instance is None:
             raise RuntimeError(
                 "Agent not initialized. Call initialize() before processing messages."
             )
 
-        # TODO: Implement ADK invoke logic using session and memory services
-        raise NotImplementedError("ADK invoke not implemented yet")
+        try:
+            text = self._get_text_from_message(message)
+            session_id = self._get_session_id_from_message(message)
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Failed to parse message: {e}") from e
+
+        user_id = f"user-{session_id}"
+        content = types.Content(parts=[types.Part(text=text)], role="user")
+
+        try:
+            await self._get_or_create_session(user_id, session_id)
+        except Exception as e:
+            raise RuntimeError(f"Failed to create session: {e}") from e
+
+        try:
+            runner = self._create_runner()
+        except Exception as e:
+            raise RuntimeError(f"Failed to create runner: {e}") from e
+
+        final_text = ""
+        try:
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=content,
+            ):
+                extracted = self._extract_text_from_event(event)
+                if extracted:
+                    final_text = extracted
+        except Exception as e:
+            raise RuntimeError(f"Failed to run agent: {e}") from e
+
+        return final_text
 
     async def stream(self, message: Any) -> AsyncGenerator[Any]:
         """Process a single input message and return an asynchronous stream."""

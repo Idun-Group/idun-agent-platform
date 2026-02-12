@@ -11,6 +11,7 @@ from typing import Any
 import yaml
 from idun_agent_schema.engine.adk import AdkAgentConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
+from idun_agent_schema.engine.api import ChatRequest
 from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2 as Guardrails
 from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_schema.engine.langgraph import (
@@ -680,3 +681,78 @@ class ConfigBuilder:
         builder._mcp_servers = engine_config.mcp_servers
 
         return builder
+
+    @staticmethod
+    def resolve_input_model(config: EngineConfig) -> type[ChatRequest] | str:
+        """Resolve custom input model from config.
+        This method is used to retrieve the input model of the agent, to get the OpenAPI spec at runtime.
+        """
+        from idun_agent_schema.engine.agent_framework import AgentFramework
+        from idun_agent_schema.engine.api import ChatRequest
+
+        agent_config = config.agent.config
+        agent_type = config.agent.type
+        input_schema = getattr(agent_config, "input_schema_definition", None)
+
+        if not input_schema:
+            return ChatRequest
+
+        # TODO: rename _load_graph to be framework agnostic and propagate changes in tests
+        if agent_type == AgentFramework.LANGGRAPH:
+            graph = ConfigBuilder._load_graph(agent_config.graph_definition)
+            annotations = graph.state_schema.__annotations__
+            if input_schema not in annotations:
+                raise ValueError(
+                    f"Field '{input_schema}' not found in state schema. "
+                    f"Available: {list(annotations.keys())}"
+                )
+            return annotations[input_schema]
+
+        elif agent_type == AgentFramework.ADK:
+            return ConfigBuilder._load_graph(input_schema)
+
+        return ChatRequest
+
+    @staticmethod
+    def _load_graph(graph_definition: str):
+        """Load graph from definition string (path:variable)."""
+        import importlib
+        import importlib.util
+
+        try:
+            module_path, var_name = graph_definition.rsplit(":", 1)
+        except ValueError:
+            raise ValueError(
+                f"Invalid graph_definition format: '{graph_definition}'. "
+                "Expected 'path/to/file.py:variable_name'"
+            )
+
+        if not module_path.endswith(".py"):
+            module_path += ".py"
+
+        resolved_path = Path(module_path).resolve()
+
+        if resolved_path.exists():
+            try:
+                spec = importlib.util.spec_from_file_location(
+                    var_name, str(resolved_path)
+                )
+                if spec is None or spec.loader is None:
+                    raise ImportError(f"Cannot load module from {resolved_path}")
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+            except Exception as e:
+                raise ImportError(f"Failed to load {resolved_path}: {e}") from e
+        else:
+            try:
+                module_import_path = module_path[:-3]  # remove .py
+                module = importlib.import_module(module_import_path)
+            except ImportError as e:
+                raise ImportError(
+                    f"Module not found as file ({resolved_path}) or package ({module_import_path}): {e}"
+                ) from e
+
+        try:
+            return getattr(module, var_name)
+        except AttributeError:
+            raise ValueError(f"Variable '{var_name}' not found in module")
