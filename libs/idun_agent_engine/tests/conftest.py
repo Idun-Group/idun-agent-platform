@@ -62,7 +62,7 @@ def pytest_sessionstart(session):
 
     for guard_url in guardrails_to_install:
         try:
-            result = subprocess.run(
+            _result = subprocess.run(
                 ["guardrails", "hub", "install", guard_url, "--quiet"],
                 check=True,
                 capture_output=True,

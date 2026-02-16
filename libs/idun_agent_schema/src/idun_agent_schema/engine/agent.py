@@ -1,6 +1,5 @@
 """Common agent model definitions (engine)."""
 
-
 from pydantic import BaseModel, model_validator
 
 from idun_agent_schema.engine.adk import AdkAgentConfig

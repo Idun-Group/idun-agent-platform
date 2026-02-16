@@ -90,7 +90,7 @@ class TestConfigBuilderFromDict:
             "server": {"api": {"port": "invalid"}},  # Port should be int
             "agent": {"type": "LANGGRAPH", "config": {}},
         }
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(Exception):  # Pydantic ValidationError  # noqa: B017
             ConfigBuilder.from_dict(invalid_config)
 
 
@@ -277,7 +277,7 @@ class TestConfigBuilderValidateAgentConfig:
     def test_validate_agent_config_invalid_raises_error(self) -> None:
         """validate_agent_config with invalid config raises error."""
         invalid_config = {"name": "Missing graph_definition"}
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(Exception):  # Pydantic ValidationError  # noqa: B017
             ConfigBuilder.validate_agent_config("langgraph", invalid_config)
 
     def test_validate_agent_config_unsupported_type(self) -> None:
@@ -387,7 +387,7 @@ class TestConfigBuilderWithConfigFromAPI:
         mock_response.text = "invalid: yaml: content:"
         mock_get.return_value = mock_response
 
-        with pytest.raises(Exception):  # YAML parsing error
+        with pytest.raises(Exception):  # YAML parsing error  # noqa: B017
             ConfigBuilder().with_config_from_api(
                 agent_api_key="test-key", url="http://localhost:8000"
             ).build()

@@ -1,13 +1,13 @@
-import pytest
 from unittest.mock import MagicMock, patch
-from pydantic import ValidationError
 
+import pytest
 from idun_agent_schema.engine.observability_v2 import (
+    LangfuseConfig,
     ObservabilityConfig,
     ObservabilityProvider,
-    LangfuseConfig,
     PhoenixConfig,
 )
+from pydantic import ValidationError
 
 
 @pytest.mark.unit
@@ -107,10 +107,11 @@ class TestObservabilityFactory:
         "idun_agent_engine.observability.gcp_logging.gcp_logging_handler.GCPLoggingHandler"
     )
     def test_create_handler_gcp_logging(self, mock_handler_class):
-        from idun_agent_engine.observability.base import create_observability_handler
         from idun_agent_schema.engine.observability_v2 import (
             GCPLoggingConfig,
         )
+
+        from idun_agent_engine.observability.base import create_observability_handler
 
         mock_handler = MagicMock()
         mock_handler_class.return_value = mock_handler
@@ -132,10 +133,11 @@ class TestObservabilityFactory:
         "idun_agent_engine.observability.gcp_trace.gcp_trace_handler.GCPTraceHandler"
     )
     def test_create_handler_gcp_trace(self, mock_handler_class):
-        from idun_agent_engine.observability.base import create_observability_handler
         from idun_agent_schema.engine.observability_v2 import (
             GCPTraceConfig,
         )
+
+        from idun_agent_engine.observability.base import create_observability_handler
 
         mock_handler = MagicMock()
         mock_handler_class.return_value = mock_handler
