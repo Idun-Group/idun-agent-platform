@@ -1,7 +1,8 @@
 """Managed Memory API.
 
 This router exposes endpoints to create, read, list, update, and delete
-managed memory configurations.
+managed memory configurations. All endpoints are scoped to the
+authenticated user's active workspace.
 """
 
 import logging
@@ -20,7 +21,12 @@ from pydantic import TypeAdapter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_session
+from app.api.v1.deps import (
+    CurrentUser,
+    get_current_user,
+    get_session,
+    require_workspace,
+)
 from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
 
 router = APIRouter()
@@ -33,8 +39,12 @@ PAGINATION_MAX_LIMIT = 1000
 PAGINATION_DEFAULT_LIMIT = 100
 
 
-async def _get_memory(id: str, session: AsyncSession) -> ManagedMemoryModel:
-    """Get memory config by ID."""
+async def _get_memory(
+    id: str,
+    session: AsyncSession,
+    workspace_id: UUID | None = None,
+) -> ManagedMemoryModel:
+    """Get memory config by ID, optionally scoped to a workspace."""
     try:
         uuid_id = UUID(id)
     except ValueError as err:
@@ -49,12 +59,16 @@ async def _get_memory(id: str, session: AsyncSession) -> ManagedMemoryModel:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Memory config with id '{id}' not found",
         )
+    if workspace_id is not None and model.workspace_id != workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Memory config with id '{id}' not found",
+        )
     return model
 
 
 def _model_to_schema(model: ManagedMemoryModel) -> ManagedMemoryRead:
     """Transform database model to response schema."""
-    # We need to use TypeAdapter for validating the Union type correctly
     config_adapter = TypeAdapter(MemoryConfig)
     memory_config = config_adapter.validate_python(model.memory_config)
 
@@ -77,11 +91,11 @@ def _model_to_schema(model: ManagedMemoryModel) -> ManagedMemoryRead:
 async def create_memory(
     request: ManagedMemoryCreate,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedMemoryRead:
     """Create a new managed memory configuration."""
     now = datetime.now(UTC)
-
-    # CheckpointConfig is already validated by Pydantic in the request model
 
     model = ManagedMemoryModel(
         id=uuid4(),
@@ -90,6 +104,7 @@ async def create_memory(
         memory_config=request.memory.model_dump(),
         created_at=now,
         updated_at=now,
+        workspace_id=workspace_id,
     )
 
     session.add(model)
@@ -109,6 +124,8 @@ async def list_memories(
     offset: int = 0,
     agent_framework: AgentFramework | None = None,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> list[ManagedMemoryRead]:
     """List managed memory configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -121,7 +138,9 @@ async def list_memories(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    stmt = select(ManagedMemoryModel)
+    stmt = select(ManagedMemoryModel).where(
+        ManagedMemoryModel.workspace_id == workspace_id
+    )
     if agent_framework:
         stmt = stmt.where(ManagedMemoryModel.agent_framework == agent_framework.value)
     stmt = stmt.limit(limit).offset(offset)
@@ -140,9 +159,11 @@ async def list_memories(
 async def get_memory(
     id: str,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedMemoryRead:
     """Get a managed memory configuration by ID."""
-    model = await _get_memory(id, session)
+    model = await _get_memory(id, session, workspace_id)
     return _model_to_schema(model)
 
 
@@ -154,9 +175,11 @@ async def get_memory(
 async def delete_memory(
     id: str,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> None:
     """Delete a managed memory configuration permanently."""
-    model = await _get_memory(id, session)
+    model = await _get_memory(id, session, workspace_id)
     await session.delete(model)
     await session.flush()
 
@@ -170,13 +193,14 @@ async def patch_memory(
     id: str,
     request: ManagedMemoryPatch,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedMemoryRead:
     """Update a memory configuration."""
-    model = await _get_memory(id, session)
+    model = await _get_memory(id, session, workspace_id)
 
     model.name = request.name
     model.agent_framework = request.agent_framework.value
-    # Config is already validated in request model
     model.memory_config = request.memory.model_dump()
     model.updated_at = datetime.now(UTC)
 

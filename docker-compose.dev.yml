@@ -30,6 +30,9 @@ services:
       DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
       DATABASEAUTO_MIGRATE: true
       AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
+      # Google OIDC – override frontend URL for Docker (web runs on port 3000)
+      AUTH__FRONTEND_URL: http://localhost:3000
+      AUTH__REDIRECT_URI: http://localhost:8000/api/v1/auth/callback
       ENVIRONMENT: development
       # Optional: Add other env vars as needed
       # LANGFUSE_HOST: ${LANGFUSE_HOST}

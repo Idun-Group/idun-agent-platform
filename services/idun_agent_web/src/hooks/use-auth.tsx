@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getSession, loginBasic, logoutBasic, signupBasic } from '../utils/auth';
+import { getSession, loginBasic, logoutSession, signupBasic } from '../utils/auth';
 import { addUnauthorizedHandler, removeUnauthorizedHandler, API_BASE_URL } from '../utils/api';
 import type { Session } from '../utils/auth';
 
@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const logout = useCallback(async () => {
-        await logoutBasic();
+        await logoutSession();
         setSession(null);
     }, []);
 

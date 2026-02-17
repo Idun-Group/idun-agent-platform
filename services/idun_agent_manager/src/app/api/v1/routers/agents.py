@@ -10,6 +10,7 @@ MVP assumptions and behavior:
   Bearer token to access `/config`.
 - Database access uses SQLAlchemy async sessions. Errors are surfaced as simple
   HTTP problem responses with relevant status codes.
+- All resource endpoints are scoped to the authenticated user's active workspace.
 
 Endpoints:
     POST   /          - Create a new managed agent
@@ -40,7 +41,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_session
+from app.api.v1.deps import (
+    CurrentUser,
+    get_current_user,
+    get_session,
+    require_workspace,
+)
 from app.api.v1.routers.auth import encrypt_payload
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 
@@ -56,8 +62,12 @@ PAGINATION_DEFAULT_LIMIT = 100
 API_KEY_PREFIX = "idun-"
 
 
-async def _get_agent(agent_id: str, session: AsyncSession) -> ManagedAgentModel:
-    """Get agent by ID."""
+async def _get_agent(
+    agent_id: str,
+    session: AsyncSession,
+    workspace_id: UUID | None = None,
+) -> ManagedAgentModel:
+    """Get agent by ID, optionally scoped to a workspace."""
     try:
         agent_uuid = UUID(agent_id)
     except ValueError as err:
@@ -72,18 +82,16 @@ async def _get_agent(agent_id: str, session: AsyncSession) -> ManagedAgentModel:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id '{agent_id}' not found",
         )
+    if workspace_id is not None and model.workspace_id != workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id '{agent_id}' not found",
+        )
     return model
 
 
 def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
-    """Transform database model to response schema.
-
-    Args:
-        model: Database model instance
-
-    Returns:
-        ManagedAgentRead: Pydantic response model
-    """
+    """Transform database model to response schema."""
     engine_config = EngineConfig(**model.engine_config)
 
     return ManagedAgentRead(
@@ -107,23 +115,11 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
 )
 async def create_agent(
     raw_request: Request,
-    #    client_key: str,
-    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedAgentRead:
-    """Create a new managed agent.
-
-    Args:
-        request: Complete `EngineConfig` containing server and agent configuration
-        session: Database session (injected)
-
-    Returns:
-        ManagedAgentCreate: The created agent with all metadata
-
-    Raises:
-        HTTPException 400: Invalid agent id format
-    """
-
+    """Create a new managed agent."""
     body = await raw_request.json()
 
     if "engine_config" in body and "guardrails" in body["engine_config"]:
@@ -137,23 +133,22 @@ async def create_agent(
 
     engine_config = EngineConfig(**request.engine_config.model_dump())
 
-    # Create database model instance (status persisted as string)
     model = ManagedAgentModel(
         id=uuid4(),
         base_url=request.base_url,
         name=request.name,
         status=AgentStatus.DRAFT.value,
         version=request.version,
-        engine_config=engine_config.model_dump(),  # Store as dict (JSONB)
+        engine_config=engine_config.model_dump(),
         created_at=now,
         updated_at=now,
+        workspace_id=workspace_id,
     )
 
     session.add(model)
     await session.flush()
     await session.refresh(model)
 
-    # Return Pydantic model for response
     return _model_to_schema(model)
 
 
@@ -164,10 +159,10 @@ async def create_agent(
     description="Generate a unique API key (hash) for an agent to authenticate API requests.",
 )
 async def generate_key(
-    #    client_key: str,
     agent_id: str,
-    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> dict[str, Any]:
     try:
         uuid = UUID(agent_id)
@@ -184,7 +179,7 @@ async def generate_key(
             detail="Unexpected error occured. Please try again later",
         ) from e
 
-    if not model:
+    if not model or model.workspace_id != workspace_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id: {agent_id} not found",
@@ -216,32 +211,16 @@ async def config(
 ) -> ManagedAgentRead:
     """Get agent configuration using API key authentication.
 
-    Expects the full API key (including prefix) as the Bearer token. If the key
-    matches an agent's ``agent_hash``, the agent configuration is returned.
-
-    Args:
-        session: Database session (injected)
-        auth: Authorization header containing Bearer token
-
-    Returns:
-        ManagedAgentModel: The agent database model (SQLAlchemy model)
-
-    Raises:
-        HTTPException 401: Invalid authorization header format
-        HTTPException 404: Invalid or expired API key
-        HTTPException 500: Database error
+    This endpoint does NOT require a session cookie – it uses Bearer token auth.
     """
-    # Validate Bearer token format
     if not auth.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authorization header",
         )
 
-    # Extract API key from Bearer token
     agent_hash = auth[7:]
 
-    # Query agent by API key
     try:
         stmt = select(ManagedAgentModel).where(
             ManagedAgentModel.agent_hash == agent_hash
@@ -249,7 +228,6 @@ async def config(
         result = await session.execute(stmt)
         agent_model = result.scalar_one_or_none()
     except SQLAlchemyError as e:
-        # Loggers can be added later via app.core.logging
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database error occurred",
@@ -270,26 +248,13 @@ async def config(
     description="List all managed agents with pagination.",
 )
 async def list_agents(
-    #    client_key: str,
-    #   _: None = Depends(allow_user),
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> list[ManagedAgentRead]:
-    """List managed agents with pagination.
-
-    Args:
-        limit: Maximum number of agents to return (1-1000, default: 100)
-        offset: Number of agents to skip (default: 0)
-        session: Database session (injected)
-
-    Returns:
-        list[ManagedAgentCreate]: List of managed agents
-
-    Raises:
-        HTTPException 400: Invalid limit, offset format
-    """
-    # Validate pagination parameters
+    """List managed agents with pagination, scoped to workspace."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -300,13 +265,13 @@ async def list_agents(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    # Build query
-    stmt = select(ManagedAgentModel)
+    stmt = (
+        select(ManagedAgentModel)
+        .where(ManagedAgentModel.workspace_id == workspace_id)
+        .limit(limit)
+        .offset(offset)
+    )
 
-    # Apply pagination
-    stmt = stmt.limit(limit).offset(offset)
-
-    # Execute query and transform results
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
@@ -320,25 +285,13 @@ async def list_agents(
     description="Retrieve a specific managed agent by its UUID with complete configuration details.",
 )
 async def get_agent(
-    #    client_key: str,
     id: str,
-    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedAgentRead:
-    """Get a managed agent by ID.
-
-    Args:
-        id: Agent UUID
-        session: Database session (injected)
-
-    Returns:
-        ManagedAgentCreate: The requested agent with full configuration
-
-    Raises:
-        HTTPException 400: Invalid agent ID format
-        HTTPException 404: Agent not found
-    """
-    model = await _get_agent(id, session)
+    """Get a managed agent by ID."""
+    model = await _get_agent(id, session, workspace_id)
     return _model_to_schema(model)
 
 
@@ -349,30 +302,13 @@ async def get_agent(
     description="Permanently delete a managed agent and all its configuration data.",
 )
 async def delete_agent(
-    #    client_key: str,
     id: str,
-    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> None:
-    """Delete a managed agent permanently.
-
-    This operation cannot be undone. The agent and its configuration will be
-    permanently removed from the database.
-
-    Args:
-        id: Agent UUID
-        session: Database session (injected)
-
-    Returns:
-        None (204 No Content)
-
-    Raises:
-        HTTPException 400: Invalid agent ID format
-        HTTPException 404: Agent not found
-    """
-    model = await _get_agent(id, session)
-
-    # Delete agent from database
+    """Delete a managed agent permanently."""
+    model = await _get_agent(id, session, workspace_id)
     await session.delete(model)
     await session.flush()
 
@@ -381,34 +317,17 @@ async def delete_agent(
     "/{id}",
     response_model=ManagedAgentRead,
     summary="Partially update agent (PATCH)",
-    description="Partially update an agent's configuration. Only the name andengine_config field can be updated if provided.",
+    description="Partially update an agent's configuration. Only the name and engine_config field can be updated if provided.",
 )
 async def patch_agent(
-    #    client_key: str,
     id: str,
     raw_request: Request,
-    #   _: None = Depends(allow_user),
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedAgentRead:
-    """Partially update an agent's configuration.
-
-    Only updates fields that are explicitly provided in the request.
-    Currently supports updating engine_config. If engine_config is provided,
-    it replaces the existing configuration and updates the updated_at timestamp.
-
-    Args:
-        id: Agent UUID
-        request: Partial update containing optional engine_config
-        session: Database session (injected)
-
-    Returns:
-        ManagedAgentCreate: The updated agent
-
-    Raises:
-        HTTPException 400: Invalid agent ID format
-        HTTPException 404: Agent not found
-    """
-    model = await _get_agent(id, session)
+    """Partially update an agent's configuration."""
+    model = await _get_agent(id, session, workspace_id)
 
     body = await raw_request.json()
 

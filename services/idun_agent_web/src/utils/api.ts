@@ -23,7 +23,13 @@ export function removeUnauthorizedHandler(handler: () => void): void {
 
 let hasNotifiedOn401 = false;
 
-// Tenant now derived from sid on backend; no tenant header logic needed
+function getWorkspaceHeader(): Record<string, string> {
+    try {
+        const wsId = localStorage.getItem('activeTenantId');
+        if (wsId) return { 'X-Workspace-Id': wsId };
+    } catch {}
+    return {};
+}
 
 export async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
     const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
@@ -32,6 +38,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
         ...options,
         headers: {
             'Accept': 'application/json',
+            ...getWorkspaceHeader(),
             ...(options.body && !(options.headers && options.headers['Content-Type'])
                 ? { 'Content-Type': 'application/json' }
                 : {}),

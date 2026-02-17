@@ -17,7 +17,11 @@ const WorkspaceContext = createContext<
 >(undefined);
 
 export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
-    const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+    const [workspaceId, setWorkspaceId] = useState<string | null>(
+        () => {
+            try { return localStorage.getItem('activeTenantId'); } catch { return null; }
+        }
+    );
 
     return (
         <WorkspaceContext.Provider value={{ workspaceId, setWorkspaceId }}>

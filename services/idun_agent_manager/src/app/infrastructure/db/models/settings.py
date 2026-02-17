@@ -1,6 +1,9 @@
 """Application settings schemas using Pydantic Settings v2."""
 
-from pydantic import Field
+import json
+from typing import Any
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +19,43 @@ class DatabaseSettings(BaseSettings):
     pool_pre_ping: bool = Field(default=True)
 
     model_config = SettingsConfigDict(env_prefix="DATABASE__", env_file=".env")
+
+
+class AuthSettings(BaseSettings):
+    """OIDC / session authentication settings."""
+
+    provider_type: str = Field(default="google")
+    issuer: str = Field(default="https://accounts.google.com")
+    client_id: str = Field(default="")
+    client_secret: str = Field(default="")
+    redirect_uri: str = Field(
+        default="http://localhost:8000/api/v1/auth/callback"
+    )
+    scopes: list[str] = Field(
+        default=["openid", "profile", "email"]
+    )
+    frontend_url: str = Field(default="http://localhost:5173")
+    session_secret: str = Field(
+        default="change-me-to-a-random-secret-at-least-32-chars!"
+    )
+    session_ttl_seconds: int = Field(default=86400)
+
+    @field_validator("scopes", mode="before")
+    @classmethod
+    def _parse_scopes(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except (json.JSONDecodeError, TypeError):
+                pass
+            return [s.strip() for s in v.split(",") if s.strip()]
+        return v  # type: ignore[return-value]
+
+    model_config = SettingsConfigDict(
+        env_prefix="AUTH__", env_file=".env", extra="ignore"
+    )
 
 
 class Settings(BaseSettings):
@@ -54,6 +94,7 @@ class Settings(BaseSettings):
         ]
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    auth: AuthSettings = Field(default_factory=AuthSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env",

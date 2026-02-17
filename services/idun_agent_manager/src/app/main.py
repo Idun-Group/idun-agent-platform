@@ -7,6 +7,7 @@ from time import perf_counter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from starlette.middleware.sessions import SessionMiddleware
 
 from app import __version__
 from app.core.logging import get_logger, setup_logging
@@ -94,6 +95,13 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Starlette SessionMiddleware – required by authlib for OIDC state storage
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.auth.session_secret,
+    )
+
     # Setup routes
     setup_routes(app)
 
@@ -105,13 +113,20 @@ def setup_routes(app: FastAPI) -> None:
     # Import minimal routers
     from app.api.v1.routers.agent_frameworks import router as agent_frameworks_router
     from app.api.v1.routers.agents import router as agents_router
+    from app.api.v1.routers.auth import router as auth_router
     from app.api.v1.routers.guardrails import router as guardrails_router
     from app.api.v1.routers.health import router as health_router
     from app.api.v1.routers.mcp_servers import router as mcp_servers_router
     from app.api.v1.routers.memory import router as memory_router
     from app.api.v1.routers.observability import router as observability_router
+    from app.api.v1.routers.workspaces import router as workspaces_router
 
     # API v1 routes
+    app.include_router(
+        auth_router,
+        prefix="/api/v1/auth",
+        tags=["Auth"],
+    )
     app.include_router(
         agents_router,
         prefix="/api/v1/agents",
@@ -146,6 +161,11 @@ def setup_routes(app: FastAPI) -> None:
         guardrails_router,
         prefix="/api/v1/guardrails",
         tags=["Guardrails"],
+    )
+    app.include_router(
+        workspaces_router,
+        prefix="/api/v1/workspaces",
+        tags=["Workspaces"],
     )
 
 

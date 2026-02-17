@@ -29,9 +29,18 @@ function App() {
     const { isLoading } = useLoader();
     const { session, isLoading: isAuthLoading } = useAuth();
 
-    // Auth guard temporarily disabled to allow navigation without session
+    // Auth guard: redirect unauthenticated users to /login
     useEffect(() => {
-        return;
+        if (isAuthLoading) return;
+
+        const publicPaths = ['/login', '/signin'];
+        const isPublic = publicPaths.includes(location.pathname);
+
+        if (!session && !isPublic) {
+            navigate('/login', { replace: true });
+        } else if (session && location.pathname === '/login') {
+            navigate('/agents', { replace: true });
+        }
     }, [navigate, location.pathname, session, isAuthLoading]);
 
     return (
