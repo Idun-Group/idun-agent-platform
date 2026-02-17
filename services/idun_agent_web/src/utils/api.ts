@@ -3,8 +3,9 @@ import { toast } from 'react-toastify';
 const resolveBaseUrl = (): string => {
     const envUrl = import.meta.env.VITE_API_URL as string | undefined;
     if (envUrl && envUrl.trim().length > 0) return envUrl;
-    // Default to backend port in dev when no explicit env is set
-    return 'http://localhost:8000';
+    // Default to relative paths so requests go through the Vite dev-server proxy
+    // (avoids cross-origin issues with cookies and CORS).
+    return '';
 };
 
 export const API_BASE_URL = resolveBaseUrl();

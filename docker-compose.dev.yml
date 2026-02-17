@@ -30,9 +30,9 @@ services:
       DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
       DATABASEAUTO_MIGRATE: true
       AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
-      # Google OIDC – override frontend URL for Docker (web runs on port 3000)
+      # Google OIDC – override for Docker (web runs on port 3000, proxy routes /api to manager)
       AUTH__FRONTEND_URL: http://localhost:3000
-      AUTH__REDIRECT_URI: http://localhost:8000/api/v1/auth/callback
+      AUTH__REDIRECT_URI: http://localhost:3000/api/v1/auth/callback
       ENVIRONMENT: development
       # Optional: Add other env vars as needed
       # LANGFUSE_HOST: ${LANGFUSE_HOST}
@@ -62,7 +62,9 @@ services:
       - ./services/idun_agent_web:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000 # http://host.docker.internal:8000
+      # Empty VITE_API_URL so the frontend uses relative paths (/api/...) proxied by Vite
+      - VITE_API_URL=
+      - VITE_API_PROXY_TARGET=http://manager:8000
       - VITE_COPILOT_RUNTIME_URL=http://copilot-runtime:8001
       - CHOKIDAR_USEPOLLING=true
     depends_on:
