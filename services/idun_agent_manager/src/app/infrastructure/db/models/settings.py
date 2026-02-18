@@ -18,12 +18,16 @@ class DatabaseSettings(BaseSettings):
     max_overflow: int = Field(default=20)
     pool_pre_ping: bool = Field(default=True)
 
-    model_config = SettingsConfigDict(env_prefix="DATABASE__", env_file=".env")
+    model_config = SettingsConfigDict(env_prefix="DATABASE__", env_file=".env", extra="ignore")
 
 
 class AuthSettings(BaseSettings):
     """OIDC / session authentication settings."""
 
+    # Auth mode control: if True, disable username/password and use SSO only
+    disable_username_password: bool = Field(default=False)
+
+    # OIDC provider settings (used when disable_username_password=True)
     provider_type: str = Field(default="google")
     issuer: str = Field(default="https://accounts.google.com")
     client_id: str = Field(default="")

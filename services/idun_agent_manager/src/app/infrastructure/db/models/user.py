@@ -20,6 +20,7 @@ class UserModel(Base):
     picture_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     provider: Mapped[str] = mapped_column(String(50), nullable=False, default="google")
     provider_sub: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
