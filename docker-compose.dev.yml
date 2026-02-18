@@ -28,19 +28,8 @@ services:
     container_name: idun-manager-dev
     env_file: .env
     environment:
-      # Database connection (use internal port 5432)
-      DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
-      DATABASEAUTO_MIGRATE: true
-      AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
-      # Google OIDC – override for Docker (web runs on port 3000, proxy routes /api to manager)
-      AUTH__FRONTEND_URL: http://localhost:3000
-      AUTH__REDIRECT_URI: http://localhost:3000/api/v1/auth/callback
-      ENVIRONMENT: development
-      # Optional: Add other env vars as needed
-      # LANGFUSE_HOST: ${LANGFUSE_HOST}
       DEBUG: true
     volumes:
-      # Mount manager source for hot reload
       - ./services/idun_agent_manager/src:/app/src
       - ./services/idun_agent_manager/alembic:/app/alembic
       - ./services/idun_agent_manager/alembic.ini:/app/alembic.ini
@@ -68,6 +57,7 @@ services:
       - VITE_API_URL=
       - VITE_API_PROXY_TARGET=http://manager:8000
       - VITE_COPILOT_RUNTIME_URL=http://copilot-runtime:8001
+      - VITE_AUTH_DISABLE_USERNAME_PASSWORD=${AUTH__DISABLE_USERNAME_PASSWORD:-false}
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       - manager

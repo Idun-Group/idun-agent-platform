@@ -17,6 +17,7 @@ from app.infrastructure.db.session import get_async_session
 # Database session dependency
 # ---------------------------------------------------------------------------
 
+
 async def get_session() -> AsyncIterator[AsyncSession]:
     """Get database session."""
     async for session in get_async_session():
@@ -27,6 +28,7 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 # Settings dependency
 # ---------------------------------------------------------------------------
 
+
 def get_settings() -> Settings:
     """Get application settings."""
     return get_settings_dependency()
@@ -36,9 +38,11 @@ def get_settings() -> Settings:
 # Auth dependencies
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CurrentUser:
     """Represents the authenticated user extracted from the session cookie."""
+
     user_id: str
     email: str
     roles: list[str] = field(default_factory=list)
@@ -117,6 +121,7 @@ def require_workspace(
 # ---------------------------------------------------------------------------
 # Legacy API-key dependency (kept for backward compatibility)
 # ---------------------------------------------------------------------------
+
 
 async def allow_user(client_key: str = Query(...)) -> None:
     key = os.getenv("KEY", "")

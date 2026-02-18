@@ -65,10 +65,11 @@ def _get_oauth() -> OAuth:
         _oauth = OAuth()
         _oauth.register(
             name="google",
-            client_id=settings.auth.client_id,
-            client_secret=settings.auth.client_secret,
+            # TODO: make provider agnostic and support more providers
+            client_id=settings.auth.google.client_id,
+            client_secret=settings.auth.google.client_secret,
             server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-            client_kwargs={"scope": " ".join(settings.auth.scopes)},
+            client_kwargs={"scope": " ".join(settings.auth.google.scopes)},
         )
     return _oauth
 
@@ -147,6 +148,7 @@ async def login(request: Request) -> RedirectResponse:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="SSO auth is disabled",
         )
+
     oauth = _get_oauth()
     redirect_uri = settings.auth.redirect_uri
     return await oauth.google.authorize_redirect(request, redirect_uri)  # type: ignore[union-attr]
@@ -321,9 +323,6 @@ async def basic_signup(
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, Any]:
     settings = get_settings()
-
-    _salt = settings.auth.session_secret
-
     if settings.auth.disable_username_password:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -358,7 +357,7 @@ async def basic_signup(
             email=request.email,
             name=request.name,
             provider="local",
-            password_hash=hash_password(request.password, _salt).decode("utf-8"),
+            password_hash=hash_password(request.password),
         )
         session.add(user)
         await session.flush()
@@ -439,7 +438,7 @@ async def basic_login(
             detail="Invalid email or password",
         )
 
-    if not verify_password(request.password, user.password_hash.encode("utf-8")):
+    if not verify_password(request.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",

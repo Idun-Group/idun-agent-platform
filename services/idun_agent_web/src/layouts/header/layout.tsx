@@ -24,19 +24,7 @@ const Header = () => {
 
     // Local state for selected environment and workspace in the header
     const [environment, setEnvironment] = useState<string>('');
-    const [workspaceId, setWorkspaceId] = useState<string>(
-        () => localStorage.getItem('activeTenantId') || ''
-    );
-
-    // Auto-select first workspace if none is selected
-    useEffect(() => {
-        if (!workspaceId && workspaces.length > 0) {
-            const firstId = workspaces[0].id;
-            setWorkspaceId(firstId);
-            setSelectedWorkspaceId(firstId);
-            localStorage.setItem('activeTenantId', firstId);
-        }
-    }, [workspaces, workspaceId, setSelectedWorkspaceId]);
+    const [workspaceId, setWorkspaceId] = useState<string>('');
 
     // Sync environment with URL param on mount and when URL changes
     useEffect(() => {
@@ -80,24 +68,28 @@ const Header = () => {
                     <Logo src="/img/logo/logo.svg" alt="Idun Logo" /> Idun Agent Platform
                 </Title>
 
-                {workspaces.length > 0 && (
+                {/** Workspace selector temporarily disabled */}
+                {false && (
                     <Select
                         value={workspaceId}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                             const value = e.target.value;
                             setWorkspaceId(value);
                             setSelectedWorkspaceId(value || null);
-                            if (value) {
-                                localStorage.setItem('activeTenantId', value);
-                            }
                         }}
                     >
                         <option value="">
-                            {t('header.workspace.select', { defaultValue: 'Select workspace' })}
+                            {t('header.workspace.select')}
                         </option>
+                        {workspaces.length === 0 ? (
+                            <option value="" disabled>
+                                {/* Avoid i18n missingKey spam until translation is added */}
+                                No workspaces
+                            </option>
+                        ) : null}
                         {workspaces.map((workspace) => (
                             <option key={workspace.id} value={workspace.id}>
-                                {workspace.icon ? `${workspace.icon} ` : ''}{workspace.name}
+                                {workspace.icon} {workspace.name}
                             </option>
                         ))}
                     </Select>

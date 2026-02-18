@@ -17,11 +17,7 @@ const WorkspaceContext = createContext<
 >(undefined);
 
 export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
-    const [workspaceId, setWorkspaceId] = useState<string | null>(
-        () => {
-            try { return localStorage.getItem('activeTenantId'); } catch { return null; }
-        }
-    );
+    const [workspaceId, setWorkspaceId] = useState<string | null>(null);
 
     return (
         <WorkspaceContext.Provider value={{ workspaceId, setWorkspaceId }}>
@@ -43,7 +39,7 @@ const useWorkspace = () => {
                 if (params?.limit != null) query.set('limit', String(params.limit));
                 if (params?.offset != null) query.set('offset', String(params.offset));
                 const qs = query.toString();
-                const path = `/api/v1/workspaces${qs ? `?${qs}` : ''}`;
+                const path = `/api/v1/workspaces/${qs ? `?${qs}` : ''}`;
                 return await getJson<Workspace[]>(path);
             } catch (error) {
                 console.error('Error fetching workspaces:', error);

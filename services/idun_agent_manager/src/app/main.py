@@ -15,9 +15,6 @@ from app.core.settings import get_settings
 from app.infrastructure.db.migrate import auto_migrate
 from app.infrastructure.db.session import close_engines, get_async_engine
 
-# Simple in-memory storage for development
-agents_db = []
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

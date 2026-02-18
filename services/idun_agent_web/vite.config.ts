@@ -49,8 +49,12 @@ export default defineConfig({
                 secure: false,
             },
             '/api': {
-                // In docker-compose, backend service is agent-manager-dev
-                target: process.env.VITE_API_PROXY_TARGET || 'http://agent-manager-dev:8000',
+                target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+            '/openapi.json': {
+                target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
                 changeOrigin: true,
                 secure: false,
             },

@@ -336,7 +336,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
         loadApps();
 
         // Fetch Frameworks
-        fetch('http://localhost:4001/api/v1/framework')
+        fetch('/api/v1/agent-frameworks/')
             .then((response) => response.json())
             .then((data) => {
                 if (Array.isArray(data)) {

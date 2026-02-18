@@ -3,9 +3,8 @@ import { toast } from 'react-toastify';
 const resolveBaseUrl = (): string => {
     const envUrl = import.meta.env.VITE_API_URL as string | undefined;
     if (envUrl && envUrl.trim().length > 0) return envUrl;
-    // Default to relative paths so requests go through the Vite dev-server proxy
-    // (avoids cross-origin issues with cookies and CORS).
-    return '';
+    // Default to backend port in dev when no explicit env is set
+    return 'http://localhost:3000';
 };
 
 export const API_BASE_URL = resolveBaseUrl();
@@ -24,13 +23,7 @@ export function removeUnauthorizedHandler(handler: () => void): void {
 
 let hasNotifiedOn401 = false;
 
-function getWorkspaceHeader(): Record<string, string> {
-    try {
-        const wsId = localStorage.getItem('activeTenantId');
-        if (wsId) return { 'X-Workspace-Id': wsId };
-    } catch {}
-    return {};
-}
+// Tenant now derived from sid on backend; no tenant header logic needed
 
 export async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
     const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
@@ -39,7 +32,6 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
         ...options,
         headers: {
             'Accept': 'application/json',
-            ...getWorkspaceHeader(),
             ...(options.body && !(options.headers && options.headers['Content-Type'])
                 ? { 'Content-Type': 'application/json' }
                 : {}),
@@ -50,7 +42,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
     if (response.status === 401) {
         // Notify listeners; do not redirect. Show a toast once to avoid spam.
         unauthorizedHandlers.forEach((h) => {
-            try { h(); } catch {}
+            try { h(); } catch { }
         });
         if (!hasNotifiedOn401) {
             hasNotifiedOn401 = true;
