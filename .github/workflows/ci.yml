@@ -57,6 +57,12 @@ jobs:
         run: |
           uv sync --group dev
 
+      - name: Build and install schema from repo
+        working-directory: libs/idun_agent_schema
+        run: |
+          uv build --no-sources
+          uv pip install dist/*.whl --force-reinstall
+
       - name: Build engine wheel/sdist
         working-directory: libs/idun_agent_engine
         run: |
