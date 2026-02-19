@@ -36,7 +36,7 @@ jobs:
           uv run pre-commit run --all-files
 
   test-engine:
-    name: Build, install, and test idun_agent_engine (Py3.12)
+    name: Test engine and manager (Py3.12)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -52,27 +52,18 @@ jobs:
         with:
           enable-cache: false
 
-      - name: Create engine environment (dev)
-        working-directory: libs/idun_agent_engine
+      - name: Install workspace dependencies
         run: |
           uv sync --group dev
 
-      - name: Build engine wheel/sdist
-        working-directory: libs/idun_agent_engine
-        run: |
-          uv build --no-sources
-
-      - name: Install built engine package into uv env
-        working-directory: libs/idun_agent_engine
-        run: |
-          uv pip install dist/*.whl
-
-      - name: Run tests (importing installed package)
+      - name: Run engine tests
         env:
-          PYTHONPATH: ""
           GUARDRAILS_API_KEY: ${{ secrets.GUARDRAILS_API_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
-        working-directory: libs/idun_agent_engine
         run: |
-          uv run pytest tests --cov=src/idun_agent_engine --cov-report=term-missing
+          uv run pytest libs/idun_agent_engine/tests
+
+      - name: Run manager tests
+        run: |
+          uv run pytest services/idun_agent_manager/tests

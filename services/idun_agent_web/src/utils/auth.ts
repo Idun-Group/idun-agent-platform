@@ -21,10 +21,10 @@ export async function loginBasic(params: { email: string; password: string }): P
 }
 
 export async function logoutBasic(): Promise<void> {
-    await postJson('/api/v1/auth/basic/logout', {});
+    await postJson('/api/v1/auth/logout', {});
 }
 
-export async function signupBasic(params: { email: string; password: string; name?: string | null; roles?: string[]; workspaces?: string[] }): Promise<{ id: string; email: string; name?: string | null; roles?: string[]; workspace_ids?: string[] }>{
+export async function signupBasic(params: { email: string; password: string; name?: string | null; roles?: string[]; workspaces?: string[] }): Promise<{ id: string; email: string; name?: string | null; roles?: string[]; workspace_ids?: string[] }> {
     return postJson('/api/v1/auth/basic/signup', params);
 }
 
@@ -37,7 +37,7 @@ export async function getSession(): Promise<Session | null> {
     }
 }
 
-export async function assignRole(params: { user_id: string; role: 'admin' | 'user' }): Promise<{ ok: true }>{
+export async function assignRole(params: { user_id: string; role: 'admin' | 'user' }): Promise<{ ok: true }> {
     return postJson('/api/v1/auth/roles/assign', params);
 }
 

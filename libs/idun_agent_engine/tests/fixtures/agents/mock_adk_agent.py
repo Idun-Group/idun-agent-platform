@@ -1,6 +1,15 @@
 from google.adk.agents import BaseAgent
 from google.adk.events import Event
 from google.genai.types import Content, Part
+from pydantic import BaseModel
+
+
+class AdkTaskRequest(BaseModel):
+    """Custom input model for testing ADK structured input."""
+
+    task_name: str
+    priority: int = 1
+    tags: list[str] = []
 
 
 class MockADKAgent(BaseAgent):

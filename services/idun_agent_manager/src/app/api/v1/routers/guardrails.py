@@ -1,7 +1,8 @@
 """Managed Guardrail API.
 
 This router exposes endpoints to create, read, list, update, and delete
-managed guardrail configurations.
+managed guardrail configurations. All endpoints are scoped to the
+authenticated user's active workspace.
 """
 
 import logging
@@ -21,7 +22,12 @@ from pydantic import TypeAdapter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_session
+from app.api.v1.deps import (
+    CurrentUser,
+    get_current_user,
+    get_session,
+    require_workspace,
+)
 from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
 
 router = APIRouter()
@@ -34,8 +40,12 @@ PAGINATION_MAX_LIMIT = 1000
 PAGINATION_DEFAULT_LIMIT = 100
 
 
-async def _get_guardrail(id: str, session: AsyncSession) -> ManagedGuardrailModel:
-    """Get guardrail config by ID."""
+async def _get_guardrail(
+    id: str,
+    session: AsyncSession,
+    workspace_id: UUID | None = None,
+) -> ManagedGuardrailModel:
+    """Get guardrail config by ID, optionally scoped to a workspace."""
     try:
         uuid_id = UUID(id)
     except ValueError as err:
@@ -46,6 +56,11 @@ async def _get_guardrail(id: str, session: AsyncSession) -> ManagedGuardrailMode
 
     model = await session.get(ManagedGuardrailModel, uuid_id)
     if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Guardrail config with id '{id}' not found",
+        )
+    if workspace_id is not None and model.workspace_id != workspace_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Guardrail config with id '{id}' not found",
@@ -74,11 +89,12 @@ def _model_to_schema(model: ManagedGuardrailModel) -> ManagedGuardrailRead:
 async def create_guardrail(
     request: ManagedGuardrailCreate,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedGuardrailRead:
     """Create a new managed guardrail configuration."""
     now = datetime.now(UTC)
 
-    # Validate config
     guardrail_config = request.guardrail
 
     model = ManagedGuardrailModel(
@@ -87,6 +103,7 @@ async def create_guardrail(
         guardrail_config=guardrail_config.model_dump(),
         created_at=now,
         updated_at=now,
+        workspace_id=workspace_id,
     )
 
     session.add(model)
@@ -105,6 +122,8 @@ async def list_guardrails(
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> list[ManagedGuardrailRead]:
     """List managed guardrail configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -117,7 +136,12 @@ async def list_guardrails(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    stmt = select(ManagedGuardrailModel).limit(limit).offset(offset)
+    stmt = (
+        select(ManagedGuardrailModel)
+        .where(ManagedGuardrailModel.workspace_id == workspace_id)
+        .limit(limit)
+        .offset(offset)
+    )
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
@@ -132,9 +156,11 @@ async def list_guardrails(
 async def get_guardrail(
     id: str,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedGuardrailRead:
     """Get a managed guardrail configuration by ID."""
-    model = await _get_guardrail(id, session)
+    model = await _get_guardrail(id, session, workspace_id)
     return _model_to_schema(model)
 
 
@@ -146,9 +172,11 @@ async def get_guardrail(
 async def delete_guardrail(
     id: str,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> None:
     """Delete a managed guardrail configuration permanently."""
-    model = await _get_guardrail(id, session)
+    model = await _get_guardrail(id, session, workspace_id)
     await session.delete(model)
     await session.flush()
 
@@ -162,9 +190,11 @@ async def patch_guardrail(
     id: str,
     request: ManagedGuardrailPatch,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedGuardrailRead:
     """Update a guardrail configuration."""
-    model = await _get_guardrail(id, session)
+    model = await _get_guardrail(id, session, workspace_id)
 
     model.name = request.name
     guardrail_config = request.guardrail

@@ -1,7 +1,8 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from idun_agent_schema.engine.mcp_server import MCPServer
+
 from idun_agent_engine.mcp.registry import MCPClientRegistry
 
 
@@ -243,7 +244,7 @@ class TestMCPRegistryGetADKToolsets:
 
     def test_get_adk_toolsets_returns_empty_for_no_configs(self):
         registry = MCPClientRegistry()
-        with patch("idun_agent_engine.mcp.registry.McpToolset") as mock_toolset:
+        with patch("idun_agent_engine.mcp.registry.McpToolset") as _mock_toolset:
             with patch("idun_agent_engine.mcp.registry.StdioServerParameters"):
                 toolsets = registry.get_adk_toolsets()
                 assert toolsets == []

@@ -18,6 +18,7 @@ import {
     Check
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL, getJson } from '../../../../utils/api';
 import { AgentAvatar } from '../../../general/agent-avatar/component';
 import {
     FormSelect,
@@ -848,23 +849,10 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
 
         setIsAuthLoading(true);
         try {
-            // Using relative URL since frontend is proxied or same origin usually,
-            // but request asked for specific curl structure.
-            // Assuming this runs in browser, we call the API endpoint.
-            // Adjust port/host if needed or use relative path if proxy is set up.
-            // Using relative path /api/v1... which is standard in this project setup
-            const response = await fetch(`http://localhost:8000/api/v1/agents/key?agent_id=${agent.id}`);
-            if (response.ok) {
-                const data = await response.json();
-                // Assuming the response returns { key: "..." } or similar, or just the string.
-                // Based on standard practices, let's assume it returns a JSON object.
-                // If it returns a plain string, we'll handle that.
-                const token = data.api_key || data.key || (typeof data === 'string' ? data : JSON.stringify(data));
-                setAuthToken(token);
-                setShowAuthToken(true);
-            } else {
-                console.error("Failed to fetch auth token");
-            }
+            const data = await getJson<Record<string, string>>(`/api/v1/agents/key?agent_id=${agent.id}`);
+            const token = data.api_key || data.key || (typeof data === 'string' ? data : JSON.stringify(data));
+            setAuthToken(token);
+            setShowAuthToken(true);
         } catch (error) {
             console.error("Error fetching auth token:", error);
         } finally {

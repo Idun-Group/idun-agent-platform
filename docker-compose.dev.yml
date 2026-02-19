@@ -20,22 +20,17 @@ services:
       retries: 5
 
   manager:
+    stdin_open: true
+    tty: true
     build:
       context: ./services/idun_agent_manager
       dockerfile: Dockerfile.dev
     container_name: idun-manager-dev
     env_file: .env
     environment:
-      # Database connection (use internal port 5432)
-      DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
-      DATABASEAUTO_MIGRATE: true
-      AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
-      ENVIRONMENT: development
-      # Optional: Add other env vars as needed
-      # LANGFUSE_HOST: ${LANGFUSE_HOST}
-      DEBUG: true
+      - AUTH__SECRET_KEY=$2b$12$6p5XpY.kO8qA4C9uG.k7u.
+      - DEBUG=true
     volumes:
-      # Mount manager source for hot reload
       - ./services/idun_agent_manager/src:/app/src
       - ./services/idun_agent_manager/alembic:/app/alembic
       - ./services/idun_agent_manager/alembic.ini:/app/alembic.ini
@@ -59,8 +54,11 @@ services:
       - ./services/idun_agent_web:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000 # http://host.docker.internal:8000
-      - VITE_COPILOT_RUNTIME_URL=http://copilot-runtime:8001
+      # Empty VITE_API_URL so the frontend uses relative paths (/api/...) proxied by Vite
+      - VITE_API_URL=
+      - VITE_API_PROXY_TARGET=http://manager:8000
+      - VITE_COPILOT_PROXY_TARGET=http://copilot-runtime:8001
+      - VITE_AUTH_DISABLE_USERNAME_PASSWORD=${AUTH__DISABLE_USERNAME_PASSWORD:-false}
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       - manager

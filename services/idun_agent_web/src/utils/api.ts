@@ -42,7 +42,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
     if (response.status === 401) {
         // Notify listeners; do not redirect. Show a toast once to avoid spam.
         unauthorizedHandlers.forEach((h) => {
-            try { h(); } catch {}
+            try { h(); } catch { }
         });
         if (!hasNotifiedOn401) {
             hasNotifiedOn401 = true;

@@ -45,10 +45,6 @@ async def configure_app(app: FastAPI, engine_config):
 
     print("guardrails: ", guardrails)
 
-    # # Initialize MCP Registry first
-    # mcp_registry = MCPClientRegistry(engine_config.mcp_servers)
-    # app.state.mcp_registry = mcp_registry
-
     # Use ConfigBuilder's centralized agent initialization, passing the registry
     try:
         agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config)
@@ -60,6 +56,7 @@ async def configure_app(app: FastAPI, engine_config):
     app.state.agent = agent_instance
     app.state.config = engine_config
     app.state.engine_config = engine_config
+    app.state.custom_input_model = getattr(agent_instance, "custom_input_model", None)
 
     app.state.guardrails = guardrails
     agent_name = getattr(agent_instance, "name", "Unknown")
@@ -68,20 +65,13 @@ async def configure_app(app: FastAPI, engine_config):
     # Setup AGUI routes if the agent is a LangGraph agent
     from ..agent.adk.adk import AdkAgent
     from ..agent.langgraph.langgraph import LanggraphAgent
-    # from ..server.routers.agui import setup_agui_router
 
     if isinstance(agent_instance, (LanggraphAgent, AdkAgent)):
         try:
-            # compiled_graph = getattr(agent_instance, "agent_instance")
-            # app.state.copilotkit_agent = setup_agui_router(app, agent_instance) # TODO: agent_instance is a compiled graph (duplicate agent_instance name not clear)
             app.state.copilotkit_agent = agent_instance.copilotkit_agent_instance
         except Exception as e:
             print(f"⚠️ Warning: Failed to setup AGUI routes: {e}")
             # Continue even if AGUI setup fails
-
-    # if app.state.mcp_registry.enabled:
-    #     servers = ", ".join(app.state.mcp_registry.available_servers())
-    #     print(f"🔌 MCP servers ready: {servers}")
 
 
 @asynccontextmanager
