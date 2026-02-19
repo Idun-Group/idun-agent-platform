@@ -11,11 +11,8 @@ const Signin = () => {
     const navigate = useNavigate();
     const { signup, session } = useAuth();
 
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
 
     useEffect(() => {
@@ -24,8 +21,7 @@ const Signin = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // In dev, signup requires an admin session; keep the form for UX but backend will enforce
-        await signup({ email, password, name: name || `${firstName} ${lastName}` });
+        await signup({ email, password, name });
         navigate('/login');
     };
 
@@ -37,55 +33,27 @@ const Signin = () => {
                 <p>{t('signin.description')}</p>
 
                 <TextInput
-                    label={t('signin.firstName.label')}
-                    name="firstName"
-                    type="text"
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder={t('signin.firstName.placeholder')}
-                    required
-                />
-
-                <TextInput
-                    label={t('signin.lastName.label')}
-                    name="lastName"
-                    type="text"
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder={t('signin.lastName.placeholder')}
-                    required
-                />
-
-                <TextInput
-                    label={t('signin.name.label')}
-                    name="name"
-                    type="text"
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t('signin.name.placeholder')}
-                    required
-                />
-
-                <TextInput
-                    label={t('signin.email.label')}
+                    label={t('signin.email.label', { defaultValue: 'Email' })}
                     name="email"
                     type="email"
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t('signin.email.placeholder')}
-                    required
-                />
-
-                <TextInput
-                    label={t('signin.phone.label')}
-                    name="phone"
-                    type="tel"
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder={t('signin.phone.placeholder')}
+                    placeholder="Email"
                     required
                 />
                 <TextInput
-                    label={t('signin.password.label')}
+                    label={t('signin.password.label', { defaultValue: 'Password' })}
                     name="password"
                     type="password"
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={t('signin.password.placeholder')}
+                    placeholder="Password"
+                    required
+                />
+                <TextInput
+                    label={t('signin.name.label', { defaultValue: 'Name' })}
+                    name="name"
+                    type="text"
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Name"
                     required
                 />
                 <Button type="submit" $variants="base">

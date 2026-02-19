@@ -27,8 +27,9 @@ dependencies = [
 
   # Security & Auth
   "python-jose[cryptography]>=3.3.0,<4.0.0",
-  "passlib[bcrypt]>=1.7.4,<2.0.0",
+  "passlib[bcrypt]>=1.7.4",
   "authlib",
+  "itsdangerous>=2.1.0,<3.0.0",
 
   # HTTP & Utilities
   "httpx>=0.28.1,<0.29.0",
@@ -63,20 +64,16 @@ dev = [
   "pytest-asyncio==0.25.0",
   "pytest-cov==6.0.0",
   "factory-boy==3.3.1",
-
-  # Developer tools
   "ruff==0.8.4",
   "black==24.10.0",
   "mypy==1.14.0",
   "pre-commit==4.0.1",
   "ipdb",
   "ipython",
-
-  # Type stubs
   "types-passlib==1.7.7",
-
-  "psycopg2-binary>=2.9.10,<3.0.0",  # Sync PostgreSQL driver (required by Alembic)
+  "psycopg2-binary>=2.9.10,<3.0.0",
   "debugpy>=1.8.0",
+  "aiosqlite>=0.22.1",
 ]
 
 [build-system]
@@ -139,6 +136,7 @@ disallow_untyped_defs = false
 [tool.pytest.ini_options]
 addopts = "-ra -q --strict-markers --disable-warnings"
 testpaths = ["tests"]
+pythonpath = ["src"]
 asyncio_mode = "auto"
 
 [tool.coverage.run]

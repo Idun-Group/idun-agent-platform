@@ -1,7 +1,32 @@
-"""Application settings schemas using Pydantic Settings v2."""
+import json
+from typing import Any
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class GoogleProviderSettings(BaseSettings):
+    client_id: str = Field(default="")
+    client_secret: str = Field(default="")
+    issuer: str = Field(default="https://accounts.google.com")
+    scopes: list[str] = Field(default=["openid", "profile", "email"])
+
+    @field_validator("scopes", mode="before")
+    @classmethod
+    def _parse_scopes(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except (json.JSONDecodeError, TypeError):
+                pass
+            return [s.strip() for s in v.split(",") if s.strip()]
+        return v
+
+    model_config = SettingsConfigDict(
+        env_prefix="AUTH__GOOGLE_", env_file=".env", extra="ignore"
+    )
 
 
 class DatabaseSettings(BaseSettings):
@@ -15,7 +40,30 @@ class DatabaseSettings(BaseSettings):
     max_overflow: int = Field(default=20)
     pool_pre_ping: bool = Field(default=True)
 
-    model_config = SettingsConfigDict(env_prefix="DATABASE__", env_file=".env")
+    model_config = SettingsConfigDict(
+        env_prefix="DATABASE__", env_file=".env", extra="ignore"
+    )
+
+
+class AuthSettings(BaseSettings):
+    """OIDC / session authentication settings."""
+
+    # Auth mode control: if True, disable username/password and use SSO only
+    disable_username_password: bool = Field(default=False)
+
+    provider: str = Field(default="google")
+    redirect_uri: str = Field(default="http://localhost:8000/api/v1/auth/callback")
+    frontend_url: str = Field(default="http://localhost:5173")
+    session_secret: str = Field(
+        default="change-me-to-a-random-secret-at-least-32-chars!"
+    )
+    session_ttl_seconds: int = Field(default=86400)
+
+    google: GoogleProviderSettings = Field(default_factory=GoogleProviderSettings)
+
+    model_config = SettingsConfigDict(
+        env_prefix="AUTH__", env_file=".env", extra="ignore"
+    )
 
 
 class Settings(BaseSettings):
@@ -54,6 +102,7 @@ class Settings(BaseSettings):
         ]
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    auth: AuthSettings = Field(default_factory=AuthSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env",

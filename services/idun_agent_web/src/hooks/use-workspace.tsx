@@ -39,7 +39,7 @@ const useWorkspace = () => {
                 if (params?.limit != null) query.set('limit', String(params.limit));
                 if (params?.offset != null) query.set('offset', String(params.offset));
                 const qs = query.toString();
-                const path = `/api/v1/workspaces${qs ? `?${qs}` : ''}`;
+                const path = `/api/v1/workspaces/${qs ? `?${qs}` : ''}`;
                 return await getJson<Workspace[]>(path);
             } catch (error) {
                 console.error('Error fetching workspaces:', error);

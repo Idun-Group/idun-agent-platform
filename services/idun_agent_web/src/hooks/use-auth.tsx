@@ -15,6 +15,15 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function syncActiveWorkspace(workspaceIds: string[] | undefined) {
+    if (typeof window === 'undefined') return;
+    const current = localStorage.getItem('activeTenantId');
+    const ids = workspaceIds || [];
+    if (!current || !ids.includes(current)) {
+        if (ids[0]) localStorage.setItem('activeTenantId', ids[0]);
+    }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -24,16 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const s = await getSession();
             setSession(s);
-            // Auto-select a tenant/workspace if available and none selected yet
-            try {
-                if (typeof window !== 'undefined') {
-                    const hasActive = localStorage.getItem('activeTenantId');
-                    const firstWorkspace = s?.principal?.workspace_ids?.[0];
-                    if (!hasActive && firstWorkspace) {
-                        localStorage.setItem('activeTenantId', firstWorkspace);
-                    }
-                }
-            } catch {}
+            syncActiveWorkspace(s?.principal?.workspace_ids);
         } finally {
             setIsLoading(false);
         }
@@ -43,16 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await loginBasic({ email, password });
         const s = await getSession();
         setSession(s);
-        // Auto-select a tenant/workspace after login
-        try {
-            if (typeof window !== 'undefined') {
-                const hasActive = localStorage.getItem('activeTenantId');
-                const firstWorkspace = s?.principal?.workspace_ids?.[0];
-                if (!hasActive && firstWorkspace) {
-                    localStorage.setItem('activeTenantId', firstWorkspace);
-                }
-            }
-        } catch {}
+        syncActiveWorkspace(s?.principal?.workspace_ids);
         return !!s;
     }, []);
 

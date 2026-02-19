@@ -1,7 +1,8 @@
 """Managed Observability API.
 
 This router exposes endpoints to create, read, list, update, and delete
-managed observability configurations.
+managed observability configurations. All endpoints are scoped to the
+authenticated user's active workspace.
 """
 
 import logging
@@ -18,7 +19,12 @@ from idun_agent_schema.manager.managed_observability import (
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import get_session
+from app.api.v1.deps import (
+    CurrentUser,
+    get_current_user,
+    get_session,
+    require_workspace,
+)
 from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
 
 router = APIRouter()
@@ -32,9 +38,11 @@ PAGINATION_DEFAULT_LIMIT = 100
 
 
 async def _get_observability(
-    id: str, session: AsyncSession
+    id: str,
+    session: AsyncSession,
+    workspace_id: UUID | None = None,
 ) -> ManagedObservabilityModel:
-    """Get observability config by ID."""
+    """Get observability config by ID, optionally scoped to a workspace."""
     try:
         uuid_id = UUID(id)
     except ValueError as err:
@@ -45,6 +53,11 @@ async def _get_observability(
 
     model = await session.get(ManagedObservabilityModel, uuid_id)
     if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Observability config with id '{id}' not found",
+        )
+    if workspace_id is not None and model.workspace_id != workspace_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Observability config with id '{id}' not found",
@@ -73,11 +86,12 @@ def _model_to_schema(model: ManagedObservabilityModel) -> ManagedObservabilityRe
 async def create_observability(
     request: ManagedObservabilityCreate,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedObservabilityRead:
     """Create a new managed observability configuration."""
     now = datetime.now(UTC)
 
-    # Validate config
     observability_config = ObservabilityConfig(**request.observability.model_dump())
 
     model = ManagedObservabilityModel(
@@ -86,6 +100,7 @@ async def create_observability(
         observability_config=observability_config.model_dump(),
         created_at=now,
         updated_at=now,
+        workspace_id=workspace_id,
     )
 
     session.add(model)
@@ -104,6 +119,8 @@ async def list_observabilities(
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> list[ManagedObservabilityRead]:
     """List managed observability configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -116,7 +133,12 @@ async def list_observabilities(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    stmt = select(ManagedObservabilityModel).limit(limit).offset(offset)
+    stmt = (
+        select(ManagedObservabilityModel)
+        .where(ManagedObservabilityModel.workspace_id == workspace_id)
+        .limit(limit)
+        .offset(offset)
+    )
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
@@ -131,9 +153,11 @@ async def list_observabilities(
 async def get_observability(
     id: str,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedObservabilityRead:
     """Get a managed observability configuration by ID."""
-    model = await _get_observability(id, session)
+    model = await _get_observability(id, session, workspace_id)
     return _model_to_schema(model)
 
 
@@ -145,9 +169,11 @@ async def get_observability(
 async def delete_observability(
     id: str,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> None:
     """Delete a managed observability configuration permanently."""
-    model = await _get_observability(id, session)
+    model = await _get_observability(id, session, workspace_id)
     await session.delete(model)
     await session.flush()
 
@@ -161,9 +187,11 @@ async def patch_observability(
     id: str,
     request: ManagedObservabilityPatch,
     session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedObservabilityRead:
     """Update an observability configuration."""
-    model = await _get_observability(id, session)
+    model = await _get_observability(id, session, workspace_id)
 
     model.name = request.name
     observability_config = ObservabilityConfig(**request.observability.model_dump())
