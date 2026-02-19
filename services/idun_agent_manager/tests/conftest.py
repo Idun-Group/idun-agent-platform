@@ -1,47 +1,80 @@
 """Pytest fixtures."""
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
-from src.app.infrastructure.db.session import Base, get_sync_session
-from src.app.main import app
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import JSON, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-SQLITE_DATABASE_URL = "sqlite:///./test_db.db"
-
-
-engine = create_engine(
-    SQLITE_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+from app.api.v1.deps import get_session
+from app.infrastructure.db.models.managed_agent import ManagedAgentModel  # noqa: F401
+from app.infrastructure.db.models.managed_guardrail import (
+    ManagedGuardrailModel,  # noqa: F401
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from app.infrastructure.db.models.managed_mcp_server import (
+    ManagedMCPServerModel,  # noqa: F401
+)
+from app.infrastructure.db.models.managed_memory import ManagedMemoryModel  # noqa: F401
+from app.infrastructure.db.models.managed_observability import (
+    ManagedObservabilityModel,  # noqa: F401
+)
+from app.infrastructure.db.models.membership import MembershipModel  # noqa: F401
+from app.infrastructure.db.models.user import UserModel  # noqa: F401
+from app.infrastructure.db.models.workspace import WorkspaceModel  # noqa: F401
+from app.infrastructure.db.session import Base
 
-Base.metadata.create_all(bind=engine)
+# Swap PostgreSQL-specific column types (JSONB, UUID) to SQLite-compatible equivalents
+for _table in Base.metadata.tables.values():
+    for _col in _table.columns:
+        if isinstance(_col.type, JSONB):
+            _col.type = JSON()
+        elif isinstance(_col.type, PG_UUID):
+            _col.type = Uuid()
 
 
-@pytest.fixture(scope="function")
-def db_session():
-    """Create a new database session with a rollback at the end of the test."""
-    connection = engine.connect()
-    transaction = connection.begin()
-    session = TestingSessionLocal(bind=connection)
-    yield session
-    session.close()
-    transaction.rollback()
-    connection.close()
+@asynccontextmanager
+async def _noop_lifespan(_app):
+    yield
 
 
-@pytest.fixture(scope="function")
-def client(db_session):
-    def override_get_db():
-        try:
-            yield db_session
-        finally:
-            db_session.close()
+@pytest_asyncio.fixture(scope="function")
+async def db_session() -> AsyncIterator[AsyncSession]:
+    """Create tables, yield a session, then drop tables."""
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",
+        connect_args={"check_same_thread": False},
+    )
 
-    app.dependency_overrides[get_sync_session] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    session_factory = async_sessionmaker(
+        bind=engine, class_=AsyncSession, expire_on_commit=False
+    )
+    async with session_factory() as session:
+        yield session
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
+    async def override_get_session() -> AsyncIterator[AsyncSession]:
+        yield db_session
+
+    from app.main import create_app
+
+    app = create_app()
+    app.router.lifespan_context = _noop_lifespan
+    app.dependency_overrides[get_session] = override_get_session
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac

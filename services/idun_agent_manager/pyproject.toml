@@ -136,6 +136,7 @@ disallow_untyped_defs = false
 [tool.pytest.ini_options]
 addopts = "-ra -q --strict-markers --disable-warnings"
 testpaths = ["tests"]
+pythonpath = ["src"]
 asyncio_mode = "auto"
 
 [tool.coverage.run]
