@@ -35,7 +35,7 @@ jobs:
         run: |
           uv run pre-commit run --all-files
 
-  test:
+  test-engine:
     name: Test engine and manager (Py3.12)
     runs-on: ubuntu-latest
     steps:
