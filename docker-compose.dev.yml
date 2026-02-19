@@ -28,7 +28,8 @@ services:
     container_name: idun-manager-dev
     env_file: .env
     environment:
-      DEBUG: true
+      - AUTH__SECRET_KEY=$2b$12$6p5XpY.kO8qA4C9uG.k7u.
+      - DEBUG=true
     volumes:
       - ./services/idun_agent_manager/src:/app/src
       - ./services/idun_agent_manager/alembic:/app/alembic
@@ -56,7 +57,7 @@ services:
       # Empty VITE_API_URL so the frontend uses relative paths (/api/...) proxied by Vite
       - VITE_API_URL=
       - VITE_API_PROXY_TARGET=http://manager:8000
-      - VITE_COPILOT_RUNTIME_URL=http://copilot-runtime:8001
+      - VITE_COPILOT_PROXY_TARGET=http://copilot-runtime:8001
       - VITE_AUTH_DISABLE_USERNAME_PASSWORD=${AUTH__DISABLE_USERNAME_PASSWORD:-false}
       - CHOKIDAR_USEPOLLING=true
     depends_on:

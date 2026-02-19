@@ -42,8 +42,7 @@ export default defineConfig({
     server: {
         proxy: {
             '/copilotkit-virtual': {
-                // Default to localhost:8001 for local dev. Docker compose sets VITE_COPILOT_RUNTIME_URL to http://copilot-runtime:8001
-                target: process.env.VITE_COPILOT_RUNTIME_URL || 'http://localhost:8001',
+                target: process.env.VITE_COPILOT_PROXY_TARGET || 'http://localhost:8001',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/copilotkit-virtual/, '/copilotkit'),
                 secure: false,
