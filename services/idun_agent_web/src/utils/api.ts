@@ -4,7 +4,7 @@ const resolveBaseUrl = (): string => {
     const envUrl = import.meta.env.VITE_API_URL as string | undefined;
     if (envUrl && envUrl.trim().length > 0) return envUrl;
     // Default to backend port in dev when no explicit env is set
-    return 'http://localhost:3000';
+    return 'http://localhost:8000';
 };
 
 export const API_BASE_URL = resolveBaseUrl();
