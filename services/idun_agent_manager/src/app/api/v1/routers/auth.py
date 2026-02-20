@@ -90,7 +90,7 @@ def _set_session_cookie(
         value=token,
         httponly=True,
         secure=is_prod,
-        samesite="lax",
+        samesite="none" if is_prod else "lax",
         max_age=max_age,
         path="/",
     )
@@ -310,7 +310,7 @@ async def logout(response: Response) -> dict[str, bool]:
         key=SESSION_COOKIE,
         httponly=True,
         secure=is_prod,
-        samesite="lax",
+        samesite="none" if is_prod else "lax",
         path="/",
     )
     return {"ok": True}

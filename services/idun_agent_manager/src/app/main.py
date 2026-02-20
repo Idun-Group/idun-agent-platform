@@ -94,9 +94,12 @@ def create_app() -> FastAPI:
     )
 
     # Starlette SessionMiddleware – required by authlib for OIDC state storage
+    is_prod = settings.environment not in ("development", "test")
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.auth.session_secret,
+        same_site="none" if is_prod else "lax",
+        https_only=is_prod,
     )
 
     # Setup routes
