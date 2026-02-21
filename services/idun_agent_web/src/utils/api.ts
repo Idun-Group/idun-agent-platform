@@ -1,10 +1,8 @@
 import { toast } from 'react-toastify';
+import { runtimeConfig } from './runtime-config';
 
 const resolveBaseUrl = (): string => {
-    const envUrl = import.meta.env.VITE_API_URL as string | undefined;
-    if (envUrl && envUrl.trim().length > 0) return envUrl;
-    // In production, nginx proxies /api to the backend on the same origin.
-    // In dev, fall back to the local backend.
+    if (runtimeConfig.API_URL.length > 0) return runtimeConfig.API_URL;
     return import.meta.env.DEV ? 'http://localhost:8000' : '';
 };
 
