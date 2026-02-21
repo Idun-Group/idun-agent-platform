@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import AgentDashboardPage from './pages/agent-dashboard/page';
 import HomePage from './pages/home/page';
 import Header from './layouts/header/layout';
@@ -15,201 +15,196 @@ import SideBar from './layouts/side-bar/dashboard-side-bar/layout';
 import SettingSideBar from './layouts/side-bar/setting-side-bar/layout';
 import { SettingPageProvider } from './hooks/use-settings-page';
 import SigninPage from './pages/signin/page';
-import { useEffect } from 'react';
 import { useAuth } from './hooks/use-auth';
 import ApplicationPage from './pages/application-page/page';
 import Loader from './components/general/loader/component';
 import { useLoader } from './hooks/use-loader';
 import ObservationPage from './pages/observation/page';
+import RequireAuth from './components/auth/require-auth';
 // PLOP_IMPORT
 
 function App() {
-    const navigate = useNavigate();
-    const location = useLocation();
     const { isLoading } = useLoader();
-    const { session, isLoading: isAuthLoading } = useAuth();
-
-    // Auth guard temporarily disabled to allow navigation without session
-    useEffect(() => {
-        return;
-    }, [navigate, location.pathname, session, isAuthLoading]);
+    const { isLoading: isAuthLoading } = useAuth();
 
     return (
         <>
             <Routes>
+                {/* Public routes */}
                 <Route path="/" element={<HomePage />} />
-                <Route
-                    path="/agents"
-                    element={
-                        <AppLayout>
-                            <Header />
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <AgentDashboardPage />
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                <Route
-                    path="/agents/:id"
-                    element={
-                        <AppLayout>
-                            <Header />
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <AgentDetailPage />
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                <Route
-                    path="/users"
-                    element={
-                        <AppLayout>
-                            <Header />
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <UserDashboardPage />
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                <Route
-                    path="/agents/create"
-                    element={
-                        <AppLayout>
-
-                            <Header />
-
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <AgentFileProvider>
-                                        <AgentProvider>
-                                            <AgentFormPage />
-                                        </AgentProvider>
-                                    </AgentFileProvider>
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                <Route
-                    path="/users/create"
-                    element={
-                        <AppLayout>
-                            <Header />
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <UserFormPage />
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                <Route path="/agent/:id" element={<AgentDetailPage />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route
-                    path="/settings"
-                    element={
-                        <SettingPageProvider>
+                <Route path="/signin" element={<SigninPage />} />
+
+                {/* Protected routes */}
+                <Route element={<RequireAuth />}>
+                    <Route
+                        path="/agents"
+                        element={
                             <AppLayout>
+                                <Header />
                                 <ContentLayout>
-                                    <SettingSideBar />
+                                    <SideBar />
                                     <MainContent>
-                                        <SettingsPage />
+                                        <AgentDashboardPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>
-                        </SettingPageProvider>
-                    }
-                />
-                <Route path="/signin" element={<SigninPage />} />
-                <Route
-                    path="/observability"
-                    element={
-                        <AppLayout>
-                            <Header />
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <ApplicationPage category="Observability" />
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                <Route
-                    path="/memory"
-                    element={
-                        <AppLayout>
-                            <Header />
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <ApplicationPage category="Memory" />
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                <Route
-                    path="/mcp"
-                    element={
-                        <AppLayout>
-                            <Header />
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <ApplicationPage category="MCP" />
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                <Route
-                    path="/guardrails"
-                    element={
-                        <AppLayout>
-                            <Header />
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <ApplicationPage category="Guardrails" />
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                <Route
-                    path="/observation"
-                    element={
-                        <AppLayout>
-                            <Header />
-                            <ContentLayout>
-                                <SideBar />
-                                <MainContent>
-                                    <ObservationPage />
-                                </MainContent>
-                            </ContentLayout>
-                        </AppLayout>
-                    }
-                />
-                {/* PLOP_ROUTE */}
+                        }
+                    />
+                    <Route
+                        path="/agents/:id"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <AgentDetailPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/agents/create"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <AgentFileProvider>
+                                            <AgentProvider>
+                                                <AgentFormPage />
+                                            </AgentProvider>
+                                        </AgentFileProvider>
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/users"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <UserDashboardPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/users/create"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <UserFormPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route path="/agent/:id" element={<AgentDetailPage />} />
+                    <Route
+                        path="/settings"
+                        element={
+                            <SettingPageProvider>
+                                <AppLayout>
+                                    <ContentLayout>
+                                        <SettingSideBar />
+                                        <MainContent>
+                                            <SettingsPage />
+                                        </MainContent>
+                                    </ContentLayout>
+                                </AppLayout>
+                            </SettingPageProvider>
+                        }
+                    />
+                    <Route
+                        path="/observability"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <ApplicationPage category="Observability" />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/memory"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <ApplicationPage category="Memory" />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/mcp"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <ApplicationPage category="MCP" />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/guardrails"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <ApplicationPage category="Guardrails" />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/observation"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <ObservationPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    {/* PLOP_ROUTE */}
+                </Route>
             </Routes>
             {(isLoading || isAuthLoading) && <Loader />}
         </>
     );
 }
 
-// Styled Components pour le layout principal
 const AppLayout = styled.div`
     display: flex;
     flex-direction: column;

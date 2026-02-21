@@ -19,7 +19,9 @@ const LoginPage = () => {
 
     useEffect(() => {
         if (session) {
-            navigate('/agents', { replace: true });
+            const returnUrl = sessionStorage.getItem('returnUrl') || '/agents';
+            sessionStorage.removeItem('returnUrl');
+            navigate(returnUrl, { replace: true });
         }
     }, [session, navigate]);
 
