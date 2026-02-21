@@ -9,6 +9,8 @@ import { runtimeConfig } from '../../utils/runtime-config';
 
 const isBasicAuthEnabled = runtimeConfig.AUTH_DISABLE_USERNAME_PASSWORD !== 'true';
 
+const isBasicAuthEnabled = import.meta.env.VITE_AUTH_DISABLE_USERNAME_PASSWORD !== 'true';
+
 const LoginPage = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
