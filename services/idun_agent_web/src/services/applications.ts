@@ -345,7 +345,7 @@ const mapMemoryToApp = (mem: components["schemas"]["ManagedMemoryRead"]): Applic
             config.connectionString = memConfig.db_url;
         } else if (memConfig.type === 'in_memory') {
             type = 'AdkInMemory';
-            imageUrl = '/img/agent-icon.svg';
+            imageUrl = '/img/google-cloud-logo.png';
         } else if (memConfig.type === 'vertex_ai') {
             type = 'AdkVertexAi';
             imageUrl = '/img/google-cloud-logo.png';
@@ -599,7 +599,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'AdkInMemory',
         category: 'Memory',
         description: 'Ephemeral in-memory storage for ADK.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/google-cloud-logo.png',
         by: 'ADK',
         framework: 'ADK'
     },
