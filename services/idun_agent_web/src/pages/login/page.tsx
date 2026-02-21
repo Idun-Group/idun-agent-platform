@@ -5,6 +5,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, TextInput } from '../../components/general/form/component';
 import { useAuth } from '../../hooks/use-auth';
+import { runtimeConfig } from '../../utils/runtime-config';
+
+const isBasicAuthEnabled = runtimeConfig.AUTH_DISABLE_USERNAME_PASSWORD !== 'true';
 
 const isBasicAuthEnabled = import.meta.env.VITE_AUTH_DISABLE_USERNAME_PASSWORD !== 'true';
 

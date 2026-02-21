@@ -1,7 +1,8 @@
 import { getJson, postJson, putJson, patchJson, deleteRequest } from '../utils/api';
 import type { components, operations } from '../generated/agent-manager';
+import { runtimeConfig } from '../utils/runtime-config';
 
-const USE_MOCKS = (import.meta as any)?.env?.VITE_USE_MOCKS === 'true';
+const USE_MOCKS = runtimeConfig.USE_MOCKS === 'true';
 
 type ManagedAgent = components['schemas']['ManagedAgentRead'];
 type AgentFramework = components['schemas']['AgentFramework'];
