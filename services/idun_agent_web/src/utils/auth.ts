@@ -1,7 +1,8 @@
 import { getJson, postJson } from './api';
 import type { User } from '../types/user.types';
+import { runtimeConfig } from './runtime-config';
 
-const USE_MOCKS = (import.meta as any)?.env?.VITE_USE_MOCKS === 'true';
+const USE_MOCKS = runtimeConfig.USE_MOCKS === 'true';
 
 export interface SessionPrincipal {
     user_id?: string;

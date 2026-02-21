@@ -12,6 +12,8 @@ export function setupCopilotAdapter(agentEndpoint: string) {
     return () => {};
 }
 
-export const COPILOT_VIRTUAL_ENDPOINT = import.meta.env.VITE_COPILOT_RUNTIME_URL
-    ? `${import.meta.env.VITE_COPILOT_RUNTIME_URL}/copilotkit`
+import { runtimeConfig } from './runtime-config';
+
+export const COPILOT_VIRTUAL_ENDPOINT = runtimeConfig.COPILOT_RUNTIME_URL
+    ? `${runtimeConfig.COPILOT_RUNTIME_URL}/copilotkit`
     : '/copilotkit-virtual';

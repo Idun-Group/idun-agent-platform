@@ -5,8 +5,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, TextInput } from '../../components/general/form/component';
 import { useAuth } from '../../hooks/use-auth';
+import { runtimeConfig } from '../../utils/runtime-config';
 
-const isBasicAuthEnabled = import.meta.env.VITE_AUTH_DISABLE_USERNAME_PASSWORD !== 'true';
+const isBasicAuthEnabled = runtimeConfig.AUTH_DISABLE_USERNAME_PASSWORD !== 'true';
 
 const LoginPage = () => {
     const { t } = useTranslation();
@@ -18,7 +19,9 @@ const LoginPage = () => {
 
     useEffect(() => {
         if (session) {
-            navigate('/agents', { replace: true });
+            const returnUrl = sessionStorage.getItem('returnUrl') || '/agents';
+            sessionStorage.removeItem('returnUrl');
+            navigate(returnUrl, { replace: true });
         }
     }, [session, navigate]);
 

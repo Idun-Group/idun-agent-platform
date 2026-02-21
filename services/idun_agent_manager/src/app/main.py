@@ -97,6 +97,8 @@ def create_app() -> FastAPI:
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.auth.session_secret,
+        same_site=settings.auth.cookie_samesite,
+        https_only=settings.auth.cookie_secure,
     )
 
     # Setup routes
