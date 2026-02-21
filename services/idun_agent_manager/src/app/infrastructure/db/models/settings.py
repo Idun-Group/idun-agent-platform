@@ -1,5 +1,6 @@
 import json
-from typing import Any
+from typing import Any, Literal
+from urllib.parse import urlparse
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -58,8 +59,23 @@ class AuthSettings(BaseSettings):
         default="change-me-to-a-random-secret-at-least-32-chars!"
     )
     session_ttl_seconds: int = Field(default=86400)
+    cookie_secure: bool = Field(default=False)
 
     google: GoogleProviderSettings = Field(default_factory=GoogleProviderSettings)
+
+    @property
+    def cookie_samesite(self) -> Literal["lax", "none"]:
+        """Derive SameSite from whether frontend and backend share the same origin."""
+        if not self.cookie_secure:
+            return "lax"
+        frontend = urlparse(self.frontend_url)
+        backend = urlparse(self.redirect_uri)
+        cross_origin = (frontend.scheme, frontend.hostname, frontend.port) != (
+            backend.scheme,
+            backend.hostname,
+            backend.port,
+        )
+        return "none" if cross_origin else "lax"
 
     model_config = SettingsConfigDict(
         env_prefix="AUTH__", env_file=".env", extra="ignore"

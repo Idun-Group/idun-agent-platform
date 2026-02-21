@@ -74,6 +74,17 @@ def _get_oauth() -> OAuth:
     return _oauth
 
 
+def _cookie_attrs() -> dict[str, Any]:
+    """Compute cookie attributes from auth settings."""
+    settings = get_settings()
+    return {
+        "httponly": True,
+        "secure": settings.auth.cookie_secure,
+        "samesite": settings.auth.cookie_samesite,
+        "path": "/",
+    }
+
+
 def _set_session_cookie(
     response: Response,
     payload: dict[str, Any],
@@ -84,16 +95,7 @@ def _set_session_cookie(
     if max_age is None:
         max_age = settings.auth.session_ttl_seconds
     token = _get_serializer().dumps(payload)
-    is_prod = settings.environment not in ("development", "test")
-    response.set_cookie(
-        key=SESSION_COOKIE,
-        value=token,
-        httponly=True,
-        secure=is_prod,
-        samesite="none" if is_prod else "lax",
-        max_age=max_age,
-        path="/",
-    )
+    response.set_cookie(key=SESSION_COOKIE, value=token, max_age=max_age, **_cookie_attrs())
 
 
 def _read_session_cookie(request: Request) -> dict[str, Any] | None:
@@ -304,15 +306,7 @@ async def me(request: Request) -> dict[str, Any]:
 )
 async def logout(response: Response) -> dict[str, bool]:
     """Clear the session cookie."""
-    settings = get_settings()
-    is_prod = settings.environment not in ("development", "test")
-    response.delete_cookie(
-        key=SESSION_COOKIE,
-        httponly=True,
-        secure=is_prod,
-        samesite="none" if is_prod else "lax",
-        path="/",
-    )
+    response.delete_cookie(key=SESSION_COOKIE, **_cookie_attrs())
     return {"ok": True}
 
 
