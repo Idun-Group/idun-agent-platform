@@ -3,8 +3,9 @@ import { toast } from 'react-toastify';
 const resolveBaseUrl = (): string => {
     const envUrl = import.meta.env.VITE_API_URL as string | undefined;
     if (envUrl && envUrl.trim().length > 0) return envUrl;
-    // Default to backend port in dev when no explicit env is set
-    return 'http://localhost:8000';
+    // In production, nginx proxies /api to the backend on the same origin.
+    // In dev, fall back to the local backend.
+    return import.meta.env.DEV ? 'http://localhost:8000' : '';
 };
 
 export const API_BASE_URL = resolveBaseUrl();
