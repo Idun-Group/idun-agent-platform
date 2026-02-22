@@ -39,6 +39,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signin" element={<SigninPage />} />
 
+
                 {/* Protected routes */}
                 <Route element={<RequireAuth />}>
                     <Route
