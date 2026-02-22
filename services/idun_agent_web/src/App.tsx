@@ -21,6 +21,10 @@ import Loader from './components/general/loader/component';
 import { useLoader } from './hooks/use-loader';
 import ObservationPage from './pages/observation/page';
 import RequireAuth from './components/auth/require-auth';
+import MemoryPage from './pages/memory-page/page';
+import ObservabilityPage from './pages/observability-page/page';
+import MCPPage from './pages/mcp-page/page';
+import GuardrailsPage from './pages/guardrails-page/page';
 // PLOP_IMPORT
 
 function App() {
@@ -34,6 +38,7 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signin" element={<SigninPage />} />
+
 
                 {/* Protected routes */}
                 <Route element={<RequireAuth />}>
@@ -135,7 +140,7 @@ function App() {
                                 <ContentLayout>
                                     <SideBar />
                                     <MainContent>
-                                        <ApplicationPage category="Observability" />
+                                        <ObservabilityPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>
@@ -149,7 +154,7 @@ function App() {
                                 <ContentLayout>
                                     <SideBar />
                                     <MainContent>
-                                        <ApplicationPage category="Memory" />
+                                        <MemoryPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>
@@ -163,7 +168,7 @@ function App() {
                                 <ContentLayout>
                                     <SideBar />
                                     <MainContent>
-                                        <ApplicationPage category="MCP" />
+                                        <MCPPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>
@@ -177,7 +182,7 @@ function App() {
                                 <ContentLayout>
                                     <SideBar />
                                     <MainContent>
-                                        <ApplicationPage category="Guardrails" />
+                                        <GuardrailsPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>

@@ -1,6 +1,7 @@
 import type { ApplicationConfig, MarketplaceApp, AppType } from '../types/application.types';
 import { getJson, postJson, patchJson, deleteRequest } from '../utils/api';
 import type { components } from '../generated/agent-manager';
+import { buildGuardrailConfig, isSupportedGuardrailType } from './guardrail-payloads';
 
 const mapConfigFromApi = (type: AppType, config: any): any => {
     if (type === 'Langfuse') {
@@ -220,7 +221,7 @@ export const mapConfigToApi = (type: AppType, config: any, name?: string): any =
     if (type === 'DetectPII') {
         return {
             config_id: 'detect_pii',
-            pii_entities: config.pii_entities ? config.pii_entities.split(',').filter((s: string) => s.trim()) : []
+            pii_entities: config.pii_entities ? config.pii_entities.split(',').map((s: string) => s.trim()).filter(Boolean) : []
         };
     }
     if (type === 'GibberishText') {
@@ -236,19 +237,9 @@ export const mapConfigToApi = (type: AppType, config: any, name?: string): any =
         };
     }
     if (type === 'DetectJailbreak') {
-        // Map sensitivity/check_type to threshold if possible, or just expect threshold from form if updated.
-        // Or default threshold.
-        // Assuming user form still has sensitivity. I'll map sensitivity to threshold.
-        let threshold = 0.5;
-        if (config.sensitivity === 'Low') threshold = 0.9;
-        if (config.sensitivity === 'Medium') threshold = 0.5;
-        if (config.sensitivity === 'High') threshold = 0.1;
-        // Or if config.threshold exists use it
-        if (config.threshold) threshold = Number(config.threshold);
-
         return {
             config_id: 'detect_jailbreak',
-            threshold: threshold
+            threshold: Number(config.threshold || 0.5)
         };
     }
     if (type === 'RestrictTopic') {
@@ -345,7 +336,7 @@ const mapMemoryToApp = (mem: components["schemas"]["ManagedMemoryRead"]): Applic
             config.connectionString = memConfig.db_url;
         } else if (memConfig.type === 'in_memory') {
             type = 'AdkInMemory';
-            imageUrl = '/img/agent-icon.svg';
+            imageUrl = '/img/google-cloud-logo.png';
         } else if (memConfig.type === 'vertex_ai') {
             type = 'AdkVertexAi';
             imageUrl = '/img/google-cloud-logo.png';
@@ -413,98 +404,25 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
     let type: AppType = 'Guard';
     let config: any = {};
 
-    // Find the first configured guardrail in input or output to determine type
-    const findConfig = (list: any[] | undefined) => {
-        if (!list || list.length === 0) return null;
-        return list[0]; // Assuming one guardrail per "Application" config for now
-    };
+    const guardrail = guard.guardrail as any;
 
-    const inputConfig = findConfig(guard.guardrail.input);
-    const outputConfig = findConfig(guard.guardrail.output);
-    let activeConfig = inputConfig || outputConfig;
-
-    if (!activeConfig && 'config_id' in guard.guardrail) {
-        activeConfig = guard.guardrail;
-    }
-
-    if (activeConfig) {
-        if ('config_id' in activeConfig) {
-            switch (activeConfig.config_id) {
-                case 'model_armor':
-                    type = 'ModelArmor';
-                    config = {
-                        projectId: (activeConfig as any).project_id,
-                        location: (activeConfig as any).location,
-                        templateId: (activeConfig as any).template_id
-                    };
-                    break;
-                case 'custom_llm':
-                    type = 'CustomLLM';
-                    config = {
-                        model: (activeConfig as any).model,
-                        prompt: (activeConfig as any).prompt
-                    };
-                    break;
-                case 'ban_list':
-                    type = 'BanList';
-                    config = { banned_words: ((activeConfig as any).banned_words || []).join('\n') };
-                    break;
-                case 'bias_check':
-                    type = 'BiasCheck';
-                    config = { threshold: (activeConfig as any).threshold };
-                    break;
-                case 'competition_check':
-                    type = 'CompetitionCheck';
-                    config = { competitors: ((activeConfig as any).competitors || []).join('\n') };
-                    break;
-                case 'correct_language':
-                    type = 'CorrectLanguage';
-                    config = { expected_languages: ((activeConfig as any).expected_languages || []).join('\n') };
-                    break;
-                case 'detect_pii':
-                    type = 'DetectPII';
-                    config = { pii_entities: ((activeConfig as any).pii_entities || []).join(',') };
-                    break;
-                case 'gibberish_text':
-                    type = 'GibberishText';
-                    config = { threshold: (activeConfig as any).threshold };
-                    break;
-                case 'nsfw_text':
-                    type = 'NSFWText';
-                    config = { threshold: (activeConfig as any).threshold };
-                    break;
-                case 'detect_jailbreak':
-                    type = 'DetectJailbreak';
-                    config = { threshold: (activeConfig as any).threshold };
-                    break;
-                case 'restrict_to_topic':
-                    type = 'RestrictTopic';
-                    config = { valid_topics: ((activeConfig as any).topics || []).join('\n') };
-                    break;
-                case 'prompt_injection':
-                    type = 'PromptInjection';
-                    config = { threshold: (activeConfig as any).threshold };
-                    break;
-                case 'rag_hallucination':
-                    type = 'RagHallucination';
-                    config = { threshold: (activeConfig as any).threshold };
-                    break;
-                case 'toxic_language':
-                    type = 'ToxicLanguage';
-                    config = { threshold: (activeConfig as any).threshold };
-                    break;
-                case 'code_scanner':
-                     type = 'CodeScanner';
-                     config = { allowed_languages: ((activeConfig as any).allowed_languages || []).join('\n') };
-                     break;
-            }
+    if (guardrail && 'config_id' in guardrail) {
+        switch (guardrail.config_id) {
+            case 'ban_list':
+                type = 'BanList';
+                config = { banned_words: (guardrail.banned_words || []).join('\n') };
+                break;
+            case 'detect_pii':
+                type = 'DetectPII';
+                config = { pii_entities: (guardrail.pii_entities || []).join(',') };
+                break;
         }
     }
 
     return {
         id: guard.id,
         name: guard.name,
-        type: type,
+        type,
         category: 'Guardrails',
         owner: 'admin',
         createdAt: guard.created_at,
@@ -599,7 +517,7 @@ export const MARKETPLACE_APPS: MarketplaceApp[] = [
         type: 'AdkInMemory',
         category: 'Memory',
         description: 'Ephemeral in-memory storage for ADK.',
-        imageUrl: '/img/agent-icon.svg',
+        imageUrl: '/img/google-cloud-logo.png',
         by: 'ADK',
         framework: 'ADK'
     },
@@ -843,21 +761,14 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
         return mapMCPServerToApp(res);
     }
 
-    if (app.category === 'Guardrails') {
-        const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck',
-            'CompetitionCheck', 'CorrectLanguage', 'DetectPII',
-            'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic',
-            'PromptInjection', 'RagHallucination', 'ToxicLanguage', 'CodeScanner'];
-
-        if (supportedTypes.includes(app.type)) {
-            const configPayload = mapConfigToApi(app.type, app.config, app.name);
-            const payload: components["schemas"]["ManagedGuardrailCreate"] = {
-                name: app.name,
-                guardrail: configPayload as any
-            };
-            const res = await postJson<components["schemas"]["ManagedGuardrailRead"]>('/api/v1/guardrails/', payload);
-            return mapGuardrailToApp(res);
-        }
+    if (app.category === 'Guardrails' && isSupportedGuardrailType(app.type)) {
+        const guardrailConfig = buildGuardrailConfig(app.type, app.config as Record<string, string>);
+        const payload = {
+            name: app.name,
+            guardrail: guardrailConfig,
+        };
+        const res = await postJson<components["schemas"]["ManagedGuardrailRead"]>('/api/v1/guardrails/', payload);
+        return mapGuardrailToApp(res);
     }
 
     throw new Error(`Application type ${app.type} is not supported by API yet.`);
@@ -916,16 +827,12 @@ export const updateApplication = async (id: string, updates: Partial<Application
             const apiGuard = await getJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`);
             const currentApp = mapGuardrailToApp(apiGuard);
             const type = updates.type || currentApp.type;
-            const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck',
-                'CompetitionCheck', 'CorrectLanguage', 'DetectPII',
-                'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic',
-                'PromptInjection', 'RagHallucination', 'ToxicLanguage', 'CodeScanner'];
-
-            if (supportedTypes.includes(type)) {
-                const configPayload = mapConfigToApi(type, updates.config || currentApp.config, updates.name || apiGuard.name);
-                const payload: components["schemas"]["ManagedGuardrailPatch"] = {
+            if (isSupportedGuardrailType(type)) {
+                const formValues = (updates.config || currentApp.config) as Record<string, string>;
+                const guardrailConfig = buildGuardrailConfig(type, formValues);
+                const payload = {
                     name: updates.name || apiGuard.name,
-                    guardrail: configPayload as any
+                    guardrail: guardrailConfig,
                 };
                 const res = await patchJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`, payload);
                 return mapGuardrailToApp(res);
@@ -986,16 +893,12 @@ export const updateApplication = async (id: string, updates: Partial<Application
         if (apiGuard) {
             const currentApp = mapGuardrailToApp(apiGuard);
             const type = updates.type || currentApp.type;
-            const supportedTypes = ['ModelArmor', 'CustomLLM', 'BanList', 'BiasCheck',
-                'CompetitionCheck', 'CorrectLanguage', 'DetectPII',
-                'GibberishText', 'NSFWText', 'DetectJailbreak', 'RestrictTopic',
-                'PromptInjection', 'RagHallucination', 'ToxicLanguage', 'CodeScanner'];
-
-            if (supportedTypes.includes(type)) {
-                const configPayload = mapConfigToApi(type, updates.config || currentApp.config, updates.name || apiGuard.name);
-                const payload: components["schemas"]["ManagedGuardrailPatch"] = {
+            if (isSupportedGuardrailType(type)) {
+                const formValues = (updates.config || currentApp.config) as Record<string, string>;
+                const guardrailConfig = buildGuardrailConfig(type, formValues);
+                const payload = {
                     name: updates.name || apiGuard.name,
-                    guardrail: configPayload as any
+                    guardrail: guardrailConfig,
                 };
                 const res = await patchJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`, payload);
                 return mapGuardrailToApp(res);
