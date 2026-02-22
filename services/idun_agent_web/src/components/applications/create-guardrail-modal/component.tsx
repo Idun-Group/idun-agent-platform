@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { createApplication, updateApplication } from '../../../services/applications';
 import type { AppType, ApplicationConfig } from '../../../types/application.types';
+import {
+    PII_ENTITY_VALUES as PII_ENTITIES,
+    validateGuardrailForm,
+    isSupportedGuardrailType,
+} from '../../../services/guardrail-payloads';
 
 interface Props {
     isOpen: boolean;
@@ -10,7 +15,7 @@ interface Props {
     appToEdit?: ApplicationConfig | null;
 }
 
-type FieldType = 'text' | 'password' | 'number' | 'textarea';
+type FieldType = 'text' | 'password' | 'number' | 'textarea' | 'select' | 'multicheck';
 
 interface Field {
     key: string;
@@ -19,6 +24,7 @@ interface Field {
     placeholder?: string;
     required?: boolean;
     hint?: string;
+    options?: readonly string[];
 }
 
 interface GuardrailType {
@@ -28,9 +34,98 @@ interface GuardrailType {
     group: string;
     description: string;
     fields: Field[];
+    comingSoon?: boolean;
 }
 
 const GUARDRAIL_TYPES: GuardrailType[] = [
+    // Content Safety
+    {
+        id: 'BanList',
+        label: 'Ban List',
+        icon: '🚫',
+        group: 'Content Safety',
+        description: 'Block specific words or phrases from appearing in responses',
+        fields: [
+            { key: 'banned_words', label: 'Banned Words / Phrases', type: 'textarea', placeholder: 'word1\nword2\nphrase to ban', hint: 'One word or phrase per line', required: true },
+        ],
+    },
+    {
+        id: 'NSFWText',
+        label: 'NSFW Text',
+        icon: '🔞',
+        group: 'Content Safety',
+        description: 'Detect and filter adult or inappropriate content',
+        fields: [
+            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
+        ],
+        comingSoon: true,
+    },
+    {
+        id: 'ToxicLanguage',
+        label: 'Toxic Language',
+        icon: '☠️',
+        group: 'Content Safety',
+        description: 'Filter hate speech, threats, and toxic content',
+        fields: [
+            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
+        ],
+        comingSoon: true,
+    },
+    {
+        id: 'GibberishText',
+        label: 'Gibberish Text',
+        icon: '🔤',
+        group: 'Content Safety',
+        description: 'Detect random, meaningless or garbled text',
+        fields: [
+            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
+        ],
+        comingSoon: true,
+    },
+    {
+        id: 'CodeScanner',
+        label: 'Code Scanner',
+        icon: '💻',
+        group: 'Content Safety',
+        description: 'Restrict code generation to allowed programming languages',
+        fields: [
+            { key: 'allowed_languages', label: 'Allowed Languages', type: 'textarea', placeholder: 'python\njavascript\ntypescript', hint: 'One language per line' },
+        ],
+        comingSoon: true,
+    },
+    // Identity & Security
+    {
+        id: 'DetectPII',
+        label: 'Detect PII',
+        icon: '🔒',
+        group: 'Identity & Security',
+        description: 'Detect and mask Personally Identifiable Information',
+        fields: [
+            { key: 'pii_entities', label: 'PII Entities to Detect', type: 'multicheck', required: true, options: PII_ENTITIES, hint: 'Select entities to detect' },
+        ],
+    },
+    {
+        id: 'DetectJailbreak',
+        label: 'Detect Jailbreak',
+        icon: '⛓️',
+        group: 'Identity & Security',
+        description: 'Detect prompt injection and jailbreak attempts',
+        fields: [
+            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
+        ],
+        comingSoon: true,
+    },
+    {
+        id: 'PromptInjection',
+        label: 'Prompt Injection',
+        icon: '💉',
+        group: 'Identity & Security',
+        description: 'Prevent prompt injection attacks',
+        fields: [
+            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
+        ],
+        comingSoon: true,
+    },
     // Enterprise
     {
         id: 'ModelArmor',
@@ -43,6 +138,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
             { key: 'location', label: 'Location', type: 'text', placeholder: 'us-central1', required: true },
             { key: 'templateId', label: 'Template ID', type: 'text', placeholder: 'my-template', required: true },
         ],
+        comingSoon: true,
     },
     {
         id: 'CustomLLM',
@@ -51,91 +147,10 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Enterprise',
         description: 'Use a custom LLM as a guardrail to evaluate responses',
         fields: [
-            { key: 'model', label: 'Model', type: 'text', placeholder: 'gemini-2.0-flash', required: true },
+            { key: 'model', label: 'Model', type: 'text', placeholder: 'gemini-2.5-flash', required: true },
             { key: 'prompt', label: 'System Prompt', type: 'textarea', placeholder: 'You are a content moderator. Respond with SAFE or UNSAFE only.', required: true },
         ],
-    },
-    // Content Safety
-    {
-        id: 'BanList',
-        label: 'Ban List',
-        icon: '🚫',
-        group: 'Content Safety',
-        description: 'Block specific words or phrases from appearing in responses',
-        fields: [
-            { key: 'banned_words', label: 'Banned Words / Phrases', type: 'textarea', placeholder: 'word1\nword2\nphrase to ban', hint: 'One word or phrase per line' },
-        ],
-    },
-    {
-        id: 'NSFWText',
-        label: 'NSFW Text',
-        icon: '🔞',
-        group: 'Content Safety',
-        description: 'Detect and filter adult or inappropriate content',
-        fields: [
-            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
-        ],
-    },
-    {
-        id: 'ToxicLanguage',
-        label: 'Toxic Language',
-        icon: '☠️',
-        group: 'Content Safety',
-        description: 'Filter hate speech, threats, and toxic content',
-        fields: [
-            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
-        ],
-    },
-    {
-        id: 'GibberishText',
-        label: 'Gibberish Text',
-        icon: '🔤',
-        group: 'Content Safety',
-        description: 'Detect random, meaningless or garbled text',
-        fields: [
-            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
-        ],
-    },
-    {
-        id: 'CodeScanner',
-        label: 'Code Scanner',
-        icon: '💻',
-        group: 'Content Safety',
-        description: 'Restrict code generation to allowed programming languages',
-        fields: [
-            { key: 'allowed_languages', label: 'Allowed Languages', type: 'textarea', placeholder: 'python\njavascript\ntypescript', hint: 'One language per line' },
-        ],
-    },
-    // Identity & Security
-    {
-        id: 'DetectPII',
-        label: 'Detect PII',
-        icon: '🔒',
-        group: 'Identity & Security',
-        description: 'Detect and mask Personally Identifiable Information',
-        fields: [
-            { key: 'pii_entities', label: 'PII Entities to Detect', type: 'textarea', placeholder: 'PERSON,EMAIL_ADDRESS,PHONE_NUMBER', hint: 'Comma-separated entity types' },
-        ],
-    },
-    {
-        id: 'DetectJailbreak',
-        label: 'Detect Jailbreak',
-        icon: '⛓️',
-        group: 'Identity & Security',
-        description: 'Detect prompt injection and jailbreak attempts',
-        fields: [
-            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
-        ],
-    },
-    {
-        id: 'PromptInjection',
-        label: 'Prompt Injection',
-        icon: '💉',
-        group: 'Identity & Security',
-        description: 'Prevent prompt injection attacks',
-        fields: [
-            { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
-        ],
+        comingSoon: true,
     },
     // Context & Quality
     {
@@ -147,6 +162,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
         ],
+        comingSoon: true,
     },
     {
         id: 'CompetitionCheck',
@@ -157,6 +173,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'competitors', label: 'Competitor Names', type: 'textarea', placeholder: 'CompetitorA\nCompetitorB', hint: 'One name per line' },
         ],
+        comingSoon: true,
     },
     {
         id: 'CorrectLanguage',
@@ -167,6 +184,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'expected_languages', label: 'Expected Languages', type: 'textarea', placeholder: 'en\nfr\nde', hint: 'One language code per line' },
         ],
+        comingSoon: true,
     },
     {
         id: 'RestrictTopic',
@@ -177,6 +195,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'valid_topics', label: 'Allowed Topics', type: 'textarea', placeholder: 'customer support\nproduct information\ntechnical help', hint: 'One topic per line' },
         ],
+        comingSoon: true,
     },
     {
         id: 'RagHallucination',
@@ -187,10 +206,11 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
         ],
+        comingSoon: true,
     },
 ];
 
-const GROUPS = ['Enterprise', 'Content Safety', 'Identity & Security', 'Context & Quality'];
+const GROUPS = ['Content Safety', 'Identity & Security', 'Enterprise', 'Context & Quality'];
 
 const spin = keyframes`from { transform: rotate(0deg); } to { transform: rotate(360deg); }`;
 
@@ -239,7 +259,7 @@ const GroupLabel = styled.p`
     &:first-child { margin-top: 0; }
 `;
 
-const TypeBtn = styled.button<{ $selected: boolean }>`
+const TypeBtn = styled.button<{ $selected: boolean; $disabled?: boolean }>`
     display: flex;
     align-items: center;
     gap: 8px;
@@ -248,23 +268,37 @@ const TypeBtn = styled.button<{ $selected: boolean }>`
     border-radius: 8px;
     border: 1px solid ${p => p.$selected ? 'var(--color-primary, #6c63ff)' : 'transparent'};
     background: ${p => p.$selected ? 'rgba(108, 99, 255, 0.15)' : 'transparent'};
-    color: ${p => p.$selected ? 'var(--color-primary, #6c63ff)' : 'var(--color-text-secondary, #ccc)'};
+    color: ${p => p.$disabled ? 'rgba(255, 255, 255, 0.3)' : p.$selected ? 'var(--color-primary, #6c63ff)' : 'var(--color-text-secondary, #ccc)'};
     font-size: 13px;
     font-weight: ${p => p.$selected ? 600 : 400};
-    cursor: pointer;
+    cursor: ${p => p.$disabled ? 'default' : 'pointer'};
+    opacity: ${p => p.$disabled ? 0.6 : 1};
     transition: all 0.15s ease;
     text-align: left;
     margin-bottom: 2px;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.06);
-        color: white;
+        background: ${p => p.$disabled ? 'transparent' : 'rgba(255, 255, 255, 0.06)'};
+        color: ${p => p.$disabled ? 'rgba(255, 255, 255, 0.3)' : 'white'};
     }
 `;
 
 const TypeIcon = styled.span`
     font-size: 15px;
     line-height: 1;
+    flex-shrink: 0;
+`;
+
+const ComingSoonBadge = styled.span`
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.35);
+    margin-left: auto;
     flex-shrink: 0;
 `;
 
@@ -395,6 +429,60 @@ const Textarea = styled.textarea`
     &:focus { border-color: var(--color-primary, #6c63ff); }
 `;
 
+const Select = styled.select`
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+    cursor: pointer;
+    appearance: none;
+
+    &:focus { border-color: var(--color-primary, #6c63ff); }
+
+    option {
+        background: #1a1a2e;
+        color: white;
+    }
+`;
+
+const CheckboxGrid = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+const CheckboxLabel = styled.label`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--color-text-secondary, #ccc);
+    transition: all 0.15s;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    input[type="checkbox"] {
+        accent-color: var(--color-primary, #6c63ff);
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+`;
+
 const ErrorMsg = styled.p`
     font-size: 13px;
     color: #f87171;
@@ -520,13 +608,15 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
         setFormValues(prev => ({ ...prev, [key]: value }));
     };
 
+    const isSupported = guardrailType && !guardrailType.comingSoon && isSupportedGuardrailType(guardrailType.id);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!guardrailType) return;
+        if (!guardrailType || !isSupported) return;
 
-        const missing = guardrailType.fields.filter(f => f.required && !formValues[f.key]?.trim());
-        if (missing.length > 0) {
-            setErrorMessage(`Required: ${missing.map(f => f.label).join(', ')}`);
+        const validationErrors = validateGuardrailForm(guardrailType.id, formValues);
+        if (validationErrors.length > 0) {
+            setErrorMessage(validationErrors.map(e => e.message).join('. '));
             return;
         }
 
@@ -575,10 +665,12 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
                                         key={t.id}
                                         type="button"
                                         $selected={selectedType === t.id}
-                                        onClick={(e) => { e.stopPropagation(); handleSelectType(t.id); }}
+                                        $disabled={!!t.comingSoon}
+                                        onClick={(e) => { e.stopPropagation(); if (!t.comingSoon) handleSelectType(t.id); }}
                                     >
                                         <TypeIcon>{t.icon}</TypeIcon>
                                         {t.label}
+                                        {t.comingSoon && <ComingSoonBadge>Soon</ComingSoonBadge>}
                                     </TypeBtn>
                                 ))}
                             </React.Fragment>
@@ -637,6 +729,39 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
                                                     onChange={e => handleChange(field.key, e.target.value)}
                                                     rows={4}
                                                 />
+                                            ) : field.type === 'select' ? (
+                                                <Select
+                                                    id={field.key}
+                                                    value={formValues[field.key] ?? ''}
+                                                    onChange={e => handleChange(field.key, e.target.value)}
+                                                >
+                                                    <option value="">Select {field.label.toLowerCase()}…</option>
+                                                    {(field.options ?? []).map(opt => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </Select>
+                                            ) : field.type === 'multicheck' ? (
+                                                <CheckboxGrid>
+                                                    {(field.options ?? []).map(opt => {
+                                                        const selected = (formValues[field.key] ?? '').split(',').filter(Boolean);
+                                                        const isChecked = selected.includes(opt);
+                                                        return (
+                                                            <CheckboxLabel key={opt}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isChecked}
+                                                                    onChange={() => {
+                                                                        const next = isChecked
+                                                                            ? selected.filter(s => s !== opt)
+                                                                            : [...selected, opt];
+                                                                        handleChange(field.key, next.join(','));
+                                                                    }}
+                                                                />
+                                                                {opt}
+                                                            </CheckboxLabel>
+                                                        );
+                                                    })}
+                                                </CheckboxGrid>
                                             ) : (
                                                 <Input
                                                     id={field.key}
@@ -657,7 +782,7 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
 
                         <Footer>
                             <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
-                            <SubmitBtn type="submit" disabled={!guardrailType || isLoading}>
+                            <SubmitBtn type="submit" disabled={!isSupported || isLoading}>
                                 {isLoading && <Spinner />}
                                 {isEditMode ? 'Save Changes' : 'Add Guardrail'}
                             </SubmitBtn>
