@@ -321,7 +321,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
         document.body.style.overflow = 'hidden';
 
         // Fetch Schema
-        fetch(`${API_BASE_URL}/openapi.json`)
+        fetch(`${API_BASE_URL}/api/openapi.json`)
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch OpenAPI schema');
                 return res.json();
