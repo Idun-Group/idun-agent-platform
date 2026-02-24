@@ -78,6 +78,7 @@ def create_app() -> FastAPI:
         title="Idun Agent Manager API",
         description="Idun service for managing AI agents",
         version=__version__,
+        openapi_url="/api/openapi.json",
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
