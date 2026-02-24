@@ -98,18 +98,21 @@ jobs:
 
       - name: Build and Push idun-platform (agent manager)
         run: |
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/idun-platform-repo/idun-platform:${{ steps.tag.outputs.ts }}"
-          docker build --platform linux/amd64 -t "$IMAGE" services/idun_agent_manager
-          docker push "$IMAGE"
+          BASE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/idun-platform-repo/idun-platform"
+          docker build --platform linux/amd64 -t "$BASE:${{ steps.tag.outputs.ts }}" -t "$BASE:latest" services/idun_agent_manager
+          docker push "$BASE:${{ steps.tag.outputs.ts }}"
+          docker push "$BASE:latest"
 
       - name: Build and Push idun-web (agent web)
         run: |
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/idun-web-repo/idun-web:${{ steps.tag.outputs.ts }}"
-          docker build --platform linux/amd64 -t "$IMAGE" services/idun_agent_web
-          docker push "$IMAGE"
+          BASE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/idun-web-repo/idun-web"
+          docker build --platform linux/amd64 -t "$BASE:${{ steps.tag.outputs.ts }}" -t "$BASE:latest" services/idun_agent_web
+          docker push "$BASE:${{ steps.tag.outputs.ts }}"
+          docker push "$BASE:latest"
 
       - name: Build and Push copilotkit (copilot runtime)
         run: |
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/copilotkit-repo/copilotkit:${{ steps.tag.outputs.ts }}"
-          docker build --platform linux/amd64 -t "$IMAGE" services/copilot_runtime
-          docker push "$IMAGE"
+          BASE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/copilotkit-repo/copilotkit"
+          docker build --platform linux/amd64 -t "$BASE:${{ steps.tag.outputs.ts }}" -t "$BASE:latest" services/copilot_runtime
+          docker push "$BASE:${{ steps.tag.outputs.ts }}"
+          docker push "$BASE:latest"
