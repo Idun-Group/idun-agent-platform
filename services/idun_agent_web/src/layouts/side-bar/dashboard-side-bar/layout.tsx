@@ -110,7 +110,8 @@ const SideBar = ({}: SideBarProps) => {
                     </MenuItem>
                 ))}
             </SideBarNav>
-            <MenuItem
+            {/* TODO: Add settings menu item back in when needed */}
+            {/* <MenuItem
                 $collapsed={collapsed}
                 $isActive={location.pathname.startsWith('/settings')}
                 onClick={() => navigate('/settings')}
@@ -124,7 +125,7 @@ const SideBar = ({}: SideBarProps) => {
                     }
                 />
                 {!collapsed && <MenuLabel>{t('header.settings')}</MenuLabel>}
-            </MenuItem>
+            </MenuItem> */}
 
             <UserArea $collapsed={collapsed}>
                 <AvatarRowOverlay $visible={collapsed}>
