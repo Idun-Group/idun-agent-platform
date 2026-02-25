@@ -207,11 +207,13 @@ export default function AgentDetailPage() {
 // Styled Components
 const PageContainer = styled.div`
     min-height: 100vh;
-    background-color: #0f1016;
+
     color: white;
     padding: 24px 40px;
     display: flex;
     flex-direction: column;
+    height: fit-content;
+    width: 100%;
 `;
 
 const TopNav = styled.div`
