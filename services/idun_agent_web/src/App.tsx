@@ -117,7 +117,7 @@ function App() {
                         }
                     />
                     <Route path="/agent/:id" element={<AgentDetailPage />} />
-                    <Route
+                    {/* <Route
                         path="/settings"
                         element={
                             <SettingPageProvider>
@@ -131,7 +131,7 @@ function App() {
                                 </AppLayout>
                             </SettingPageProvider>
                         }
-                    />
+                    /> */}
                     <Route
                         path="/observability"
                         element={
