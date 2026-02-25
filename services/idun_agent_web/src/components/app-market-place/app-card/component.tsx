@@ -32,7 +32,7 @@ const Container = styled.div`
     border-radius: 8px;
     padding: 16px;
     height: 100%;
-    min-height: 250px;
+    min-height: 200px;
 `;
 
 const AppImage = styled.img`
