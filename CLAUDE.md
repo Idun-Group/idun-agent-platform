@@ -15,6 +15,14 @@ Idun Agent Platform is a self-hosted control plane that wraps LangGraph/ADK agen
 - `services/copilot_runtime/` — Node.js CopilotKit runtime for real-time agent streaming
 - `docs/` — MkDocs Material documentation site
 
+## Per-Service Documentation
+
+Each package/service has its own `CLAUDE.md` with detailed architecture, module maps, and conventions. **Always read the relevant CLAUDE.md before working on a specific package:**
+
+- `libs/idun_agent_schema/CLAUDE.md` — Schema library: Pydantic models, config hierarchy, discriminated unions, manager schemas
+- `libs/idun_agent_engine/CLAUDE.md` — Engine SDK: agent adapters, config flow, server endpoints, guardrails, observability, MCP, CLI
+- `services/idun_agent_manager/CLAUDE.md` — Manager API: routes, auth (OIDC + basic), multi-tenancy, database models, migrations
+
 ## Build & Development Commands
 
 **Package manager:** UV (Python), npm (Node.js)
