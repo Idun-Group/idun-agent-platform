@@ -170,3 +170,7 @@ alembic upgrade head
 - When unsure between two valid approaches, state both with trade-offs instead of picking one arbitrarily.
 - If something feels off about a request or approach, say so and explain why. Push back with reasoning rather than complying silently.
 - If the user's suggestion would introduce a bug, reduce safety, or violate a best practice, flag it clearly before proceeding.
+
+### Keeping Documentation Current
+- When you add a major feature, change architecture, or modify conventions in a service, update the corresponding `CLAUDE.md` to reflect the change.
+- This includes new routes, new config options, new env vars, changed module structure, or deprecated behavior.
