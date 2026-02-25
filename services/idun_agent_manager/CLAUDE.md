@@ -156,36 +156,23 @@ alembic upgrade head
 
 Nested `pydantic-settings` with `env_nested_delimiter="__"`:
 
-```bash
-# Database
-DATABASE__URL=postgresql+asyncpg://user:pass@localhost:5432/idun
-
-# Auth mode
-AUTH__DISABLE_USERNAME_PASSWORD=false   # true = SSO only
-
-# SSO (Google OIDC)
-AUTH__GOOGLE_CLIENT_ID=...
-AUTH__GOOGLE_CLIENT_SECRET=...
-AUTH__REDIRECT_URI=http://localhost:8000/api/v1/auth/callback
-AUTH__FRONTEND_URL=http://localhost:5173
-
-# Session
-AUTH__SESSION_SECRET=your-random-secret-at-least-32-chars
-AUTH__SESSION_TTL_SECONDS=86400
-AUTH__COOKIE_SECURE=false              # true in production (HTTPS)
-
-# Agent API key encryption
-AUTH__SECRET_KEY=...                   # Used by scrypt for agent API key hashing
-
-# CORS
-CORS_ORIGINS=http://localhost:3000,http://localhost:5173
-
-# General
-ENVIRONMENT=development
-DEBUG=false
-HOST=0.0.0.0
-PORT=8000
-```
+| Variable | Description | Default |
+|---|---|---|
+| `DATABASE__URL` | PostgreSQL async connection string | — (required) |
+| `AUTH__DISABLE_USERNAME_PASSWORD` | When `true`, hides email/password auth and forces SSO only | `false` |
+| `AUTH__GOOGLE_CLIENT_ID` | Google OAuth 2.0 client ID (required for SSO) | — |
+| `AUTH__GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 client secret (required for SSO) | — |
+| `AUTH__REDIRECT_URI` | OAuth callback URL (must match Google console) | `http://localhost:8000/api/v1/auth/callback` |
+| `AUTH__FRONTEND_URL` | Frontend URL for post-login redirect | `http://localhost:5173` |
+| `AUTH__SESSION_SECRET` | Secret key for signing session cookies (min 32 chars) | — (required) |
+| `AUTH__SESSION_TTL_SECONDS` | Session cookie TTL | `86400` (24h) |
+| `AUTH__COOKIE_SECURE` | Set `true` in production (HTTPS-only cookies) | `false` |
+| `AUTH__SECRET_KEY` | Secret for scrypt hashing of agent API keys | — (required) |
+| `CORS_ORIGINS` | Comma-separated allowed CORS origins | `http://localhost:3000,http://localhost:5173` |
+| `ENVIRONMENT` | Runtime environment label | `development` |
+| `DEBUG` | Enable debug mode | `false` |
+| `HOST` | Server bind address | `0.0.0.0` |
+| `PORT` | Server port | `8000` |
 
 ## Dependencies
 

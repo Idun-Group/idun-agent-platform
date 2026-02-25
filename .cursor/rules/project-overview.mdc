@@ -12,6 +12,7 @@ This is a monorepo. Each package/service has its own `CLAUDE.md` with detailed a
 - `libs/idun_agent_schema/CLAUDE.md` — Schema library: Pydantic models, config hierarchy, discriminated unions, manager CRUD schemas
 - `libs/idun_agent_engine/CLAUDE.md` — Engine SDK: agent adapters, config flow, YAML structure, server endpoints, guardrails, observability, MCP, CLI
 - `services/idun_agent_manager/CLAUDE.md` — Manager API: routes, authentication, multi-tenancy, database models, migrations, settings
+- `services/idun_agent_web/CLAUDE.md` — Web UI: routes, auth flow, API layer, styling, i18n, state management
 
 ## Key Rules
 

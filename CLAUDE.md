@@ -22,6 +22,7 @@ Each package/service has its own `CLAUDE.md` with detailed architecture, module 
 - `libs/idun_agent_schema/CLAUDE.md` — Schema library: Pydantic models, config hierarchy, discriminated unions, manager schemas
 - `libs/idun_agent_engine/CLAUDE.md` — Engine SDK: agent adapters, config flow, server endpoints, guardrails, observability, MCP, CLI
 - `services/idun_agent_manager/CLAUDE.md` — Manager API: routes, auth (OIDC + basic), multi-tenancy, database models, migrations
+- `services/idun_agent_web/CLAUDE.md` — Web UI: routes, auth flow, API layer, styling, i18n, state management
 
 ## Build & Development Commands
 
