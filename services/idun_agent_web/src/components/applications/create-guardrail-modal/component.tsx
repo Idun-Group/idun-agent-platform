@@ -1,5 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
+import {
+    Ban,
+    ShieldAlert,
+    Skull,
+    Type,
+    Code2,
+    Lock,
+    LockKeyhole,
+    Shield,
+    Bot,
+    Scale,
+    Trophy,
+    Globe,
+    Target,
+    Brain,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { createApplication, updateApplication } from '../../../services/applications';
 import type { AppType, ApplicationConfig } from '../../../types/application.types';
 import {
@@ -30,7 +47,7 @@ interface Field {
 interface GuardrailType {
     id: AppType;
     label: string;
-    icon: string;
+    icon: LucideIcon;
     group: string;
     description: string;
     fields: Field[];
@@ -42,7 +59,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'BanList',
         label: 'Ban List',
-        icon: '🚫',
+        icon: Ban,
         group: 'Content Safety',
         description: 'Block specific words or phrases from appearing in responses',
         fields: [
@@ -52,7 +69,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'NSFWText',
         label: 'NSFW Text',
-        icon: '🔞',
+        icon: ShieldAlert,
         group: 'Content Safety',
         description: 'Detect and filter adult or inappropriate content',
         fields: [
@@ -62,7 +79,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'ToxicLanguage',
         label: 'Toxic Language',
-        icon: '☠️',
+        icon: Skull,
         group: 'Content Safety',
         description: 'Filter hate speech, threats, and toxic content',
         fields: [
@@ -72,7 +89,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'GibberishText',
         label: 'Gibberish Text',
-        icon: '🔤',
+        icon: Type,
         group: 'Content Safety',
         description: 'Detect random, meaningless or garbled text',
         fields: [
@@ -82,7 +99,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'CodeScanner',
         label: 'Code Scanner',
-        icon: '💻',
+        icon: Code2,
         group: 'Content Safety',
         description: 'Restrict code generation to allowed programming languages',
         fields: [
@@ -94,7 +111,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'DetectPII',
         label: 'Detect PII',
-        icon: '🔒',
+        icon: Lock,
         group: 'Identity & Security',
         description: 'Detect and mask Personally Identifiable Information',
         fields: [
@@ -104,7 +121,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'DetectJailbreak',
         label: 'Detect Jailbreak',
-        icon: '⛓️',
+        icon: LockKeyhole,
         group: 'Identity & Security',
         description: 'Detect prompt injection and jailbreak attempts',
         fields: [
@@ -115,7 +132,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'PromptInjection',
         label: 'Prompt Injection',
-        icon: '💉',
+        icon: ShieldAlert,
         group: 'Identity & Security',
         description: 'Prevent prompt injection attacks',
         fields: [
@@ -127,7 +144,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'ModelArmor',
         label: 'Model Armor',
-        icon: '🛡️',
+        icon: Shield,
         group: 'Enterprise',
         description: 'Google Cloud Model Armor for enterprise-grade content filtering',
         fields: [
@@ -140,7 +157,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'CustomLLM',
         label: 'Custom LLM',
-        icon: '🤖',
+        icon: Bot,
         group: 'Enterprise',
         description: 'Use a custom LLM as a guardrail to evaluate responses',
         fields: [
@@ -153,7 +170,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'BiasCheck',
         label: 'Bias Check',
-        icon: '⚖️',
+        icon: Scale,
         group: 'Context & Quality',
         description: 'Detect and filter biased content in responses',
         fields: [
@@ -163,7 +180,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'CompetitionCheck',
         label: 'Competition Check',
-        icon: '🏆',
+        icon: Trophy,
         group: 'Context & Quality',
         description: 'Prevent mention of competitor brands or products',
         fields: [
@@ -173,7 +190,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'CorrectLanguage',
         label: 'Correct Language',
-        icon: '🌐',
+        icon: Globe,
         group: 'Context & Quality',
         description: 'Enforce responses in specific languages only',
         fields: [
@@ -183,7 +200,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'RestrictTopic',
         label: 'Restrict Topic',
-        icon: '🎯',
+        icon: Target,
         group: 'Context & Quality',
         description: 'Limit conversations to specific allowed topics',
         fields: [
@@ -193,7 +210,7 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
     {
         id: 'RagHallucination',
         label: 'RAG Hallucination',
-        icon: '🧠',
+        icon: Brain,
         group: 'Context & Quality',
         description: 'Detect hallucinations in RAG-based responses',
         fields: [
@@ -661,7 +678,7 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
                                         $disabled={!!t.comingSoon}
                                         onClick={(e) => { e.stopPropagation(); if (!t.comingSoon) handleSelectType(t.id); }}
                                     >
-                                        <TypeIcon>{t.icon}</TypeIcon>
+                                        <TypeIcon aria-hidden><t.icon size={15} /></TypeIcon>
                                         {t.label}
                                         {t.comingSoon && <ComingSoonBadge>Soon</ComingSoonBadge>}
                                     </TypeBtn>

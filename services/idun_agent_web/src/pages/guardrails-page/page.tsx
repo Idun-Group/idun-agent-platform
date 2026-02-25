@@ -1,5 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
+import {
+    Ban,
+    ShieldAlert,
+    Skull,
+    Type,
+    Code2,
+    Lock,
+    LockKeyhole,
+    Shield,
+    Bot,
+    Scale,
+    Trophy,
+    Globe,
+    Target,
+    Brain,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { fetchApplications, deleteApplication } from '../../services/applications';
 import type { ApplicationConfig } from '../../types/application.types';
 import CreateGuardrailModal from '../../components/applications/create-guardrail-modal/component';
@@ -300,22 +317,22 @@ const LoadingSpinner = styled.div`
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const TYPE_META: Record<string, { icon: string; group: string }> = {
-    ModelArmor:       { icon: '🛡️', group: 'Enterprise' },
-    CustomLLM:        { icon: '🤖', group: 'Enterprise' },
-    BanList:          { icon: '🚫', group: 'Content Safety' },
-    NSFWText:         { icon: '🔞', group: 'Content Safety' },
-    ToxicLanguage:    { icon: '☠️', group: 'Content Safety' },
-    GibberishText:    { icon: '🔤', group: 'Content Safety' },
-    CodeScanner:      { icon: '💻', group: 'Content Safety' },
-    DetectPII:        { icon: '🔒', group: 'Identity & Security' },
-    DetectJailbreak:  { icon: '⛓️', group: 'Identity & Security' },
-    PromptInjection:  { icon: '💉', group: 'Identity & Security' },
-    BiasCheck:        { icon: '⚖️', group: 'Context & Quality' },
-    CompetitionCheck: { icon: '🏆', group: 'Context & Quality' },
-    CorrectLanguage:  { icon: '🌐', group: 'Context & Quality' },
-    RestrictTopic:    { icon: '🎯', group: 'Context & Quality' },
-    RagHallucination: { icon: '🧠', group: 'Context & Quality' },
+const TYPE_META: Record<string, { icon: LucideIcon; group: string }> = {
+    ModelArmor:       { icon: Shield, group: 'Enterprise' },
+    CustomLLM:        { icon: Bot, group: 'Enterprise' },
+    BanList:          { icon: Ban, group: 'Content Safety' },
+    NSFWText:         { icon: ShieldAlert, group: 'Content Safety' },
+    ToxicLanguage:    { icon: Skull, group: 'Content Safety' },
+    GibberishText:    { icon: Type, group: 'Content Safety' },
+    CodeScanner:      { icon: Code2, group: 'Content Safety' },
+    DetectPII:        { icon: Lock, group: 'Identity & Security' },
+    DetectJailbreak:  { icon: LockKeyhole, group: 'Identity & Security' },
+    PromptInjection:  { icon: ShieldAlert, group: 'Identity & Security' },
+    BiasCheck:        { icon: Scale, group: 'Context & Quality' },
+    CompetitionCheck: { icon: Trophy, group: 'Context & Quality' },
+    CorrectLanguage:  { icon: Globe, group: 'Context & Quality' },
+    RestrictTopic:    { icon: Target, group: 'Context & Quality' },
+    RagHallucination: { icon: Brain, group: 'Context & Quality' },
 };
 
 const flattenConfig = (config: unknown): Record<string, string> => {
@@ -406,7 +423,7 @@ const GuardrailsPage: React.FC = () => {
             ) : (
                 <Grid>
                     {filtered.map(app => {
-                        const meta = TYPE_META[app.type] ?? { icon: '🛡️', group: 'Other' };
+                        const meta = TYPE_META[app.type] ?? { icon: Shield, group: 'Other' };
                         const config = flattenConfig(app.config);
                         const configEntries = Object.entries(config);
 
@@ -414,7 +431,7 @@ const GuardrailsPage: React.FC = () => {
                             <Card key={app.id}>
                                 <CardHeader>
                                     <GuardrailInfo>
-                                        <GuardrailIcon>{meta.icon}</GuardrailIcon>
+                                        <GuardrailIcon aria-hidden><meta.icon size={20} /></GuardrailIcon>
                                         <GuardrailMeta>
                                             <GuardrailName>{app.name}</GuardrailName>
                                             <GuardrailType>{app.type}</GuardrailType>
