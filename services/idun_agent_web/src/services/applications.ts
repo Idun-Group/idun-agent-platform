@@ -416,6 +416,34 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
                 type = 'DetectPII';
                 config = { pii_entities: (guardrail.pii_entities || []).join(',') };
                 break;
+            case 'nsfw_text':
+                type = 'NSFWText';
+                config = { threshold: String(guardrail.threshold ?? 0.5) };
+                break;
+            case 'toxic_language':
+                type = 'ToxicLanguage';
+                config = { threshold: String(guardrail.threshold ?? 0.5) };
+                break;
+            case 'gibberish_text':
+                type = 'GibberishText';
+                config = { threshold: String(guardrail.threshold ?? 0.5) };
+                break;
+            case 'bias_check':
+                type = 'BiasCheck';
+                config = { threshold: String(guardrail.threshold ?? 0.5) };
+                break;
+            case 'competition_check':
+                type = 'CompetitionCheck';
+                config = { competitors: (guardrail.competitors || []).join('\n') };
+                break;
+            case 'correct_language':
+                type = 'CorrectLanguage';
+                config = { expected_languages: (guardrail.expected_languages || []).join('\n') };
+                break;
+            case 'restrict_to_topic':
+                type = 'RestrictTopic';
+                config = { valid_topics: (guardrail.topics || []).join('\n') };
+                break;
         }
     }
 

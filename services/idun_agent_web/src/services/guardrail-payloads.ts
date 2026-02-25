@@ -1,10 +1,6 @@
 /**
  * Guardrail payload builders aligned to the actual manager backend.
  *
- * The manager currently supports exactly 2 guardrail types:
- *   - SimpleBanListConfig  (config_id: "ban_list")
- *   - SimplePIIConfig      (config_id: "detect_pii")
- *
  * Source of truth: libs/idun_agent_schema/src/idun_agent_schema/manager/guardrail_configs.py
  *
  * The `guardrail` field on ManagedGuardrailCreate is a FLAT union
@@ -22,7 +18,51 @@ export interface SimplePIIConfig {
     pii_entities: string[];
 }
 
-export type ManagerGuardrailConfig = SimpleBanListConfig | SimplePIIConfig;
+export interface SimpleNSFWTextConfig {
+    config_id: 'nsfw_text';
+    threshold: number;
+}
+
+export interface SimpleToxicLanguageConfig {
+    config_id: 'toxic_language';
+    threshold: number;
+}
+
+export interface SimpleGibberishTextConfig {
+    config_id: 'gibberish_text';
+    threshold: number;
+}
+
+export interface SimpleBiasCheckConfig {
+    config_id: 'bias_check';
+    threshold: number;
+}
+
+export interface SimpleCompetitionCheckConfig {
+    config_id: 'competition_check';
+    competitors: string[];
+}
+
+export interface SimpleCorrectLanguageConfig {
+    config_id: 'correct_language';
+    expected_languages: string[];
+}
+
+export interface SimpleRestrictToTopicConfig {
+    config_id: 'restrict_to_topic';
+    topics: string[];
+}
+
+export type ManagerGuardrailConfig =
+    | SimpleBanListConfig
+    | SimplePIIConfig
+    | SimpleNSFWTextConfig
+    | SimpleToxicLanguageConfig
+    | SimpleGibberishTextConfig
+    | SimpleBiasCheckConfig
+    | SimpleCompetitionCheckConfig
+    | SimpleCorrectLanguageConfig
+    | SimpleRestrictToTopicConfig;
 
 export const PII_ENTITY_VALUES = [
     'Email',
@@ -34,11 +74,27 @@ export const PII_ENTITY_VALUES = [
 
 export type PIIEntity = typeof PII_ENTITY_VALUES[number];
 
-export type SupportedGuardrailAppType = 'BanList' | 'DetectPII';
+export type SupportedGuardrailAppType =
+    | 'BanList'
+    | 'DetectPII'
+    | 'NSFWText'
+    | 'ToxicLanguage'
+    | 'GibberishText'
+    | 'BiasCheck'
+    | 'CompetitionCheck'
+    | 'CorrectLanguage'
+    | 'RestrictTopic';
 
 export const SUPPORTED_GUARDRAIL_TYPES: SupportedGuardrailAppType[] = [
     'BanList',
     'DetectPII',
+    'NSFWText',
+    'ToxicLanguage',
+    'GibberishText',
+    'BiasCheck',
+    'CompetitionCheck',
+    'CorrectLanguage',
+    'RestrictTopic',
 ];
 
 export function isSupportedGuardrailType(type: string): type is SupportedGuardrailAppType {
@@ -53,6 +109,11 @@ function splitLines(val: string | undefined): string[] {
 
 function splitComma(val: string | undefined): string[] {
     return val ? val.split(',').map(s => s.trim()).filter(Boolean) : [];
+}
+
+function parseThreshold(val: string | undefined): number {
+    const n = parseFloat(val ?? '0.5');
+    return isNaN(n) ? 0.5 : Math.min(1, Math.max(0, n));
 }
 
 export function buildGuardrailConfig(
@@ -72,8 +133,50 @@ export function buildGuardrailConfig(
                 pii_entities: splitComma(formValues.pii_entities),
             };
 
+        case 'NSFWText':
+            return {
+                config_id: 'nsfw_text',
+                threshold: parseThreshold(formValues.threshold),
+            };
+
+        case 'ToxicLanguage':
+            return {
+                config_id: 'toxic_language',
+                threshold: parseThreshold(formValues.threshold),
+            };
+
+        case 'GibberishText':
+            return {
+                config_id: 'gibberish_text',
+                threshold: parseThreshold(formValues.threshold),
+            };
+
+        case 'BiasCheck':
+            return {
+                config_id: 'bias_check',
+                threshold: parseThreshold(formValues.threshold),
+            };
+
+        case 'CompetitionCheck':
+            return {
+                config_id: 'competition_check',
+                competitors: splitLines(formValues.competitors),
+            };
+
+        case 'CorrectLanguage':
+            return {
+                config_id: 'correct_language',
+                expected_languages: splitLines(formValues.expected_languages),
+            };
+
+        case 'RestrictTopic':
+            return {
+                config_id: 'restrict_to_topic',
+                topics: splitLines(formValues.valid_topics),
+            };
+
         default:
-            throw new Error(`Unsupported guardrail type: ${appType}. Only BanList and DetectPII are supported by the backend.`);
+            throw new Error(`Unsupported guardrail type: ${appType}`);
     }
 }
 
@@ -104,6 +207,31 @@ export function validateGuardrailForm(
                 if (invalid.length)
                     errors.push({ field: 'pii_entities', message: `Invalid entities: ${invalid.join(', ')}` });
             }
+            break;
+
+        case 'NSFWText':
+        case 'ToxicLanguage':
+        case 'GibberishText':
+        case 'BiasCheck': {
+            const t = parseFloat(formValues.threshold ?? '');
+            if (isNaN(t) || t < 0 || t > 1)
+                errors.push({ field: 'threshold', message: 'Threshold must be a number between 0 and 1' });
+            break;
+        }
+
+        case 'CompetitionCheck':
+            if (!splitLines(formValues.competitors).length)
+                errors.push({ field: 'competitors', message: 'At least one competitor name is required' });
+            break;
+
+        case 'CorrectLanguage':
+            if (!splitLines(formValues.expected_languages).length)
+                errors.push({ field: 'expected_languages', message: 'At least one language code is required' });
+            break;
+
+        case 'RestrictTopic':
+            if (!splitLines(formValues.valid_topics).length)
+                errors.push({ field: 'valid_topics', message: 'At least one topic is required' });
             break;
 
         default:

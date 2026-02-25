@@ -58,7 +58,6 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
         ],
-        comingSoon: true,
     },
     {
         id: 'ToxicLanguage',
@@ -69,7 +68,6 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
         ],
-        comingSoon: true,
     },
     {
         id: 'GibberishText',
@@ -80,7 +78,6 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
         ],
-        comingSoon: true,
     },
     {
         id: 'CodeScanner',
@@ -162,7 +159,6 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
         ],
-        comingSoon: true,
     },
     {
         id: 'CompetitionCheck',
@@ -173,7 +169,6 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'competitors', label: 'Competitor Names', type: 'textarea', placeholder: 'CompetitorA\nCompetitorB', hint: 'One name per line' },
         ],
-        comingSoon: true,
     },
     {
         id: 'CorrectLanguage',
@@ -184,7 +179,6 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'expected_languages', label: 'Expected Languages', type: 'textarea', placeholder: 'en\nfr\nde', hint: 'One language code per line' },
         ],
-        comingSoon: true,
     },
     {
         id: 'RestrictTopic',
@@ -195,7 +189,6 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         fields: [
             { key: 'valid_topics', label: 'Allowed Topics', type: 'textarea', placeholder: 'customer support\nproduct information\ntechnical help', hint: 'One topic per line' },
         ],
-        comingSoon: true,
     },
     {
         id: 'RagHallucination',
