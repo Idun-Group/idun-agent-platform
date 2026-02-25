@@ -39,7 +39,7 @@ const LoginPage = () => {
         return (
             <main>
                 <StyledForm onSubmit={handleBasicLogin} noValidate>
-                    <h1>Idun Agent Platform</h1>
+                    <h1>Idun Platform</h1>
                     <h2>{t('login.title')}</h2>
                     <p>{t('login.description')}</p>
 
@@ -76,7 +76,7 @@ const LoginPage = () => {
     return (
         <main>
             <StyledForm onSubmit={(e) => e.preventDefault()} noValidate>
-                <h1>Idun Agent Platform</h1>
+                <h1>Idun Platform</h1>
                 <h2>{t('login.title')}</h2>
                 <p>{t('login.description')}</p>
 

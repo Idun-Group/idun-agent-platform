@@ -65,7 +65,7 @@ const Header = () => {
         <HeaderContainer>
             <SideContainer>
                 <Title onClick={() => navigate('/agents')} style={{ cursor: 'pointer' }}>
-                    <Logo src="/img/logo/logo.svg" alt="Idun Logo" /> Idun Agent Platform
+                    <Logo src="/img/logo/favicon.svg" alt="Idun Logo" /> Idun Platform
                 </Title>
 
                 {/** Workspace selector temporarily disabled */}
