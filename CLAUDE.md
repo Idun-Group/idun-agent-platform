@@ -15,6 +15,15 @@ Idun Agent Platform is a self-hosted control plane that wraps LangGraph/ADK agen
 - `services/copilot_runtime/` — Node.js CopilotKit runtime for real-time agent streaming
 - `docs/` — MkDocs Material documentation site
 
+## Per-Service Documentation
+
+Each package/service has its own `CLAUDE.md` with detailed architecture, module maps, and conventions. **Always read the relevant CLAUDE.md before working on a specific package:**
+
+- `libs/idun_agent_schema/CLAUDE.md` — Schema library: Pydantic models, config hierarchy, discriminated unions, manager schemas
+- `libs/idun_agent_engine/CLAUDE.md` — Engine SDK: agent adapters, config flow, server endpoints, guardrails, observability, MCP, CLI
+- `services/idun_agent_manager/CLAUDE.md` — Manager API: routes, auth (OIDC + basic), multi-tenancy, database models, migrations
+- `services/idun_agent_web/CLAUDE.md` — Web UI: routes, auth flow, API layer, styling, i18n, state management
+
 ## Build & Development Commands
 
 **Package manager:** UV (Python), npm (Node.js)
@@ -161,3 +170,7 @@ alembic upgrade head
 - When unsure between two valid approaches, state both with trade-offs instead of picking one arbitrarily.
 - If something feels off about a request or approach, say so and explain why. Push back with reasoning rather than complying silently.
 - If the user's suggestion would introduce a bug, reduce safety, or violate a best practice, flag it clearly before proceeding.
+
+### Keeping Documentation Current
+- When you add a major feature, change architecture, or modify conventions in a service, update the corresponding `CLAUDE.md` to reflect the change.
+- This includes new routes, new config options, new env vars, changed module structure, or deprecated behavior.
