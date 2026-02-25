@@ -1,179 +1,359 @@
-import { useEffect, useState } from 'react';
-import DataBoard from '../../layouts/data-board/layout';
+import { useEffect, useState, useMemo } from 'react';
+import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import type { BackendAgent } from '../../services/agents';
-import { listAgents } from '../../services/agents';
-import AgentLine from '../../components/dashboard/agents/agent-line/component';
-import { Button } from '../../components/general/button/component';
-import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Search, Plus, Bot } from 'lucide-react';
+import type { BackendAgent } from '../../services/agents';
+import { listAgents, deleteAgent } from '../../services/agents';
+import AgentCard from '../../components/dashboard/agents/agent-card/component';
+import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 
+// ── Animations ───────────────────────────────────────────────────────────────
+
+const fadeIn = keyframes`
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+`;
+
+const spin = keyframes`
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+`;
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 const AgentDashboardPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+
     const [agents, setAgents] = useState<BackendAgent[]>([]);
-    const columns = [
-        {
-            id: 'status',
-            label: t('dashboard.table.status'),
-            width: 86,
-            sortable: true,
-        },
-        {
-            id: 'name',
-            label: t('dashboard.table.name'),
-            width: 260,
-            sortable: true,
-        },
-        {
-            id: 'run',
-            label: t('dashboard.table.runs'),
-            width: 120,
-            sortable: true,
-        },
-        {
-            id: 'avgTime',
-            label: t('dashboard.table.avgTime'),
-            width: 120,
-            sortable: true,
-            alignment: 'center' as const,
-        },
-        {
-            id: 'errorRate',
-            label: t('dashboard.table.errorRate'),
-            width: 120,
-            sortable: true,
-            alignment: 'center' as const,
-        },
-        {
-            id: 'framework',
-            label: t('dashboard.table.framework'),
-            width: 140,
-            sortable: true,
-            alignment: 'center' as const,
-        },
-        {
-            id: 'a2a',
-            label: 'A2A',
-            width: 120,
-            sortable: false,
-            alignment: 'center' as const,
-        },
-        {
-            id: 'actions',
-            label: t('dashboard.table.actions'),
-            width: 140,
-            sortable: false,
-            alignment: 'center' as const,
-        },
-    ];
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [agentToDelete, setAgentToDelete] = useState<BackendAgent | null>(null);
 
     useEffect(() => {
-        listAgents({ limit: 20, offset: 0 })
+        setIsLoading(true);
+        listAgents()
             .then((rows) => setAgents(rows))
             .catch((error) => {
                 const message = error instanceof Error ? error.message : String(error);
                 toast.error(message);
-            });
+            })
+            .finally(() => setIsLoading(false));
     }, []);
 
-    return (
-        <AgentDashboardContainer>
-            <DashboardHeader>
-                <HeaderContent>
-                    <Title>{t('dashboard.agent.title')}</Title>
-                    <Description>
-                        {t('dashboard.agent.description')}
-                    </Description>
-                </HeaderContent>
-                <HeaderActions>
-                    <Button
-                        $variants="base"
-                        $color="primary"
-                        onClick={() => navigate('/agents/create')}
-                    >
-                        {t('dashboard.agent.create')}
-                    </Button>
-                </HeaderActions>
-            </DashboardHeader>
+    const filteredAgents = useMemo(() => {
+        if (!searchTerm) return agents;
+        const q = searchTerm.toLowerCase();
+        return agents.filter(
+            (a) =>
+                a.name.toLowerCase().includes(q) ||
+                (a.description ?? '').toLowerCase().includes(q) ||
+                a.framework.toLowerCase().includes(q)
+        );
+    }, [agents, searchTerm]);
 
-            <DataBoardWrapper>
-                <DataBoard
-                    columns={columns}
-                    data={agents}
-                    searchPlaceholder={t('dashboard.search.placeholder')}
-                    searchFields={['name', 'description', 'framework']}
-                    showSearch={true}
-                >
-                    {({ paginatedData, startIndex, columns: boardColumns }) => (
-                        <>
-                            {paginatedData.map((agent, rowIndex) => (
-                                    <AgentLine
-                                    key={startIndex + rowIndex}
-                                        agent={agent}
-                                        onDeleted={(id) => setAgents((prev) => prev.filter((a) => a.id !== id))}
-                                    columns={boardColumns}
-                                />
-                            ))}
-                        </>
-                    )}
-                </DataBoard>
-            </DataBoardWrapper>
-        </AgentDashboardContainer>
+    const handleDeleteConfirm = async () => {
+        if (!agentToDelete) return;
+        await deleteAgent(agentToDelete.id);
+        toast.success('Agent deleted');
+        setAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
+    };
+
+    // ── Empty state ──────────────────────────────────────────────────────────
+
+    if (!isLoading && agents.length === 0) {
+        return (
+            <PageWrapper>
+                <PageHeader>
+                    <TitleBlock>
+                        <PageTitle>{t('dashboard.agent.title')}</PageTitle>
+                        <PageSubtitle>{t('dashboard.agent.description')}</PageSubtitle>
+                    </TitleBlock>
+                </PageHeader>
+
+                <EmptyState>
+                    <EmptyIcon>
+                        <Bot size={48} strokeWidth={1.2} />
+                    </EmptyIcon>
+                    <EmptyTitle>No agents yet</EmptyTitle>
+                    <EmptyDescription>
+                        Create your first agent to start monitoring and managing your AI
+                        workflows.
+                    </EmptyDescription>
+                    <CreateButton onClick={() => navigate('/agents/create')}>
+                        <Plus size={18} />
+                        {t('dashboard.agent.create')}
+                    </CreateButton>
+                </EmptyState>
+            </PageWrapper>
+        );
+    }
+
+    // ── Main render ──────────────────────────────────────────────────────────
+
+    return (
+        <PageWrapper>
+            <PageHeader>
+                <TitleBlock>
+                    <PageTitle>{t('dashboard.agent.title')}</PageTitle>
+                    <PageSubtitle>{t('dashboard.agent.description')}</PageSubtitle>
+                </TitleBlock>
+                <HeaderActions>
+                    <SearchBar>
+                        <Search size={15} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                        <SearchInput
+                            placeholder={t('dashboard.search.placeholder')}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </SearchBar>
+                    <CreateButton onClick={() => navigate('/agents/create')}>
+                        <Plus size={16} />
+                        {t('dashboard.agent.create')}
+                    </CreateButton>
+                </HeaderActions>
+            </PageHeader>
+
+            {isLoading ? (
+                <CenterBox>
+                    <LoadingSpinner />
+                    <LoadingText>Loading agents...</LoadingText>
+                </CenterBox>
+            ) : (
+                <Grid>
+                    {filteredAgents.map((agent) => (
+                        <AgentCard
+                            key={agent.id}
+                            agent={agent}
+                            onDeleteRequest={setAgentToDelete}
+                        />
+                    ))}
+
+                    <AddCard onClick={() => navigate('/agents/create')}>
+                        <AddIconWrapper>
+                            <Plus size={28} />
+                        </AddIconWrapper>
+                        <AddTitle>Connect a new agent</AddTitle>
+                        <AddSubtitle>Configure from a template or connect</AddSubtitle>
+                    </AddCard>
+                </Grid>
+            )}
+
+            <DeleteConfirmModal
+                isOpen={!!agentToDelete}
+                onClose={() => setAgentToDelete(null)}
+                onConfirm={handleDeleteConfirm}
+                itemName={agentToDelete?.name ?? ''}
+            />
+        </PageWrapper>
     );
 };
 
-// Styled Components
-const AgentDashboardContainer = styled.div`
+export default AgentDashboardPage;
+
+// ── Styled components ────────────────────────────────────────────────────────
+
+const PageWrapper = styled.div`
     display: flex;
     flex-direction: column;
     height: 100%;
+    padding: 32px;
+    gap: 24px;
+    animation: ${fadeIn} 0.3s ease;
+    overflow-y: auto;
     background: hsl(var(--background));
-    flex: 1;
 `;
 
-const DashboardHeader = styled.div`
+const PageHeader = styled.div`
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
-    padding: 2rem 1.5rem 1rem 1.5rem;
-    background: hsl(var(--background));
-    border-bottom: 1px solid hsl(var(--border));
-    flex-shrink: 0;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
 `;
 
-const HeaderContent = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-`;
+const TitleBlock = styled.div``;
 
-const Title = styled.h1`
-    font-size: 2rem;
-    font-weight: 600;
+const PageTitle = styled.h1`
+    font-size: 24px;
+    font-weight: 700;
     color: hsl(var(--foreground));
-    margin: 0;
+    margin: 0 0 6px;
 `;
 
-const Description = styled.p`
-    font-size: 1rem;
+const PageSubtitle = styled.p`
+    font-size: 14px;
     color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
 const HeaderActions = styled.div`
     display: flex;
-    gap: 1rem;
     align-items: center;
+    gap: 12px;
 `;
 
-const DataBoardWrapper = styled.div`
-    flex: 1;
-    min-height: 0;
+const SearchBar = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 0 14px;
+    height: 38px;
+    transition: border-color 0.15s;
+
+    &:focus-within {
+        border-color: hsl(var(--primary) / 0.5);
+    }
+`;
+
+const SearchInput = styled.input`
+    background: transparent;
+    border: none;
+    outline: none;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    width: 200px;
+
+    &::placeholder {
+        color: rgba(255, 255, 255, 0.35);
+    }
+`;
+
+const CreateButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px;
+    height: 38px;
+    background: hsl(var(--primary));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+
+    &:hover {
+        opacity: 0.88;
+    }
+`;
+
+// ── Grid ─────────────────────────────────────────────────────────────────────
+
+const Grid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+`;
+
+// ── Add card ─────────────────────────────────────────────────────────────────
+
+const AddCard = styled.button`
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: transparent;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 40px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 200px;
+
+    &:hover {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.04);
+    }
+
+    &:hover span,
+    &:hover p {
+        color: hsl(var(--primary));
+    }
 `;
 
-export default AgentDashboardPage;
+const AddIconWrapper = styled.span`
+    color: rgba(255, 255, 255, 0.2);
+    transition: color 0.2s;
+`;
+
+const AddTitle = styled.span`
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.35);
+    transition: color 0.2s;
+`;
+
+const AddSubtitle = styled.p`
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.2);
+    margin: 0;
+    transition: color 0.2s;
+`;
+
+// ── Empty state ──────────────────────────────────────────────────────────────
+
+const EmptyState = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 16px;
+    text-align: center;
+    padding: 60px 24px;
+`;
+
+const EmptyIcon = styled.div`
+    color: rgba(255, 255, 255, 0.15);
+    margin-bottom: 8px;
+`;
+
+const EmptyTitle = styled.h2`
+    font-size: 20px;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin: 0;
+`;
+
+const EmptyDescription = styled.p`
+    font-size: 14px;
+    color: hsl(var(--muted-foreground));
+    margin: 0;
+    max-width: 380px;
+    line-height: 1.5;
+`;
+
+// ── Loading ──────────────────────────────────────────────────────────────────
+
+const CenterBox = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 80px;
+`;
+
+const LoadingSpinner = styled.div`
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: hsl(var(--primary));
+    border-radius: 50%;
+    animation: ${spin} 0.8s linear infinite;
+`;
+
+const LoadingText = styled.p`
+    font-size: 14px;
+    color: hsl(var(--muted-foreground));
+    margin: 0;
+`;

@@ -1,0 +1,11 @@
+meta {
+  name: get config
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://localhost:8008/agent/config
+  body: json
+  auth: none
+}
