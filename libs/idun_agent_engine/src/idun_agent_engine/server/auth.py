@@ -26,6 +26,7 @@ class OIDCValidator:
     def __init__(self, config: SSOConfig) -> None:
         self._issuer = config.issuer.rstrip("/")
         self._client_id = config.client_id
+        self._audience = config.audience or config.client_id
         self._allowed_domains = (
             [d.lower() for d in config.allowed_domains]
             if config.allowed_domains
@@ -78,7 +79,7 @@ class OIDCValidator:
                 signing_key.key,
                 algorithms=self._algorithms,
                 issuer=self._issuer,
-                audience=self._client_id,
+                audience=self._audience,
                 options={"require": ["exp", "iss", "aud"]},
             )
         except HTTPException:

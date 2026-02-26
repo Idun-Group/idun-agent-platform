@@ -33,8 +33,15 @@ class SSOConfig(BaseModel):
     )
     client_id: str = Field(
         description=(
-            "OAuth 2.0 client ID. Validated against the 'aud' claim "
-            "in incoming JWTs."
+            "OAuth 2.0 client ID. Used as the default audience for "
+            "JWT validation when 'audience' is not set."
+        ),
+    )
+    audience: str | None = Field(
+        default=None,
+        description=(
+            "Expected JWT 'aud' claim. Defaults to client_id if not set. "
+            "Okta client credentials tokens use 'api://default'."
         ),
     )
     allowed_domains: list[str] | None = Field(
