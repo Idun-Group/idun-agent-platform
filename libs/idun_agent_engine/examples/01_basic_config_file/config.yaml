@@ -60,3 +60,7 @@ observability:
       project_id: "idun-platform"
       resource_type: "global"
       severity: "INFO"
+
+sso:
+  issuer: "your-issuer"
+  client_id: "your-client-id"

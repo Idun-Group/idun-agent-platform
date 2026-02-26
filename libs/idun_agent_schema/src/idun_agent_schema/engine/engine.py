@@ -8,6 +8,7 @@ from .guardrails_v2 import GuardrailsV2 as Guardrails
 from .mcp_server import MCPServer
 from .observability_v2 import ObservabilityConfig
 from .server import ServerConfig
+from .sso import SSOConfig
 
 
 class EngineConfig(BaseModel):
@@ -23,3 +24,4 @@ class EngineConfig(BaseModel):
     mcp_servers: list[MCPServer] | None = Field(default=None, alias="mcpServers")
     guardrails: Guardrails | None = None
     observability: list[ObservabilityConfig] | None = None
+    sso: SSOConfig | None = None

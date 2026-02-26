@@ -1,0 +1,260 @@
+# CLAUDE.md — Idun Agent Engine
+
+## What This Is
+
+`idun_agent_engine` is a Python SDK that wraps agent frameworks (LangGraph, Google ADK, Haystack) into production-ready FastAPI services. Users define their agent and configuration, and the engine handles serving, streaming (AG-UI protocol via CopilotKit), memory, Langgraph checkpointing, observability, guardrails, and MCP tool management.
+
+Published to PyPI as `idun-agent-engine`. CLI entry point: `idun`.
+
+## Package Structure
+
+There are **two packages** in `src/`:
+
+- `idun_agent_engine/` — The SDK library
+- `idun_platform_cli/` — The CLI (Click + Textual TUI)
+
+## Module Map
+
+```
+idun_agent_engine/
+├── core/               # Config resolution, app factory, server runner
+│   ├── engine_config   # Re-exports Pydantic models from idun_agent_schema
+│   ├── config_builder  # Central hub: loads YAML/dict/API, builds EngineConfig, initializes agents
+│   ├── app_factory     # create_app() → FastAPI application
+│   └── server_runner   # run_server() → uvicorn wrapper
+├── agent/              # Framework adapters (all implement BaseAgent ABC)
+│   ├── base            # BaseAgent protocol: initialize(), invoke(), stream(), copilotkit_agent_instance
+│   ├── langgraph/      # Primary adapter. Full streaming (AG-UI events). Expects uncompiled StateGraph.
+│   ├── adk/            # Google ADK adapter. Mature. Session + memory services. Stream not yet implemented.
+│   └── haystack/       # Haystack adapter. Accepts Pipeline or Agent. Basic invoke only. Experimental.
+├── server/             # FastAPI layer
+│   ├── routers/agent   # /agent/invoke, /agent/stream, /agent/copilotkit/stream, /agent/config
+│   ├── routers/base    # /, /health, /reload
+│   ├── dependencies    # DI: get_agent, get_copilotkit_agent, get_mcp_registry
+│   └── lifespan        # Startup: agent init, guardrails parsing, CopilotKit setup, telemetry
+├── guardrails/         # Guardrails AI Hub integration
+│   ├── base            # BaseGuardrail ABC: validate(input) → bool
+│   └── guardrails_hub/ # Downloads + runs guards from guardrailsai hub. Blocks requests on violation.
+├── observability/      # Provider-agnostic tracing
+│   ├── base            # ObservabilityHandlerBase ABC, factory functions
+│   ├── langfuse/       # LangChain CallbackHandler integration
+│   ├── phoenix/        # OpenTelemetry + OpenInference instrumentation
+│   ├── gcp_trace/      # Cloud Trace exporter + OpenInference instrumentation
+│   └── gcp_logging/    # Google Cloud Logging (hooks into python logging)
+├── mcp/                # MCP tool management
+│   ├── registry        # MCPClientRegistry wrapping langchain-mcp-adapters MultiServerMCPClient
+│   └── helpers         # get_langchain_tools(), get_adk_tools() — convenience functions
+├── templates/          # Pre-built LangGraph agents (translation, correction, deep_research). Ignore.
+└── telemetry/          # Anonymous usage telemetry (PostHog). Opt-out: IDUN_TELEMETRY_ENABLED=false
+
+idun_platform_cli/
+├── main.py             # CLI entry: `idun agent serve`, `idun init`
+├── groups/agent/serve  # `idun agent serve --source file --path config.yaml` or `--source manager`
+├── groups/init         # `idun init` — launches Textual TUI for interactive config creation
+└── tui/                # Textual TUI: screens, widgets (chat, observability, guardrails, memory, MCP, serve)
+```
+
+## Public API
+
+Exported from `idun_agent_engine.__init__`:
+
+```python
+from idun_agent_engine import (
+    create_app,          # config → FastAPI app
+    run_server,          # app → uvicorn
+    run_server_from_config,   # config_path → app → uvicorn
+    run_server_from_builder,  # ConfigBuilder → app → uvicorn
+    ConfigBuilder,       # Fluent builder + static helpers for config loading/agent init
+    BaseAgent,           # ABC for agent adapters
+)
+```
+
+## Configuration Flow
+
+YAML config is preferred. Two sources:
+
+1. **File-based** (`--source file`): Reads `config.yaml` → validates into `EngineConfig` (Pydantic) → builds FastAPI app → serves.
+2. **Manager-based** (`--source manager`): Requires `IDUN_AGENT_API_KEY` + `IDUN_MANAGER_HOST` env vars → fetches config from manager API → same flow. The config structure is identical in both cases.
+
+Config resolution priority in `ConfigBuilder.resolve_config()`:
+1. `engine_config` (pre-validated EngineConfig)
+2. `config_dict` (raw dict)
+3. `config_path` (YAML file path)
+4. Default `config.yaml`
+
+### YAML Config Structure
+
+Fields inside `agent.config` change depending on `agent.type`:
+
+**LangGraph:**
+```yaml
+server:
+  api:
+    port: 8001
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "My Agent"
+    graph_definition: "./agent.py:app"    # module_path:variable_name
+    input_schema_definition: "field_name" # optional: field in state schema to use as input model
+    checkpointer:
+      type: "sqlite"                      # sqlite | memory | postgres
+      db_url: "sqlite:///checkpoint.db"
+
+observability:                # top-level, not inside agent.config (agent-level is deprecated)
+  - provider: "LANGFUSE"
+    enabled: true
+    config:
+      host: "https://cloud.langfuse.com"
+      public_key: "pk-..."
+      secret_key: "sk-..."
+
+guardrails:
+  input:
+    - config_id: "DETECT_PII"
+      # ...
+  output:
+    - config_id: "TOXIC_LANGUAGE"
+      # ...
+
+mcp_servers:
+  - name: "time"
+    transport: "stdio"
+    command: "docker"
+    args: ["run", "-i", "--rm", "mcp/time"]
+```
+
+**ADK:**
+```yaml
+agent:
+  type: "ADK"
+  config:
+    name: "ADK Agent"
+    app_name: "adk_agent"
+    agent: "./agent.py:root_agent"        # module_path:variable_name (points to ADK agent)
+    session_service:
+      type: "in_memory"                   # in_memory | vertex_ai | database
+    memory_service:
+      type: "in_memory"                   # in_memory | vertex_ai
+```
+
+**Haystack:**
+```yaml
+agent:
+  type: "HAYSTACK"
+  config:
+    name: "Haystack Agent"
+    component_type: "pipeline"            # pipeline | agent
+    component_definition: "./pipe.py:pipe"  # module_path:variable_name
+```
+
+## Agent Adapters
+
+All adapters implement `BaseAgent` (generic ABC parameterized by config type):
+
+| Adapter | Config Model | Graph Loading | Streaming | CopilotKit |
+|---|---|---|---|---|
+| **LanggraphAgent** | `LangGraphAgentConfig` | `graph_definition` → dynamic import → expects **uncompiled `StateGraph`** (engine compiles it with checkpointer/store) | Full AG-UI event stream via `astream_events` | `LangGraphAGUIAgent` |
+| **AdkAgent** | `AdkAgentConfig` | `agent` field → dynamic import | Not implemented | `ADKAGUIAgent` |
+| **HaystackAgent** | `HaystackAgentConfig` | `component_definition` → dynamic import → `Pipeline` or `Agent` | Not implemented | Not supported |
+
+### LangGraph: Key Details
+
+- **`graph_definition`**: Format `path/to/file.py:variable_name`. Tries file path first, falls back to Python module import.
+- **`input_schema_definition`**: Points to a field name in the graph's `state_schema`. The engine extracts the type annotation and uses it as the `/agent/invoke` input model for OpenAPI schema generation. If not set, defaults to `ChatRequest` (`query` + `session_id`).
+- **Checkpointers**: `InMemorySaver`, `AsyncSqliteSaver`, `AsyncPostgresSaver` — configured via YAML.
+- **Streaming**: Maps LangGraph `astream_events(v2)` to AG-UI events (RunStarted, StepStarted, TextMessageStart/Content/End, ToolCallStart/Args/End, ThinkingStart/End, RunFinished).
+
+### ADK: Key Details
+
+- Session services: InMemory (default), VertexAI, Database (PostgreSQL).
+- Memory services: InMemory (default), VertexAI.
+- Langfuse observability via `GoogleADKInstrumentor` (OpenInference).
+
+## Server Endpoints
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/` | GET | Service info |
+| `/health` | GET | Health check |
+| `/docs` | GET | OpenAPI docs |
+| `/reload` | POST | Hot-reload agent config without restarting the server |
+| `/agent/invoke` | POST | Invoke agent (request/response). Input model is dynamic based on `input_schema_definition`. |
+| `/agent/stream` | POST | Stream AG-UI events (custom implementation in agent adapter) |
+| `/agent/copilotkit/stream` | POST | Stream via CopilotKit AG-UI agent wrapper (used by the frontend) |
+| `/agent/config` | GET | Get current agent config |
+
+## Guardrails
+
+Uses [Guardrails AI Hub](https://hub.guardrailsai.com/). Guards are downloaded and run locally at startup. Requests are blocked (HTTP 429) if a guardrail triggers.
+
+Available guards: `BanList`, `DetectPII`, `NSFWText`, `CompetitorCheck`, `BiasCheck`, `ValidLanguage`, `GibberishText`, `ToxicLanguage`, `RestrictToTopic`.
+
+Guardrails are split into `input` (validated before agent invocation) and `output` (validated after).
+
+## Observability
+
+Top-level config. Multiple providers can be active simultaneously. All are lazy-loaded.
+
+| Provider | Mechanism | Callbacks? |
+|---|---|---|
+| **Langfuse** | Sets env vars → `CallbackHandler` for LangChain | Yes |
+| **Phoenix** | `phoenix.otel.register()` + `LangChainInstrumentor` | No (global instrumentation) |
+| **GCP Trace** | `CloudTraceSpanExporter` + `LangChainInstrumentor` + optional Guardrails/VertexAI/MCP instrumentors | No (global instrumentation) |
+| **GCP Logging** | `google.cloud.logging.Client.setup_logging()` | No (hooks into python logging) |
+
+Config values support env var references: `${LANGFUSE_HOST}` syntax in YAML, resolved at load time.
+
+## MCP (Model Context Protocol)
+
+`MCPClientRegistry` wraps `langchain-mcp-adapters`'s `MultiServerMCPClient`. Configured via `mcp_servers` in YAML.
+
+- Supports `stdio` transport (and SSE/HTTP for LangChain adapters).
+- Provides `get_langchain_tools()` for LangGraph agents and `get_adk_toolsets()` for ADK agents.
+
+## CLI
+
+```bash
+# Serve from a config file
+idun agent serve --source file --path config.yaml
+
+# Serve from the manager (requires env vars: IDUN_AGENT_API_KEY and IDUN_MANAGER_HOST)
+idun agent serve --source manager
+
+# Interactive TUI for creating config + launching server
+idun init
+```
+
+## Key Dependencies
+
+- `idun_agent_schema` — Shared Pydantic models (local editable dep)
+- `langgraph`, `google-adk`, `haystack-ai` — Agent frameworks
+- `copilotkit`, `ag-ui-core`, `ag-ui-encoder`, `ag-ui-adk` — AG-UI streaming protocol
+- `langchain-mcp-adapters` — MCP client
+- `guardrails-ai` — Guardrails hub
+- `langfuse`, `arize-phoenix`, `opentelemetry-*`, `google-cloud-*` — Observability
+
+## Development
+
+```bash
+# Run tests
+uv run pytest libs/idun_agent_engine/tests/ -v
+
+# Skip tests requiring external services
+uv run pytest -m "not requires_langfuse and not requires_phoenix and not requires_postgres"
+
+# Lint and format
+make lint && make format
+
+# Type check
+make mypy
+```
+
+## Conventions
+
+- All agent operations are async (`initialize`, `invoke`, `stream`).
+- Schema changes go in `idun_agent_schema` first, then consumed here.
+- Observability config is top-level in the YAML, not nested inside `agent.config` (agent-level is deprecated).
+- Dynamic imports for agent loading: file path first, Python module fallback.
+- `CompiledStateGraph` is **rejected** — always provide an uncompiled `StateGraph`. The engine compiles it.
