@@ -2,6 +2,8 @@ import styled from 'styled-components';
 import { Check } from 'lucide-react';
 import { AgentAvatar } from '../../../components/general/agent-avatar/component';
 import type { Framework } from '../types';
+import langGraphLogo from '../../../assets/langgraph-color.png';
+import adkLogo from '../../../assets/agent-development-kit.png';
 
 interface BasicsStepProps {
     name: string;
@@ -10,16 +12,18 @@ interface BasicsStepProps {
     onFrameworkChange: (fw: Framework) => void;
 }
 
-const FRAMEWORKS: { id: Framework; label: string; description: string }[] = [
+const FRAMEWORKS: { id: Framework; label: string; description: string; logo: string }[] = [
     {
         id: 'LANGGRAPH',
         label: 'LangGraph',
         description: 'Build stateful, multi-actor agents with LangGraph',
+        logo: langGraphLogo,
     },
     {
         id: 'ADK',
         label: 'Google ADK',
         description: "Build agents with Google's Agent Development Kit",
+        logo: adkLogo,
     },
 ];
 
@@ -62,13 +66,14 @@ export default function BasicsStep({
                             type="button"
                         >
                             <CardTop>
-                                <CardLabel>{fw.label}</CardLabel>
+                                <FrameworkLogo src={fw.logo} alt={fw.label} />
                                 {framework === fw.id && (
                                     <CheckCircle>
                                         <Check size={12} color="white" />
                                     </CheckCircle>
                                 )}
                             </CardTop>
+                            <CardLabel>{fw.label}</CardLabel>
                             <CardDescription>{fw.description}</CardDescription>
                         </FrameworkCard>
                     ))}
@@ -190,6 +195,12 @@ const CardTop = styled.div`
     align-items: center;
     justify-content: space-between;
     width: 100%;
+`;
+
+const FrameworkLogo = styled.img`
+    height: 28px;
+    width: auto;
+    object-fit: contain;
 `;
 
 const CardLabel = styled.span`
