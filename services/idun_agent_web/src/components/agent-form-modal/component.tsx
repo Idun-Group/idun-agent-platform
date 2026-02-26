@@ -1,4 +1,4 @@
-import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap, AlertTriangle } from 'lucide-react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap, AlertTriangle, KeyRound } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
@@ -11,6 +11,8 @@ import { fetchApplications, MARKETPLACE_APPS, mapConfigToApi } from '../../servi
 import type { ApplicationConfig, AppType, MarketplaceApp, AppCategory } from '../../types/application.types';
 import ApplicationModal from '../applications/application-modal/component';
 import type { BackendAgent } from '../../services/agents';
+import { fetchSSOs } from '../../services/sso';
+import type { ManagedSSO } from '../../services/sso';
 
 const DISABLED_FRAMEWORKS = new Set(['CREWAI', 'CUSTOM']);
 
@@ -119,6 +121,10 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
     const [selectedGuardTypeToAdd, setSelectedGuardTypeToAdd] = useState<string>('');
     const [isGuardrailMarketplaceVisible, setIsGuardrailMarketplaceVisible] = useState(false);
 
+    // SSO State
+    const [ssoConfigs, setSsoConfigs] = useState<ManagedSSO[]>([]);
+    const [selectedSSOId, setSelectedSSOId] = useState<string>('');
+
     // Application Modal State
     const [isAppModalOpen, setIsAppModalOpen] = useState(false);
     const [appToCreate, setAppToCreate] = useState<MarketplaceApp | undefined>(undefined);
@@ -141,6 +147,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             setMcpApps(apps.filter(a => a.category === 'MCP'));
             setGuardApps(apps.filter(a => a.category === 'Guardrails'));
         });
+        fetchSSOs().then(setSsoConfigs).catch(err => console.error('Failed to load SSO configs', err));
     };
 
     // Initialize form with existing data when editing
@@ -311,8 +318,15 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 });
                 setSelectedMCPIds([...new Set(ids)]);
             }
+
+            // SSO
+            const sso = (initialData.engine_config as any)?.sso;
+            if (sso && ssoConfigs.length > 0) {
+                const match = ssoConfigs.find(c => c.sso.issuer === sso.issuer && c.sso.clientId === sso.clientId);
+                if (match) setSelectedSSOId(match.id);
+            }
         }
-    }, [mode, initialData, isOpen, guardApps, memoryApps, observabilityApps, mcpApps]);
+    }, [mode, initialData, isOpen, guardApps, memoryApps, observabilityApps, mcpApps, ssoConfigs]);
 
     // Data Fetching
     useEffect(() => {
@@ -376,6 +390,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 setSelectedObservabilityApps({});
                 setSelectedMCPIds([]);
                 setSelectedGuardIds([]);
+                setSelectedSSOId('');
             }
             setSubmitError(null);
         }
@@ -594,6 +609,10 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 output: []
             } : null;
 
+            // 4. Handle SSO
+            const selectedSSO = selectedSSOId ? ssoConfigs.find(c => c.id === selectedSSOId) : null;
+            const ssoConfig = selectedSSO ? selectedSSO.sso : null;
+
             const payload = {
                 name: name.trim(),
                 version: version.trim() || '1.0.0',
@@ -603,7 +622,8 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                     agent: { type: agentType, config: finalAgentConfig },
                     mcp_servers: mcpConfigs.length > 0 ? mcpConfigs : null,
                     guardrails: guardrailsConfig,
-                    observability: observabilityConfigs
+                    observability: observabilityConfigs,
+                    sso: ssoConfig
                 }
             };
 
@@ -975,6 +995,35 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
 
                                         {guardApps.length === 0 && !isGuardrailMarketplaceVisible && (
                                             <EmptyText style={{ marginTop: '8px' }}>No guardrails configured.</EmptyText>
+                                        )}
+                                    </div>
+
+                                    {/* SSO / OIDC */}
+                                    <div>
+                                        <SectionTitle><SectionIndicator $color="yellow" /><KeyRound size={16} style={{ marginRight: '8px' }} />SSO / OIDC</SectionTitle>
+                                        {ssoConfigs.length === 0 ? (
+                                            <EmptyState>
+                                                <p>No SSO configurations available. Create one from the SSO page first.</p>
+                                            </EmptyState>
+                                        ) : (
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px' }}>
+                                                {ssoConfigs.map(config => (
+                                                    <SafetyCardContainer key={config.id} $enabled={selectedSSOId === config.id} onClick={() => setSelectedSSOId(prev => prev === config.id ? '' : config.id)}>
+                                                        <SafetyCardHeader>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <KeyRound size={16} color="#eab308" />
+                                                                <SafetyTitle $enabled={selectedSSOId === config.id}>{config.name}</SafetyTitle>
+                                                            </div>
+                                                            <SafetyCheckbox $checked={selectedSSOId === config.id}>
+                                                                {selectedSSOId === config.id && <Check size={12} />}
+                                                            </SafetyCheckbox>
+                                                        </SafetyCardHeader>
+                                                        <SafetyFooter>
+                                                            <SafetyDesc>{config.sso.issuer}</SafetyDesc>
+                                                        </SafetyFooter>
+                                                    </SafetyCardContainer>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
                                 </StepGrid>

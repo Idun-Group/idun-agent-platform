@@ -7,3 +7,8 @@ from .managed_agent import (  # noqa: F401
     ManagedAgentPatch,
     ManagedAgentRead,
 )
+from .managed_sso import (  # noqa: F401
+    ManagedSSOCreate,
+    ManagedSSOPatch,
+    ManagedSSORead,
+)

@@ -25,6 +25,7 @@ import MemoryPage from './pages/memory-page/page';
 import ObservabilityPage from './pages/observability-page/page';
 import MCPPage from './pages/mcp-page/page';
 import GuardrailsPage from './pages/guardrails-page/page';
+import SSOPage from './pages/sso-page/page';
 // PLOP_IMPORT
 
 function App() {
@@ -197,6 +198,20 @@ function App() {
                                     <SideBar />
                                     <MainContent>
                                         <ObservationPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/sso"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <SSOPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>

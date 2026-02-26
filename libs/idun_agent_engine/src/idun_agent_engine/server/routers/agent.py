@@ -14,6 +14,7 @@ from idun_agent_schema.engine.guardrails import Guardrail
 from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
+from idun_agent_engine.server.auth import get_verified_user
 from idun_agent_engine.server.dependencies import get_agent, get_copilotkit_agent
 
 logging.basicConfig(
@@ -55,6 +56,7 @@ async def get_config(request: Request):
 async def stream(
     request: ChatRequest,
     agent: Annotated[BaseAgent, Depends(get_agent)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
 ):
     """Process a message with the agent, streaming ag-ui events."""
     try:
@@ -76,6 +78,7 @@ async def copilotkit_stream(
     copilotkit_agent: Annotated[
         LangGraphAGUIAgent | ADKAGUIAgent, Depends(get_copilotkit_agent)
     ],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
 ):
     """Process a message with the agent, streaming ag-ui events."""
     guardrails = getattr(request.app.state, "guardrails", [])
@@ -184,6 +187,7 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         request: Request,
         input_data: input_model,  # type: ignore[valid-type]
         agent: Annotated[BaseAgent, Depends(get_agent)],
+        _user: Annotated[dict | None, Depends(get_verified_user)],
     ) -> ChatResponse | dict:
         """Invoke the agent with a message and get a response."""
         guardrails = getattr(request.app.state, "guardrails", [])

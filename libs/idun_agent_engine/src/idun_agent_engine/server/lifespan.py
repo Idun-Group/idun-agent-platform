@@ -59,6 +59,17 @@ async def configure_app(app: FastAPI, engine_config):
     app.state.custom_input_model = getattr(agent_instance, "custom_input_model", None)
 
     app.state.guardrails = guardrails
+
+    # SSO / OIDC setup
+    sso_config = engine_config.sso
+    if sso_config and sso_config.enabled:
+        from ..server.auth import OIDCValidator
+
+        app.state.sso_validator = OIDCValidator(sso_config)
+        print(f"🔒 SSO enabled — issuer: {sso_config.issuer}")
+    else:
+        app.state.sso_validator = None
+
     agent_name = getattr(agent_instance, "name", "Unknown")
     print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
 

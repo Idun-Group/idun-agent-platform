@@ -394,6 +394,156 @@ class TestConfigBuilderWithConfigFromAPI:
 
 
 @pytest.mark.unit
+class TestConfigBuilderSSO:
+    """Test SSO configuration in ConfigBuilder."""
+
+    def test_build_includes_sso_when_set(self, tmp_path: Path) -> None:
+        """build() includes SSO config in the EngineConfig."""
+        from idun_agent_schema.engine.sso import SSOConfig
+
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="SSO Agent", graph_definition=str(tmp_path / "agent.py:graph")
+        )
+        builder._sso = SSOConfig(
+            issuer="https://accounts.google.com",
+            client_id="test-client-id",
+        )
+        engine_config = builder.build()
+        assert engine_config.sso is not None
+        assert engine_config.sso.issuer == "https://accounts.google.com"
+        assert engine_config.sso.client_id == "test-client-id"
+
+    def test_build_sso_none_by_default(self) -> None:
+        """build() sets SSO to None when not configured."""
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="No SSO Agent", graph_definition="./agent.py:graph"
+        )
+        engine_config = builder.build()
+        assert engine_config.sso is None
+
+    def test_build_sso_with_audience(self, tmp_path: Path) -> None:
+        """build() preserves the optional audience field."""
+        from idun_agent_schema.engine.sso import SSOConfig
+
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="Okta Agent", graph_definition=str(tmp_path / "agent.py:graph")
+        )
+        builder._sso = SSOConfig(
+            issuer="https://trial.okta.com/oauth2/default",
+            client_id="okta-client-id",
+            audience="api://default",
+        )
+        engine_config = builder.build()
+        assert engine_config.sso is not None
+        assert engine_config.sso.audience == "api://default"
+
+    def test_from_dict_preserves_sso(self, tmp_path: Path) -> None:
+        """from_dict copies SSO config into the builder."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Dict SSO Agent",
+                    "graph_definition": str(tmp_path / "agent.py:graph"),
+                },
+            },
+            "sso": {
+                "issuer": "https://accounts.google.com",
+                "client_id": "google-id",
+            },
+        }
+        builder = ConfigBuilder.from_dict(config_dict)
+        assert builder._sso is not None
+        assert builder._sso.issuer == "https://accounts.google.com"
+
+        engine_config = builder.build()
+        assert engine_config.sso is not None
+        assert engine_config.sso.client_id == "google-id"
+
+    def test_from_engine_config_preserves_sso(self, tmp_path: Path) -> None:
+        """from_engine_config copies SSO config into the builder."""
+        from idun_agent_schema.engine.sso import SSOConfig
+
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="SSO Agent", graph_definition=str(tmp_path / "agent.py:graph")
+        )
+        builder._sso = SSOConfig(
+            issuer="https://accounts.google.com",
+            client_id="test-id",
+        )
+        engine_config = builder.build()
+
+        new_builder = ConfigBuilder.from_engine_config(engine_config)
+        assert new_builder._sso is not None
+        assert new_builder._sso.issuer == "https://accounts.google.com"
+
+    @patch("requests.get")
+    def test_with_config_from_api_parses_sso(self, mock_get: Mock) -> None:
+        """with_config_from_api parses SSO config from API response."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 8000}},
+                    "agent": {
+                        "type": "LANGGRAPH",
+                        "config": {
+                            "name": "API SSO Agent",
+                            "graph_definition": "./agent.py:graph",
+                        },
+                    },
+                    "sso": {
+                        "issuer": "https://trial.okta.com/oauth2/default",
+                        "client_id": "okta-client-id",
+                        "audience": "api://default",
+                    },
+                }
+            }
+        )
+        mock_get.return_value = mock_response
+
+        builder = ConfigBuilder().with_config_from_api(
+            agent_api_key="test-key", url="http://localhost:8000"
+        )
+
+        engine_config = builder.build()
+        assert engine_config.sso is not None
+        assert engine_config.sso.issuer == "https://trial.okta.com/oauth2/default"
+        assert engine_config.sso.client_id == "okta-client-id"
+        assert engine_config.sso.audience == "api://default"
+
+    @patch("requests.get")
+    def test_with_config_from_api_without_sso(self, mock_get: Mock) -> None:
+        """with_config_from_api sets SSO to None when not in response."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 8000}},
+                    "agent": {
+                        "type": "LANGGRAPH",
+                        "config": {
+                            "name": "No SSO API Agent",
+                            "graph_definition": "./agent.py:graph",
+                        },
+                    },
+                }
+            }
+        )
+        mock_get.return_value = mock_response
+
+        builder = ConfigBuilder().with_config_from_api(
+            agent_api_key="test-key", url="http://localhost:8000"
+        )
+
+        engine_config = builder.build()
+        assert engine_config.sso is None
+
+
+@pytest.mark.unit
 class TestConfigBuilderGetAgentClass:
     """Test getting agent class by type."""
 

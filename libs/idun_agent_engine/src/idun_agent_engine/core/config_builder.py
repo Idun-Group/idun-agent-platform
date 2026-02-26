@@ -20,6 +20,7 @@ from idun_agent_schema.engine.langgraph import (
 )
 from idun_agent_schema.engine.mcp_server import MCPServer
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.sso import SSOConfig
 from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from yaml import YAMLError
 
@@ -55,6 +56,7 @@ class ConfigBuilder:
         self._mcp_servers: list[MCPServer] | None = None
         self._observability: list[ObservabilityConfig] | None = None
         self._guardrails: Guardrails | None = None
+        self._sso: SSOConfig | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """Set the API port for the server.
@@ -147,6 +149,15 @@ class ConfigBuilder:
                 raise YAMLError(
                     f"Failed to parse yaml file for Observability: {e}"
                 ) from e
+            try:
+                sso_data = yaml_config.get("engine_config", {}).get("sso")
+                if sso_data:
+                    self._sso = SSOConfig.model_validate(sso_data)
+                else:
+                    self._sso = None
+            except Exception as e:
+                raise YAMLError(f"Failed to parse yaml file for SSO: {e}") from e
+
             # try:
             #     mcp_servers_list = yaml_config.get("engine_config", {}).get("mcp_servers") or yaml_config.get("engine_config", {}).get("mcpServers") # TODO to fix camelcase issues
             #     if mcp_servers_list:
@@ -258,6 +269,7 @@ class ConfigBuilder:
             guardrails=self._guardrails,
             observability=self._observability,
             mcp_servers=self._mcp_servers,
+            sso=self._sso,
         )
 
     def build_dict(self) -> dict[str, Any]:  # NOT USED
@@ -648,6 +660,7 @@ class ConfigBuilder:
         builder._guardrails = engine_config.guardrails
         builder._observability = engine_config.observability
         builder._mcp_servers = engine_config.mcp_servers
+        builder._sso = engine_config.sso
         return builder
 
     @classmethod
@@ -679,6 +692,7 @@ class ConfigBuilder:
         builder._guardrails = engine_config.guardrails
         builder._observability = engine_config.observability
         builder._mcp_servers = engine_config.mcp_servers
+        builder._sso = engine_config.sso
 
         return builder
 
