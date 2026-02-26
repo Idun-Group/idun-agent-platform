@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -39,10 +39,19 @@ const TABS = [
 export default function AgentDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState('overview');
     const [agent, setAgent] = useState<BackendAgent | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+    // Auto-open edit modal when ?edit=true is in the URL
+    useEffect(() => {
+        if (searchParams.get('edit') === 'true' && agent) {
+            setIsEditModalOpen(true);
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, agent]);
 
     const { isLoading: isAuthLoading } = useAuth();
 
