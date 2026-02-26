@@ -544,6 +544,172 @@ class TestConfigBuilderSSO:
 
 
 @pytest.mark.unit
+class TestConfigBuilderIntegrations:
+    """Test integrations configuration in ConfigBuilder."""
+
+    def test_build_includes_integrations_when_set(self, tmp_path: Path) -> None:
+        """build() includes integrations config in the EngineConfig."""
+        from idun_agent_schema.engine.integrations import (
+            IntegrationConfig,
+            IntegrationProvider,
+        )
+
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="Integration Agent", graph_definition=str(tmp_path / "agent.py:graph")
+        )
+        builder._integrations = [
+            IntegrationConfig(
+                provider=IntegrationProvider.WHATSAPP,
+                enabled=True,
+                config={
+                    "access_token": "tok",
+                    "phone_number_id": "123",
+                    "verify_token": "vt",
+                },
+            )
+        ]
+        engine_config = builder.build()
+        assert engine_config.integrations is not None
+        assert len(engine_config.integrations) == 1
+        assert engine_config.integrations[0].provider == IntegrationProvider.WHATSAPP
+
+    def test_build_integrations_none_by_default(self) -> None:
+        """build() sets integrations to None when not configured."""
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="No Integrations Agent", graph_definition="./agent.py:graph"
+        )
+        engine_config = builder.build()
+        assert engine_config.integrations is None
+
+    def test_from_dict_preserves_integrations(self, tmp_path: Path) -> None:
+        """from_dict copies integrations config into the builder."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Dict Integration Agent",
+                    "graph_definition": str(tmp_path / "agent.py:graph"),
+                },
+            },
+            "integrations": [
+                {
+                    "provider": "WHATSAPP",
+                    "enabled": True,
+                    "config": {
+                        "access_token": "tok",
+                        "phone_number_id": "123",
+                        "verify_token": "vt",
+                    },
+                }
+            ],
+        }
+        builder = ConfigBuilder.from_dict(config_dict)
+        assert builder._integrations is not None
+        assert len(builder._integrations) == 1
+
+        engine_config = builder.build()
+        assert engine_config.integrations is not None
+        assert engine_config.integrations[0].config.phone_number_id == "123"
+
+    def test_from_engine_config_preserves_integrations(self, tmp_path: Path) -> None:
+        """from_engine_config copies integrations config into the builder."""
+        from idun_agent_schema.engine.integrations import (
+            IntegrationConfig,
+            IntegrationProvider,
+        )
+
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="Integration Agent", graph_definition=str(tmp_path / "agent.py:graph")
+        )
+        builder._integrations = [
+            IntegrationConfig(
+                provider=IntegrationProvider.WHATSAPP,
+                enabled=True,
+                config={
+                    "access_token": "tok",
+                    "phone_number_id": "123",
+                    "verify_token": "vt",
+                },
+            )
+        ]
+        engine_config = builder.build()
+
+        new_builder = ConfigBuilder.from_engine_config(engine_config)
+        assert new_builder._integrations is not None
+        assert len(new_builder._integrations) == 1
+
+    @patch("requests.get")
+    def test_with_config_from_api_parses_integrations(self, mock_get: Mock) -> None:
+        """with_config_from_api parses integrations config from API response."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 8000}},
+                    "agent": {
+                        "type": "LANGGRAPH",
+                        "config": {
+                            "name": "API Integration Agent",
+                            "graph_definition": "./agent.py:graph",
+                        },
+                    },
+                    "integrations": [
+                        {
+                            "provider": "WHATSAPP",
+                            "enabled": True,
+                            "config": {
+                                "access_token": "tok",
+                                "phone_number_id": "456",
+                                "verify_token": "vt",
+                            },
+                        }
+                    ],
+                }
+            }
+        )
+        mock_get.return_value = mock_response
+
+        builder = ConfigBuilder().with_config_from_api(
+            agent_api_key="test-key", url="http://localhost:8000"
+        )
+
+        engine_config = builder.build()
+        assert engine_config.integrations is not None
+        assert len(engine_config.integrations) == 1
+        assert engine_config.integrations[0].config.phone_number_id == "456"
+
+    @patch("requests.get")
+    def test_with_config_from_api_without_integrations(self, mock_get: Mock) -> None:
+        """with_config_from_api sets integrations to None when not in response."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 8000}},
+                    "agent": {
+                        "type": "LANGGRAPH",
+                        "config": {
+                            "name": "No Integration API Agent",
+                            "graph_definition": "./agent.py:graph",
+                        },
+                    },
+                }
+            }
+        )
+        mock_get.return_value = mock_response
+
+        builder = ConfigBuilder().with_config_from_api(
+            agent_api_key="test-key", url="http://localhost:8000"
+        )
+
+        engine_config = builder.build()
+        assert engine_config.integrations is None
+
+
+@pytest.mark.unit
 class TestConfigBuilderGetAgentClass:
     """Test getting agent class by type."""
 

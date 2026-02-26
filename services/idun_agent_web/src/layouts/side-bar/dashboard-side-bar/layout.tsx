@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
 import { useState, useEffect, type ComponentType } from 'react';
-import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X } from 'lucide-react';
+import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
@@ -82,6 +82,13 @@ const SideBar = ({}: SideBarProps) => {
             key: 'guard',
             path: '/guardrails',
             onClick: () => navigate('/guardrails'),
+        },
+        {
+            icon: Plug,
+            label: t('sidebar.integrations', 'Integrations'),
+            key: 'integrations',
+            path: '/integrations',
+            onClick: () => navigate('/integrations'),
         },
         {
             icon: KeyRound,

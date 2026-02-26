@@ -30,8 +30,9 @@ idun_agent_engine/
 ├── server/             # FastAPI layer
 │   ├── routers/agent   # /agent/invoke, /agent/stream, /agent/copilotkit/stream, /agent/config
 │   ├── routers/base    # /, /health, /reload
+│   ├── auth            # OIDCValidator — JWT validation via OIDC JWKS, require_auth dependency
 │   ├── dependencies    # DI: get_agent, get_copilotkit_agent, get_mcp_registry
-│   └── lifespan        # Startup: agent init, guardrails parsing, CopilotKit setup, telemetry
+│   └── lifespan        # Startup: agent init, guardrails parsing, CopilotKit setup, SSO, telemetry
 ├── guardrails/         # Guardrails AI Hub integration
 │   ├── base            # BaseGuardrail ABC: validate(input) → bool
 │   └── guardrails_hub/ # Downloads + runs guards from guardrailsai hub. Blocks requests on violation.
@@ -41,6 +42,11 @@ idun_agent_engine/
 │   ├── phoenix/        # OpenTelemetry + OpenInference instrumentation
 │   ├── gcp_trace/      # Cloud Trace exporter + OpenInference instrumentation
 │   └── gcp_logging/    # Google Cloud Logging (hooks into python logging)
+├── integrations/       # Messaging/webhook provider integrations
+│   ├── base            # BaseIntegration ABC, setup_integrations() factory, IntegrationProvider dispatch
+│   ├── whatsapp/       # WhatsApp Cloud API: handler (webhook verify + receive), client (send_text_message)
+│   └── discord/        # Discord Interactions Endpoint: handler (Ed25519 verify + slash commands),
+│                       #   client (edit_interaction_response), verify (signature check), integration (app.state setup)
 ├── mcp/                # MCP tool management
 │   ├── registry        # MCPClientRegistry wrapping langchain-mcp-adapters MultiServerMCPClient
 │   └── helpers         # get_langchain_tools(), get_adk_tools() — convenience functions
@@ -123,6 +129,26 @@ mcp_servers:
     transport: "stdio"
     command: "docker"
     args: ["run", "-i", "--rm", "mcp/time"]
+
+sso:
+  enabled: true
+  issuer: "https://accounts.google.com"
+  client_id: "123456.apps.googleusercontent.com"
+  allowed_domains: ["company.com"]
+
+integrations:
+  - provider: "WHATSAPP"
+    enabled: true
+    config:
+      access_token: "EAA..."
+      phone_number_id: "123456"
+      verify_token: "my-secret"
+  - provider: "DISCORD"
+    enabled: true
+    config:
+      bot_token: "MTI..."
+      application_id: "123456789"
+      public_key: "abcdef..."
 ```
 
 **ADK:**
@@ -184,6 +210,8 @@ All adapters implement `BaseAgent` (generic ABC parameterized by config type):
 | `/agent/stream` | POST | Stream AG-UI events (custom implementation in agent adapter) |
 | `/agent/copilotkit/stream` | POST | Stream via CopilotKit AG-UI agent wrapper (used by the frontend) |
 | `/agent/config` | GET | Get current agent config |
+| `/integrations/whatsapp/webhook` | GET/POST | WhatsApp webhook (GET: Meta verify, POST: receive messages) |
+| `/integrations/discord/webhook` | POST | Discord Interactions Endpoint (Ed25519 verified, handles PING + slash commands) |
 
 ## Guardrails
 

@@ -84,6 +84,16 @@ async def configure_app(app: FastAPI, engine_config):
             print(f"⚠️ Warning: Failed to setup AGUI routes: {e}")
             # Continue even if AGUI setup fails
 
+    # Setup integrations (WhatsApp, etc.)
+    if engine_config.integrations:
+        from ..integrations import setup_integrations
+
+        app.state.integrations = await setup_integrations(
+            app, engine_config.integrations, agent_instance
+        )
+    else:
+        app.state.integrations = []
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -115,6 +125,14 @@ async def lifespan(app: FastAPI):
 
     # Clean up on shutdown
     print("🔄 Idun Agent Engine shutting down...")
+
+    # Shutdown integrations
+    for integration in getattr(app.state, "integrations", []):
+        try:
+            await integration.shutdown()
+        except Exception as e:
+            print(f"⚠️ Warning: Failed to shutdown integration: {e}")
+
     telemetry = getattr(app.state, "telemetry", None)
     if telemetry is not None:
         telemetry.capture("engine stopped")

@@ -139,7 +139,8 @@
         "observation": "Observación",
         "tools": "Herramientas",
         "users": "Usuarios",
-        "apps": "Aplicaciones"
+        "apps": "Aplicaciones",
+        "integrations": "Integraciones"
     },
     "signin": {
         "title": "Crear una cuenta",
@@ -938,6 +939,17 @@
         "comingSoon": "Próximamente",
         "underDevelopment": "Esta funcionalidad está en desarrollo",
         "back": "Volver"
+    },
+    "integrations": {
+        "title": "Integraciones",
+        "subtitle": "Conecte plataformas de mensajería externas a sus agentes",
+        "search": "Buscar integraciones...",
+        "add": "Añadir integración",
+        "addCard": "Añadir integración",
+        "loading": "Cargando integraciones…",
+        "active": "Integraciones activas",
+        "comingSoon": "Próximamente",
+        "whatsapp": "WhatsApp"
     },
     "theme": {
         "toggleToLight": "Cambiar a modo claro",

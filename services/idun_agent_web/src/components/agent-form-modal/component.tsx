@@ -1,4 +1,4 @@
-import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap, AlertTriangle, KeyRound } from 'lucide-react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap, AlertTriangle, KeyRound, Plug } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
@@ -13,6 +13,8 @@ import ApplicationModal from '../applications/application-modal/component';
 import type { BackendAgent } from '../../services/agents';
 import { fetchSSOs } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
+import { fetchIntegrations } from '../../services/integrations';
+import type { ManagedIntegration } from '../../services/integrations';
 
 const DISABLED_FRAMEWORKS = new Set(['CREWAI', 'CUSTOM']);
 
@@ -125,6 +127,10 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
     const [ssoConfigs, setSsoConfigs] = useState<ManagedSSO[]>([]);
     const [selectedSSOId, setSelectedSSOId] = useState<string>('');
 
+    // Integrations State
+    const [integrationConfigs, setIntegrationConfigs] = useState<ManagedIntegration[]>([]);
+    const [selectedIntegrationIds, setSelectedIntegrationIds] = useState<string[]>([]);
+
     // Application Modal State
     const [isAppModalOpen, setIsAppModalOpen] = useState(false);
     const [appToCreate, setAppToCreate] = useState<MarketplaceApp | undefined>(undefined);
@@ -148,6 +154,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             setGuardApps(apps.filter(a => a.category === 'Guardrails'));
         });
         fetchSSOs().then(setSsoConfigs).catch(err => console.error('Failed to load SSO configs', err));
+        fetchIntegrations().then(setIntegrationConfigs).catch(err => console.error('Failed to load integrations', err));
     };
 
     // Initialize form with existing data when editing
@@ -325,8 +332,19 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 const match = ssoConfigs.find(c => c.sso.issuer === sso.issuer && c.sso.clientId === sso.clientId);
                 if (match) setSelectedSSOId(match.id);
             }
+
+            // Integrations
+            const ints = (initialData.engine_config as any)?.integrations;
+            if (Array.isArray(ints) && integrationConfigs.length > 0) {
+                const ids: string[] = [];
+                ints.forEach((i: any) => {
+                    const match = integrationConfigs.find(c => c.integration.provider === i.provider);
+                    if (match) ids.push(match.id);
+                });
+                setSelectedIntegrationIds([...new Set(ids)]);
+            }
         }
-    }, [mode, initialData, isOpen, guardApps, memoryApps, observabilityApps, mcpApps, ssoConfigs]);
+    }, [mode, initialData, isOpen, guardApps, memoryApps, observabilityApps, mcpApps, ssoConfigs, integrationConfigs]);
 
     // Data Fetching
     useEffect(() => {
@@ -391,6 +409,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 setSelectedMCPIds([]);
                 setSelectedGuardIds([]);
                 setSelectedSSOId('');
+                setSelectedIntegrationIds([]);
             }
             setSubmitError(null);
         }
@@ -613,6 +632,11 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             const selectedSSO = selectedSSOId ? ssoConfigs.find(c => c.id === selectedSSOId) : null;
             const ssoConfig = selectedSSO ? selectedSSO.sso : null;
 
+            // 5. Handle Integrations
+            const integrationsConfig = selectedIntegrationIds
+                .map(id => integrationConfigs.find(c => c.id === id)?.integration)
+                .filter(Boolean);
+
             const payload = {
                 name: name.trim(),
                 version: version.trim() || '1.0.0',
@@ -623,7 +647,8 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                     mcp_servers: mcpConfigs.length > 0 ? mcpConfigs : null,
                     guardrails: guardrailsConfig,
                     observability: observabilityConfigs,
-                    sso: ssoConfig
+                    sso: ssoConfig,
+                    integrations: integrationsConfig.length > 0 ? integrationsConfig : null
                 }
             };
 
@@ -1023,6 +1048,38 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                                                         </SafetyFooter>
                                                     </SafetyCardContainer>
                                                 ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Integrations */}
+                                    <div>
+                                        <SectionTitle><SectionIndicator $color="green" /><Plug size={16} style={{ marginRight: '8px' }} />Integrations</SectionTitle>
+                                        {integrationConfigs.length === 0 ? (
+                                            <EmptyState>
+                                                <p>No integrations available. Create one from the Integrations page first.</p>
+                                            </EmptyState>
+                                        ) : (
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px' }}>
+                                                {integrationConfigs.map(config => {
+                                                    const selected = selectedIntegrationIds.includes(config.id);
+                                                    return (
+                                                        <SafetyCardContainer key={config.id} $enabled={selected} onClick={() => setSelectedIntegrationIds(prev => selected ? prev.filter(id => id !== config.id) : [...prev, config.id])}>
+                                                            <SafetyCardHeader>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                    <Plug size={16} color="#25d366" />
+                                                                    <SafetyTitle $enabled={selected}>{config.name}</SafetyTitle>
+                                                                </div>
+                                                                <SafetyCheckbox $checked={selected}>
+                                                                    {selected && <Check size={12} />}
+                                                                </SafetyCheckbox>
+                                                            </SafetyCardHeader>
+                                                            <SafetyFooter>
+                                                                <SafetyDesc>{config.integration.provider}</SafetyDesc>
+                                                            </SafetyFooter>
+                                                        </SafetyCardContainer>
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>

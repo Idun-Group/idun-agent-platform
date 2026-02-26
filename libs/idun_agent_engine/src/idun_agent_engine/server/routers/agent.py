@@ -212,8 +212,16 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
                     "query": input_data.query,
                     "session_id": input_data.session_id,
                 }
-                response = await agent.invoke(message)
-                return ChatResponse(session_id=input_data.session_id, response=response)
+                try:
+                    response = await agent.invoke(message)
+                    return ChatResponse(
+                        session_id=input_data.session_id, response=response
+                    )
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Make sure your input schema is {'query': 'your input', 'session_id': 'your-session-id'",
+                    ) from e
         except Exception as e:  # noqa: BLE001
             logger.error(f"Error invoking agent: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e)) from e
