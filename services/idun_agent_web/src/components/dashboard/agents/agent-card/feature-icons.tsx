@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Activity, Database, ShieldCheck, Wrench } from 'lucide-react';
+import { Activity, Database, ShieldCheck, Wrench, KeyRound } from 'lucide-react';
 import type { BackendAgent } from '../../../../services/agents';
 
 // ── Feature detection ────────────────────────────────────────────────────────
@@ -34,7 +34,11 @@ export function detectAgentFeatures(agent: BackendAgent) {
     const hasMcp =
         Array.isArray(engineConfig?.mcpServers) && engineConfig.mcpServers.length > 0;
 
-    return { hasObservability, hasMemory, hasGuardrails, hasMcp };
+    // SSO: sso config at engine_config.sso
+    const ssoConfig = (engineConfig as Record<string, unknown>)?.sso;
+    const hasSso = ssoConfig != null && (ssoConfig as Record<string, unknown>)?.enabled !== false;
+
+    return { hasObservability, hasMemory, hasGuardrails, hasMcp, hasSso };
 }
 
 // ── Feature config ───────────────────────────────────────────────────────────
@@ -76,6 +80,13 @@ const FEATURES: FeatureDef[] = [
         color: '#fbbf24',
         glowColor: 'rgba(251, 191, 36, 0.15)',
     },
+    {
+        key: 'sso',
+        label: 'SSO',
+        icon: KeyRound,
+        color: '#f472b6',
+        glowColor: 'rgba(244, 114, 182, 0.15)',
+    },
 ];
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -92,6 +103,7 @@ export const FeatureIcons: React.FC<FeatureIconsProps> = ({ agent }) => {
         memory: features.hasMemory,
         guardrails: features.hasGuardrails,
         mcp: features.hasMcp,
+        sso: features.hasSso,
     };
 
     return (

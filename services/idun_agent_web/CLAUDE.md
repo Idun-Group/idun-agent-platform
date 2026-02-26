@@ -60,7 +60,8 @@ services/idun_agent_web/
 │   │   └── use-toggle-theme.tsx # ToggleThemeModeProvider — dark/light/system theme
 │   ├── services/                # API service layer
 │   │   ├── agents.ts            # Agent CRUD (list, get, patch, delete)
-│   │   └── applications.ts     # Integration config CRUD (observability, memory, MCP, guardrails)
+│   │   ├── applications.ts     # Integration config CRUD (observability, memory, MCP, guardrails)
+│   │   └── sso.ts              # SSO/OIDC config CRUD
 │   ├── utils/
 │   │   ├── api.ts               # HTTP client (apiFetch, getJson, postJson, patchJson, deleteRequest)
 │   │   ├── auth.ts              # Auth API calls (getSession, loginBasic, logoutBasic, signupBasic)
@@ -98,6 +99,7 @@ services/idun_agent_web/
 | `/memory` | ApplicationPage | Protected | Memory/checkpoint configs |
 | `/mcp` | ApplicationPage | Protected | MCP server configs |
 | `/guardrails` | ApplicationPage | Protected | Guardrail configs |
+| `/sso` | SSOPage | Protected | SSO/OIDC configuration management |
 | `/observation` | ObservationPage | Protected | Observation/metrics view |
 
 Protected routes are wrapped with `<RequireAuth />` which redirects to `/login` if no session exists.
@@ -226,3 +228,18 @@ npm run generate:manager-types
 - Hooks/providers are in `src/hooks/use-{name}.tsx`
 - All API calls go through `src/utils/api.ts` — never use `fetch` directly
 - Use `useTranslation()` for all user-facing strings
+
+### Adding New Features / Config Types
+
+When adding a new feature or config type (like SSO, MCP, Guardrails, etc.), you **must** update all of these locations:
+
+1. **Dedicated page** — `src/pages/{feature}-page/page.tsx` (list view with CRUD)
+2. **API service** — `src/services/{feature}.ts` (CRUD functions)
+3. **Route** — `src/App.tsx` (register the route)
+4. **Sidebar** — `src/layouts/side-bar/dashboard-side-bar/layout.tsx` (add nav entry)
+5. **Agent creation form** — `src/pages/agent-form/page.tsx` (Step 3: load configs, add selection UI, include in `engine_config` payload)
+6. **Agent edit modal** — `src/components/agent-form-modal/component.tsx` (same as above + extract existing config in edit mode init effect)
+7. **Agent dashboard card badges** — `src/components/dashboard/agents/agent-card/feature-icons.tsx` (add detection logic + badge)
+8. **i18n** — `src/i18n/locales/*.json` (add translation keys)
+
+Missing any of these will result in the feature being partially integrated (e.g., config exists but can't be assigned to agents, or agents don't show the feature badge).

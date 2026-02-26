@@ -154,7 +154,8 @@
         "apps": "Apps",
         "observability": "Observability",
         "memory": "Memory",
-        "mcp": "MCP"
+        "mcp": "MCP",
+        "sso": "SSO"
     },
     "signin": {
         "title": "Create an account",
