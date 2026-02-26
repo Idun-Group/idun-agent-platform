@@ -159,3 +159,12 @@ export function restartAgent(baseUrl: string): Promise<unknown> {
     const url = baseUrl.endsWith('/') ? `${baseUrl}reload` : `${baseUrl}/reload`;
     return postJson(url, {});
 }
+
+interface ApiKeyResponse {
+    api_key: string;
+}
+
+export async function getAgentApiKey(agentId: string): Promise<string> {
+    const result = await getJson<ApiKeyResponse>(`/api/v1/agents/key?agent_id=${encodeURIComponent(agentId)}`);
+    return result.api_key;
+}

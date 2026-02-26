@@ -108,7 +108,7 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
 
 @router.post(
     "/",
-    response_model=ManagedAgentCreate,
+    response_model=ManagedAgentRead,
     status_code=status.HTTP_201_CREATED,
     summary="Create managed agent",
     description="Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
