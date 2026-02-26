@@ -16,39 +16,34 @@ const AccountInfo = () => {
         '';
     return (
         <AccountInfoContainer>
-            <AvatarWrapper>
-                {avatarUrl && !false ? (
-                    <ProfileImage
-                        src={avatarUrl}
-                        alt="Profile Photo"
-                        onError={(e) => {
-                            const target = e.currentTarget as HTMLImageElement;
-                            target.style.display = 'none';
-                        }}
-                    />
-                ) : (
-                    <UserAvatarFallback>
-                        <UserIcon size={24} color="#826F95" />
-                    </UserAvatarFallback>
-                )}
-            </AvatarWrapper>
-
-            <ContentRow>
-                <TextCol>
-                    <h3 title={session?.principal?.email ?? 'User'}>
-                        {session?.principal?.email ?? 'User'}
-                    </h3>
-                    <h4>{t('account.info.sub-title')}</h4>
-                </TextCol>
-                <Button
-                    $variants="transparent"
-                    onClick={() => {
-                        void logout().then(() => navigate('/login'));
+            {avatarUrl ? (
+                <ProfileImage
+                    src={avatarUrl}
+                    alt="Profile Photo"
+                    onError={(e) => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        target.style.display = 'none';
                     }}
-                >
-                    <LogOut />
-                </Button>
-            </ContentRow>
+                />
+            ) : (
+                <UserAvatarFallback>
+                    <UserIcon size={17} color="#826F95" />
+                </UserAvatarFallback>
+            )}
+
+            <TextCol>
+                <h3 title={session?.principal?.email ?? 'User'}>
+                    {session?.principal?.email ?? 'User'}
+                </h3>
+            </TextCol>
+            <Button
+                $variants="transparent"
+                onClick={() => {
+                    void logout().then(() => navigate('/login'));
+                }}
+            >
+                <LogOut size={16} />
+            </Button>
         </AccountInfoContainer>
     );
 };
@@ -56,78 +51,46 @@ export default AccountInfo;
 
 const AccountInfoContainer = styled.div`
     display: flex;
-    flex-direction: column;
-    padding: 12px 0;
-    gap: 12px;
-
-    h4 {
-        color: grey;
-    }
-`;
-
-const AvatarWrapper = styled.div`
-    display: flex;
-    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 0;
 `;
 
 const ProfileImage = styled.img`
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    margin-right: 16px;
+    width: 17px;
+    height: 17px;
     object-fit: cover;
     display: block;
-    aspect-ratio: 1 / 1;
-    flex: 0 0 50px;
-    overflow: hidden;
+    flex-shrink: 0;
+    border-radius: 50%;
 `;
 
 const UserAvatarFallback = styled.div`
-    width: 50px;
-    height: 50px;
+    width: 17px;
+    height: 17px;
     border-radius: 50%;
     background: #121122;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 16px;
-    flex: 0 0 50px;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-`;
-
-const ContentRow = styled.div`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    margin: 0 auto;
+    flex-shrink: 0;
 `;
 
 const TextCol = styled.div`
     display: flex;
     flex-direction: column;
     min-width: 0;
-    align-items: center;
-    text-align: center;
+    flex: 1;
 
     h3 {
         margin: 0;
-        font-size: 16px;
+        font-size: 13px;
+        font-weight: 500;
         color: #ffffff;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 180px;
-    }
-
-    h4 {
-        margin: 4px 0 0;
-        font-size: 14px;
-        color: grey;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 180px;
     }
 `;
