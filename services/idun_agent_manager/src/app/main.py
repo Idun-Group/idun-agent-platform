@@ -119,6 +119,7 @@ def setup_routes(app: FastAPI) -> None:
     from app.api.v1.routers.mcp_servers import router as mcp_servers_router
     from app.api.v1.routers.memory import router as memory_router
     from app.api.v1.routers.observability import router as observability_router
+    from app.api.v1.routers.sso import router as sso_router
     from app.api.v1.routers.workspaces import router as workspaces_router
 
     # API v1 routes
@@ -166,6 +167,11 @@ def setup_routes(app: FastAPI) -> None:
         workspaces_router,
         prefix="/api/v1/workspaces",
         tags=["Workspaces"],
+    )
+    app.include_router(
+        sso_router,
+        prefix="/api/v1/sso",
+        tags=["SSO"],
     )
 
 
