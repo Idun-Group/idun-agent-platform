@@ -3,11 +3,13 @@ import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
 import { useState, useEffect, type ComponentType } from 'react';
-import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X } from 'lucide-react';
+import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Bug } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
 const GITHUB_DISMISSED_KEY = 'idun-github-card-dismissed';
+const GITHUB_NEW_BUG_ISSUE_URL =
+    'https://github.com/idun-corp/idun-agent-platform/issues/new?template=bug_report.yml';
 
 type SideBarProps = {
     // config your component props here
@@ -173,6 +175,15 @@ const SideBar = ({}: SideBarProps) => {
                 >
                     <LifeBuoy size={17} color="#826F95" />
                     {!collapsed && <MenuLabel>Support</MenuLabel>}
+                </BottomLink>
+                <BottomLink
+                    $collapsed={collapsed}
+                    href={GITHUB_NEW_BUG_ISSUE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <Bug size={17} color="#826F95" />
+                    {!collapsed && <MenuLabel>Report bug</MenuLabel>}
                 </BottomLink>
                 <UserRow $collapsed={collapsed}>
                     {collapsed ? (

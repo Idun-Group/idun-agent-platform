@@ -96,6 +96,7 @@ const Header = () => {
                 )}
             </SideContainer>
 
+            {/* Select your environment – temporarily disabled
             {location.pathname !== '/agents/create' && (
                 <SideContainer>
                     <EnvSelect
@@ -138,6 +139,7 @@ const Header = () => {
                     </EnvSelect>
                 </SideContainer>
             )}
+            */}
         </HeaderContainer>
     );
 };
