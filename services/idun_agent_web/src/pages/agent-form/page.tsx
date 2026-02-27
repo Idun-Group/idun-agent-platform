@@ -1,5 +1,6 @@
-import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap, KeyRound, Plug } from 'lucide-react';
+import { Check, Box, Settings, Rocket, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap, KeyRound, Plug } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
+import { useCallback } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
@@ -12,7 +13,6 @@ import { fetchSSOs } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
 import { fetchIntegrations } from '../../services/integrations';
 import type { ManagedIntegration } from '../../services/integrations';
-import { Box, Settings, Rocket } from 'lucide-react';
 import { toast } from 'react-toastify';
 import WizardStepper from './components/wizard-stepper';
 import BasicsStep from './steps/basics-step';
