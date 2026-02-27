@@ -36,7 +36,6 @@ from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerMode
 
 router = APIRouter()
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Constants

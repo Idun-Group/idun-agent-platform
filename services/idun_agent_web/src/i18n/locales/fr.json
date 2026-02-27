@@ -155,7 +155,8 @@
         "observability": "Observabilité",
         "memory": "Mémoire",
         "mcp": "MCP",
-        "sso": "SSO"
+        "sso": "SSO",
+        "integrations": "Intégrations"
     },
     "signin": {
         "title": "Créer un compte",
@@ -987,6 +988,17 @@
         "comingSoon": "Bientôt disponible",
         "underDevelopment": "Cette fonctionnalité est en cours de développement",
         "back": "Retour"
+    },
+    "integrations": {
+        "title": "Intégrations",
+        "subtitle": "Connectez des plateformes de messagerie externes à vos agents",
+        "search": "Rechercher des intégrations...",
+        "add": "Ajouter une intégration",
+        "addCard": "Ajouter une intégration",
+        "loading": "Chargement des intégrations…",
+        "active": "Intégrations actives",
+        "comingSoon": "Bientôt disponible",
+        "whatsapp": "WhatsApp"
     },
     "theme": {
         "toggleToLight": "Passer en mode clair",

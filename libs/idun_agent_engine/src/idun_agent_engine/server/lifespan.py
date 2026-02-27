@@ -4,6 +4,7 @@ Initializes the agent at startup and cleans up resources on shutdown.
 """
 
 import inspect
+import logging
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 
@@ -13,6 +14,8 @@ from idun_agent_schema.engine.guardrails import Guardrails
 from ..core.config_builder import ConfigBuilder
 from ..guardrails.base import BaseGuardrail
 from ..telemetry import get_telemetry, sanitize_telemetry_config
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
@@ -43,7 +46,7 @@ async def configure_app(app: FastAPI, engine_config):
     guardrails_obj = engine_config.guardrails
     guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
 
-    print("guardrails: ", guardrails)
+    logger.debug(f"Guardrails: {guardrails}")
 
     # Use ConfigBuilder's centralized agent initialization, passing the registry
     try:
@@ -66,12 +69,12 @@ async def configure_app(app: FastAPI, engine_config):
         from ..server.auth import OIDCValidator
 
         app.state.sso_validator = OIDCValidator(sso_config)
-        print(f"🔒 SSO enabled — issuer: {sso_config.issuer}")
+        logger.info(f"🔒 SSO enabled — issuer: {sso_config.issuer}")
     else:
         app.state.sso_validator = None
 
     agent_name = getattr(agent_instance, "name", "Unknown")
-    print(f"✅ Agent '{agent_name}' initialized and ready to serve!")
+    logger.info(f"✅ Agent '{agent_name}' initialized and ready to serve!")
 
     # Setup AGUI routes if the agent is a LangGraph agent
     from ..agent.adk.adk import AdkAgent
@@ -81,15 +84,25 @@ async def configure_app(app: FastAPI, engine_config):
         try:
             app.state.copilotkit_agent = agent_instance.copilotkit_agent_instance
         except Exception as e:
-            print(f"⚠️ Warning: Failed to setup AGUI routes: {e}")
+            logger.warning(f"⚠️ Failed to setup AGUI routes: {e}")
             # Continue even if AGUI setup fails
+
+    # Setup integrations (WhatsApp, etc.)
+    if engine_config.integrations:
+        from ..integrations import setup_integrations
+
+        app.state.integrations = await setup_integrations(
+            app, engine_config.integrations, agent_instance
+        )
+    else:
+        app.state.integrations = []
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context to initialize and teardown the agent."""
     # Load config and initialize agent on startup
-    print("Server starting up...")
+    logger.info("🚀 Server starting up...")
     if not app.state.engine_config:
         raise ValueError("Error: No Engine configuration found.")
 
@@ -108,17 +121,25 @@ async def lifespan(app: FastAPI):
             },
         )
     except Exception as e:
-        print(f"⚠️ Warning: Failed to start telemetry: {e}")
+        logger.warning(f"⚠️ Failed to start telemetry: {e}")
         app.state.telemetry = None
 
     yield
 
     # Clean up on shutdown
-    print("🔄 Idun Agent Engine shutting down...")
+    logger.info("🔄 Idun Agent Engine shutting down...")
+
+    # Shutdown integrations
+    for integration in getattr(app.state, "integrations", []):
+        try:
+            await integration.shutdown()
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to shutdown integration: {e}")
+
     telemetry = getattr(app.state, "telemetry", None)
     if telemetry is not None:
         telemetry.capture("engine stopped")
     await cleanup_agent(app)
     if telemetry is not None:
         telemetry.shutdown()
-    print("✅ Agent resources cleaned up successfully.")
+    logger.info("✅ Agent resources cleaned up successfully.")

@@ -1,6 +1,7 @@
 """Agent routes for invoking and streaming agent responses."""
 
 import logging
+import time
 from typing import Annotated
 
 from ag_ui.core.types import RunAgentInput
@@ -16,12 +17,6 @@ from pydantic import BaseModel
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.auth import get_verified_user
 from idun_agent_engine.server.dependencies import get_agent, get_copilotkit_agent
-
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(message)s",
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 
 logger = logging.getLogger(__name__)
 agent_router = APIRouter()
@@ -40,15 +35,14 @@ def _run_guardrails(
 @agent_router.get("/config")
 async def get_config(request: Request):
     """Get the current agent configuration."""
-    logger.debug("Fetching agent config..")
     if not hasattr(request.app.state, "engine_config"):
-        logger.error("Error retrieving the engine config from the api. ")
+        logger.error("Engine config not available on app state")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not available"
         )
 
     config = request.app.state.engine_config.agent
-    logger.info(f"Fetched config for agent: {request.app.state.engine_config}")
+    logger.debug(f"Returning config for agent '{config.config.name}' (type={config.type})")
     return {"config": config}
 
 
@@ -59,6 +53,8 @@ async def stream(
     _user: Annotated[dict | None, Depends(get_verified_user)],
 ):
     """Process a message with the agent, streaming ag-ui events."""
+    query_preview = request.query[:120] + ("..." if len(request.query) > 120 else "")
+    logger.info(f"Stream request — session_id={request.session_id}, query={query_preview}")
     try:
 
         async def event_stream():
@@ -68,6 +64,10 @@ async def stream(
 
         return StreamingResponse(event_stream(), media_type="text/event-stream")
     except Exception as e:  # noqa: BLE001
+        logger.error(
+            f"Stream failed — session_id={request.session_id}, error={e}",
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -81,8 +81,20 @@ async def copilotkit_stream(
     _user: Annotated[dict | None, Depends(get_verified_user)],
 ):
     """Process a message with the agent, streaming ag-ui events."""
+    last_msg = input_data.messages[-1] if input_data.messages else None
+    last_content = str(last_msg.content)[:120] if last_msg else "<empty>"
+    logger.info(
+        f"CopilotKit stream — session_id={input_data.thread_id}, "
+        f"message={last_content}{'...' if last_msg and len(str(last_msg.content)) > 120 else ''}"
+    )
+    logger.debug(
+        f"CopilotKit details — agent={type(copilotkit_agent).__name__}, "
+        f"thread_id={input_data.thread_id}, messages_count={len(input_data.messages)}"
+    )
+
     guardrails = getattr(request.app.state, "guardrails", [])
     if guardrails:
+        logger.debug(f"Running {len(guardrails)} input guardrails")
         _run_guardrails(
             guardrails, message=input_data.messages[-1].content, position="input"
         )
@@ -203,19 +215,36 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
 
         try:
             if is_custom:
+                start = time.monotonic()
                 response = await agent.invoke(input_data)
+                logger.info(f"Invoke completed in {time.monotonic() - start:.2f}s")
                 if isinstance(response, dict):
                     return response
                 return {"result": response}
             else:
+                query = input_data.query[:120]
+                logger.info(f"Invoke session={input_data.session_id} query={query}")
                 message = {
                     "query": input_data.query,
                     "session_id": input_data.session_id,
                 }
-                response = await agent.invoke(message)
-                return ChatResponse(session_id=input_data.session_id, response=response)
+                try:
+                    start = time.monotonic()
+                    response = await agent.invoke(message)
+                    logger.info(f"Invoke session={input_data.session_id} completed in {time.monotonic() - start:.2f}s response={str(response)[:200]}")
+                    return ChatResponse(
+                        session_id=input_data.session_id, response=response
+                    )
+                except Exception as e:
+                    logger.error(f"Invoke session={input_data.session_id} failed: {e}", exc_info=True)
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Make sure your input schema is {'query': 'your input', 'session_id': 'your-session-id'",
+                    ) from e
+        except HTTPException:
+            raise
         except Exception as e:  # noqa: BLE001
-            logger.error(f"Error invoking agent: {e}", exc_info=True)
+            logger.error(f"Invoke failed: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e)) from e
 
     app.add_api_route(

@@ -34,7 +34,9 @@ EngineConfig                    # Top-level config (engine/engine.py)
 │   └── config: <framework-specific config>
 ├── observability: list[ObservabilityConfig]  # (engine/observability_v2.py)
 ├── guardrails: GuardrailsV2    # (engine/guardrails_v2.py)
-└── mcp_servers: list[MCPServer]  # (engine/mcp_server.py)
+├── mcp_servers: list[MCPServer]  # (engine/mcp_server.py)
+├── sso: SSOConfig | None      # (engine/sso.py) — OIDC JWT validation on protected routes
+└── integrations: list[IntegrationConfig] | None  # (engine/integrations/) — WhatsApp, Discord
 ```
 
 ### Agent Framework Configs
@@ -95,6 +97,22 @@ Two versions exist:
 
 Each guard has its own typed config (e.g. `BanListConfig`, `DetectPIIConfig`, `ToxicLanguageConfig`), including `api_key`, `guard_url`, `reject_message`, and guard-specific params.
 
+### Integrations (`engine/integrations/`)
+
+Provider-specific integration configs for messaging/webhook channels.
+
+**`base.py`**: `IntegrationProvider` enum (`WHATSAPP`, `DISCORD`), `IntegrationConfig` model with `provider`, `enabled`, and `config` (union of provider configs, coerced via `_coerce_config_type` model validator).
+
+**`whatsapp.py`**: `WhatsAppIntegrationConfig` — `access_token`, `phone_number_id`, `verify_token`, `api_version` (default `"v21.0"`).
+
+**`discord.py`**: `DiscordIntegrationConfig` — `bot_token`, `application_id`, `public_key` (Ed25519 hex), optional `guild_id`.
+
+**`discord_webhook.py`**: Pydantic models for Discord Interactions Endpoint payloads — `InteractionType` (IntEnum: PING=1, APPLICATION_COMMAND=2), `InteractionResponseType` (IntEnum: PONG=1, DEFERRED=5), `DiscordInteraction` (with `resolve_user_id()` and `extract_command_text()` methods). Note: `DiscordInteraction.type` is `int` (not enum) to accept unknown interaction types from Discord.
+
+### SSO
+
+`SSOConfig` (`engine/sso.py`): OIDC Single Sign-On configuration for engine route protection. When enabled, the engine validates JWT tokens on protected routes (`/agent/invoke`, `/agent/stream`, `/agent/copilotkit/stream`) against the OIDC provider's JWKS endpoint. Fields: `enabled`, `issuer`, `client_id`, `audience` (optional, defaults to `client_id`), `allowed_domains`, `allowed_emails`.
+
 ### MCP Server
 
 `MCPServer` (`mcp_server.py`): Full MCP server connection config.
@@ -125,6 +143,8 @@ CRUD models for resources managed via the manager API. Each follows the pattern:
 | **MCP Server** | `managed_mcp_server.py` | `name`, `mcp_server` (`MCPServer`) |
 | **Memory** | `managed_memory.py` | `name`, `agent_framework`, `memory` (`CheckpointConfig \| SessionServiceConfig`) |
 | **Observability** | `managed_observability.py` | `name`, `observability` (`ObservabilityConfig` V2) |
+| **SSO** | `managed_sso.py` | `name`, `sso` (`SSOConfig`) |
+| **Integration** | `managed_integration.py` | `name`, `integration` (`IntegrationConfig`) |
 | **API Key** | `api.py` | `api_key` (str) |
 
 **`AgentStatus`** enum: `DRAFT`, `ACTIVE`, `INACTIVE`, `DEPRECATED`, `ERROR`

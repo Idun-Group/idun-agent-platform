@@ -4,6 +4,12 @@ from .agent import AgentConfig, BaseAgentConfig  # noqa: F401
 from .agent_framework import AgentFramework  # noqa: F401
 from .api import ChatRequest, ChatResponse  # noqa: F401
 from .engine import EngineConfig  # noqa: F401
+from .integrations import (  # noqa: F401
+    DiscordIntegrationConfig,
+    IntegrationConfig,
+    IntegrationProvider,
+    WhatsAppIntegrationConfig,
+)
 from .langgraph import (  # noqa: F401
     CheckpointConfig,
     LangGraphAgentConfig,

@@ -1,13 +1,13 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import styled, { keyframes, css } from 'styled-components';
-import { 
-    Database, 
-    HardDrive, 
-    Search, 
-    Plus, 
-    Layers, 
-    Users, 
-    RefreshCw, 
+import {
+    Database,
+    HardDrive,
+    Search,
+    Plus,
+    Layers,
+    Users,
+    RefreshCw,
     MoreHorizontal,
     Cpu
 } from 'lucide-react';
@@ -51,9 +51,9 @@ const MemoryPage = () => {
           'LANGGRAPH': [],
           'ADK': []
       };
-      
-      const filtered = memories.filter(m => 
-          m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+
+      const filtered = memories.filter(m =>
+          m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           m.type.toLowerCase().includes(searchTerm.toLowerCase())
       );
 
@@ -112,9 +112,9 @@ const MemoryPage = () => {
           <HeaderActions>
              <SearchWrapper>
                 <Search className="icon" size={16} />
-                <SearchInput 
-                    type="text" 
-                    placeholder="Search stores..." 
+                <SearchInput
+                    type="text"
+                    placeholder="Search stores..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -134,7 +134,7 @@ const MemoryPage = () => {
                {Object.entries(groupedMemories).map(([framework, groupItems]) => {
                    // Only skip empty groups if there's a search term, otherwise show all frameworks
                    if (searchTerm && groupItems.length === 0) return null;
-                   
+
                    const frameworkName = framework === 'LANGGRAPH' ? 'LangGraph' : framework;
 
                    return (
@@ -173,7 +173,7 @@ const MemoryPage = () => {
                                                <MoreHorizontal size={16} />
                                            </MoreButton>
                                        </CardHeader>
-                                       
+
                                        {/* Description - Use config as description placeholder if unavailable */}
                                        <Description>
                                            {/* mem.description is not in ApplicationConfig, show something else or generic */}
@@ -187,7 +187,7 @@ const MemoryPage = () => {
                                                     <Users size={10} style={{ marginRight: '4px' }} /> Connected Agents
                                                 </StatLabel>
                                                 {/* Mock connected agents count as we don't have it in ApplicationConfig yet */}
-                                                <StatValue>0</StatValue> 
+                                                <StatValue>0</StatValue>
                                             </StatBox>
                                        </StatsGrid>
 
@@ -203,7 +203,7 @@ const MemoryPage = () => {
                                        </CardFooter>
                                    </Card>
                                ))}
-                               
+
                                {/* Add New Card for Framework */}
                                <AddCard onClick={() => openCreateModal(framework)}>
                                     <AddIconWrapper>
@@ -276,7 +276,7 @@ const HeaderActions = styled.div`
 
 const SearchWrapper = styled.div`
     position: relative;
-    
+
     .icon {
         position: absolute;
         left: 0.75rem;
@@ -368,7 +368,7 @@ const Grid = styled.div`
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.5rem;
-    
+
     @media (min-width: 1024px) {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -459,7 +459,7 @@ const MoreButton = styled.button`
     border: none;
     cursor: pointer;
     padding: 0.25rem;
-    
+
     &:hover {
         color: white;
     }
@@ -584,7 +584,7 @@ const AddCard = styled.div`
     &:hover {
         border-color: rgba(255, 255, 255, 0.2);
         color: white;
-        
+
         div { /* Icon wrapper */
             background-color: rgba(139, 92, 246, 0.1);
             color: #8c52ff;
@@ -615,11 +615,11 @@ const LoaderContainer = styled.div`
     justify-content: center;
     align-items: center;
     flex: 1;
-    
+
     .animate-spin {
         animation: spin 1s linear infinite;
     }
-    
+
     @keyframes spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
