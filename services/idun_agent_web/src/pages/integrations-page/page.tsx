@@ -18,7 +18,7 @@ interface ProviderMeta {
 const PROVIDERS: Record<string, ProviderMeta> = {
     WHATSAPP: { label: 'WhatsApp', color: '#25D366' },
     DISCORD: { label: 'Discord', color: '#5865F2' },
-    SLACK: { label: 'Slack', color: '#E01E5A', comingSoon: true },
+    SLACK: { label: 'Slack', color: '#E01E5A' },
     TEAMS: { label: 'Microsoft Teams', color: '#5059C9', comingSoon: true },
     TELEGRAM: { label: 'Telegram', color: '#26A5E4', comingSoon: true },
     LINE: { label: 'LINE', color: '#06C755', comingSoon: true },
@@ -561,6 +561,22 @@ const IntegrationsPage: React.FC = () => {
                                                     <ConfigRow>
                                                         <ConfigKey>Guild ID</ConfigKey>
                                                         <ConfigValue>{config.integration.config.guild_id ?? 'All servers'}</ConfigValue>
+                                                    </ConfigRow>
+                                                </>
+                                            )}
+                                            {provider === 'SLACK' && 'signing_secret' in config.integration.config && (
+                                                <>
+                                                    <ConfigRow>
+                                                        <ConfigKey>Bot Token</ConfigKey>
+                                                        <ConfigValue title={config.integration.config.bot_token}>
+                                                            {maskToken(config.integration.config.bot_token)}
+                                                        </ConfigValue>
+                                                    </ConfigRow>
+                                                    <ConfigRow>
+                                                        <ConfigKey>Signing Secret</ConfigKey>
+                                                        <ConfigValue title={config.integration.config.signing_secret}>
+                                                            {maskToken(config.integration.config.signing_secret)}
+                                                        </ConfigValue>
                                                     </ConfigRow>
                                                 </>
                                             )}

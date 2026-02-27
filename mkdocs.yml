@@ -132,6 +132,7 @@ nav:
   - Integrations:
       - Discord: integrations/discord.md
       - WhatsApp: integrations/whatsapp.md
+      - Slack: integrations/slack.md
   - SSO:
       - Overview: sso-rbac/overview.md
   - Deployment:
