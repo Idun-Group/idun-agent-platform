@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes, css } from 'styled-components';
-import { 
-    X, 
-    Database, 
-    Layers, 
-    Search, 
-    Globe, 
+import {
+    X,
+    Database,
+    Layers,
+    Search,
+    Globe,
     Cpu,
     ArrowRight,
     Loader2
@@ -34,18 +34,18 @@ interface CreateMemoryModalProps {
 }
 
 const FRAMEWORKS_LIST = [
-    { 
-        id: 'LANGGRAPH', 
-        name: 'LangGraph', 
-        icon: Layers, 
-        color: 'indigo', 
+    {
+        id: 'LANGGRAPH',
+        name: 'LangGraph',
+        icon: Layers,
+        color: 'indigo',
         description: 'Graph-based agent orchestration framework.'
     },
-    { 
-        id: 'ADK', 
-        name: 'ADK', 
-        icon: Cpu, 
-        color: 'blue', 
+    {
+        id: 'ADK',
+        name: 'ADK',
+        icon: Cpu,
+        color: 'blue',
         description: 'Agent Development Kit for enterprise solutions.'
     }
     // HayStack is not currently supported in types
@@ -67,7 +67,7 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
   const [loadingText, setLoadingText] = useState('Initializing...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const [formData, setFormData] = useState<MemoryFormData>({
       name: '',
       provider: '', // Will be set based on framework
@@ -132,11 +132,11 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage(null);
-    
+
     // Simulate high-tech loading sequence
     let currentProgress = 0;
     setLoadingText('Provisioning storage container...');
-    
+
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     intervalRef.current = setInterval(() => {
@@ -187,7 +187,7 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
         if (intervalRef.current) clearInterval(intervalRef.current);
         setIsSubmitting(false);
         setProgress(0);
-        
+
         let msg = error.message || 'An unknown error occurred';
         try {
             const errObj = JSON.parse(msg);
@@ -220,7 +220,7 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
   return (
     <Overlay onClick={onClose}>
       <ModalContainer onClick={e => e.stopPropagation()}>
-        
+
         {/* Loading Overlay */}
         {isSubmitting && (
             <LoadingOverlay>
@@ -285,7 +285,7 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
             <FormSection>
                 <FormBackground />
                 <Form onSubmit={handleSubmit}>
-                    
+
                     {/* Selected Framework Banner */}
                     <FrameworkBanner color={currentFramework?.color}>
                         <BannerIcon color={currentFramework?.color}>
@@ -300,8 +300,8 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
                     <Grid2Cols>
                         <div>
                             <Label>Store Name</Label>
-                            <Input 
-                                type="text" 
+                            <Input
+                                type="text"
                                 required
                                 value={formData.name}
                                 onChange={e => setFormData({...formData, name: e.target.value})}
@@ -313,7 +313,7 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
                             <Label>Database Provider</Label>
                             <SelectWrapper>
                                 <Database className="icon" size={16} />
-                                <Select 
+                                <Select
                                     value={formData.provider}
                                     onChange={e => setFormData({...formData, provider: e.target.value})}
                                 >
@@ -327,7 +327,7 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
 
                     <div>
                         <Label>Description (Optional)</Label>
-                        <TextArea 
+                        <TextArea
                             value={formData.description}
                             onChange={e => setFormData({...formData, description: e.target.value})}
                             placeholder="Briefly describe the contents of this store..."
@@ -338,14 +338,14 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
                     <SectionDivider>
                         <span className="marker"></span> Connection Details
                     </SectionDivider>
-                        
+
                     {(formData.provider === 'PostgreSQL' || formData.provider === 'SQLite' || formData.provider === 'AdkDatabase') && (
                         <div>
                             <Label>Connection URL / Host</Label>
                             <InputWrapper>
                                 <Globe className="icon" size={16} />
-                                <Input 
-                                    type="text" 
+                                <Input
+                                    type="text"
                                     required
                                     value={formData.connectionUrl}
                                     onChange={e => setFormData({...formData, connectionUrl: e.target.value})}
@@ -360,8 +360,8 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
                         <>
                              <div>
                                 <Label>Project ID</Label>
-                                <Input 
-                                    type="text" 
+                                <Input
+                                    type="text"
                                     required
                                     value={formData.projectId}
                                     onChange={e => setFormData({...formData, projectId: e.target.value})}
@@ -370,8 +370,8 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
                              <Grid2Cols>
                                 <div>
                                     <Label>Location</Label>
-                                    <Input 
-                                        type="text" 
+                                    <Input
+                                        type="text"
                                         required
                                         value={formData.location}
                                         onChange={e => setFormData({...formData, location: e.target.value})}
@@ -380,8 +380,8 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
                                 </div>
                                 <div>
                                     <Label>Reasoning Engine App Name</Label>
-                                    <Input 
-                                        type="text" 
+                                    <Input
+                                        type="text"
                                         required
                                         value={formData.reasoningEngineAppName}
                                         onChange={e => setFormData({...formData, reasoningEngineAppName: e.target.value})}
@@ -398,13 +398,13 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
                     <Footer>
                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, alignItems: 'flex-end' }}>
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <CancelButton 
+                                <CancelButton
                                     type="button"
                                     onClick={onClose}
                                 >
                                     Cancel
                                 </CancelButton>
-                                <SubmitButton 
+                                <SubmitButton
                                     type="submit"
                                     disabled={!isValid()}
                                 >
@@ -491,7 +491,7 @@ const ContentWrapper = styled.div`
     flex-direction: column;
     flex: 1;
     overflow: hidden;
-    
+
     @media (min-width: 768px) {
         flex-direction: row;
     }
@@ -503,7 +503,7 @@ const Sidebar = styled.div`
     border-right: 1px solid rgba(255, 255, 255, 0.05);
     padding: 1rem;
     overflow-y: auto;
-    
+
     @media (min-width: 768px) {
         width: 33.333333%;
     }
@@ -651,7 +651,7 @@ const Grid2Cols = styled.div`
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.5rem;
-    
+
     @media (min-width: 768px) {
         grid-template-columns: 1fr 1fr;
     }
@@ -693,7 +693,7 @@ const Input = styled.input`
 
 const SelectWrapper = styled.div`
     position: relative;
-    
+
     .icon {
         position: absolute;
         left: 0.75rem;
@@ -714,7 +714,7 @@ const Select = styled.select`
     outline: none;
     appearance: none;
     cursor: pointer;
-    
+
     &:focus {
         border-color: #8c52ff;
     }
@@ -730,7 +730,7 @@ const TextArea = styled.textarea`
     color: white;
     outline: none;
     resize: none;
-    
+
     &:focus {
         border-color: #8c52ff;
     }
@@ -757,7 +757,7 @@ const SectionDivider = styled.h4`
 
 const InputWrapper = styled.div`
     position: relative;
-    
+
     .icon {
         position: absolute;
         left: 0.75rem;

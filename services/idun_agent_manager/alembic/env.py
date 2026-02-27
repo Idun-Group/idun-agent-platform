@@ -17,6 +17,7 @@ from app.infrastructure.db.models.user import UserModel  # noqa: F401
 from app.infrastructure.db.models.workspace import WorkspaceModel  # noqa: F401
 from app.infrastructure.db.models.membership import MembershipModel  # noqa: F401
 from app.infrastructure.db.models.managed_sso import ManagedSSOModel  # noqa: F401
+from app.infrastructure.db.models.managed_integration import ManagedIntegrationModel  # noqa: F401
 
 # Initialize application logging for Alembic
 from app.core.logging import setup_logging

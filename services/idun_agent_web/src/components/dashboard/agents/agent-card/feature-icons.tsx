@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Activity, Database, ShieldCheck, Wrench, KeyRound } from 'lucide-react';
+import { Activity, Database, ShieldCheck, Wrench, KeyRound, Plug } from 'lucide-react';
 import type { BackendAgent } from '../../../../services/agents';
 
 // ── Feature detection ────────────────────────────────────────────────────────
@@ -38,7 +38,11 @@ export function detectAgentFeatures(agent: BackendAgent) {
     const ssoConfig = (engineConfig as Record<string, unknown>)?.sso;
     const hasSso = ssoConfig != null && (ssoConfig as Record<string, unknown>)?.enabled !== false;
 
-    return { hasObservability, hasMemory, hasGuardrails, hasMcp, hasSso };
+    // Integrations: array at engine_config.integrations
+    const integrationsConfig = (engineConfig as Record<string, unknown>)?.integrations;
+    const hasIntegrations = Array.isArray(integrationsConfig) && integrationsConfig.length > 0;
+
+    return { hasObservability, hasMemory, hasGuardrails, hasMcp, hasSso, hasIntegrations };
 }
 
 // ── Feature config ───────────────────────────────────────────────────────────
@@ -87,6 +91,13 @@ const FEATURES: FeatureDef[] = [
         color: '#f472b6',
         glowColor: 'rgba(244, 114, 182, 0.15)',
     },
+    {
+        key: 'integrations',
+        label: 'Int',
+        icon: Plug,
+        color: '#25d366',
+        glowColor: 'rgba(37, 211, 102, 0.15)',
+    },
 ];
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -104,6 +115,7 @@ export const FeatureIcons: React.FC<FeatureIconsProps> = ({ agent }) => {
         guardrails: features.hasGuardrails,
         mcp: features.hasMcp,
         sso: features.hasSso,
+        integrations: features.hasIntegrations,
     };
 
     return (

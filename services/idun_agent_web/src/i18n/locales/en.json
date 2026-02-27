@@ -155,7 +155,8 @@
         "observability": "Observability",
         "memory": "Memory",
         "mcp": "MCP",
-        "sso": "SSO"
+        "sso": "SSO",
+        "integrations": "Integrations"
     },
     "signin": {
         "title": "Create an account",
@@ -980,6 +981,18 @@
         "comingSoon": "Coming soon",
         "underDevelopment": "This feature is under development",
         "back": "Back"
+    },
+    "integrations": {
+        "title": "Integrations",
+        "subtitle": "Connect external messaging platforms to your agents",
+        "search": "Search integrations...",
+        "add": "Add integration",
+        "addCard": "Add integration",
+        "loading": "Loading integrations…",
+        "active": "Active Integrations",
+        "comingSoon": "Coming Soon",
+        "whatsapp": "WhatsApp",
+        "discord": "Discord"
     },
     "theme": {
         "toggleToLight": "Switch to light mode",

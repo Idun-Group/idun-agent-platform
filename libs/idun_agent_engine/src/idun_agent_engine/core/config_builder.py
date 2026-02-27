@@ -57,6 +57,7 @@ class ConfigBuilder:
         self._observability: list[ObservabilityConfig] | None = None
         self._guardrails: Guardrails | None = None
         self._sso: SSOConfig | None = None
+        self._integrations: list | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """Set the API port for the server.
@@ -169,6 +170,23 @@ class ConfigBuilder:
             # except Exception as e:
             #     raise YAMLError(f"Failed to parse yaml file for MCP Servers: {e}") from e
 
+            try:
+                from idun_agent_schema.engine.integrations import IntegrationConfig
+
+                integrations_list = yaml_config.get("engine_config", {}).get(
+                    "integrations"
+                )
+                if integrations_list:
+                    self._integrations = [
+                        IntegrationConfig.model_validate(i) for i in integrations_list
+                    ]
+                else:
+                    self._integrations = None
+            except Exception as e:
+                raise YAMLError(
+                    f"Failed to parse yaml file for Integrations: {e}"
+                ) from e
+
             return self
 
         except Exception as e:
@@ -270,6 +288,7 @@ class ConfigBuilder:
             observability=self._observability,
             mcp_servers=self._mcp_servers,
             sso=self._sso,
+            integrations=self._integrations,
         )
 
     def build_dict(self) -> dict[str, Any]:  # NOT USED
@@ -661,6 +680,7 @@ class ConfigBuilder:
         builder._observability = engine_config.observability
         builder._mcp_servers = engine_config.mcp_servers
         builder._sso = engine_config.sso
+        builder._integrations = engine_config.integrations
         return builder
 
     @classmethod
@@ -693,6 +713,7 @@ class ConfigBuilder:
         builder._observability = engine_config.observability
         builder._mcp_servers = engine_config.mcp_servers
         builder._sso = engine_config.sso
+        builder._integrations = engine_config.integrations
 
         return builder
 
