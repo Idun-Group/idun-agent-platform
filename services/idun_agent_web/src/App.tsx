@@ -7,8 +7,7 @@ import styled from 'styled-components';
 import AgentFormPage from './pages/agent-form/page';
 import UserFormPage from './pages/user-form/page';
 import AgentDetailPage from './pages/agent-detail/page';
-import { AgentFileProvider } from './hooks/use-agent-file';
-import { AgentProvider } from './hooks/use-agent-model';
+
 import LoginPage from './pages/login/page';
 import SettingsPage from './pages/settings/page';
 import SideBar from './layouts/side-bar/dashboard-side-bar/layout';
@@ -80,11 +79,7 @@ function App() {
                                 <ContentLayout>
                                     <SideBar />
                                     <MainContent>
-                                        <AgentFileProvider>
-                                            <AgentProvider>
-                                                <AgentFormPage />
-                                            </AgentProvider>
-                                        </AgentFileProvider>
+                                        <AgentFormPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>

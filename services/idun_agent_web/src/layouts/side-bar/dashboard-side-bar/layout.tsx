@@ -145,7 +145,7 @@ const SideBar = ({}: SideBarProps) => {
             {!collapsed && !githubDismissed && (
                 <GithubCard>
                     <GithubHeader>
-                        <GithubTitle>Star Idun</GithubTitle>
+                        <GithubTitle>⭐ Star Idun</GithubTitle>
                         <GithubDismiss onClick={dismissGithub}>
                             <X size={14} />
                         </GithubDismiss>
@@ -196,6 +196,7 @@ const SideBar = ({}: SideBarProps) => {
                         <AccountInfo />
                     )}
                 </UserRow>
+                {!collapsed && <VersionLabel>v{__APP_VERSION__}</VersionLabel>}
             </BottomSection>
         </SideBarContainer>
     );
@@ -276,6 +277,13 @@ const BottomSection = styled.div`
     display: flex;
     flex-direction: column;
     margin-top: auto;
+`;
+
+const VersionLabel = styled.span`
+    font-size: 11px;
+    color: #4b5563;
+    text-align: center;
+    padding: 4px 0 8px;
 `;
 
 const BottomLink = styled.a<{ $collapsed?: boolean }>`
