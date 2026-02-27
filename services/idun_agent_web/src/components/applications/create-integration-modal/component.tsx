@@ -241,6 +241,7 @@ const ProviderBanner = styled.div<{ $color: string }>`
 const PROVIDER_META: Record<IntegrationProvider, { label: string; color: string }> = {
     WHATSAPP: { label: 'WhatsApp Business Cloud API', color: '#25D366' },
     DISCORD: { label: 'Discord Interactions Endpoint', color: '#5865F2' },
+    SLACK: { label: 'Slack Events API', color: '#E01E5A' },
 };
 
 const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit, provider }) => {
@@ -261,6 +262,10 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
     const [publicKey, setPublicKey] = useState('');
     const [guildId, setGuildId] = useState('');
 
+    // Slack fields
+    const [slackBotToken, setSlackBotToken] = useState('');
+    const [signingSecret, setSigningSecret] = useState('');
+
     useEffect(() => {
         if (isOpen && appToEdit) {
             setName(appToEdit.name);
@@ -278,6 +283,9 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                 setApplicationId(cfg.application_id);
                 setPublicKey(cfg.public_key);
                 setGuildId(cfg.guild_id ?? '');
+            } else if (appToEdit.integration.provider === 'SLACK' && 'signing_secret' in cfg) {
+                setSlackBotToken(cfg.bot_token);
+                setSigningSecret(cfg.signing_secret);
             }
         } else if (isOpen) {
             setName('');
@@ -285,6 +293,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
             setErrorMessage(null);
             setAccessToken(''); setPhoneNumberId(''); setVerifyToken(''); setApiVersion('v21.0');
             setBotToken(''); setApplicationId(''); setPublicKey(''); setGuildId('');
+            setSlackBotToken(''); setSigningSecret('');
         }
     }, [isOpen, appToEdit]);
 
@@ -306,7 +315,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                 verify_token: verifyToken.trim(),
                 api_version: apiVersion.trim() || 'v21.0',
             };
-        } else {
+        } else if (provider === 'DISCORD') {
             if (!botToken.trim()) { setErrorMessage('Bot Token is required'); return; }
             if (!applicationId.trim()) { setErrorMessage('Application ID is required'); return; }
             if (!publicKey.trim()) { setErrorMessage('Public Key is required'); return; }
@@ -315,6 +324,13 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                 application_id: applicationId.trim(),
                 public_key: publicKey.trim(),
                 ...(guildId.trim() ? { guild_id: guildId.trim() } : {}),
+            };
+        } else {
+            if (!slackBotToken.trim()) { setErrorMessage('Bot Token is required'); return; }
+            if (!signingSecret.trim()) { setErrorMessage('Signing Secret is required'); return; }
+            config = {
+                bot_token: slackBotToken.trim(),
+                signing_secret: signingSecret.trim(),
             };
         }
 
@@ -482,6 +498,38 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                                         onChange={e => setGuildId(e.target.value)}
                                     />
                                     <HelpText>Leave empty to allow all servers</HelpText>
+                                </FieldGroup>
+                            </>
+                        )}
+
+                        {provider === 'SLACK' && (
+                            <>
+                                <FieldGroup>
+                                    <Label htmlFor="int-slack-bot-token">
+                                        Bot Token <span style={{ color: '#f87171' }}>*</span>
+                                    </Label>
+                                    <Input
+                                        id="int-slack-bot-token"
+                                        type="password"
+                                        placeholder="xoxb-..."
+                                        value={slackBotToken}
+                                        onChange={e => setSlackBotToken(e.target.value)}
+                                    />
+                                    <HelpText>Slack bot token from the OAuth & Permissions page</HelpText>
+                                </FieldGroup>
+
+                                <FieldGroup>
+                                    <Label htmlFor="int-signing-secret">
+                                        Signing Secret <span style={{ color: '#f87171' }}>*</span>
+                                    </Label>
+                                    <Input
+                                        id="int-signing-secret"
+                                        type="password"
+                                        placeholder="Signing secret from Basic Information"
+                                        value={signingSecret}
+                                        onChange={e => setSigningSecret(e.target.value)}
+                                    />
+                                    <HelpText>HMAC-SHA256 signing secret for verifying webhook requests</HelpText>
                                 </FieldGroup>
                             </>
                         )}

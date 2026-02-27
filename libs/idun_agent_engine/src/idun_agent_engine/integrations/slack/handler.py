@@ -63,13 +63,13 @@ async def slack_webhook(request: Request) -> Response:
         return Response(status_code=401, content="Invalid request signature")
 
     if payload.type != "event_callback" or not payload.event:
-        logger.debug("Ignoring Slack event type: %s", payload.type)
+        logger.warning("Ignoring Slack event type: %s", payload.type)
         return Response(status_code=200)
 
     event = payload.event
 
     if event.type != "message" or event.bot_id:
-        logger.debug("Skipping non-user message event (type=%s, bot_id=%s)", event.type, event.bot_id)
+        logger.warning("Skipping non-user message event (type=%s, bot_id=%s)", event.type, event.bot_id)
         return Response(status_code=200)
 
     agent: BaseAgent | None = getattr(request.app.state, "agent", None)
