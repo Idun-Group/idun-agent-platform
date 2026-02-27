@@ -15,7 +15,14 @@ from idun_agent_schema.manager.managed_mcp_server import (
     ManagedMCPServerCreate,
     ManagedMCPServerPatch,
     ManagedMCPServerRead,
+    MCPToolSchema,
+    MCPToolsResponse,
 )
+from mcp import ClientSession
+from mcp.client.sse import sse_client
+from mcp.client.stdio import StdioServerParameters, stdio_client
+from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.websocket import websocket_client
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -202,3 +209,108 @@ async def patch_mcp_server(
     await session.refresh(model)
 
     return _model_to_schema(model)
+
+
+def _get_transport(config: MCPServer):
+    """Return the appropriate MCP transport context manager."""
+    logger.debug(f"Creating transport for '{config.name}' ({config.transport})")
+    try:
+        match config.transport:
+            case "stdio":
+                server_params = StdioServerParameters(
+                    command=config.command,  # type: ignore[arg-type]
+                    args=config.args,
+                    env=config.env or None,
+                    cwd=config.cwd,
+                )
+                return stdio_client(server=server_params)
+            case "streamable_http":
+                return streamablehttp_client(
+                    url=config.url,  # type: ignore[arg-type]
+                    headers=config.headers or None,
+                )
+            case "sse":
+                return sse_client(
+                    url=config.url,  # type: ignore[arg-type]
+                    headers=config.headers or None,
+                )
+            case "websocket":
+                return websocket_client(
+                    url=config.url,  # type: ignore[arg-type]
+                )
+            case _:
+                raise ValueError(
+                    f"Unsupported transport: {config.transport}"
+                )
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"Transport creation failed for '{config.name}': {e}")
+        raise ConnectionError(
+            f"Failed to create transport '{config.transport}': {e}"
+        ) from e
+
+
+async def _list_tools(mcp_session: ClientSession) -> list[MCPToolSchema]:
+    """List tools from an initialized MCP session."""
+    logger.debug("Listing tools from MCP session")
+    try:
+        result = await mcp_session.list_tools()
+        logger.info(f"Discovered {len(result.tools)} tools")
+        return [
+            MCPToolSchema(
+                name=t.name,
+                description=t.description,
+                input_schema=t.inputSchema,
+            )
+            for t in result.tools
+        ]
+    except Exception as e:
+        logger.error(f"Failed to list tools: {e}")
+        raise RuntimeError(f"Failed to list tools: {e}") from e
+
+
+async def _discover_tools(config: MCPServer) -> list[MCPToolSchema]:
+    """Connect to an MCP server, list its tools, and clean up."""
+    logger.info(f"Connecting to MCP server '{config.name}'")
+    try:
+        transport_ctx = _get_transport(config)
+        async with transport_ctx as streams:
+            read_stream, write_stream = streams[0], streams[1]
+            async with ClientSession(read_stream, write_stream) as mcp_session:
+                await mcp_session.initialize()
+                logger.info(f"Connected to MCP server '{config.name}'")
+                return await _list_tools(mcp_session)
+    except (ValueError, RuntimeError):
+        raise
+    except Exception as e:
+        logger.error(f"Connection failed for '{config.name}': {e}")
+        raise ConnectionError(
+            f"Failed to connect to MCP server: {e}"
+        ) from e
+
+
+@router.post(
+    "/{id}/tools",
+    response_model=MCPToolsResponse,
+    summary="Discover tools from an MCP server",
+)
+async def discover_tools(
+    id: str,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> MCPToolsResponse:
+    """Connect to an MCP server and return its available tools."""
+    model = await _get_mcp_server(id, session, workspace_id)
+    config = MCPServer(**model.mcp_server_config)
+
+    try:
+        tools = await _discover_tools(config)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(e),
+        ) from e
+
+    return MCPToolsResponse(tools=tools)
