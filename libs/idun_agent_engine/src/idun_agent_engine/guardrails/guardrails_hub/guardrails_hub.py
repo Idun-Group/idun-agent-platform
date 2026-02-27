@@ -1,10 +1,14 @@
 """Guardrails."""
 
+import logging
+
 from guardrails import Guard
 from idun_agent_schema.engine.guardrails import Guardrail as GuardrailSchema
 from idun_agent_schema.engine.guardrails_v2 import GuardrailConfigId
 
 from ..base import BaseGuardrail
+
+logger = logging.getLogger(__name__)
 
 
 def get_guard_instance(name: GuardrailConfigId) -> Guard:
@@ -78,7 +82,7 @@ class GuardrailsHubGuard(BaseGuardrail):
         try:
             api_key = self._guardrail_config.api_key
 
-            print("Configuring guardrails with token...")
+            logger.info("Configuring guardrails...")
             result = subprocess.run(
                 [
                     "guardrails",
@@ -92,12 +96,12 @@ class GuardrailsHubGuard(BaseGuardrail):
                 capture_output=True,
                 text=True,
             )
-            print(f"Configure output: {result.stdout}")
+            logger.debug(f"Configure output: {result.stdout}")
             if result.stderr:
-                print(f"Configure stderr: {result.stderr}")
-            print(f"Installing model: {self._guard_url}..")
+                logger.debug(f"Configure stderr: {result.stderr}")
+            logger.info(f"Installing model: {self._guard_url}...")
             install(self._guard_url, quiet=False, install_local_models=True)
-            print(f"Successfully installed: {self._guard_url}")
+            logger.info(f"✅ Successfully installed: {self._guard_url}")
         except subprocess.CalledProcessError as e:
             raise OSError(
                 f"Cannot configure guardrails: stdout={e.stdout}, stderr={e.stderr}"

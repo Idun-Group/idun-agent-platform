@@ -7,8 +7,12 @@ import click
 from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.config_builder import ConfigBuilder
 from idun_agent_engine.core.engine_config import EngineConfig
+from idun_agent_engine.core.logging import get_logger, setup_logging
 from idun_agent_engine.core.server_runner import run_server
+from idun_agent_engine.core.utils import print_banner
 from idun_platform_cli.telemetry import track_command
+
+logger = get_logger(__name__)
 
 
 class ServerSource(StrEnum):
@@ -22,14 +26,17 @@ class Serve:
     """Helper class to run the server."""
 
     def __init__(self, source: ServerSource, path: str | None = None) -> None:
+        setup_logging()
+        print_banner()
+
         self._source: ServerSource = source
         self._path: str | None = path or None
 
         if self._source == ServerSource.MANAGER and (
             not os.getenv("IDUN_AGENT_API_KEY") or not os.getenv("IDUN_MANAGER_HOST")
         ):
-            print(
-                "[ERROR]: either IDUN_AGENT_API_KEY or IDUN_MANAGER_HOST are not found. Make sure you add them both to your env variables, as `manager` source requires both."
+            logger.error(
+                "IDUN_AGENT_API_KEY or IDUN_MANAGER_HOST not found. Both env variables are required for `manager` source."
             )
             sys.exit(1)
 
@@ -42,21 +49,21 @@ class Serve:
     def _resolve_source(self):
         """Returns the EngineConfig based on the type of the source."""
         if self._source == ServerSource.MANAGER:
-            print("Getting the config for the manager...")
+            logger.info("Fetching config from the manager...")
             return self._fetch_from_manager()
         elif self._source == ServerSource.FILE:
-            print(f"Building config from: {self._path}")
+            logger.info(f"Building config from: {self._path}")
             return self._fetch_from_path()
 
     def _fetch_from_path(self) -> EngineConfig | None:
         try:
             config = ConfigBuilder().load_from_file(self._path or "")
-            print(f"✅ Successfully fetched and built config from {self._path}")
+            logger.info(f"✅ Successfully fetched and built config from {self._path}")
             return config
 
         except Exception as e:
             raise ValueError(
-                f"[ERROR]: Cannot fetch config from {self._path}: {e} "
+                f"Cannot fetch config from {self._path}: {e}"
             ) from e
 
     def _fetch_from_manager(self) -> EngineConfig | None:
@@ -67,10 +74,10 @@ class Serve:
                 .with_config_from_api(agent_api_key=self._agent_api_key, url=self._url)
                 .build()
             )
-            print(f"✅ Successfully fetched and built config from {self._url}")
+            logger.info(f"✅ Successfully fetched and built config from {self._url}")
             return config
         except Exception as e:
-            print(f"[ERROR]: Cannot fetch config from {self._url}: {e} ")
+            logger.error(f"Cannot fetch config from {self._url}: {e}")
             sys.exit(1)
 
     def serve(self) -> None:
@@ -98,12 +105,10 @@ def serve_command(source: str, path: str | None):
 
         case ServerSource.FILE:
             if not path:
-                print(
-                    "[ERROR]: No config path provided. You need to specify the path of your config.yaml"
-                )
+                logger.error("No config path provided. Specify the path of your config.yaml")
                 sys.exit(1)
             s = Serve(source=source, path=path)
             s.serve()
         case _:
-            print(f"[ERROR]: Argument {source} not recognized.")
+            logger.error(f"Argument {source} not recognized.")
             sys.exit(1)

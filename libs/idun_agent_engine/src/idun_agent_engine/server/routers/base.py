@@ -1,5 +1,6 @@
 """Base routes for service health and landing info."""
 
+import logging
 import os
 
 from fastapi import APIRouter, HTTPException, Request
@@ -8,6 +9,8 @@ from pydantic import BaseModel
 from ..._version import __version__
 from ...core.config_builder import ConfigBuilder
 from ..lifespan import cleanup_agent, configure_app
+
+logger = logging.getLogger(__name__)
 
 base_router = APIRouter()
 
@@ -29,10 +32,10 @@ async def reload_config(request: Request, body: ReloadRequest | None = None):
     """Reload the agent configuration from the manager or a file."""
     try:
         if body and body.path:
-            print(f"🔄 Reloading configuration from file: {body.path}...")
+            logger.info(f"🔄 Reloading configuration from file: {body.path}...")
             new_config = ConfigBuilder.load_from_file(body.path)
         else:
-            print("🔄 Reloading configuration from manager...")
+            logger.info("🔄 Reloading configuration from manager...")
             agent_api_key = os.getenv("IDUN_AGENT_API_KEY")
             manager_host = os.getenv("IDUN_MANAGER_HOST")
 
@@ -63,7 +66,7 @@ async def reload_config(request: Request, body: ReloadRequest | None = None):
         raise
 
     except Exception as e:
-        print(f"❌ Error reloading configuration: {e}")
+        logger.exception(f"❌ Error reloading configuration: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to reload configuration: {str(e)}"
         )
