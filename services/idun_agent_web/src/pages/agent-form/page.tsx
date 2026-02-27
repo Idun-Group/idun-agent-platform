@@ -1,4 +1,4 @@
-import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap, KeyRound } from 'lucide-react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap, KeyRound, Plug } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
@@ -14,6 +14,8 @@ import type { ApplicationConfig, AppType, MarketplaceApp, AppCategory } from '..
 import ApplicationModal from '../../components/applications/application-modal/component';
 import { fetchSSOs } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
+import { fetchIntegrations } from '../../services/integrations';
+import type { ManagedIntegration } from '../../services/integrations';
 
 const DISABLED_FRAMEWORKS = new Set(['CREWAI', 'CUSTOM']);
 
@@ -118,6 +120,10 @@ export default function AgentFormPage() {
     const [ssoConfigs, setSsoConfigs] = useState<ManagedSSO[]>([]);
     const [selectedSSOId, setSelectedSSOId] = useState<string>('');
 
+    // Integrations State
+    const [integrationConfigs, setIntegrationConfigs] = useState<ManagedIntegration[]>([]);
+    const [selectedIntegrationIds, setSelectedIntegrationIds] = useState<string[]>([]);
+
     // Application Modal State
     const [isAppModalOpen, setIsAppModalOpen] = useState(false);
     const [appToCreate, setAppToCreate] = useState<MarketplaceApp | undefined>(undefined);
@@ -141,6 +147,7 @@ export default function AgentFormPage() {
             setGuardApps(apps.filter(a => a.category === 'Guardrails'));
         });
         fetchSSOs().then(setSsoConfigs).catch(err => console.error('Failed to load SSO configs', err));
+        fetchIntegrations().then(setIntegrationConfigs).catch(err => console.error('Failed to load integrations', err));
     };
 
     // Data Fetching
@@ -405,6 +412,11 @@ export default function AgentFormPage() {
             const selectedSSO = selectedSSOId ? ssoConfigs.find(c => c.id === selectedSSOId) : null;
             const ssoConfig = selectedSSO ? selectedSSO.sso : null;
 
+            // 5. Handle Integrations
+            const integrationsConfig = selectedIntegrationIds
+                .map(id => integrationConfigs.find(c => c.id === id)?.integration)
+                .filter(Boolean);
+
             const payload = {
                 name: name.trim(),
                 version: version.trim() || '1.0.0',
@@ -415,7 +427,8 @@ export default function AgentFormPage() {
                     mcp_servers: mcpConfigs.length > 0 ? mcpConfigs : null,
                     guardrails: guardrailsConfig,
                     observability: observabilityConfigs,
-                    sso: ssoConfig
+                    sso: ssoConfig,
+                    integrations: integrationsConfig.length > 0 ? integrationsConfig : null
                 }
             };
 
@@ -807,6 +820,38 @@ export default function AgentFormPage() {
                                                         </SafetyFooter>
                                                     </SafetyCardContainer>
                                                 ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Integrations */}
+                                    <div>
+                                        <SectionTitle><SectionIndicator $color="green" /><Plug size={16} style={{ marginRight: '8px' }} />Integrations</SectionTitle>
+                                        {integrationConfigs.length === 0 ? (
+                                            <EmptyState>
+                                                <p>No integrations available. Create one from the Integrations page first.</p>
+                                            </EmptyState>
+                                        ) : (
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(315px, 1fr))', gap: '16px' }}>
+                                                {integrationConfigs.map(config => {
+                                                    const selected = selectedIntegrationIds.includes(config.id);
+                                                    return (
+                                                        <SafetyCardContainer key={config.id} $enabled={selected} onClick={() => setSelectedIntegrationIds(prev => selected ? prev.filter(id => id !== config.id) : [...prev, config.id])}>
+                                                            <SafetyCardHeader>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                    <Plug size={16} color="#25d366" />
+                                                                    <SafetyTitle $enabled={selected}>{config.name}</SafetyTitle>
+                                                                </div>
+                                                                <SafetyCheckbox $checked={selected}>
+                                                                    {selected && <Check size={12} />}
+                                                                </SafetyCheckbox>
+                                                            </SafetyCardHeader>
+                                                            <SafetyFooter>
+                                                                <SafetyDesc>{config.integration.provider}</SafetyDesc>
+                                                            </SafetyFooter>
+                                                        </SafetyCardContainer>
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>

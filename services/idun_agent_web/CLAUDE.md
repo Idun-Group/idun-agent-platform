@@ -61,6 +61,7 @@ services/idun_agent_web/
 │   ├── services/                # API service layer
 │   │   ├── agents.ts            # Agent CRUD (list, get, patch, delete)
 │   │   ├── applications.ts     # Integration config CRUD (observability, memory, MCP, guardrails)
+│   │   ├── integrations.ts     # Messaging integrations CRUD (WhatsApp, Discord)
 │   │   └── sso.ts              # SSO/OIDC config CRUD
 │   ├── utils/
 │   │   ├── api.ts               # HTTP client (apiFetch, getJson, postJson, patchJson, deleteRequest)
@@ -100,6 +101,7 @@ services/idun_agent_web/
 | `/mcp` | ApplicationPage | Protected | MCP server configs |
 | `/guardrails` | ApplicationPage | Protected | Guardrail configs |
 | `/sso` | SSOPage | Protected | SSO/OIDC configuration management |
+| `/integrations` | IntegrationsPage | Protected | Messaging integrations (WhatsApp, Discord) |
 | `/observation` | ObservationPage | Protected | Observation/metrics view |
 
 Protected routes are wrapped with `<RequireAuth />` which redirects to `/login` if no session exists.
