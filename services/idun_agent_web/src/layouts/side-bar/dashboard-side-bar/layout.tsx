@@ -145,7 +145,7 @@ const SideBar = ({}: SideBarProps) => {
             {!collapsed && !githubDismissed && (
                 <GithubCard>
                     <GithubHeader>
-                        <GithubTitle>Star Idun</GithubTitle>
+                        <GithubTitle>⭐ Star Idun</GithubTitle>
                         <GithubDismiss onClick={dismissGithub}>
                             <X size={14} />
                         </GithubDismiss>
