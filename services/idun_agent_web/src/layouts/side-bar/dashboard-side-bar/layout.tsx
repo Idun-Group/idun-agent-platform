@@ -196,6 +196,7 @@ const SideBar = ({}: SideBarProps) => {
                         <AccountInfo />
                     )}
                 </UserRow>
+                {!collapsed && <VersionLabel>v{__APP_VERSION__}</VersionLabel>}
             </BottomSection>
         </SideBarContainer>
     );
@@ -276,6 +277,13 @@ const BottomSection = styled.div`
     display: flex;
     flex-direction: column;
     margin-top: auto;
+`;
+
+const VersionLabel = styled.span`
+    font-size: 11px;
+    color: #4b5563;
+    text-align: center;
+    padding: 4px 0 8px;
 `;
 
 const BottomLink = styled.a<{ $collapsed?: boolean }>`
