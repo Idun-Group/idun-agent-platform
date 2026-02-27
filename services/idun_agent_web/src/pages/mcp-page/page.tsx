@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { fetchApplications, deleteApplication } from '../../services/applications';
+import { fetchApplications, deleteApplication, discoverTools } from '../../services/applications';
+import type { MCPTool } from '../../services/applications';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import type { ApplicationConfig } from '../../types/application.types';
 import CreateMcpModal from '../../components/applications/create-mcp-modal/component';
@@ -301,14 +302,69 @@ const EyeBtn = styled.button`
     &:hover { color: white; }
 `;
 
-const CapabilitiesPlaceholder = styled.div`
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px dashed rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
+const DiscoverButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: rgba(108, 99, 255, 0.08);
+    border: 1px solid rgba(108, 99, 255, 0.2);
+    border-radius: 8px;
+    color: var(--color-primary, #6c63ff);
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.3);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover { background: rgba(108, 99, 255, 0.15); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
+const ToolList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+`;
+
+const ToolItem = styled.div`
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+`;
+
+const ToolName = styled.p`
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    margin: 0 0 2px;
+    font-family: monospace;
+`;
+
+const ToolDescription = styled.p`
+    font-size: 12px;
+    color: var(--color-text-muted, #888);
+    margin: 0;
+`;
+
+const DiscoverError = styled.p`
+    font-size: 13px;
+    color: #f87171;
+    margin: 0;
     text-align: center;
+`;
+
+const DiscoverSpinner = styled.div`
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(108, 99, 255, 0.2);
+    border-top-color: var(--color-primary, #6c63ff);
+    border-radius: 50%;
+    animation: ${spin} 0.8s linear infinite;
 `;
 
 const BodyActions = styled.div`
@@ -437,6 +493,22 @@ const MCPPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
+    const [toolsMap, setToolsMap] = useState<Record<string, MCPTool[]>>({});
+    const [loadingTools, setLoadingTools] = useState<Record<string, boolean>>({});
+    const [toolErrors, setToolErrors] = useState<Record<string, string>>({});
+
+    const handleDiscover = async (appId: string) => {
+        setLoadingTools(prev => ({ ...prev, [appId]: true }));
+        setToolErrors(prev => ({ ...prev, [appId]: '' }));
+        try {
+            const tools = await discoverTools(appId);
+            setToolsMap(prev => ({ ...prev, [appId]: tools }));
+        } catch (e) {
+            setToolErrors(prev => ({ ...prev, [appId]: 'Failed to discover tools' }));
+        } finally {
+            setLoadingTools(prev => ({ ...prev, [appId]: false }));
+        }
+    };
 
     const loadApps = useCallback(async () => {
         setIsLoading(true);
@@ -560,10 +632,39 @@ const MCPPage: React.FC = () => {
                                         </Section>
 
                                         <Section>
-                                            <SectionTitle>Capabilities</SectionTitle>
-                                            <CapabilitiesPlaceholder>
-                                                Connect to discover tools &amp; resources
-                                            </CapabilitiesPlaceholder>
+                                            <SectionTitle>Tools</SectionTitle>
+                                            {toolsMap[app.id] ? (
+                                                toolsMap[app.id].length > 0 ? (
+                                                    <ToolList>
+                                                        {toolsMap[app.id].map(tool => (
+                                                            <ToolItem key={tool.name}>
+                                                                <ToolName>{tool.name}</ToolName>
+                                                                {tool.description && (
+                                                                    <ToolDescription>{tool.description}</ToolDescription>
+                                                                )}
+                                                            </ToolItem>
+                                                        ))}
+                                                    </ToolList>
+                                                ) : (
+                                                    <ToolDescription>No tools available</ToolDescription>
+                                                )
+                                            ) : (
+                                                <>
+                                                    <DiscoverButton
+                                                        onClick={() => handleDiscover(app.id)}
+                                                        disabled={loadingTools[app.id]}
+                                                    >
+                                                        {loadingTools[app.id] ? (
+                                                            <><DiscoverSpinner /> Discovering…</>
+                                                        ) : (
+                                                            'Discover Tools'
+                                                        )}
+                                                    </DiscoverButton>
+                                                    {toolErrors[app.id] && (
+                                                        <DiscoverError>{toolErrors[app.id]}</DiscoverError>
+                                                    )}
+                                                </>
+                                            )}
                                         </Section>
                                     </BodyGrid>
 

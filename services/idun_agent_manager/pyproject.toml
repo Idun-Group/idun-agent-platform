@@ -47,6 +47,8 @@ dependencies = [
   "opentelemetry-exporter-otlp>=1.34.0,<2.0.0",
   "structlog>=23.2.0,<24.0.0",
 
+  "mcp>=1.0.0",
+
   # Idun schemas
   "idun-agent-schema>=0.3.8,<1.0.0",
 ]
@@ -138,6 +140,9 @@ addopts = "-ra -q --strict-markers --disable-warnings"
 testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
+markers = [
+    "integration: tests that connect to real external services",
+]
 
 [tool.coverage.run]
 source = ["src"]

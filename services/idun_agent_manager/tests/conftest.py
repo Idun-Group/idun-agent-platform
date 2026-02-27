@@ -22,6 +22,7 @@ from app.infrastructure.db.models.managed_memory import ManagedMemoryModel  # no
 from app.infrastructure.db.models.managed_observability import (
     ManagedObservabilityModel,  # noqa: F401
 )
+from app.infrastructure.db.models.managed_sso import ManagedSSOModel  # noqa: F401
 from app.infrastructure.db.models.membership import MembershipModel  # noqa: F401
 from app.infrastructure.db.models.user import UserModel  # noqa: F401
 from app.infrastructure.db.models.workspace import WorkspaceModel  # noqa: F401

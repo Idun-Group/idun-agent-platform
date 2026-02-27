@@ -7,6 +7,9 @@ from .managed_agent import (  # noqa: F401
     ManagedAgentPatch,
     ManagedAgentRead,
 )
+from .managed_mcp_server import (  # noqa: F401
+    MCPToolSchema,
+    MCPToolsResponse,
 from .managed_integration import (  # noqa: F401
     ManagedIntegrationCreate,
     ManagedIntegrationPatch,
