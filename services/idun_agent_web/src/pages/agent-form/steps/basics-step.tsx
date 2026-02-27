@@ -2,11 +2,8 @@ import styled from 'styled-components';
 import { Check } from 'lucide-react';
 import { AgentAvatar } from '../../../components/general/agent-avatar/component';
 import type { Framework } from '../types';
-<<<<<<< HEAD
 import langGraphLogo from '../../../assets/langgraph-color.png';
 import adkLogo from '../../../assets/agent-development-kit.png';
-=======
->>>>>>> 85795ccd (Refactor agent creation API response and simplify agent form structure)
 
 interface BasicsStepProps {
     name: string;
@@ -15,28 +12,18 @@ interface BasicsStepProps {
     onFrameworkChange: (fw: Framework) => void;
 }
 
-<<<<<<< HEAD
 const FRAMEWORKS: { id: Framework; label: string; description: string; logo: string }[] = [
-=======
-const FRAMEWORKS: { id: Framework; label: string; description: string }[] = [
->>>>>>> 85795ccd (Refactor agent creation API response and simplify agent form structure)
     {
         id: 'LANGGRAPH',
         label: 'LangGraph',
         description: 'Build stateful, multi-actor agents with LangGraph',
-<<<<<<< HEAD
         logo: langGraphLogo,
-=======
->>>>>>> 85795ccd (Refactor agent creation API response and simplify agent form structure)
     },
     {
         id: 'ADK',
         label: 'Google ADK',
         description: "Build agents with Google's Agent Development Kit",
-<<<<<<< HEAD
         logo: adkLogo,
-=======
->>>>>>> 85795ccd (Refactor agent creation API response and simplify agent form structure)
     },
 ];
 
@@ -79,21 +66,14 @@ export default function BasicsStep({
                             type="button"
                         >
                             <CardTop>
-<<<<<<< HEAD
                                 <FrameworkLogo src={fw.logo} alt={fw.label} />
-=======
-                                <CardLabel>{fw.label}</CardLabel>
->>>>>>> 85795ccd (Refactor agent creation API response and simplify agent form structure)
                                 {framework === fw.id && (
                                     <CheckCircle>
                                         <Check size={12} color="white" />
                                     </CheckCircle>
                                 )}
                             </CardTop>
-<<<<<<< HEAD
                             <CardLabel>{fw.label}</CardLabel>
-=======
->>>>>>> 85795ccd (Refactor agent creation API response and simplify agent form structure)
                             <CardDescription>{fw.description}</CardDescription>
                         </FrameworkCard>
                     ))}
@@ -217,15 +197,12 @@ const CardTop = styled.div`
     width: 100%;
 `;
 
-<<<<<<< HEAD
 const FrameworkLogo = styled.img`
     height: 28px;
     width: auto;
     object-fit: contain;
 `;
 
-=======
->>>>>>> 85795ccd (Refactor agent creation API response and simplify agent form structure)
 const CardLabel = styled.span`
     font-size: 16px;
     font-weight: 600;
