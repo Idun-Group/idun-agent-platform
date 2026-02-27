@@ -39,6 +39,10 @@ def _create_integration(config: IntegrationConfig) -> BaseIntegration:
             from .discord.integration import DiscordIntegration
 
             return DiscordIntegration(config)
+        case IntegrationProvider.SLACK:
+            from .slack.integration import SlackIntegration
+
+            return SlackIntegration(config)
         case _:
             raise ValueError(f"Unsupported integration provider: {config.provider}")
 

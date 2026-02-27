@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_camel
 
 from .discord import DiscordIntegrationConfig
+from .slack import SlackIntegrationConfig
 from .whatsapp import WhatsAppIntegrationConfig
 
 
@@ -17,6 +18,7 @@ class IntegrationProvider(StrEnum):
 
     WHATSAPP = "WHATSAPP"
     DISCORD = "DISCORD"
+    SLACK = "SLACK"
 
 
 class IntegrationConfig(BaseModel):
@@ -39,7 +41,7 @@ class IntegrationConfig(BaseModel):
         default=True,
         description="Toggle this integration on or off.",
     )
-    config: Union[WhatsAppIntegrationConfig, DiscordIntegrationConfig] = Field(
+    config: Union[WhatsAppIntegrationConfig, DiscordIntegrationConfig, SlackIntegrationConfig] = Field(
         description="Provider-specific configuration.",
     )
 
@@ -61,5 +63,7 @@ class IntegrationConfig(BaseModel):
                 values["config"] = DiscordIntegrationConfig(**config)
             elif provider_str == IntegrationProvider.WHATSAPP:
                 values["config"] = WhatsAppIntegrationConfig(**config)
+            elif provider_str == IntegrationProvider.SLACK:
+                values["config"] = SlackIntegrationConfig(**config)
 
         return values
