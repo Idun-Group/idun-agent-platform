@@ -2,6 +2,7 @@
 
 import importlib
 import importlib.util
+import logging
 import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -25,6 +26,8 @@ from langgraph.graph.state import CompiledStateGraph
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
+
+logger = logging.getLogger(__name__)
 
 
 class LanggraphAgent(agent_base.BaseAgent):
@@ -224,7 +227,7 @@ class LanggraphAgent(agent_base.BaseAgent):
                 self._infos["input_schema"] = str(self._input_schema)
                 self._infos["output_schema"] = str(self._output_schema)
             except Exception:
-                print("Could not parse schema")
+                logger.warning("Could not parse schema")
                 self._input_schema = self._configuration.input_schema_definition
                 self._output_schema = self._configuration.output_schema_definition
                 self._infos["input_schema"] = "Cannot extract schema"
@@ -244,7 +247,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         if self._connection:
             await self._connection.close()
             self._connection = None
-            print("Database connection closed.")
+            logger.debug("Database connection closed.")
 
     async def _setup_persistence(self) -> None:
         """Configures the agent's persistence (checkpoint and store) asynchronously."""
@@ -316,9 +319,6 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         # Try loading as a file path first
         try:
-            import os
-
-            print("Current directory: ", os.getcwd())  # TODO remove
             from pathlib import Path
 
             resolved_path = Path(module_path).resolve()

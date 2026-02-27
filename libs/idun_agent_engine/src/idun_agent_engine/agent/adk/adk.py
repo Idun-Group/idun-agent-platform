@@ -1,6 +1,7 @@
 """ADK agent adapter implementing the BaseAgent protocol."""
 
 import importlib.util
+import logging
 import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -32,6 +33,8 @@ from pydantic import BaseModel
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
+
+logger = logging.getLogger(__name__)
 
 
 class AdkAgent(agent_base.BaseAgent):
@@ -160,23 +163,23 @@ class AdkAgent(agent_base.BaseAgent):
 
                     langfuse_pk = os.environ.get("LANGFUSE_PUBLIC_KEY")
                     langfuse_host = os.environ.get("LANGFUSE_BASE_URL")
-                    print(f"LANGFUSE_PUBLIC_KEY: {langfuse_pk}")
-                    print(f"LANGFUSE_BASE_URL: {langfuse_host}")
+                    logger.debug(f"LANGFUSE_PUBLIC_KEY: {langfuse_pk}")
+                    logger.debug(f"LANGFUSE_BASE_URL: {langfuse_host}")
                     try:
                         from openinference.instrumentation.google_adk import (
                             GoogleADKInstrumentor,
                         )
 
                         GoogleADKInstrumentor().instrument()
-                        print("GoogleADKInstrumentor instrumented successfully.")
+                        logger.info("GoogleADKInstrumentor instrumented successfully.")
                     except ImportError:
-                        print(
+                        logger.warning(
                             "openinference-instrumentation-google-adk not installed, skipping Google ADK instrumentation."
                         )
                     except Exception as e:
-                        print(f"Failed to instrument Google ADK: {e}")
+                        logger.warning(f"Failed to instrument Google ADK: {e}")
             except Exception as e:
-                print(
+                logger.warning(
                     f"Error checking observability config for ADK instrumentation: {e}"
                 )
 
