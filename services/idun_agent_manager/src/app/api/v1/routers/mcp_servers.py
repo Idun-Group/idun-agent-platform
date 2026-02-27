@@ -283,8 +283,12 @@ async def _discover_tools(config: MCPServer) -> list[MCPToolSchema]:
                 return await _list_tools(mcp_session)
     except (ValueError, RuntimeError):
         raise
-    except Exception as e:
-        logger.error(f"Connection failed for '{config.name}': {e}")
+    except BaseException as e:
+        if isinstance(e, ExceptionGroup):
+            for sub in e.exceptions:
+                logger.error(f"Connection failed for '{config.name}': {sub}", exc_info=sub)
+        else:
+            logger.error(f"Connection failed for '{config.name}': {e}", exc_info=e)
         raise ConnectionError(
             f"Failed to connect to MCP server: {e}"
         ) from e
