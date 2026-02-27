@@ -76,6 +76,7 @@ dependencies = [
     "posthog>=7.0.0,<8.0.0",
     "PyYAML>=6.0.0,<7.0.0",
     "PyJWT[crypto]>=2.9.0,<3.0.0",
+    "slack-sdk>=3.33.0,<4.0.0",
 ]
 
 

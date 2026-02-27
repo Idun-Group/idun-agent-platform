@@ -1,6 +1,6 @@
 import { getJson, postJson, patchJson, deleteRequest } from '../utils/api';
 
-export type IntegrationProvider = 'WHATSAPP' | 'DISCORD';
+export type IntegrationProvider = 'WHATSAPP' | 'DISCORD' | 'SLACK';
 
 export interface WhatsAppIntegrationConfig {
     access_token: string;
@@ -16,10 +16,15 @@ export interface DiscordIntegrationConfig {
     guild_id?: string;
 }
 
+export interface SlackIntegrationConfig {
+    bot_token: string;
+    signing_secret: string;
+}
+
 export interface IntegrationConfig {
     provider: IntegrationProvider;
     enabled: boolean;
-    config: WhatsAppIntegrationConfig | DiscordIntegrationConfig;
+    config: WhatsAppIntegrationConfig | DiscordIntegrationConfig | SlackIntegrationConfig;
 }
 
 export interface ManagedIntegration {

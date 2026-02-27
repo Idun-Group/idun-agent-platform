@@ -11,6 +11,11 @@ from .discord_webhook import (  # noqa: F401
     InteractionResponseType,
     InteractionType,
 )
+from .slack import SlackIntegrationConfig  # noqa: F401
+from .slack_webhook import (  # noqa: F401
+    SlackEventPayload,
+    SlackMessageEvent,
+)
 from .whatsapp import WhatsAppIntegrationConfig  # noqa: F401
 from .whatsapp_webhook import (  # noqa: F401
     WhatsAppChange,

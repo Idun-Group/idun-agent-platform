@@ -1,6 +1,5 @@
-import { Check, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap, KeyRound, Plug } from 'lucide-react';
-import { type ChangeEvent, useEffect, useRef } from 'react';
-import { useCallback, useState } from 'react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Activity, Upload, Server, Layers, X, Database, Info, Eye, Plus, Zap, KeyRound, Plug } from 'lucide-react';
+import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
