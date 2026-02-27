@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
 from idun_agent_schema.engine.observability import _resolve_env
 
 from ..base import ObservabilityHandlerBase
+
+logger = logging.getLogger(__name__)
 
 
 class LangfuseHandler(ObservabilityHandlerBase):
@@ -48,20 +51,15 @@ class LangfuseHandler(ObservabilityHandlerBase):
 
             try:
                 if self._langfuse_client.auth_check():
-                    print("Langfuse client is authenticated and ready!")
+                    logger.info("✅ Langfuse client is authenticated and ready!")
                 else:
-                    print(
-                        "Authentication failed. Please check your credentials and host."
-                    )
+                    logger.error("❌ Langfuse authentication failed. Please check your credentials and host.")
             except Exception as e:
-                print(f"Error during Langfuse client authentication: {e}")
+                logger.error(f"Error during Langfuse client authentication: {e}")
 
-            # Initialize callback handler
-            # We pass the resolved credentials explicitly to ensure they are used
-            # even if env vars were not successfully set or read.
             self._callbacks = [CallbackHandler()]
         except Exception as e:
-            print(f"Failed to initialize Langfuse callback/client: {e}")
+            logger.error(f"Failed to initialize Langfuse callback/client: {e}")
             self._callbacks = []
 
     @staticmethod

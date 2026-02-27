@@ -1,9 +1,13 @@
 """Dependency injection helpers for FastAPI routes."""
 
+import logging
+
 from fastapi import HTTPException, Request, status
 
 from ..core.config_builder import ConfigBuilder
 from ..mcp import MCPClientRegistry
+
+logger = logging.getLogger(__name__)
 
 
 async def get_agent(request: Request):
@@ -17,7 +21,7 @@ async def get_agent(request: Request):
         # This is a fallback for cases where the lifespan event did not run,
         # like in some testing scenarios.
         # Consider logging a warning here.
-        print("⚠️  Agent not found in app state, initializing fallback agent...")
+        logger.warning("⚠️ Agent not found in app state, initializing fallback agent...")
 
         app_config = ConfigBuilder.load_from_file()
         agent = await ConfigBuilder.initialize_agent_from_config(app_config)
@@ -35,9 +39,7 @@ async def get_copilotkit_agent(request: Request):
         # This is a fallback for cases where the lifespan event did not run,
         # like in some testing scenarios.
         # Consider logging a warning here.
-        print(
-            "⚠️  CopilotKit agent not found in app state, initializing fallback agent..."
-        )
+        logger.warning("⚠️ CopilotKit agent not found in app state, initializing fallback agent...")
 
         app_config = ConfigBuilder.load_from_file()
         copilotkit_agent = await ConfigBuilder.initialize_agent_from_config(app_config)

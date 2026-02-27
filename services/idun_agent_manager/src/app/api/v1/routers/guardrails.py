@@ -32,7 +32,6 @@ from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
 
 router = APIRouter()
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Constants
