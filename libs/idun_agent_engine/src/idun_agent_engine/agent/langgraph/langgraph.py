@@ -30,6 +30,23 @@ from idun_agent_engine.agent import base as agent_base
 logger = logging.getLogger(__name__)
 
 
+def _extract_text_content(content: Any) -> str:
+    """Normalise LLM message content to a plain-text string."""
+    if isinstance(content, str):
+        return content
+
+    if not isinstance(content, list):
+        return str(content)
+
+    parts: list[str] = []
+    for block in content:
+        if isinstance(block, str):
+            parts.append(block)
+        elif isinstance(block, dict) and block.get("type") == "text" and isinstance(block.get("text"), str):
+            parts.append(block["text"])
+    return "".join(parts) if parts else str(content)
+
+
 class LanggraphAgent(agent_base.BaseAgent):
     """LangGraph agent adapter implementing the BaseAgent protocol."""
 
@@ -418,14 +435,11 @@ class LanggraphAgent(agent_base.BaseAgent):
         if output and "messages" in output and output["messages"]:
             response_message = output["messages"][-1]
             if hasattr(response_message, "content"):
-                return response_message.content
-            elif isinstance(response_message, dict) and "content" in response_message:
-                return response_message["content"]
-            elif isinstance(response_message, tuple):
-                return response_message[1]
-            else:
-                # No usable content attribute; fall through to returning raw output
-                pass
+                return _extract_text_content(response_message.content)
+            if isinstance(response_message, dict) and "content" in response_message:
+                return _extract_text_content(response_message["content"])
+            if isinstance(response_message, tuple) and len(response_message) >= 2:
+                return str(response_message[1])
 
         return output
 

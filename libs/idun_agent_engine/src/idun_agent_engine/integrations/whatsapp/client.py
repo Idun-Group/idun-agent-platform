@@ -39,8 +39,11 @@ class WhatsAppClient:
             response.raise_for_status()
             logger.info(f"Message sent to {to} successfully")
             return response.json()
-        except httpx.HTTPStatusError:
-            logger.exception(f"WhatsApp API error sending message to {to}")
+        except httpx.HTTPStatusError as exc:
+            logger.error(
+                "WhatsApp API error sending message to %s: %s %s",
+                to, exc.response.status_code, exc.response.text,
+            )
             raise
 
     async def close(self) -> None:
