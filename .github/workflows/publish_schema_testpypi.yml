@@ -4,41 +4,9 @@ on:
   push:
     branches:
       - '**'  # Trigger on all branches and all commits
-  workflow_dispatch:
-    inputs:
-      retry_count:
-        description: "Automatic retry counter (0-based)"
-        required: false
-        default: "0"
-      source_run_id:
-        description: "Original failed run id"
-        required: false
-        default: ""
 
 jobs:
-  prepare-retry:
-    runs-on: ubuntu-latest
-    outputs:
-      retry_count: ${{ steps.compute.outputs.retry_count }}
-      next_retry_count: ${{ steps.compute.outputs.next_retry_count }}
-      allow_retry: ${{ steps.compute.outputs.allow_retry }}
-    steps:
-      - name: Compute retry metadata
-        id: compute
-        run: |
-          RETRY_COUNT="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.retry_count || '0' }}"
-          NEXT_RETRY_COUNT=$((RETRY_COUNT + 1))
-          if [ "$RETRY_COUNT" -lt 2 ]; then
-            ALLOW_RETRY="true"
-          else
-            ALLOW_RETRY="false"
-          fi
-          echo "retry_count=$RETRY_COUNT" >> "$GITHUB_OUTPUT"
-          echo "next_retry_count=$NEXT_RETRY_COUNT" >> "$GITHUB_OUTPUT"
-          echo "allow_retry=$ALLOW_RETRY" >> "$GITHUB_OUTPUT"
-
   build-and-publish:
-    needs: prepare-retry
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -112,26 +80,3 @@ jobs:
 
           echo "Publish failed after $MAX_ATTEMPTS attempts."
           exit 1
-
-  retry-workflow:
-    if: ${{ needs.build-and-publish.result == 'failure' && needs.prepare-retry.outputs.allow_retry == 'true' }}
-    needs: [prepare-retry, build-and-publish]
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - name: Dispatch retry run
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'publish_schema_testpypi.yml',
-              ref: context.ref.replace('refs/heads/', ''),
-              inputs: {
-                retry_count: '${{ needs.prepare-retry.outputs.next_retry_count }}',
-                source_run_id: String(context.runId),
-              },
-            });
