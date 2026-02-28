@@ -101,6 +101,11 @@ async def configure_app(app: FastAPI, engine_config):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan context to initialize and teardown the agent."""
+    # Apply monkey patches for upstream ag-ui bugs (safe to remove once fixed upstream)
+    from .patches import apply_all as _apply_ag_ui_patches
+
+    _apply_ag_ui_patches()
+
     # Load config and initialize agent on startup
     logger.info("🚀 Server starting up...")
     if not app.state.engine_config:
