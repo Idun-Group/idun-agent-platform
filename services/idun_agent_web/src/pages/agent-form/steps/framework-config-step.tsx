@@ -1,5 +1,6 @@
 import styled from 'styled-components';
-import { Monitor, Globe } from 'lucide-react';
+import { Monitor, Globe, ChevronUp, ChevronDown } from 'lucide-react';
+import { useRef, useCallback } from 'react';
 import type { Framework, HostMode } from '../types';
 import FrameworkGuide from '../components/framework-guide';
 
@@ -89,21 +90,10 @@ export default function FrameworkConfigStep({
                 </FieldGroup>
 
                 {hostMode === 'localhost' && (
-                    <FieldGroup>
-                        <InputLabel>Server Port</InputLabel>
-                        <PortInputRow>
-                            <PortPrefix>http://localhost:</PortPrefix>
-                            <PortInput
-                                type="number"
-                                placeholder="8800"
-                                value={serverPort}
-                                onChange={e => onFieldChange('serverPort', e.target.value)}
-                                min="1"
-                                max="65535"
-                            />
-                        </PortInputRow>
-                        <Hint>Your agent will be accessible at http://localhost:{serverPort || '8800'}</Hint>
-                    </FieldGroup>
+                    <PortField
+                        port={serverPort}
+                        onChange={value => onFieldChange('serverPort', value)}
+                    />
                 )}
 
                 {hostMode === 'remote' && (
@@ -121,6 +111,50 @@ export default function FrameworkConfigStep({
 
             <FrameworkGuide framework={framework} />
         </StepContainer>
+    );
+}
+
+function PortField({ port, onChange }: { port: string; onChange: (v: string) => void }) {
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const clamp = useCallback((n: number) => Math.max(1, Math.min(65535, n)), []);
+
+    const step = useCallback((delta: number) => {
+        const current = parseInt(port, 10) || 8800;
+        onChange(String(clamp(current + delta)));
+    }, [port, onChange, clamp]);
+
+    const handleWheel = useCallback((e: React.WheelEvent) => {
+        e.currentTarget.blur();
+        e.preventDefault();
+    }, []);
+
+    return (
+        <FieldGroup>
+            <InputLabel>Server Port</InputLabel>
+            <PortInputRow>
+                <PortPrefix>http://localhost:</PortPrefix>
+                <PortInput
+                    ref={inputRef}
+                    type="number"
+                    placeholder="8800"
+                    value={port}
+                    onChange={e => onChange(e.target.value)}
+                    onWheel={handleWheel}
+                    min="1"
+                    max="65535"
+                />
+                <PortSteppers>
+                    <PortStepBtn type="button" onClick={() => step(1)} aria-label="Increase port">
+                        <ChevronUp size={12} />
+                    </PortStepBtn>
+                    <PortStepBtn type="button" onClick={() => step(-1)} aria-label="Decrease port">
+                        <ChevronDown size={12} />
+                    </PortStepBtn>
+                </PortSteppers>
+            </PortInputRow>
+            <Hint>Your agent will be accessible at http://localhost:{port || '8800'}</Hint>
+        </FieldGroup>
     );
 }
 
@@ -266,7 +300,7 @@ const PortInput = styled.input`
     outline: none;
     width: 80px;
 
-    /* Hide number spinners */
+    /* Hide native number spinners */
     -moz-appearance: textfield;
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button {
@@ -276,5 +310,38 @@ const PortInput = styled.input`
 
     &::placeholder {
         color: #374151;
+    }
+`;
+
+const PortSteppers = styled.div`
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+`;
+
+const PortStepBtn = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 20px;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.15s;
+
+    &:first-child {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    &:hover {
+        background: rgba(140, 82, 255, 0.15);
+        color: #a78bfa;
+    }
+
+    &:active {
+        background: rgba(140, 82, 255, 0.25);
     }
 `;

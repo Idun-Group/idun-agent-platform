@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { CheckCircle2, AlertCircle, Copy, Check, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { createAgent, getAgentApiKey } from '../../../services/agents';
+import { createAgent, patchAgent, getAgentApiKey } from '../../../services/agents';
 import { API_BASE_URL } from '../../../utils/api';
 import { type WizardState, resolveBaseUrl, resolveServerPort } from '../types';
 import CodeSnippet from '../components/code-snippet';
@@ -18,8 +18,8 @@ function buildPayload(state: WizardState) {
     const { name, framework } = state;
 
     const agentConfig = framework === 'LANGGRAPH'
-        ? { name, graph_definition: state.graphDefinition }
-        : { name, agent: state.adkAgent, app_name: state.adkAppName };
+        ? { name, graph_definition: state.graphDefinition, checkpointer: { type: 'memory' } }
+        : { name, agent: state.adkAgent, app_name: state.adkAppName, session_service: { type: 'in_memory' } };
 
     return {
         name,
@@ -35,24 +35,50 @@ function buildPayload(state: WizardState) {
 }
 
 export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps) {
-    const [phase, setPhase] = useState<'creating' | 'error' | 'ready'>(
+    const [phase, setPhase] = useState<'creating' | 'updating' | 'error' | 'ready'>(
         state.createdAgentId ? 'ready' : 'creating'
     );
     const [errorMessage, setErrorMessage] = useState('');
     const [showKey, setShowKey] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
     const attemptedRef = useRef(false);
+    const lastPayloadRef = useRef<string>('');
 
     const managerHost = API_BASE_URL || window.location.origin;
 
     useEffect(() => {
-        if (state.createdAgentId || attemptedRef.current) return;
+        const payload = buildPayload(state);
+        const payloadJson = JSON.stringify(payload);
+
+        // If agent already exists, check if config changed since last apply
+        if (state.createdAgentId) {
+            if (payloadJson === lastPayloadRef.current) return;
+            // Config changed — update the existing agent
+            lastPayloadRef.current = payloadJson;
+            setPhase('updating');
+            (async () => {
+                try {
+                    await patchAgent(state.createdAgentId!, payload);
+                    setPhase('ready');
+                    toast.success('Agent configuration updated');
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Failed to update agent';
+                    setErrorMessage(msg);
+                    setPhase('error');
+                }
+            })();
+            return;
+        }
+
+        // First time — create
+        if (attemptedRef.current) return;
         attemptedRef.current = true;
 
         (async () => {
             try {
-                const agent = await createAgent(buildPayload(state));
+                const agent = await createAgent(payload);
                 const apiKey = await getAgentApiKey(agent.id);
+                lastPayloadRef.current = payloadJson;
                 onCreated(agent.id, apiKey);
                 setShowConfetti(true);
                 setPhase('ready');
@@ -65,16 +91,23 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
     }, [state, onCreated]);
 
     const handleRetry = async () => {
-        setPhase('creating');
+        const payload = buildPayload(state);
+        const isUpdate = !!state.createdAgentId;
+        setPhase(isUpdate ? 'updating' : 'creating');
         setErrorMessage('');
         try {
-            const agent = await createAgent(buildPayload(state));
-            const apiKey = await getAgentApiKey(agent.id);
-            onCreated(agent.id, apiKey);
-            setShowConfetti(true);
+            if (isUpdate) {
+                await patchAgent(state.createdAgentId!, payload);
+            } else {
+                const agent = await createAgent(payload);
+                const apiKey = await getAgentApiKey(agent.id);
+                onCreated(agent.id, apiKey);
+                setShowConfetti(true);
+            }
+            lastPayloadRef.current = JSON.stringify(payload);
             setPhase('ready');
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Failed to create agent';
+            const msg = err instanceof Error ? err.message : `Failed to ${isUpdate ? 'update' : 'create'} agent`;
             setErrorMessage(msg);
             setPhase('error');
         }
@@ -85,12 +118,13 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
         toast.success('Copied to clipboard');
     };
 
-    if (phase === 'creating') {
+    if (phase === 'creating' || phase === 'updating') {
+        const isUpdate = phase === 'updating';
         return (
             <CenterContainer>
                 <SpinningLoader size={32} />
-                <LoadingTitle>Creating your agent...</LoadingTitle>
-                <LoadingSubtitle>Setting up configuration and generating API key</LoadingSubtitle>
+                <LoadingTitle>{isUpdate ? 'Updating your agent...' : 'Creating your agent...'}</LoadingTitle>
+                <LoadingSubtitle>{isUpdate ? 'Applying configuration changes' : 'Setting up configuration and generating API key'}</LoadingSubtitle>
             </CenterContainer>
         );
     }
@@ -99,7 +133,7 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
         return (
             <CenterContainer>
                 <AlertCircle size={32} color="#f87171" />
-                <ErrorTitle>Failed to create agent</ErrorTitle>
+                <ErrorTitle>{errorMessage.includes('update') ? 'Failed to update agent' : 'Failed to create agent'}</ErrorTitle>
                 <ErrorMessage>{errorMessage}</ErrorMessage>
                 <RetryButton onClick={handleRetry} type="button">Try Again</RetryButton>
             </CenterContainer>

@@ -59,7 +59,7 @@ export default function AgentFormPage() {
     };
 
     const handleBack = () => {
-        if (currentStep > 0 && !state.createdAgentId) {
+        if (currentStep > 0) {
             setCurrentStep(prev => prev - 1);
         }
     };
@@ -127,7 +127,7 @@ export default function AgentFormPage() {
                                 Cancel
                             </CancelButton>
                         )}
-                        {currentStep > 0 && !state.createdAgentId && (
+                        {currentStep > 0 && (
                             <BackButton onClick={handleBack} type="button">
                                 <ChevronLeft size={16} /> Back
                             </BackButton>

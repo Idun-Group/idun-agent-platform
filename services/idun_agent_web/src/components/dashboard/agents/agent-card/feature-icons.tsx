@@ -16,12 +16,16 @@ export function detectAgentFeatures(agent: BackendAgent) {
         : obsConfig != null;
 
     // Memory: LangGraph uses checkpointer/store, ADK uses memory_service/session_service
+    // In-memory defaults (checkpointer.type=memory, session_service.type=in_memory) count as OFF
+    const checkpointer = agentConfig?.checkpointer as Record<string, unknown> | null | undefined;
+    const hasCheckpointer = checkpointer != null && checkpointer.type !== 'memory';
+    const sessionService = agentConfig?.session_service as Record<string, unknown> | null | undefined;
+    const hasSessionService = sessionService != null && sessionService.type !== 'in_memory';
     const hasMemory =
-        agentConfig?.checkpointer != null ||
+        hasCheckpointer ||
         agentConfig?.store != null ||
         agentConfig?.memory_service != null ||
-        (agentConfig?.session_service != null &&
-            (agentConfig.session_service as Record<string, unknown>)?.type !== 'in_memory');
+        hasSessionService;
 
     // Guardrails: has input/output arrays — enabled when either has items
     const guardrails = engineConfig?.guardrails as Record<string, unknown> | null | undefined;
