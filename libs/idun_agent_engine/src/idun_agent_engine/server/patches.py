@@ -204,7 +204,8 @@ def apply_tool_call_output_patch() -> None:
             ToolCallResultEvent,
             ToolCallStartEvent,
         )
-        from ag_ui_langgraph.utils import dump_json_safe, normalize_tool_content
+        from ag_ui_langgraph.agent import dump_json_safe
+        from ag_ui_langgraph.utils import normalize_tool_content
         from langgraph.types import Command
 
         try:
