@@ -13,8 +13,8 @@ dependencies = [
     "idun-agent-schema>=0.4.7,<0.5.0",
     "posthog>=7.7.0",
     "setuptools>=80.9.0,<83.0.0",
-    "tokenizers<0.19",
-    "transformers<4.40",
+    "tokenizers>=0.19",
+    "transformers>=4.40",
 ]
 
 [dependency-groups]
@@ -38,6 +38,7 @@ dev = [
     "mkdocs-git-revision-date-localized-plugin>=1.2.6,<2",
     "torch>=2.10.0",
     "pytest-asyncio>=1.3.0",
+    "typer>=0.15.0",
 ]
 
 [tool.uv]

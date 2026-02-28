@@ -136,7 +136,7 @@ module = "tests.*"
 disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
-addopts = "-ra -q --strict-markers --disable-warnings"
+addopts = "-ra -q --strict-markers --disable-warnings --import-mode=importlib"
 testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
