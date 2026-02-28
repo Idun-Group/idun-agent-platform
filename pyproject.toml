@@ -14,7 +14,7 @@ dependencies = [
     "posthog>=7.7.0",
     "setuptools>=80.9.0,<83.0.0",
     "tokenizers>=0.19",
-    "transformers>=4.40",
+    "transformers>=4.40,<5.0",
 ]
 
 [dependency-groups]
