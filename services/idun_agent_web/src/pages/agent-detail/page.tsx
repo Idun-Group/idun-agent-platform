@@ -20,7 +20,8 @@ import {
     Webhook,
     Settings,
     Activity,
-    Layers
+    Layers,
+    MessageSquare,
 } from 'lucide-react';
 
 const OverviewTab = lazy(() => import('../../components/agent-detail/tabs/overview-tab/component'));
@@ -28,12 +29,14 @@ const GatewayTab = lazy(() => import('../../components/agent-detail/tabs/gateway
 const ConfigurationTab = lazy(() => import('../../components/agent-detail/tabs/configuration-tab/component'));
 const ActivityTab = lazy(() => import('../../components/agent-detail/tabs/activity-tab/component'));
 const LogsTab = lazy(() => import('../../components/agent-detail/tabs/logs-tab/component'));
+const ChatTab = lazy(() => import('../../components/agent-detail/tabs/chat-tab/component'));
 
 const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'chat', label: 'Chat', icon: MessageSquare },
     { id: 'gateway', label: 'API Integration', icon: Webhook },
     { id: 'configuration', label: 'Configuration', icon: Settings },
-    { id: 'logs', label: 'Logs', icon: Activity } // Added Logs as it was in original but maybe not in target design tabs list, keeping for functionality
+    { id: 'logs', label: 'Logs', icon: Activity },
 ];
 
 export default function AgentDetailPage() {
@@ -194,6 +197,7 @@ export default function AgentDetailPage() {
             <ContentArea>
                 <Suspense fallback={<Loader />}>
                     {activeTab === 'overview' && <OverviewTab agent={agent} />}
+                    {activeTab === 'chat' && <ChatTab agent={agent} />}
                     {activeTab === 'gateway' && <GatewayTab agent={agent} />}
                     {activeTab === 'configuration' && <ConfigurationTab agent={agent} />}
                     {activeTab === 'logs' && <LogsTab />}
