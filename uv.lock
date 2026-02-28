@@ -2072,19 +2072,19 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ag-ui-adk", specifier = ">=0.3.4,<0.4.0" },
-    { name = "ag-ui-langgraph", specifier = ">=0.0.20,<0.1.0" },
+    { name = "ag-ui-adk", specifier = ">=0.3.4,<0.6.0" },
+    { name = "ag-ui-langgraph", specifier = "==0.0.25" },
     { name = "ag-ui-protocol", specifier = ">=0.1.8,<0.2.0" },
-    { name = "aiosqlite", specifier = ">=0.21.0,<0.22.0" },
-    { name = "arize-phoenix", specifier = ">=11.22.0,<12.0.0" },
+    { name = "aiosqlite", specifier = ">=0.21.0,<=0.22.1" },
+    { name = "arize-phoenix", specifier = ">=11.22.0,<14.0.0" },
     { name = "arize-phoenix-otel", specifier = ">=0.2.0,<1.0.0" },
-    { name = "click", specifier = ">=8.2.0" },
+    { name = "click", specifier = ">=8.2.0,<9.0.0" },
     { name = "copilotkit", specifier = ">=0.1.72,<0.2.0" },
     { name = "deepagents", specifier = ">=0.2.8,<1.0.0" },
-    { name = "fastapi", specifier = ">=0.115.0,<0.116.0" },
+    { name = "fastapi", specifier = ">=0.115.0,<=0.134.0" },
     { name = "google-adk", specifier = ">=1.19.0,<2.0.0" },
     { name = "google-cloud-logging", specifier = ">=3.10.0,<4.0.0" },
-    { name = "guardrails-ai", specifier = ">=0.7.2,<0.8.0" },
+    { name = "guardrails-ai", specifier = ">=0.7.2,<1.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "idun-agent-schema", specifier = ">=0.3.8,<1.0.0" },
     { name = "langchain", specifier = ">=1.0.0,<2.0.0" },
@@ -2097,11 +2097,11 @@ requires-dist = [
     { name = "langgraph-checkpoint-postgres", specifier = ">=3.0.0,<4.0.0" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0.0,<4.0.0" },
     { name = "mcp", specifier = ">=1.0.0,<2.0.0" },
-    { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.0,<1.0.0" },
-    { name = "openinference-instrumentation-guardrails", specifier = ">=0.1.0,<1.0.0" },
-    { name = "openinference-instrumentation-langchain", specifier = ">=0.1.13,<1.0.0" },
+    { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.0,<2.0.0" },
+    { name = "openinference-instrumentation-guardrails", specifier = ">=0.1.0,<2.0.0" },
+    { name = "openinference-instrumentation-langchain", specifier = ">=0.1.13,<2.0.0" },
     { name = "openinference-instrumentation-mcp", specifier = ">=1.0.0,<2.0.0" },
-    { name = "openinference-instrumentation-vertexai", specifier = ">=0.1.0,<1.0.0" },
+    { name = "openinference-instrumentation-vertexai", specifier = ">=0.1.0,<2.0.0" },
     { name = "opentelemetry-exporter-gcp-trace", specifier = ">=1.6.0,<2.0.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.22.0,<2.0.0" },
     { name = "platformdirs", specifier = ">=4.0.0,<5.0.0" },
@@ -2109,14 +2109,14 @@ requires-dist = [
     { name = "psycopg-binary", specifier = ">=3.3.0,<4.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.9.0,<3.0.0" },
-    { name = "python-dotenv", specifier = ">=1.1.1" },
+    { name = "python-dotenv", specifier = ">=1.1.1,<2.0.0" },
     { name = "pyyaml", specifier = ">=6.0.0,<7.0.0" },
     { name = "slack-sdk", specifier = ">=3.33.0,<4.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.36,<3.0.0" },
     { name = "streamlit", specifier = ">=1.47.1,<2.0.0" },
     { name = "tavily-python", specifier = ">=0.7.9,<0.8.0" },
-    { name = "textual", specifier = ">=7.3.0,<7.4.0" },
-    { name = "uvicorn", specifier = ">=0.35.0,<0.36.0" },
+    { name = "textual", specifier = ">=7.3.0,<8.0.0" },
+    { name = "uvicorn", specifier = ">=0.35.0,<=0.41.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -2261,7 +2261,7 @@ requires-dist = [
     { name = "idun-agent-manager", editable = "services/idun_agent_manager" },
     { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },
     { name = "posthog", specifier = ">=7.7.0" },
-    { name = "setuptools", specifier = ">=80.9.0" },
+    { name = "setuptools", specifier = ">=80.9.0,<83.0.0" },
     { name = "tokenizers", specifier = "<0.19" },
     { name = "transformers", specifier = "<4.40" },
 ]
@@ -2427,6 +2427,9 @@ name = "jsonpath-ng"
 version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/32/58/250751940d75c8019659e15482d548a4aa3b6ce122c515102a4bfdac50e3/jsonpath_ng-1.8.0.tar.gz", hash = "sha256:54252968134b5e549ea5b872f1df1168bd7defe1a52fed5a358c194e1943ddc3", size = 74513, upload-time = "2026-02-24T14:42:06.182Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/03/99/33c7d78a3fb70d545fd5411ac67a651c81602cc09c9cf0df383733f068c5/jsonpath_ng-1.8.0-py3-none-any.whl", hash = "sha256:b8dde192f8af58d646fc031fac9c99fe4d00326afc4148f1f043c601a8cfe138", size = 67844, upload-time = "2026-02-28T00:53:19.637Z" },
+]
 
 [[package]]
 name = "jsonpointer"
