@@ -76,6 +76,9 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
     """
     global _ORIGINAL_HANDLE_SINGLE_EVENT
 
+    if _ORIGINAL_HANDLE_SINGLE_EVENT is not None:
+        return
+
     try:
         from ag_ui_langgraph.agent import LangGraphAgent
         from ag_ui_langgraph.types import LangGraphEventTypes
