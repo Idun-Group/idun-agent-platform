@@ -18,7 +18,6 @@ def chatbot(state: MessagesState):
 graph = StateGraph(MessagesState)
 graph.add_node("chatbot", chatbot)
 graph.set_entry_point("chatbot")
-graph = graph.compile()
 
 # graph_definition = "./agent/graph.py:graph"`,
     },
