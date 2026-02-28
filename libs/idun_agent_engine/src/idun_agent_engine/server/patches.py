@@ -11,15 +11,7 @@ HOW TO VERIFY REMOVAL IS SAFE
 
 PATCHES
 -------
-1. ``apply_make_json_safe_patch``
-   - Upstream bug: ``make_json_safe`` in ``ag_ui_langgraph.utils`` calls
-     ``dataclasses.asdict()`` which internally ``copy.deepcopy()``s fields.
-     MCP tool objects contain async futures that cannot be pickled.
-   - Error: ``TypeError: cannot pickle '_GatheringFuture' object``
-   - Upstream issue: https://github.com/ag-ui-protocol/ag-ui/issues/1203
-   - Fix: wrap the dataclass branch in a try/except and fall back to ``repr()``.
-
-2. ``apply_tool_call_output_patch``
+1. ``apply_tool_call_output_patch``
    - Upstream bug: ``_handle_single_event`` in ``ag_ui_langgraph.agent``
      assumes ``event["data"]["output"]`` on ``OnToolEnd`` is always a single
      ``ToolMessage``. When the tool node returns a **list** (e.g. from MCP
@@ -38,134 +30,11 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from dataclasses import asdict, is_dataclass
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Patch 1 — make_json_safe: catch unpicklable dataclass fields
-# Upstream issue: https://github.com/ag-ui-protocol/ag-ui/issues/1203
-# ---------------------------------------------------------------------------
-
-_ORIGINAL_MAKE_JSON_SAFE = None  # will hold ref to the unpatched function
-
-
-def _patched_make_json_safe(value: Any, _seen: set[int] | None = None) -> Any:
-    """Drop-in replacement for ``ag_ui_langgraph.utils.make_json_safe``.
-
-    The ONLY change vs. upstream is that the dataclass branch (step 5) is
-    wrapped in try/except so that objects whose fields cannot be deep-copied
-    (e.g. MCP tool sessions containing asyncio futures) fall through to
-    ``repr()`` instead of crashing.
-    """
-    from enum import Enum
-
-    if _seen is None:
-        _seen = set()
-
-    obj_id = id(value)
-    if obj_id in _seen:
-        return "<recursive>"
-
-    # 1. Primitives
-    if isinstance(value, (str, int, float, bool)) or value is None:
-        return value
-
-    # 2. Enum
-    if isinstance(value, Enum):
-        return _patched_make_json_safe(value.value, _seen)
-
-    # 3. Dicts
-    if isinstance(value, dict):
-        _seen.add(obj_id)
-        return {
-            _patched_make_json_safe(k, _seen): _patched_make_json_safe(v, _seen)
-            for k, v in value.items()
-        }
-
-    # 4. Iterable containers
-    if isinstance(value, (list, tuple, set, frozenset)):
-        _seen.add(obj_id)
-        return [_patched_make_json_safe(v, _seen) for v in value]
-
-    # 5. Dataclasses — PATCHED: catch TypeError from unpicklable fields
-    if is_dataclass(value) and not isinstance(value, type):
-        _seen.add(obj_id)
-        try:
-            return _patched_make_json_safe(asdict(value), _seen)
-        except (TypeError, Exception):
-            # asdict() internally deep-copies; MCP tool sessions contain
-            # asyncio futures that are not picklable → fall through.
-            logger.debug(
-                "make_json_safe: asdict() failed for %s, falling back to repr()",
-                type(value).__name__,
-            )
-            return repr(value)
-
-    # 6. Pydantic v2
-    if hasattr(value, "model_dump") and callable(value.model_dump):
-        _seen.add(obj_id)
-        try:
-            return _patched_make_json_safe(value.model_dump(), _seen)
-        except Exception:
-            pass
-
-    # 7. Pydantic v1
-    if hasattr(value, "dict") and callable(value.dict):
-        _seen.add(obj_id)
-        try:
-            return _patched_make_json_safe(value.dict(), _seen)
-        except Exception:
-            pass
-
-    # 8. Generic to_dict
-    if hasattr(value, "to_dict") and callable(value.to_dict):
-        _seen.add(obj_id)
-        try:
-            return _patched_make_json_safe(value.to_dict(), _seen)
-        except Exception:
-            pass
-
-    # 9. Generic __dict__
-    if hasattr(value, "__dict__"):
-        _seen.add(obj_id)
-        try:
-            return _patched_make_json_safe(vars(value), _seen)
-        except Exception:
-            pass
-
-    # 10. Last resort
-    return repr(value)
-
-
-def apply_make_json_safe_patch() -> None:
-    """Monkey-patch ``ag_ui_langgraph.utils.make_json_safe``.
-
-    Remove when upstream ships a fix for:
-    https://github.com/ag-ui-protocol/ag-ui/issues/1203
-    """
-    global _ORIGINAL_MAKE_JSON_SAFE
-
-    try:
-        import ag_ui_langgraph.agent as agent_mod
-        import ag_ui_langgraph.utils as utils_mod
-    except ImportError:
-        logger.debug("ag_ui_langgraph not installed — skipping make_json_safe patch")
-        return
-
-    _ORIGINAL_MAKE_JSON_SAFE = utils_mod.make_json_safe
-    utils_mod.make_json_safe = _patched_make_json_safe
-    agent_mod.make_json_safe = _patched_make_json_safe
-
-    logger.info(
-        "[idun patch] applied make_json_safe patch "
-        "(https://github.com/ag-ui-protocol/ag-ui/issues/1203)"
-    )
-
-
-# ---------------------------------------------------------------------------
-# Patch 2 — _handle_single_event: handle list / raw tool outputs
+# Patch 1 — _handle_single_event: handle list / raw tool outputs
 # Upstream issue: https://github.com/ag-ui-protocol/ag-ui/issues/1072
 # Upstream PRs:   #1073, #1164
 # ---------------------------------------------------------------------------
@@ -173,7 +42,7 @@ def apply_make_json_safe_patch() -> None:
 _ORIGINAL_HANDLE_SINGLE_EVENT = None
 
 
-def apply_tool_call_output_patch() -> None:
+def apply_tool_call_output_patch() -> None:  # noqa: C901
     """Monkey-patch ``LangGraphAgent._handle_single_event`` to handle list outputs.
 
     Remove when upstream merges a fix for:
@@ -190,12 +59,13 @@ def apply_tool_call_output_patch() -> None:
 
     _ORIGINAL_HANDLE_SINGLE_EVENT = LangGraphAgent._handle_single_event
 
-    async def _patched_handle_single_event(self, event, state):
+    async def _patched_handle_single_event(self, event, state):  # noqa: C901
         """Wraps the original _handle_single_event.
 
-        For OnToolEnd events where tool_call_output is a list or a raw
-        str/dict (not a ToolMessage), we handle serialization ourselves.
-        All other events are delegated to the original implementation.
+        Replaces the OnToolEnd branch entirely so that list outputs,
+        single ToolMessages, Commands, and raw str/dict outputs are all
+        handled correctly. All other event types are delegated to the
+        original implementation unchanged.
         """
         from ag_ui.core import (
             EventType,
@@ -215,18 +85,69 @@ def apply_tool_call_output_patch() -> None:
 
         event_type = event.get("event")
 
+        # --- Non-tool events: delegate entirely to original -------------------
         if event_type != LangGraphEventTypes.OnToolEnd:
-            # Not a tool-end event — delegate entirely to the original.
             async for evt in _ORIGINAL_HANDLE_SINGLE_EVENT(self, event, state):
                 yield evt
             return
 
+        # =====================================================================
+        # OnToolEnd — fully replaced to handle all output shapes.
+        # =====================================================================
         tool_call_output = event["data"]["output"]
 
-        # --- Case 1: Command objects (already handled upstream) ---------------
+        # -- Helper: emit events for a single ToolMessage ---------------------
+        def _emit_for_tool_msg(tool_msg):
+            """Yields AG-UI events for a single ToolMessage (sync generator)."""
+            if not self.active_run["has_function_streaming"]:
+                yield self._dispatch_event(
+                    ToolCallStartEvent(
+                        type=EventType.TOOL_CALL_START,
+                        tool_call_id=tool_msg.tool_call_id,
+                        tool_call_name=tool_msg.name,
+                        parent_message_id=tool_msg.id,
+                        raw_event=event,
+                    )
+                )
+                yield self._dispatch_event(
+                    ToolCallArgsEvent(
+                        type=EventType.TOOL_CALL_ARGS,
+                        tool_call_id=tool_msg.tool_call_id,
+                        delta=json.dumps(event["data"].get("input", {})),
+                        raw_event=event,
+                    )
+                )
+                yield self._dispatch_event(
+                    ToolCallEndEvent(
+                        type=EventType.TOOL_CALL_END,
+                        tool_call_id=tool_msg.tool_call_id,
+                        raw_event=event,
+                    )
+                )
+
+            try:
+                normalized = normalize_tool_content(tool_msg.content)
+            except Exception:  # noqa: BLE001
+                normalized = dump_json_safe(tool_msg.content)
+
+            yield self._dispatch_event(
+                ToolCallResultEvent(
+                    type=EventType.TOOL_CALL_RESULT,
+                    tool_call_id=tool_msg.tool_call_id,
+                    message_id=str(uuid.uuid4()),
+                    content=normalized,
+                    role="tool",
+                )
+            )
+
+        # --- Case 1: Command — extract ToolMessages from Command.update ------
         if isinstance(tool_call_output, Command):
-            async for evt in _ORIGINAL_HANDLE_SINGLE_EVENT(self, event, state):
-                yield evt
+            update = tool_call_output.update or {}
+            messages = update.get("messages", [])
+            tool_messages = [m for m in messages if isinstance(m, ToolMessage)]
+            for tool_msg in tool_messages:
+                for evt in _emit_for_tool_msg(tool_msg):
+                    yield evt
             return
 
         # --- Case 2: List of outputs (BUG — upstream crashes here) -----------
@@ -235,51 +156,13 @@ def apply_tool_call_output_patch() -> None:
                 m for m in tool_call_output if isinstance(m, ToolMessage)
             ]
             for tool_msg in tool_messages:
-                if not self.active_run["has_function_streaming"]:
-                    yield self._dispatch_event(
-                        ToolCallStartEvent(
-                            type=EventType.TOOL_CALL_START,
-                            tool_call_id=tool_msg.tool_call_id,
-                            tool_call_name=tool_msg.name,
-                            parent_message_id=tool_msg.id,
-                            raw_event=event,
-                        )
-                    )
-                    yield self._dispatch_event(
-                        ToolCallArgsEvent(
-                            type=EventType.TOOL_CALL_ARGS,
-                            tool_call_id=tool_msg.tool_call_id,
-                            delta=json.dumps(event["data"].get("input", {})),
-                            raw_event=event,
-                        )
-                    )
-                    yield self._dispatch_event(
-                        ToolCallEndEvent(
-                            type=EventType.TOOL_CALL_END,
-                            tool_call_id=tool_msg.tool_call_id,
-                            raw_event=event,
-                        )
-                    )
-
-                try:
-                    normalized = normalize_tool_content(tool_msg.content)
-                except Exception:
-                    normalized = dump_json_safe(tool_msg.content)
-
-                yield self._dispatch_event(
-                    ToolCallResultEvent(
-                        type=EventType.TOOL_CALL_RESULT,
-                        tool_call_id=tool_msg.tool_call_id,
-                        message_id=str(uuid.uuid4()),
-                        content=normalized,
-                        role="tool",
-                    )
-                )
+                for evt in _emit_for_tool_msg(tool_msg):
+                    yield evt
             return
 
-        # --- Case 3: Single ToolMessage (happy path) -------------------------
+        # --- Case 3: Single ToolMessage --------------------------------------
         if isinstance(tool_call_output, ToolMessage):
-            async for evt in _ORIGINAL_HANDLE_SINGLE_EVENT(self, event, state):
+            for evt in _emit_for_tool_msg(tool_call_output):
                 yield evt
             return
 
@@ -335,7 +218,7 @@ def apply_tool_call_output_patch() -> None:
         try:
             raw_content = getattr(tool_call_output, "content", tool_call_output)
             normalized = normalize_tool_content(raw_content)
-        except Exception:
+        except Exception:  # noqa: BLE001
             normalized = dump_json_safe(
                 getattr(tool_call_output, "content", tool_call_output)
             )
@@ -371,5 +254,4 @@ def apply_all() -> None:
     2. Remove its call below.
     3. Test with an MCP-tool agent via /agent/copilotkit/stream.
     """
-    apply_make_json_safe_patch()
     apply_tool_call_output_patch()
