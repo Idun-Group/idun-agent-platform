@@ -57,27 +57,8 @@ services:
       # Empty VITE_API_URL so the frontend uses relative paths (/api/...) proxied by Vite
       - VITE_API_URL=
       - VITE_API_PROXY_TARGET=http://manager:8000
-      - VITE_COPILOT_PROXY_TARGET=http://copilot-runtime:8001
       - VITE_AUTH_DISABLE_USERNAME_PASSWORD=${AUTH__DISABLE_USERNAME_PASSWORD:-false}
       - CHOKIDAR_USEPOLLING=true
-    depends_on:
-      - manager
-
-  copilot-runtime:
-    image: node:20-alpine
-    container_name: idun-copilot-runtime-dev
-    working_dir: /app
-    command: sh -lc "npm install --legacy-peer-deps && npm run dev"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "8001:8001"
-    volumes:
-      - ./services/copilot_runtime:/app
-      - /app/node_modules
-    environment:
-      - PORT=8001
-      - MANAGER_URL=http://manager:8000
     depends_on:
       - manager
 

@@ -45,12 +45,6 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            '/copilotkit-virtual': {
-                target: process.env.VITE_COPILOT_PROXY_TARGET || 'http://localhost:8001',
-                changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/copilotkit-virtual/, '/copilotkit'),
-                secure: false,
-            },
             '/api': {
                 target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
                 changeOrigin: true,

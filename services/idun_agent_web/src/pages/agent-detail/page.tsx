@@ -19,7 +19,6 @@ import {
     LayoutDashboard,
     Webhook,
     Settings,
-    Activity,
     Layers,
     MessageSquare,
 } from 'lucide-react';
@@ -27,8 +26,6 @@ import {
 const OverviewTab = lazy(() => import('../../components/agent-detail/tabs/overview-tab/component'));
 const GatewayTab = lazy(() => import('../../components/agent-detail/tabs/gateway-tab/component'));
 const ConfigurationTab = lazy(() => import('../../components/agent-detail/tabs/configuration-tab/component'));
-const ActivityTab = lazy(() => import('../../components/agent-detail/tabs/activity-tab/component'));
-const LogsTab = lazy(() => import('../../components/agent-detail/tabs/logs-tab/component'));
 const ChatTab = lazy(() => import('../../components/agent-detail/tabs/chat-tab/component'));
 
 const TABS = [
@@ -36,7 +33,6 @@ const TABS = [
     { id: 'chat', label: 'Chat', icon: MessageSquare },
     { id: 'gateway', label: 'API Integration', icon: Webhook },
     { id: 'configuration', label: 'Configuration', icon: Settings },
-    { id: 'logs', label: 'Logs', icon: Activity },
 ];
 
 export default function AgentDetailPage() {
@@ -81,15 +77,6 @@ export default function AgentDetailPage() {
     };
 
     const handleTabClick = (tabId: string) => {
-        if (tabId === 'logs') {
-            // For logs, we might want to open external link or show tab.
-            // Original code opened external link. Let's keep it if that's the intention,
-            // OR show the LogsTab. The new design doesn't explicitly show Logs tab in TABS list but I'll keep it.
-            // If we want to replicate the target exactly, maybe we should hide it or move it.
-            // Let's show the tab for now as it exists in components.
-            setActiveTab(tabId);
-            return;
-        }
         setActiveTab(tabId);
     };
 
@@ -200,7 +187,6 @@ export default function AgentDetailPage() {
                     {activeTab === 'chat' && <ChatTab agent={agent} />}
                     {activeTab === 'gateway' && <GatewayTab agent={agent} />}
                     {activeTab === 'configuration' && <ConfigurationTab agent={agent} />}
-                    {activeTab === 'logs' && <LogsTab />}
                 </Suspense>
             </ContentArea>
 

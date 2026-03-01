@@ -60,29 +60,7 @@ services:
       - "3000:3000"
     environment:
       - VITE_API_URL=http://localhost:8000 # http://host.docker.internal:8000
-      - VITE_COPILOT_RUNTIME_URL=http://localhost:8001
       - CHOKIDAR_USEPOLLING=true
-    # networks:
-    #   - idun_network
-    depends_on:
-      - manager
-      - copilot-runtime
-
-  copilot-runtime:
-    image: node:20-alpine
-    container_name: idun-copilot-runtime-dev
-    working_dir: /app
-    command: sh -lc "npm install --legacy-peer-deps && npm run dev"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "8001:8001"
-    volumes:
-      - ./services/copilot_runtime:/app
-      - /app/node_modules
-    environment:
-      - PORT=8001
-      - MANAGER_URL=http://manager:8000
     # networks:
     #   - idun_network
     depends_on:

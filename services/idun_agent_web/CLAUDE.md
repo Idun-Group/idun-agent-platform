@@ -12,7 +12,7 @@ For backend API routes and schemas, see `services/idun_agent_manager/CLAUDE.md` 
 - **styled-components 6** — CSS-in-JS styling with CSS custom properties for theming
 - **React Router 7** — Client-side routing
 - **i18next** — Internationalization (7 languages, default: French)
-- **CopilotKit** — AI chat integration (`@copilotkit/react-core`, `@copilotkit/react-ui`)
+- **AG-UI Client** — Agent streaming protocol (`@ag-ui/client`)
 - **Monaco Editor** — Code/config editing
 - **Lucide React** — Icons
 - **react-toastify** — Toast notifications
@@ -163,7 +163,6 @@ Config resolution order (per key):
 | Key | Vite Env | Default | Purpose |
 |---|---|---|---|
 | `API_URL` | `VITE_API_URL` | `''` (uses proxy) | Manager backend URL |
-| `COPILOT_RUNTIME_URL` | `VITE_COPILOT_RUNTIME_URL` | `''` | CopilotKit runtime URL |
 | `AUTH_DISABLE_USERNAME_PASSWORD` | `VITE_AUTH_DISABLE_USERNAME_PASSWORD` | `false` | Hide email/password login |
 | `USE_MOCKS` | `VITE_USE_MOCKS` | `false` | Use mock data instead of API |
 
@@ -174,7 +173,6 @@ In development, Vite proxies API calls to avoid CORS:
 | Path | Target | Purpose |
 |---|---|---|
 | `/api/*` | `localhost:8000` | Manager backend |
-| `/copilotkit-virtual/*` | `localhost:8001` | CopilotKit runtime (rewrites to `/copilotkit/*`) |
 | `/openapi.json` | `localhost:8000` | OpenAPI spec |
 
 ## State Management

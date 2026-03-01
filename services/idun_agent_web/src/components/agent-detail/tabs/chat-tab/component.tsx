@@ -415,29 +415,21 @@ function ExtraMessagesEditor({ messages, onChange, hint }: {
   );
 }
 
-// --- Config Panel ---
+// --- Config Panel (now togglable) ---
 function ConfigPanel({
   agentUrl,
-  endpoint, setEndpoint,
-  threadId, setThreadId,
   stateJson, setStateJson,
   toolsJson, setToolsJson,
   contextJson, setContextJson,
   forwardedPropsJson, setForwardedPropsJson,
   extraMessages, setExtraMessages,
-  onNewThread, onClear,
 }: {
   agentUrl: string;
-  endpoint: '/agent/copilotkit/stream' | '/agent/stream';
-  setEndpoint: (v: '/agent/copilotkit/stream' | '/agent/stream') => void;
-  threadId: string; setThreadId: (v: string) => void;
   stateJson: string; setStateJson: (v: string) => void;
   toolsJson: string; setToolsJson: (v: string) => void;
   contextJson: string; setContextJson: (v: string) => void;
   forwardedPropsJson: string; setForwardedPropsJson: (v: string) => void;
   extraMessages: { role: string; content: string }[]; setExtraMessages: (v: { role: string; content: string }[]) => void;
-  onNewThread: () => void;
-  onClear: () => void;
 }) {
   return (
     <div className="config-panel">
@@ -447,33 +439,8 @@ function ConfigPanel({
           <div className="agent-url-display" title={agentUrl}>{agentUrl}</div>
         </div>
         <div className="config-row">
-          <label>Endpoint</label>
-          <select
-            value={endpoint}
-            onChange={e => setEndpoint(e.target.value as typeof endpoint)}
-          >
-            <option value="/agent/copilotkit/stream">CopilotKit Stream (AG-UI)</option>
-            <option value="/agent/stream">Custom Stream</option>
-          </select>
-        </div>
-        <div className="config-row">
-          <label>Thread ID</label>
-          <div className="config-description">Identifies the conversation. Reuse it to keep continuity across multiple requests.</div>
-          <div className="thread-row">
-            <input
-              type="text"
-              value={threadId}
-              onChange={e => setThreadId(e.target.value)}
-            />
-            <button onClick={onNewThread} className="btn-small" title="New thread">↻</button>
-          </div>
-        </div>
-        <div className="config-row">
           <label>Run ID <span className="config-hint">(auto)</span></label>
           <div className="config-description">Auto-generated unique UUID per request.</div>
-        </div>
-        <div className="config-actions">
-          <button onClick={onClear} className="btn-small btn-danger">Clear Chat</button>
         </div>
       </div>
       <div className="config-editors">
@@ -625,7 +592,8 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
   const [endpoint, setEndpoint] = useState<'/agent/copilotkit/stream' | '/agent/stream'>('/agent/copilotkit/stream');
   const [threadId, setThreadId] = useState(() => uuidv4());
   const [input, setInput] = useState('');
-  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
   const [stateJson, setStateJson] = useState('{}');
   const [toolsJson, setToolsJson] = useState('[]');
   const [contextJson, setContextJson] = useState('[]');
@@ -674,42 +642,82 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
     }
   };
 
+  const handleNewThread = () => {
+    setThreadId(uuidv4());
+    clearChat();
+  };
+
   return (
-    <div className="agui-chat" style={{ height: 'calc(100vh - 320px)', minHeight: '500px' }}>
-      <header className="app-header">
-        <div className="header-left">
-          <h1>Developer Chat</h1>
-          <span className="header-badge">{endpoint.split('/').pop()}</span>
+    <div className="agui-chat" style={{ height: 'calc(100vh - 260px)', minHeight: '500px' }}>
+      {/* Compact toolbar */}
+      <div className="chat-toolbar">
+        <div className="toolbar-group">
+          <span className="toolbar-badge">{endpoint === '/agent/copilotkit/stream' ? 'AG-UI' : 'SSE'}</span>
+          <select
+            className="toolbar-select"
+            value={endpoint}
+            onChange={e => setEndpoint(e.target.value as typeof endpoint)}
+          >
+            <option value="/agent/copilotkit/stream">AG-UI Stream</option>
+            <option value="/agent/stream">Custom Stream</option>
+          </select>
         </div>
-        <div className="header-right">
-          <button
-            className={`btn-icon ${inspectorOpen ? 'active' : ''}`}
-            onClick={() => setInspectorOpen(v => !v)}
-            title="Event Inspector"
-          >{ inspectorOpen ? '◧' : '▣' }</button>
+
+        <span className="toolbar-sep" />
+
+        <div className="toolbar-group">
+          <span className="toolbar-label">Thread</span>
+          <input
+            type="text"
+            className="toolbar-input"
+            value={threadId}
+            onChange={e => setThreadId(e.target.value)}
+          />
+          <button className="toolbar-btn" onClick={handleNewThread} title="New thread">↻</button>
         </div>
-      </header>
 
-      <ConfigPanel
-        agentUrl={agentUrl}
-        endpoint={endpoint} setEndpoint={setEndpoint}
-        threadId={threadId} setThreadId={setThreadId}
-        stateJson={stateJson} setStateJson={setStateJson}
-        toolsJson={toolsJson} setToolsJson={setToolsJson}
-        contextJson={contextJson} setContextJson={setContextJson}
-        forwardedPropsJson={forwardedPropsJson} setForwardedPropsJson={setForwardedPropsJson}
-        extraMessages={extraMessages} setExtraMessages={setExtraMessages}
-        onNewThread={() => { setThreadId(uuidv4()); clearChat(); }}
-        onClear={clearChat}
-      />
+        <span className="toolbar-sep" />
 
+        <button className="toolbar-btn danger" onClick={clearChat}>Clear</button>
+
+        <span className="toolbar-spacer" />
+
+        <button
+          className={`toolbar-btn ${configOpen ? 'active' : ''}`}
+          onClick={() => setConfigOpen(v => !v)}
+          title="Toggle config panel"
+        >
+          ⚙ Config
+        </button>
+        <button
+          className={`toolbar-btn ${inspectorOpen ? 'active' : ''}`}
+          onClick={() => setInspectorOpen(v => !v)}
+          title="Toggle event inspector"
+        >
+          Events{events.length > 0 ? ` (${events.length})` : ''}
+        </button>
+      </div>
+
+      {/* Collapsible config panel */}
+      {configOpen && (
+        <ConfigPanel
+          agentUrl={agentUrl}
+          stateJson={stateJson} setStateJson={setStateJson}
+          toolsJson={toolsJson} setToolsJson={setToolsJson}
+          contextJson={contextJson} setContextJson={setContextJson}
+          forwardedPropsJson={forwardedPropsJson} setForwardedPropsJson={setForwardedPropsJson}
+          extraMessages={extraMessages} setExtraMessages={setExtraMessages}
+        />
+      )}
+
+      {/* Chat + Event Inspector */}
       <div className="app-body">
         <div className="chat-panel">
           <div className="chat-messages">
             {messages.length === 0 && (
               <div className="empty-state">
                 <p>Send a message to start chatting with your agent.</p>
-                <p className="hint">Tip: Use the config panel to change endpoint or set extra parameters. The Events panel (◧) shows raw AG-UI events.</p>
+                <p className="hint">Use the toolbar to switch endpoints, manage threads, or open the config panel for advanced options.</p>
               </div>
             )}
             {messages.map(msg => (
