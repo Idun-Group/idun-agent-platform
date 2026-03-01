@@ -1,4 +1,4 @@
-import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap, AlertTriangle, KeyRound, Plug } from 'lucide-react';
+import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap, KeyRound, Plug } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
@@ -10,7 +10,6 @@ import { API_BASE_URL } from '../../utils/api';
 import { fetchApplications, MARKETPLACE_APPS, mapConfigToApi } from '../../services/applications';
 import type { ApplicationConfig, AppType, MarketplaceApp, AppCategory } from '../../types/application.types';
 import ApplicationModal from '../applications/application-modal/component';
-import type { BackendAgent } from '../../services/agents';
 import { fetchSSOs } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
 import { fetchIntegrations } from '../../services/integrations';
@@ -87,11 +86,9 @@ export interface AgentFormModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: (agent: any) => void;
-    mode: 'create' | 'edit';
-    initialData?: BackendAgent;
 }
 
-export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initialData }: AgentFormModalProps) {
+export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentFormModalProps) {
     const [currentStep, setCurrentStep] = useState(1);
     const [name, setName] = useState<string>('');
     const [version, setVersion] = useState<string>('1.0.0');
@@ -157,195 +154,6 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
         fetchIntegrations().then(setIntegrationConfigs).catch(err => console.error('Failed to load integrations', err));
     };
 
-    // Initialize form with existing data when editing
-    useEffect(() => {
-        if (mode === 'edit' && initialData && isOpen) {
-            setName(initialData.name || '');
-            setVersion(initialData.version || '1.0.0');
-            setBaseUrl(initialData.base_url || '');
-            setDescription(initialData.description || '');
-
-            // Extract port from engine_config
-            const port = initialData.engine_config?.server?.api?.port;
-            setServerPort(port ? String(port) : '8000');
-
-            // Extract framework/agent type
-            const framework = initialData.engine_config?.agent?.type || initialData.framework || 'LANGGRAPH';
-            setAgentType(framework);
-
-            // Extract agent config - cast to any to access dynamic properties
-            const config = { ...(initialData.engine_config?.agent?.config || {}) } as any;
-
-            // Ensure graph_definition is a string
-            if (config.graph_definition && typeof config.graph_definition !== 'string') {
-                try {
-                    config.graph_definition = JSON.stringify(config.graph_definition, null, 4);
-                } catch (e) {
-                    console.error('Failed to stringify graph_definition', e);
-                }
-            }
-
-            // Ensure component_definition is a string
-            if (config.component_definition && typeof config.component_definition !== 'string') {
-                try {
-                    config.component_definition = JSON.stringify(config.component_definition, null, 4);
-                } catch (e) {
-                    console.error('Failed to stringify component_definition', e);
-                }
-            }
-
-            // Ensure schema definitions and store are strings
-            ['input_schema_definition', 'output_schema_definition', 'store'].forEach(key => {
-                if (config[key] && typeof config[key] !== 'string') {
-                    try {
-                        config[key] = JSON.stringify(config[key], null, 4);
-                    } catch (e) {
-                        console.error(`Failed to stringify ${key}`, e);
-                    }
-                }
-            });
-
-            setAgentConfig(config);
-
-            // Extract checkpointer/memory selection
-            const checkpointer = config.checkpointer;
-            const sessionService = config.session_service;
-
-            if (framework === 'ADK') {
-                if (sessionService) {
-                    if (sessionService.type === 'in_memory') {
-                        setSelectedMemoryType('AdkInMemory');
-                    } else {
-                        const typeMap: Record<string, string> = { 'vertex_ai': 'AdkVertexAi', 'database': 'AdkDatabase' };
-                        const memType = typeMap[sessionService.type];
-                        if (memType) {
-                            setSelectedMemoryType(memType);
-                            // Try to match with existing apps
-                            // This logic assumes we can match by config. Ideally we should store app_id if possible or just match by config values.
-                            // For now, let's leave app matching logic basic or skip it if complex,
-                            // as we mainly need to set the type.
-                            // Re-using the checkpointer matching logic style:
-                            if (memoryApps.length > 0) {
-                                const match = memoryApps.find(app => {
-                                    if (app.type !== memType) return false;
-                                    if (memType === 'AdkDatabase') return app.config.connectionString === sessionService.db_url;
-                                    if (memType === 'AdkVertexAi') return app.config.project_id === sessionService.project_id;
-                                    return false;
-                                });
-                                if (match) setSelectedMemoryAppId(match.id);
-                            }
-                        }
-                    }
-                } else {
-                    // Default to AdkInMemory if no session service config present? Or leave empty?
-                    // User query implies default is AdkInMemory.
-                    setSelectedMemoryType('AdkInMemory');
-                }
-            } else if (checkpointer) {
-                if (checkpointer.type === 'memory') {
-                    setSelectedMemoryType('InMemoryCheckpointConfig');
-                } else {
-                    const memType = checkpointer.type === 'sqlite' ? 'SQLite' : 'PostgreSQL';
-                    setSelectedMemoryType(memType);
-
-                    if (memoryApps.length > 0 && checkpointer.db_url) {
-                        const match = memoryApps.find(app => app.type === memType && app.config.connectionString === checkpointer.db_url);
-                        if (match) {
-                            setSelectedMemoryAppId(match.id);
-                        }
-                    }
-                }
-            }
-
-            // Extract observability
-            const obs = (initialData.engine_config as any)?.observability || config.observability;
-            if (Array.isArray(obs)) {
-                const types: string[] = [];
-                const selectedApps: Record<string, string> = {};
-
-                obs.forEach((o: any) => {
-                    if (o.provider && o.enabled !== false) {
-                        const providerMap: Record<string, string> = {
-                            'langfuse': 'Langfuse',
-                            'LANGFUSE': 'Langfuse',
-                            'phoenix': 'Phoenix',
-                            'PHOENIX': 'Phoenix',
-                            'google_cloud_logging': 'GoogleCloudLogging',
-                            'GCP_LOGGING': 'GoogleCloudLogging',
-                            'google_cloud_trace': 'GoogleCloudTrace',
-                            'GCP_TRACE': 'GoogleCloudTrace',
-                            'langsmith': 'LangSmith',
-                            'LANGSMITH': 'LangSmith'
-                        };
-                        const type = providerMap[o.provider];
-                        if (type) {
-                            types.push(type);
-
-                            if (observabilityApps.length > 0 && o.config) {
-                                const match = observabilityApps.find(app => {
-                                    if (app.type !== type) return false;
-                                    // Compare config keys
-                                    const keys = Object.keys(o.config);
-                                    if (keys.length === 0) return false;
-                                    return keys.every(k => app.config[k] === o.config[k]);
-                                });
-                                if (match) {
-                                    selectedApps[type] = match.id;
-                                }
-                            }
-                        }
-                    }
-                });
-                setSelectedObservabilityTypes([...new Set(types)]);
-                setSelectedObservabilityApps(selectedApps);
-            }
-
-            // Guardrails
-            const guards = (initialData.engine_config as any)?.guardrails;
-            if (guards?.input && Array.isArray(guards.input) && guardApps.length > 0) {
-                 const ids: string[] = [];
-                 guards.input.forEach((g: any) => {
-                     const match = guardApps.find(app => app.name === g.name);
-                     if (match) {
-                        ids.push(match.id);
-                     }
-                 });
-                 setSelectedGuardIds([...new Set(ids)]);
-            }
-
-            // MCP Servers
-            const mcp = (initialData.engine_config as any)?.mcp_servers;
-            if (Array.isArray(mcp) && mcpApps.length > 0) {
-                const ids: string[] = [];
-                mcp.forEach((m: any) => {
-                    const match = mcpApps.find(app => app.name === m.name);
-                    if (match) {
-                        ids.push(match.id);
-                    }
-                });
-                setSelectedMCPIds([...new Set(ids)]);
-            }
-
-            // SSO
-            const sso = (initialData.engine_config as any)?.sso;
-            if (sso && ssoConfigs.length > 0) {
-                const match = ssoConfigs.find(c => c.sso.issuer === sso.issuer && c.sso.clientId === sso.clientId);
-                if (match) setSelectedSSOId(match.id);
-            }
-
-            // Integrations
-            const ints = (initialData.engine_config as any)?.integrations;
-            if (Array.isArray(ints) && integrationConfigs.length > 0) {
-                const ids: string[] = [];
-                ints.forEach((i: any) => {
-                    const match = integrationConfigs.find(c => c.integration.provider === i.provider);
-                    if (match) ids.push(match.id);
-                });
-                setSelectedIntegrationIds([...new Set(ids)]);
-            }
-        }
-    }, [mode, initialData, isOpen, guardApps, memoryApps, observabilityApps, mcpApps, ssoConfigs, integrationConfigs]);
-
     // Data Fetching
     useEffect(() => {
         if (!isOpen) return;
@@ -394,26 +202,24 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
     useEffect(() => {
         if (!isOpen) {
             setCurrentStep(1);
-            if (mode === 'create') {
-                setName('');
-                setVersion('1.0.0');
-                setBaseUrl('');
-                setDescription('');
-                setServerPort('8000');
-                setAgentType('LANGGRAPH');
-                setAgentConfig({});
-                setSelectedMemoryType('InMemoryCheckpointConfig');
-                setSelectedMemoryAppId('');
-                setSelectedObservabilityTypes([]);
-                setSelectedObservabilityApps({});
-                setSelectedMCPIds([]);
-                setSelectedGuardIds([]);
-                setSelectedSSOId('');
-                setSelectedIntegrationIds([]);
-            }
+            setName('');
+            setVersion('1.0.0');
+            setBaseUrl('');
+            setDescription('');
+            setServerPort('8000');
+            setAgentType('LANGGRAPH');
+            setAgentConfig({});
+            setSelectedMemoryType('InMemoryCheckpointConfig');
+            setSelectedMemoryAppId('');
+            setSelectedObservabilityTypes([]);
+            setSelectedObservabilityApps({});
+            setSelectedMCPIds([]);
+            setSelectedGuardIds([]);
+            setSelectedSSOId('');
+            setSelectedIntegrationIds([]);
             setSubmitError(null);
         }
-    }, [isOpen, mode]);
+    }, [isOpen]);
 
     // Helpers
     const getRiskLevel = (type: string) => {
@@ -652,14 +458,14 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                 }
             };
 
-            console.log(`${mode === 'edit' ? 'Updating' : 'Creating'} agent:`, payload);
+            console.log('Creating agent:', payload);
 
             // Call the appropriate API based on mode
             onSuccess(payload);
 
         } catch (error: any) {
             console.error('Error:', error);
-            let msg = `Failed to ${mode === 'edit' ? 'update' : 'create'} agent`;
+            let msg = 'Failed to create agent';
             try {
                 const parsed = JSON.parse(error.message);
                 if (parsed.detail) {
@@ -705,18 +511,11 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
             <ModalWindow>
                 <ModalHeader>
                     <div>
-                        <ModalTitle>{mode === 'edit' ? t('agent-form.edit-title', 'Edit Agent') : t('agent-form.title')}</ModalTitle>
+                        <ModalTitle>{t('agent-form.title')}</ModalTitle>
                         <ModalSubtitle>Step {currentStep} of 3</ModalSubtitle>
                     </div>
                     <CloseButton onClick={onClose}><X size={24} /></CloseButton>
                 </ModalHeader>
-
-                {mode === 'edit' && (
-                    <WarningBanner>
-                        <AlertTriangle size={16} />
-                        <span>Updating the agent will overwrite its configuration. Please ensure all desired settings are selected below.</span>
-                    </WarningBanner>
-                )}
 
                 <StepperContainer>
                     <StepperInner>
@@ -1107,7 +906,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess, mode, initi
                             </NextButton>
                         ) : (
                             <DeployButton onClick={handleSubmitForm} disabled={isSubmitting}>
-                                {isSubmitting ? 'Saving...' : (mode === 'edit' ? 'Save Changes' : 'Create Agent')}
+                                {isSubmitting ? 'Saving...' : 'Create Agent'}
                             </DeployButton>
                         )}
                     </div>
@@ -1151,22 +950,6 @@ const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>` font-
 const StepInProgress = styled.p` font-size: 10px; color: #8c52ff; margin: 0; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } `;
 const StepSeparatorLine = styled.div` flex: 1; height: 2px; margin: 0 16px; background-color: rgba(255, 255, 255, 0.1); position: relative; `;
 const StepProgress = styled.div<{ $isCompleted: boolean }>` position: absolute; inset: 0; background-color: #10b981; width: ${props => props.$isCompleted ? '100%' : '0%'}; transition: width 0.5s; `;
-const WarningBanner = styled.div`
-    background-color: rgba(234, 179, 8, 0.1);
-    border: 1px solid rgba(234, 179, 8, 0.2);
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin: 0 32px 16px 32px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #facc15;
-    font-size: 13px;
-
-    svg {
-        flex-shrink: 0;
-    }
-`;
 const ModalBody = styled.div` flex: 1; overflow-y: auto; padding: 32px; background-color: #040210; `;
 const ModalFooter = styled.div` padding: 24px; border-top: 1px solid rgba(255, 255, 255, 0.05); background-color: #0B0A15; display: flex; justify-content: space-between; align-items: center; `;
 const CancelButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: #9ca3af; background: transparent; border: none; border-radius: 8px; cursor: pointer; transition: color 0.2s; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); } `;

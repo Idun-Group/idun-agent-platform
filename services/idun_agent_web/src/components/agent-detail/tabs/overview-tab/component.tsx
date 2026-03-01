@@ -1,107 +1,192 @@
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { useTranslation } from 'react-i18next';
-import AgentInfo from '../agent-info/component';
+import { toast } from 'react-toastify';
+import { Save } from 'lucide-react';
 import type { BackendAgent } from '../../../../services/agents';
+import { fetchApplications } from '../../../../services/applications';
+import { fetchSSOs } from '../../../../services/sso';
+import { fetchIntegrations } from '../../../../services/integrations';
+import { API_BASE_URL } from '../../../../utils/api';
+import {
+    extractAgentConfig,
+    extractSelectionsFromAgent,
+    validateAgentForm,
+    buildAgentPatchPayload,
+    getDefaultSelections,
+    type AgentFormState,
+    type AgentSelections,
+    type AvailableResources,
+} from '../../../../utils/agent-config-utils';
+import AgentDetailsSection from './sections/agent-details-section';
+import FrameworkSection from './sections/framework-section';
+import ResourcesSection from './sections/resources-section';
+import { ActionBar, ActionButton, TwoColumnGrid, ColumnStack } from './sections/styled';
 
-interface OverviewTabProps { agent: BackendAgent | null }
+interface OverviewTabProps {
+    agent: BackendAgent | null;
+    isEditing: boolean;
+    onSave: (payload: any) => void;
+    onCancel: () => void;
+    saveTrigger?: number;
+}
 
-const OverviewTab = ({ agent }: OverviewTabProps) => {
-    const { t } = useTranslation();
+const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger }: OverviewTabProps) => {
+    // Form state (initialized when entering edit mode)
+    const [formState, setFormState] = useState<AgentFormState>({
+        name: '',
+        version: '1.0.0',
+        baseUrl: '',
+        description: '',
+        serverPort: '8000',
+        agentType: 'LANGGRAPH',
+        agentConfig: {},
+    });
 
-    // Extract observability provider from agent config
-    const getObservabilityProviders = (): string[] => {
-        if (!agent?.engine_config?.agent?.config) return [];
-        const config = agent.engine_config.agent.config as any;
+    const [selections, setSelections] = useState<AgentSelections>(getDefaultSelections());
+    const [resources, setResources] = useState<AvailableResources>({
+        observabilityApps: [],
+        memoryApps: [],
+        mcpApps: [],
+        guardApps: [],
+        ssoConfigs: [],
+        integrationConfigs: [],
+    });
+    const [rootSchema, setRootSchema] = useState<any>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-        const providers: string[] = [];
-        if (config.observability?.enabled && config.observability?.provider) {
-            providers.push(config.observability.provider);
-        }
-        return providers;
+    // Fetch available resources and schema when entering edit mode
+    useEffect(() => {
+        if (!isEditing || !agent) return;
+
+        // Fetch OpenAPI schema
+        fetch(`${API_BASE_URL}/api/openapi.json`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to fetch schema');
+                return res.json();
+            })
+            .then(setRootSchema)
+            .catch(err => console.error('Error fetching OpenAPI schema:', err));
+
+        // Fetch all available resources
+        const loadResources = async () => {
+            try {
+                const [apps, ssos, integrations] = await Promise.all([
+                    fetchApplications(),
+                    fetchSSOs().catch(() => []),
+                    fetchIntegrations().catch(() => []),
+                ]);
+
+                const newResources: AvailableResources = {
+                    observabilityApps: apps.filter(a => a.category === 'Observability'),
+                    memoryApps: apps.filter(a => a.category === 'Memory'),
+                    mcpApps: apps.filter(a => a.category === 'MCP'),
+                    guardApps: apps.filter(a => a.category === 'Guardrails'),
+                    ssoConfigs: ssos,
+                    integrationConfigs: integrations,
+                };
+                setResources(newResources);
+
+                // Extract current selections from agent config, now that we have resources
+                const extracted = extractSelectionsFromAgent(
+                    agent.engine_config,
+                    agent.framework || 'LANGGRAPH',
+                    newResources
+                );
+                setSelections(extracted);
+            } catch (err) {
+                console.error('Failed to load resources:', err);
+            }
+        };
+
+        loadResources();
+
+        // Initialize form state from agent
+        const port = agent.engine_config?.server?.api?.port;
+        setFormState({
+            name: agent.name || '',
+            version: agent.version || '1.0.0',
+            baseUrl: agent.base_url || '',
+            description: agent.description || '',
+            serverPort: port ? String(port) : '8000',
+            agentType: agent.engine_config?.agent?.type || agent.framework || 'LANGGRAPH',
+            agentConfig: extractAgentConfig(agent.engine_config),
+        });
+    }, [isEditing, agent]);
+
+    const handleFieldChange = (field: keyof AgentFormState, value: string) => {
+        setFormState(prev => ({ ...prev, [field]: value }));
     };
 
+    const handleConfigChange = (newConfig: Record<string, any>) => {
+        setFormState(prev => ({ ...prev, agentConfig: newConfig }));
+    };
+
+    const handleSelectionChange = (updated: Partial<AgentSelections>) => {
+        setSelections(prev => ({ ...prev, ...updated }));
+    };
+
+    const handleSave = async () => {
+        const error = validateAgentForm(formState);
+        if (error) {
+            toast.error(error);
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const payload = buildAgentPatchPayload(formState, selections, resources);
+            await onSave(payload);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    useEffect(() => {
+        if (saveTrigger && saveTrigger > 0 && isEditing) {
+            handleSave();
+        }
+    }, [saveTrigger]);
+
+    if (!agent) return null;
 
     return (
         <Container>
+            <TwoColumnGrid>
+                <ColumnStack>
+                    <AgentDetailsSection
+                        agent={agent}
+                        isEditing={isEditing}
+                        formState={formState}
+                        onFieldChange={handleFieldChange}
+                    />
 
+                    <FrameworkSection
+                        agent={agent}
+                        isEditing={isEditing}
+                        agentConfig={formState.agentConfig}
+                        rootSchema={rootSchema}
+                        onConfigChange={handleConfigChange}
+                    />
+                </ColumnStack>
 
-            <MainContent>
-                <DetailsCard>
-                    <CardHeader>
-                        <CardTitle>Agent Details</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <DetailRow>
-                            <DetailLabel>Name</DetailLabel>
-                            <DetailValue>{agent?.name ?? 'N/A'}</DetailValue>
-                        </DetailRow>
-
-                        {agent?.description && (
-                            <DetailRow>
-                                <DetailLabel>Description</DetailLabel>
-                                <DetailValue>{agent.description}</DetailValue>
-                            </DetailRow>
-                        )}
-
-                        <DetailRow>
-                            <DetailLabel>Status</DetailLabel>
-                            <StatusBadge status={agent?.status ?? 'draft'}>
-                                {agent?.status ?? 'draft'}
-                            </StatusBadge>
-                        </DetailRow>
-
-                        <DetailRow>
-                            <DetailLabel>Version</DetailLabel>
-                            <DetailValue>{agent?.version ?? 'N/A'}</DetailValue>
-                        </DetailRow>
-
-                        <DetailRow>
-                            <DetailLabel>Created</DetailLabel>
-                            <DetailValue>
-                                {agent?.created_at
-                                    ? new Date(agent.created_at).toLocaleString('en-US', {
-                                        dateStyle: 'medium',
-                                        timeStyle: 'short'
-                                    })
-                                    : 'N/A'}
-                            </DetailValue>
-                        </DetailRow>
-
-                        <DetailRow>
-                            <DetailLabel>Last Updated</DetailLabel>
-                            <DetailValue>
-                                {agent?.updated_at
-                                    ? new Date(agent.updated_at).toLocaleString('en-US', {
-                                        dateStyle: 'medium',
-                                        timeStyle: 'short'
-                                    })
-                                    : 'N/A'}
-                            </DetailValue>
-                        </DetailRow>
-                    </CardContent>
-                </DetailsCard>
-
-                {/* {agent?.engine_config?.server?.api?.port && (
-                    <DetailsCard>
-                        <CardHeader>
-                            <CardTitle>Server Configuration</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <DetailRow>
-                                <DetailLabel>API Port</DetailLabel>
-                                <DetailValue>{agent.engine_config.server.api.port}</DetailValue>
-                            </DetailRow>
-                        </CardContent>
-                    </DetailsCard>
-                )} */}
-            </MainContent>
-
-            <Sidebar>
-                <AgentInfo
-                    framework={agent?.framework ?? 'UNKNOWN'}
-                    observability={getObservabilityProviders()}
+                <ResourcesSection
+                    agent={agent}
+                    isEditing={isEditing}
+                    resources={resources}
+                    selections={selections}
+                    onSelectionChange={handleSelectionChange}
+                    onResourcesRefresh={setResources}
                 />
-            </Sidebar>
+            </TwoColumnGrid>
+
+            {isEditing && (
+                <ActionBar>
+                    <ActionButton onClick={onCancel}>Cancel</ActionButton>
+                    <ActionButton $primary onClick={handleSave} disabled={isSaving}>
+                        <Save size={16} /> {isSaving ? 'Saving...' : 'Save Changes'}
+                    </ActionButton>
+                </ActionBar>
+            )}
         </Container>
     );
 };
@@ -110,122 +195,9 @@ export default OverviewTab;
 
 const Container = styled.div`
     display: flex;
-    width: 98%;
+    flex-direction: column;
     gap: 24px;
-    height: 100%;
-    overflow-y: auto;
+    width: 100%;
     padding: 24px 0;
-`;
-
-const Sidebar = styled.div`
-    width: 300px;
-    flex-shrink: 0;
-
-    @media (max-width: 1024px) {
-        width: 250px;
-    }
-`;
-
-const MainContent = styled.div`
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    min-width: 0;
-`;
-
-const DetailsCard = styled.div`
-    background: var(--color-background-secondary, #1a1a2e);
-    border: 1px solid var(--color-border-primary, #2a3f5f);
-    border-radius: 12px;
-    padding: 24px;
-`;
-
-const CardHeader = styled.div`
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--color-border-primary, #2a3f5f);
-`;
-
-const CardTitle = styled.h3`
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
-    margin: 0;
-`;
-
-const CardContent = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-`;
-
-const DetailRow = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(42, 63, 95, 0.3);
-
-    &:last-child {
-        border-bottom: none;
-    }
-`;
-
-const DetailLabel = styled.div`
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-text-secondary, #8892b0);
-`;
-
-const DetailValue = styled.div`
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-text-primary, #ffffff);
-    text-align: right;
-`;
-
-const StatusBadge = styled.span<{ status: string }>`
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-
-    ${(props) => {
-        switch (props.status.toLowerCase()) {
-            case 'active':
-                return `
-                    background: rgba(16, 185, 129, 0.2);
-                    color: #34d399;
-                    border: 1px solid rgba(16, 185, 129, 0.3);
-                `;
-            case 'draft':
-                return `
-                    background: rgba(107, 114, 128, 0.2);
-                    color: #9ca3af;
-                    border: 1px solid rgba(107, 114, 128, 0.3);
-                `;
-            case 'inactive':
-            case 'deprecated':
-                return `
-                    background: rgba(251, 191, 36, 0.2);
-                    color: #fbbf24;
-                    border: 1px solid rgba(251, 191, 36, 0.3);
-                `;
-            case 'error':
-                return `
-                    background: rgba(239, 68, 68, 0.2);
-                    color: #ef4444;
-                    border: 1px solid rgba(239, 68, 68, 0.3);
-                `;
-            default:
-                return `
-                    background: rgba(107, 114, 128, 0.2);
-                    color: #9ca3af;
-                    border: 1px solid rgba(107, 114, 128, 0.3);
-                `;
-        }
-    }}
+    overflow-y: auto;
 `;

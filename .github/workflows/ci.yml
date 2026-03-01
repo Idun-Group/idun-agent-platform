@@ -130,10 +130,3 @@ jobs:
           docker build --platform linux/amd64 -t "$BASE:${{ steps.tag.outputs.ts }}" -t "$BASE:latest" services/idun_agent_web
           docker push "$BASE:${{ steps.tag.outputs.ts }}"
           docker push "$BASE:latest"
-
-      - name: Build and Push copilotkit (copilot runtime)
-        run: |
-          BASE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/copilotkit-repo/copilotkit"
-          docker build --platform linux/amd64 -t "$BASE:${{ steps.tag.outputs.ts }}" -t "$BASE:latest" services/copilot_runtime
-          docker push "$BASE:${{ steps.tag.outputs.ts }}"
-          docker push "$BASE:latest"

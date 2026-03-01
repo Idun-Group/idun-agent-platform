@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { CheckCircle2, AlertCircle, Copy, Check, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { createAgent, patchAgent, getAgentApiKey } from '../../../services/agents';
+import { createAgent, patchAgent, getAgentApiKey, performHealthCheck } from '../../../services/agents';
 import { API_BASE_URL } from '../../../utils/api';
 import { type WizardState, resolveBaseUrl, resolveServerPort } from '../types';
 import CodeSnippet from '../components/code-snippet';
@@ -58,7 +58,8 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
             setPhase('updating');
             (async () => {
                 try {
-                    await patchAgent(state.createdAgentId!, payload);
+                    const updated = await patchAgent(state.createdAgentId!, payload);
+                    performHealthCheck(updated);
                     setPhase('ready');
                     toast.success('Agent configuration updated');
                 } catch (err) {
@@ -80,6 +81,7 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
                 const apiKey = await getAgentApiKey(agent.id);
                 lastPayloadRef.current = payloadJson;
                 onCreated(agent.id, apiKey);
+                performHealthCheck(agent);
                 setShowConfetti(true);
                 setPhase('ready');
             } catch (err) {
@@ -97,11 +99,13 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
         setErrorMessage('');
         try {
             if (isUpdate) {
-                await patchAgent(state.createdAgentId!, payload);
+                const updated = await patchAgent(state.createdAgentId!, payload);
+                performHealthCheck(updated);
             } else {
                 const agent = await createAgent(payload);
                 const apiKey = await getAgentApiKey(agent.id);
                 onCreated(agent.id, apiKey);
+                performHealthCheck(agent);
                 setShowConfetti(true);
             }
             lastPayloadRef.current = JSON.stringify(payload);

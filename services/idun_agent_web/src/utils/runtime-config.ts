@@ -1,6 +1,5 @@
 interface RuntimeConfig {
     API_URL: string;
-    COPILOT_RUNTIME_URL: string;
     AUTH_DISABLE_USERNAME_PASSWORD: string;
     USE_MOCKS: string;
 }
@@ -21,7 +20,6 @@ function resolve(key: keyof RuntimeConfig, viteKey: string, fallback: string): s
 
 export const runtimeConfig: RuntimeConfig = {
     API_URL: resolve('API_URL', 'VITE_API_URL', ''),
-    COPILOT_RUNTIME_URL: resolve('COPILOT_RUNTIME_URL', 'VITE_COPILOT_RUNTIME_URL', ''),
     AUTH_DISABLE_USERNAME_PASSWORD: resolve(
         'AUTH_DISABLE_USERNAME_PASSWORD',
         'VITE_AUTH_DISABLE_USERNAME_PASSWORD',

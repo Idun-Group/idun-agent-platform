@@ -6,6 +6,7 @@ from .managed_agent import (  # noqa: F401
     ManagedAgentCreate,
     ManagedAgentPatch,
     ManagedAgentRead,
+    ManagedAgentStatusUpdate,
 )
 from .managed_integration import (  # noqa: F401
     ManagedIntegrationCreate,
