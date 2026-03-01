@@ -68,3 +68,9 @@ class ManagedAgentPatch(BaseModel):
     engine_config: EngineConfig = Field(
         ..., description="Idun Agent Engine configuration"
     )
+
+
+class ManagedAgentStatusUpdate(BaseModel):
+    """Schema for updating only the agent status."""
+
+    status: AgentStatus = Field(..., description="New agent status")

@@ -7,6 +7,7 @@ import {
     getAgent,
     patchAgent,
     restartAgent,
+    performHealthCheck,
     type BackendAgent,
 } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
@@ -50,7 +51,10 @@ export default function AgentDetailPage() {
     const loadAgent = () => {
         if (!id) return;
         getAgent(id)
-            .then(setAgent)
+            .then((loaded) => {
+                setAgent(loaded);
+                performHealthCheck(loaded, setAgent);
+            })
             .catch((e) => {
                 const errorMsg = e instanceof Error ? e.message : 'Failed to load agent';
                 setError(errorMsg);
@@ -75,6 +79,7 @@ export default function AgentDetailPage() {
             setAgent(updatedAgent);
             setIsEditing(false);
             toast.success('Agent updated successfully!');
+            performHealthCheck(updatedAgent, setAgent);
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to update agent';
             toast.error(errorMsg);
