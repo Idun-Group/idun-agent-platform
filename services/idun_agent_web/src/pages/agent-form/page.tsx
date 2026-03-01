@@ -13,7 +13,7 @@ import { fetchSSOs } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
 import { fetchIntegrations } from '../../services/integrations';
 import type { ManagedIntegration } from '../../services/integrations';
-import { toast } from 'react-toastify';
+import { notify } from '../../components/toast/notify';
 import WizardStepper from './components/wizard-stepper';
 import BasicsStep from './steps/basics-step';
 import FrameworkConfigStep from './steps/framework-config-step';
@@ -70,7 +70,7 @@ export default function AgentFormPage() {
 
     const handleFinalize = () => {
         if (state.createdAgentId) {
-            toast.success('Agent ready! You can now configure additional features.');
+            notify.success('Agent ready! You can now configure additional features.');
             navigate(`/agents/${state.createdAgentId}`);
         }
     };

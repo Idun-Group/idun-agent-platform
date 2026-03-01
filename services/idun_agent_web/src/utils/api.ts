@@ -1,4 +1,4 @@
-import { toast } from 'react-toastify';
+import { notify } from '../components/toast/notify';
 import { runtimeConfig } from './runtime-config';
 
 const resolveBaseUrl = (): string => {

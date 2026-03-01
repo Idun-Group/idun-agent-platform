@@ -1,7 +1,7 @@
 import { Check, Box, Code2, Shield, ChevronRight, ChevronLeft, Upload, Server, Layers, X, Database, Eye, Plus, Zap, KeyRound, Plug } from 'lucide-react';
 import { type ChangeEvent, useEffect, useState, useRef } from 'react';
 import styled from 'styled-components';
-import { toast } from 'react-toastify';
+import { notify } from '../toast/notify';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_FRAMEWORKS } from '../../utils/yaml-parser';
 import { AgentAvatar } from '../general/agent-avatar/component';
@@ -279,7 +279,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
             setAppToEdit(undefined);
             setIsAppModalOpen(true);
         } else {
-            toast.error(`Configuration template for ${type} not found.`);
+            notify.error(`Configuration template for ${type} not found.`);
         }
     };
 
@@ -293,31 +293,31 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
     const handleSubmitForm = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) => {
         if (e && 'preventDefault' in e) e.preventDefault();
 
-        if (!name.trim()) return toast.error('Agent name is required');
-        if (!agentType) return toast.error('Please select an agent type');
+        if (!name.trim()) return notify.error('Agent name is required');
+        if (!agentType) return notify.error('Please select an agent type');
         const parsedPort = Number(serverPort);
-        if (!Number.isFinite(parsedPort) || parsedPort <= 0) return toast.error('Invalid server port');
+        if (!Number.isFinite(parsedPort) || parsedPort <= 0) return notify.error('Invalid server port');
 
         // Validate required fields based on framework
         if (agentType === 'LANGGRAPH') {
             if (!agentConfig.graph_definition || (typeof agentConfig.graph_definition === 'string' && !agentConfig.graph_definition.trim())) {
-                return toast.error('Graph Definition is required for LangGraph agents');
+                return notify.error('Graph Definition is required for LangGraph agents');
             }
         }
         if (agentType === 'HAYSTACK') {
             if (!agentConfig.component_type) {
-                return toast.error('Component Type is required for Haystack agents');
+                return notify.error('Component Type is required for Haystack agents');
             }
             if (!agentConfig.component_definition || (typeof agentConfig.component_definition === 'string' && !agentConfig.component_definition.trim())) {
-                return toast.error('Component Definition is required for Haystack agents');
+                return notify.error('Component Definition is required for Haystack agents');
             }
         }
         if (agentType === 'ADK') {
             if (!agentConfig.agent) {
-                return toast.error('Agent definition is required for ADK agents');
+                return notify.error('Agent definition is required for ADK agents');
             }
             if (!agentConfig.app_name) {
-                return toast.error('App Name is required for ADK agents');
+                return notify.error('App Name is required for ADK agents');
             }
         }
 

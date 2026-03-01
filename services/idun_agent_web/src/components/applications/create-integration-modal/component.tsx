@@ -8,7 +8,7 @@ interface Props {
     onClose: () => void;
     onCreated: () => void;
     appToEdit?: ManagedIntegration | null;
-    provider: IntegrationProvider;
+    provider?: IntegrationProvider;
 }
 
 const spin = keyframes`from { transform: rotate(0deg); } to { transform: rotate(360deg); }`;
@@ -244,11 +244,64 @@ const PROVIDER_META: Record<IntegrationProvider, { label: string; color: string 
     SLACK: { label: 'Slack Events API', color: '#E01E5A' },
 };
 
-const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit, provider }) => {
+const ProviderPickerGrid = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 28px;
+`;
+
+const ProviderPickerCard = styled.button<{ $color: string }>`
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: ${p => `${p.$color}0a`};
+    border: 1px solid ${p => `${p.$color}30`};
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+
+    &:hover {
+        background: ${p => `${p.$color}18`};
+        border-color: ${p => `${p.$color}50`};
+    }
+`;
+
+const ProviderPickerIcon = styled.div<{ $color: string }>`
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: ${p => `${p.$color}18`};
+    color: ${p => p.$color};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+`;
+
+const ProviderPickerName = styled.span`
+    font-size: 15px;
+    font-weight: 600;
+`;
+
+const ProviderPickerDesc = styled.span`
+    font-size: 12px;
+    color: var(--color-text-muted, #888);
+`;
+
+const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit, provider: providerProp }) => {
+    const [selectedProvider, setSelectedProvider] = useState<IntegrationProvider>(providerProp ?? 'WHATSAPP');
     const [name, setName] = useState('');
     const [enabled, setEnabled] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [showProviderPicker, setShowProviderPicker] = useState(!providerProp && !appToEdit);
+
+    const provider = providerProp ?? selectedProvider;
 
     // WhatsApp fields
     const [accessToken, setAccessToken] = useState('');
@@ -294,8 +347,10 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
             setAccessToken(''); setPhoneNumberId(''); setVerifyToken(''); setApiVersion('v21.0');
             setBotToken(''); setApplicationId(''); setPublicKey(''); setGuildId('');
             setSlackBotToken(''); setSigningSecret('');
+            setShowProviderPicker(!providerProp);
+            if (providerProp) setSelectedProvider(providerProp);
         }
-    }, [isOpen, appToEdit]);
+    }, [isOpen, appToEdit, providerProp]);
 
     if (!isOpen) return null;
 
@@ -361,10 +416,29 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                 {isLoading && <LoadingOverlay><BigSpinner $color={PROVIDER_META[provider].color} /></LoadingOverlay>}
 
                 <PanelHeader>
-                    <PanelTitle>{appToEdit ? 'Edit Integration' : 'Add Integration'}</PanelTitle>
+                    <PanelTitle>{appToEdit ? 'Edit Integration' : showProviderPicker ? 'Choose Provider' : 'Add Integration'}</PanelTitle>
                     <CloseBtn type="button" onClick={onClose}>×</CloseBtn>
                 </PanelHeader>
 
+                {showProviderPicker ? (
+                    <ProviderPickerGrid>
+                        {(Object.entries(PROVIDER_META) as [IntegrationProvider, { label: string; color: string }][]).map(([key, meta]) => (
+                            <ProviderPickerCard
+                                key={key}
+                                $color={meta.color}
+                                onClick={() => { setSelectedProvider(key); setShowProviderPicker(false); }}
+                            >
+                                <ProviderPickerIcon $color={meta.color}>
+                                    {key === 'WHATSAPP' ? '💬' : key === 'DISCORD' ? '🎮' : '⚡'}
+                                </ProviderPickerIcon>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <ProviderPickerName>{key === 'WHATSAPP' ? 'WhatsApp' : key === 'DISCORD' ? 'Discord' : 'Slack'}</ProviderPickerName>
+                                    <ProviderPickerDesc>{meta.label}</ProviderPickerDesc>
+                                </div>
+                            </ProviderPickerCard>
+                        ))}
+                    </ProviderPickerGrid>
+                ) : (
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                     <FormBody>
                         {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
@@ -552,6 +626,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                         </SubmitBtn>
                     </Footer>
                 </form>
+                )}
             </Modal>
         </Overlay>
     );

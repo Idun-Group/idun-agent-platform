@@ -152,11 +152,11 @@ export const ResourceCardContainer = styled.div<{ $configured?: boolean }>`
     transition: border-color 0.2s;
 `;
 
-export const ResourceCardHeader = styled.div`
+export const ResourceCardHeader = styled.div<{ $hasBody?: boolean }>`
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: ${p => p.$hasBody !== false ? '12px' : '0'};
 `;
 
 export const ResourceCardTitle = styled.div`
@@ -323,4 +323,153 @@ export const ColumnStack = styled.div`
     display: flex;
     flex-direction: column;
     gap: 24px;
+`;
+
+/* ── View-mode detail components ── */
+
+export const ViewModeDetails = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
+
+export const ViewDetailItem = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+`;
+
+export const ViewDetailHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+`;
+
+export const ViewDetailName = styled.span`
+    font-size: 13px;
+    font-weight: 600;
+    color: #e5e7eb;
+`;
+
+export const ViewDetailBadge = styled.span`
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(140, 82, 255, 0.1);
+    color: #a78bfa;
+    border: 1px solid rgba(140, 82, 255, 0.15);
+    white-space: nowrap;
+`;
+
+export const ViewDetailMeta = styled.span`
+    font-size: 11px;
+    color: #6b7280;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+export const ViewConfigButton = styled.button<{ $active?: boolean }>`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid ${p => p.$active ? 'rgba(140, 82, 255, 0.4)' : 'rgba(255, 255, 255, 0.1)'};
+    background: ${p => p.$active ? 'rgba(140, 82, 255, 0.15)' : 'transparent'};
+    color: ${p => p.$active ? '#a78bfa' : '#6b7280'};
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+
+    &:hover {
+        border-color: rgba(140, 82, 255, 0.4);
+        background: rgba(140, 82, 255, 0.1);
+        color: #a78bfa;
+    }
+`;
+
+export const ManageButton = styled.button`
+    font-size: 11px;
+    color: #a78bfa;
+    font-weight: 500;
+    align-self: flex-start;
+    margin-top: 4px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: color 0.15s;
+
+    &:hover {
+        color: #c4b5fd;
+        text-decoration: underline;
+    }
+`;
+
+export const QuickAddButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px dashed rgba(140, 82, 255, 0.3);
+    background: transparent;
+    color: #a78bfa;
+    cursor: pointer;
+    width: 100%;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s;
+
+    &:hover {
+        border-color: rgba(140, 82, 255, 0.5);
+        background: rgba(140, 82, 255, 0.04);
+    }
+`;
+
+/* ── Expandable config view ── */
+
+export const ExpandedConfig = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+`;
+
+export const ExpandedConfigRow = styled.div`
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    line-height: 1.5;
+`;
+
+export const ExpandedConfigKey = styled.span`
+    color: #6b7280;
+    flex-shrink: 0;
+    min-width: 80px;
+    font-weight: 500;
+`;
+
+export const ExpandedConfigValue = styled.span`
+    color: #9ca3af;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: monospace;
+    font-size: 11px;
 `;

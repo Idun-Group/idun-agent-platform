@@ -2,7 +2,7 @@ import { User, Building } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Button } from '../../components/general/button/component';
-import { toast } from 'react-toastify';
+import { notify } from '../../components/toast/notify';
 import { signupBasic, getRoles } from '../../utils/auth';
 
 import useWorkspace from '../../hooks/use-workspace';
@@ -78,7 +78,7 @@ export default function UserFormPage() {
                 roles: selectedRoles,
                 workspaces: selectedWorkspaces,
             });
-            toast.success(t('user-form.create.success', { defaultValue: 'User created' }));
+            notify.success(t('user-form.create.success', { defaultValue: 'User created' }));
             // Redirect back to users list; the dashboard will refetch on mount
             window.location.assign('/users');
         } catch (err: any) {
@@ -87,7 +87,7 @@ export default function UserFormPage() {
                 : err?.message === 'conflict_email'
                 ? t('errors.email_conflict', { defaultValue: 'Email already registered' })
                 : t('errors.create_failed', { defaultValue: 'Failed to create user' });
-            toast.error(msg as string);
+            notify.error(msg as string);
         }
     };
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../../general/button/component';
-import { toast } from 'react-toastify';
+import { notify } from '../../toast/notify';
 import { t } from 'i18next';
 import {
     Form,
@@ -17,7 +17,7 @@ const SecuritySettings = () => {
         e: React.FormEvent<HTMLFormElement>
     ) => {
         e.preventDefault();
-        toast.success('Mot de passe mis à jour avec succès');
+        notify.success('Mot de passe mis à jour avec succès');
     };
 
     return (

@@ -180,14 +180,39 @@ export function extractSelectionsFromAgent(
         selections.selectedObservabilityApps = selectedApps;
     }
 
-    // Guardrails
+    // Guardrails — match by config_id→type mapping, then fall back to name
+    const CONFIG_ID_TO_TYPE: Record<string, AppType> = {
+        ban_list: 'BanList',
+        detect_pii: 'DetectPII',
+        nsfw_text: 'NSFWText',
+        toxic_language: 'ToxicLanguage',
+        gibberish_text: 'GibberishText',
+        bias_check: 'BiasCheck',
+        competition_check: 'CompetitionCheck',
+        correct_language: 'CorrectLanguage',
+        restrict_to_topic: 'RestrictTopic',
+        model_armor: 'ModelArmor',
+        custom_llm_guardrail: 'CustomLLMGuardrail',
+        detect_jailbreak: 'DetectJailbreak',
+        rag_hallucination: 'RagHallucination',
+    };
     const guards = engineConfig?.guardrails;
     if (guards?.input && Array.isArray(guards.input)) {
         const ids: string[] = [];
+        const usedAppIds = new Set<string>();
         for (const g of guards.input) {
-            const guardName = g.name || g.config_id;
-            const match = resources.guardApps.find(app => app.name === guardName || app.name === g.config_id);
-            if (match) ids.push(match.id);
+            const expectedType = g.config_id ? CONFIG_ID_TO_TYPE[g.config_id] : undefined;
+            // Try matching by type first (most reliable), then by name
+            const match = resources.guardApps.find(app =>
+                !usedAppIds.has(app.id) && (
+                    (expectedType && app.type === expectedType) ||
+                    (g.name && app.name === g.name)
+                )
+            );
+            if (match) {
+                ids.push(match.id);
+                usedAppIds.add(match.id);
+            }
         }
         selections.selectedGuardIds = [...new Set(ids)];
     }

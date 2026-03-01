@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { CheckCircle2, AlertCircle, Copy, Check, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { notify } from '../../../components/toast/notify';
 import { createAgent, patchAgent, getAgentApiKey, performHealthCheck } from '../../../services/agents';
 import { API_BASE_URL } from '../../../utils/api';
 import { type WizardState, resolveBaseUrl, resolveServerPort } from '../types';
@@ -61,7 +61,7 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
                     const updated = await patchAgent(state.createdAgentId!, payload);
                     performHealthCheck(updated);
                     setPhase('ready');
-                    toast.success('Agent configuration updated');
+                    notify.success('Agent configuration updated');
                 } catch (err) {
                     const msg = err instanceof Error ? err.message : 'Failed to update agent';
                     setErrorMessage(msg);
@@ -119,7 +119,7 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
 
     const copyToClipboard = async (text: string) => {
         await navigator.clipboard.writeText(text);
-        toast.success('Copied to clipboard');
+        notify.success('Copied to clipboard');
     };
 
     if (phase === 'creating' || phase === 'updating') {

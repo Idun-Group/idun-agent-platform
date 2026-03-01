@@ -15,7 +15,7 @@ import { CreateMemoryModal } from '../../components/applications/create-memory-m
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import { fetchApplications, deleteApplication } from '../../services/applications';
 import type { ApplicationConfig } from '../../types/application.types';
-import { toast } from 'react-toastify';
+import { notify } from '../../components/toast/notify';
 import { Loader } from 'lucide-react';
 
 const MemoryPage = () => {
@@ -35,7 +35,7 @@ const MemoryPage = () => {
           setMemories(memoryApps);
       } catch (error) {
           console.error("Failed to fetch memories", error);
-          toast.error("Failed to fetch memory stores");
+          notify.error("Failed to fetch memory stores");
       } finally {
           setIsLoading(false);
       }
@@ -88,7 +88,7 @@ const MemoryPage = () => {
   const handleDeleteConfirm = async () => {
       if (!appToDelete?.id) return;
       await deleteApplication(appToDelete.id);
-      toast.success('Memory store removed');
+      notify.success('Memory store removed');
       setAppToDelete(null);
       loadMemories();
   };

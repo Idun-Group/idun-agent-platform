@@ -4,8 +4,9 @@ import App from './App.tsx';
 import GlobalStyles from './global-styles.tsx';
 import { BrowserRouter } from 'react-router-dom';
 import './i18n'; // Import i18n configuration
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ToastStyles from './components/toast/toast-styles';
 import { WorkspaceProvider } from './hooks/use-workspace.tsx';
 import { ToggleThemeModeProvider } from './hooks/use-toggle-theme-mode.tsx';
 import { LoaderProvider } from './hooks/use-loader.tsx';
@@ -19,8 +20,22 @@ createRoot(document.getElementById('root')!).render(
                     <LoaderProvider>
                         <AuthProvider>
                             <GlobalStyles />
+                            <ToastStyles />
                             <App />
-                            <ToastContainer />
+                            <ToastContainer
+                                position="top-right"
+                                autoClose={300000}
+                                hideProgressBar={false}
+                                newestOnTop
+                                closeOnClick
+                                rtl={false}
+                                pauseOnFocusLoss={false}
+                                draggable={false}
+                                pauseOnHover
+                                theme="dark"
+                                transition={Slide}
+                                limit={5}
+                            />
                         </AuthProvider>
                     </LoaderProvider>
                 </WorkspaceProvider>

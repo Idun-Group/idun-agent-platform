@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
+import { notify } from '../../components/toast/notify';
 import { useAuth } from '../../hooks/use-auth';
 import {
     getAgent,
@@ -78,11 +78,11 @@ export default function AgentDetailPage() {
             const updatedAgent = await patchAgent(agent.id, payload);
             setAgent(updatedAgent);
             setIsEditing(false);
-            toast.success('Agent updated successfully!');
+            notify.success('Agent updated successfully!');
             performHealthCheck(updatedAgent, setAgent);
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to update agent';
-            toast.error(errorMsg);
+            notify.error(errorMsg);
         }
     };
 
@@ -93,15 +93,15 @@ export default function AgentDetailPage() {
 
     const handleRestart = async () => {
         if (!agent?.base_url) {
-            toast.error('Agent URL is not available');
+            notify.error('Agent URL is not available');
             return;
         }
         try {
             await restartAgent(agent.base_url);
-            toast.success('Agent restart triggered successfully');
+            notify.success('Agent restart triggered successfully');
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to restart agent';
-            toast.error(errorMsg);
+            notify.error(errorMsg);
         }
     };
 
@@ -194,6 +194,7 @@ export default function AgentDetailPage() {
                             onSave={handleEditSave}
                             onCancel={() => setIsEditing(false)}
                             saveTrigger={saveTrigger}
+                            onAgentRefresh={loadAgent}
                         />
                     )}
                     {activeTab === 'chat' && <ChatTab agent={agent} />}

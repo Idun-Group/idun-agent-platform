@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { notify } from '../../components/toast/notify';
 import { Search, Plus, Bot } from 'lucide-react';
 import type { BackendAgent } from '../../services/agents';
 import { listAgents, deleteAgent } from '../../services/agents';
@@ -38,7 +38,7 @@ const AgentDashboardPage = () => {
             .then((rows) => setAgents(rows))
             .catch((error) => {
                 const message = error instanceof Error ? error.message : String(error);
-                toast.error(message);
+                notify.error(message);
             })
             .finally(() => setIsLoading(false));
     }, []);
@@ -57,7 +57,7 @@ const AgentDashboardPage = () => {
     const handleDeleteConfirm = async () => {
         if (!agentToDelete) return;
         await deleteAgent(agentToDelete.id);
-        toast.success('Agent deleted');
+        notify.success('Agent deleted');
         setAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
     };
 
