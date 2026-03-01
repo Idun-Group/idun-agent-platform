@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -10,12 +10,12 @@ import {
     type BackendAgent,
 } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
-import AgentFormModal from '../../components/agent-form-modal/component';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
 import {
     ArrowLeft,
     RotateCcw,
     Edit3,
+    X,
     LayoutDashboard,
     Webhook,
     Settings,
@@ -38,19 +38,10 @@ const TABS = [
 export default function AgentDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState('overview');
     const [agent, setAgent] = useState<BackendAgent | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-    // Auto-open edit modal when ?edit=true is in the URL
-    useEffect(() => {
-        if (searchParams.get('edit') === 'true' && agent) {
-            setIsEditModalOpen(true);
-            setSearchParams({}, { replace: true });
-        }
-    }, [searchParams, agent]);
+    const [isEditing, setIsEditing] = useState(false);
 
     const { isLoading: isAuthLoading } = useAuth();
 
@@ -70,27 +61,27 @@ export default function AgentDetailPage() {
         loadAgent();
     }, [id, isAuthLoading]);
 
-    const getLangfuseUrl = (): string => {
-        const maybe = (agent as any)?.run_config?.env?.LANGFUSE_HOST as string | undefined;
-        if (maybe && typeof maybe === 'string' && !maybe.includes('${')) return maybe;
-        return 'https://cloud.langfuse.com';
-    };
-
     const handleTabClick = (tabId: string) => {
+        if (isEditing && tabId !== 'overview') return;
         setActiveTab(tabId);
     };
 
-    const handleEditSuccess = async (payload: any) => {
+    const handleEditSave = async (payload: any) => {
         if (!agent) return;
         try {
             const updatedAgent = await patchAgent(agent.id, payload);
             setAgent(updatedAgent);
-            setIsEditModalOpen(false);
+            setIsEditing(false);
             toast.success('Agent updated successfully!');
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to update agent';
             toast.error(errorMsg);
         }
+    };
+
+    const handleEditToggle = () => {
+        setIsEditing(true);
+        setActiveTab('overview');
     };
 
     const handleRestart = async () => {
@@ -106,8 +97,6 @@ export default function AgentDetailPage() {
             toast.error(errorMsg);
         }
     };
-
-    const statusColor = (agent?.status || 'draft').toLowerCase() === 'active' ? 'emerald' : 'gray';
 
     if (error) {
         return (
@@ -158,8 +147,8 @@ export default function AgentDetailPage() {
                     <HeaderButton onClick={handleRestart}>
                         <RotateCcw size={16} /> Restart
                     </HeaderButton>
-                    <HeaderButton $primary onClick={() => setIsEditModalOpen(true)}>
-                        <Edit3 size={16} /> Edit Agent
+                    <HeaderButton $primary onClick={isEditing ? () => setIsEditing(false) : handleEditToggle}>
+                        {isEditing ? <><X size={16} /> Cancel Edit</> : <><Edit3 size={16} /> Edit Agent</>}
                     </HeaderButton>
                 </Actions>
             </HeaderSection>
@@ -172,6 +161,7 @@ export default function AgentDetailPage() {
                         <TabButton
                             key={tab.id}
                             $active={isActive}
+                            $disabled={isEditing && tab.id !== 'overview'}
                             onClick={() => handleTabClick(tab.id)}
                         >
                             <Icon size={16} style={{ marginRight: '8px' }} />
@@ -183,22 +173,20 @@ export default function AgentDetailPage() {
 
             <ContentArea>
                 <Suspense fallback={<Loader />}>
-                    {activeTab === 'overview' && <OverviewTab agent={agent} />}
+                    {activeTab === 'overview' && (
+                        <OverviewTab
+                            agent={agent}
+                            isEditing={isEditing}
+                            onSave={handleEditSave}
+                            onCancel={() => setIsEditing(false)}
+                        />
+                    )}
                     {activeTab === 'chat' && <ChatTab agent={agent} />}
                     {activeTab === 'gateway' && <GatewayTab agent={agent} />}
                     {activeTab === 'configuration' && <ConfigurationTab agent={agent} />}
                 </Suspense>
             </ContentArea>
 
-            {agent && (
-                <AgentFormModal
-                    isOpen={isEditModalOpen}
-                    onClose={() => setIsEditModalOpen(false)}
-                    onSuccess={handleEditSuccess}
-                    mode="edit"
-                    initialData={agent}
-                />
-            )}
         </PageContainer>
     );
 }
@@ -339,7 +327,7 @@ const TabsNav = styled.div`
     margin-bottom: 32px;
 `;
 
-const TabButton = styled.button<{ $active: boolean }>`
+const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
     display: flex;
     align-items: center;
     background: none;
@@ -347,9 +335,10 @@ const TabButton = styled.button<{ $active: boolean }>`
     padding: 16px 4px;
     font-size: 14px;
     font-weight: 500;
-    cursor: pointer;
+    cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
     position: relative;
     transition: all 0.2s;
+    opacity: ${props => props.$disabled ? 0.4 : 1};
 
     ${props => props.$active
         ? `color: white;`

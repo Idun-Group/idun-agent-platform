@@ -18,13 +18,13 @@ const getInitialLanguage = (): string => {
         return saved;
     }
     const browserLang = navigator.language.split('-')[0];
-    return supported.includes(browserLang) ? browserLang : 'fr';
+    return supported.includes(browserLang) ? browserLang : 'en';
 };
 
 i18n.use(initReactI18next) // React-i18next plugin
     .init({
         // Langue par défaut et initiale
-        fallbackLng: 'fr',
+        fallbackLng: 'en',
         lng: getInitialLanguage(),
 
         // Langues supportées
