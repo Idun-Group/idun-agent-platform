@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { Database, Eye, Server, Shield, KeyRound, Plug } from 'lucide-react';
 import type { BackendAgent } from '../../../../../services/agents';
-import type { ApplicationConfig } from '../../../../../types/application.types';
+import type { ApplicationConfig, MarketplaceApp, AppCategory } from '../../../../../types/application.types';
 import type { AgentSelections, AvailableResources } from '../../../../../utils/agent-config-utils';
 import { OBSERVABILITY_PROVIDER_MAP, FRAMEWORK_MEMORY_MAP } from '../../../../../utils/agent-config-utils';
+import { MARKETPLACE_APPS, fetchApplications } from '../../../../../services/applications';
+import { fetchSSOs } from '../../../../../services/sso';
+import { fetchIntegrations } from '../../../../../services/integrations';
+import ApplicationModal from '../../../../applications/application-modal/component';
 import ResourceCard from './resource-card';
 import {
     SectionCard,
@@ -27,12 +32,29 @@ function makeVirtualMemoryApp(id: string, name: string, type: string): Applicati
     };
 }
 
+type CreateTarget =
+    | { category: 'Observability' }
+    | { category: 'Memory' }
+    | { category: 'MCP' }
+    | { category: 'Guardrails' }
+    | { category: 'SSO' }
+    | { category: 'Integrations' };
+
+function getMarketplaceAppsForCategory(category: AppCategory, framework: string): MarketplaceApp[] {
+    return MARKETPLACE_APPS.filter(app => {
+        if (app.category !== category) return false;
+        if (category === 'Memory' && app.framework && app.framework !== framework) return false;
+        return true;
+    });
+}
+
 interface ResourcesSectionProps {
     agent: BackendAgent;
     isEditing: boolean;
     resources: AvailableResources;
     selections: AgentSelections;
     onSelectionChange: (updated: Partial<AgentSelections>) => void;
+    onResourcesRefresh?: (resources: AvailableResources) => void;
 }
 
 export default function ResourcesSection({
@@ -41,10 +63,15 @@ export default function ResourcesSection({
     resources,
     selections,
     onSelectionChange,
+    onResourcesRefresh,
 }: ResourcesSectionProps) {
     const framework = agent.framework || 'LANGGRAPH';
 
-    // Derive assigned names from engine_config for view mode
+    const [createTarget, setCreateTarget] = useState<CreateTarget | null>(null);
+    const [selectedMarketplaceApp, setSelectedMarketplaceApp] = useState<MarketplaceApp | undefined>();
+    const [isPickerOpen, setIsPickerOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
     const getMemoryAssigned = (): string[] => {
         const config = agent.engine_config?.agent?.config as any;
         if (!config) return ['In-Memory'];
@@ -95,7 +122,7 @@ export default function ResourcesSection({
         return ints.map((i: any) => i.provider).filter(Boolean);
     };
 
-    // Memory: build list with built-in options + framework-compatible app configs
+    // Memory
     const availableMemoryTypes = FRAMEWORK_MEMORY_MAP[framework] || [];
     const filteredMemoryApps = resources.memoryApps.filter(app => availableMemoryTypes.includes(app.type));
     const builtinMemoryItems = [
@@ -106,7 +133,6 @@ export default function ResourcesSection({
         ...filteredMemoryApps.map(app => ({ kind: 'app' as const, data: app })),
     ];
 
-    // Derive the selected ID for the memory card (single-select)
     const getMemorySelectedId = (): string[] => {
         if (selections.selectedMemoryType === 'InMemoryCheckpointConfig' || selections.selectedMemoryType === 'AdkInMemory') {
             return [VIRTUAL_IN_MEMORY];
@@ -182,6 +208,54 @@ export default function ResourcesSection({
 
     const obsSelectedIds = Object.values(selections.selectedObservabilityApps);
 
+    // "Create new" flow
+    const openCreatePicker = (category: AppCategory) => {
+        const marketplaceApps = getMarketplaceAppsForCategory(category, framework);
+        if (marketplaceApps.length === 1) {
+            setSelectedMarketplaceApp(marketplaceApps[0]);
+            setCreateTarget({ category });
+            setIsCreateModalOpen(true);
+        } else if (marketplaceApps.length > 1) {
+            setCreateTarget({ category });
+            setIsPickerOpen(true);
+        }
+    };
+
+    const selectMarketplaceAppAndCreate = (app: MarketplaceApp) => {
+        setSelectedMarketplaceApp(app);
+        setIsPickerOpen(false);
+        setIsCreateModalOpen(true);
+    };
+
+    const handleCreateSuccess = async () => {
+        setIsCreateModalOpen(false);
+        setSelectedMarketplaceApp(undefined);
+        setCreateTarget(null);
+
+        if (!onResourcesRefresh) return;
+        try {
+            const [apps, ssos, integrations] = await Promise.all([
+                fetchApplications(),
+                fetchSSOs().catch(() => []),
+                fetchIntegrations().catch(() => []),
+            ]);
+            onResourcesRefresh({
+                observabilityApps: apps.filter(a => a.category === 'Observability'),
+                memoryApps: apps.filter(a => a.category === 'Memory'),
+                mcpApps: apps.filter(a => a.category === 'MCP'),
+                guardApps: apps.filter(a => a.category === 'Guardrails'),
+                ssoConfigs: ssos,
+                integrationConfigs: integrations,
+            });
+        } catch {
+            // toast is handled by the modal
+        }
+    };
+
+    const pickerApps = createTarget
+        ? getMarketplaceAppsForCategory(createTarget.category as AppCategory, framework)
+        : [];
+
     return (
         <SectionCard>
             <SectionHeader>
@@ -199,6 +273,7 @@ export default function ResourcesSection({
                     multiSelect={false}
                     onToggle={handleMemoryToggle}
                     assignedNames={getMemoryAssigned()}
+                    onCreateNew={isEditing ? () => openCreatePicker('Memory') : undefined}
                 />
 
                 <ResourceCard
@@ -210,6 +285,7 @@ export default function ResourcesSection({
                     multiSelect={true}
                     onToggle={handleObsToggle}
                     assignedNames={getObservabilityAssigned()}
+                    onCreateNew={isEditing ? () => openCreatePicker('Observability') : undefined}
                 />
 
                 <ResourceCard
@@ -221,6 +297,7 @@ export default function ResourcesSection({
                     multiSelect={true}
                     onToggle={handleMCPToggle}
                     assignedNames={getMCPAssigned()}
+                    onCreateNew={isEditing ? () => openCreatePicker('MCP') : undefined}
                 />
 
                 <ResourceCard
@@ -232,6 +309,7 @@ export default function ResourcesSection({
                     multiSelect={true}
                     onToggle={handleGuardToggle}
                     assignedNames={getGuardrailsAssigned()}
+                    onCreateNew={isEditing ? () => openCreatePicker('Guardrails') : undefined}
                 />
 
                 <ResourceCard
@@ -256,6 +334,100 @@ export default function ResourcesSection({
                     assignedNames={getIntegrationsAssigned()}
                 />
             </ResourceGrid>
+
+            {/* Marketplace picker for categories with multiple creation types */}
+            {isPickerOpen && (
+                <PickerOverlay onClick={() => setIsPickerOpen(false)}>
+                    <PickerPanel onClick={e => e.stopPropagation()}>
+                        <PickerTitle>Choose a type to create</PickerTitle>
+                        <PickerGrid>
+                            {pickerApps.map(app => (
+                                <PickerCard key={app.id} onClick={() => selectMarketplaceAppAndCreate(app)}>
+                                    <PickerCardName>{app.name}</PickerCardName>
+                                    <PickerCardDesc>{app.description}</PickerCardDesc>
+                                </PickerCard>
+                            ))}
+                        </PickerGrid>
+                    </PickerPanel>
+                </PickerOverlay>
+            )}
+
+            <ApplicationModal
+                isOpen={isCreateModalOpen}
+                onClose={() => {
+                    setIsCreateModalOpen(false);
+                    setSelectedMarketplaceApp(undefined);
+                    setCreateTarget(null);
+                }}
+                appToCreate={selectedMarketplaceApp}
+                onSuccess={handleCreateSuccess}
+            />
         </SectionCard>
     );
 }
+
+// Inline styled for the picker overlay (avoid bloating shared styled.ts)
+import styled from 'styled-components';
+
+const PickerOverlay = styled.div`
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+`;
+
+const PickerPanel = styled.div`
+    background: #1a1a2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 520px;
+    width: 90%;
+    max-height: 70vh;
+    overflow-y: auto;
+`;
+
+const PickerTitle = styled.h3`
+    font-size: 16px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin: 0 0 16px;
+`;
+
+const PickerGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+`;
+
+const PickerCard = styled.button`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    color: #e5e7eb;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+
+    &:hover {
+        border-color: rgba(140, 82, 255, 0.4);
+        background: rgba(140, 82, 255, 0.06);
+    }
+`;
+
+const PickerCardName = styled.span`
+    font-weight: 600;
+    font-size: 13px;
+`;
+
+const PickerCardDesc = styled.span`
+    font-size: 11px;
+    color: #6b7280;
+`;

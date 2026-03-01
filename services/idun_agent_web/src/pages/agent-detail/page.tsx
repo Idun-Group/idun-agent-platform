@@ -16,6 +16,7 @@ import {
     RotateCcw,
     Edit3,
     X,
+    Save,
     LayoutDashboard,
     Webhook,
     Settings,
@@ -42,6 +43,7 @@ export default function AgentDetailPage() {
     const [agent, setAgent] = useState<BackendAgent | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [saveTrigger, setSaveTrigger] = useState(0);
 
     const { isLoading: isAuthLoading } = useAuth();
 
@@ -144,10 +146,17 @@ export default function AgentDetailPage() {
                 </div>
 
                 <Actions>
-                    <HeaderButton onClick={handleRestart}>
-                        <RotateCcw size={16} /> Restart
-                    </HeaderButton>
-                    <HeaderButton $primary onClick={isEditing ? () => setIsEditing(false) : handleEditToggle}>
+                    {!isEditing && (
+                        <HeaderButton onClick={handleRestart}>
+                            <RotateCcw size={16} /> Restart
+                        </HeaderButton>
+                    )}
+                    {isEditing && (
+                        <HeaderButton $primary onClick={() => setSaveTrigger(t => t + 1)}>
+                            <Save size={16} /> Save Changes
+                        </HeaderButton>
+                    )}
+                    <HeaderButton $primary={!isEditing} onClick={isEditing ? () => setIsEditing(false) : handleEditToggle}>
                         {isEditing ? <><X size={16} /> Cancel Edit</> : <><Edit3 size={16} /> Edit Agent</>}
                     </HeaderButton>
                 </Actions>
@@ -179,6 +188,7 @@ export default function AgentDetailPage() {
                             isEditing={isEditing}
                             onSave={handleEditSave}
                             onCancel={() => setIsEditing(false)}
+                            saveTrigger={saveTrigger}
                         />
                     )}
                     {activeTab === 'chat' && <ChatTab agent={agent} />}

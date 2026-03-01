@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check, Plus } from 'lucide-react';
 import type { ApplicationConfig } from '../../../../../types/application.types';
 import type { ManagedSSO } from '../../../../../services/sso';
 import type { ManagedIntegration } from '../../../../../services/integrations';
@@ -9,15 +9,68 @@ import {
     NotAssignedBadge,
     ConfigChip,
     SelectableCard,
+    SelectableCardBody,
     SelectableCardName,
     SelectableCardType,
+    SelectableCardDetail,
     CheckIndicator,
+    CreateNewButton,
 } from './styled';
 
-type ResourceItem =
+export type ResourceItem =
     | { kind: 'app'; data: ApplicationConfig }
     | { kind: 'sso'; data: ManagedSSO }
     | { kind: 'integration'; data: ManagedIntegration };
+
+function getItemDetails(item: ResourceItem): { name: string; type: string; detail: string } {
+    if (item.kind === 'app') {
+        const cfg = item.data.config || {};
+        let detail = '';
+        switch (item.data.type) {
+            case 'Langfuse':
+                detail = cfg.host || '';
+                break;
+            case 'Phoenix':
+                detail = cfg.host || '';
+                break;
+            case 'LangSmith':
+                detail = cfg.projectName || cfg.endpoint || '';
+                break;
+            case 'GoogleCloudLogging':
+            case 'GoogleCloudTrace':
+                detail = cfg.gcpProjectId || '';
+                break;
+            case 'PostgreSQL':
+            case 'SQLite':
+            case 'AdkDatabase':
+                detail = cfg.connectionString ? `${cfg.connectionString.substring(0, 40)}...` : '';
+                break;
+            case 'AdkVertexAi':
+                detail = cfg.project_id ? `${cfg.project_id} / ${cfg.location || ''}` : '';
+                break;
+            case 'MCPServer':
+                detail = cfg.transport === 'stdio'
+                    ? `stdio: ${cfg.command || ''}`
+                    : `${cfg.transport || 'http'}: ${cfg.url || ''}`;
+                break;
+            default:
+                detail = Object.values(cfg).filter(v => typeof v === 'string').join(', ').substring(0, 50);
+        }
+        return { name: item.data.name, type: item.data.type, detail };
+    }
+    if (item.kind === 'sso') {
+        return {
+            name: item.data.name,
+            type: 'SSO',
+            detail: item.data.sso?.issuer || '',
+        };
+    }
+    return {
+        name: item.data.name,
+        type: item.data.integration?.provider || 'Integration',
+        detail: '',
+    };
+}
 
 interface ResourceCardProps {
     icon: React.ReactNode;
@@ -27,8 +80,8 @@ interface ResourceCardProps {
     isEditing: boolean;
     multiSelect: boolean;
     onToggle: (id: string) => void;
-    /** Names/labels of currently assigned configs (view mode) */
     assignedNames: string[];
+    onCreateNew?: () => void;
 }
 
 export default function ResourceCard({
@@ -40,6 +93,7 @@ export default function ResourceCard({
     multiSelect,
     onToggle,
     assignedNames,
+    onCreateNew,
 }: ResourceCardProps) {
     const hasAssigned = assignedNames.length > 0;
 
@@ -49,61 +103,56 @@ export default function ResourceCard({
                 <ResourceCardTitle>
                     {icon}
                     {title}
+                    {!isEditing && !hasAssigned && (
+                        <NotAssignedBadge>Not assigned</NotAssignedBadge>
+                    )}
                 </ResourceCardTitle>
-                {!isEditing && !hasAssigned && (
-                    <NotAssignedBadge>Not assigned</NotAssignedBadge>
+                {!isEditing && hasAssigned && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {assignedNames.map((name, i) => (
+                            <ConfigChip key={i}>{name}</ConfigChip>
+                        ))}
+                    </div>
                 )}
             </ResourceCardHeader>
 
-            {!isEditing && hasAssigned && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {assignedNames.map((name, i) => (
-                        <ConfigChip key={i}>{name}</ConfigChip>
-                    ))}
-                </div>
-            )}
-
             {isEditing && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                    {items.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {items.length === 0 && !onCreateNew && (
                         <div style={{ color: '#6b7280', fontSize: '12px', fontStyle: 'italic' }}>
                             No configurations available
                         </div>
-                    ) : (
-                        items.map(item => {
-                            const id = item.data.id;
-                            const isSelected = selectedIds.includes(id);
-                            const name = item.kind === 'app'
-                                ? item.data.name
-                                : item.kind === 'sso'
-                                    ? item.data.name
-                                    : item.data.name;
-                            const type = item.kind === 'app'
-                                ? item.data.type
-                                : item.kind === 'sso'
-                                    ? 'SSO'
-                                    : item.data.integration.provider;
+                    )}
 
-                            return (
-                                <SelectableCard
-                                    key={id}
-                                    type="button"
-                                    $selected={isSelected}
-                                    onClick={() => {
-                                        if (!multiSelect && !isSelected) {
-                                            // Single select: deselect others first via parent
-                                        }
-                                        onToggle(id);
-                                    }}
-                                >
-                                    <CheckIndicator $checked={isSelected}>
-                                        {isSelected && <Check size={12} color="white" />}
-                                    </CheckIndicator>
+                    {items.map(item => {
+                        const id = item.data.id;
+                        const isSelected = selectedIds.includes(id);
+                        const { name, type, detail } = getItemDetails(item);
+
+                        return (
+                            <SelectableCard
+                                key={id}
+                                type="button"
+                                $selected={isSelected}
+                                onClick={() => onToggle(id)}
+                            >
+                                <CheckIndicator $checked={isSelected}>
+                                    {isSelected && <Check size={12} color="white" />}
+                                </CheckIndicator>
+                                <SelectableCardBody>
                                     <SelectableCardName>{name}</SelectableCardName>
-                                    <SelectableCardType>{type}</SelectableCardType>
-                                </SelectableCard>
-                            );
-                        })
+                                    <SelectableCardType>{type}{multiSelect ? '' : ' (single)'}</SelectableCardType>
+                                    {detail && <SelectableCardDetail>{detail}</SelectableCardDetail>}
+                                </SelectableCardBody>
+                            </SelectableCard>
+                        );
+                    })}
+
+                    {onCreateNew && (
+                        <CreateNewButton type="button" onClick={onCreateNew}>
+                            <Plus size={14} />
+                            Create new {title.toLowerCase()}
+                        </CreateNewButton>
                     )}
                 </div>
             )}

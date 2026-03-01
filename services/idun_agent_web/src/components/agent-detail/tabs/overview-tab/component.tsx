@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
+import { Save } from 'lucide-react';
 import type { BackendAgent } from '../../../../services/agents';
 import { fetchApplications } from '../../../../services/applications';
 import { fetchSSOs } from '../../../../services/sso';
@@ -26,9 +27,10 @@ interface OverviewTabProps {
     isEditing: boolean;
     onSave: (payload: any) => void;
     onCancel: () => void;
+    saveTrigger?: number;
 }
 
-const OverviewTab = ({ agent, isEditing, onSave, onCancel }: OverviewTabProps) => {
+const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger }: OverviewTabProps) => {
     // Form state (initialized when entering edit mode)
     const [formState, setFormState] = useState<AgentFormState>({
         name: '',
@@ -139,6 +141,12 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel }: OverviewTabProps) =
         }
     };
 
+    useEffect(() => {
+        if (saveTrigger && saveTrigger > 0 && isEditing) {
+            handleSave();
+        }
+    }, [saveTrigger]);
+
     if (!agent) return null;
 
     return (
@@ -167,6 +175,7 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel }: OverviewTabProps) =
                     resources={resources}
                     selections={selections}
                     onSelectionChange={handleSelectionChange}
+                    onResourcesRefresh={setResources}
                 />
             </TwoColumnGrid>
 
@@ -174,7 +183,7 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel }: OverviewTabProps) =
                 <ActionBar>
                     <ActionButton onClick={onCancel}>Cancel</ActionButton>
                     <ActionButton $primary onClick={handleSave} disabled={isSaving}>
-                        {isSaving ? 'Saving...' : 'Save Changes'}
+                        <Save size={16} /> {isSaving ? 'Saving...' : 'Save Changes'}
                     </ActionButton>
                 </ActionBar>
             )}

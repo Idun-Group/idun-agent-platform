@@ -190,10 +190,10 @@ export const ConfigChip = styled.span`
 
 export const SelectableCard = styled.button<{ $selected?: boolean }>`
     display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 8px;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
     border: 1px solid ${p => p.$selected ? 'rgba(140, 82, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)'};
     background: ${p => p.$selected ? 'rgba(140, 82, 255, 0.08)' : 'rgba(255, 255, 255, 0.02)'};
     color: #e5e7eb;
@@ -209,14 +209,53 @@ export const SelectableCard = styled.button<{ $selected?: boolean }>`
     }
 `;
 
-export const SelectableCardName = styled.span`
-    font-weight: 500;
+export const SelectableCardBody = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     flex: 1;
+    min-width: 0;
+`;
+
+export const SelectableCardName = styled.span`
+    font-weight: 600;
+    font-size: 13px;
+    color: #e5e7eb;
 `;
 
 export const SelectableCardType = styled.span`
     font-size: 11px;
     color: #6b7280;
+`;
+
+export const SelectableCardDetail = styled.span`
+    font-size: 11px;
+    color: #4b5563;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+export const CreateNewButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px dashed rgba(140, 82, 255, 0.3);
+    background: transparent;
+    color: #a78bfa;
+    cursor: pointer;
+    width: 100%;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s;
+
+    &:hover {
+        border-color: rgba(140, 82, 255, 0.5);
+        background: rgba(140, 82, 255, 0.04);
+    }
 `;
 
 export const ActionBar = styled.div`
@@ -229,6 +268,9 @@ export const ActionBar = styled.div`
 `;
 
 export const ActionButton = styled.button<{ $primary?: boolean }>`
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 8px 20px;
     border-radius: 8px;
     font-size: 14px;
