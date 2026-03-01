@@ -5,7 +5,8 @@
       "name": "idun-agent-web",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "port": 3000,
+      "cwd": "services/idun_agent_web"
     }
   ]
 }

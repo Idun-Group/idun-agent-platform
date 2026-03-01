@@ -10,30 +10,27 @@ import ru from './locales/ru.json';
 import pt from './locales/pt.json';
 import it from './locales/it.json';
 
-// Détection simple de la langue depuis localStorage ou navigateur
+// Language detection: use saved preference from localStorage, otherwise default to English.
+// Users can switch language from Settings > Language.
 const getInitialLanguage = (): string => {
-    const supported = ['fr', 'en', 'es', 'de', 'ru', 'pt', 'it'];
+    const supported = ['en', 'fr', 'es', 'de', 'ru', 'pt', 'it'];
     const saved = localStorage.getItem('i18nextLng');
     if (saved && supported.includes(saved)) {
         return saved;
     }
-    const browserLang = navigator.language.split('-')[0];
-    return supported.includes(browserLang) ? browserLang : 'en';
+    return 'en';
 };
 
-i18n.use(initReactI18next) // React-i18next plugin
+i18n.use(initReactI18next)
     .init({
-        // Langue par défaut et initiale
         fallbackLng: 'en',
         lng: getInitialLanguage(),
 
-        // Langues supportées
-        supportedLngs: ['fr', 'en', 'es', 'de', 'ru', 'pt', 'it'],
+        supportedLngs: ['en', 'fr', 'es', 'de', 'ru', 'pt', 'it'],
 
-        // Resources (traductions)
         resources: {
-            fr: { translation: fr },
             en: { translation: en },
+            fr: { translation: fr },
             es: { translation: es },
             de: { translation: de },
             ru: { translation: ru },
@@ -41,27 +38,20 @@ i18n.use(initReactI18next) // React-i18next plugin
             it: { translation: it },
         },
 
-        // Options d'interpolation
         interpolation: {
-            escapeValue: false, // React échappe déjà par défaut
+            escapeValue: false,
         },
 
-        // Mode debug (à désactiver en production)
         debug: process.env.NODE_ENV === 'development',
-
-        // Namespace par défaut
         defaultNS: 'translation',
 
-        // Configuration pour React
         react: {
-            useSuspense: false, // Évite les problèmes avec Suspense
+            useSuspense: false,
         },
 
-        // Sauvegarde automatique de la langue choisie
         saveMissing: false,
     });
 
-// Sauvegarde de la langue quand elle change
 i18n.on('languageChanged', (lng) => {
     localStorage.setItem('i18nextLng', lng);
 });
