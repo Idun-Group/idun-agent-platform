@@ -1,28 +1,50 @@
 version: 2
 updates:
   - package-ecosystem: "uv"
-    directory: "/"
+    directories:
+      - "/"
+      - "/libs/idun_agent_engine"
+      - "/libs/idun_agent_schema"
+      - "/services/idun_agent_manager"
     schedule:
       interval: "monthly"
-  - package-ecosystem: "uv"
-    directory: "/libs/idun_agent_engine"
-    schedule:
-      interval: "monthly"
-  - package-ecosystem: "uv"
-    directory: "/libs/idun_agent_schema"
-    schedule:
-      interval: "monthly"
-  - package-ecosystem: "uv"
-    directory: "/services/idun_agent_manager"
-    schedule:
-      interval: "monthly"
+    open-pull-requests-limit: 3
+    rebase-strategy: "disabled"
+    groups:
+      all:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "npm"
     directory: "/services/idun_agent_web"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 3
+    rebase-strategy: "disabled"
+    groups:
+      all:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 3
+    rebase-strategy: "disabled"
+    groups:
+      all:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
