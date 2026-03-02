@@ -8,8 +8,12 @@ interface ConnectionVerifierProps {
 
 type Status = 'idle' | 'checking' | 'connected' | 'failed';
 
+const MAX_ATTEMPTS = 4;
+const INTERVAL_MS = 5000;
+
 export default function ConnectionVerifier({ baseUrl }: ConnectionVerifierProps) {
     const [status, setStatus] = useState<Status>('idle');
+    const [attempt, setAttempt] = useState(0);
     const abortRef = useRef<AbortController | null>(null);
 
     const verify = useCallback(async () => {
@@ -18,16 +22,15 @@ export default function ConnectionVerifier({ baseUrl }: ConnectionVerifierProps)
         abortRef.current = controller;
 
         setStatus('checking');
+        setAttempt(1);
 
         const healthUrl = baseUrl.endsWith('/')
             ? `${baseUrl}health`
             : `${baseUrl}/health`;
 
-        const MAX_ATTEMPTS = 10;
-        const INTERVAL_MS = 3000;
-
         for (let i = 0; i < MAX_ATTEMPTS; i++) {
             if (controller.signal.aborted) return;
+            setAttempt(i + 1);
 
             try {
                 const response = await fetch(healthUrl, {
@@ -65,6 +68,12 @@ export default function ConnectionVerifier({ baseUrl }: ConnectionVerifierProps)
                 )}
             </VerifyButton>
 
+            {status === 'checking' && (
+                <RetryHint>
+                    Attempt {attempt} of {MAX_ATTEMPTS}, retrying every {INTERVAL_MS / 1000}s
+                </RetryHint>
+            )}
+
             {status === 'connected' && (
                 <StatusMessage $variant="success">
                     <Wifi size={14} />
@@ -75,7 +84,7 @@ export default function ConnectionVerifier({ baseUrl }: ConnectionVerifierProps)
             {status === 'failed' && (
                 <StatusMessage $variant="error">
                     <WifiOff size={14} />
-                    Could not reach the agent. Make sure it is running at {baseUrl}
+                    Could not reach the agent after {MAX_ATTEMPTS} attempts. Make sure it is running at {baseUrl}
                 </StatusMessage>
             )}
         </Container>
@@ -120,6 +129,12 @@ const SpinningLoader = styled(Loader2)`
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
     }
+`;
+
+const RetryHint = styled.div`
+    font-size: 12px;
+    color: #9ca3af;
+    font-style: italic;
 `;
 
 const StatusMessage = styled.div<{ $variant: 'success' | 'error' }>`

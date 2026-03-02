@@ -9,7 +9,7 @@ const Row = styled.div`
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    min-height: 40px;
+    min-height: 60px;
     justify-content: center;
     align-items: anchor-center;
     padding-left: 15px;
@@ -28,8 +28,8 @@ const IconWrap = styled.div<{ $color: string }>`
 
 const Message = styled.span`
     flex: 1;
-    font-size: 13px;
-    font-weight: 450;
+    font-size: 15px;
+    font-weight: 600;
     line-height: 1.5;
     color: rgba(226, 228, 240, 0.92);
 `;
