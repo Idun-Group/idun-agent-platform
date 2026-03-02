@@ -3,30 +3,26 @@ updates:
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
   - package-ecosystem: "uv"
     directory: "/libs/idun_agent_engine"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
   - package-ecosystem: "uv"
     directory: "/libs/idun_agent_schema"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
   - package-ecosystem: "uv"
     directory: "/services/idun_agent_manager"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "npm"
     directory: "/services/idun_agent_web"
     schedule:
-      interval: "weekly"
-  - package-ecosystem: "npm"
-    directory: "/services/copilot_runtime"
-    schedule:
-      interval: "weekly"
+      interval: "monthly"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
