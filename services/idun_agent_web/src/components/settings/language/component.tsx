@@ -1,151 +1,93 @@
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-const LanguageSettings = () => {
-    const { t, i18n } = useTranslation();
+const LANGUAGES = [
+    { code: 'en', label: 'English', region: 'English (US)', flag: 'EN' },
+    { code: 'fr', label: 'Français', region: 'Français (France)', flag: 'FR' },
+    { code: 'es', label: 'Español', region: 'Español (España)', flag: 'ES' },
+    { code: 'de', label: 'Deutsch', region: 'Deutsch (Germany)', flag: 'DE' },
+    { code: 'it', label: 'Italiano', region: 'Italiano (Italia)', flag: 'IT' },
+    { code: 'pt', label: 'Português', region: 'Português (Brasil)', flag: 'PT' },
+    { code: 'ru', label: 'Русский', region: 'Русский (Россия)', flag: 'RU' },
+] as const;
 
+const LanguageSettings = () => {
+    const { i18n } = useTranslation();
     const { language, changeLanguage } = i18n;
 
     return (
-        <section>
-            <h1>{t('settings.language.title')}</h1>
-            <p>{t('settings.language.description')}</p>
-
-            <h2>{t('settings.language.subtitle')}</h2>
-            <SelectLanguageContainer>
-                <LanguageButton
-                    onClick={() => changeLanguage('en')}
-                    $selected={language === 'en'}
+        <Grid>
+            {LANGUAGES.map((lang) => (
+                <LanguageCard
+                    key={lang.code}
+                    $isSelected={language === lang.code}
+                    onClick={() => changeLanguage(lang.code)}
                 >
-                    <h3>US</h3>
-                    <div>
-                        <LanguageTitle>English</LanguageTitle>
-                        <LanguageDescription>English (US)</LanguageDescription>
-                    </div>
-                </LanguageButton>
-
-                <LanguageButton
-                    onClick={() => changeLanguage('fr')}
-                    $selected={language === 'fr'}
-                >
-                    <h3>FR</h3>
-                    <div>
-                        <LanguageTitle>Français</LanguageTitle>
-                        <LanguageDescription>
-                            Français (France)
-                        </LanguageDescription>
-                    </div>
-                </LanguageButton>
-                <LanguageButton
-                    onClick={() => changeLanguage('es')}
-                    $selected={language === 'es'}
-                >
-                    <h3>es</h3>
-                    <div>
-                        <LanguageTitle>Spanish</LanguageTitle>
-                        <LanguageDescription>Spanish (es)</LanguageDescription>
-                    </div>
-                </LanguageButton>
-
-                <LanguageButton
-                    onClick={() => changeLanguage('de')}
-                    $selected={language === 'de'}
-                >
-                    <h3>DE</h3>
-                    <div>
-                        <LanguageTitle>Deutsch</LanguageTitle>
-                        <LanguageDescription>
-                            Deutsch (Germany)
-                        </LanguageDescription>
-                    </div>
-                </LanguageButton>
-                <LanguageButton
-                    onClick={() => changeLanguage('it')}
-                    $selected={language === 'it'}
-                >
-                    <h3>IT</h3>
-                    <div>
-                        <LanguageTitle>Italiano</LanguageTitle>
-                        <LanguageDescription>
-                            Italiano (Italia)
-                        </LanguageDescription>
-                    </div>
-                </LanguageButton>
-
-                <LanguageButton
-                    onClick={() => changeLanguage('pt')}
-                    $selected={language === 'pt'}
-                >
-                    <h3>PT</h3>
-                    <div>
-                        <LanguageTitle>Português</LanguageTitle>
-                        <LanguageDescription>
-                            Português (Brasil)
-                        </LanguageDescription>
-                    </div>
-                </LanguageButton>
-                <LanguageButton
-                    onClick={() => changeLanguage('ru')}
-                    $selected={language === 'ru'}
-                >
-                    <h3>RU</h3>
-                    <div>
-                        <LanguageTitle>Русский</LanguageTitle>
-                        <LanguageDescription>
-                            Русский (Россия)
-                        </LanguageDescription>
-                    </div>
-                </LanguageButton>
-            </SelectLanguageContainer>
-        </section>
+                    <FlagBadge $isSelected={language === lang.code}>
+                        {lang.flag}
+                    </FlagBadge>
+                    <LangInfo>
+                        <LangName>{lang.label}</LangName>
+                        <LangRegion>{lang.region}</LangRegion>
+                    </LangInfo>
+                </LanguageCard>
+            ))}
+        </Grid>
     );
 };
+
 export default LanguageSettings;
 
-const LanguageButton = styled.button<{ $selected: boolean }>`
-    background: transparent;
-    border: none;
-    text-align: left;
-    padding: 12px 16px;
-    border-radius: 14px;
-    width: 20%;
-    cursor: pointer;
-    color: white;
+const Grid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+`;
+
+const LanguageCard = styled.button<{ $isSelected: boolean }>`
     display: flex;
-    gap: 16px;
     align-items: center;
-    border: 1px solid grey;
-    &:hover {
-        border: 3px solid #8c52ff;
-    }
-
-    ${(props) =>
-        props.$selected &&
-        `
-        border: 3px solid #8c52ff;
-        background: rgba(140, 82, 255, 0.1);
-    `}
-
-    h3 {
-        font-size: 1.5rem;
-        font-weight: 600;
-    }
-
-    p {
-        margin: 0;
-    }
-`;
-
-const LanguageTitle = styled.h4`
-    font-size: 1.25rem;
-    font-weight: 600;
-`;
-
-const LanguageDescription = styled.p`
-    margin: 0;
-`;
-const SelectLanguageContainer = styled.article`
-    display: flex;
     gap: 12px;
-    margin-top: 12px;
+    padding: 12px 14px;
+    background: ${({ $isSelected }) =>
+        $isSelected ? 'rgba(140, 82, 255, 0.06)' : 'rgba(255, 255, 255, 0.02)'};
+    border: 1px solid
+        ${({ $isSelected }) =>
+            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.1)'};
+    border-radius: 8px;
+    cursor: pointer;
+    color: #ffffff;
+    text-align: left;
+    transition: all 150ms ease;
+    font-family: inherit;
+
+    &:hover {
+        border-color: ${({ $isSelected }) =>
+            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.2)'};
+    }
+`;
+
+const FlagBadge = styled.span<{ $isSelected: boolean }>`
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: ${({ $isSelected }) => ($isSelected ? '#8c52ff' : '#9ca3af')};
+    min-width: 24px;
+`;
+
+const LangInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+`;
+
+const LangName = styled.span`
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+`;
+
+const LangRegion = styled.span`
+    font-size: 12px;
+    color: #6b7280;
 `;

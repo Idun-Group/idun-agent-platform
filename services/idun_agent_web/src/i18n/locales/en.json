@@ -156,7 +156,8 @@
         "memory": "Memory",
         "mcp": "MCP",
         "sso": "SSO",
-        "integrations": "Integrations"
+        "integrations": "Integrations",
+        "settings": "Settings"
     },
     "signin": {
         "title": "Create an account",
@@ -611,6 +612,55 @@
     "settings": {
         "title": "Settings",
         "back_to_dashboard": "Back to dashboard",
+        "group": {
+            "preferences": "Preferences",
+            "workspaces": "Workspaces"
+        },
+        "preferences": {
+            "general": "General",
+            "appearance": "Appearance",
+            "appearance.description": "Customize how the application looks and feels.",
+            "language": "Language",
+            "language.description": "Choose your preferred language for the interface."
+        },
+        "workspaces": {
+            "general": "General",
+            "users": "Users",
+            "general.rename": "Workspace Name",
+            "general.renameDescription": "Change the display name of your workspace.",
+            "general.namePlaceholder": "Workspace name",
+            "general.renameSuccess": "Workspace renamed successfully",
+            "general.noWorkspace": "No workspace selected",
+            "general.spaces": "Spaces",
+            "general.spacesDescription": "Spaces within this workspace. Manage spaces from the main dashboard.",
+            "general.spacesComingSoon": "Space management will be available here soon.",
+            "users.title": "Members",
+            "users.description": "Manage who has access to this workspace.",
+            "users.addMember": "Add member",
+            "users.name": "Name",
+            "users.email": "Email",
+            "users.role": "Role",
+            "users.actions": "",
+            "users.remove": "Remove",
+            "users.roleUpdated": "Role updated",
+            "users.memberRemoved": "Member removed",
+            "users.memberAdded": "Member added",
+            "users.fetchError": "Failed to load members",
+            "users.noMembers": "No members yet.",
+            "users.confirmRemoveTitle": "Remove member",
+            "users.confirmRemoveMessage": "Are you sure you want to remove this member from the workspace?",
+            "users.confirmRemove": "Remove",
+            "users.inviteTitle": "Add new member",
+            "users.inviteDescription": "Invite a user to this workspace by their email address. If they haven't signed up yet, they'll be added automatically when they do.",
+            "users.emailLabel": "Email",
+            "users.roleLabel": "Role",
+            "users.emailRequired": "Email is required",
+            "users.grantAccess": "Grant access",
+            "users.pending": "Pending",
+            "users.invitationCancelled": "Invitation cancelled",
+            "users.cancelInvitation": "Cancel invitation",
+            "users.alreadyInvited": "This email has already been invited"
+        },
         "profile": {
             "title": "Profile",
             "description": "Manage your personal information and preferences.",
@@ -980,7 +1030,9 @@
         "close": "Close",
         "comingSoon": "Coming soon",
         "underDevelopment": "This feature is under development",
-        "back": "Back"
+        "back": "Back",
+        "saving": "Saving...",
+        "adding": "Adding..."
     },
     "integrations": {
         "title": "Integrations",

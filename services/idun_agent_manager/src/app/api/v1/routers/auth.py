@@ -18,7 +18,7 @@ import logging
 import os
 import time
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -132,6 +132,44 @@ def encrypt_payload(payload: str) -> bytes:
     )
 
 
+async def _consume_pending_invitations(
+    db_session: AsyncSession, user_id: UUID, email: str
+) -> list[str]:
+    """Find pending invitations for this email, create memberships, delete invitations.
+
+    Returns list of workspace IDs the user was added to.
+    """
+    from app.infrastructure.db.models.invitation import InvitationModel
+    from app.infrastructure.db.models.membership import MembershipModel
+
+    inv_stmt = select(InvitationModel).where(InvitationModel.email == email)
+    invitations = (await db_session.execute(inv_stmt)).scalars().all()
+
+    new_workspace_ids: list[str] = []
+    for inv in invitations:
+        # Check no duplicate membership exists
+        dup_stmt = select(MembershipModel).where(
+            MembershipModel.user_id == user_id,
+            MembershipModel.workspace_id == inv.workspace_id,
+        )
+        if (await db_session.execute(dup_stmt)).scalar_one_or_none() is None:
+            membership = MembershipModel(
+                id=uuid4(),
+                user_id=user_id,
+                workspace_id=inv.workspace_id,
+                role=inv.role,
+            )
+            db_session.add(membership)
+            new_workspace_ids.append(str(inv.workspace_id))
+
+        await db_session.delete(inv)
+
+    if new_workspace_ids:
+        await db_session.flush()
+
+    return new_workspace_ids
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -240,12 +278,16 @@ async def callback(
             id=uuid4(),
             user_id=user.id,
             workspace_id=workspace.id,
-            role="admin",
+            role="owner",
         )
         session.add(membership)
         await session.flush()
 
-        workspace_ids = [str(workspace.id)]
+        # Consume any pending invitations for this email
+        invited_ws_ids = await _consume_pending_invitations(
+            session, user.id, email
+        )
+        workspace_ids = [str(workspace.id)] + invited_ws_ids
     else:
         # Update profile fields if changed
         if user.name != name and name:
@@ -368,10 +410,15 @@ async def basic_signup(
             id=uuid4(),
             user_id=user.id,
             workspace_id=workspace.id,
-            role="admin",
+            role="owner",
         )
         session.add(membership)
         await session.flush()
+
+        # Consume any pending invitations for this email
+        invited_ws_ids = await _consume_pending_invitations(
+            session, user.id, request.email
+        )
     except Exception as e:
         logger.error(f"Database error creating user: {e}")
         raise HTTPException(
@@ -379,13 +426,15 @@ async def basic_signup(
             detail="Database error",
         ) from e
 
+    workspace_ids = [str(workspace.id)] + invited_ws_ids
+
     session_payload = {
         "provider": "local",
         "principal": {
             "user_id": str(user.id),
             "email": request.email,
             "roles": ["admin"],
-            "workspace_ids": [str(workspace.id)],
+            "workspace_ids": workspace_ids,
         },
         "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
     }
@@ -395,7 +444,7 @@ async def basic_signup(
         "id": str(user.id),
         "email": user.email,
         "name": user.name,
-        "workspace_ids": [str(workspace.id)],
+        "workspace_ids": workspace_ids,
     }
 
 

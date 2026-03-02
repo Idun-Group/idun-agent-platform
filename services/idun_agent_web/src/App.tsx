@@ -11,8 +11,6 @@ import AgentDetailPage from './pages/agent-detail/page';
 import LoginPage from './pages/login/page';
 import SettingsPage from './pages/settings/page';
 import SideBar from './layouts/side-bar/dashboard-side-bar/layout';
-import SettingSideBar from './layouts/side-bar/setting-side-bar/layout';
-import { SettingPageProvider } from './hooks/use-settings-page';
 import SigninPage from './pages/signin/page';
 import { useAuth } from './hooks/use-auth';
 import ApplicationPage from './pages/application-page/page';
@@ -114,21 +112,20 @@ function App() {
                         }
                     />
                     <Route path="/agent/:id" element={<AgentDetailPage />} />
-                    {/* <Route
-                        path="/settings"
+                    <Route
+                        path="/settings/:page?"
                         element={
-                            <SettingPageProvider>
-                                <AppLayout>
-                                    <ContentLayout>
-                                        <SettingSideBar />
-                                        <MainContent>
-                                            <SettingsPage />
-                                        </MainContent>
-                                    </ContentLayout>
-                                </AppLayout>
-                            </SettingPageProvider>
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <SettingsPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
                         }
-                    /> */}
+                    />
                     <Route
                         path="/observability"
                         element={

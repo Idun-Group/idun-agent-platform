@@ -181,6 +181,21 @@ const SideBar = ({}: SideBarProps) => {
                     <LifeBuoy size={17} color="#826F95" />
                     {!collapsed && <MenuLabel>Support</MenuLabel>}
                 </BottomLink>
+                <MenuItem
+                    $isActive={!!location.pathname.startsWith('/settings')}
+                    $collapsed={collapsed}
+                    onClick={() => navigate('/settings')}
+                >
+                    <Settings
+                        size={17}
+                        color={
+                            location.pathname.startsWith('/settings')
+                                ? '#8C52FF'
+                                : '#826F95'
+                        }
+                    />
+                    {!collapsed && <MenuLabel>{t('sidebar.settings', 'Settings')}</MenuLabel>}
+                </MenuItem>
                 <UserRow $collapsed={collapsed}>
                     {collapsed ? (
                         avatarUrl && !avatarError ? (

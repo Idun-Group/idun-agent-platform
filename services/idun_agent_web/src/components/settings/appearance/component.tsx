@@ -2,57 +2,79 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { useToggleThemeMode } from '../../../hooks/use-toggle-theme-mode';
 import { useState } from 'react';
-import { LabeledToggleButton } from '../../general/form/component';
 
 const AppearanceSettings = () => {
     const { themeMode, setToggleThemeMode } = useToggleThemeMode();
     const { t } = useTranslation();
     const [isCompactMode, setIsCompactMode] = useState(false);
     const [isHighContrastMode, setIsHighContrastMode] = useState(false);
-    return (
-        <section>
-            <h1>{t('settings.appearance.title')}</h1>
-            <p>{t('settings.appearance.description')}</p>
-            <h2>{t('settings.appearance.subtitle')}</h2>
 
+    return (
+        <div>
             <ThemeContainer>
                 <ThemeCard
                     onClick={() => setToggleThemeMode('system')}
                     $isSelected={themeMode === 'system'}
                 >
-                    <ThemeShow $typologie="system"></ThemeShow>
-                    <p>{t('settings.appearance.theme.system')}</p>
+                    <ThemePreview $mode="system" />
+                    <ThemeLabel>
+                        {t('settings.appearance.theme.system')}
+                    </ThemeLabel>
                 </ThemeCard>
                 <ThemeCard
                     onClick={() => setToggleThemeMode('light')}
                     $isSelected={themeMode === 'light'}
                 >
-                    <ThemeShow $typologie="light"></ThemeShow>
-                    <p>{t('settings.appearance.theme.light')}</p>
+                    <ThemePreview $mode="light" />
+                    <ThemeLabel>
+                        {t('settings.appearance.theme.light')}
+                    </ThemeLabel>
                 </ThemeCard>
                 <ThemeCard
                     onClick={() => setToggleThemeMode('dark')}
                     $isSelected={themeMode === 'dark'}
                 >
-                    <ThemeShow $typologie="dark"></ThemeShow>
-                    <p>{t('settings.appearance.theme.dark')}</p>
+                    <ThemePreview $mode="dark" />
+                    <ThemeLabel>
+                        {t('settings.appearance.theme.dark')}
+                    </ThemeLabel>
                 </ThemeCard>
             </ThemeContainer>
 
-            <LabeledToggleButton
-                label={t('settings.appearance.compact-mode.label')}
-                subLabel={t('settings.appearance.compact-mode.subLabel')}
-                isOn={isCompactMode}
-                onToggle={() => setIsCompactMode(!isCompactMode)}
-            />
+            <ToggleRow>
+                <ToggleInfo>
+                    <ToggleLabel>
+                        {t('settings.appearance.compact-mode.label')}
+                    </ToggleLabel>
+                    <ToggleDescription>
+                        {t('settings.appearance.compact-mode.subLabel')}
+                    </ToggleDescription>
+                </ToggleInfo>
+                <ToggleTrack
+                    $isOn={isCompactMode}
+                    onClick={() => setIsCompactMode(!isCompactMode)}
+                >
+                    <ToggleKnob $isOn={isCompactMode} />
+                </ToggleTrack>
+            </ToggleRow>
 
-            <LabeledToggleButton
-                label={t('settings.appearance.high-contrast-mode.label')}
-                subLabel={t('settings.appearance.high-contrast-mode.subLabel')}
-                isOn={isHighContrastMode}
-                onToggle={() => setIsHighContrastMode(!isHighContrastMode)}
-            />
-        </section>
+            <ToggleRow>
+                <ToggleInfo>
+                    <ToggleLabel>
+                        {t('settings.appearance.high-contrast-mode.label')}
+                    </ToggleLabel>
+                    <ToggleDescription>
+                        {t('settings.appearance.high-contrast-mode.subLabel')}
+                    </ToggleDescription>
+                </ToggleInfo>
+                <ToggleTrack
+                    $isOn={isHighContrastMode}
+                    onClick={() => setIsHighContrastMode(!isHighContrastMode)}
+                >
+                    <ToggleKnob $isOn={isHighContrastMode} />
+                </ToggleTrack>
+            </ToggleRow>
+        </div>
     );
 };
 
@@ -60,41 +82,91 @@ export default AppearanceSettings;
 
 const ThemeContainer = styled.div`
     display: flex;
-    gap: 16px;
-    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
 `;
 
-const ThemeShow = styled.div<{ $typologie: 'system' | 'light' | 'dark' }>`
+const ThemePreview = styled.div<{ $mode: 'system' | 'light' | 'dark' }>`
     width: 100%;
-    height: 50px;
-    border-radius: 8px;
-    display: inline-block;
-    background-color: ${({ $typologie: typologie }) =>
-        typologie === 'dark'
-            ? '#333'
-            : typologie === 'light'
-            ? '#fff'
-            : '#f0f0f0'};
+    height: 48px;
+    border-radius: 6px;
+    background: ${({ $mode }) =>
+        $mode === 'dark'
+            ? 'linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%)'
+            : $mode === 'light'
+              ? 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)'
+              : 'linear-gradient(135deg, #1a1a2e 0%, #e9ecef 100%)'};
 `;
 
 const ThemeCard = styled.div<{ $isSelected: boolean }>`
-    width: 33%;
+    flex: 1;
     border-radius: 8px;
-    display: inline-block;
-    padding: 16px;
-    border: 1px solid #525252;
-    p {
-        margin: 8px 0;
-        text-align: center;
-    }
+    padding: 10px;
+    cursor: pointer;
+    border: 1px solid
+        ${({ $isSelected }) =>
+            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.1)'};
+    background: ${({ $isSelected }) =>
+        $isSelected ? 'rgba(140, 82, 255, 0.06)' : 'rgba(255, 255, 255, 0.02)'};
+    transition: all 150ms ease;
 
     &:hover {
-        border: 3px solid #8c52ff;
+        border-color: ${({ $isSelected }) =>
+            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.2)'};
     }
+`;
 
-    ${({ $isSelected: isSelected }) =>
-        isSelected &&
-        `
-        border: 3px solid #8c52ff;
-    `}
+const ThemeLabel = styled.p`
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+    text-align: center;
+    margin: 8px 0 0 0;
+`;
+
+const ToggleRow = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+`;
+
+const ToggleInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+`;
+
+const ToggleLabel = styled.span`
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+`;
+
+const ToggleDescription = styled.span`
+    font-size: 13px;
+    color: #6b7280;
+`;
+
+const ToggleTrack = styled.div<{ $isOn: boolean }>`
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    background: ${({ $isOn }) => ($isOn ? '#8c52ff' : 'rgba(255, 255, 255, 0.12)')};
+    cursor: pointer;
+    position: relative;
+    transition: background 150ms ease;
+    flex-shrink: 0;
+`;
+
+const ToggleKnob = styled.div<{ $isOn: boolean }>`
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    position: absolute;
+    top: 3px;
+    left: ${({ $isOn }) => ($isOn ? '21px' : '3px')};
+    transition: left 150ms ease;
 `;
