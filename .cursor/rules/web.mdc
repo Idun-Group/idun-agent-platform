@@ -1,0 +1,18 @@
+---
+description: "Rules for working on the idun_agent_web frontend"
+globs: ["services/idun_agent_web/**"]
+alwaysApply: false
+---
+# Idun Agent Web
+
+Read `services/idun_agent_web/CLAUDE.md` before making changes. It contains the full project layout, routes, auth flow, API layer, and conventions.
+
+For backend API routes, see `services/idun_agent_manager/CLAUDE.md`. For data schemas, see `libs/idun_agent_schema/CLAUDE.md`.
+
+- styled-components for all styling — no CSS modules or Tailwind.
+- React Context API for state — no Redux/Zustand.
+- All API calls go through `src/utils/api.ts` — never use `fetch` directly.
+- Use `useTranslation()` for all user-facing strings.
+- Auto-generated types from OpenAPI spec in `src/generated/agent-manager.ts`.
+- Components follow folder convention: `component.tsx` + optional `component.stories.tsx`.
+- Use `npm run plop` to scaffold new components/pages.

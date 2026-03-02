@@ -7,6 +7,10 @@ the Idun Agent Engine. It handles common deployment scenarios and provides sensi
 import uvicorn
 from fastapi import FastAPI
 
+from .logging import get_logger, setup_logging
+
+logger = get_logger(__name__)
+
 
 def run_server(
     app: FastAPI,
@@ -41,16 +45,18 @@ def run_server(
         # Run in production mode
         run_server(app, workers=4)
     """
-    print(f"🌐 Starting Idun Agent Engine server on http://{host}:{port}...")
-    print(f"📚 API documentation available at http://{host}:{port}/docs")
+    setup_logging(log_level)
+
+    logger.info(f"🌐 Starting Idun Agent Engine server on http://{host}:{port}...")
+    logger.info(f"📚 API documentation available at http://{host}:{port}/docs")
 
     if reload and workers:
-        print(
-            "⚠️  Warning: reload=True is incompatible with workers > 1. Disabling reload."
+        logger.warning(
+            "⚠️ reload=True is incompatible with workers > 1. Disabling reload."
         )
         reload = False
 
-    print("Config: ", app.state.engine_config)
+    logger.debug(f"Engine config: {app.state.engine_config}")
     uvicorn.run(
         app,
         host=host,
@@ -87,14 +93,13 @@ def run_server_from_config(config_path: str = "config.yaml", **kwargs) -> None:
         kwargs["port"] = engine_config.server.api.port
 
     # Show configuration info
-    print(f"🔧 Loaded configuration from {config_path}")
-    # Best-effort: handle both dict-like and model access
     agent_name = (
         engine_config.agent.config.get("name")  # type: ignore[call-arg, index]
         if hasattr(engine_config.agent.config, "get")
         else getattr(engine_config.agent.config, "name", "Unknown")
     )
-    print(f"🤖 Agent: {agent_name} ({engine_config.agent.type})")
+    logger.info(f"🔧 Loaded configuration from {config_path}")
+    logger.info(f"🤖 Agent: {agent_name} ({engine_config.agent.type})")
 
     run_server(app, **kwargs)
 
@@ -134,12 +139,12 @@ def run_server_from_builder(config_builder, **kwargs) -> None:
         kwargs["port"] = engine_config.server.api.port
 
     # Show configuration info
-    print("🔧 Using programmatic configuration")
     agent_name = (
         engine_config.agent.config.get("name")  # type: ignore[call-arg, index]
         if hasattr(engine_config.agent.config, "get")
         else getattr(engine_config.agent.config, "name", "Unknown")
     )
-    print(f"🤖 Agent: {agent_name} ({engine_config.agent.type})")
+    logger.info("🔧 Using programmatic configuration")
+    logger.info(f"🤖 Agent: {agent_name} ({engine_config.agent.type})")
 
     run_server(app, **kwargs)

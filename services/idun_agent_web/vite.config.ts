@@ -1,10 +1,13 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
 
 // https://vite.dev/config/
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 // import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
@@ -36,17 +39,12 @@ export default defineConfig({
     ],
     define: {
         'process.env': {},
+        __APP_VERSION__: JSON.stringify(pkg.version),
     },
     resolve: {
     },
     server: {
         proxy: {
-            '/copilotkit-virtual': {
-                target: process.env.VITE_COPILOT_PROXY_TARGET || 'http://localhost:8001',
-                changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/copilotkit-virtual/, '/copilotkit'),
-                secure: false,
-            },
             '/api': {
                 target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
                 changeOrigin: true,

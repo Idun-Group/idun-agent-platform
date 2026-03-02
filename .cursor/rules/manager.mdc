@@ -1,0 +1,15 @@
+---
+description: "Rules for working on the idun_agent_manager service"
+globs: ["services/idun_agent_manager/**"]
+alwaysApply: false
+---
+# Idun Agent Manager
+
+Read `services/idun_agent_manager/CLAUDE.md` before making changes. It contains the full API route map, auth flow, database models, and conventions.
+
+- All DB operations are async (`AsyncSession`).
+- Config stored as JSONB, validated in/out via `idun_agent_schema` Pydantic models.
+- Router pattern: `_get_<resource>()` helper for fetch + 404, `_model_to_schema()` for DB model → response.
+- Workspace scoping via `require_workspace` dependency on all resource endpoints.
+- Migrations: `cd services/idun_agent_manager && alembic revision --autogenerate -m "description"`.
+- Guardrails from the frontend use simplified configs converted via `convert_guardrail()`.

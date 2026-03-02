@@ -3,9 +3,11 @@ import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
 import { useState, useEffect, type ComponentType } from 'react';
-import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck } from 'lucide-react';
+import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
+
+const GITHUB_DISMISSED_KEY = 'idun-github-card-dismissed';
 
 type SideBarProps = {
     // config your component props here
@@ -31,7 +33,15 @@ const SideBar = ({}: SideBarProps) => {
     // by default the sidebar should be collapsed; hovering will expand it
     const [isCollapsed] = useState(true);
     const [isHovered, setIsHovered] = useState(false);
+    const [githubDismissed, setGithubDismissed] = useState(() =>
+        localStorage.getItem(GITHUB_DISMISSED_KEY) === 'true'
+    );
     const { t } = useTranslation();
+
+    const dismissGithub = () => {
+        setGithubDismissed(true);
+        localStorage.setItem(GITHUB_DISMISSED_KEY, 'true');
+    };
 
     // Effective collapsed state: collapsed when user set collapsed AND not hovered
     // Hovering temporarily expands the sidebar
@@ -73,7 +83,28 @@ const SideBar = ({}: SideBarProps) => {
             path: '/guardrails',
             onClick: () => navigate('/guardrails'),
         },
+        {
+            icon: Plug,
+            label: t('sidebar.integrations', 'Integrations'),
+            key: 'integrations',
+            path: '/integrations',
+            onClick: () => navigate('/integrations'),
+        },
+        {
+            icon: KeyRound,
+            label: t('sidebar.sso', 'SSO'),
+            key: 'sso',
+            path: '/sso',
+            onClick: () => navigate('/sso'),
+        },
     ];
+
+    const avatarUrl =
+        (session as any)?.principal?.avatarUrl ||
+        (session as any)?.principal?.picture ||
+        (session as any)?.user?.avatarUrl ||
+        (session as any)?.user?.picture ||
+        '';
 
     return (
         <SideBarContainer
@@ -110,32 +141,49 @@ const SideBar = ({}: SideBarProps) => {
                     </MenuItem>
                 ))}
             </SideBarNav>
-            <MenuItem
-                $collapsed={collapsed}
-                $isActive={location.pathname.startsWith('/settings')}
-                onClick={() => navigate('/settings')}
-            >
-                <Settings
-                    size={17}
-                    color={
-                        location.pathname.startsWith('/settings')
-                            ? '#8C52FF'
-                            : '#826F95'
-                    }
-                />
-                {!collapsed && <MenuLabel>{t('header.settings')}</MenuLabel>}
-            </MenuItem>
 
-            <UserArea $collapsed={collapsed}>
-                <AvatarRowOverlay $visible={collapsed}>
-                    {(() => {
-                        const avatarUrl =
-                            (session as any)?.principal?.avatarUrl ||
-                            (session as any)?.principal?.picture ||
-                            (session as any)?.user?.avatarUrl ||
-                            (session as any)?.user?.picture ||
-                            '';
-                        return avatarUrl && !avatarError ? (
+            {!collapsed && !githubDismissed && (
+                <GithubCard>
+                    <GithubHeader>
+                        <GithubTitle>⭐ Star Idun</GithubTitle>
+                        <GithubDismiss onClick={dismissGithub}>
+                            <X size={14} />
+                        </GithubDismiss>
+                    </GithubHeader>
+                    <GithubDesc>
+                        See the latest releases and help grow the community on GitHub
+                    </GithubDesc>
+                    <GithubLink
+                        href="https://github.com/idun-corp/idun-agent-platform"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <Github size={14} />
+                        Idun Platform
+                    </GithubLink>
+                </GithubCard>
+            )}
+
+            <BottomSection>
+                <BottomLink
+                    $collapsed={collapsed}
+                    href="https://idunplatform.com/#pricing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <Sparkles size={17} color="#fbbf24" />
+                    {!collapsed && <MenuLabel>Upgrade</MenuLabel>}
+                </BottomLink>
+                <BottomLink
+                    $collapsed={collapsed}
+                    href="mailto:contact@idun-group.com"
+                >
+                    <LifeBuoy size={17} color="#826F95" />
+                    {!collapsed && <MenuLabel>Support</MenuLabel>}
+                </BottomLink>
+                <UserRow $collapsed={collapsed}>
+                    {collapsed ? (
+                        avatarUrl && !avatarError ? (
                             <AvatarImg
                                 src={avatarUrl}
                                 alt=""
@@ -143,13 +191,13 @@ const SideBar = ({}: SideBarProps) => {
                             />
                         ) : (
                             <UserIcon size={17} color="#826F95" />
-                        );
-                    })()}
-                </AvatarRowOverlay>
-                <AccountInfoWrapper $visible={!collapsed}>
-                    <AccountInfo />
-                </AccountInfoWrapper>
-            </UserArea>
+                        )
+                    ) : (
+                        <AccountInfo />
+                    )}
+                </UserRow>
+                {!collapsed && <VersionLabel>v{__APP_VERSION__}</VersionLabel>}
+            </BottomSection>
         </SideBarContainer>
     );
 };
@@ -158,27 +206,21 @@ const SideBar = ({}: SideBarProps) => {
 const SideBarContainer = styled.aside<{ $collapsed?: boolean }>`
     width: ${({ $collapsed }) => ($collapsed ? '72px' : '250px')};
     min-height: 100%;
-    background: #030711; /* unified sidebar background */
+    background: #030711;
     color: hsl(var(--sidebar-foreground));
-    border-right: 1px solid #25325a; /* from Figma stroke */
+    border-right: 1px solid #25325a;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
     transition: width 300ms ease, background-color 300ms ease, color 300ms ease;
     position: relative;
-    z-index: 10; /* Lower z-index */
-    padding-bottom: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')}; /* reserve space for fixed user area */
+    z-index: 10;
 `;
 
 const SideBarNav = styled.nav<{ $collapsed?: boolean }>`
-    flex: 1;
-    padding: 0 0 0 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    ${({ $collapsed }) =>
-        !$collapsed && `
-        /* No separators currently applied */
-    `}
 `;
 
 const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
@@ -186,16 +228,16 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
     align-items: center;
     gap: ${({ $collapsed }) => ($collapsed ? '0' : '10px')};
     height: 47px;
-    padding: 0 16px 0 30px; /* left 30px per Figma */
+    padding: 0 16px 0 30px;
     border: none;
-    border-radius: 0; /* no radius in figma */
+    border-radius: 0;
     background: #040210;
-    color: #ffffff; /* text always white */
+    color: #ffffff;
     cursor: pointer;
     transition: background-color 200ms ease, color 200ms ease;
     text-align: left;
     width: 100%;
-    font-size: 15px; /* 15px text box height */
+    font-size: 15px;
     font-weight: 400;
     font-family: inherit;
     position: relative;
@@ -203,17 +245,16 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
         $collapsed ? 'center' : 'flex-start'};
 
     &:hover {
-        background: #000000; /* maximum contrast vs default */
+        background: #000000;
         color: #ffffff;
     }
 
     ${({ $isActive }) =>
         $isActive &&
         `
-        background: #000000; /* maximum contrast */
+        background: #000000;
         font-weight: 700;
         border-right: 3px solid #8C52FF;
-
     `}
 `;
 
@@ -230,44 +271,53 @@ const IconMask = styled.span<{ $src: string; $active?: boolean }>`
     mask: url(${(props) => props.$src}) no-repeat center / contain;
 `;
 
-// Ensure icons turn purple on hover (for both masked images and lucide SVGs)
-const MenuItemWithHover = styled(MenuItem)`
-    &:hover ${IconMask} {
-        background-color: #8C52FF;
-    }
-    &:hover svg {
-        stroke: #8C52FF;
-        color: #8C52FF;
-    }
-`;
-
 export default SideBar;
 
-const UserArea = styled.div<{ $collapsed?: boolean }>`
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')}; /* reserve space to avoid jumping */
-`;
-
-const AvatarRow = styled.div`
+const BottomSection = styled.div`
     display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 47px;
-    width: 100%;
-    padding: 0 16px 0 30px; /* match MenuItem padding for consistent centering */
-    background: #030711;
+    flex-direction: column;
+    margin-top: auto;
 `;
 
-const AvatarRowOverlay = styled(AvatarRow)<{ $visible?: boolean }>`
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    display: ${(p) => (p.$visible ? 'flex' : 'none')};
+const VersionLabel = styled.span`
+    font-size: 11px;
+    color: #4b5563;
+    text-align: center;
+    padding: 4px 0 8px;
+`;
+
+const BottomLink = styled.a<{ $collapsed?: boolean }>`
+    display: flex;
+    align-items: center;
+    gap: ${({ $collapsed }) => ($collapsed ? '0' : '10px')};
+    justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
+    height: 47px;
+    padding: 0 16px 0 30px;
+    background: #040210;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 400;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 200ms ease, color 200ms ease;
+    width: 100%;
+
+    &:hover {
+        background: #000000;
+        color: #ffffff;
+    }
+`;
+
+const UserRow = styled.div<{ $collapsed?: boolean }>`
+    display: flex;
+    align-items: center;
+    justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
+    min-height: 47px;
+    padding: 0 16px 0 30px;
+    background: #030711;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    overflow: hidden;
 `;
 
 const AvatarImg = styled.img`
@@ -276,18 +326,68 @@ const AvatarImg = styled.img`
     border-radius: 50%;
     object-fit: cover;
     display: block;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
 `;
 
-const AccountInfoWrapper = styled.div<{ $visible?: boolean }>`
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    padding: 8px 12px;
-    display: ${(p) => (p.$visible ? 'flex' : 'none')};
+const GithubCard = styled.div`
+    margin: 12px 16px;
+    padding: 16px;
+    border-radius: 8px;
+    background: #0d1117;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+`;
+
+const GithubHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+`;
+
+const GithubTitle = styled.span`
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+`;
+
+const GithubDismiss = styled.button`
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    padding: 0;
+    display: flex;
     align-items: center;
     justify-content: center;
+
+    &:hover {
+        color: rgba(255, 255, 255, 0.6);
+    }
+`;
+
+const GithubDesc = styled.p`
+    margin: 0 0 14px 0;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+    line-height: 1.45;
+`;
+
+const GithubLink = styled.a`
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 150ms ease;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+    }
 `;

@@ -35,6 +35,7 @@ from idun_agent_schema.manager import (
     ManagedAgentCreate,
     ManagedAgentPatch,
     ManagedAgentRead,
+    ManagedAgentStatusUpdate,
 )
 from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from sqlalchemy import select
@@ -52,8 +53,7 @@ from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 
 router = APIRouter()
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 # Constants
@@ -108,7 +108,7 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
 
 @router.post(
     "/",
-    response_model=ManagedAgentCreate,
+    response_model=ManagedAgentRead,
     status_code=status.HTTP_201_CREATED,
     summary="Create managed agent",
     description="Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
@@ -347,4 +347,26 @@ async def patch_agent(
     await session.flush()
     await session.refresh(model)
 
+    return _model_to_schema(model)
+
+
+@router.put(
+    "/{id}/status",
+    response_model=ManagedAgentRead,
+    summary="Update agent status",
+    description="Update only the status field of an agent. Used by the health check flow to set active/draft without touching config.",
+)
+async def update_agent_status(
+    id: str,
+    request: ManagedAgentStatusUpdate,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> ManagedAgentRead:
+    """Update agent status without modifying other fields."""
+    model = await _get_agent(id, session, workspace_id)
+    model.status = request.status.value
+    model.updated_at = datetime.now(UTC)
+    await session.flush()
+    await session.refresh(model)
     return _model_to_schema(model)

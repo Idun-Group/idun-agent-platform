@@ -101,4 +101,25 @@ jobs:
       - name: Publish to TestPyPI
         working-directory: libs/idun_agent_engine
         run: |
-          uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }}
+          MAX_ATTEMPTS=3
+          ATTEMPT=1
+          SLEEP_DURATION=30
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Publish attempt $ATTEMPT/$MAX_ATTEMPTS..."
+
+            if uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }}; then
+              echo "Publish succeeded."
+              exit 0
+            fi
+
+            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              echo "Publish failed. Retrying in ${SLEEP_DURATION}s..."
+              sleep $SLEEP_DURATION
+            fi
+
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+
+          echo "Publish failed after $MAX_ATTEMPTS attempts."
+          exit 1

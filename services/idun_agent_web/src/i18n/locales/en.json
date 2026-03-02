@@ -25,7 +25,7 @@
         },
         "apps": {
             "title": "Connect your first application.",
-            "description": "Visit the app marketplace to connect the Idun Agent Platform and the tools that grow your business.",
+            "description": "Visit the app marketplace to connect the Idun Platform and the tools that grow your business.",
             "first-install": "Install the first application"
         },
         "marketplace": {
@@ -154,11 +154,13 @@
         "apps": "Apps",
         "observability": "Observability",
         "memory": "Memory",
-        "mcp": "MCP"
+        "mcp": "MCP",
+        "sso": "SSO",
+        "integrations": "Integrations"
     },
     "signin": {
         "title": "Create an account",
-        "description": "Fill out the form to create your Idun Agent Platform account.",
+        "description": "Fill out the form to create your Idun Platform account.",
         "firstName": {
             "label": "First Name",
             "placeholder": "Enter your first name"
@@ -266,7 +268,7 @@
     },
     "login": {
         "title": "Login",
-        "description": "Login to your Idun Agent Platform account.",
+        "description": "Login to your Idun Platform account.",
         "email": "Email address",
         "email.placeholder": "Enter your email address",
         "password": "Password",
@@ -979,6 +981,18 @@
         "comingSoon": "Coming soon",
         "underDevelopment": "This feature is under development",
         "back": "Back"
+    },
+    "integrations": {
+        "title": "Integrations",
+        "subtitle": "Connect external messaging platforms to your agents",
+        "search": "Search integrations...",
+        "add": "Add integration",
+        "addCard": "Add integration",
+        "loading": "Loading integrations…",
+        "active": "Active Integrations",
+        "comingSoon": "Coming Soon",
+        "whatsapp": "WhatsApp",
+        "discord": "Discord"
     },
     "theme": {
         "toggleToLight": "Switch to light mode",

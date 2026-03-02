@@ -24,12 +24,12 @@
         },
         "apps": {
             "title": "Verbinden Sie Ihre erste Anwendung.",
-            "description": "Besuchen Sie den App-Marktplatz, um Idun Engine und die Tools zu verbinden, die Ihr Geschäft voranbringen.",
+            "description": "Besuchen Sie den App-Marktplatz, um Idun Platform und die Tools zu verbinden, die Ihr Geschäft voranbringen.",
             "first-install": "Erste Anwendung installieren"
         },
         "marketplace": {
             "title": "App-Marktplatz",
-            "subtitle": "Entdecken und verbinden Sie Apps mit Idun Engine.",
+            "subtitle": "Entdecken und verbinden Sie Apps mit Idun Platform.",
             "all-apps": "Alle Anwendungen",
             "by": "von",
             "install": "Anwendung hinzufügen",
@@ -139,11 +139,16 @@
         "observation": "Beobachtung",
         "tools": "Werkzeuge",
         "users": "Benutzer",
-        "apps": "Apps"
+        "apps": "Apps",
+        "observability": "Observierbarkeit",
+        "memory": "Speicher",
+        "mcp": "MCP",
+        "sso": "SSO",
+        "integrations": "Integrationen"
     },
     "signin": {
         "title": "Konto erstellen",
-        "description": "Füllen Sie das Formular aus, um Ihr Idun Engine-Konto zu erstellen.",
+        "description": "Füllen Sie das Formular aus, um Ihr Idun Platform-Konto zu erstellen.",
         "firstName": {
             "label": "Vorname",
             "placeholder": "Geben Sie Ihren Vornamen ein"
@@ -250,7 +255,7 @@
     },
     "login": {
         "title": "Anmelden",
-        "description": "Melden Sie sich bei Ihrem Idun Engine-Konto an.",
+        "description": "Melden Sie sich bei Ihrem Idun Platform-Konto an.",
         "email": "E-Mail-Adresse",
         "email.placeholder": "Geben Sie Ihre E-Mail-Adresse ein",
         "password": "Passwort",
@@ -488,7 +493,7 @@
             "code": "Code"
         },
         "metrics": {
-            "totalRuns": "Gesamtlaufzeit",
+            "totalRuns": "Gesamtausführungen",
             "successRate": "Erfolgsrate",
             "avgResponseTime": "Durchschnittliche Antwortzeit",
             "uptime": "Verfügbarkeit",
@@ -498,7 +503,7 @@
             "lastDays": "letzten 7 Tage"
         },
         "charts": {
-            "dailyUsage": "Täglicher Verbrauch (letzte 7 Tage)",
+            "dailyUsage": "Tägliche Nutzung (letzte 7 Tage)",
             "success": "Erfolg",
             "errors": "Fehler"
         },
@@ -941,6 +946,17 @@
         "comingSoon": "Demnächst",
         "underDevelopment": "Diese Funktion ist in Entwicklung",
         "back": "Zurück"
+    },
+    "integrations": {
+        "title": "Integrationen",
+        "subtitle": "Verbinden Sie externe Messaging-Plattformen mit Ihren Agenten",
+        "search": "Integrationen suchen...",
+        "add": "Integration hinzufügen",
+        "addCard": "Integration hinzufügen",
+        "loading": "Integrationen werden geladen…",
+        "active": "Aktive Integrationen",
+        "comingSoon": "Demnächst",
+        "whatsapp": "WhatsApp"
     },
     "theme": {
         "toggleToLight": "In den hellen Modus wechseln",

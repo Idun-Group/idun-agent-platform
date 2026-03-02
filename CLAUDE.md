@@ -12,8 +12,16 @@ Idun Agent Platform is a self-hosted control plane that wraps LangGraph/ADK agen
 - `libs/idun_agent_engine/` — SDK runtime that wraps agents into FastAPI services (published to PyPI)
 - `services/idun_agent_manager/` — FastAPI + PostgreSQL backend for agent config CRUD, auth, policy enforcement
 - `services/idun_agent_web/` — React 19 + Vite + TypeScript admin dashboard
-- `services/copilot_runtime/` — Node.js CopilotKit runtime for real-time agent streaming
 - `docs/` — MkDocs Material documentation site
+
+## Per-Service Documentation
+
+Each package/service has its own `CLAUDE.md` with detailed architecture, module maps, and conventions. **Always read the relevant CLAUDE.md before working on a specific package:**
+
+- `libs/idun_agent_schema/CLAUDE.md` — Schema library: Pydantic models, config hierarchy, discriminated unions, manager schemas
+- `libs/idun_agent_engine/CLAUDE.md` — Engine SDK: agent adapters, config flow, server endpoints, guardrails, observability, MCP, CLI
+- `services/idun_agent_manager/CLAUDE.md` — Manager API: routes, auth (OIDC + basic), multi-tenancy, database models, migrations
+- `services/idun_agent_web/CLAUDE.md` — Web UI: routes, auth flow, API layer, styling, i18n, state management
 
 ## Build & Development Commands
 
@@ -26,7 +34,7 @@ make sync                    # or: uv sync --all-groups
 # Install libs in editable mode
 make dev
 
-# Run full dev stack (PostgreSQL + Manager + Web + CopilotKit)
+# Run full dev stack (PostgreSQL + Manager + Web)
 docker compose -f docker-compose.dev.yml up --build
 
 # Run manager locally (port 8000)
@@ -34,9 +42,6 @@ make dev-manager
 
 # Run frontend locally (port 3000)
 cd services/idun_agent_web && npm install && npm run dev
-
-# Run copilot runtime locally (port 8001)
-cd services/copilot_runtime && npm install && npm run dev
 ```
 
 ## Testing
@@ -75,9 +80,7 @@ Pre-commit hooks: Ruff linter/formatter, Pyright (manual stage), Gitleaks secret
 
 **Manager** (`idun_agent_manager`): Control plane API. Routers in `src/app/api/v1/routers/` for agents, auth (OIDC + session-based), guardrails, memory, observability, MCP servers, workspaces (multi-tenancy). Database models in `src/app/infrastructure/db/models/`. Migrations via Alembic in `alembic/`.
 
-**Web UI** (`idun_agent_web`): Pages in `src/pages/` (login, dashboard, agent forms, settings). Components in `src/components/`. Auto-generated API types in `src/generated/`. Uses styled-components, Monaco Editor, CopilotKit, i18next.
-
-**CopilotKit Runtime** (`copilot_runtime`): Bridges CopilotKit clients to agents via AG-UI protocol adapters.
+**Web UI** (`idun_agent_web`): Pages in `src/pages/` (login, dashboard, agent forms, settings). Components in `src/components/`. Auto-generated API types in `src/generated/`. Uses styled-components, Monaco Editor, AG-UI client, i18next.
 
 ## Database Migrations (Manager)
 
@@ -161,3 +164,7 @@ alembic upgrade head
 - When unsure between two valid approaches, state both with trade-offs instead of picking one arbitrarily.
 - If something feels off about a request or approach, say so and explain why. Push back with reasoning rather than complying silently.
 - If the user's suggestion would introduce a bug, reduce safety, or violate a best practice, flag it clearly before proceeding.
+
+### Keeping Documentation Current
+- When you add a major feature, change architecture, or modify conventions in a service, update the corresponding `CLAUDE.md` to reflect the change.
+- This includes new routes, new config options, new env vars, changed module structure, or deprecated behavior.

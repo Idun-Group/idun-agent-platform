@@ -13,7 +13,7 @@ import {
     Trash2,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { notify } from '../../../toast/notify';
 import {
     ActionsContainer,
     TableCell,
@@ -182,11 +182,11 @@ export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps)
                                 const confirmed = window.confirm('Delete this agent?');
                                 if (!confirmed) return;
                                 await deleteAgent(agent.id);
-                                toast.success('Agent deleted');
+                                notify.success('Agent deleted');
                                 onDeleted?.(agent.id);
                             } catch (e) {
                                 const message = e instanceof Error ? e.message : 'Failed to delete agent';
-                                toast.error(message);
+                                notify.error(message);
                             }
                         }}
                     />

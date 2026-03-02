@@ -937,6 +937,17 @@ export const updateApplication = async (id: string, updates: Partial<Application
     throw new Error('App not found or update failed');
 };
 
+export interface MCPTool {
+    name: string;
+    description: string | null;
+    input_schema: Record<string, unknown> | null;
+}
+
+export const discoverTools = async (id: string): Promise<MCPTool[]> => {
+    const res = await postJson<{ tools: MCPTool[] }>(`/api/v1/mcp-servers/${id}/tools`, {});
+    return res.tools;
+};
+
 export const deleteApplication = async (id: string): Promise<void> => {
     try { await deleteRequest(`/api/v1/observability/${id}`); return; } catch (e) { /* ignore */ }
     try { await deleteRequest(`/api/v1/memory/${id}`); return; } catch (e) { /* ignore */ }

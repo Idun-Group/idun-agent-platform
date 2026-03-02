@@ -3,7 +3,7 @@ import { SquarePen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { Button } from '../../general/button/component';
-import { toast } from 'react-toastify';
+import { notify } from '../../toast/notify';
 import { Form, TextInput } from '../../general/form/component';
 
 const ProfileSettings = () => {
@@ -24,7 +24,7 @@ const ProfileSettings = () => {
             phone,
         };
         console.log(data);
-        toast.success('not implemented');
+        notify.success('not implemented');
     };
     return (
         <Form

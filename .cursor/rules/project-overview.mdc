@@ -1,0 +1,25 @@
+---
+description: "Project overview and conventions for the Idun Agent Platform monorepo"
+alwaysApply: true
+---
+# Idun Agent Platform
+
+This is a monorepo. Each package/service has its own `CLAUDE.md` with detailed architecture, module maps, and conventions. **Always read the relevant CLAUDE.md before working on a specific package.**
+
+## Documentation Map
+
+- `CLAUDE.md` — Root: project overview, build commands, testing, linting, development principles
+- `libs/idun_agent_schema/CLAUDE.md` — Schema library: Pydantic models, config hierarchy, discriminated unions, manager CRUD schemas
+- `libs/idun_agent_engine/CLAUDE.md` — Engine SDK: agent adapters, config flow, YAML structure, server endpoints, guardrails, observability, MCP, CLI
+- `services/idun_agent_manager/CLAUDE.md` — Manager API: routes, authentication, multi-tenancy, database models, migrations, settings
+- `services/idun_agent_web/CLAUDE.md` — Web UI: routes, auth flow, API layer, styling, i18n, state management
+
+## Key Rules
+
+- Read before you write. Understand existing patterns before modifying.
+- Schema changes go in `idun_agent_schema` first, then propagate to engine and manager.
+- Python: async throughout, Ruff + Black formatting, line length 88.
+- Run `make lint` and `make precommit` before committing.
+- No `Any` types unless genuinely unavoidable.
+- Don't mix refactoring with feature work in the same change.
+- Small, focused commits — one concern per commit.

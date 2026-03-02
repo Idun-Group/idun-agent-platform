@@ -6,7 +6,7 @@ from idun_agent_engine_ui.app import send_message
 def test_api_returns_valid_dict():
     """Test API call returns valid dict."""
     messages = [{"role": "user", "content": "Hello"}]
-    result = send_message(messages)
+    result = send_message(messages, session_id="test-session")
 
     assert (
         not isinstance(result, dict) or "error" not in result
@@ -21,7 +21,7 @@ def test_conversation():
         {"role": "user", "content": "What's my name?"},
     ]
 
-    result = send_message(messages)
+    result = send_message(messages, session_id="test-session")
     assert result is not None
     assert "John" in result
     assert not isinstance(result, dict) or "error" not in result

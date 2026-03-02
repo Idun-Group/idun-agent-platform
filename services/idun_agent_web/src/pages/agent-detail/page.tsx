@@ -1,39 +1,40 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
+import { notify } from '../../components/toast/notify';
 import { useAuth } from '../../hooks/use-auth';
 import {
     getAgent,
     patchAgent,
     restartAgent,
+    performHealthCheck,
     type BackendAgent,
 } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
-import AgentFormModal from '../../components/agent-form-modal/component';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
 import {
     ArrowLeft,
     RotateCcw,
     Edit3,
+    X,
+    Save,
     LayoutDashboard,
     Webhook,
     Settings,
-    Activity,
-    Layers
+    Layers,
+    MessageSquare,
 } from 'lucide-react';
 
 const OverviewTab = lazy(() => import('../../components/agent-detail/tabs/overview-tab/component'));
 const GatewayTab = lazy(() => import('../../components/agent-detail/tabs/gateway-tab/component'));
 const ConfigurationTab = lazy(() => import('../../components/agent-detail/tabs/configuration-tab/component'));
-const ActivityTab = lazy(() => import('../../components/agent-detail/tabs/activity-tab/component'));
-const LogsTab = lazy(() => import('../../components/agent-detail/tabs/logs-tab/component'));
+const ChatTab = lazy(() => import('../../components/agent-detail/tabs/chat-tab/component'));
 
 const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'chat', label: 'Chat', icon: MessageSquare },
     { id: 'gateway', label: 'API Integration', icon: Webhook },
     { id: 'configuration', label: 'Configuration', icon: Settings },
-    { id: 'logs', label: 'Logs', icon: Activity } // Added Logs as it was in original but maybe not in target design tabs list, keeping for functionality
 ];
 
 export default function AgentDetailPage() {
@@ -42,14 +43,18 @@ export default function AgentDetailPage() {
     const [activeTab, setActiveTab] = useState('overview');
     const [agent, setAgent] = useState<BackendAgent | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [saveTrigger, setSaveTrigger] = useState(0);
 
     const { isLoading: isAuthLoading } = useAuth();
 
     const loadAgent = () => {
         if (!id) return;
         getAgent(id)
-            .then(setAgent)
+            .then((loaded) => {
+                setAgent(loaded);
+                performHealthCheck(loaded, setAgent);
+            })
             .catch((e) => {
                 const errorMsg = e instanceof Error ? e.message : 'Failed to load agent';
                 setError(errorMsg);
@@ -62,53 +67,43 @@ export default function AgentDetailPage() {
         loadAgent();
     }, [id, isAuthLoading]);
 
-    const getLangfuseUrl = (): string => {
-        const maybe = (agent as any)?.run_config?.env?.LANGFUSE_HOST as string | undefined;
-        if (maybe && typeof maybe === 'string' && !maybe.includes('${')) return maybe;
-        return 'https://cloud.langfuse.com';
-    };
-
     const handleTabClick = (tabId: string) => {
-        if (tabId === 'logs') {
-            // For logs, we might want to open external link or show tab.
-            // Original code opened external link. Let's keep it if that's the intention,
-            // OR show the LogsTab. The new design doesn't explicitly show Logs tab in TABS list but I'll keep it.
-            // If we want to replicate the target exactly, maybe we should hide it or move it.
-            // Let's show the tab for now as it exists in components.
-            setActiveTab(tabId);
-            return;
-        }
+        if (isEditing && tabId !== 'overview') return;
         setActiveTab(tabId);
     };
 
-    const handleEditSuccess = async (payload: any) => {
+    const handleEditSave = async (payload: any) => {
         if (!agent) return;
         try {
             const updatedAgent = await patchAgent(agent.id, payload);
             setAgent(updatedAgent);
-            setIsEditModalOpen(false);
-            toast.success('Agent updated successfully!');
+            setIsEditing(false);
+            notify.success('Agent updated successfully!');
+            performHealthCheck(updatedAgent, setAgent);
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to update agent';
-            toast.error(errorMsg);
+            notify.error(errorMsg);
         }
+    };
+
+    const handleEditToggle = () => {
+        setIsEditing(true);
+        setActiveTab('overview');
     };
 
     const handleRestart = async () => {
         if (!agent?.base_url) {
-            toast.error('Agent URL is not available');
+            notify.error('Agent URL is not available');
             return;
         }
         try {
             await restartAgent(agent.base_url);
-            toast.success('Agent restart triggered successfully');
+            notify.success('Agent restart triggered successfully');
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to restart agent';
-            toast.error(errorMsg);
+            notify.error(errorMsg);
         }
     };
-
-    const statusColor = (agent?.status || 'draft').toLowerCase() === 'active' ? 'emerald' : 'gray';
 
     if (error) {
         return (
@@ -156,11 +151,18 @@ export default function AgentDetailPage() {
                 </div>
 
                 <Actions>
-                    <HeaderButton onClick={handleRestart}>
-                        <RotateCcw size={16} /> Restart
-                    </HeaderButton>
-                    <HeaderButton $primary onClick={() => setIsEditModalOpen(true)}>
-                        <Edit3 size={16} /> Edit Agent
+                    {!isEditing && (
+                        <HeaderButton onClick={handleRestart}>
+                            <RotateCcw size={16} /> Restart
+                        </HeaderButton>
+                    )}
+                    {isEditing && (
+                        <HeaderButton $primary onClick={() => setSaveTrigger(t => t + 1)}>
+                            <Save size={16} /> Save Changes
+                        </HeaderButton>
+                    )}
+                    <HeaderButton $primary={!isEditing} onClick={isEditing ? () => setIsEditing(false) : handleEditToggle}>
+                        {isEditing ? <><X size={16} /> Cancel Edit</> : <><Edit3 size={16} /> Edit Agent</>}
                     </HeaderButton>
                 </Actions>
             </HeaderSection>
@@ -173,6 +175,7 @@ export default function AgentDetailPage() {
                         <TabButton
                             key={tab.id}
                             $active={isActive}
+                            $disabled={isEditing && tab.id !== 'overview'}
                             onClick={() => handleTabClick(tab.id)}
                         >
                             <Icon size={16} style={{ marginRight: '8px' }} />
@@ -184,22 +187,22 @@ export default function AgentDetailPage() {
 
             <ContentArea>
                 <Suspense fallback={<Loader />}>
-                    {activeTab === 'overview' && <OverviewTab agent={agent} />}
+                    {activeTab === 'overview' && (
+                        <OverviewTab
+                            agent={agent}
+                            isEditing={isEditing}
+                            onSave={handleEditSave}
+                            onCancel={() => setIsEditing(false)}
+                            saveTrigger={saveTrigger}
+                            onAgentRefresh={loadAgent}
+                        />
+                    )}
+                    {activeTab === 'chat' && <ChatTab agent={agent} />}
                     {activeTab === 'gateway' && <GatewayTab agent={agent} />}
                     {activeTab === 'configuration' && <ConfigurationTab agent={agent} />}
-                    {activeTab === 'logs' && <LogsTab />}
                 </Suspense>
             </ContentArea>
 
-            {agent && (
-                <AgentFormModal
-                    isOpen={isEditModalOpen}
-                    onClose={() => setIsEditModalOpen(false)}
-                    onSuccess={handleEditSuccess}
-                    mode="edit"
-                    initialData={agent}
-                />
-            )}
         </PageContainer>
     );
 }
@@ -340,7 +343,7 @@ const TabsNav = styled.div`
     margin-bottom: 32px;
 `;
 
-const TabButton = styled.button<{ $active: boolean }>`
+const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
     display: flex;
     align-items: center;
     background: none;
@@ -348,9 +351,10 @@ const TabButton = styled.button<{ $active: boolean }>`
     padding: 16px 4px;
     font-size: 14px;
     font-weight: 500;
-    cursor: pointer;
+    cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
     position: relative;
     transition: all 0.2s;
+    opacity: ${props => props.$disabled ? 0.4 : 1};
 
     ${props => props.$active
         ? `color: white;`

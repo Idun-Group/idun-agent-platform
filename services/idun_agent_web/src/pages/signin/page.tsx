@@ -6,6 +6,55 @@ import { useNavigate } from 'react-router-dom';
 import { Form, TextInput } from '../../components/general/form/component';
 import { useAuth } from '../../hooks/use-auth';
 
+const FIELD_LABELS: Record<string, string> = {
+    email: 'Email',
+    password: 'Password',
+    name: 'Name',
+};
+
+const FRIENDLY_MESSAGES: Record<string, Record<string, string>> = {
+    email: {
+        value_error: 'Please enter a valid email address',
+    },
+    password: {
+        string_too_short: 'Password must be at least 8 characters',
+    },
+};
+
+const DEFAULT_ERROR = 'Sign up failed. Please try again.';
+
+function extractErrorMessage(err: unknown): string {
+    if (!(err instanceof Error) || !err.message) return DEFAULT_ERROR;
+
+    try {
+        const parsed = JSON.parse(err.message);
+        if (!parsed.detail) return DEFAULT_ERROR;
+
+        // String detail: "Email already registered", "Database error", etc.
+        if (typeof parsed.detail === 'string') return parsed.detail;
+
+        // Array detail: Pydantic validation errors
+        if (Array.isArray(parsed.detail)) {
+            const messages = parsed.detail.map(
+                (item: { type?: string; loc?: string[]; msg?: string }) => {
+                    const field = item.loc?.find((l) => l !== 'body') || '';
+                    const friendly = FRIENDLY_MESSAGES[field]?.[item.type || ''];
+                    if (friendly) return friendly;
+
+                    const label = FIELD_LABELS[field] || field || 'Field';
+                    const msg = item.msg || 'is invalid';
+                    return `${label}: ${msg}`;
+                },
+            );
+            return messages.join('. ');
+        }
+
+        return DEFAULT_ERROR;
+    } catch {
+        return DEFAULT_ERROR;
+    }
+}
+
 const Signin = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -14,6 +63,7 @@ const Signin = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (session) navigate('/agents');
@@ -21,14 +71,19 @@ const Signin = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await signup({ email, password, name });
-        navigate('/login');
+        setError('');
+        try {
+            await signup({ email, password, name });
+            navigate('/login');
+        } catch (err) {
+            setError(extractErrorMessage(err));
+        }
     };
 
     return (
         <main>
             <StyledForm onSubmit={handleSubmit}>
-                <h1>Idun Agent Platform</h1>
+                <h1>Idun Platform</h1>
                 <h2>{t('signin.title')}</h2>
                 <p>{t('signin.description')}</p>
 
@@ -56,6 +111,7 @@ const Signin = () => {
                     placeholder="Name"
                     required
                 />
+                {error && <ErrorText>{error}</ErrorText>}
                 <Button type="submit" $variants="base">
                     {t('signin.submit')}
                 </Button>
@@ -63,6 +119,12 @@ const Signin = () => {
         </main>
     );
 };
+
+const ErrorText = styled.p`
+    color: var(--color-error, #ff4757);
+    font-size: 13px;
+    margin: 0;
+`;
 
 const StyledForm = styled(Form)`
     position: absolute;

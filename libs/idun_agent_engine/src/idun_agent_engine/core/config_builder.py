@@ -4,6 +4,7 @@ This module provides a fluent API for building configuration objects using Pydan
 This approach ensures type safety, validation, and consistency with the rest of the codebase.
 """
 
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,7 @@ from idun_agent_schema.engine.langgraph import (
 )
 from idun_agent_schema.engine.mcp_server import MCPServer
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.sso import SSOConfig
 from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from yaml import YAMLError
 
@@ -27,6 +29,8 @@ from idun_agent_engine.server.server_config import ServerAPIConfig
 
 from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigBuilder:
@@ -55,6 +59,8 @@ class ConfigBuilder:
         self._mcp_servers: list[MCPServer] | None = None
         self._observability: list[ObservabilityConfig] | None = None
         self._guardrails: Guardrails | None = None
+        self._sso: SSOConfig | None = None
+        self._integrations: list | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """Set the API port for the server.
@@ -101,7 +107,7 @@ class ConfigBuilder:
 
         headers = {"auth": f"Bearer {agent_api_key}"}
         try:
-            print(f"Fetching config from {url + '/api/v1/agents/config'}")
+            logger.info(f"Fetching config from {url}/api/v1/agents/config")
             response = requests.get(url=url + "/api/v1/agents/config", headers=headers)
             if response.status_code != 200:
                 raise ValueError(
@@ -147,6 +153,15 @@ class ConfigBuilder:
                 raise YAMLError(
                     f"Failed to parse yaml file for Observability: {e}"
                 ) from e
+            try:
+                sso_data = yaml_config.get("engine_config", {}).get("sso")
+                if sso_data:
+                    self._sso = SSOConfig.model_validate(sso_data)
+                else:
+                    self._sso = None
+            except Exception as e:
+                raise YAMLError(f"Failed to parse yaml file for SSO: {e}") from e
+
             # try:
             #     mcp_servers_list = yaml_config.get("engine_config", {}).get("mcp_servers") or yaml_config.get("engine_config", {}).get("mcpServers") # TODO to fix camelcase issues
             #     if mcp_servers_list:
@@ -157,6 +172,23 @@ class ConfigBuilder:
             #         self._mcp_servers = None
             # except Exception as e:
             #     raise YAMLError(f"Failed to parse yaml file for MCP Servers: {e}") from e
+
+            try:
+                from idun_agent_schema.engine.integrations import IntegrationConfig
+
+                integrations_list = yaml_config.get("engine_config", {}).get(
+                    "integrations"
+                )
+                if integrations_list:
+                    self._integrations = [
+                        IntegrationConfig.model_validate(i) for i in integrations_list
+                    ]
+                else:
+                    self._integrations = None
+            except Exception as e:
+                raise YAMLError(
+                    f"Failed to parse yaml file for Integrations: {e}"
+                ) from e
 
             return self
 
@@ -258,6 +290,8 @@ class ConfigBuilder:
             guardrails=self._guardrails,
             observability=self._observability,
             mcp_servers=self._mcp_servers,
+            sso=self._sso,
+            integrations=self._integrations,
         )
 
     def build_dict(self) -> dict[str, Any]:  # NOT USED
@@ -331,7 +365,7 @@ class ConfigBuilder:
 
             from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
 
-            print("Current directory: ", os.getcwd())  # TODO remove
+            logger.debug(f"Current directory: {os.getcwd()}")
             try:
                 validated_config = LangGraphAgentConfig.model_validate(agent_config_obj)
 
@@ -584,7 +618,6 @@ class ConfigBuilder:
         config_dict: dict[str, Any] | None = None,
         engine_config: EngineConfig | None = None,
     ) -> EngineConfig:
-        print(config_dict)
         """Umbrella function to resolve configuration from various sources.
 
         This function handles all the different ways configuration can be provided
@@ -608,19 +641,16 @@ class ConfigBuilder:
         """
         if engine_config:
             # Use pre-validated EngineConfig (from ConfigBuilder)
-            print("✅ Using pre-validated EngineConfig")
+            logger.info("✅ Using pre-validated EngineConfig")
             return engine_config
         elif config_dict:
-            # Validate dictionary config
-            print("✅ Validated dictionary configuration")
+            logger.info("✅ Validated dictionary configuration")
             return EngineConfig.model_validate(config_dict)
         elif config_path:
-            # Load from file using ConfigB/uilder
-            print(f"✅ Loaded configuration from {config_path}")
+            logger.info(f"✅ Loaded configuration from {config_path}")
             return ConfigBuilder.load_from_file(config_path)
         else:
-            # Default to loading config.yaml
-            print("✅ Loaded default configuration from config.yaml")
+            logger.info("✅ Loaded default configuration from config.yaml")
             return ConfigBuilder.load_from_file("config.yaml")
 
     @classmethod
@@ -648,6 +678,8 @@ class ConfigBuilder:
         builder._guardrails = engine_config.guardrails
         builder._observability = engine_config.observability
         builder._mcp_servers = engine_config.mcp_servers
+        builder._sso = engine_config.sso
+        builder._integrations = engine_config.integrations
         return builder
 
     @classmethod
@@ -679,6 +711,8 @@ class ConfigBuilder:
         builder._guardrails = engine_config.guardrails
         builder._observability = engine_config.observability
         builder._mcp_servers = engine_config.mcp_servers
+        builder._sso = engine_config.sso
+        builder._integrations = engine_config.integrations
 
         return builder
 

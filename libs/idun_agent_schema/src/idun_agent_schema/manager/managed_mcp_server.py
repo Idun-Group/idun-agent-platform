@@ -1,6 +1,7 @@
 """Main managed MCP server configuration model."""
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -30,3 +31,17 @@ class ManagedMCPServerPatch(BaseModel):
 
     name: str
     mcp_server: MCPServer = Field(..., description="MCP server configuration")
+
+
+class MCPToolSchema(BaseModel):
+    """Schema for a single MCP tool."""
+
+    name: str
+    description: str | None = None
+    input_schema: dict[str, Any] | None = None
+
+
+class MCPToolsResponse(BaseModel):
+    """Response containing discovered MCP tools."""
+
+    tools: list[MCPToolSchema]

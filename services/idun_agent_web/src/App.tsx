@@ -7,8 +7,7 @@ import styled from 'styled-components';
 import AgentFormPage from './pages/agent-form/page';
 import UserFormPage from './pages/user-form/page';
 import AgentDetailPage from './pages/agent-detail/page';
-import { AgentFileProvider } from './hooks/use-agent-file';
-import { AgentProvider } from './hooks/use-agent-model';
+
 import LoginPage from './pages/login/page';
 import SettingsPage from './pages/settings/page';
 import SideBar from './layouts/side-bar/dashboard-side-bar/layout';
@@ -25,6 +24,8 @@ import MemoryPage from './pages/memory-page/page';
 import ObservabilityPage from './pages/observability-page/page';
 import MCPPage from './pages/mcp-page/page';
 import GuardrailsPage from './pages/guardrails-page/page';
+import SSOPage from './pages/sso-page/page';
+import IntegrationsPage from './pages/integrations-page/page';
 // PLOP_IMPORT
 
 function App() {
@@ -78,11 +79,7 @@ function App() {
                                 <ContentLayout>
                                     <SideBar />
                                     <MainContent>
-                                        <AgentFileProvider>
-                                            <AgentProvider>
-                                                <AgentFormPage />
-                                            </AgentProvider>
-                                        </AgentFileProvider>
+                                        <AgentFormPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>
@@ -117,7 +114,7 @@ function App() {
                         }
                     />
                     <Route path="/agent/:id" element={<AgentDetailPage />} />
-                    <Route
+                    {/* <Route
                         path="/settings"
                         element={
                             <SettingPageProvider>
@@ -131,7 +128,7 @@ function App() {
                                 </AppLayout>
                             </SettingPageProvider>
                         }
-                    />
+                    /> */}
                     <Route
                         path="/observability"
                         element={
@@ -197,6 +194,34 @@ function App() {
                                     <SideBar />
                                     <MainContent>
                                         <ObservationPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/sso"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <SSOPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/integrations"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <IntegrationsPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>

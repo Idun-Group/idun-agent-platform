@@ -78,4 +78,28 @@ def create_app(
 
     register_invoke_route(app, input_model)
 
+    # Register integration routers based on config
+    if validated_config.integrations:
+        from idun_agent_schema.engine.integrations import IntegrationProvider
+
+        from ..integrations.discord.handler import router as discord_router
+        from ..integrations.whatsapp.handler import router as whatsapp_router
+
+        for integration in validated_config.integrations:
+            match integration.provider:
+                case IntegrationProvider.WHATSAPP if integration.enabled:
+                    app.include_router(
+                        whatsapp_router,
+                        prefix="/integrations/whatsapp",
+                        tags=["WhatsApp"],
+                    )
+                case IntegrationProvider.DISCORD if integration.enabled:
+                    app.include_router(
+                        discord_router,
+                        prefix="/integrations/discord",
+                        tags=["Discord"],
+                    )
+                case _:
+                    pass
+
     return app

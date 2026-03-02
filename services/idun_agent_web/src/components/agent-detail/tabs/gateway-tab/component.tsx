@@ -6,38 +6,22 @@ import {
     Key,
     Copy,
     ChevronDown,
-    MessageSquare,
-    RotateCcw,
     Plus,
     Trash2,
     Power,
-    Send,
     Loader2,
     Eye,
     EyeOff,
-    Check
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL, getJson } from '../../../../utils/api';
-import { AgentAvatar } from '../../../general/agent-avatar/component';
+import { getJson } from '../../../../utils/api';
 import {
     FormSelect,
     FormTextArea,
     TextInput,
 } from '../../../general/form/component';
 
-// CopilotKit Imports
-import { CopilotKit } from "@copilotkit/react-core";
-import { CopilotChat } from "@copilotkit/react-ui";
-// We removed the default CSS import to ensure our custom styles take full precedence
-// import "@copilotkit/react-ui/styles.css";
-
 // --- Keyframes for Animations ---
-const bounce = keyframes`
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
-`;
-
 const fadeIn = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }
@@ -55,16 +39,6 @@ const Container = styled.div`
     background-color: #0f1016;
     height: 100%;
     overflow-y: auto;
-`;
-
-const Grid = styled.div`
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 24px;
-
-    @media (min-width: 1024px) {
-        grid-template-columns: 1fr 1fr;
-    }
 `;
 
 const Card = styled.div`
@@ -314,28 +288,6 @@ const CodeSnippet = styled.div`
     }
 `;
 
-const PreviewHeader = styled.div`
-    padding: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background-color: rgba(255, 255, 255, 0.02);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-`;
-
-const ResetButton = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: #6b7280;
-    background: none;
-    border: none;
-    cursor: pointer;
-    &:hover { color: white; }
-`;
-
 const AddButton = styled.button`
     display: flex;
     align-items: center;
@@ -428,266 +380,6 @@ const LoadingSpinner = styled(Loader2)`
     animation: ${spin} 1s linear infinite;
 `;
 
-// --- Chat Specific Styled Components ---
-
-const StyledCopilotChat = styled(CopilotChat)`
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: transparent;
-    position: relative;
-    overflow: hidden;
-
-    /* Target the container that holds the messages.
-       CopilotKit often uses a specific class or the first child div for messages. */
-    & > div:first-of-type,
-    & .copilotKitMessages,
-    & .copilot-chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 24px;
-        padding-bottom: 90px; /* Space for absolute positioned input */
-        scroll-behavior: smooth;
-
-        /* Custom Scrollbar Styling */
-        &::-webkit-scrollbar {
-            width: 6px;
-        }
-        &::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-        &::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-        }
-        &::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-    }
-
-    & .copilot-chat-input {
-        display: none; /* We use our own custom input */
-    }
-`;
-
-const ChatArea = styled.div`
-    flex: 1;
-    background-color: #05040a;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    position: relative; /* Needed for absolute positioning context if required */
-`;
-
-const UserMessageWrapper = styled.div`
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    justify-content: flex-end;
-    margin-bottom: 20px; /* Increased spacing between messages */
-    width: 100%;
-`;
-
-const UserMessageBubble = styled.div`
-    background-color: #8c52ff;
-    color: white;
-    padding: 12px 20px; /* Increased padding inside bubble */
-    border-radius: 16px;
-    border-bottom-right-radius: 2px; /* Match rounded-br-sm */
-    word-break: break-word;
-    max-width: 80%;
-    font-size: 14px;
-    line-height: 1.6; /* Better line height */
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-`;
-
-const AssistantMessageWrapper = styled.div`
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    justify-content: flex-start;
-    margin-bottom: 20px; /* Increased spacing between messages */
-    width: 100%;
-`;
-
-const AssistantAvatarWrapper = styled.div`
-    margin-top: 2px;
-    flex-shrink: 0;
-`;
-
-const AssistantContent = styled.div`
-    flex: 1;
-    min-width: 0;
-    max-width: 85%;
-`;
-
-const AssistantBubble = styled.div`
-    padding: 12px 20px; /* Increased padding inside bubble */
-    border-radius: 16px;
-    border-bottom-left-radius: 2px; /* Match rounded-bl-sm */
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #e5e7eb;
-    font-size: 14px;
-    line-height: 1.6; /* Better line height */
-    border: 1px solid rgba(255, 255, 255, 0.05);
-`;
-
-const TypingContainer = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 0;
-`;
-
-const TypingDot = styled.div<{ $delay: string }>`
-    width: 6px;
-    height: 6px;
-    background-color: #9ca3af;
-    border-radius: 50%;
-    animation: ${bounce} 1.4s infinite ease-in-out both;
-    animation-delay: ${props => props.$delay};
-`;
-
-const InputContainer = styled.div`
-    padding: 16px;
-    background-color: #0B0A15;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    position: absolute; /* Fix to bottom */
-    width: 100%;
-    bottom: 0;
-    z-index: 10;
-`;
-
-const InputWrapper = styled.div`
-    position: relative;
-    display: flex;
-    align-items: center;
-`;
-
-const StyledInput = styled.input`
-    width: 100%;
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 14px 48px 14px 16px; /* Increased padding for input */
-    font-size: 14px;
-    color: white;
-    outline: none;
-    transition: all 0.2s;
-    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
-
-    &:focus {
-        border-color: #8c52ff;
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-`;
-
-const StyledSendButton = styled.button`
-    position: absolute;
-    right: 8px;
-    padding: 8px; /* Slightly larger button */
-    background-color: #8c52ff;
-    color: white;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-
-    &:hover:not(:disabled) {
-        background-color: #7c3aed;
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-`;
-
-
-// --- Custom Chat Components ---
-
-const CustomUserMessage = (props: any) => {
-    return (
-        <UserMessageWrapper>
-            <UserMessageBubble>{props.message?.content}</UserMessageBubble>
-        </UserMessageWrapper>
-    );
-};
-
-const CustomAssistantMessage = (props: any) => {
-    const { message, isLoading } = props;
-    const isTyping = isLoading && !message?.content;
-
-    return (
-        <AssistantMessageWrapper>
-            <AssistantAvatarWrapper>
-                <AgentAvatar name="Agent" size={28} />
-            </AssistantAvatarWrapper>
-            <AssistantContent>
-                <AssistantBubble>
-                    {message?.content && <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>}
-
-                    {/* Fallback to show raw message if content is empty or for debugging */}
-                    {(!message?.content && !isTyping && message) && (
-                        <div style={{ fontSize: '10px', fontFamily: 'monospace', color: '#9ca3af', marginTop: '4px', overflowX: 'auto' }}>
-                            {JSON.stringify(message, null, 2)}
-                        </div>
-                    )}
-
-                    {isTyping && (
-                        <TypingContainer>
-                            <TypingDot $delay="0ms" />
-                            <TypingDot $delay="150ms" />
-                            <TypingDot $delay="300ms" />
-                        </TypingContainer>
-                    )}
-                </AssistantBubble>
-            </AssistantContent>
-        </AssistantMessageWrapper>
-    );
-};
-
-const CustomInput = ({ inProgress, onSend }: any) => {
-    const handleSubmit = (value: string) => {
-        if (value.trim()) onSend(value);
-    };
-
-    return (
-        <InputContainer>
-            <InputWrapper>
-                <StyledInput
-                    disabled={inProgress}
-                    placeholder="Type a message to test..."
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSubmit(e.currentTarget.value);
-                            e.currentTarget.value = '';
-                        }
-                    }}
-                />
-                <StyledSendButton
-                    disabled={inProgress}
-                    onClick={(e) => {
-                        const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                        handleSubmit(input.value);
-                        input.value = '';
-                    }}
-                >
-                    <Send size={16} />
-                </StyledSendButton>
-            </InputWrapper>
-        </InputContainer>
-    );
-};
-
 // --- Interfaces ---
 interface RouteItem {
     id: string;
@@ -774,8 +466,6 @@ const NewRouteForm: React.FC<NewRouteFormProps> = ({ onCancel, onCreate }) => {
     );
 };
 
-import { setupCopilotAdapter, COPILOT_VIRTUAL_ENDPOINT } from '../../../../utils/copilot-adapter';
-
 // --- Main Component ---
 const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
     const [routes, setRoutes] = useState<RouteItem[]>([]);
@@ -790,31 +480,6 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
     const [isTokenCopied, setIsTokenCopied] = useState(false);
 
     const baseUrl = agent?.base_url || `https://api.idun.ai/v1/agents/${agent?.id || '{agent_id}'}/invoke`;
-    // Clean up base URL to avoid double slashes
-    const cleanBaseUrl = agent?.base_url?.replace(/\/+$/, '') || '';
-
-    // The agent's real AG-UI endpoint
-    let agentEndpoint = `${cleanBaseUrl}/agent/copilotkit/stream`;
-
-    // If we are in a local dev environment (accessing via localhost),
-    // and the agent URL is also localhost, we need to rewrite it to 'manager'
-    // so the dockerized copilot-runtime service can reach it.
-    // If running locally, rewrite localhost/127.0.0.1 to host.docker.internal
-    // so the Docker container can reach services running on the host machine (like the agent on port 8005)
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        agentEndpoint = agentEndpoint.replace('localhost', 'host.docker.internal').replace('127.0.0.1', 'host.docker.internal');
-    }
-
-    // Setup the client-side adapter when the agent endpoint changes
-    useEffect(() => {
-        if (agentEndpoint) {
-            return setupCopilotAdapter(agentEndpoint);
-        }
-    }, [agentEndpoint]);
-
-    // Point CopilotKit to our virtual endpoint
-    // Pass the agent endpoint as a query parameter so the proxy service knows where to forward
-    const copilotRuntimeUrl = `${COPILOT_VIRTUAL_ENDPOINT}?agentUrl=${encodeURIComponent(agentEndpoint)}`;
 
     useEffect(() => {
         if (agent?.base_url) {
@@ -874,11 +539,8 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
     };
 
     return (
-        <CopilotKit runtimeUrl={copilotRuntimeUrl} agent="my_agent">
-            <Container>
-                <Grid>
-                    {/* Left Column: Endpoint Details */}
-                    <Card style={{ height: '100%' }}>
+        <Container>
+            <Card>
                         <CardHeader>
                             <CardTitleIcon>
                                 <Terminal size={18} color="#8c52ff" />
@@ -1022,33 +684,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                 </EndpointsList>
                             </Section>
                         </CardContent>
-                    </Card>
-
-                    {/* Right Column: Interactive Preview */}
-                    <Card style={{ height: '600px' }}>
-                        <CardHeader style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <CardTitleIcon>
-                                <MessageSquare size={16} color="#8c52ff" />
-                                <h3>Interactive Preview</h3>
-                            </CardTitleIcon>
-                            <ResetButton onClick={() => { window.location.reload() }}>
-                                <RotateCcw size={12} /> Reset
-                            </ResetButton>
-                        </CardHeader>
-
-                        <ChatArea>
-                            <StyledCopilotChat
-                                labels={{
-                                    title: "Agent Session",
-                                    initial: "Hello! I am ready to test. Send me a request to verify my logic.",
-                                }}
-                                UserMessage={CustomUserMessage}
-                                AssistantMessage={CustomAssistantMessage}
-                                Input={CustomInput}
-                            />
-                        </ChatArea>
-                    </Card>
-                </Grid>
+            </Card>
 
                 {isModalOpen && (
                     <ModalOverlay onClick={() => setIsModalOpen(false)}>
@@ -1066,8 +702,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                         </ModalContent>
                     </ModalOverlay>
                 )}
-            </Container>
-        </CopilotKit>
+        </Container>
     );
 };
 

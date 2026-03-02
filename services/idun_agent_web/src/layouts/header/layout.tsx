@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import useWorkspace from '../../hooks/use-workspace';
 import { useAuth } from '../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,6 @@ const Header = () => {
         { id: string; name: string; icon: string; description: string }[]
     >([]);
     const navigate = useNavigate();
-    const location = useLocation();
 
     const { setSelectedWorkspaceId, getAllWorkspace } = useWorkspace();
     const { session, isLoading: isAuthLoading } = useAuth();
@@ -22,50 +21,13 @@ const Header = () => {
         getAllWorkspace().then((data) => setWorkspaces(data));
     }, [isAuthLoading, session, getAllWorkspace]);
 
-    // Local state for selected environment and workspace in the header
-    const [environment, setEnvironment] = useState<string>('');
     const [workspaceId, setWorkspaceId] = useState<string>('');
-
-    // Sync environment with URL param on mount and when URL changes
-    useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        const env = params.get('env') || '';
-        setEnvironment(env);
-    }, [location.search]);
-
-    // Auto-size env select to selected option text
-    const envSelectRef = useRef<HTMLSelectElement>(null);
-    const updateEnvWidth = useCallback(() => {
-        const el = envSelectRef.current;
-        if (!el) return;
-        const selectedText = el.options[el.selectedIndex]?.text || '';
-        const span = document.createElement('span');
-        const cs = getComputedStyle(el);
-        span.style.position = 'fixed';
-        span.style.visibility = 'hidden';
-        span.style.whiteSpace = 'pre';
-        span.style.font = `${cs.fontStyle} ${cs.fontVariant} ${cs.fontWeight} ${cs.fontSize} / ${cs.lineHeight} ${cs.fontFamily}`;
-        span.textContent = selectedText;
-        document.body.appendChild(span);
-        const textWidth = span.getBoundingClientRect().width;
-        document.body.removeChild(span);
-        const padding = 32; // left+right padding from styled Select
-        const arrowRoom = 20; // dropdown arrow space
-        el.style.width = `${Math.ceil(textWidth + padding + arrowRoom)}px`;
-    }, []);
-
-    useEffect(() => {
-        updateEnvWidth();
-        const onResize = () => updateEnvWidth();
-        window.addEventListener('resize', onResize);
-        return () => window.removeEventListener('resize', onResize);
-    }, [environment, updateEnvWidth]);
 
     return (
         <HeaderContainer>
             <SideContainer>
                 <Title onClick={() => navigate('/agents')} style={{ cursor: 'pointer' }}>
-                    <Logo src="/img/logo/logo.svg" alt="Idun Logo" /> Idun Agent Platform
+                    <Logo src="/img/logo/favicon.svg" alt="Idun Logo" /> Idun Platform
                 </Title>
 
                 {/** Workspace selector temporarily disabled */}
@@ -83,7 +45,6 @@ const Header = () => {
                         </option>
                         {workspaces.length === 0 ? (
                             <option value="" disabled>
-                                {/* Avoid i18n missingKey spam until translation is added */}
                                 No workspaces
                             </option>
                         ) : null}
@@ -95,49 +56,6 @@ const Header = () => {
                     </Select>
                 )}
             </SideContainer>
-
-            {location.pathname !== '/agents/create' && (
-                <SideContainer>
-                    <EnvSelect
-                        ref={envSelectRef}
-                        value={environment}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                            const value = e.target.value;
-                            setEnvironment(value);
-                            const params = new URLSearchParams(location.search);
-                            if (!value) {
-                                params.delete('env');
-                            } else {
-                                params.set('env', value);
-                            }
-                            navigate(
-                                {
-                                    pathname: location.pathname,
-                                    search: params.toString()
-                                        ? `?${params.toString()}`
-                                        : '',
-                                },
-                                { replace: true }
-                            );
-                            // update width after change
-                            requestAnimationFrame(updateEnvWidth);
-                        }}
-                    >
-                        <option value="">
-                            {t('header.environment.select')}
-                        </option>
-                        <option value="development">
-                            {t('header.environment.development')}
-                        </option>
-                        <option value="staging">
-                            {t('header.environment.staging')}
-                        </option>
-                        <option value="production">
-                            {t('header.environment.production')}
-                        </option>
-                    </EnvSelect>
-                </SideContainer>
-            )}
         </HeaderContainer>
     );
 };
@@ -206,24 +124,8 @@ const Select = styled.select`
     }
 `;
 
-const EnvSelect = styled(Select)`
-    background: hsl(var(--accent));
-    color: hsl(var(--header-text));
-    border-color: hsl(var(--header-border));
-    min-width: unset;
-    width: auto;
-    display: inline-block;
-
-    &:hover {
-        background: hsl(var(--accent));
-        border-color: hsl(var(--app-purple));
-    }
-`;
-
 const SideContainer = styled.div`
     display: flex;
     align-items: center;
     gap: 0.75rem;
 `;
-
-// Removed EnvLabel badge for environment selection

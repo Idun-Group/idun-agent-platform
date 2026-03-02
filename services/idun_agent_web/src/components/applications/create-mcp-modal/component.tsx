@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { Globe, Radio, Plug, Terminal } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { createApplication, updateApplication } from '../../../services/applications';
 import type { ApplicationConfig } from '../../../types/application.types';
 
@@ -23,7 +25,7 @@ const TRANSPORT_API_VALUE: Record<TransportType, string> = {
 interface Transport {
     id: TransportType;
     label: string;
-    icon: string;
+    icon: LucideIcon;
     description: string;
     fields: Field[];
 }
@@ -40,7 +42,7 @@ const TRANSPORTS: Transport[] = [
     {
         id: 'StreamableHTTP',
         label: 'Streamable HTTP',
-        icon: '🌐',
+        icon: Globe,
         description: 'Modern HTTP-based transport with streaming',
         fields: [
             { key: 'url', label: 'Server URL', type: 'url', placeholder: 'https://mcp.example.com/mcp', required: true },
@@ -50,7 +52,7 @@ const TRANSPORTS: Transport[] = [
     {
         id: 'SSE',
         label: 'SSE',
-        icon: '📡',
+        icon: Radio,
         description: 'Server-Sent Events transport',
         fields: [
             { key: 'url', label: 'SSE Endpoint', type: 'url', placeholder: 'https://mcp.example.com/sse', required: true },
@@ -60,7 +62,7 @@ const TRANSPORTS: Transport[] = [
     {
         id: 'WebSocket',
         label: 'WebSocket',
-        icon: '🔌',
+        icon: Plug,
         description: 'WebSocket-based bidirectional transport',
         fields: [
             { key: 'url', label: 'WebSocket URL', type: 'url', placeholder: 'wss://mcp.example.com/ws', required: true },
@@ -70,7 +72,7 @@ const TRANSPORTS: Transport[] = [
     {
         id: 'STDIO',
         label: 'STDIO',
-        icon: '⌨️',
+        icon: Terminal,
         description: 'Standard I/O process-based transport',
         fields: [
             { key: 'command', label: 'Command', type: 'text', placeholder: 'npx -y @modelcontextprotocol/server-everything', required: true },
@@ -429,7 +431,7 @@ const CreateMcpModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit
                                 $selected={isSel}
                                 onClick={(e) => { e.stopPropagation(); handleSelectTransport(t.id); }}
                             >
-                                <TransportIcon>{t.icon}</TransportIcon>
+                                <TransportIcon aria-hidden><t.icon size={18} /></TransportIcon>
                                 {t.label}
                             </TransportBtn>
                         );

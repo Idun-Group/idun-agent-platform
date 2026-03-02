@@ -24,12 +24,12 @@
         },
         "apps": {
             "title": "Conecte su primera aplicación.",
-            "description": "Visite el marketplace de aplicaciones para conectar Idun Engine y las herramientas que impulsan su negocio.",
+            "description": "Visite el marketplace de aplicaciones para conectar Idun Platform y las herramientas que impulsan su negocio.",
             "first-install": "Instalar la primera aplicación"
         },
         "marketplace": {
             "title": "Marketplace de aplicaciones",
-            "subtitle": "Descubra y conecte aplicaciones a Idun Engine.",
+            "subtitle": "Descubra y conecte aplicaciones a Idun Platform.",
             "all-apps": "Todas las aplicaciones",
             "by": "por",
             "install": "Añadir aplicación",
@@ -64,7 +64,7 @@
             "description": "Gestione y supervise sus agentes de IA",
             "create": "Crear un agente",
             "edit": "Editar el agente",
-            "delete": "Excluir el agente"
+            "delete": "Eliminar el agente"
         },
         "search": {
             "placeholder": "Escriba el nombre del agente o el framework..."
@@ -84,7 +84,7 @@
             "status": "Estado",
             "controls": "Controles",
             "avgTime": "Tiempo medio",
-            "environment": "Ambiente",
+            "environment": "Entorno",
             "errorRate": "Tasa de error",
             "source": "Fuente",
             "framework": "Framework",
@@ -119,7 +119,7 @@
             "of": "de",
             "agents": "agentes",
             "previous": "Anterior",
-            "next": "Próximo"
+            "next": "Siguiente"
         },
         "loading": "Cargando agentes...",
         "error": "Error al cargar",
@@ -139,18 +139,19 @@
         "observation": "Observación",
         "tools": "Herramientas",
         "users": "Usuarios",
-        "apps": "Aplicaciones"
+        "apps": "Aplicaciones",
+        "integrations": "Integraciones"
     },
     "signin": {
         "title": "Crear una cuenta",
-        "description": "Rellene el formulario para crear su cuenta Idun Engine.",
+        "description": "Rellene el formulario para crear su cuenta en Idun Platform.",
         "firstName": {
             "label": "Primer nombre",
             "placeholder": "Introduzca su primer nombre"
         },
         "lastName": {
-            "label": "Sobrenome",
-            "placeholder": "Introduzca su sobrenome"
+            "label": "Apellido",
+            "placeholder": "Introduzca su apellido"
         },
         "name": {
             "label": "Nombre de usuario",
@@ -180,8 +181,8 @@
                 "placeholder": "Introduzca su primer nombre"
             },
             "last-name": {
-                "label": "Sobrenome",
-                "placeholder": "Introduzca su sobrenome"
+                "label": "Apellido",
+                "placeholder": "Introduzca su apellido"
             },
             "email": {
                 "label": "Dirección de correo electrónico",
@@ -249,8 +250,8 @@
         "create-user": "Crear usuario"
     },
     "login": {
-        "title": "Login",
-        "description": "Faça login em sua conta Idun Engine.",
+        "title": "Iniciar sesión",
+        "description": "Inicie sesión en su cuenta de Idun Platform.",
         "email": "Dirección de correo electrónico",
         "email.placeholder": "Introduzca su dirección de correo electrónico",
         "password": "Contraseña",
@@ -351,7 +352,7 @@
         },
         "graph-definition-path": {
             "label": "Ruta de definición del grafo",
-            "placeholder": "SSeleccione la ruta del archivo de definición del grafo"
+            "placeholder": "Seleccione la ruta del archivo de definición del grafo"
         },
         "source": {
             "label": "Fuente",
@@ -580,8 +581,8 @@
                 "placeholder": "Su primer nombre"
             },
             "lastName": {
-                "label": "Sobrenome",
-                "placeholder": "Su sobrenome"
+                "label": "Apellido",
+                "placeholder": "Su apellido"
             },
             "email": {
                 "label": "Correo electrónico",
@@ -662,7 +663,7 @@
             }
         },
         "firstName": "Primer nombre",
-        "lastName": "Sobrenome",
+        "lastName": "Apellido",
         "email": "Correo electrónico",
         "phoneNumber": "Número de teléfono",
         "country": "País",
@@ -754,16 +755,16 @@
         "invitations": "Invitaciones",
         "activity": "Actividad del usuario",
         "totalResults": "Total: {{count}} usuarios",
-        "noUsers": "Nenhum usuário disponível.",
-        "noResultsFound": "Nenhum usuário encontrado que corresponda à sua busca.",
-        "cta": "Adicionar usuario",
+        "noUsers": "No hay usuarios disponibles.",
+        "noResultsFound": "No se encontraron usuarios que coincidan con su búsqueda.",
+        "cta": "Añadir usuario",
         "searchPlaceholder": "Buscar usuarios por nombre, correo electrónico o rol...",
         "search": {
             "placeholder": "Buscar usuarios por nombre, correo electrónico o rol..."
         },
         "column": {
-            "lastName": "Sobrenome",
-            "firstName": "Primer nombre",
+            "lastName": "Apellido",
+            "firstName": "Nombre",
             "userName": "Nombre de usuario",
             "email": "Correo electrónico",
             "phone": "Teléfono",
@@ -782,9 +783,9 @@
                     "required": "El primer nombre es obligatorio"
                 },
                 "lastName": {
-                    "label": "Sobrenome",
-                    "placeholder": "Introduzca el sobrenome",
-                    "required": "El sobrenome es obligatorio"
+                    "label": "Apellido",
+                    "placeholder": "Introduzca el apellido",
+                    "required": "El apellido es obligatorio"
                 },
                 "username": {
                     "label": "Nombre de usuario",
@@ -834,7 +835,7 @@
         "showing": "Mostrando {{start}} a {{end}} de {{total}} elementos",
         "total-per-page": "Total por página: {{count}}",
         "previous": "Anterior",
-        "next": "Próximo",
+        "next": "Siguiente",
         "items-per-page": "Elementos por página:",
         "no-data": "No hay datos disponibles.",
         "page": "Página"
@@ -854,14 +855,14 @@
         },
         "username": "Nombre de usuario",
         "firstName": "Primer nombre",
-        "lastName": "Sobrenome",
+        "lastName": "Apellido",
         "profilePicture": "Foto de perfil",
         "uploadPhoto": "Subir una foto",
         "password": "Contraseña",
         "confirmPassword": "Confirmar contraseña",
         "usernamePlaceholder": "Introduzca su nombre de usuario",
         "firstNamePlaceholder": "Introduzca su primer nombre",
-        "lastNamePlaceholder": "Introduzca su sobrenome",
+        "lastNamePlaceholder": "Introduzca su apellido",
         "passwordPlaceholder": "Introduzca su contraseña",
         "confirmPasswordPlaceholder": "Confirme su contraseña",
         "forgotPassword": "¿Ha olvidado su contraseña?",
@@ -918,7 +919,7 @@
             "itemsPerPage": "Elementos por página:",
             "showing": "Mostrando de {{start}} a {{end}} de {{total}} elementos",
             "previous": "← Anterior",
-            "next": "Próximo →"
+            "next": "Siguiente →"
         },
         "emptyState": "No hay datos disponibles.",
         "table": {
@@ -938,6 +939,17 @@
         "comingSoon": "Próximamente",
         "underDevelopment": "Esta funcionalidad está en desarrollo",
         "back": "Volver"
+    },
+    "integrations": {
+        "title": "Integraciones",
+        "subtitle": "Conecte plataformas de mensajería externas a sus agentes",
+        "search": "Buscar integraciones...",
+        "add": "Añadir integración",
+        "addCard": "Añadir integración",
+        "loading": "Cargando integraciones…",
+        "active": "Integraciones activas",
+        "comingSoon": "Próximamente",
+        "whatsapp": "WhatsApp"
     },
     "theme": {
         "toggleToLight": "Cambiar a modo claro",

@@ -25,7 +25,7 @@
         },
         "apps": {
             "title": "Connecter votre première application.",
-            "description": "Visitez la marketplace des applications pour connecter l'Idun Agent Platform et les outils que développent votre entreprise.",
+            "description": "Visitez la marketplace des applications pour connecter l'Idun Platform et les outils que développent votre entreprise.",
             "first-install": "Installer la première application"
         },
         "marketplace": {
@@ -154,11 +154,13 @@
         "apps": "Applications",
         "observability": "Observabilité",
         "memory": "Mémoire",
-        "mcp": "MCP"
+        "mcp": "MCP",
+        "sso": "SSO",
+        "integrations": "Intégrations"
     },
     "signin": {
         "title": "Créer un compte",
-        "description": "Remplissez le formulaire pour créer votre compte sur l'Idun Agent Platform.",
+        "description": "Remplissez le formulaire pour créer votre compte sur l'Idun Platform.",
         "firstName": {
             "label": "Prénom",
             "placeholder": "Entrez votre prénom"
@@ -267,7 +269,7 @@
     },
     "login": {
         "title": "Connexion",
-        "description": "Connectez-vous à votre compte sur l'Idun Agent Platform.",
+        "description": "Connectez-vous à votre compte sur l'Idun Platform.",
         "email": "Adresse e-mail",
         "email.placeholder": "Entrez votre adresse e-mail",
         "password": "Mot de passe",
@@ -986,6 +988,17 @@
         "comingSoon": "Bientôt disponible",
         "underDevelopment": "Cette fonctionnalité est en cours de développement",
         "back": "Retour"
+    },
+    "integrations": {
+        "title": "Intégrations",
+        "subtitle": "Connectez des plateformes de messagerie externes à vos agents",
+        "search": "Rechercher des intégrations...",
+        "add": "Ajouter une intégration",
+        "addCard": "Ajouter une intégration",
+        "loading": "Chargement des intégrations…",
+        "active": "Intégrations actives",
+        "comingSoon": "Bientôt disponible",
+        "whatsapp": "WhatsApp"
     },
     "theme": {
         "toggleToLight": "Passer en mode clair",
