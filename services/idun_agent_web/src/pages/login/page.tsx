@@ -46,9 +46,14 @@ const LoginPage = () => {
 
     useEffect(() => {
         if (session) {
-            const returnUrl = sessionStorage.getItem('returnUrl') || '/agents';
-            sessionStorage.removeItem('returnUrl');
-            navigate(returnUrl, { replace: true });
+            const hasWorkspaces = (session.principal?.workspace_ids?.length ?? 0) > 0;
+            if (!hasWorkspaces) {
+                navigate('/onboarding', { replace: true });
+            } else {
+                const returnUrl = sessionStorage.getItem('returnUrl') || '/agents';
+                sessionStorage.removeItem('returnUrl');
+                navigate(returnUrl, { replace: true });
+            }
         }
     }, [session, navigate]);
 
