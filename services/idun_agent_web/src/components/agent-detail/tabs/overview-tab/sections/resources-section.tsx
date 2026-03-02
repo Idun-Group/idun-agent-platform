@@ -538,8 +538,12 @@ export default function ResourcesSection({
     const handleCreateSuccess = async () => {
         setIsCreateModalOpen(false);
         const wasQuickAdd = quickAddCategory !== null;
-        setCreateTarget(null);
-        setQuickAddCategory(null);
+        const previousCategory = quickAddCategory;
+
+        if (!wasQuickAdd) {
+            setCreateTarget(null);
+            setQuickAddCategory(null);
+        }
 
         if (!onResourcesRefresh) return;
         try {
@@ -558,9 +562,10 @@ export default function ResourcesSection({
             };
             onResourcesRefresh(newResources);
 
-            // If this was a quick-add (view mode), refresh agent
-            if (wasQuickAdd && onAgentRefresh) {
-                onAgentRefresh();
+            // If this was a quick-add (view mode), reopen the picker with refreshed data
+            if (wasQuickAdd && previousCategory) {
+                setPickerSelectedIds(getAssignedIdsForCategory(previousCategory));
+                setIsQuickAddPickerOpen(true);
             }
         } catch {
             // toast is handled by the modal
@@ -569,8 +574,12 @@ export default function ResourcesSection({
 
     const handleCreateModalClose = () => {
         setIsCreateModalOpen(false);
-        setCreateTarget(null);
-        setQuickAddCategory(null);
+        // If we came from the quick-add picker, reopen it instead of closing everything
+        if (quickAddCategory !== null) {
+            setIsQuickAddPickerOpen(true);
+        } else {
+            setCreateTarget(null);
+        }
     };
 
     /** Extract key config fields for inline preview on picker cards */

@@ -24,7 +24,7 @@ createRoot(document.getElementById('root')!).render(
                             <App />
                             <ToastContainer
                                 position="top-right"
-                                autoClose={300000}
+                                autoClose={5000}
                                 hideProgressBar={false}
                                 newestOnTop
                                 closeOnClick

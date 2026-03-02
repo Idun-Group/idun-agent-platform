@@ -56,9 +56,15 @@ const AgentDashboardPage = () => {
 
     const handleDeleteConfirm = async () => {
         if (!agentToDelete) return;
-        await deleteAgent(agentToDelete.id);
-        notify.success('Agent deleted');
-        setAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
+        try {
+            await deleteAgent(agentToDelete.id);
+            notify.success('Agent deleted');
+            setAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to delete agent';
+            notify.error(message);
+            throw err;
+        }
     };
 
     // ── Empty state ──────────────────────────────────────────────────────────

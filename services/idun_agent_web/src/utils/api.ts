@@ -56,6 +56,10 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
         throw new Error(text || `Request failed with status ${response.status}`);
     }
 
+    if (response.status === 204) {
+        return undefined as unknown as T;
+    }
+
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
         return (await response.json()) as T;
