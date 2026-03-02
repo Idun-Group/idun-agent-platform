@@ -5,7 +5,7 @@ import { Button } from '../../general/button/component';
 import { TextInput, Checkbox, TextArea, Select, TagInput } from '../../general/form/component';
 import type { AppType, ApplicationConfig, MarketplaceApp } from '../../../types/application.types';
 import { createApplication, updateApplication, deleteApplication } from '../../../services/applications';
-import { toast } from 'react-toastify';
+import { notify } from '../../toast/notify';
 
 interface ApplicationModalProps {
     isOpen: boolean;
@@ -60,7 +60,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
 
     const handleSubmit = async () => {
         if (!name) {
-            toast.error('Please provide a name');
+            notify.error('Please provide a name');
             return;
         }
 
@@ -75,7 +75,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                     config,
                     imageUrl: appToCreate.imageUrl
                 });
-                toast.success('Application created successfully');
+                notify.success('Application created successfully');
             } else if (appToEdit) {
                 await updateApplication(appToEdit.id, {
                     name,
@@ -83,7 +83,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                     category: appToEdit.category,
                     type: appToEdit.type
                 });
-                toast.success('Application updated successfully');
+                notify.success('Application updated successfully');
             }
             onSuccess();
             onClose();
@@ -91,7 +91,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
             console.error(error);
             const msg = formatError(error);
             setErrorMessage(msg);
-            toast.error(msg);
+            notify.error(msg);
         } finally {
             setIsSubmitting(false);
         }
@@ -104,14 +104,14 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
         setErrorMessage(null);
         try {
             await deleteApplication(appToEdit.id);
-            toast.success('Application deleted successfully');
+            notify.success('Application deleted successfully');
             onSuccess();
             onClose();
         } catch (error: any) {
             console.error(error);
             const msg = formatError(error);
             setErrorMessage(msg);
-            toast.error(msg);
+            notify.error(msg);
         } finally {
             setIsSubmitting(false);
         }

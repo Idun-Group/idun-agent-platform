@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { Button } from '../../../components/general/button/component';
-import { toast } from 'react-toastify';
+import { notify } from '../../../components/toast/notify';
 import { useSettingsPage } from '../../../hooks/use-settings-page';
 import { useState } from 'react';
 import {
@@ -56,7 +56,7 @@ const SettingSideBar = () => {
                     <AccountInfo />
                     <ButtonSwitchAccount
                         $variants="transparent"
-                        onClick={() => toast.warning('Switch account clicked')}
+                        onClick={() => notify.warning('Switch account clicked')}
                     >
                         {t('settings.switch-account')}
                     </ButtonSwitchAccount>

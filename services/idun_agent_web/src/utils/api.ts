@@ -1,4 +1,4 @@
-import { toast } from 'react-toastify';
+import { notify } from '../components/toast/notify';
 import { runtimeConfig } from './runtime-config';
 
 const resolveBaseUrl = (): string => {
@@ -54,6 +54,10 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
     if (!response.ok) {
         const text = await response.text().catch(() => '');
         throw new Error(text || `Request failed with status ${response.status}`);
+    }
+
+    if (response.status === 204) {
+        return undefined as unknown as T;
     }
 
     const contentType = response.headers.get('content-type') || '';

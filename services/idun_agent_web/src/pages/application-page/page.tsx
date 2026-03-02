@@ -8,7 +8,7 @@ import ConfiguredAppCard from '../../components/connected-app/configured-app-car
 import { fetchApplications, MARKETPLACE_APPS } from '../../services/applications';
 import type { ApplicationConfig, MarketplaceApp, AppCategory } from '../../types/application.types';
 import { Loader, Plus, Wrench } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { notify } from '../../components/toast/notify';
 
 // Define props to make the component reusable for different categories
 interface ApplicationPageProps {

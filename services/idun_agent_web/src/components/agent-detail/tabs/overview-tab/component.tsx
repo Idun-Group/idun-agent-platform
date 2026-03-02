@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { toast } from 'react-toastify';
+import { notify } from '../../../toast/notify';
 import { Save } from 'lucide-react';
 import type { BackendAgent } from '../../../../services/agents';
 import { fetchApplications } from '../../../../services/applications';
@@ -28,9 +28,10 @@ interface OverviewTabProps {
     onSave: (payload: any) => void;
     onCancel: () => void;
     saveTrigger?: number;
+    onAgentRefresh?: () => void;
 }
 
-const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger }: OverviewTabProps) => {
+const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentRefresh }: OverviewTabProps) => {
     // Form state (initialized when entering edit mode)
     const [formState, setFormState] = useState<AgentFormState>({
         name: '',
@@ -54,7 +55,37 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger }: Overvi
     const [rootSchema, setRootSchema] = useState<any>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Fetch available resources and schema when entering edit mode
+    // Fetch available resources on mount (needed for quick-add in view mode)
+    useEffect(() => {
+        if (!agent) return;
+        loadResources();
+    }, [agent?.id]);
+
+    const loadResources = async () => {
+        try {
+            const [apps, ssos, integrations] = await Promise.all([
+                fetchApplications(),
+                fetchSSOs().catch(() => []),
+                fetchIntegrations().catch(() => []),
+            ]);
+
+            const newResources: AvailableResources = {
+                observabilityApps: apps.filter(a => a.category === 'Observability'),
+                memoryApps: apps.filter(a => a.category === 'Memory'),
+                mcpApps: apps.filter(a => a.category === 'MCP'),
+                guardApps: apps.filter(a => a.category === 'Guardrails'),
+                ssoConfigs: ssos,
+                integrationConfigs: integrations,
+            };
+            setResources(newResources);
+            return newResources;
+        } catch (err) {
+            console.error('Failed to load resources:', err);
+            return null;
+        }
+    };
+
+    // Fetch schema and initialize form when entering edit mode
     useEffect(() => {
         if (!isEditing || !agent) return;
 
@@ -67,38 +98,19 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger }: Overvi
             .then(setRootSchema)
             .catch(err => console.error('Error fetching OpenAPI schema:', err));
 
-        // Fetch all available resources
-        const loadResources = async () => {
-            try {
-                const [apps, ssos, integrations] = await Promise.all([
-                    fetchApplications(),
-                    fetchSSOs().catch(() => []),
-                    fetchIntegrations().catch(() => []),
-                ]);
-
-                const newResources: AvailableResources = {
-                    observabilityApps: apps.filter(a => a.category === 'Observability'),
-                    memoryApps: apps.filter(a => a.category === 'Memory'),
-                    mcpApps: apps.filter(a => a.category === 'MCP'),
-                    guardApps: apps.filter(a => a.category === 'Guardrails'),
-                    ssoConfigs: ssos,
-                    integrationConfigs: integrations,
-                };
-                setResources(newResources);
-
-                // Extract current selections from agent config, now that we have resources
+        // Extract current selections from agent config using current resources
+        const initSelections = async () => {
+            const freshResources = await loadResources();
+            if (freshResources && agent) {
                 const extracted = extractSelectionsFromAgent(
                     agent.engine_config,
                     agent.framework || 'LANGGRAPH',
-                    newResources
+                    freshResources
                 );
                 setSelections(extracted);
-            } catch (err) {
-                console.error('Failed to load resources:', err);
             }
         };
-
-        loadResources();
+        initSelections();
 
         // Initialize form state from agent
         const port = agent.engine_config?.server?.api?.port;
@@ -128,7 +140,7 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger }: Overvi
     const handleSave = async () => {
         const error = validateAgentForm(formState);
         if (error) {
-            toast.error(error);
+            notify.error(error);
             return;
         }
 
@@ -176,6 +188,7 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger }: Overvi
                     selections={selections}
                     onSelectionChange={handleSelectionChange}
                     onResourcesRefresh={setResources}
+                    onAgentRefresh={onAgentRefresh}
                 />
             </TwoColumnGrid>
 

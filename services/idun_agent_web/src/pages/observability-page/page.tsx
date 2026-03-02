@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { Eye, EyeOff } from 'lucide-react';
 import { fetchApplications, deleteApplication } from '../../services/applications';
 import type { ApplicationConfig } from '../../types/application.types';
 import CreateObservabilityModal from '../../components/applications/create-observability-modal/component';
@@ -358,7 +359,7 @@ const SecretField: React.FC<{ value: string }> = ({ value }) => {
     return (
         <SecretValue>
             <SecretText $visible={visible}>{visible ? value : '•'.repeat(Math.min(value.length, 12))}</SecretText>
-            <EyeBtn type="button" onClick={() => setVisible(v => !v)}>{visible ? '🙈' : '👁️'}</EyeBtn>
+            <EyeBtn type="button" onClick={() => setVisible(v => !v)}>{visible ? <EyeOff size={14} /> : <Eye size={14} />}</EyeBtn>
         </SecretValue>
     );
 };
