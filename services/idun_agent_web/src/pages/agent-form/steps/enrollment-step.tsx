@@ -148,7 +148,7 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
         'pip install idun-agent-engine',
         '',
         `export IDUN_MANAGER_HOST="${managerHost}"`,
-        `export IDUN_AGENT_KEY="${state.apiKey}"`,
+        `export IDUN_AGENT_API_KEY="${state.apiKey}"`,
         '',
         'idun agent serve --source=manager',
     ].join('\n');
