@@ -85,7 +85,7 @@ const Sidebar = styled.aside`
     display: flex;
     flex-direction: column;
     gap: 24px;
-    border-right: 1px solid #25325a;
+    border-right: 1px solid hsl(var(--border));
     padding-right: 24px;
 `;
 
@@ -106,13 +106,13 @@ const Header = styled.div`
 const Title = styled.h1`
     font-size: 28px;
     font-weight: 600;
-    color: #fff;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const Subtitle = styled.h2`
     font-size: 14px;
-    color: #a0a0a0;
+    color: hsl(var(--muted-foreground));
     font-weight: normal;
     margin: 0;
 `;
@@ -121,7 +121,7 @@ const SearchInput = styled(TextInput)`
     width: 100%;
 
     input {
-        background: #0f1016;
+        background: hsl(var(--card));
     }
 `;
 
@@ -135,7 +135,7 @@ const FilterTitle = styled.h3`
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
-    color: #64748b;
+    color: hsl(var(--muted-foreground));
     margin: 0;
     padding-left: 8px;
 `;
@@ -147,8 +147,8 @@ const FilterList = styled.div`
 `;
 
 const FilterItem = styled.button<{ $isActive: boolean }>`
-    background: ${props => props.$isActive ? '#8c52ff' : 'transparent'};
-    color: ${props => props.$isActive ? '#fff' : '#a0a0a0'};
+    background: ${props => props.$isActive ? 'hsl(var(--primary))' : 'transparent'};
+    color: ${props => props.$isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'};
     border: none;
     border-radius: 6px;
     padding: 10px 12px;
@@ -159,8 +159,8 @@ const FilterItem = styled.button<{ $isActive: boolean }>`
     transition: all 0.2s;
 
     &:hover {
-        background: ${props => props.$isActive ? '#8c52ff' : '#1a1a2e'};
-        color: #fff;
+        background: ${props => props.$isActive ? 'hsl(var(--primary))' : 'hsl(var(--surface-elevated))'};
+        color: hsl(var(--foreground));
     }
 `;
 
@@ -188,9 +188,9 @@ const CardWrapper = styled.div`
 const NoResults = styled.div`
     grid-column: 1 / -1;
     text-align: center;
-    color: #a0a0a0;
+    color: hsl(var(--muted-foreground));
     padding: 40px;
-    background: #1a1a2e;
+    background: hsl(var(--surface-elevated));
     border-radius: 8px;
-    border: 1px dashed #25325a;
+    border: 1px dashed hsl(var(--border));
 `;

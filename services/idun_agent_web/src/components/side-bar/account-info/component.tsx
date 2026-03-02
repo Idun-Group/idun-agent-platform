@@ -71,7 +71,7 @@ const UserAvatarFallback = styled.div`
     width: 17px;
     height: 17px;
     border-radius: 50%;
-    background: #121122;
+    background: hsl(var(--accent));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -88,7 +88,7 @@ const TextCol = styled.div`
         margin: 0;
         font-size: 13px;
         font-weight: 500;
-        color: #ffffff;
+        color: hsl(var(--foreground));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

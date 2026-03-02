@@ -27,8 +27,8 @@ const Container = styled.div`
     position: relative;
     display: flex;
     flex-direction: column;
-    background: #5050501c;
-    box-shadow: 0 0 10px #8c52ff61;
+    background: var(--overlay-subtle);
+    box-shadow: 0 0 10px rgba(140, 82, 255, 0.38);
     border-radius: 8px;
     padding: 16px;
     height: 100%;
@@ -47,12 +47,12 @@ const Title = styled.h3`
     font-size: 1.25rem;
     font-weight: bold;
     margin: 0 0 8px 0;
-    color: #fff;
+    color: hsl(var(--foreground));
 `;
 
 const Description = styled.p`
     margin: 8px 0;
-    color: #a0a0a0;
+    color: hsl(var(--muted-foreground));
     font-size: 0.875rem;
     line-height: 1.5;
     flex: 1;
@@ -61,15 +61,15 @@ const Description = styled.p`
 const By = styled.p`
     margin: 0;
     font-size: 0.75rem;
-    color: #666;
+    color: hsl(var(--text-tertiary));
 `;
 
 const Tag = styled.span`
     position: absolute;
     top: 12px;
     right: 12px;
-    background: #8c52ff;
-    color: #fff;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
     padding: 4px 8px;
     border-radius: 6px;
     font-size: 0.75rem;

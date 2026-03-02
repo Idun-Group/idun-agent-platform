@@ -28,10 +28,10 @@ interface AgentLineProps {
 
 // const ActionButton = styled.button`
 //     background: transparent;
-//     border: 1px solid var(--color-border-primary);
+//     border: 1px solid hsl(var(--border));
 //     border-radius: 6px;
 //     padding: 8px;
-//     color: var(--color-text-secondary);
+//     color: hsl(var(--muted-foreground));
 //     cursor: pointer;
 //     transition: all var(--transition-default);
 //     display: inline-flex;
@@ -39,13 +39,13 @@ interface AgentLineProps {
 //     justify-content: center;
 
 //     &:hover {
-//         background: var(--color-background-tertiary);
-//         color: var(--color-text-primary);
-//         border-color: var(--color-primary);
+//         background: hsl(var(--accent));
+//         color: hsl(var(--foreground));
+//         border-color: hsl(var(--primary));
 //     }
 
 //     &:active {
-//         background: var(--color-background-primary);
+//         background: hsl(var(--background));
 //     }
 // `;
 
@@ -64,36 +64,36 @@ interface AgentLineProps {
 // `;
 
 // const StatusText = styled.span`
-//     color: var(--color-text-secondary);
+//     color: hsl(var(--muted-foreground));
 //     font-size: 12px;
 //     text-transform: capitalize;
 // `;
 
 // const AgentLink = styled(Link)`
-//     color: var(--color-text-primary);
+//     color: hsl(var(--foreground));
 //     text-decoration: none;
 //     font-weight: 500;
 //     transition: color var(--transition-default);
 
 //     &:hover {
-//         color: var(--color-primary);
+//         color: hsl(var(--primary));
 //         text-decoration: underline;
 //     }
 // `;
 
 // const MetricValue = styled.span`
-//     color: var(--color-text-secondary);
+//     color: hsl(var(--muted-foreground));
 //     font-size: 14px;
 // `;
 
 // const FrameworkTag = styled.span`
-//     background: var(--color-background-tertiary);
-//     color: var(--color-text-secondary);
+//     background: hsl(var(--accent));
+//     color: hsl(var(--muted-foreground));
 //     padding: 4px 8px;
 //     border-radius: 4px;
 //     font-size: 12px;
 //     font-weight: 500;
-//     border: 1px solid var(--color-border-primary);
+//     border: 1px solid hsl(var(--border));
 // `;
 
 export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps) {

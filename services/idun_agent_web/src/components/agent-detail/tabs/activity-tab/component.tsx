@@ -59,7 +59,7 @@ const ActivityHeader = styled.div`
     align-items: center;
     gap: 12px;
     margin-bottom: 32px;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
 
     h2 {
         font-size: 24px;
@@ -79,7 +79,7 @@ const ActivityItem = styled.div`
     align-items: center;
     gap: 16px;
     padding: 16px 0;
-    border-bottom: 1px solid var(--color-border-primary, #2a3f5f);
+    border-bottom: 1px solid hsl(var(--border));
 
     &:last-child {
         border-bottom: none;
@@ -127,7 +127,7 @@ const ActivityTitle = styled.h3`
     font-size: 16px;
     font-weight: 500;
     margin: 0;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
 `;
 
 const ActivityMeta = styled.div`
@@ -138,15 +138,15 @@ const ActivityMeta = styled.div`
 
 const ActivityType = styled.span`
     font-size: 12px;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     padding: 2px 8px;
-    background: var(--color-background-tertiary, #2a3f5f);
+    background: hsl(var(--accent));
     border-radius: 4px;
 `;
 
 const ActivityDuration = styled.span`
     font-size: 12px;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
 `;
 
 const ActivityStatus = styled.span<{ $status: string }>`
@@ -169,6 +169,6 @@ const ActivityStatus = styled.span<{ $status: string }>`
 
 const ActivityTimestamp = styled.span`
     font-size: 12px;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     white-space: nowrap;
 `;

@@ -55,8 +55,8 @@ export default function UsageChart({ title, data }: UsageChartProps) {
 }
 
 const ChartContainer = styled.div`
-    background: var(--color-background-secondary, #1a1a2e);
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
     border-radius: 12px;
     padding: 24px;
 `;
@@ -71,7 +71,7 @@ const ChartHeader = styled.div`
 const ChartTitle = styled.h3`
     font-size: 18px;
     font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     margin: 0;
     display: flex;
     align-items: center;
@@ -93,7 +93,7 @@ const LegendItem = styled.div`
     align-items: center;
     gap: 8px;
     font-size: 14px;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
 `;
 
 const LegendColor = styled.div<{ $color: string }>`
@@ -117,7 +117,7 @@ const ChartRow = styled.div`
 
 const DateLabel = styled.div`
     font-size: 14px;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     min-width: 50px;
     font-weight: 500;
 `;
@@ -132,7 +132,7 @@ const BarContainer = styled.div`
 const ProgressBar = styled.div`
     flex: 1;
     height: 20px;
-    background: var(--color-background-primary, #0f1016);
+    background: hsl(var(--background));
     border-radius: 10px;
     overflow: hidden;
     position: relative;
@@ -141,21 +141,21 @@ const ProgressBar = styled.div`
 
 const SuccessBar = styled.div<{ $width: number }>`
     width: ${(props) => props.$width}%;
-    background: #10b981;
+    background: hsl(var(--success));
     height: 100%;
     border-radius: 10px 0 0 10px;
 `;
 
 const ErrorBar = styled.div<{ $width: number }>`
     width: ${(props) => props.$width}%;
-    background: #ef4444;
+    background: hsl(var(--destructive));
     height: 100%;
 `;
 
 const ValueLabel = styled.div`
     font-size: 14px;
     font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     min-width: 30px;
     text-align: right;
 `;

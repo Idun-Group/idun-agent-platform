@@ -382,7 +382,7 @@ const RoleSelect = ({ value, callerRole, onChange }: RoleSelectProps) => {
         <RoleSelectContainer ref={ref}>
             <RoleSelectTrigger onClick={() => setIsOpen(!isOpen)}>
                 <RoleBadge $role={value}>{ROLE_LABELS[value]}</RoleBadge>
-                <ChevronDown size={14} color="#9ca3af" />
+                <ChevronDown size={14} color="hsl(var(--muted-foreground))" />
             </RoleSelectTrigger>
 
             {isOpen && (
@@ -400,7 +400,7 @@ const RoleSelect = ({ value, callerRole, onChange }: RoleSelectProps) => {
                             onMouseLeave={() => setHoveredRole(null)}
                         >
                             <span>{ROLE_LABELS[role]}</span>
-                            {role === value && <Check size={14} color="#8c52ff" />}
+                            {role === value && <Check size={14} color="hsl(var(--primary))" />}
                         </RoleOption>
                     ))}
 
@@ -411,7 +411,7 @@ const RoleSelect = ({ value, callerRole, onChange }: RoleSelectProps) => {
                             <TooltipPermissions>
                                 {ROLE_PERMISSIONS[hoveredRole].map((perm) => (
                                     <PermissionItem key={perm}>
-                                        <Check size={12} color="#8c52ff" />
+                                        <Check size={12} color="hsl(var(--primary))" />
                                         {perm}
                                     </PermissionItem>
                                 ))}
@@ -532,7 +532,7 @@ const InviteMemberDialog = ({
                                             <TooltipPermissions>
                                                 {ROLE_PERMISSIONS[r].map((perm) => (
                                                     <PermissionItem key={perm}>
-                                                        <Check size={12} color="#8c52ff" />
+                                                        <Check size={12} color="hsl(var(--primary))" />
                                                         {perm}
                                                     </PermissionItem>
                                                 ))}
@@ -622,13 +622,13 @@ const HeaderRow = styled.div`
 const PageTitle = styled.h2`
     font-size: 18px;
     font-weight: 600;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     margin: 0 0 4px 0;
 `;
 
 const PageDescription = styled.p`
     font-size: 14px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
@@ -637,10 +637,10 @@ const InviteButton = styled.button`
     align-items: center;
     gap: 8px;
     padding: 9px 16px;
-    background: #8c52ff;
+    background: hsl(var(--primary));
     border: none;
     border-radius: 8px;
-    color: #ffffff;
+    color: hsl(var(--primary-foreground));
     font-size: 14px;
     font-weight: 500;
     font-family: inherit;
@@ -649,14 +649,27 @@ const InviteButton = styled.button`
     white-space: nowrap;
 
     &:hover {
-        background: #7c3aed;
+        filter: brightness(0.9);
     }
 `;
 
 const TableCard = styled.div`
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
-    overflow: hidden;
+
+    /* Allow dropdowns to escape while keeping rounded corners on the table header */
+    thead tr:first-child th:first-child {
+        border-top-left-radius: 10px;
+    }
+    thead tr:first-child th:last-child {
+        border-top-right-radius: 10px;
+    }
+    tbody tr:last-child td:first-child {
+        border-bottom-left-radius: 10px;
+    }
+    tbody tr:last-child td:last-child {
+        border-bottom-right-radius: 10px;
+    }
 `;
 
 const Table = styled.table`
@@ -665,7 +678,7 @@ const Table = styled.table`
 `;
 
 const Tr = styled.tr`
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--border-subtle);
 
     &:last-child {
         border-bottom: none;
@@ -679,14 +692,14 @@ const Th = styled.th`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #826f95;
-    background: rgba(255, 255, 255, 0.02);
+    color: hsl(var(--muted-foreground));
+    background: var(--overlay-subtle);
 `;
 
 const Td = styled.td`
     padding: 12px 16px;
     font-size: 14px;
-    color: #e5e7eb;
+    color: hsl(var(--foreground));
     vertical-align: middle;
 `;
 
@@ -707,8 +720,8 @@ const AvatarFallback = styled.div`
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(140, 82, 255, 0.2);
-    color: #8c52ff;
+    background: hsla(var(--primary) / 0.2);
+    color: hsl(var(--primary));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -718,11 +731,11 @@ const AvatarFallback = styled.div`
 
 const UserName = styled.span`
     font-weight: 500;
-    color: #ffffff;
+    color: hsl(var(--foreground));
 `;
 
 const EmailText = styled.span`
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
 `;
 
 const RoleBadge = styled.span<{ $role: WorkspaceRole }>`
@@ -735,25 +748,25 @@ const RoleBadge = styled.span<{ $role: WorkspaceRole }>`
     background: ${({ $role }) => {
         switch ($role) {
             case 'owner':
-                return 'rgba(251, 191, 36, 0.12)';
+                return 'hsla(var(--warning) / 0.12)';
             case 'admin':
-                return 'rgba(140, 82, 255, 0.12)';
+                return 'hsla(var(--primary) / 0.12)';
             case 'member':
                 return 'rgba(59, 130, 246, 0.12)';
             case 'viewer':
-                return 'rgba(107, 114, 128, 0.12)';
+                return 'hsla(var(--muted-foreground) / 0.12)';
         }
     }};
     color: ${({ $role }) => {
         switch ($role) {
             case 'owner':
-                return '#fbbf24';
+                return 'hsl(var(--warning))';
             case 'admin':
                 return '#a78bfa';
             case 'member':
                 return '#60a5fa';
             case 'viewer':
-                return '#9ca3af';
+                return 'hsl(var(--muted-foreground))';
         }
     }};
 `;
@@ -765,8 +778,8 @@ const PendingBadge = styled.span`
     border-radius: 6px;
     font-size: 13px;
     font-weight: 500;
-    background: rgba(107, 114, 128, 0.12);
-    color: #9ca3af;
+    background: hsla(var(--muted-foreground) / 0.12);
+    color: hsl(var(--muted-foreground));
 `;
 
 const RemoveButton = styled.button`
@@ -778,14 +791,14 @@ const RemoveButton = styled.button`
     border: none;
     border-radius: 6px;
     background: transparent;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     transition: all 150ms ease;
     margin-left: auto;
 
     &:hover {
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
+        background: hsla(var(--destructive) / 0.1);
+        color: hsl(var(--destructive));
     }
 `;
 
@@ -808,8 +821,8 @@ const RoleSelectTrigger = styled.button`
     transition: all 150ms ease;
 
     &:hover {
-        border-color: rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.02);
+        border-color: var(--border-light);
+        background: var(--overlay-subtle);
     }
 `;
 
@@ -820,8 +833,8 @@ const RoleDropdown = styled.div`
     z-index: 50;
     margin-top: 4px;
     min-width: 180px;
-    background: #0f0f23;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: hsl(var(--popover));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 4px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -836,15 +849,15 @@ const RoleOption = styled.button<{ $isActive?: boolean }>`
     border: none;
     border-radius: 6px;
     background: ${({ $isActive }) =>
-        $isActive ? 'rgba(140, 82, 255, 0.08)' : 'transparent'};
-    color: #e5e7eb;
+        $isActive ? 'hsla(var(--primary) / 0.08)' : 'transparent'};
+    color: hsl(var(--foreground));
     font-size: 14px;
     font-family: inherit;
     cursor: pointer;
     transition: background 150ms ease;
 
     &:hover {
-        background: rgba(140, 82, 255, 0.12);
+        background: hsla(var(--primary) / 0.12);
     }
 `;
 
@@ -853,8 +866,8 @@ const RoleTooltip = styled.div`
     left: calc(100% + 8px);
     top: 0;
     width: 240px;
-    background: #0f0f23;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: hsl(var(--popover));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 14px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -864,7 +877,7 @@ const RoleTooltip = styled.div`
 const TooltipTitle = styled.div`
     font-size: 14px;
     font-weight: 600;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     margin-bottom: 10px;
 `;
 
@@ -879,7 +892,7 @@ const PermissionItem = styled.div`
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
 `;
 
 // Dialog styles
@@ -897,7 +910,7 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 100;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--overlay-backdrop);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
@@ -906,8 +919,8 @@ const Overlay = styled.div`
 `;
 
 const Dialog = styled.div`
-    background: #0f0f23;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: hsl(var(--popover));
+    border: 1px solid var(--border-light);
     border-radius: 12px;
     padding: 24px;
     width: 100%;
@@ -927,7 +940,7 @@ const DialogHeader = styled.div`
 const DialogTitle = styled.h3`
     font-size: 18px;
     font-weight: 600;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
@@ -940,19 +953,19 @@ const CloseButton = styled.button`
     border: none;
     border-radius: 6px;
     background: transparent;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     transition: all 150ms ease;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.06);
-        color: #ffffff;
+        background: var(--overlay-light);
+        color: hsl(var(--foreground));
     }
 `;
 
 const DialogDescription = styled.p`
     font-size: 14px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0 0 20px 0;
     line-height: 1.5;
 `;
@@ -972,26 +985,26 @@ const FieldGroup = styled.div`
 const FieldLabel = styled.label`
     font-size: 13px;
     font-weight: 500;
-    color: #e5e7eb;
+    color: hsl(var(--foreground));
 `;
 
 const Input = styled.input`
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     font-size: 14px;
     font-family: inherit;
     transition: border-color 150ms ease;
 
     &:focus {
         outline: none;
-        border-color: #8c52ff;
+        border-color: hsl(var(--primary));
     }
 
     &::placeholder {
-        color: #6b7280;
+        color: hsl(var(--muted-foreground));
     }
 `;
 
@@ -1009,11 +1022,11 @@ const InviteRoleOption = styled.button<{ $isSelected?: boolean }>`
     padding: 12px;
     border: 1px solid
         ${({ $isSelected }) =>
-            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.1)'};
+            $isSelected ? 'hsl(var(--primary))' : 'var(--border-light)'};
     border-radius: 8px;
     background: ${({ $isSelected }) =>
-        $isSelected ? 'rgba(140, 82, 255, 0.08)' : 'rgba(255, 255, 255, 0.02)'};
-    color: #ffffff;
+        $isSelected ? 'hsla(var(--primary) / 0.08)' : 'var(--overlay-subtle)'};
+    color: hsl(var(--foreground));
     text-align: left;
     font-family: inherit;
     cursor: pointer;
@@ -1021,9 +1034,9 @@ const InviteRoleOption = styled.button<{ $isSelected?: boolean }>`
 
     &:hover {
         border-color: ${({ $isSelected }) =>
-            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.2)'};
+            $isSelected ? 'hsl(var(--primary))' : 'var(--overlay-strong)'};
         background: ${({ $isSelected }) =>
-            $isSelected ? 'rgba(140, 82, 255, 0.08)' : 'rgba(255, 255, 255, 0.04)'};
+            $isSelected ? 'hsla(var(--primary) / 0.08)' : 'var(--overlay-subtle)'};
     }
 `;
 
@@ -1034,7 +1047,7 @@ const InviteRoleName = styled.span`
 
 const InviteRoleDesc = styled.span`
     font-size: 12px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
 `;
 
 const InviteRoleTooltip = styled.div`
@@ -1043,8 +1056,8 @@ const InviteRoleTooltip = styled.div`
     left: 50%;
     transform: translateX(-50%);
     width: 220px;
-    background: #0f0f23;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: hsl(var(--popover));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 14px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -1053,7 +1066,7 @@ const InviteRoleTooltip = styled.div`
 
 const ErrorText = styled.p`
     font-size: 13px;
-    color: #ef4444;
+    color: hsl(var(--destructive));
     margin: 0;
 `;
 
@@ -1067,9 +1080,9 @@ const DialogActions = styled.div`
 const CancelButton = styled.button`
     padding: 9px 16px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    color: #e5e7eb;
+    color: hsl(var(--foreground));
     font-size: 14px;
     font-weight: 500;
     font-family: inherit;
@@ -1077,16 +1090,16 @@ const CancelButton = styled.button`
     transition: all 150ms ease;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.04);
+        background: var(--overlay-subtle);
     }
 `;
 
 const SubmitButton = styled.button`
     padding: 9px 16px;
-    background: #8c52ff;
+    background: hsl(var(--primary));
     border: none;
     border-radius: 8px;
-    color: #ffffff;
+    color: hsl(var(--primary-foreground));
     font-size: 14px;
     font-weight: 500;
     font-family: inherit;
@@ -1094,7 +1107,7 @@ const SubmitButton = styled.button`
     transition: all 150ms ease;
 
     &:hover:not(:disabled) {
-        background: #7c3aed;
+        filter: brightness(0.9);
     }
 
     &:disabled {
@@ -1105,10 +1118,10 @@ const SubmitButton = styled.button`
 
 const DestructiveButton = styled.button`
     padding: 9px 16px;
-    background: #ef4444;
+    background: hsl(var(--destructive));
     border: none;
     border-radius: 8px;
-    color: #ffffff;
+    color: hsl(var(--destructive-foreground));
     font-size: 14px;
     font-weight: 500;
     font-family: inherit;
@@ -1116,19 +1129,19 @@ const DestructiveButton = styled.button`
     transition: all 150ms ease;
 
     &:hover {
-        background: #dc2626;
+        filter: brightness(0.9);
     }
 `;
 
 const LoadingText = styled.p`
     font-size: 14px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     padding: 24px 0;
 `;
 
 const EmptyText = styled.p`
     font-size: 14px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     text-align: center;
     padding: 24px 0;
     margin: 0;

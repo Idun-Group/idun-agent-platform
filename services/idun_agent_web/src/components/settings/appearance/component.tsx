@@ -105,21 +105,21 @@ const ThemeCard = styled.div<{ $isSelected: boolean }>`
     cursor: pointer;
     border: 1px solid
         ${({ $isSelected }) =>
-            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.1)'};
+            $isSelected ? 'hsl(var(--primary))' : 'var(--border-light)'};
     background: ${({ $isSelected }) =>
-        $isSelected ? 'rgba(140, 82, 255, 0.06)' : 'rgba(255, 255, 255, 0.02)'};
+        $isSelected ? 'hsla(var(--primary) / 0.06)' : 'var(--overlay-subtle)'};
     transition: all 150ms ease;
 
     &:hover {
         border-color: ${({ $isSelected }) =>
-            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.2)'};
+            $isSelected ? 'hsl(var(--primary))' : 'var(--overlay-strong)'};
     }
 `;
 
 const ThemeLabel = styled.p`
     font-size: 13px;
     font-weight: 500;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     text-align: center;
     margin: 8px 0 0 0;
 `;
@@ -129,7 +129,7 @@ const ToggleRow = styled.div`
     align-items: center;
     justify-content: space-between;
     padding: 14px 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    border-top: 1px solid var(--border-subtle);
 `;
 
 const ToggleInfo = styled.div`
@@ -141,19 +141,19 @@ const ToggleInfo = styled.div`
 const ToggleLabel = styled.span`
     font-size: 14px;
     font-weight: 500;
-    color: #ffffff;
+    color: hsl(var(--foreground));
 `;
 
 const ToggleDescription = styled.span`
     font-size: 13px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
 `;
 
 const ToggleTrack = styled.div<{ $isOn: boolean }>`
     width: 40px;
     height: 22px;
     border-radius: 11px;
-    background: ${({ $isOn }) => ($isOn ? '#8c52ff' : 'rgba(255, 255, 255, 0.12)')};
+    background: ${({ $isOn }) => ($isOn ? 'hsl(var(--primary))' : 'var(--overlay-medium)')};
     cursor: pointer;
     position: relative;
     transition: background 150ms ease;
@@ -164,7 +164,7 @@ const ToggleKnob = styled.div<{ $isOn: boolean }>`
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #ffffff;
+    background: hsl(var(--foreground));
     position: absolute;
     top: 3px;
     left: ${({ $isOn }) => ($isOn ? '21px' : '3px')};

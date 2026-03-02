@@ -46,8 +46,8 @@ const Container = styled.div`
 `;
 
 const Card = styled.div`
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
     padding: 24px;
 `;
@@ -55,12 +55,12 @@ const Card = styled.div`
 const CardTitle = styled.h3`
     font-size: 16px;
     font-weight: 600;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     margin: 0 0 4px 0;
 `;
 
 const CardDescription = styled.p`
     font-size: 14px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0 0 20px 0;
 `;

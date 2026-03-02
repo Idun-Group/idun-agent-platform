@@ -107,10 +107,10 @@ const MobileNav = styled.nav`
 const MobileSelect = styled.select`
     width: 100%;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     font-size: 14px;
     font-family: inherit;
     cursor: pointer;
@@ -121,13 +121,13 @@ const MobileSelect = styled.select`
 
     &:focus {
         outline: none;
-        border-color: #8c52ff;
+        border-color: hsl(var(--primary));
     }
 
     option,
     optgroup {
-        background: #0a0a1a;
-        color: #ffffff;
+        background: hsl(var(--popover));
+        color: hsl(var(--foreground));
     }
 `;
 
@@ -148,7 +148,7 @@ const Sidebar = styled.nav`
     display: flex;
     flex-direction: column;
     gap: 4px;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid var(--border-subtle);
     padding-right: 16px;
 `;
 
@@ -160,7 +160,7 @@ const SidebarGroup = styled.div`
     & + & {
         margin-top: 16px;
         padding-top: 16px;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        border-top: 1px solid var(--border-subtle);
     }
 `;
 
@@ -169,7 +169,7 @@ const GroupLabel = styled.span`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #826f95;
+    color: hsl(var(--muted-foreground));
     padding: 0 12px;
     margin-bottom: 4px;
 `;
@@ -181,8 +181,8 @@ const TabItem = styled.button<{ $isActive?: boolean }>`
     border: none;
     border-radius: 6px;
     background: ${({ $isActive }) =>
-        $isActive ? 'rgba(140, 82, 255, 0.12)' : 'transparent'};
-    color: ${({ $isActive }) => ($isActive ? '#ffffff' : '#9ca3af')};
+        $isActive ? 'hsla(var(--primary) / 0.12)' : 'transparent'};
+    color: ${({ $isActive }) => ($isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))')};
     font-size: 14px;
     font-weight: ${({ $isActive }) => ($isActive ? '600' : '400')};
     font-family: inherit;
@@ -204,18 +204,18 @@ const TabItem = styled.button<{ $isActive?: boolean }>`
             width: 3px;
             height: 16px;
             border-radius: 0 2px 2px 0;
-            background: #8C52FF;
+            background: hsl(var(--primary));
         }
     `}
 
     &:hover {
         background: ${({ $isActive }) =>
-            $isActive ? 'rgba(140, 82, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)'};
-        color: #ffffff;
+            $isActive ? 'hsla(var(--primary) / 0.12)' : 'var(--overlay-subtle)'};
+        color: hsl(var(--foreground));
     }
 `;
 
 const Content = styled.div`
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
 `;

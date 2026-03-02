@@ -16,7 +16,7 @@ export default function MetricCard({
     trend,
     trendColor = 'blue',
     icon: Icon,
-    iconColor = 'var(--color-primary, #8c52ff)',
+    iconColor = 'hsl(var(--primary))',
 }: MetricCardProps) {
     return (
         <Card>
@@ -35,14 +35,14 @@ export default function MetricCard({
 }
 
 const Card = styled.div`
-    background: var(--color-background-secondary, #1a1a2e);
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    background: hsl(var(--surface-elevated));
+    border: 1px solid hsl(var(--border));
     border-radius: 12px;
     padding: 24px;
     transition: all 0.2s ease;
 
     &:hover {
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     }
@@ -58,7 +58,7 @@ const CardHeader = styled.div`
 const CardTitle = styled.h3`
     font-size: 14px;
     font-weight: 500;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
@@ -78,7 +78,7 @@ const CardContent = styled.div`
 const Value = styled.div`
     font-size: 32px;
     font-weight: 700;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     line-height: 1;
 `;
 

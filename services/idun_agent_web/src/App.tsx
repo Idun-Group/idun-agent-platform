@@ -250,7 +250,7 @@ const MainContent = styled.div`
     display: flex;
     flex-direction: column;
     min-height: 0;
-    background: var(--color-background-primary);
+    background: hsl(var(--background));
     overflow: auto;
 `;
 

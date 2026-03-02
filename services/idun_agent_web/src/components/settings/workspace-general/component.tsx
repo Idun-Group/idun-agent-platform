@@ -163,8 +163,8 @@ const Container = styled.div`
 `;
 
 const Card = styled.div`
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
     padding: 24px;
 `;
@@ -172,13 +172,13 @@ const Card = styled.div`
 const CardTitle = styled.h3`
     font-size: 16px;
     font-weight: 600;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     margin: 0 0 4px 0;
 `;
 
 const CardDescription = styled.p`
     font-size: 14px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0 0 20px 0;
 `;
 
@@ -191,30 +191,30 @@ const FormRow = styled.div`
 const Input = styled.input`
     flex: 1;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     font-size: 14px;
     font-family: inherit;
     transition: border-color 150ms ease;
 
     &:focus {
         outline: none;
-        border-color: #8c52ff;
+        border-color: hsl(var(--primary));
     }
 
     &::placeholder {
-        color: #6b7280;
+        color: hsl(var(--muted-foreground));
     }
 `;
 
 const SaveButton = styled.button`
     padding: 10px 20px;
-    background: #8c52ff;
+    background: hsl(var(--primary));
     border: none;
     border-radius: 8px;
-    color: #ffffff;
+    color: hsl(var(--primary-foreground));
     font-size: 14px;
     font-weight: 500;
     font-family: inherit;
@@ -223,7 +223,7 @@ const SaveButton = styled.button`
     white-space: nowrap;
 
     &:hover:not(:disabled) {
-        background: #7c3aed;
+        filter: brightness(0.9);
     }
 
     &:disabled {
@@ -238,7 +238,7 @@ const MetaRow = styled.div`
     gap: 12px;
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    border-top: 1px solid var(--border-subtle);
 `;
 
 const MetaLabel = styled.span`
@@ -246,34 +246,34 @@ const MetaLabel = styled.span`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #826f95;
+    color: hsl(var(--muted-foreground));
     min-width: 40px;
 `;
 
 const MetaValue = styled.span`
     font-size: 13px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     font-family: 'SF Mono', 'Fira Code', monospace;
 `;
 
 const LoadingText = styled.p`
     font-size: 14px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     padding: 24px 0;
 `;
 
 const EmptyText = styled.p`
     font-size: 14px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     padding: 24px 0;
 `;
 
 const PlaceholderText = styled.p`
     font-size: 14px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     padding: 16px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--overlay-subtle);
     border-radius: 6px;
-    border: 1px dashed rgba(255, 255, 255, 0.08);
+    border: 1px dashed var(--border-light);
     margin: 0;
 `;

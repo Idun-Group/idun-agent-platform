@@ -66,7 +66,7 @@ const Item = styled.li`
         border-radius: 6px;
         border: none;
         background: hsl(var(--app-purple));
-        color: white;
+        color: hsl(var(--foreground));
         cursor: pointer;
     }
 `;

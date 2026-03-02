@@ -17,14 +17,14 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: var(--color-surface, #1a1a2e);
+    background: hsl(var(--card));
     border-radius: 16px;
     width: 560px;
     max-width: 95vw;
@@ -33,13 +33,13 @@ const Modal = styled.div`
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-light);
     position: relative;
 `;
 
 const PanelHeader = styled.div`
     padding: 24px 28px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -48,17 +48,17 @@ const PanelHeader = styled.div`
 const PanelTitle = styled.h2`
     font-size: 18px;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const CloseBtn = styled.button`
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--overlay-light);
     border: none;
     border-radius: 8px;
     width: 32px;
     height: 32px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 18px;
     cursor: pointer;
     display: flex;
@@ -66,7 +66,7 @@ const CloseBtn = styled.button`
     justify-content: center;
     transition: background 0.15s;
 
-    &:hover { background: rgba(255, 255, 255, 0.15); }
+    &:hover { background: var(--border-medium); }
 `;
 
 const FormBody = styled.div`
@@ -83,29 +83,29 @@ const Label = styled.label`
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: var(--color-text-secondary, #ccc);
+    color: hsl(var(--text-secondary));
     margin-bottom: 8px;
 `;
 
 const Input = styled.input`
     width: 100%;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.15s;
 
-    &::placeholder { color: rgba(255, 255, 255, 0.3); }
-    &:focus { border-color: var(--color-primary, #6c63ff); }
+    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &:focus { border-color: hsl(var(--primary)); }
 `;
 
 const HelpText = styled.p`
     font-size: 12px;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--text-tertiary));
     margin: 6px 0 0;
 `;
 
@@ -119,7 +119,7 @@ const ToggleRow = styled.div`
 const ToggleLabel = styled.span`
     font-size: 14px;
     font-weight: 500;
-    color: white;
+    color: hsl(var(--foreground));
 `;
 
 const Toggle = styled.button<{ $active: boolean }>`
@@ -130,7 +130,7 @@ const Toggle = styled.button<{ $active: boolean }>`
     cursor: pointer;
     position: relative;
     transition: background 0.2s;
-    background: ${p => p.$active ? '#25D366' : 'rgba(255, 255, 255, 0.15)'};
+    background: ${p => p.$active ? '#25D366' : 'var(--border-medium)'};
 
     &::after {
         content: '';
@@ -140,14 +140,14 @@ const Toggle = styled.button<{ $active: boolean }>`
         width: 18px;
         height: 18px;
         border-radius: 50%;
-        background: white;
+        background: hsl(var(--foreground));
         transition: left 0.2s;
     }
 `;
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: #f87171;
+    color: hsl(var(--destructive));
     margin: 0 0 16px;
     padding: 10px 14px;
     background: rgba(248, 113, 113, 0.1);
@@ -157,7 +157,7 @@ const ErrorMsg = styled.p`
 
 const Footer = styled.div`
     padding: 20px 28px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -166,23 +166,23 @@ const Footer = styled.div`
 const CancelBtn = styled.button`
     padding: 10px 20px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-medium);
     border-radius: 8px;
-    color: var(--color-text-secondary, #ccc);
+    color: hsl(var(--text-secondary));
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: rgba(255, 255, 255, 0.06); color: white; }
+    &:hover { background: var(--overlay-light); color: hsl(var(--foreground)); }
 `;
 
 const SubmitBtn = styled.button<{ $color?: string }>`
     padding: 10px 24px;
-    background: ${p => p.$color ?? '#6c63ff'};
+    background: ${p => p.$color ?? 'hsl(var(--primary))'};
     border: none;
     border-radius: 8px;
-    color: white;
+    color: hsl(var(--primary-foreground));
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -198,8 +198,8 @@ const SubmitBtn = styled.button<{ $color?: string }>`
 const Spinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+    border: 2px solid var(--overlay-strong);
+    border-top-color: hsl(var(--foreground));
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
@@ -207,7 +207,7 @@ const Spinner = styled.div`
 const LoadingOverlay = styled.div`
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -218,8 +218,8 @@ const LoadingOverlay = styled.div`
 const BigSpinner = styled.div<{ $color?: string }>`
     width: 40px;
     height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-top-color: ${p => p.$color ?? '#6c63ff'};
+    border: 3px solid var(--overlay-strong);
+    border-top-color: ${p => p.$color ?? 'hsl(var(--primary))'};
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -259,7 +259,7 @@ const ProviderPickerCard = styled.button<{ $color: string }>`
     background: ${p => `${p.$color}0a`};
     border: 1px solid ${p => `${p.$color}30`};
     border-radius: 10px;
-    color: white;
+    color: hsl(var(--foreground));
     cursor: pointer;
     text-align: left;
     transition: all 0.15s;
@@ -290,7 +290,7 @@ const ProviderPickerName = styled.span`
 
 const ProviderPickerDesc = styled.span`
     font-size: 12px;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--text-tertiary));
 `;
 
 const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit, provider: providerProp }) => {
@@ -449,7 +449,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
 
                         <FieldGroup>
                             <Label htmlFor="int-name">
-                                Name <span style={{ color: '#f87171' }}>*</span>
+                                Name <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
                             </Label>
                             <Input
                                 id="int-name"
@@ -464,7 +464,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                             <>
                                 <FieldGroup>
                                     <Label htmlFor="int-access-token">
-                                        Access Token <span style={{ color: '#f87171' }}>*</span>
+                                        Access Token <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
                                     </Label>
                                     <Input
                                         id="int-access-token"
@@ -478,7 +478,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
 
                                 <FieldGroup>
                                     <Label htmlFor="int-phone-id">
-                                        Phone Number ID <span style={{ color: '#f87171' }}>*</span>
+                                        Phone Number ID <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
                                     </Label>
                                     <Input
                                         id="int-phone-id"
@@ -492,7 +492,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
 
                                 <FieldGroup>
                                     <Label htmlFor="int-verify-token">
-                                        Verify Token <span style={{ color: '#f87171' }}>*</span>
+                                        Verify Token <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
                                     </Label>
                                     <Input
                                         id="int-verify-token"
@@ -522,7 +522,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                             <>
                                 <FieldGroup>
                                     <Label htmlFor="int-bot-token">
-                                        Bot Token <span style={{ color: '#f87171' }}>*</span>
+                                        Bot Token <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
                                     </Label>
                                     <Input
                                         id="int-bot-token"
@@ -536,7 +536,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
 
                                 <FieldGroup>
                                     <Label htmlFor="int-application-id">
-                                        Application ID <span style={{ color: '#f87171' }}>*</span>
+                                        Application ID <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
                                     </Label>
                                     <Input
                                         id="int-application-id"
@@ -550,7 +550,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
 
                                 <FieldGroup>
                                     <Label htmlFor="int-public-key">
-                                        Public Key <span style={{ color: '#f87171' }}>*</span>
+                                        Public Key <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
                                     </Label>
                                     <Input
                                         id="int-public-key"
@@ -580,7 +580,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                             <>
                                 <FieldGroup>
                                     <Label htmlFor="int-slack-bot-token">
-                                        Bot Token <span style={{ color: '#f87171' }}>*</span>
+                                        Bot Token <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
                                     </Label>
                                     <Input
                                         id="int-slack-bot-token"
@@ -594,7 +594,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
 
                                 <FieldGroup>
                                     <Label htmlFor="int-signing-secret">
-                                        Signing Secret <span style={{ color: '#f87171' }}>*</span>
+                                        Signing Secret <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
                                     </Label>
                                     <Input
                                         id="int-signing-secret"

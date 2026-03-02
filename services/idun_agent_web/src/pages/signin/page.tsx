@@ -121,7 +121,7 @@ const Signin = () => {
 };
 
 const ErrorText = styled.p`
-    color: var(--color-error, #ff4757);
+    color: hsl(var(--destructive));
     font-size: 13px;
     margin: 0;
 `;

@@ -50,20 +50,20 @@ const LanguageCard = styled.button<{ $isSelected: boolean }>`
     gap: 12px;
     padding: 12px 14px;
     background: ${({ $isSelected }) =>
-        $isSelected ? 'rgba(140, 82, 255, 0.06)' : 'rgba(255, 255, 255, 0.02)'};
+        $isSelected ? 'hsla(var(--primary) / 0.06)' : 'var(--overlay-subtle)'};
     border: 1px solid
         ${({ $isSelected }) =>
-            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.1)'};
+            $isSelected ? 'hsl(var(--primary))' : 'var(--border-light)'};
     border-radius: 8px;
     cursor: pointer;
-    color: #ffffff;
+    color: hsl(var(--foreground));
     text-align: left;
     transition: all 150ms ease;
     font-family: inherit;
 
     &:hover {
         border-color: ${({ $isSelected }) =>
-            $isSelected ? '#8c52ff' : 'rgba(255, 255, 255, 0.2)'};
+            $isSelected ? 'hsl(var(--primary))' : 'var(--overlay-strong)'};
     }
 `;
 
@@ -71,7 +71,7 @@ const FlagBadge = styled.span<{ $isSelected: boolean }>`
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.04em;
-    color: ${({ $isSelected }) => ($isSelected ? '#8c52ff' : '#9ca3af')};
+    color: ${({ $isSelected }) => ($isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))')};
     min-width: 24px;
 `;
 
@@ -84,10 +84,10 @@ const LangInfo = styled.div`
 const LangName = styled.span`
     font-size: 14px;
     font-weight: 500;
-    color: #ffffff;
+    color: hsl(var(--foreground));
 `;
 
 const LangRegion = styled.span`
     font-size: 12px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
 `;
