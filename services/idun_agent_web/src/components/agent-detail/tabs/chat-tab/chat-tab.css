@@ -565,8 +565,13 @@
 
 .agui-chat .error-banner-actions {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
+}
+.agui-chat .error-banner-actions .msg-btn {
+  padding: 4px 10px;
+  font-size: 20px;
+  line-height: 1.4;
 }
 
 .agui-chat .error-banner-details {

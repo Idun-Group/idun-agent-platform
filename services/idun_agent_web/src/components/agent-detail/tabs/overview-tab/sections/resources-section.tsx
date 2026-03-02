@@ -146,6 +146,9 @@ export default function ResourcesSection({
 
     // ── Assigned details (new: rich view-mode data) ──
 
+    const findAppName = (apps: ApplicationConfig[], appType: string): string | undefined =>
+        apps.find(a => a.type === appType)?.name;
+
     const getMemoryDetails = (): AssignedResourceDetail[] => {
         const config = agent.engine_config?.agent?.config as any;
         if (!config) return [{ name: 'In-Memory', type: 'InMemory', detail: 'Default in-memory storage', linkTo: '/memory' }];
@@ -156,12 +159,14 @@ export default function ResourcesSection({
                 const entries: ConfigEntry[] = [];
                 if (ss.project_id) entries.push({ key: 'Project', value: ss.project_id });
                 if (ss.location) entries.push({ key: 'Location', value: ss.location });
-                return [{ name: 'Vertex AI', type: 'AdkVertexAi', detail: ss.project_id ? `${ss.project_id} / ${ss.location || ''}` : '', badge: 'Vertex AI', linkTo: '/memory', configEntries: entries }];
+                const appName = findAppName(resources.memoryApps, 'AdkVertexAi');
+                return [{ name: 'Vertex AI', type: 'AdkVertexAi', detail: ss.project_id ? `${ss.project_id} / ${ss.location || ''}` : '', badge: appName, linkTo: '/memory', configEntries: entries }];
             }
             if (ss.type === 'database') {
                 const entries: ConfigEntry[] = [];
                 if (ss.connection_string) entries.push({ key: 'Connection', value: truncate(ss.connection_string, 60) });
-                return [{ name: 'Database', type: 'AdkDatabase', detail: ss.connection_string ? truncate(ss.connection_string, 40) : '', badge: 'Database', linkTo: '/memory', configEntries: entries }];
+                const appName = findAppName(resources.memoryApps, 'AdkDatabase');
+                return [{ name: 'Database', type: 'AdkDatabase', detail: ss.connection_string ? truncate(ss.connection_string, 40) : '', badge: appName, linkTo: '/memory', configEntries: entries }];
             }
             return [{ name: 'In-Memory', type: 'InMemory', detail: 'Default in-memory storage', linkTo: '/memory' }];
         }
@@ -171,13 +176,15 @@ export default function ResourcesSection({
             const connStr = cp.db_url || cp.connection_string || '';
             const entries: ConfigEntry[] = [];
             if (connStr) entries.push({ key: 'Connection', value: connStr });
-            return [{ name: 'SQLite', type: 'SQLite', detail: connStr || 'Local SQLite', badge: 'SQLite', linkTo: '/memory', configEntries: entries }];
+            const appName = findAppName(resources.memoryApps, 'SQLite');
+            return [{ name: 'SQLite', type: 'SQLite', detail: connStr || 'Local SQLite', badge: appName, linkTo: '/memory', configEntries: entries }];
         }
         if (cp.type === 'postgres') {
             const connStr = cp.db_url || cp.connection_string || '';
             const entries: ConfigEntry[] = [];
             if (connStr) entries.push({ key: 'Connection', value: truncate(connStr, 60) });
-            return [{ name: 'PostgreSQL', type: 'PostgreSQL', detail: connStr ? truncate(connStr, 40) : '', badge: 'PostgreSQL', linkTo: '/memory', configEntries: entries }];
+            const appName = findAppName(resources.memoryApps, 'PostgreSQL');
+            return [{ name: 'PostgreSQL', type: 'PostgreSQL', detail: connStr ? truncate(connStr, 40) : '', badge: appName, linkTo: '/memory', configEntries: entries }];
         }
         return [{ name: cp.type, type: cp.type, detail: '', linkTo: '/memory' }];
     };
@@ -211,7 +218,8 @@ export default function ResourcesSection({
                 if (region) entries.push({ key: 'Region', value: region });
 
                 const detail = host || projectName || endpoint || gcpProjectId || '';
-                return { name, type: name, detail, badge: name, linkTo: '/observability', configEntries: entries };
+                const appName = findAppName(resources.observabilityApps, name);
+                return { name, type: name, detail, badge: appName, linkTo: '/observability', configEntries: entries };
             });
     };
 
@@ -228,7 +236,9 @@ export default function ResourcesSection({
             if (m.args?.length) entries.push({ key: 'Args', value: m.args.join(' ') });
             if (m.url) entries.push({ key: 'URL', value: m.url });
             if (m.env && Object.keys(m.env).length > 0) entries.push({ key: 'Env vars', value: Object.keys(m.env).join(', ') });
-            return { name: m.name || 'MCP Server', type: 'MCPServer', detail, badge: transport.toUpperCase(), linkTo: '/mcp', configEntries: entries };
+            const mcpName = m.name || 'MCP Server';
+            const appName = resources.mcpApps.find(a => a.name === mcpName)?.name;
+            return { name: mcpName, type: 'MCPServer', detail, badge: appName, linkTo: '/mcp', configEntries: entries };
         });
     };
 
@@ -248,7 +258,8 @@ export default function ResourcesSection({
             if (g.project_id) entries.push({ key: 'GCP Project', value: g.project_id });
             if (g.template_id) entries.push({ key: 'Template', value: g.template_id });
             const detail = g.threshold != null ? `Threshold: ${g.threshold}` : configId;
-            return { name, type: configId, detail, linkTo: '/guardrails', configEntries: entries };
+            const appName = resources.guardApps.find(a => a.name === name)?.name;
+            return { name, type: configId, detail, badge: appName, linkTo: '/guardrails', configEntries: entries };
         });
     };
 
@@ -259,7 +270,8 @@ export default function ResourcesSection({
         if (sso.issuer) entries.push({ key: 'Issuer', value: sso.issuer });
         if (sso.audience) entries.push({ key: 'Audience', value: sso.audience });
         if (sso.jwks_uri) entries.push({ key: 'JWKS URI', value: sso.jwks_uri });
-        return [{ name: 'SSO', type: 'OIDC', detail: sso.issuer || '', badge: 'OIDC', configEntries: entries }];
+        const ssoName = resources.ssoConfigs.find(s => s.sso?.issuer === sso.issuer)?.name;
+        return [{ name: 'SSO', type: 'OIDC', detail: sso.issuer || '', badge: ssoName, configEntries: entries }];
     };
 
     const getIntegrationsDetails = (): AssignedResourceDetail[] => {
@@ -269,10 +281,12 @@ export default function ResourcesSection({
             const entries: ConfigEntry[] = [];
             if (i.provider) entries.push({ key: 'Provider', value: i.provider });
             if (i.base_url) entries.push({ key: 'URL', value: i.base_url });
+            const intName = resources.integrationConfigs.find(c => c.integration?.provider === i.provider)?.name;
             return {
                 name: i.provider || 'Integration',
                 type: i.provider || 'Integration',
                 detail: '',
+                badge: intName,
                 configEntries: entries,
             };
         });
