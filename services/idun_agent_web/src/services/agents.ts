@@ -215,6 +215,18 @@ export function performHealthCheck(
         });
 }
 
+export async function fetchAgentGraph(baseUrl: string): Promise<string | null> {
+    const url = baseUrl.endsWith('/') ? `${baseUrl}agent/graph` : `${baseUrl}/agent/graph`;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.graph ?? null;
+    } catch {
+        return null;
+    }
+}
+
 interface ApiKeyResponse {
     api_key: string;
 }

@@ -32,6 +32,24 @@ def _run_guardrails(
             raise HTTPException(status_code=429, detail=guard.reject_message)  # type: ignore[attr-defined]
 
 
+@agent_router.get("/graph")
+async def get_graph(
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
+):
+    """Return the Mermaid diagram of the compiled LangGraph agent."""
+    from langgraph.graph.state import CompiledStateGraph
+
+    instance = getattr(agent, "_agent_instance", None)
+    if not isinstance(instance, CompiledStateGraph):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Graph visualization is only available for LangGraph agents",
+        )
+
+    return {"graph": instance.get_graph().draw_mermaid()}
+
+
 @agent_router.get("/config")
 async def get_config(request: Request):
     """Get the current agent configuration."""

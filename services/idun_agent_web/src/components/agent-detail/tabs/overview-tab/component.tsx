@@ -19,6 +19,7 @@ import {
 } from '../../../../utils/agent-config-utils';
 import AgentDetailsSection from './sections/agent-details-section';
 import FrameworkSection from './sections/framework-section';
+import GraphSection from './sections/graph-section';
 import ResourcesSection from './sections/resources-section';
 import { ActionBar, ActionButton, TwoColumnGrid, ColumnStack } from './sections/styled';
 
@@ -179,6 +180,8 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
                         rootSchema={rootSchema}
                         onConfigChange={handleConfigChange}
                     />
+
+                    <GraphSection agent={agent} />
                 </ColumnStack>
 
                 <ResourcesSection
