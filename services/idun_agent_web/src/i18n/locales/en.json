@@ -1050,5 +1050,16 @@
         "toggleToLight": "Switch to light mode",
         "toggleToDark": "Switch to dark mode",
         "theme": "Theme"
+    },
+    "onboarding": {
+        "title": "Create your workspace",
+        "description": "Get started by creating your first workspace to manage your AI agents.",
+        "name": {
+            "label": "Workspace name",
+            "placeholder": "My Workspace"
+        },
+        "submit": "Create workspace",
+        "creating": "Creating...",
+        "error": "Failed to create workspace. Please try again."
     }
 }

@@ -251,10 +251,7 @@ async def callback(
     user = result.scalar_one_or_none()
 
     if user is None:
-        # First-time login: create user + default workspace + membership
-        from app.infrastructure.db.models.membership import MembershipModel
-        from app.infrastructure.db.models.workspace import WorkspaceModel
-
+        # First-time login: create user only (no auto-workspace creation)
         user = UserModel(
             id=uuid4(),
             email=email,
@@ -266,28 +263,16 @@ async def callback(
         session.add(user)
         await session.flush()
 
-        workspace = WorkspaceModel(
-            id=uuid4(),
-            name=f"{name or email.split('@')[0]}'s Workspace",
-            slug=f"ws-{uuid4().hex[:8]}",
-        )
-        session.add(workspace)
-        await session.flush()
-
-        membership = MembershipModel(
-            id=uuid4(),
-            user_id=user.id,
-            workspace_id=workspace.id,
-            role="owner",
-        )
-        session.add(membership)
-        await session.flush()
-
         # Consume any pending invitations for this email
         invited_ws_ids = await _consume_pending_invitations(
             session, user.id, email
         )
-        workspace_ids = [str(workspace.id)] + invited_ws_ids
+        workspace_ids = invited_ws_ids
+
+        # Set default workspace if invitations provided one
+        if workspace_ids and user.default_workspace_id is None:
+            user.default_workspace_id = UUID(workspace_ids[0])
+            await session.flush()
     else:
         # Update profile fields if changed
         if user.name != name and name:
@@ -313,13 +298,14 @@ async def callback(
         "principal": {
             "user_id": str(user.id),
             "email": email,
-            "roles": ["admin"] if not workspace_ids else ["admin"],
+            "roles": ["admin"],
             "workspace_ids": workspace_ids,
+            "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
         },
         "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
     }
 
-    redirect_url = f"{settings.auth.frontend_url}/agents"
+    redirect_url = f"{settings.auth.frontend_url}/agents" if workspace_ids else f"{settings.auth.frontend_url}/onboarding"
     response = RedirectResponse(url=redirect_url, status_code=302)
     _set_session_cookie(response, session_payload)
     return response
@@ -328,16 +314,60 @@ async def callback(
 @router.get(
     "/me",
     summary="Get current session",
-    description="Returns the current user session from the session cookie.",
+    description="Returns the current user session with fresh workspace data from DB.",
 )
-async def me(request: Request) -> dict[str, Any]:
-    """Return the current session or 401."""
+async def me(
+    request: Request,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    """Return the current session or 401.
+
+    Re-queries the database for fresh workspace IDs and default_workspace_id
+    so the frontend always has up-to-date data (e.g. after workspace creation).
+    Also re-signs the session cookie so subsequent API requests carry
+    the updated workspace_ids.
+    """
     payload = _read_session_cookie(request)
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
         )
+
+    principal = payload.get("principal", {})
+    user_id = principal.get("user_id")
+    cookie_dirty = False
+    if user_id:
+        from app.infrastructure.db.models.membership import MembershipModel
+        from app.infrastructure.db.models.user import UserModel
+
+        try:
+            user_uuid = UUID(user_id)
+            ws_stmt = select(MembershipModel.workspace_id).where(
+                MembershipModel.user_id == user_uuid
+            )
+            ws_result = await session.execute(ws_stmt)
+            workspace_ids = [str(wid) for (wid,) in ws_result.all()]
+
+            old_ws_ids = principal.get("workspace_ids", [])
+            principal["workspace_ids"] = workspace_ids
+
+            user = await session.get(UserModel, user_uuid)
+            new_default = (
+                str(user.default_workspace_id) if user and user.default_workspace_id else None
+            )
+            old_default = principal.get("default_workspace_id")
+            principal["default_workspace_id"] = new_default
+
+            if workspace_ids != old_ws_ids or new_default != old_default:
+                cookie_dirty = True
+        except Exception:
+            pass
+
+    if cookie_dirty:
+        _set_session_cookie(response, payload)
+
     return {"session": payload}
 
 
@@ -384,9 +414,6 @@ async def basic_signup(
             detail="Email already registered",
         )
 
-    from app.infrastructure.db.models.membership import MembershipModel
-    from app.infrastructure.db.models.workspace import WorkspaceModel
-
     try:
         user = UserModel(
             id=uuid4(),
@@ -398,27 +425,15 @@ async def basic_signup(
         session.add(user)
         await session.flush()
 
-        workspace = WorkspaceModel(
-            id=uuid4(),
-            name=f"{request.name or request.email.split('@')[0]}'s Workspace",
-            slug=f"ws-{uuid4().hex[:8]}",
-        )
-        session.add(workspace)
-        await session.flush()
-
-        membership = MembershipModel(
-            id=uuid4(),
-            user_id=user.id,
-            workspace_id=workspace.id,
-            role="owner",
-        )
-        session.add(membership)
-        await session.flush()
-
         # Consume any pending invitations for this email
         invited_ws_ids = await _consume_pending_invitations(
             session, user.id, request.email
         )
+
+        # Set default workspace if invitations provided one
+        if invited_ws_ids and user.default_workspace_id is None:
+            user.default_workspace_id = UUID(invited_ws_ids[0])
+            await session.flush()
     except Exception as e:
         logger.error(f"Database error creating user: {e}")
         raise HTTPException(
@@ -426,7 +441,7 @@ async def basic_signup(
             detail="Database error",
         ) from e
 
-    workspace_ids = [str(workspace.id)] + invited_ws_ids
+    workspace_ids = invited_ws_ids
 
     session_payload = {
         "provider": "local",
@@ -435,6 +450,7 @@ async def basic_signup(
             "email": request.email,
             "roles": ["admin"],
             "workspace_ids": workspace_ids,
+            "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
         },
         "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
     }
@@ -445,6 +461,7 @@ async def basic_signup(
         "email": user.email,
         "name": user.name,
         "workspace_ids": workspace_ids,
+        "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
     }
 
 
@@ -507,6 +524,7 @@ async def basic_login(
             "email": user.email,
             "roles": ["admin"],
             "workspace_ids": workspace_ids,
+            "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
         },
         "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
     }
@@ -517,4 +535,5 @@ async def basic_login(
         "email": user.email,
         "name": user.name,
         "workspace_ids": workspace_ids,
+        "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
     }

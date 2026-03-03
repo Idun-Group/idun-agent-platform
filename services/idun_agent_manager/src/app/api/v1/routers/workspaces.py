@@ -16,6 +16,7 @@ from app.api.v1.deps import CurrentUser, get_current_user, get_session
 from app.api.v1.routers.members import require_workspace_role
 from app.api.v1.schemas.workspace_members import WorkspaceRole
 from app.infrastructure.db.models.membership import MembershipModel
+from app.infrastructure.db.models.user import UserModel
 from app.infrastructure.db.models.workspace import WorkspaceModel
 
 router = APIRouter()
@@ -116,6 +117,12 @@ async def create_workspace(
     )
     session.add(membership)
     await session.flush()
+
+    # Set as default workspace if user doesn't have one yet
+    user_model = await session.get(UserModel, UUID(user.user_id))
+    if user_model and user_model.default_workspace_id is None:
+        user_model.default_workspace_id = ws_id
+        await session.flush()
 
     return WorkspaceRead(
         id=str(workspace.id),

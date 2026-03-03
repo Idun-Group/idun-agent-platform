@@ -24,6 +24,7 @@ import MCPPage from './pages/mcp-page/page';
 import GuardrailsPage from './pages/guardrails-page/page';
 import SSOPage from './pages/sso-page/page';
 import IntegrationsPage from './pages/integrations-page/page';
+import OnboardingPage from './pages/onboarding/page';
 // PLOP_IMPORT
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
 
                 {/* Protected routes */}
                 <Route element={<RequireAuth />}>
+                    <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route
                         path="/agents"
                         element={
