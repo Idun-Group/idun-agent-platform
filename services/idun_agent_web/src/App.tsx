@@ -10,6 +10,7 @@ import AgentDetailPage from './pages/agent-detail/page';
 
 import LoginPage from './pages/login/page';
 import SettingsPage from './pages/settings/page';
+import UserPreferencesPage from './pages/user-preferences/page';
 import SideBar from './layouts/side-bar/dashboard-side-bar/layout';
 import SigninPage from './pages/signin/page';
 import { useAuth } from './hooks/use-auth';
@@ -114,6 +115,20 @@ function App() {
                         }
                     />
                     <Route path="/agent/:id" element={<AgentDetailPage />} />
+                    <Route
+                        path="/preferences/:page?"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <UserPreferencesPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
                     <Route
                         path="/settings/:page?"
                         element={

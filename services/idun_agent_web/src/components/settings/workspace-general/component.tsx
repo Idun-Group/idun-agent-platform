@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'react-toastify';
+import { notify } from '../../toast/notify';
 import styled from 'styled-components';
 import useWorkspace from '../../../hooks/use-workspace';
 import { patchJson, getJson } from '../../../utils/api';
@@ -50,7 +50,7 @@ const WorkspaceGeneralTab = () => {
                 { name: name.trim() },
             );
             setWorkspace(updated);
-            toast.success(
+            notify.success(
                 t(
                     'settings.workspaces.general.renameSuccess',
                     'Workspace renamed successfully',
@@ -59,7 +59,7 @@ const WorkspaceGeneralTab = () => {
         } catch (err: unknown) {
             const message =
                 err instanceof Error ? err.message : 'Failed to rename workspace';
-            toast.error(message);
+            notify.error(message);
         } finally {
             setSaving(false);
         }

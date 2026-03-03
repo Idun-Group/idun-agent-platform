@@ -7,16 +7,13 @@ import PagedSettingsContainer, {
 } from '../../components/settings/paged-settings-container/component';
 import Loader from '../../components/general/loader/component';
 
-const WorkspaceGeneralTab = lazy(
-    () => import('../../components/settings/workspace-general/component'),
-);
-const WorkspaceUsersTab = lazy(
-    () => import('../../components/settings/workspace-users/component'),
+const PreferencesGeneralTab = lazy(
+    () => import('../../components/settings/preferences-general/component'),
 );
 
-const DEFAULT_PAGE = 'workspace-general';
+const DEFAULT_PAGE = 'general';
 
-const SettingsPage = () => {
+const UserPreferencesPage = () => {
     const { page } = useParams<{ page?: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
@@ -25,22 +22,12 @@ const SettingsPage = () => {
 
     const pages: SettingsPage[] = [
         {
-            title: t('settings.workspaces.general', 'General'),
-            slug: 'workspace-general',
-            group: t('settings.group.workspaces', 'Workspaces'),
+            title: t('settings.preferences.general', 'General'),
+            slug: 'general',
+            group: t('settings.group.preferences', 'Preferences'),
             content: (
                 <Suspense fallback={<Loader />}>
-                    <WorkspaceGeneralTab />
-                </Suspense>
-            ),
-        },
-        {
-            title: t('settings.workspaces.users', 'Users'),
-            slug: 'workspace-users',
-            group: t('settings.group.workspaces', 'Workspaces'),
-            content: (
-                <Suspense fallback={<Loader />}>
-                    <WorkspaceUsersTab />
+                    <PreferencesGeneralTab />
                 </Suspense>
             ),
         },
@@ -48,16 +35,16 @@ const SettingsPage = () => {
 
     const handlePageChange = (slug: string) => {
         if (slug === DEFAULT_PAGE) {
-            navigate('/settings');
+            navigate('/preferences');
         } else {
-            navigate(`/settings/${slug}`);
+            navigate(`/preferences/${slug}`);
         }
     };
 
     return (
         <PageContainer>
             <PageHeader>
-                <PageTitle>{t('settings.title', 'Settings')}</PageTitle>
+                <PageTitle>{t('preferences.title', 'Preferences')}</PageTitle>
             </PageHeader>
             <PagedSettingsContainer
                 pages={pages}
@@ -68,7 +55,7 @@ const SettingsPage = () => {
     );
 };
 
-export default SettingsPage;
+export default UserPreferencesPage;
 
 const PageContainer = styled.div`
     display: flex;

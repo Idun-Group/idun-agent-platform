@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'react-toastify';
+import { notify } from '../../toast/notify';
 import styled, { keyframes } from 'styled-components';
 import { Trash2, UserPlus, Check, X, ChevronDown } from 'lucide-react';
 import useWorkspace from '../../../hooks/use-workspace';
@@ -57,7 +57,7 @@ const WorkspaceUsersTab = () => {
             setMembers(res.members);
             setInvitations(res.invitations ?? []);
         } catch {
-            toast.error(t('settings.workspaces.users.fetchError', 'Failed to load members'));
+            notify.error(t('settings.workspaces.users.fetchError', 'Failed to load members'));
         } finally {
             setLoading(false);
         }
@@ -72,11 +72,11 @@ const WorkspaceUsersTab = () => {
         if (!wsId) return;
         try {
             await updateMemberRole(wsId, member.id, { role: newRole });
-            toast.success(t('settings.workspaces.users.roleUpdated', 'Role updated'));
+            notify.success(t('settings.workspaces.users.roleUpdated', 'Role updated'));
             fetchMembers();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to update role';
-            toast.error(msg);
+            notify.error(msg);
         }
     };
 
@@ -85,11 +85,11 @@ const WorkspaceUsersTab = () => {
         if (!wsId) return;
         try {
             await removeMember(wsId, member.id);
-            toast.success(t('settings.workspaces.users.memberRemoved', 'Member removed'));
+            notify.success(t('settings.workspaces.users.memberRemoved', 'Member removed'));
             fetchMembers();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to remove member';
-            toast.error(msg);
+            notify.error(msg);
         }
     };
 
@@ -97,7 +97,7 @@ const WorkspaceUsersTab = () => {
         const wsId = await resolveWorkspaceId();
         if (!wsId) return;
         await addMember(wsId, { email, role });
-        toast.success(t('settings.workspaces.users.memberAdded', 'Member added'));
+        notify.success(t('settings.workspaces.users.memberAdded', 'Member added'));
         fetchMembers();
     };
 
@@ -106,11 +106,11 @@ const WorkspaceUsersTab = () => {
         if (!wsId) return;
         try {
             await cancelInvitation(wsId, invitation.id);
-            toast.success(t('settings.workspaces.users.invitationCancelled', 'Invitation cancelled'));
+            notify.success(t('settings.workspaces.users.invitationCancelled', 'Invitation cancelled'));
             fetchMembers();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to cancel invitation';
-            toast.error(msg);
+            notify.error(msg);
         }
     };
 

@@ -1,13 +1,9 @@
-import { LogOut, User as UserIcon } from 'lucide-react';
-import { Button } from '../../general/button/component';
+import { User as UserIcon } from 'lucide-react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../hooks/use-auth';
+
 const AccountInfo = () => {
-    const navigate = useNavigate();
-    const { t } = useTranslation();
-    const { logout, session } = useAuth();
+    const { session } = useAuth();
     const avatarUrl =
         (session as any)?.principal?.avatarUrl ||
         (session as any)?.principal?.picture ||
@@ -36,14 +32,6 @@ const AccountInfo = () => {
                     {session?.principal?.email ?? 'User'}
                 </h3>
             </TextCol>
-            <Button
-                $variants="transparent"
-                onClick={() => {
-                    void logout().then(() => navigate('/login'));
-                }}
-            >
-                <LogOut size={16} />
-            </Button>
         </AccountInfoContainer>
     );
 };
@@ -64,7 +52,6 @@ const ProfileImage = styled.img`
     object-fit: cover;
     display: block;
     flex-shrink: 0;
-    border-radius: 50%;
 `;
 
 const UserAvatarFallback = styled.div`
