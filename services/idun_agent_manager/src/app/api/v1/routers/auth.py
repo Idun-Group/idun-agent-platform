@@ -292,6 +292,11 @@ async def callback(
         ws_result = await session.execute(ws_stmt)
         workspace_ids = [str(wid) for (wid,) in ws_result.all()]
 
+        # Backfill default_workspace_id for users created before the migration
+        if user.default_workspace_id is None and workspace_ids:
+            user.default_workspace_id = UUID(workspace_ids[0])
+            await session.flush()
+
     # Build session payload matching the frontend Session interface
     session_payload = {
         "provider": "google",
@@ -363,7 +368,7 @@ async def me(
             if workspace_ids != old_ws_ids or new_default != old_default:
                 cookie_dirty = True
         except Exception:
-            pass
+            logger.exception("Failed to refresh workspace data for user %s", user_id)
 
     if cookie_dirty:
         _set_session_cookie(response, payload)
@@ -510,6 +515,11 @@ async def basic_login(
         )
         ws_result = await session.execute(ws_stmt)
         workspace_ids = [str(wid) for (wid,) in ws_result.all()]
+
+        # Backfill default_workspace_id for users created before the migration
+        if user.default_workspace_id is None and workspace_ids:
+            user.default_workspace_id = UUID(workspace_ids[0])
+            await session.flush()
     except Exception as e:
         logger.error(f"Database error fetching workspaces: {e}")
         raise HTTPException(

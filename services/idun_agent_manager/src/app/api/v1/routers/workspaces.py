@@ -91,6 +91,8 @@ async def list_workspaces(
     summary="Create a new workspace",
 )
 async def create_workspace(
+    # NOTE: This endpoint intentionally uses get_current_user (not require_workspace)
+    # because it must remain accessible to users with no workspaces yet (onboarding flow).
     request: WorkspaceCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),

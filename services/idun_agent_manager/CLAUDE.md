@@ -104,18 +104,28 @@ Two modes, controlled by `AUTH__DISABLE_USERNAME_PASSWORD` env var:
 - Signed with `itsdangerous.URLSafeTimedSerializer` using `AUTH__SESSION_SECRET`
 - TTL: `AUTH__SESSION_TTL_SECONDS` (default 86400 = 24h)
 - Cookie SameSite auto-derived from frontend/backend URL comparison
-- Session payload: `{ provider, principal: { user_id, email, roles, workspace_ids }, expires_at }`
+- Session payload: `{ provider, principal: { user_id, email, roles, workspace_ids, default_workspace_id }, expires_at }`
+- The `/me` endpoint re-queries the database for fresh `workspace_ids` and `default_workspace_id`, and re-signs the cookie when data has changed (supports post-workspace-creation session refresh).
 
-### First Login Flow
-On first login (SSO or signup), the system automatically creates:
-1. A `UserModel` record
-2. A default `WorkspaceModel` (named after the user)
-3. A `MembershipModel` linking user → workspace with `admin` role
+### Signup / First Login Flow
+On signup (SSO or basic), the system:
+1. Creates a `UserModel` record (no workspace is auto-created)
+2. Consumes any pending `InvitationModel` records for the user's email → creates `MembershipModel` entries
+3. Sets `default_workspace_id` to the first invited workspace (if any)
+4. If no invitations exist, `workspace_ids` is empty and the frontend redirects to `/onboarding` where the user creates their first workspace
+
+### Onboarding Flow
+- Users with no workspaces are redirected to `/onboarding` by the frontend `RequireAuth` guard
+- The onboarding page calls `POST /api/v1/workspaces/` (which only requires `get_current_user`, not `require_workspace`)
+- After workspace creation, the frontend calls `/me` which refreshes the session cookie with the new workspace
+- The `create_workspace` endpoint sets `default_workspace_id` on the user if it's their first workspace
 
 ## Multi-Tenancy (Workspaces)
 
 - **WorkspaceModel**: `id`, `name`, `slug` (unique)
-- **MembershipModel**: Links users to workspaces with a `role` (admin/member). Unique constraint on `(user_id, workspace_id)`.
+- **MembershipModel**: Links users to workspaces with a `role` (owner/admin/member/viewer via `WorkspaceRole` enum). Unique constraint on `(user_id, workspace_id)`.
+- **InvitationModel**: Pending invitations (`email`, `workspace_id`, `role`). Consumed on signup.
+- **UserModel.default_workspace_id**: FK to `workspaces.id` (SET NULL on delete). Set on first workspace creation or invitation consumption. Backfilled at login for users created before the migration.
 - All managed resources (agents, guardrails, MCP servers, etc.) have a `workspace_id` FK → `workspaces.id` (CASCADE delete).
 - Active workspace resolved via `require_workspace` dependency: reads `X-Workspace-Id` header, falls back to first workspace from session.
 

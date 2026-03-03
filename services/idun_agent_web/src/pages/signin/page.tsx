@@ -77,7 +77,7 @@ const Signin = () => {
         setError('');
         try {
             await signup({ email, password, name });
-            navigate('/onboarding');
+            // Navigation is handled by the useEffect above once session is set.
         } catch (err) {
             setError(extractErrorMessage(err));
         }
