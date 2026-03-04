@@ -10,7 +10,9 @@ class ManagedPromptCreate(BaseModel):
     """Request body for creating a new prompt version."""
 
     prompt_id: str = Field(..., description="Logical prompt identifier")
-    content: str = Field(..., description="Prompt text, supports Jinja2 {{ variables }}")
+    content: str = Field(
+        ..., description="Prompt text, supports Jinja2 {{ variables }}"
+    )
     tags: list[str] = Field(default_factory=list, description="User-defined tags")
 
 
