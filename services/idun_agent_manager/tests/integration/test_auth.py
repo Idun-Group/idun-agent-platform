@@ -1,9 +1,10 @@
 """Integration tests for auth endpoints."""
 
+from uuid import uuid4
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import uuid4
 
 pytestmark = pytest.mark.asyncio
 
@@ -13,7 +14,12 @@ pytestmark = pytest.mark.asyncio
 # ---------------------------------------------------------------------------
 
 
-async def _signup(client: AsyncClient, email: str = "test@example.com", password: str = "password123", name: str | None = "Test User"):
+async def _signup(
+    client: AsyncClient,
+    email: str = "test@example.com",
+    password: str = "password123",
+    name: str | None = "Test User",
+):
     payload: dict = {"email": email, "password": password}
     if name is not None:
         payload["name"] = name
@@ -55,7 +61,9 @@ class TestBasicSignup:
 
     async def test_signup_duplicate_email(self, client: AsyncClient):
         await _signup(client, email="duplicate@example.com")
-        response = await _signup(client, email="duplicate@example.com", password="different456")
+        response = await _signup(
+            client, email="duplicate@example.com", password="different456"
+        )
         assert response.status_code == 409
         assert "already registered" in response.json()["detail"]
 
@@ -127,7 +135,9 @@ class TestBasicLogin:
 
     async def test_login_wrong_password(self, client: AsyncClient):
         await _signup(client, email="wrongpwd@example.com")
-        response = await _login(client, email="wrongpwd@example.com", password="wrongpassword")
+        response = await _login(
+            client, email="wrongpwd@example.com", password="wrongpassword"
+        )
         assert response.status_code == 401
         assert "Invalid email or password" in response.json()["detail"]
 
@@ -156,10 +166,11 @@ class TestBasicLogin:
         self, client: AsyncClient, db_session: AsyncSession
     ):
         """Login should set default_workspace_id if user has workspaces but NULL default."""
+        from sqlalchemy import select
+
         from app.infrastructure.db.models.membership import MembershipModel
         from app.infrastructure.db.models.user import UserModel
         from app.infrastructure.db.models.workspace import WorkspaceModel
-        from sqlalchemy import select
 
         # Signup (no workspace)
         await _signup(client, email="backfill@example.com")
@@ -210,7 +221,9 @@ class TestAuthMe:
         response = await client.get("/api/v1/auth/me")
         assert response.status_code == 401
 
-    async def test_me_returns_empty_workspace_ids_after_signup(self, client: AsyncClient):
+    async def test_me_returns_empty_workspace_ids_after_signup(
+        self, client: AsyncClient
+    ):
         """After signup with no invitations, /me returns empty workspace_ids."""
         await _signup(client, email="nows-me@example.com")
         response = await client.get("/api/v1/auth/me")
@@ -295,10 +308,13 @@ class TestWorkspaceOnboardingFlow:
         assert data["name"] == "First WS"
         assert "id" in data
 
-    async def test_first_workspace_sets_default(self, client: AsyncClient, db_session: AsyncSession):
+    async def test_first_workspace_sets_default(
+        self, client: AsyncClient, db_session: AsyncSession
+    ):
         """Creating the first workspace sets it as default_workspace_id."""
-        from app.infrastructure.db.models.user import UserModel
         from sqlalchemy import select
+
+        from app.infrastructure.db.models.user import UserModel
 
         await _signup(client, email="default@example.com")
         ws_resp = await _create_workspace(client, name="Default WS")
@@ -316,8 +332,9 @@ class TestWorkspaceOnboardingFlow:
         self, client: AsyncClient, db_session: AsyncSession
     ):
         """Creating a second workspace should not overwrite default_workspace_id."""
-        from app.infrastructure.db.models.user import UserModel
         from sqlalchemy import select
+
+        from app.infrastructure.db.models.user import UserModel
 
         await _signup(client, email="twoworkspaces@example.com")
         ws1_resp = await _create_workspace(client, name="First")

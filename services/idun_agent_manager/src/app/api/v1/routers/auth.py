@@ -95,7 +95,9 @@ def _set_session_cookie(
     if max_age is None:
         max_age = settings.auth.session_ttl_seconds
     token = _get_serializer().dumps(payload)
-    response.set_cookie(key=SESSION_COOKIE, value=token, max_age=max_age, **_cookie_attrs())
+    response.set_cookie(
+        key=SESSION_COOKIE, value=token, max_age=max_age, **_cookie_attrs()
+    )
 
 
 def _read_session_cookie(request: Request) -> dict[str, Any] | None:
@@ -264,9 +266,7 @@ async def callback(
         await session.flush()
 
         # Consume any pending invitations for this email
-        invited_ws_ids = await _consume_pending_invitations(
-            session, user.id, email
-        )
+        invited_ws_ids = await _consume_pending_invitations(session, user.id, email)
         workspace_ids = invited_ws_ids
 
         # Set default workspace if invitations provided one
@@ -305,12 +305,18 @@ async def callback(
             "email": email,
             "roles": ["admin"],
             "workspace_ids": workspace_ids,
-            "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
+            "default_workspace_id": str(user.default_workspace_id)
+            if user.default_workspace_id
+            else None,
         },
         "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
     }
 
-    redirect_url = f"{settings.auth.frontend_url}/agents" if workspace_ids else f"{settings.auth.frontend_url}/onboarding"
+    redirect_url = (
+        f"{settings.auth.frontend_url}/agents"
+        if workspace_ids
+        else f"{settings.auth.frontend_url}/onboarding"
+    )
     response = RedirectResponse(url=redirect_url, status_code=302)
     _set_session_cookie(response, session_payload)
     return response
@@ -360,7 +366,9 @@ async def me(
 
             user = await session.get(UserModel, user_uuid)
             new_default = (
-                str(user.default_workspace_id) if user and user.default_workspace_id else None
+                str(user.default_workspace_id)
+                if user and user.default_workspace_id
+                else None
             )
             old_default = principal.get("default_workspace_id")
             principal["default_workspace_id"] = new_default
@@ -455,7 +463,9 @@ async def basic_signup(
             "email": request.email,
             "roles": ["admin"],
             "workspace_ids": workspace_ids,
-            "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
+            "default_workspace_id": str(user.default_workspace_id)
+            if user.default_workspace_id
+            else None,
         },
         "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
     }
@@ -466,7 +476,9 @@ async def basic_signup(
         "email": user.email,
         "name": user.name,
         "workspace_ids": workspace_ids,
-        "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
+        "default_workspace_id": str(user.default_workspace_id)
+        if user.default_workspace_id
+        else None,
     }
 
 
@@ -534,7 +546,9 @@ async def basic_login(
             "email": user.email,
             "roles": ["admin"],
             "workspace_ids": workspace_ids,
-            "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
+            "default_workspace_id": str(user.default_workspace_id)
+            if user.default_workspace_id
+            else None,
         },
         "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
     }
@@ -545,5 +559,7 @@ async def basic_login(
         "email": user.email,
         "name": user.name,
         "workspace_ids": workspace_ids,
-        "default_workspace_id": str(user.default_workspace_id) if user.default_workspace_id else None,
+        "default_workspace_id": str(user.default_workspace_id)
+        if user.default_workspace_id
+        else None,
     }
