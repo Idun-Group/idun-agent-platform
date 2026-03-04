@@ -18,6 +18,7 @@ from app.api.v1.schemas.workspace_members import WorkspaceRole
 from app.infrastructure.db.models.membership import MembershipModel
 from app.infrastructure.db.models.project import ProjectModel
 from app.infrastructure.db.models.user import UserModel
+from app.infrastructure.db.models.project import ProjectModel
 from app.infrastructure.db.models.workspace import WorkspaceModel
 
 router = APIRouter()
