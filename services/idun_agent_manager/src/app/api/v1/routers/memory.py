@@ -24,10 +24,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
+    get_project_id,
     get_session,
     require_workspace,
 )
+from app.api.v1.project_helpers import (
+    apply_project_filter,
+    assign_resource_to_default_project,
+    cleanup_resource_project_assignments,
+)
 from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
+from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_MEMORY
 
 router = APIRouter()
 
@@ -92,6 +99,7 @@ async def create_memory(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> ManagedMemoryRead:
     """Create a new managed memory configuration."""
     now = datetime.now(UTC)
@@ -110,6 +118,10 @@ async def create_memory(
     await session.flush()
     await session.refresh(model)
 
+    await assign_resource_to_default_project(
+        session, workspace_id, model.id, RESOURCE_TYPE_MEMORY, project_id
+    )
+
     return _model_to_schema(model)
 
 
@@ -125,6 +137,7 @@ async def list_memories(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> list[ManagedMemoryRead]:
     """List managed memory configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -140,6 +153,7 @@ async def list_memories(
     stmt = select(ManagedMemoryModel).where(
         ManagedMemoryModel.workspace_id == workspace_id
     )
+    stmt = apply_project_filter(stmt, ManagedMemoryModel, RESOURCE_TYPE_MEMORY, project_id)
     if agent_framework:
         stmt = stmt.where(ManagedMemoryModel.agent_framework == agent_framework.value)
     stmt = stmt.limit(limit).offset(offset)
@@ -179,6 +193,7 @@ async def delete_memory(
 ) -> None:
     """Delete a managed memory configuration permanently."""
     model = await _get_memory(id, session, workspace_id)
+    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_MEMORY)
     await session.delete(model)
     await session.flush()
 

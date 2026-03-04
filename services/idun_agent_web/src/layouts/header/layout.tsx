@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import useWorkspace from '../../hooks/use-workspace';
+import { useProject } from '../../hooks/use-project';
 import { useAuth } from '../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
+import ProjectManager from '../../components/project-manager/component';
 
 const Header = () => {
     const [workspaces, setWorkspaces] = useState<
@@ -12,14 +14,17 @@ const Header = () => {
     const navigate = useNavigate();
 
     const { setSelectedWorkspaceId, getAllWorkspace } = useWorkspace();
+    const { selectedProjectId, setSelectedProjectId, projects, refreshProjects } = useProject();
     const { session, isLoading: isAuthLoading } = useAuth();
+    const [showProjectManager, setShowProjectManager] = useState(false);
 
     const { t } = useTranslation();
 
     useEffect(() => {
         if (isAuthLoading || !session) return;
         getAllWorkspace().then((data) => setWorkspaces(data));
-    }, [isAuthLoading, session, getAllWorkspace]);
+        refreshProjects();
+    }, [isAuthLoading, session, getAllWorkspace, refreshProjects]);
 
     const [workspaceId, setWorkspaceId] = useState<string>('');
 
@@ -55,7 +60,34 @@ const Header = () => {
                         ))}
                     </Select>
                 )}
+
+                {session && projects.length > 0 && (
+                    <Select
+                        value={selectedProjectId || ''}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            const value = e.target.value;
+                            if (value === '__manage__') {
+                                setShowProjectManager(true);
+                                return;
+                            }
+                            setSelectedProjectId(value || null);
+                        }}
+                    >
+                        <option value="">{t('header.project.all')}</option>
+                        {projects.map((project) => (
+                            <option key={project.id} value={project.id}>
+                                {project.name}
+                                {project.is_default ? ` (${t('projects.default')})` : ''}
+                            </option>
+                        ))}
+                        <option value="__manage__">{t('header.project.manage')}</option>
+                    </Select>
+                )}
             </SideContainer>
+
+            {showProjectManager && (
+                <ProjectManager onClose={() => setShowProjectManager(false)} />
+            )}
         </HeaderContainer>
     );
 };

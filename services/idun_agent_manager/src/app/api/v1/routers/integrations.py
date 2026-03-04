@@ -22,12 +22,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
+    get_project_id,
     get_session,
     require_workspace,
+)
+from app.api.v1.project_helpers import (
+    apply_project_filter,
+    assign_resource_to_default_project,
+    cleanup_resource_project_assignments,
 )
 from app.infrastructure.db.models.managed_integration import (
     ManagedIntegrationModel,
 )
+from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_INTEGRATION
 
 router = APIRouter()
 
@@ -91,6 +98,7 @@ async def create_integration(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> ManagedIntegrationRead:
     """Create a new managed integration configuration."""
     now = datetime.now(UTC)
@@ -110,6 +118,10 @@ async def create_integration(
     await session.flush()
     await session.refresh(model)
 
+    await assign_resource_to_default_project(
+        session, workspace_id, model.id, RESOURCE_TYPE_INTEGRATION, project_id
+    )
+
     return _model_to_schema(model)
 
 
@@ -124,6 +136,7 @@ async def list_integrations(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> list[ManagedIntegrationRead]:
     """List managed integration configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -137,12 +150,9 @@ async def list_integrations(
             detail="Offset must be >= 0",
         )
 
-    stmt = (
-        select(ManagedIntegrationModel)
-        .where(ManagedIntegrationModel.workspace_id == workspace_id)
-        .limit(limit)
-        .offset(offset)
-    )
+    stmt = select(ManagedIntegrationModel).where(ManagedIntegrationModel.workspace_id == workspace_id)
+    stmt = apply_project_filter(stmt, ManagedIntegrationModel, RESOURCE_TYPE_INTEGRATION, project_id)
+    stmt = stmt.limit(limit).offset(offset)
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
@@ -178,6 +188,7 @@ async def delete_integration(
 ) -> None:
     """Delete a managed integration configuration permanently."""
     model = await _get_integration(id, session, workspace_id)
+    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_INTEGRATION)
     await session.delete(model)
     await session.flush()
 

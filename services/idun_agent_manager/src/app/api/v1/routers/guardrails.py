@@ -25,10 +25,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
+    get_project_id,
     get_session,
     require_workspace,
 )
+from app.api.v1.project_helpers import (
+    apply_project_filter,
+    assign_resource_to_default_project,
+    cleanup_resource_project_assignments,
+)
 from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
+from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_GUARDRAIL
 
 router = APIRouter()
 
@@ -90,6 +97,7 @@ async def create_guardrail(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> ManagedGuardrailRead:
     """Create a new managed guardrail configuration."""
     now = datetime.now(UTC)
@@ -109,6 +117,10 @@ async def create_guardrail(
     await session.flush()
     await session.refresh(model)
 
+    await assign_resource_to_default_project(
+        session, workspace_id, model.id, RESOURCE_TYPE_GUARDRAIL, project_id
+    )
+
     return _model_to_schema(model)
 
 
@@ -123,6 +135,7 @@ async def list_guardrails(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> list[ManagedGuardrailRead]:
     """List managed guardrail configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -135,12 +148,9 @@ async def list_guardrails(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    stmt = (
-        select(ManagedGuardrailModel)
-        .where(ManagedGuardrailModel.workspace_id == workspace_id)
-        .limit(limit)
-        .offset(offset)
-    )
+    stmt = select(ManagedGuardrailModel).where(ManagedGuardrailModel.workspace_id == workspace_id)
+    stmt = apply_project_filter(stmt, ManagedGuardrailModel, RESOURCE_TYPE_GUARDRAIL, project_id)
+    stmt = stmt.limit(limit).offset(offset)
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
@@ -176,6 +186,7 @@ async def delete_guardrail(
 ) -> None:
     """Delete a managed guardrail configuration permanently."""
     model = await _get_guardrail(id, session, workspace_id)
+    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_GUARDRAIL)
     await session.delete(model)
     await session.flush()
 

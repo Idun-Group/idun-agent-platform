@@ -29,10 +29,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
+    get_project_id,
     get_session,
     require_workspace,
 )
+from app.api.v1.project_helpers import (
+    apply_project_filter,
+    assign_resource_to_default_project,
+    cleanup_resource_project_assignments,
+)
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
+from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_MCP_SERVER
 
 router = APIRouter()
 
@@ -94,6 +101,7 @@ async def create_mcp_server(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> ManagedMCPServerRead:
     """Create a new managed MCP server configuration."""
     now = datetime.now(UTC)
@@ -113,6 +121,10 @@ async def create_mcp_server(
     await session.flush()
     await session.refresh(model)
 
+    await assign_resource_to_default_project(
+        session, workspace_id, model.id, RESOURCE_TYPE_MCP_SERVER, project_id
+    )
+
     return _model_to_schema(model)
 
 
@@ -127,6 +139,7 @@ async def list_mcp_servers(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> list[ManagedMCPServerRead]:
     """List managed MCP server configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -139,12 +152,9 @@ async def list_mcp_servers(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    stmt = (
-        select(ManagedMCPServerModel)
-        .where(ManagedMCPServerModel.workspace_id == workspace_id)
-        .limit(limit)
-        .offset(offset)
-    )
+    stmt = select(ManagedMCPServerModel).where(ManagedMCPServerModel.workspace_id == workspace_id)
+    stmt = apply_project_filter(stmt, ManagedMCPServerModel, RESOURCE_TYPE_MCP_SERVER, project_id)
+    stmt = stmt.limit(limit).offset(offset)
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
@@ -180,6 +190,7 @@ async def delete_mcp_server(
 ) -> None:
     """Delete a managed MCP server configuration permanently."""
     model = await _get_mcp_server(id, session, workspace_id)
+    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_MCP_SERVER)
     await session.delete(model)
     await session.flush()
 

@@ -22,10 +22,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
+    get_project_id,
     get_session,
     require_workspace,
 )
+from app.api.v1.project_helpers import (
+    apply_project_filter,
+    assign_resource_to_default_project,
+    cleanup_resource_project_assignments,
+)
 from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
+from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_OBSERVABILITY
 
 router = APIRouter()
 
@@ -87,6 +94,7 @@ async def create_observability(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> ManagedObservabilityRead:
     """Create a new managed observability configuration."""
     now = datetime.now(UTC)
@@ -106,6 +114,10 @@ async def create_observability(
     await session.flush()
     await session.refresh(model)
 
+    await assign_resource_to_default_project(
+        session, workspace_id, model.id, RESOURCE_TYPE_OBSERVABILITY, project_id
+    )
+
     return _model_to_schema(model)
 
 
@@ -120,6 +132,7 @@ async def list_observabilities(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> list[ManagedObservabilityRead]:
     """List managed observability configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -132,12 +145,9 @@ async def list_observabilities(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    stmt = (
-        select(ManagedObservabilityModel)
-        .where(ManagedObservabilityModel.workspace_id == workspace_id)
-        .limit(limit)
-        .offset(offset)
-    )
+    stmt = select(ManagedObservabilityModel).where(ManagedObservabilityModel.workspace_id == workspace_id)
+    stmt = apply_project_filter(stmt, ManagedObservabilityModel, RESOURCE_TYPE_OBSERVABILITY, project_id)
+    stmt = stmt.limit(limit).offset(offset)
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
@@ -173,6 +183,7 @@ async def delete_observability(
 ) -> None:
     """Delete a managed observability configuration permanently."""
     model = await _get_observability(id, session, workspace_id)
+    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_OBSERVABILITY)
     await session.delete(model)
     await session.flush()
 

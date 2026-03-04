@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import CurrentUser, get_current_user, get_session
 from app.infrastructure.db.models.membership import MembershipModel
+from app.infrastructure.db.models.project import ProjectModel
 from app.infrastructure.db.models.workspace import WorkspaceModel
 
 router = APIRouter()
@@ -113,6 +114,19 @@ async def create_workspace(
         role="admin",
     )
     session.add(membership)
+    await session.flush()
+
+    # Auto-create default project for the new workspace
+    project = ProjectModel(
+        id=uuid4(),
+        name="Default",
+        slug="default",
+        is_default=True,
+        workspace_id=ws_id,
+        created_at=now,
+        updated_at=now,
+    )
+    session.add(project)
     await session.flush()
 
     return WorkspaceRead(

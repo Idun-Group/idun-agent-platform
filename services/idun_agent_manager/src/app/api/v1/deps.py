@@ -119,6 +119,29 @@ def require_workspace(
 
 
 # ---------------------------------------------------------------------------
+# Project dependency
+# ---------------------------------------------------------------------------
+
+
+def get_project_id(
+    x_project_id: str | None = Header(None),
+) -> UUID | None:
+    """Extract optional project ID from X-Project-Id header.
+
+    Returns None if no project is specified (meaning "all projects" / no filter).
+    """
+    if not x_project_id:
+        return None
+    try:
+        return UUID(x_project_id)
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid project ID format",
+        ) from err
+
+
+# ---------------------------------------------------------------------------
 # Legacy API-key dependency (kept for backward compatibility)
 # ---------------------------------------------------------------------------
 

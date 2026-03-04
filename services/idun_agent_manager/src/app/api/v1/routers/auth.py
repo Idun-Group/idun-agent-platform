@@ -245,6 +245,19 @@ async def callback(
         session.add(membership)
         await session.flush()
 
+        # Auto-create default project for the new workspace
+        from app.infrastructure.db.models.project import ProjectModel
+
+        default_project = ProjectModel(
+            id=uuid4(),
+            name="Default",
+            slug="default",
+            is_default=True,
+            workspace_id=workspace.id,
+        )
+        session.add(default_project)
+        await session.flush()
+
         workspace_ids = [str(workspace.id)]
     else:
         # Update profile fields if changed
@@ -371,6 +384,19 @@ async def basic_signup(
             role="admin",
         )
         session.add(membership)
+        await session.flush()
+
+        # Auto-create default project for the new workspace
+        from app.infrastructure.db.models.project import ProjectModel
+
+        default_project = ProjectModel(
+            id=uuid4(),
+            name="Default",
+            slug="default",
+            is_default=True,
+            workspace_id=workspace.id,
+        )
+        session.add(default_project)
         await session.flush()
     except Exception as e:
         logger.error(f"Database error creating user: {e}")

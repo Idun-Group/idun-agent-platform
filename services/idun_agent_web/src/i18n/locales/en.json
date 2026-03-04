@@ -57,11 +57,31 @@
         "workspace": {
             "select": "Select a workspace"
         },
+        "project": {
+            "all": "All Projects",
+            "manage": "Manage Projects"
+        },
         "environment": {
             "select": "Select an environment",
             "development": "Development",
             "staging": "Staging",
             "production": "Production"
+        }
+    },
+    "projects": {
+        "manage": "Manage Projects",
+        "create": "Create",
+        "default": "Default",
+        "namePlaceholder": "Project name",
+        "createSuccess": "Project created",
+        "createError": "Failed to create project",
+        "updateSuccess": "Project updated",
+        "updateError": "Failed to update project",
+        "deleteSuccess": "Project deleted",
+        "deleteError": "Failed to delete project",
+        "delete": {
+            "confirm": "Delete this project? Resources will be moved to Default.",
+            "blocked": "Cannot delete the default project"
         }
     },
     "workspace": {

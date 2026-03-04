@@ -26,11 +26,17 @@ let hasNotifiedOn401 = false;
 
 export async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
     const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
+
+    // Auto-attach project filter header when a project is selected
+    const projectId = typeof window !== 'undefined' ? localStorage.getItem('activeProjectId') : null;
+    const projectHeader: Record<string, string> = projectId ? { 'X-Project-Id': projectId } : {};
+
     const response = await fetch(url, {
         credentials: 'include',
         ...options,
         headers: {
             'Accept': 'application/json',
+            ...projectHeader,
             ...(options.body && !(options.headers && options.headers['Content-Type'])
                 ? { 'Content-Type': 'application/json' }
                 : {}),

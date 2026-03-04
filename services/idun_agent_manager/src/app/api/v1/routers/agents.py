@@ -45,11 +45,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
+    get_project_id,
     get_session,
     require_workspace,
 )
+from app.api.v1.project_helpers import (
+    apply_project_filter,
+    assign_resource_to_default_project,
+    cleanup_resource_project_assignments,
+)
 from app.api.v1.routers.auth import encrypt_payload
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
+from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_AGENT
 
 router = APIRouter()
 
@@ -118,6 +125,7 @@ async def create_agent(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> ManagedAgentRead:
     """Create a new managed agent."""
     body = await raw_request.json()
@@ -148,6 +156,10 @@ async def create_agent(
     session.add(model)
     await session.flush()
     await session.refresh(model)
+
+    await assign_resource_to_default_project(
+        session, workspace_id, model.id, RESOURCE_TYPE_AGENT, project_id
+    )
 
     return _model_to_schema(model)
 
@@ -253,6 +265,7 @@ async def list_agents(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
+    project_id: UUID | None = Depends(get_project_id),
 ) -> list[ManagedAgentRead]:
     """List managed agents with pagination, scoped to workspace."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -265,12 +278,13 @@ async def list_agents(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
         )
 
-    stmt = (
-        select(ManagedAgentModel)
-        .where(ManagedAgentModel.workspace_id == workspace_id)
-        .limit(limit)
-        .offset(offset)
+    stmt = select(ManagedAgentModel).where(
+        ManagedAgentModel.workspace_id == workspace_id
     )
+    stmt = apply_project_filter(
+        stmt, ManagedAgentModel, RESOURCE_TYPE_AGENT, project_id
+    )
+    stmt = stmt.limit(limit).offset(offset)
 
     result = await session.execute(stmt)
     rows = result.scalars().all()
@@ -309,6 +323,7 @@ async def delete_agent(
 ) -> None:
     """Delete a managed agent permanently."""
     model = await _get_agent(id, session, workspace_id)
+    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_AGENT)
     await session.delete(model)
     await session.flush()
 
