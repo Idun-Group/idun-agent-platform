@@ -1,5 +1,7 @@
 """Prompt configuration model."""
 
+from __future__ import annotations
+
 from typing import Any
 
 from jinja2 import StrictUndefined, TemplateError
@@ -31,3 +33,14 @@ class PromptConfig(BaseModel):
                 f"Failed to render prompt '{self.prompt_id}' v{self.version}. "
                 f"Check the variables passed to render(): {e}"
             ) from e
+
+    def to_langchain(self) -> PromptTemplate:  # noqa: F821
+        """Convert to a LangChain PromptTemplate with Jinja2 template format."""
+        try:
+            from langchain_core.prompts import PromptTemplate
+        except ImportError:
+            raise ImportError(
+                "langchain-core is required for to_langchain(). "
+                "Install it with: pip install langchain-core"
+            )
+        return PromptTemplate.from_template(self.content, template_format="jinja2")

@@ -53,3 +53,32 @@ class TestPromptConfigFormat:
             prompt_id="test", version=1, content="Hello {{ name }}!"
         )
         assert prompt.format(name="World", extra="ignored") == "Hello World!"
+
+
+@pytest.mark.unit
+class TestPromptConfigToLangchain:
+    def test_returns_prompt_template(self) -> None:
+        from langchain_core.prompts import PromptTemplate
+
+        prompt = PromptConfig(
+            prompt_id="test", version=1, content="Hello {{ name }}!"
+        )
+        lc_prompt = prompt.to_langchain()
+        assert isinstance(lc_prompt, PromptTemplate)
+
+    def test_renders_with_variables(self) -> None:
+        prompt = PromptConfig(
+            prompt_id="rag", version=1,
+            content="Query: {{ query }}\nContext: {{ context }}",
+        )
+        lc_prompt = prompt.to_langchain()
+        result = lc_prompt.format(query="What is AI?", context="AI is...")
+        assert "What is AI?" in result
+        assert "AI is..." in result
+
+    def test_static_content(self) -> None:
+        prompt = PromptConfig(
+            prompt_id="static", version=1, content="No variables here."
+        )
+        lc_prompt = prompt.to_langchain()
+        assert lc_prompt.format() == "No variables here."
