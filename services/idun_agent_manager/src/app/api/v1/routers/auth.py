@@ -110,9 +110,15 @@ def _read_session_cookie(request: Request) -> dict[str, Any] | None:
         payload: dict[str, Any] = _get_serializer().loads(
             token, max_age=settings.auth.session_ttl_seconds
         )
-        return payload
     except (BadSignature, SignatureExpired):
         return None
+
+    created_at = payload.get("created_at")
+    if created_at is not None:
+        if (time.time() - created_at) > settings.auth.session_max_lifetime_seconds:
+            return None
+
+    return payload
 
 
 def encrypt_payload(payload: str) -> bytes:
@@ -309,7 +315,7 @@ async def callback(
             if user.default_workspace_id
             else None,
         },
-        "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
+        "created_at": int(time.time()),
     }
 
     redirect_url = (
@@ -467,7 +473,7 @@ async def basic_signup(
             if user.default_workspace_id
             else None,
         },
-        "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
+        "created_at": int(time.time()),
     }
     _set_session_cookie(response, session_payload)
 
@@ -550,7 +556,7 @@ async def basic_login(
             if user.default_workspace_id
             else None,
         },
-        "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
+        "created_at": int(time.time()),
     }
     _set_session_cookie(response, session_payload)
 

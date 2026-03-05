@@ -15,7 +15,6 @@ export interface SessionPrincipal {
 export interface Session {
     provider?: string;
     principal?: SessionPrincipal;
-    expires_at?: number;
 }
 
 export async function loginBasic(params: { email: string; password: string }): Promise<void> {
