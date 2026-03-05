@@ -913,8 +913,8 @@ const PickerOverlay = styled.div`
 `;
 
 const PickerPanel = styled.div`
-    background: #1a1a2e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: hsl(var(--surface-elevated));
+    border: 1px solid var(--border-light);
     border-radius: 12px;
     padding: 24px;
     max-width: 520px;
@@ -1002,7 +1002,7 @@ const PickerSaveButton = styled.button`
     padding: 10px 20px;
     border-radius: 8px;
     background: #8c52ff;
-    color: white;
+    color: hsl(var(--foreground));
     border: none;
     font-size: 14px;
     font-weight: 600;

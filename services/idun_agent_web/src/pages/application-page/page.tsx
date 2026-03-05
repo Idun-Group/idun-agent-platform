@@ -205,7 +205,7 @@ const SubHeader = styled.header`
     padding: 2rem 2rem 0 2rem;
     width: 100%;
     background: hsl(var(--background));
-    border-bottom: 1px solid var(--color-border-primary);
+    border-bottom: 1px solid hsl(var(--border));
     flex-shrink: 0;
 `;
 
@@ -231,7 +231,7 @@ const TopContainer = styled.div`
     h1 {
         font-size: 24px;
         font-weight: 600;
-        color: #fff;
+        color: hsl(var(--foreground));
         margin: 0;
     }
 `;
@@ -240,17 +240,17 @@ const NavButton = styled(Button)<{ isSelected: boolean }>`
     padding: 12px 24px;
     position: relative;
     border-radius: 0;
-    color: ${props => props.isSelected ? '#fff' : '#a0a0a0'};
+    color: ${props => props.isSelected ? 'hsl(var(--foreground))' : '#a0a0a0'};
     background: transparent !important;
 
     &:hover {
-        color: #fff;
+        color: hsl(var(--foreground));
     }
 
     ${({ isSelected }) =>
         isSelected &&
         `
-        color: #fff;
+        color: hsl(var(--foreground));
         &::after {
             content: '';
             display: block;
@@ -311,8 +311,8 @@ const MCPAddContainer = styled.div`
 `;
 
 const MCPCard = styled.div`
-    background: var(--color-background-secondary, #1a1a2e);
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    background: hsl(var(--surface-elevated));
+    border: 1px solid hsl(var(--border));
     border-radius: 16px;
     padding: 32px;
     width: 100%;
@@ -326,7 +326,7 @@ const MCPCard = styled.div`
 
     &:hover {
         transform: translateY(-4px);
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
     }
 `;
@@ -345,13 +345,13 @@ const IconWrapper = styled.div`
 const CardTitle = styled.h3`
     font-size: 20px;
     font-weight: 600;
-    color: #fff;
+    color: hsl(var(--foreground));
     margin-bottom: 12px;
 `;
 
 const CardDescription = styled.p`
     font-size: 14px;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     margin-bottom: 32px;
     line-height: 1.5;
 `;

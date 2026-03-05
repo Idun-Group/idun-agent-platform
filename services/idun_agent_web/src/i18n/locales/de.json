@@ -164,7 +164,8 @@
         "memory": "Speicher",
         "mcp": "MCP",
         "sso": "SSO",
-        "integrations": "Integrationen"
+        "integrations": "Integrationen",
+        "settings": "Einstellungen"
     },
     "signin": {
         "title": "Konto erstellen",
@@ -595,6 +596,55 @@
     "settings": {
         "title": "Einstellungen",
         "back_to_dashboard": "Zurück zum Dashboard",
+        "group": {
+            "preferences": "Einstellungen",
+            "workspaces": "Arbeitsbereiche"
+        },
+        "preferences": {
+            "general": "Allgemein",
+            "appearance": "Darstellung",
+            "appearance.description": "Passen Sie das Erscheinungsbild der Anwendung an.",
+            "language": "Sprache",
+            "language.description": "Wählen Sie Ihre bevorzugte Sprache für die Oberfläche."
+        },
+        "workspaces": {
+            "general": "Allgemein",
+            "users": "Benutzer",
+            "general.rename": "Name des Arbeitsbereichs",
+            "general.renameDescription": "Ändern Sie den Anzeigenamen Ihres Arbeitsbereichs.",
+            "general.namePlaceholder": "Name des Arbeitsbereichs",
+            "general.renameSuccess": "Arbeitsbereich erfolgreich umbenannt",
+            "general.noWorkspace": "Kein Arbeitsbereich ausgewählt",
+            "general.spaces": "Bereiche",
+            "general.spacesDescription": "Bereiche innerhalb dieses Arbeitsbereichs. Verwalten Sie Bereiche über das Hauptdashboard.",
+            "general.spacesComingSoon": "Die Bereichsverwaltung wird hier bald verfügbar sein.",
+            "users.title": "Mitglieder",
+            "users.description": "Verwalten Sie, wer Zugriff auf diesen Arbeitsbereich hat.",
+            "users.addMember": "Mitglied hinzufügen",
+            "users.name": "Name",
+            "users.email": "E-Mail",
+            "users.role": "Rolle",
+            "users.actions": "",
+            "users.remove": "Entfernen",
+            "users.roleUpdated": "Rolle aktualisiert",
+            "users.memberRemoved": "Mitglied entfernt",
+            "users.memberAdded": "Mitglied hinzugefügt",
+            "users.fetchError": "Fehler beim Laden der Mitglieder",
+            "users.noMembers": "Noch keine Mitglieder.",
+            "users.confirmRemoveTitle": "Mitglied entfernen",
+            "users.confirmRemoveMessage": "Sind Sie sicher, dass Sie dieses Mitglied aus dem Arbeitsbereich entfernen möchten?",
+            "users.confirmRemove": "Entfernen",
+            "users.inviteTitle": "Neues Mitglied hinzufügen",
+            "users.inviteDescription": "Laden Sie einen Benutzer per E-Mail in diesen Arbeitsbereich ein. Falls er noch kein Konto hat, wird er bei der ersten Anmeldung hinzugefügt.",
+            "users.emailLabel": "E-Mail",
+            "users.roleLabel": "Rolle",
+            "users.emailRequired": "E-Mail-Adresse ist erforderlich",
+            "users.grantAccess": "Zugriff gewähren",
+            "users.pending": "Ausstehend",
+            "users.invitationCancelled": "Einladung abgebrochen",
+            "users.cancelInvitation": "Einladung abbrechen",
+            "users.alreadyInvited": "Diese E-Mail-Adresse wurde bereits eingeladen"
+        },
         "profile": {
             "title": "Profil",
             "description": "Verwalten Sie Ihre persönlichen Informationen und Präferenzen.",
@@ -965,7 +1015,9 @@
         "close": "Schließen",
         "comingSoon": "Demnächst",
         "underDevelopment": "Diese Funktion ist in Entwicklung",
-        "back": "Zurück"
+        "back": "Zurück",
+        "saving": "Speichern...",
+        "adding": "Hinzufügen..."
     },
     "integrations": {
         "title": "Integrationen",

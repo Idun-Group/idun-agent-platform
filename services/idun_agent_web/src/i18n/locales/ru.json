@@ -159,7 +159,8 @@
         "observation": "Наблюдение",
         "tools": "Инструменты",
         "users": "Пользователи",
-        "apps": "Приложения"
+        "apps": "Приложения",
+        "settings": "Настройки"
     },
     "signin": {
         "title": "Создать аккаунт",
@@ -594,6 +595,55 @@
     "settings": {
         "title": "Настройки",
         "back_to_dashboard": "Назад к панели управления",
+        "group": {
+            "preferences": "Настройки",
+            "workspaces": "Рабочие пространства"
+        },
+        "preferences": {
+            "general": "Общие",
+            "appearance": "Внешний вид",
+            "appearance.description": "Настройте внешний вид приложения.",
+            "language": "Язык",
+            "language.description": "Выберите предпочитаемый язык интерфейса."
+        },
+        "workspaces": {
+            "general": "Общие",
+            "users": "Пользователи",
+            "general.rename": "Название рабочего пространства",
+            "general.renameDescription": "Измените отображаемое название рабочего пространства.",
+            "general.namePlaceholder": "Название рабочего пространства",
+            "general.renameSuccess": "Рабочее пространство успешно переименовано",
+            "general.noWorkspace": "Рабочее пространство не выбрано",
+            "general.spaces": "Пространства",
+            "general.spacesDescription": "Пространства в этом рабочем пространстве. Управляйте пространствами из главной панели.",
+            "general.spacesComingSoon": "Управление пространствами скоро будет доступно здесь.",
+            "users.title": "Участники",
+            "users.description": "Управляйте доступом к этому рабочему пространству.",
+            "users.addMember": "Добавить участника",
+            "users.name": "Имя",
+            "users.email": "Email",
+            "users.role": "Роль",
+            "users.actions": "",
+            "users.remove": "Удалить",
+            "users.roleUpdated": "Роль обновлена",
+            "users.memberRemoved": "Участник удалён",
+            "users.memberAdded": "Участник добавлен",
+            "users.fetchError": "Ошибка загрузки участников",
+            "users.noMembers": "Участников пока нет.",
+            "users.confirmRemoveTitle": "Удалить участника",
+            "users.confirmRemoveMessage": "Вы уверены, что хотите удалить этого участника из рабочего пространства?",
+            "users.confirmRemove": "Удалить",
+            "users.inviteTitle": "Добавить нового участника",
+            "users.inviteDescription": "Пригласите пользователя в это рабочее пространство по электронной почте. Если у него ещё нет аккаунта, он будет добавлен при первом входе.",
+            "users.emailLabel": "Email",
+            "users.roleLabel": "Роль",
+            "users.emailRequired": "Адрес электронной почты обязателен",
+            "users.grantAccess": "Предоставить доступ",
+            "users.pending": "Ожидает",
+            "users.invitationCancelled": "Приглашение отменено",
+            "users.cancelInvitation": "Отменить приглашение",
+            "users.alreadyInvited": "Этот адрес электронной почты уже был приглашён"
+        },
         "profile": {
             "title": "Профиль",
             "description": "Управление личной информацией и настройками.",
@@ -963,7 +1013,9 @@
         "close": "Закрыть",
         "comingSoon": "Скоро",
         "underDevelopment": "Эта функция находится в разработке",
-        "back": "Назад"
+        "back": "Назад",
+        "saving": "Сохранение...",
+        "adding": "Добавление..."
     },
     "theme": {
         "toggleToLight": "Переключиться на светлый режим",

@@ -36,14 +36,14 @@ const spin = keyframes`
 const Container = styled.div`
     flex: 1;
     padding: 24px;
-    background-color: #0f1016;
+    background-color: hsl(var(--background));
     height: 100%;
     overflow-y: auto;
 `;
 
 const Card = styled.div`
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: hsl(var(--card));
+    border: 1px solid var(--overlay-light);
     border-radius: 12px;
     overflow: hidden;
     display: flex;
@@ -52,7 +52,7 @@ const Card = styled.div`
 
 const CardHeader = styled.div`
     padding: 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--overlay-light);
     flex-shrink: 0;
 `;
 
@@ -65,7 +65,7 @@ const CardTitleIcon = styled.div`
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: white;
+        color: hsl(var(--foreground));
     }
 `;
 
@@ -84,7 +84,7 @@ const Label = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     margin-bottom: 8px;
 `;
@@ -92,8 +92,8 @@ const Label = styled.label`
 const InputGroup = styled.div`
     display: flex;
     align-items: center;
-    background-color: #05040a;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
 `;
 
@@ -111,9 +111,9 @@ const CodeBlock = styled.code`
 const CopyButton = styled.button`
     background: transparent;
     border: none;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid var(--border-light);
     padding: 12px 16px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
@@ -121,8 +121,8 @@ const CopyButton = styled.button`
     position: relative;
 
     &:hover {
-        color: white;
-        background-color: rgba(255, 255, 255, 0.05);
+        color: hsl(var(--foreground));
+        background-color: var(--overlay-light);
     }
 `;
 
@@ -133,7 +133,7 @@ const CopiedTooltip = styled.div`
     transform: translateX(-50%);
     margin-bottom: 8px;
     background-color: rgba(0, 0, 0, 0.9);
-    color: white;
+    color: hsl(var(--foreground));
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 10px;
@@ -176,7 +176,7 @@ const TokenText = styled.span`
 const ActionButton = styled.button`
     font-size: 12px;
     font-weight: 500;
-    color: #8c52ff;
+    color: hsl(var(--primary));
     background: none;
     border: none;
     padding: 0 16px;
@@ -195,8 +195,8 @@ const EndpointsList = styled.div`
 `;
 
 const EndpointItem = styled.div`
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: hsl(var(--card));
+    border: 1px solid var(--overlay-light);
     border-radius: 8px;
     overflow: hidden;
 `;
@@ -207,7 +207,7 @@ const EndpointHeader = styled.div`
     justify-content: space-between;
     padding: 12px;
     cursor: pointer;
-    &:hover { background-color: rgba(255, 255, 255, 0.05); }
+    &:hover { background-color: var(--overlay-light); }
 `;
 
 const EndpointMeta = styled.div`
@@ -229,7 +229,7 @@ const MethodBadge = styled.span<{ $method: string }>`
             case 'GET': return 'background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2);';
             case 'DELETE': return 'background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2);';
             case 'PUT': return 'background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2);';
-            default: return 'background: rgba(107, 114, 128, 0.1); color: #9ca3af; border-color: rgba(107, 114, 128, 0.2);';
+            default: return `background: rgba(107, 114, 128, 0.1); color: hsl(var(--muted-foreground)); border-color: rgba(107, 114, 128, 0.2);`;
         }
     }}
 `;
@@ -242,14 +242,14 @@ const EndpointPath = styled.code`
 
 const EndpointDetails = styled.div`
     padding: 12px;
-    background-color: #05040a;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: hsl(var(--accent));
+    border-top: 1px solid var(--overlay-light);
     animation: ${fadeIn} 0.2s ease-out;
 `;
 
 const Description = styled.p`
     font-size: 12px;
-    color: #6b7280;
+    color: hsl(var(--text-secondary));
     margin: 0 0 12px 0;
 `;
 
@@ -262,18 +262,18 @@ const SubLabel = styled.label`
     display: block;
     font-size: 10px;
     font-weight: 600;
-    color: #4b5563;
+    color: hsl(var(--text-tertiary));
     text-transform: uppercase;
     margin-bottom: 6px;
 `;
 
 const CodeSnippet = styled.div`
     background-color: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-light);
     border-radius: 6px;
     padding: 8px 12px;
     font-size: 12px;
-    color: #8c52ff;
+    color: hsl(var(--primary));
     font-family: monospace;
     position: relative;
     display: flex;
@@ -282,7 +282,7 @@ const CodeSnippet = styled.div`
 
     pre {
         margin: 0;
-        color: #9ca3af;
+        color: hsl(var(--muted-foreground));
         white-space: pre-wrap;
         overflow-x: auto;
     }
@@ -294,7 +294,7 @@ const AddButton = styled.button`
     gap: 4px;
     padding: 4px 8px;
     font-size: 12px;
-    color: #8c52ff;
+    color: hsl(var(--primary));
     background: rgba(140, 82, 255, 0.1);
     border: 1px solid rgba(140, 82, 255, 0.2);
     border-radius: 6px;
@@ -305,8 +305,8 @@ const AddButton = styled.button`
 
 const InactiveBadge = styled.span`
     font-size: 10px;
-    color: #9ca3af;
-    background: rgba(255, 255, 255, 0.05);
+    color: hsl(var(--muted-foreground));
+    background: var(--overlay-light);
     padding: 2px 6px;
     border-radius: 4px;
 `;
@@ -316,25 +316,25 @@ const RouteActions = styled.div`
     gap: 8px;
     margin-bottom: 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid var(--overlay-light);
 
     button {
         background: none;
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid var(--border-light);
         border-radius: 4px;
         padding: 4px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        &:hover { background: rgba(255,255,255,0.05); }
+        &:hover { background: var(--overlay-light); }
     }
 `;
 
 const ModalOverlay = styled.div`
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--overlay-backdrop);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
@@ -344,8 +344,8 @@ const ModalOverlay = styled.div`
 
 const ModalContent = styled.div`
     width: 480px;
-    background: #0f1016;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: hsl(var(--background));
+    border: 1px solid var(--border-light);
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -357,7 +357,7 @@ const ModalHeader = styled.div`
         margin: 0;
         font-size: 18px;
         font-weight: 600;
-        color: white;
+        color: hsl(var(--foreground));
     }
 `;
 
@@ -371,8 +371,8 @@ const ModalButton = styled.button<{ $primary?: boolean }>`
     transition: all 0.2s;
 
     ${props => props.$primary
-        ? `background-color: #8c52ff; color: white; &:hover { background-color: #7c3aed; }`
-        : `background-color: transparent; color: #9ca3af; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); }`
+        ? `background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); &:hover { background-color: #7c3aed; }`
+        : `background-color: transparent; color: hsl(var(--muted-foreground)); &:hover { color: hsl(var(--foreground)); background-color: var(--overlay-light); }`
     }
 `;
 
@@ -543,7 +543,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
             <Card>
                         <CardHeader>
                             <CardTitleIcon>
-                                <Terminal size={18} color="#8c52ff" />
+                                <Terminal size={18} color="hsl(var(--primary))" />
                                 <h3>Endpoint Details</h3>
                             </CardTitleIcon>
                         </CardHeader>
@@ -575,7 +575,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                     {authToken && showAuthToken && (
                                         <CopyButton
                                             onClick={handleCopyToken}
-                                            style={{ borderLeft: '1px solid rgba(255,255,255,0.1)' }}
+                                            style={{ borderLeft: '1px solid var(--border-light)' }}
                                             title="Copy Token"
                                         >
                                             <Copy size={14} />
@@ -620,7 +620,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                 </InputGroup>
                             </Section>
 
-                            <Section style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', marginTop: '24px' }}>
+                            <Section style={{ borderTop: '1px solid var(--overlay-light)', paddingTop: '24px', marginTop: '24px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                     <Label style={{ marginBottom: 0 }}>Available Endpoints</Label>
                                     <AddButton onClick={() => setIsModalOpen(true)}>
@@ -638,7 +638,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                                 </EndpointMeta>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     {!ep.active && <InactiveBadge>Disabled</InactiveBadge>}
-                                                    <ChevronDown size={14} style={{ transform: expandedEndpoint === ep.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#6b7280' }} />
+                                                    <ChevronDown size={14} style={{ transform: expandedEndpoint === ep.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'hsl(var(--text-secondary))' }} />
                                                 </div>
                                             </EndpointHeader>
 
@@ -651,12 +651,12 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                                         <button onClick={() => {
                                                             setRoutes(prev => prev.map(r => r.id === ep.id ? { ...r, active: !r.active } : r));
                                                         }} title={ep.active ? "Disable" : "Enable"}>
-                                                            <Power size={14} color={ep.active ? "#10b981" : "#ef4444"} />
+                                                            <Power size={14} color={ep.active ? "hsl(var(--success))" : "hsl(var(--destructive))"} />
                                                         </button>
                                                         <button onClick={() => {
                                                             setRoutes(prev => prev.filter(r => r.id !== ep.id));
                                                         }} title="Delete">
-                                                            <Trash2 size={14} color="#ef4444" />
+                                                            <Trash2 size={14} color="hsl(var(--destructive))" />
                                                         </button>
                                                     </RouteActions>
 

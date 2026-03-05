@@ -20,6 +20,7 @@ from app.infrastructure.db.models.managed_sso import ManagedSSOModel  # noqa: F4
 from app.infrastructure.db.models.managed_integration import ManagedIntegrationModel  # noqa: F401
 from app.infrastructure.db.models.project import ProjectModel  # noqa: F401
 from app.infrastructure.db.models.project_resource import ProjectResourceModel  # noqa: F401
+from app.infrastructure.db.models.invitation import InvitationModel  # noqa: F401
 
 # Initialize application logging for Alembic
 from app.core.logging import setup_logging

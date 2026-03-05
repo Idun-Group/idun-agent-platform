@@ -10,9 +10,8 @@ import AgentDetailPage from './pages/agent-detail/page';
 
 import LoginPage from './pages/login/page';
 import SettingsPage from './pages/settings/page';
+import UserPreferencesPage from './pages/user-preferences/page';
 import SideBar from './layouts/side-bar/dashboard-side-bar/layout';
-import SettingSideBar from './layouts/side-bar/setting-side-bar/layout';
-import { SettingPageProvider } from './hooks/use-settings-page';
 import SigninPage from './pages/signin/page';
 import { useAuth } from './hooks/use-auth';
 import ApplicationPage from './pages/application-page/page';
@@ -26,6 +25,7 @@ import MCPPage from './pages/mcp-page/page';
 import GuardrailsPage from './pages/guardrails-page/page';
 import SSOPage from './pages/sso-page/page';
 import IntegrationsPage from './pages/integrations-page/page';
+import OnboardingPage from './pages/onboarding/page';
 // PLOP_IMPORT
 
 function App() {
@@ -43,6 +43,7 @@ function App() {
 
                 {/* Protected routes */}
                 <Route element={<RequireAuth />}>
+                    <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route
                         path="/agents"
                         element={
@@ -114,21 +115,34 @@ function App() {
                         }
                     />
                     <Route path="/agent/:id" element={<AgentDetailPage />} />
-                    {/* <Route
-                        path="/settings"
+                    <Route
+                        path="/preferences/:page?"
                         element={
-                            <SettingPageProvider>
-                                <AppLayout>
-                                    <ContentLayout>
-                                        <SettingSideBar />
-                                        <MainContent>
-                                            <SettingsPage />
-                                        </MainContent>
-                                    </ContentLayout>
-                                </AppLayout>
-                            </SettingPageProvider>
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <UserPreferencesPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
                         }
-                    /> */}
+                    />
+                    <Route
+                        path="/settings/:page?"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <SettingsPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
                     <Route
                         path="/observability"
                         element={
@@ -253,7 +267,7 @@ const MainContent = styled.div`
     display: flex;
     flex-direction: column;
     min-height: 0;
-    background: var(--color-background-primary);
+    background: hsl(var(--background));
     overflow: auto;
 `;
 

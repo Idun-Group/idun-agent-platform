@@ -118,6 +118,7 @@ def setup_routes(app: FastAPI) -> None:
     from app.api.v1.routers.health import router as health_router
     from app.api.v1.routers.integrations import router as integrations_router
     from app.api.v1.routers.mcp_servers import router as mcp_servers_router
+    from app.api.v1.routers.members import router as members_router
     from app.api.v1.routers.memory import router as memory_router
     from app.api.v1.routers.observability import router as observability_router
     from app.api.v1.routers.projects import router as projects_router
@@ -184,6 +185,11 @@ def setup_routes(app: FastAPI) -> None:
         projects_router,
         prefix="/api/v1/projects",
         tags=["Projects"],
+    )
+    app.include_router(
+        members_router,
+        prefix="/api/v1/workspaces",
+        tags=["Workspace Members"],
     )
 
 

@@ -77,7 +77,7 @@ export const Label = styled.label`
     gap: 8px;
     font-size: 14px;
     font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     margin-bottom: 8px;
 `;
 
@@ -88,7 +88,7 @@ const LabelContent = styled.div`
 `;
 
 const Required = styled.span`
-    color: #ff4757;
+    color: hsl(var(--destructive));
     font-weight: 500;
     margin-left: 4px;
 `;
@@ -96,22 +96,22 @@ const Required = styled.span`
 const Input = styled.input`
     width: 100%;
     padding: 16px 20px;
-    background: var(--color-background-primary, #0f1016);
-    border: 1px solid var(--color-border-primary, #1a1a2e);
+    background: hsl(var(--card));
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     font-size: 16px;
     transition: all 0.2s ease;
     box-sizing: border-box;
 
     &:focus {
         outline: none;
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
     }
 
     &::placeholder {
-        color: var(--color-text-tertiary, #64748b);
+        color: hsl(var(--text-tertiary));
     }
 
     &:disabled {
@@ -123,10 +123,10 @@ const Input = styled.input`
 const TextArea = styled.textarea`
     width: 100%;
     padding: 16px 20px;
-    background: var(--color-background-primary, #0f1016);
-    border: 1px solid var(--color-border-primary, #1a1a2e);
+    background: hsl(var(--card));
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     font-size: 16px;
     min-height: 120px;
     resize: vertical;
@@ -136,22 +136,22 @@ const TextArea = styled.textarea`
 
     &:focus {
         outline: none;
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
     }
 
     &::placeholder {
-        color: var(--color-text-tertiary, #64748b);
+        color: hsl(var(--text-tertiary));
     }
 `;
 
 const Select = styled.select`
     width: 100%;
     padding: 16px 20px;
-    background: var(--color-background-primary, #0f1016);
-    border: 1px solid var(--color-border-primary, #1a1a2e);
+    background: hsl(var(--card));
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     font-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -159,18 +159,18 @@ const Select = styled.select`
 
     &:focus {
         outline: none;
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
     }
 
     option {
-        background: var(--color-background-primary, #0f1016);
-        color: var(--color-text-primary, #ffffff);
+        background: hsl(var(--card));
+        color: hsl(var(--foreground));
     }
 `;
 
 const ErrorText = styled.p`
-    color: #ff4757;
+    color: hsl(var(--destructive));
     font-size: 12px;
     margin-top: 4px;
 `;
@@ -187,8 +187,8 @@ const TooltipContent = styled.div`
     visibility: hidden;
     width: max-content;
     max-width: 300px;
-    background-color: #2a2a40;
-    color: #fff;
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
     text-align: left;
     border-radius: 6px;
     padding: 8px 12px;
@@ -201,7 +201,7 @@ const TooltipContent = styled.div`
     font-size: 12px;
     font-weight: 400;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    border: 1px solid var(--border-subtle);
     pointer-events: none;
     white-space: normal;
 
@@ -213,7 +213,7 @@ const TooltipContent = styled.div`
         left: 17px;
         border-width: 5px;
         border-style: solid;
-        border-color: #2a2a40 transparent transparent transparent;
+        border-color: hsl(var(--popover)) transparent transparent transparent;
     }
 
     ${TooltipContainer}:hover & {
@@ -224,7 +224,7 @@ const TooltipContent = styled.div`
 
 const TooltipIcon = ({ text }: { text: string }) => (
     <TooltipContainer>
-        <Info size={14} color="#a0a0a0" />
+        <Info size={14} color="hsl(var(--muted-foreground))" />
         <TooltipContent>{text}</TooltipContent>
     </TooltipContainer>
 );
@@ -358,15 +358,15 @@ const TagContainer = styled.div`
     gap: 8px;
     padding: 12px;
     min-height: 48px;
-    background: var(--color-background-primary, #0f1016);
-    border: 1px solid var(--color-border-primary, #1a1a2e);
+    background: hsl(var(--card));
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     width: 100%;
     box-sizing: border-box;
     transition: all 0.2s ease;
 
     &:focus-within {
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
     }
 `;
@@ -375,7 +375,7 @@ const Tag = styled.div`
     display: inline-flex;
     align-items: center;
     background: rgba(140, 82, 255, 0.15);
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 14px;
@@ -391,7 +391,7 @@ const Tag = styled.div`
 
         &:hover {
             opacity: 1;
-            color: #ff4757;
+            color: hsl(var(--destructive));
         }
     }
 `;
@@ -399,7 +399,7 @@ const Tag = styled.div`
 const TagInputRaw = styled.input`
     background: transparent;
     border: none;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     font-size: 14px;
     flex: 1;
     min-width: 120px;
@@ -410,7 +410,7 @@ const TagInputRaw = styled.input`
     }
 
     &::placeholder {
-        color: var(--color-text-tertiary, #64748b);
+        color: hsl(var(--text-tertiary));
     }
 `;
 
@@ -574,11 +574,11 @@ const CheckboxContainer = styled.label`
     display: flex;
     align-items: center;
     cursor: pointer;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     font-size: 14px;
 
     input {
-        accent-color: var(--color-primary, #8c52ff);
+        accent-color: hsl(var(--primary));
         width: 16px;
         height: 16px;
         cursor: pointer;
@@ -595,16 +595,16 @@ export const Form = styled.form`
     max-width: 800px;
     margin: 0 auto;
     padding: 32px;
-    background: var(--color-background-secondary, #1a1a2e);
+    background: hsl(var(--card));
     border-radius: 12px;
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    border: 1px solid hsl(var(--border));
     max-height: 65vh;
     overflow-y: auto;
 
     h1,
     h2,
     h3 {
-        color: var(--color-text-primary, #ffffff);
+        color: hsl(var(--foreground));
         margin-bottom: 8px;
     }
 
@@ -621,7 +621,7 @@ export const Form = styled.form`
     }
 
     p {
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
         margin-bottom: 32px;
         line-height: 1.5;
     }
@@ -632,17 +632,17 @@ export const Form = styled.form`
     }
 
     &::-webkit-scrollbar-track {
-        background: var(--color-background-primary, #0f1016);
+        background: hsl(var(--background));
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: var(--color-border-primary, #2a3f5f);
+        background: hsl(var(--border));
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: var(--color-primary, #8c52ff);
+        background: hsl(var(--primary));
     }
 `;
 

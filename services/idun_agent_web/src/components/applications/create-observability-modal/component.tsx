@@ -82,14 +82,14 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: var(--color-surface, #1a1a2e);
+    background: hsl(var(--card));
     border-radius: 16px;
     width: 820px;
     max-width: 95vw;
@@ -97,15 +97,15 @@ const Modal = styled.div`
     display: flex;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-light);
     position: relative;
 `;
 
 const Sidebar = styled.div`
     width: 220px;
     flex-shrink: 0;
-    background: rgba(0, 0, 0, 0.25);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    background: hsl(var(--accent));
+    border-right: 1px solid var(--border-subtle);
     padding: 24px 12px;
     overflow-y: auto;
 `;
@@ -115,7 +115,7 @@ const SidebarTitle = styled.p`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--text-tertiary));
     margin: 0 0 12px 8px;
 `;
 
@@ -126,9 +126,9 @@ const ProviderBtn = styled.button<{ $selected: boolean }>`
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px solid ${p => p.$selected ? 'var(--color-primary, #6c63ff)' : 'transparent'};
+    border: 1px solid ${p => p.$selected ? 'hsl(var(--primary))' : 'transparent'};
     background: ${p => p.$selected ? 'rgba(108, 99, 255, 0.15)' : 'transparent'};
-    color: ${p => p.$selected ? 'var(--color-primary, #6c63ff)' : 'var(--color-text-secondary, #ccc)'};
+    color: ${p => p.$selected ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))'};
     font-size: 14px;
     font-weight: ${p => p.$selected ? 600 : 400};
     cursor: pointer;
@@ -137,8 +137,8 @@ const ProviderBtn = styled.button<{ $selected: boolean }>`
     margin-bottom: 4px;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.06);
-        color: white;
+        background: var(--overlay-light);
+        color: hsl(var(--foreground));
     }
 `;
 
@@ -166,7 +166,7 @@ const RightPanel = styled.div`
 
 const PanelHeader = styled.div`
     padding: 24px 28px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -175,17 +175,17 @@ const PanelHeader = styled.div`
 const PanelTitle = styled.h2`
     font-size: 18px;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const CloseBtn = styled.button`
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--overlay-light);
     border: none;
     border-radius: 8px;
     width: 32px;
     height: 32px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 18px;
     cursor: pointer;
     display: flex;
@@ -193,7 +193,7 @@ const CloseBtn = styled.button`
     justify-content: center;
     transition: background 0.15s;
 
-    &:hover { background: rgba(255, 255, 255, 0.15); }
+    &:hover { background: var(--border-medium); }
 `;
 
 const FormBody = styled.div`
@@ -209,7 +209,7 @@ const EmptyState = styled.div`
     justify-content: center;
     height: 100%;
     gap: 12px;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--text-tertiary));
     text-align: center;
 
     span { font-size: 48px; }
@@ -219,7 +219,7 @@ const EmptyState = styled.div`
 const NameFieldGroup = styled.div`
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border-subtle);
 `;
 
 const FieldGroup = styled.div`
@@ -230,29 +230,29 @@ const Label = styled.label`
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: var(--color-text-secondary, #ccc);
+    color: hsl(var(--text-secondary));
     margin-bottom: 8px;
 `;
 
 const Input = styled.input`
     width: 100%;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.15s;
 
-    &::placeholder { color: rgba(255, 255, 255, 0.3); }
-    &:focus { border-color: var(--color-primary, #6c63ff); }
+    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &:focus { border-color: hsl(var(--primary)); }
 `;
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: #f87171;
+    color: hsl(var(--destructive));
     margin: 0 0 16px;
     padding: 10px 14px;
     background: rgba(248, 113, 113, 0.1);
@@ -262,7 +262,7 @@ const ErrorMsg = styled.p`
 
 const Footer = styled.div`
     padding: 20px 28px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -271,23 +271,23 @@ const Footer = styled.div`
 const CancelBtn = styled.button`
     padding: 10px 20px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--border-medium);
     border-radius: 8px;
-    color: var(--color-text-secondary, #ccc);
+    color: hsl(var(--text-secondary));
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: rgba(255, 255, 255, 0.06); color: white; }
+    &:hover { background: var(--overlay-light); color: hsl(var(--foreground)); }
 `;
 
 const SubmitBtn = styled.button`
     padding: 10px 24px;
-    background: var(--color-primary, #6c63ff);
+    background: hsl(var(--primary));
     border: none;
     border-radius: 8px;
-    color: white;
+    color: hsl(var(--primary-foreground));
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -303,8 +303,8 @@ const SubmitBtn = styled.button`
 const Spinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+    border: 2px solid var(--overlay-strong);
+    border-top-color: hsl(var(--foreground));
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
@@ -312,7 +312,7 @@ const Spinner = styled.div`
 const LoadingOverlay = styled.div`
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -323,8 +323,8 @@ const LoadingOverlay = styled.div`
 const BigSpinner = styled.div`
     width: 40px;
     height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-top-color: var(--color-primary, #6c63ff);
+    border: 3px solid var(--overlay-strong);
+    border-top-color: hsl(var(--primary));
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -472,7 +472,7 @@ const CreateObservabilityModal: React.FC<Props> = ({ isOpen, onClose, onCreated,
                                     {provider.fields.map(field => (
                                         <FieldGroup key={field.key}>
                                             <Label htmlFor={field.key}>
-                                                {field.label}{field.required && <span style={{ color: '#f87171' }}> *</span>}
+                                                {field.label}{field.required && <span style={{ color: 'hsl(var(--destructive))' }}> *</span>}
                                             </Label>
                                             <Input
                                                 id={field.key}
