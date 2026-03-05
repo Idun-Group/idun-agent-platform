@@ -104,7 +104,7 @@ async def test_langgraph_agent_sends_trace_to_langfuse(
     _ = await agent.invoke({"query": message, "session_id": "session123"})
 
     await asyncio.sleep(
-        35
+        45
     )  # langfuse-docs: New data is typically available for querying within 15-30 seconds of ingestion
 
     trace = langfuse_client.api.trace.list(
@@ -152,7 +152,7 @@ async def test_adk_agent_sends_trace_to_langfuse(
 
     end_time = datetime.now(UTC)
 
-    await asyncio.sleep(35)
+    await asyncio.sleep(45)
 
     trace = langfuse_client.api.trace.list(
         limit=10, from_timestamp=start_time, to_timestamp=end_time

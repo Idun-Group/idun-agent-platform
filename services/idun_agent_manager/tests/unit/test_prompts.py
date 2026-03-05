@@ -16,9 +16,6 @@ from app.api.v1.deps import (
     get_session,
     require_workspace,
 )
-from app.infrastructure.db.models.agent_prompt_assignment import (
-    AgentPromptAssignmentModel,
-)
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.infrastructure.db.models.managed_prompt import ManagedPromptModel
 from app.infrastructure.db.models.workspace import WorkspaceModel
@@ -445,5 +442,3 @@ class TestUnassignPrompt:
             f"/api/v1/prompts/{seeded_prompt.id}/assign/{seeded_agent.id}"
         )
         assert resp.status_code == 404
-
-
