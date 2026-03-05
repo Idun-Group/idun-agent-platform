@@ -41,7 +41,7 @@ const PromptsPage = () => {
     const [agentAssignments, setAgentAssignments] = useState<Map<string, string[]>>(new Map());
     const [updateTarget, setUpdateTarget] = useState<PromptGroup | null>(null);
     const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set());
-    const [previewVersions, setPreviewVersions] = useState<Set<string>>(new Set());
+    const [rawVersions, setPreviewVersions] = useState<Set<string>>(new Set());
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -112,7 +112,7 @@ const PromptsPage = () => {
         });
     };
 
-    const togglePreview = (versionId: string) => {
+    const toggleRaw = (versionId: string) => {
         setPreviewVersions(prev => {
             const next = new Set(prev);
             if (next.has(versionId)) next.delete(versionId);
@@ -357,13 +357,13 @@ const PromptsPage = () => {
                                                             {isVersionExpanded && (
                                                                 <>
                                                                     <ViewToggle>
-                                                                        <ToggleBtn $active={!previewVersions.has(v.id)} onClick={() => previewVersions.has(v.id) && togglePreview(v.id)}>Raw</ToggleBtn>
-                                                                        <ToggleBtn $active={previewVersions.has(v.id)} onClick={() => !previewVersions.has(v.id) && togglePreview(v.id)}>Preview</ToggleBtn>
+                                                                        <ToggleBtn $active={rawVersions.has(v.id)} onClick={() => !rawVersions.has(v.id) && toggleRaw(v.id)}>Raw</ToggleBtn>
+                                                                        <ToggleBtn $active={!rawVersions.has(v.id)} onClick={() => rawVersions.has(v.id) && toggleRaw(v.id)}>Preview</ToggleBtn>
                                                                     </ViewToggle>
-                                                                    {previewVersions.has(v.id) ? (
-                                                                        <MarkdownWrap><ReactMarkdown>{v.content}</ReactMarkdown></MarkdownWrap>
-                                                                    ) : (
+                                                                    {rawVersions.has(v.id) ? (
                                                                         <VersionContent>{v.content}</VersionContent>
+                                                                    ) : (
+                                                                        <MarkdownWrap><ReactMarkdown>{v.content}</ReactMarkdown></MarkdownWrap>
                                                                     )}
                                                                 </>
                                                             )}

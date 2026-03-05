@@ -15,6 +15,15 @@ interface Props {
     lockPromptId?: boolean;
 }
 
+const PLACEHOLDER_CONTENT = `You are a helpful {{ role }} assistant.
+
+Answer questions about {{ domain }} clearly and concisely.
+
+## Guidelines
+- Always cite your sources
+- Stay on topic
+- Be polite and professional`;
+
 const CreatePromptModal: FC<Props> = ({ isOpen, onClose, onCreated, initialPromptId, initialContent, lockPromptId }) => {
     const [promptId, setPromptId] = useState('');
     const [content, setContent] = useState('');
@@ -29,7 +38,7 @@ const CreatePromptModal: FC<Props> = ({ isOpen, onClose, onCreated, initialPromp
     useEffect(() => {
         if (isOpen) {
             setPromptId(initialPromptId ?? '');
-            setContent(initialContent ?? '');
+            setContent(initialContent ?? PLACEHOLDER_CONTENT);
             setTagInput('');
             setTags([]);
             setErrorMessage(null);
@@ -108,6 +117,7 @@ const CreatePromptModal: FC<Props> = ({ isOpen, onClose, onCreated, initialPromp
                                     <ToggleBtn $active={showPreview} onClick={() => setShowPreview(true)}>Preview</ToggleBtn>
                                 </ViewToggle>
                             </ContentHeader>
+                            <ContentHint>Create your prompt template. Use <code>{'{{variable}}'}</code> to insert variables into your prompt.</ContentHint>
                             {showPreview ? (
                                 <PreviewWrap>
                                     {content ? <ReactMarkdown>{content}</ReactMarkdown> : <PreviewPlaceholder>Nothing to preview</PreviewPlaceholder>}
@@ -486,6 +496,20 @@ const PreviewWrap = styled.div`
     }
     a { color: #a78bfa; }
     hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 0.8em 0; }
+`;
+
+const ContentHint = styled.p`
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    margin: 2px 0 8px;
+    code {
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 11px;
+        padding: 1px 5px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.4);
+    }
 `;
 
 const PreviewPlaceholder = styled.p`
