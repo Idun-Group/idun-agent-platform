@@ -95,8 +95,8 @@ export default function SourceSelectorModel({
 }
 
 export const TemplateCard = styled.div<{ isSelected: boolean }>`
-    background: var(--color-background-tertiary, #2a3f5f);
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    background: hsl(var(--accent));
+    border: 1px solid hsl(var(--border));
     border-radius: 8px;
     padding: 20px;
     cursor: pointer;
@@ -104,13 +104,13 @@ export const TemplateCard = styled.div<{ isSelected: boolean }>`
     ${({ isSelected }) =>
         isSelected &&
         `
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         background: rgba(140, 82, 255, 0.05);
     `}
     transition: all 0.2s;
 
     &:hover {
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         background: rgba(140, 82, 255, 0.05);
     }
 
@@ -118,12 +118,12 @@ export const TemplateCard = styled.div<{ isSelected: boolean }>`
         margin: 0 0 8px 0;
         font-size: 16px;
         font-weight: 600;
-        color: var(--color-text-primary, #ffffff);
+        color: hsl(var(--foreground));
     }
 
     p {
         margin: 0;
         font-size: 14px;
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
     }
 `;

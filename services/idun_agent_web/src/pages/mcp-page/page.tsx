@@ -38,13 +38,13 @@ const TitleBlock = styled.div``;
 const PageTitle = styled.h1`
     font-size: 24px;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0 0 6px;
 `;
 
 const PageSubtitle = styled.p`
     font-size: 14px;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
@@ -58,8 +58,8 @@ const SearchBar = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
@@ -69,11 +69,11 @@ const SearchInput = styled.input`
     background: transparent;
     border: none;
     outline: none;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 14px;
     width: 180px;
 
-    &::placeholder { color: rgba(255, 255, 255, 0.35); }
+    &::placeholder { color: hsl(var(--muted-foreground)); }
 `;
 
 const AddButton = styled.button`
@@ -82,10 +82,10 @@ const AddButton = styled.button`
     gap: 8px;
     padding: 0 18px;
     height: 38px;
-    background: var(--color-primary, #6c63ff);
+    background: hsl(var(--primary));
     border: none;
     border-radius: 10px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -108,13 +108,13 @@ const StatChip = styled.div`
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
     font-size: 13px;
-    color: var(--color-text-secondary, #ccc);
+    color: hsl(var(--text-secondary));
 
-    strong { color: white; font-weight: 700; }
+    strong { color: hsl(var(--foreground)); font-weight: 700; }
 `;
 
 // ── Accordion List ────────────────────────────────────────────────────────────
@@ -126,13 +126,13 @@ const ServerList = styled.div`
 `;
 
 const ServerCard = styled.div`
-    background: var(--color-surface, #1a1a2e);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: hsl(var(--surface-elevated));
+    border: 1px solid var(--border-subtle);
     border-radius: 14px;
     overflow: hidden;
     transition: border-color 0.2s;
 
-    &:hover { border-color: rgba(108, 99, 255, 0.25); }
+    &:hover { border-color: hsl(var(--primary) / 0.25); }
 `;
 
 const ServerHeader = styled.button`
@@ -145,14 +145,14 @@ const ServerHeader = styled.button`
     border: none;
     cursor: pointer;
     text-align: left;
-    color: white;
+    color: hsl(var(--foreground));
 `;
 
 const ServerIcon = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--border-subtle);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -174,13 +174,13 @@ const ServerMeta = styled.div`
 const ServerName = styled.p`
     font-size: 15px;
     font-weight: 600;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0 0 4px;
 `;
 
 const ServerSubtitle = styled.p`
     font-size: 12px;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--muted-foreground));
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -199,7 +199,7 @@ const StatusBadge = styled.span<{ $active: boolean }>`
     font-weight: 600;
     padding: 4px 10px;
     border-radius: 20px;
-    background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'rgba(255, 255, 255, 0.07)'};
+    background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'var(--border-subtle)'};
     color: ${p => p.$active ? '#34d399' : '#888'};
     border: 1px solid ${p => p.$active ? 'rgba(52, 211, 153, 0.3)' : 'transparent'};
 `;
@@ -209,22 +209,22 @@ const TransportBadge = styled.span`
     font-weight: 600;
     padding: 4px 10px;
     border-radius: 20px;
-    background: rgba(108, 99, 255, 0.12);
-    color: var(--color-primary, #6c63ff);
-    border: 1px solid rgba(108, 99, 255, 0.2);
+    background: hsl(var(--primary) / 0.12);
+    color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary) / 0.2);
 `;
 
 const ChevronIcon = styled.span<{ $open: boolean }>`
     font-size: 12px;
     transition: transform 0.2s;
     transform: ${p => p.$open ? 'rotate(180deg)' : 'rotate(0deg)'};
-    color: rgba(255, 255, 255, 0.4);
+    color: hsl(var(--muted-foreground));
 `;
 
 const AccordionBody = styled.div<{ $open: boolean }>`
     display: ${p => p.$open ? 'block' : 'none'};
     animation: ${p => p.$open ? expandDown : 'none'} 0.25s ease;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
     padding: 20px;
 `;
 
@@ -247,7 +247,7 @@ const SectionTitle = styled.p`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--muted-foreground));
     margin: 0 0 4px;
 `;
 
@@ -260,14 +260,14 @@ const ConfigRow = styled.div`
 
 const ConfigKey = styled.span`
     font-size: 12px;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--muted-foreground));
     text-transform: capitalize;
     flex-shrink: 0;
 `;
 
 const ConfigValue = styled.span`
     font-size: 12px;
-    color: var(--color-text-secondary, #ccc);
+    color: hsl(var(--text-secondary));
     font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -284,7 +284,7 @@ const SecretValue = styled.div`
 
 const SecretText = styled.span`
     font-size: 12px;
-    color: var(--color-text-secondary, #ccc);
+    color: hsl(var(--text-secondary));
     font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -294,13 +294,13 @@ const SecretText = styled.span`
 const EyeBtn = styled.button`
     background: none;
     border: none;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     padding: 0;
     font-size: 12px;
     flex-shrink: 0;
 
-    &:hover { color: white; }
+    &:hover { color: hsl(var(--foreground)); }
 `;
 
 const DiscoverButton = styled.button`
@@ -310,16 +310,16 @@ const DiscoverButton = styled.button`
     gap: 8px;
     width: 100%;
     padding: 10px 16px;
-    background: rgba(108, 99, 255, 0.08);
-    border: 1px solid rgba(108, 99, 255, 0.2);
+    background: hsl(var(--primary) / 0.08);
+    border: 1px solid hsl(var(--primary) / 0.2);
     border-radius: 8px;
-    color: var(--color-primary, #6c63ff);
+    color: hsl(var(--primary));
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: rgba(108, 99, 255, 0.15); }
+    &:hover { background: hsl(var(--primary) / 0.15); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
@@ -333,28 +333,28 @@ const ToolList = styled.div`
 
 const ToolItem = styled.div`
     padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
 `;
 
 const ToolName = styled.p`
     font-size: 13px;
     font-weight: 600;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0 0 2px;
     font-family: monospace;
 `;
 
 const ToolDescription = styled.p`
     font-size: 12px;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
 const DiscoverError = styled.p`
     font-size: 13px;
-    color: #f87171;
+    color: hsl(var(--destructive));
     margin: 0;
     text-align: center;
 `;
@@ -362,8 +362,8 @@ const DiscoverError = styled.p`
 const DiscoverSpinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(108, 99, 255, 0.2);
-    border-top-color: var(--color-primary, #6c63ff);
+    border: 2px solid hsl(var(--primary) / 0.2);
+    border-top-color: hsl(var(--primary));
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -373,21 +373,21 @@ const BodyActions = styled.div`
     gap: 10px;
     margin-top: 20px;
     padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
 `;
 
 const EditBtn = styled.button`
     padding: 8px 18px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--border-subtle);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: rgba(255, 255, 255, 0.12); }
+    &:hover { background: var(--overlay-medium); }
 `;
 
 const DeleteBtn = styled.button`
@@ -395,7 +395,7 @@ const DeleteBtn = styled.button`
     background: rgba(248, 113, 113, 0.08);
     border: 1px solid rgba(248, 113, 113, 0.2);
     border-radius: 8px;
-    color: #f87171;
+    color: hsl(var(--destructive));
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -412,18 +412,18 @@ const AddCard = styled.button`
     justify-content: center;
     gap: 12px;
     background: transparent;
-    border: 2px dashed rgba(255, 255, 255, 0.1);
+    border: 2px dashed var(--border-light);
     border-radius: 14px;
     padding: 28px;
     cursor: pointer;
     transition: all 0.2s;
-    color: rgba(255, 255, 255, 0.3);
+    color: hsl(var(--muted-foreground));
     font-size: 14px;
 
     &:hover {
-        border-color: var(--color-primary, #6c63ff);
-        background: rgba(108, 99, 255, 0.05);
-        color: var(--color-primary, #6c63ff);
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.05);
+        color: hsl(var(--primary));
     }
 `;
 
@@ -436,15 +436,15 @@ const CenterBox = styled.div`
     justify-content: center;
     gap: 12px;
     padding: 80px;
-    color: var(--color-text-muted, #888);
+    color: hsl(var(--muted-foreground));
     text-align: center;
 `;
 
 const LoadingSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-top-color: var(--color-primary, #6c63ff);
+    border: 3px solid var(--border-light);
+    border-top-color: hsl(var(--primary));
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -561,7 +561,7 @@ const MCPPage: React.FC = () => {
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
-                        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14 }}>🔍</span>
+                        <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 14 }}>🔍</span>
                         <SearchInput
                             placeholder="Search servers..."
                             value={searchTerm}
@@ -615,7 +615,7 @@ const MCPPage: React.FC = () => {
                                         <Section>
                                             <SectionTitle>Configuration</SectionTitle>
                                             {configEntries.length === 0 ? (
-                                                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', margin: 0 }}>
+                                                <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', margin: 0 }}>
                                                     No configuration data
                                                 </p>
                                             ) : (

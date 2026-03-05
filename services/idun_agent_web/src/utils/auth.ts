@@ -9,6 +9,7 @@ export interface SessionPrincipal {
     email?: string;
     roles?: string[];
     workspace_ids?: string[];
+    default_workspace_id?: string | null;
 }
 
 export interface Session {

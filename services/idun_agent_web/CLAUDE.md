@@ -103,8 +103,11 @@ services/idun_agent_web/
 | `/sso` | SSOPage | Protected | SSO/OIDC configuration management |
 | `/integrations` | IntegrationsPage | Protected | Messaging integrations (WhatsApp, Discord) |
 | `/observation` | ObservationPage | Protected | Observation/metrics view |
+| `/onboarding` | OnboardingPage | Protected | First workspace creation (shown when user has no workspaces) |
 
-Protected routes are wrapped with `<RequireAuth />` which redirects to `/login` if no session exists.
+Protected routes are wrapped with `<RequireAuth />` which:
+1. Redirects to `/login` if no session exists
+2. Redirects to `/onboarding` if the user has no workspaces (except when already on `/onboarding`)
 
 The `/observability`, `/memory`, `/mcp`, and `/guardrails` routes all use the same `ApplicationPage` component with a different `category` prop.
 
@@ -116,6 +119,12 @@ Uses session cookies set by the manager backend. Two modes (controlled by `AUTH_
 - **OIDC**: Redirects to `GET /api/v1/auth/login` (manager handles Google OAuth flow)
 
 `AuthProvider` hydrates session on mount via `GET /api/v1/auth/me`. On 401, it re-validates the session once.
+
+### Onboarding Flow
+- Signup no longer auto-creates a workspace. New users start with `workspace_ids: []`.
+- `LoginPage` and `SigninPage` check `workspace_ids` and redirect to `/onboarding` when empty.
+- `OnboardingPage` lets the user create their first workspace, then calls `refresh()` (which hits `/me` and re-signs the cookie), then navigates to `/agents`.
+- `syncActiveWorkspace()` in `use-auth.tsx` prefers `default_workspace_id` when selecting the active tenant.
 
 ## API Layer
 

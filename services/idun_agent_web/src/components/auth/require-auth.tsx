@@ -12,5 +12,10 @@ export default function RequireAuth() {
         return <Navigate to="/login" replace />;
     }
 
+    const hasWorkspaces = (session.principal?.workspace_ids?.length ?? 0) > 0;
+    if (!hasWorkspaces && location.pathname !== '/onboarding') {
+        return <Navigate to="/onboarding" replace />;
+    }
+
     return <Outlet />;
 }

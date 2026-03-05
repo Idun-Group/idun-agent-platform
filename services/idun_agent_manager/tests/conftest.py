@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.api.v1.deps import get_session
+from app.infrastructure.db.models.invitation import InvitationModel  # noqa: F401
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel  # noqa: F401
 from app.infrastructure.db.models.managed_guardrail import (
     ManagedGuardrailModel,  # noqa: F401

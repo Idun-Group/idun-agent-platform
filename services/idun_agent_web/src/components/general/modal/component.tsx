@@ -47,7 +47,7 @@ const Overlay = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -56,8 +56,8 @@ const Overlay = styled.div`
 `;
 
 const ModalContainer = styled.div<{ width: string }>`
-    background-color: #1a1a2e; // Matches app theme
-    border: 1px solid #404040;
+    background-color: hsl(var(--card));
+    border: 1px solid var(--border-medium);
     border-radius: 12px;
     width: ${(props) => props.width};
     max-width: 90vw;
@@ -78,20 +78,20 @@ const Header = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 16px 24px;
-    border-bottom: 1px solid #404040;
+    border-bottom: 1px solid var(--border-medium);
 `;
 
 const Title = styled.h2`
     font-size: 18px;
     font-weight: 600;
-    color: #fff;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const CloseButton = styled.button`
     background: none;
     border: none;
-    color: #a0a0a0;
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
@@ -101,8 +101,8 @@ const CloseButton = styled.button`
     justify-content: center;
 
     &:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.1);
+        color: hsl(var(--foreground));
+        background: var(--overlay-medium);
     }
 `;
 

@@ -109,8 +109,8 @@ export default function AgentDetailPage() {
         return (
             <PageContainer>
                 <div style={{ padding: '40px', textAlign: 'center' }}>
-                    <h2 style={{ color: '#ef4444', marginBottom: '16px' }}>Failed to load agent</h2>
-                    <p style={{ color: '#9ca3af', marginBottom: '24px' }}>{error}</p>
+                    <h2 style={{ color: 'hsl(var(--destructive))', marginBottom: '16px' }}>Failed to load agent</h2>
+                    <p style={{ color: 'hsl(var(--muted-foreground))', marginBottom: '24px' }}>{error}</p>
                     <Button onClick={() => window.location.reload()}>Retry</Button>
                 </div>
             </PageContainer>
@@ -144,7 +144,7 @@ export default function AgentDetailPage() {
                             <MetaText>ID: {agent?.id}</MetaText>
                             <Separator>•</Separator>
                             <MetaText style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Layers size={12} color="#8c52ff" /> {agent?.framework || 'LANGGRAPH'}
+                                <Layers size={12} color="hsl(var(--primary))" /> {agent?.framework || 'LANGGRAPH'}
                             </MetaText>
                         </MetaInfo>
                     </div>
@@ -211,7 +211,7 @@ export default function AgentDetailPage() {
 const PageContainer = styled.div`
     min-height: 100vh;
 
-    color: white;
+    color: hsl(var(--foreground));
     padding: 24px 40px;
     display: flex;
     flex-direction: column;
@@ -228,12 +228,12 @@ const BackButton = styled.button`
     align-items: center;
     background: none;
     border: none;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     padding: 0;
-    &:hover { color: white; }
+    &:hover { color: hsl(var(--foreground)); }
 `;
 
 const HeaderSection = styled.div`
@@ -256,15 +256,15 @@ const StatusDot = styled.div<{ $status: string }>`
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    border: 4px solid #0f1016;
-    background-color: ${props => props.$status.toLowerCase() === 'active' ? '#10b981' : '#ef4444'}; // Emerald or Red (or Gray for draft)
-    ${props => props.$status.toLowerCase() === 'draft' && 'background-color: #6b7280;'}
+    border: 4px solid hsl(var(--card));
+    background-color: ${props => props.$status.toLowerCase() === 'active' ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}; // Emerald or Red (or Gray for draft)
+    ${props => props.$status.toLowerCase() === 'draft' && 'background-color: hsl(var(--muted-foreground));'}
 `;
 
 const Title = styled.h1`
     font-size: 32px;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0 0 8px 0;
     letter-spacing: -0.02em;
 `;
@@ -294,11 +294,11 @@ const StatusBadge = styled.span<{ $status: string }>`
 `;
 
 const Separator = styled.span`
-    color: #4b5563;
+    color: hsl(var(--muted-foreground));
 `;
 
 const MetaText = styled.span`
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     font-size: 12px;
     font-family: monospace;
 `;
@@ -321,17 +321,17 @@ const HeaderButton = styled.button<{ $primary?: boolean }>`
 
     ${props => props.$primary
         ? `
-            background-color: #8c52ff;
-            color: white;
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
             border: none;
             box-shadow: 0 0 15px rgba(140, 82, 255, 0.3);
-            &:hover { background-color: #7c3aed; box-shadow: 0 0 20px rgba(140, 82, 255, 0.5); }
+            &:hover { background-color: hsl(var(--primary) / 0.85); box-shadow: 0 0 20px rgba(140, 82, 255, 0.5); }
         `
         : `
-            background-color: rgba(255, 255, 255, 0.05);
-            color: #d1d5db;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            &:hover { background-color: rgba(255, 255, 255, 0.1); color: white; }
+            background-color: var(--overlay-light);
+            color: hsl(var(--muted-foreground));
+            border: 1px solid var(--border-light);
+            &:hover { background-color: var(--overlay-medium); color: hsl(var(--foreground)); }
         `
     }
 `;
@@ -339,7 +339,7 @@ const HeaderButton = styled.button<{ $primary?: boolean }>`
 const TabsNav = styled.div`
     display: flex;
     gap: 32px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--overlay-light);
     margin-bottom: 32px;
 `;
 
@@ -357,8 +357,8 @@ const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
     opacity: ${props => props.$disabled ? 0.4 : 1};
 
     ${props => props.$active
-        ? `color: white;`
-        : `color: #9ca3af; &:hover { color: #d1d5db; }`
+        ? `color: hsl(var(--foreground));`
+        : `color: hsl(var(--muted-foreground)); &:hover { color: hsl(var(--foreground)); }`
     }
 
     &::after {
@@ -368,18 +368,18 @@ const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
         left: 0;
         right: 0;
         height: 2px;
-        background-color: #8c52ff;
+        background-color: hsl(var(--primary));
         opacity: ${props => props.$active ? 1 : 0};
         transition: opacity 0.2s;
     }
 
     svg {
-        color: ${props => props.$active ? '#8c52ff' : 'currentColor'};
+        color: ${props => props.$active ? 'hsl(var(--primary))' : 'currentColor'};
         transition: color 0.2s;
     }
 
     &:hover svg {
-        color: ${props => props.$active ? '#8c52ff' : '#d1d5db'};
+        color: ${props => props.$active ? 'hsl(var(--primary))' : 'hsl(var(--foreground))'};
     }
 `;
 
@@ -392,8 +392,8 @@ const ContentArea = styled.div`
 
 const Button = styled.button`
     padding: 8px 16px;
-    background-color: #8c52ff;
-    color: white;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
     border: none;
     border-radius: 6px;
     cursor: pointer;

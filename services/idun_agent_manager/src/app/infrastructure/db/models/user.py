@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -23,6 +23,12 @@ class UserModel(Base):
     provider: Mapped[str] = mapped_column(String(50), nullable=False, default="google")
     provider_sub: Mapped[str | None] = mapped_column(String(255), nullable=True)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    default_workspace_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
