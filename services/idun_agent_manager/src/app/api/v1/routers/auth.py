@@ -108,9 +108,15 @@ def _read_session_cookie(request: Request) -> dict[str, Any] | None:
         payload: dict[str, Any] = _get_serializer().loads(
             token, max_age=settings.auth.session_ttl_seconds
         )
-        return payload
     except (BadSignature, SignatureExpired):
         return None
+
+    created_at = payload.get("created_at")
+    if created_at is not None:
+        if (time.time() - created_at) > settings.auth.session_max_lifetime_seconds:
+            return None
+
+    return payload
 
 
 def encrypt_payload(payload: str) -> bytes:
@@ -274,7 +280,7 @@ async def callback(
             "roles": ["admin"] if not workspace_ids else ["admin"],
             "workspace_ids": workspace_ids,
         },
-        "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
+        "created_at": int(time.time()),
     }
 
     redirect_url = f"{settings.auth.frontend_url}/agents"
@@ -387,7 +393,7 @@ async def basic_signup(
             "roles": ["admin"],
             "workspace_ids": [str(workspace.id)],
         },
-        "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
+        "created_at": int(time.time()),
     }
     _set_session_cookie(response, session_payload)
 
@@ -459,7 +465,7 @@ async def basic_login(
             "roles": ["admin"],
             "workspace_ids": workspace_ids,
         },
-        "expires_at": int(time.time()) + settings.auth.session_ttl_seconds,
+        "created_at": int(time.time()),
     }
     _set_session_cookie(response, session_payload)
 

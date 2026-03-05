@@ -94,7 +94,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Starlette SessionMiddleware – required by authlib for OIDC state storage
+    from app.core.middleware import SessionRefreshMiddleware
+
+    app.add_middleware(SessionRefreshMiddleware)
+
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.auth.session_secret,
