@@ -47,6 +47,9 @@ idun_agent_engine/
 │   ├── whatsapp/       # WhatsApp Cloud API: handler (webhook verify + receive), client (send_text_message)
 │   └── discord/        # Discord Interactions Endpoint: handler (Ed25519 verify + slash commands),
 │                       #   client (edit_interaction_response), verify (signature check), integration (app.state setup)
+├── prompts/            # Prompt loading and helpers
+│   ├── __init__        # Re-exports get_prompt
+│   └── helpers         # get_prompt(), get_prompts(), get_prompts_from_file(), get_prompts_from_api()
 ├── mcp/                # MCP tool management
 │   ├── registry        # MCPClientRegistry wrapping langchain-mcp-adapters MultiServerMCPClient
 │   └── helpers         # get_langchain_tools(), get_adk_tools() — convenience functions
@@ -129,6 +132,12 @@ mcp_servers:
     transport: "stdio"
     command: "docker"
     args: ["run", "-i", "--rm", "mcp/time"]
+
+prompts:
+  - prompt_id: "system-prompt"
+    version: 1
+    content: "You are a helpful assistant for {{ domain }}."
+    tags: ["latest"]
 
 sso:
   enabled: true
@@ -233,6 +242,25 @@ Top-level config. Multiple providers can be active simultaneously. All are lazy-
 | **GCP Logging** | `google.cloud.logging.Client.setup_logging()` | No (hooks into python logging) |
 
 Config values support env var references: `${LANGFUSE_HOST}` syntax in YAML, resolved at load time.
+
+## Prompts
+
+`idun_agent_engine.prompts` provides helpers for loading `PromptConfig` entries from YAML files or the Manager API.
+
+```python
+from idun_agent_engine.prompts import get_prompt
+
+prompt = get_prompt("system-prompt")           # returns PromptConfig | None
+rendered = prompt.format(query="What is AI?")  # Jinja2 rendering
+lc_prompt = prompt.to_langchain()              # LangChain PromptTemplate
+```
+
+Resolution priority in `get_prompts()`:
+1. Explicit `config_path` argument
+2. `IDUN_CONFIG_PATH` environment variable
+3. Manager API (`IDUN_AGENT_API_KEY` + `IDUN_MANAGER_HOST` env vars)
+
+`ConfigBuilder` also reads prompts from config and passes them through to `EngineConfig.prompts`.
 
 ## MCP (Model Context Protocol)
 
