@@ -311,7 +311,11 @@ class TestGetPrompts:
 
         with patch.dict(
             "os.environ",
-            {"IDUN_AGENT_API_KEY": "k", "IDUN_MANAGER_HOST": "http://h"},
+            {
+                "IDUN_AGENT_API_KEY": "k",
+                "IDUN_MANAGER_HOST": "http://h",
+                "IDUN_CONFIG_PATH": "",
+            },
         ):
             result = get_prompts()
 
