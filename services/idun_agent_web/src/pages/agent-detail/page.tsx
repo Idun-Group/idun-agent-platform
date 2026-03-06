@@ -8,6 +8,8 @@ import {
     patchAgent,
     restartAgent,
     performHealthCheck,
+    fetchEngineHealth,
+    fetchLatestEngineVersion,
     type BackendAgent,
 } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
@@ -23,6 +25,8 @@ import {
     Settings,
     Layers,
     MessageSquare,
+    AlertTriangle,
+    CheckCircle2,
 } from 'lucide-react';
 
 const OverviewTab = lazy(() => import('../../components/agent-detail/tabs/overview-tab/component'));
@@ -42,6 +46,8 @@ export default function AgentDetailPage() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
     const [agent, setAgent] = useState<BackendAgent | null>(null);
+    const [engineVersion, setEngineVersion] = useState<string | null>(null);
+    const [latestEngineVersion, setLatestEngineVersion] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [saveTrigger, setSaveTrigger] = useState(0);
@@ -54,6 +60,12 @@ export default function AgentDetailPage() {
             .then((loaded) => {
                 setAgent(loaded);
                 performHealthCheck(loaded, setAgent);
+                if (loaded.base_url) {
+                    fetchEngineHealth(loaded.base_url).then(health => {
+                        if (health?.engineVersion) setEngineVersion(health.engineVersion);
+                    });
+                }
+                fetchLatestEngineVersion().then(v => setLatestEngineVersion(v));
             })
             .catch((e) => {
                 const errorMsg = e instanceof Error ? e.message : 'Failed to load agent';
@@ -146,6 +158,23 @@ export default function AgentDetailPage() {
                             <MetaText style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Layers size={12} color="hsl(var(--primary))" /> {agent?.framework || 'LANGGRAPH'}
                             </MetaText>
+                            {engineVersion && (
+                                <>
+                                    <Separator>•</Separator>
+                                    <VersionBadge
+                                        $status={!latestEngineVersion ? 'neutral' : engineVersion === latestEngineVersion ? 'ok' : 'outdated'}
+                                        $tooltip={latestEngineVersion && engineVersion === latestEngineVersion ? 'You are running the latest version' : undefined}
+                                    >
+                                        Engine v{engineVersion}
+                                        {latestEngineVersion && engineVersion === latestEngineVersion && (
+                                            <CheckCircle2 size={11} />
+                                        )}
+                                        {latestEngineVersion && engineVersion !== latestEngineVersion && (
+                                            <> — <AlertTriangle size={11} /> Update to v{latestEngineVersion}</>
+                                        )}
+                                    </VersionBadge>
+                                </>
+                            )}
                         </MetaInfo>
                     </div>
                 </div>
@@ -388,6 +417,59 @@ const ContentArea = styled.div`
     display: flex;
     flex-direction: column;
     min-height: 0;
+`;
+
+const VersionBadge = styled.span<{ $status: 'ok' | 'outdated' | 'neutral'; $tooltip?: string }>`
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: monospace;
+    position: relative;
+    cursor: default;
+    ${props => {
+        if (props.$status === 'ok') return `
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        `;
+        if (props.$status === 'outdated') return `
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        `;
+        return `
+            background-color: rgba(140, 82, 255, 0.1);
+            color: hsl(var(--primary));
+            border: 1px solid rgba(140, 82, 255, 0.2);
+        `;
+    }}
+
+    ${props => props.$tooltip && `
+        &::after {
+            content: '${props.$tooltip}';
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            background-color: hsl(var(--foreground));
+            color: hsl(var(--background));
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+        &:hover::after {
+            opacity: 1;
+        }
+    `}
 `;
 
 const Button = styled.button`
