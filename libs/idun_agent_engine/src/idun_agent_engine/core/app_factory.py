@@ -61,6 +61,10 @@ def create_app(
         redoc_url="/redoc",
     )
 
+    # TODO: Add CORS configuration feature. Default allowed origins should be:
+    #   - https://cloud.idunplatform.com (production SaaS)
+    #   - http://localhost:3000 (local frontend dev)
+    # For now, allow all origins to avoid blocking local agent connections.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

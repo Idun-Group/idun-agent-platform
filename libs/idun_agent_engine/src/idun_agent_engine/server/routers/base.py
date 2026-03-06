@@ -24,7 +24,7 @@ class ReloadRequest(BaseModel):
 @base_router.get("/health")
 def health_check():
     """Health check endpoint for monitoring and load balancers."""
-    return {"status": "healthy", "engine_version": __version__}
+    return {"status": "ok", "service": "idun-agent-engine", "version": __version__}
 
 
 @base_router.post("/reload")

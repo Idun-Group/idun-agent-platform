@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getJson } from '../../../../utils/api';
+import { agentFetch, buildAgentUrl } from '../../../../utils/agent-fetch';
 import {
     FormSelect,
     FormTextArea,
@@ -483,7 +484,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
 
     useEffect(() => {
         if (agent?.base_url) {
-            fetch(`${agent.base_url}/openapi.json`)
+            agentFetch(buildAgentUrl(agent.base_url, '/openapi.json'))
                 .then(res => res.json())
                 .then(data => {
                     if (data && data.paths) {

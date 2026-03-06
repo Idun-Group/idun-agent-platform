@@ -286,8 +286,9 @@ class TestBaseRoutes:
 
             assert response.status_code == 200
             data = response.json()
-            assert data["status"] == "healthy"
-            assert "engine_version" in data
+            assert data["status"] == "ok"
+            assert "version" in data
+            assert data["service"] == "idun-agent-engine"
 
     def test_root_endpoint(self):
         """Root endpoint returns service information."""

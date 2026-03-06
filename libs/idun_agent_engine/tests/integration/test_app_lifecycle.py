@@ -32,7 +32,7 @@ class TestAppStartup:
         with TestClient(app) as client:
             response = client.get("/health")
             assert response.status_code == 200
-            assert response.json()["status"] == "healthy"
+            assert response.json()["status"] == "ok"
 
     def test_app_exposes_root_info(self):
         """App root endpoint returns agent information."""

@@ -34,7 +34,7 @@ class TestAppFactoryConfigSources:
 
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json()["status"] == "healthy"
+        assert response.json()["status"] == "ok"
 
         assert app.state.engine_config.server.api.port == 8888
         assert app.state.engine_config.agent.config.name == "YAML Test Agent"
@@ -129,7 +129,7 @@ class TestAppFactoryRoutes:
 
         resp = client.get("/health")
         assert resp.status_code == 200
-        assert resp.json().get("status") == "healthy"
+        assert resp.json().get("status") == "ok"
 
         resp = client.get("/")
         assert resp.status_code == 200

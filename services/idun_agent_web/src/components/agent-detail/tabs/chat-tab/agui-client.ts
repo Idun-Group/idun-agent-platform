@@ -2,6 +2,7 @@ import { HttpAgent } from '@ag-ui/client';
 import type { BaseEvent, RunAgentInput, Message, Tool, Context } from '@ag-ui/client';
 import { v4 as uuidv4 } from 'uuid';
 import type { ChatMessage, AgentError } from './types';
+import { agentFetch } from '../../../../utils/agent-fetch';
 
 export interface StreamOptions {
   agentUrl: string;
@@ -101,7 +102,7 @@ export async function streamAgent(options: StreamOptions): Promise<AbortControll
     const body = { session_id: threadId, query: lastUserMsg?.content ?? '' };
 
     try {
-      const response = await fetch(`${agentUrl}${endpoint}`, {
+      const response = await agentFetch(`${agentUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
