@@ -155,9 +155,17 @@ export async function deleteAgent(agentId: string): Promise<void> {
     await deleteRequest(`/api/v1/agents/${agentId}`);
 }
 
-export function restartAgent(baseUrl: string): Promise<unknown> {
+export async function restartAgent(baseUrl: string): Promise<void> {
     const url = baseUrl.endsWith('/') ? `${baseUrl}reload` : `${baseUrl}/reload`;
-    return postJson(url, {});
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+    });
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(text || `Reload failed with status ${res.status}`);
+    }
 }
 
 export function updateAgentStatus(
