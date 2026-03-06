@@ -55,6 +55,12 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
     });
     const [rootSchema, setRootSchema] = useState<any>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [graphRefreshKey, setGraphRefreshKey] = useState(0);
+
+    // Refresh graph on every mount (tab switch or page load)
+    useEffect(() => {
+        setGraphRefreshKey(k => k + 1);
+    }, []);
 
     // Fetch available resources on mount (needed for quick-add in view mode)
     useEffect(() => {
@@ -166,6 +172,8 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
         <Container>
             <TwoColumnGrid>
                 <ColumnStack>
+                    <GraphSection agent={agent} refreshKey={graphRefreshKey} />
+
                     <AgentDetailsSection
                         agent={agent}
                         isEditing={isEditing}
@@ -180,8 +188,6 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
                         rootSchema={rootSchema}
                         onConfigChange={handleConfigChange}
                     />
-
-                    <GraphSection agent={agent} />
                 </ColumnStack>
 
                 <ResourcesSection

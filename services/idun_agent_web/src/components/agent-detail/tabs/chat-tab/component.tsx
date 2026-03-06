@@ -723,6 +723,22 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
             {messages.map(msg => (
               <MessageBubble key={msg.id} msg={msg} />
             ))}
+            {isStreaming && !messages.findLast(m => m.role === 'assistant')?.content && (
+              <div className="thinking-indicator">
+                <div className="thinking-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.5V20a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2.5c2.9-1.2 5-4.1 5-7.5a8 8 0 0 0-8-8z"/>
+                    <line x1="10" y1="22" x2="14" y2="22"/>
+                  </svg>
+                </div>
+                <span className="thinking-label">Thinking</span>
+                <span className="thinking-dots">
+                  <span className="thinking-dot" />
+                  <span className="thinking-dot" />
+                  <span className="thinking-dot" />
+                </span>
+              </div>
+            )}
             {error && (
               <ErrorBanner error={error} onDismiss={clearError} />
             )}
