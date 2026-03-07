@@ -4,22 +4,29 @@
  * Handles two concerns:
  * 1. URL normalization — eliminates the repeated `endsWith('/')` pattern
  * 2. Local network access — when the cloud frontend calls a localhost agent,
- *    adds `targetAddressSpace: "loopback"` so the browser permits the request.
+ *    adds `targetAddressSpace: "local"` to signal that the request targets the
+ *    local network (Chrome Local Network Access requirement).
  *    Skipped in local dev (both sides are localhost, no PNA rules apply).
  */
 
-const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
+function isLoopbackHost(hostname: string): boolean {
+    if (hostname === 'localhost' || hostname === '::1') {
+        return true;
+    }
+
+    return hostname.startsWith('127.');
+}
 
 function isLoopbackUrl(url: string): boolean {
     try {
-        return LOOPBACK_HOSTS.includes(new URL(url).hostname);
+        return isLoopbackHost(new URL(url).hostname);
     } catch {
         return false;
     }
 }
 
-function isPublicOrigin(): boolean {
-    return !LOOPBACK_HOSTS.includes(window.location.hostname);
+function isLoopbackOrigin(): boolean {
+    return isLoopbackHost(window.location.hostname);
 }
 
 /**
@@ -34,13 +41,15 @@ export function buildAgentUrl(baseUrl: string, path: string): string {
 /**
  * Fetch wrapper for agent endpoints. When the frontend runs on a public
  * domain (e.g. cloud.idunplatform.com) and the agent is on localhost,
- * adds `targetAddressSpace: "loopback"` to allow the browser request.
+ * adds `targetAddressSpace: "local"` to signal local-network intent for
+ * Chrome Local Network Access checks.
  */
 export function agentFetch(url: string, init?: RequestInit): Promise<Response> {
     const options: RequestInit = { ...init };
 
-    if (isPublicOrigin() && isLoopbackUrl(url)) {
-        (options as Record<string, unknown>).targetAddressSpace = 'loopback';
+    if (!isLoopbackOrigin() && isLoopbackUrl(url)) {
+        (options as RequestInit & { targetAddressSpace?: 'local' }).targetAddressSpace =
+            'local';
     }
 
     return fetch(url, options);
