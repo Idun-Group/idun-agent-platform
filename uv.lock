@@ -2020,7 +2020,7 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
-version = "0.4.7"
+version = "0.4.8"
 source = { editable = "libs/idun_agent_engine" }
 dependencies = [
     { name = "ag-ui-adk" },
@@ -2047,6 +2047,7 @@ dependencies = [
     { name = "langgraph" },
     { name = "langgraph-checkpoint-postgres" },
     { name = "langgraph-checkpoint-sqlite" },
+    { name = "langsmith" },
     { name = "mcp" },
     { name = "openinference-instrumentation-google-adk" },
     { name = "openinference-instrumentation-guardrails" },
@@ -2096,6 +2097,7 @@ requires-dist = [
     { name = "langgraph", specifier = ">=1.0.0,<2.0.0" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=3.0.0,<4.0.0" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0.0,<4.0.0" },
+    { name = "langsmith", specifier = ">=0.3.0,<1.0.0" },
     { name = "mcp", specifier = ">=1.0.0,<2.0.0" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.0,<2.0.0" },
     { name = "openinference-instrumentation-guardrails", specifier = ">=0.1.0,<2.0.0" },
@@ -2135,7 +2137,7 @@ dev = [
 
 [[package]]
 name = "idun-agent-manager"
-version = "0.4.7"
+version = "0.4.8"
 source = { editable = "services/idun_agent_manager" }
 dependencies = [
     { name = "alembic" },
@@ -2293,7 +2295,7 @@ dev = [
 
 [[package]]
 name = "idun-agent-schema"
-version = "0.4.7"
+version = "0.4.8"
 source = { editable = "libs/idun_agent_schema" }
 dependencies = [
     { name = "pydantic" },

@@ -54,6 +54,7 @@ const PROVIDERS: Provider[] = [
         fields: [
             { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'ls__...', required: true },
             { key: 'projectName', label: 'Project Name', type: 'text', placeholder: 'my-project' },
+            { key: 'endpoint', label: 'Endpoint', type: 'text', placeholder: 'https://api.smith.langchain.com' },
         ],
     },
     {

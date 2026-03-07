@@ -1143,12 +1143,6 @@ export interface components {
              */
             api_key: string;
             /**
-             * Project Id
-             * @description The project identifier (corresponds to project id in LangSmith).
-             * @default
-             */
-            project_id: string;
-            /**
              * Project Name
              * @description The name of the project in LangSmith to bucket these traces under (e.g., prod-chatbot-v1).
              * @default
@@ -1160,24 +1154,6 @@ export interface components {
              * @default
              */
             endpoint: string;
-            /**
-             * Trace Name
-             * @description The name for the trace or tracing session.
-             * @default
-             */
-            trace_name: string;
-            /**
-             * Tracing Enabled
-             * @description A toggle to globally turn tracing on or off.
-             * @default false
-             */
-            tracing_enabled: boolean;
-            /**
-             * Capture Inputs Outputs
-             * @description A toggle to decide if the full text of LLM inputs and outputs should be logged.
-             * @default false
-             */
-            capture_inputs_outputs: boolean;
         };
         /**
          * MCPServer
