@@ -2,23 +2,52 @@
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any, cast
 
+from idun_agent_schema.engine.mcp_server import MCPServer
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import Connection
 
 if TYPE_CHECKING:
     from google.adk.tools import McpToolset
+    from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
     from mcp import StdioServerParameters
 
 try:
     from google.adk.tools import McpToolset
+    from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
     from mcp import StdioServerParameters
 except ImportError:
     McpToolset = None  # type: ignore
+    StdioConnectionParams = None  # type: ignore
     StdioServerParameters = None  # type: ignore
 
-from idun_agent_schema.engine.mcp_server import MCPServer
+
+class _DeepcopySafeStderr:
+    """Stderr proxy that survives ``copy.deepcopy`` / ``model_copy(deep=True)``.
+
+    Google ADK ``McpToolset`` stores an ``errlog`` attribute that defaults to
+    ``sys.stderr`` (a ``TextIOWrapper``).  ``TextIOWrapper`` cannot be pickled
+    or deep-copied, which causes ``ag_ui_adk`` to crash when it deep-copies
+    the ADK agent.
+
+    This thin wrapper delegates writes to the *current* ``sys.stderr`` at call
+    time (so it follows any runtime reassignment) and simply returns ``self``
+    on ``__deepcopy__`` — there is no mutable state to duplicate.
+    """
+
+    def write(self, s: str) -> int:
+        return sys.stderr.write(s)
+
+    def flush(self) -> None:
+        sys.stderr.flush()
+
+    def writable(self) -> bool:
+        return True
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> _DeepcopySafeStderr:
+        return self
 
 
 class MCPClientRegistry:
@@ -90,6 +119,7 @@ class MCPClientRegistry:
                 "google-adk and mcp packages are required for ADK toolsets."
             )
 
+        safe_errlog = _DeepcopySafeStderr()
         toolsets = []
         for config in self._configs:
             if config.transport == "stdio":
@@ -105,9 +135,15 @@ class MCPClientRegistry:
                     encoding_error_handler=config.encoding_error_handler or "strict",
                 )
 
+                connection_params = (
+                    StdioConnectionParams(server_params=server_params)
+                    if StdioConnectionParams is not None
+                    else server_params
+                )
+
                 toolset = McpToolset(
-                    # name=config.name,
-                    connection_params=server_params
+                    connection_params=connection_params,
+                    errlog=safe_errlog,
                 )
                 toolsets.append(toolset)
             # TODO: Add support for SSE/HTTP transports when available in ADK/MCP

@@ -1,9 +1,10 @@
+import copy
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from idun_agent_schema.engine.mcp_server import MCPServer
 
-from idun_agent_engine.mcp.registry import MCPClientRegistry
+from idun_agent_engine.mcp.registry import MCPClientRegistry, _DeepcopySafeStderr
 
 
 @pytest.mark.unit
@@ -263,22 +264,31 @@ class TestMCPRegistryGetADKToolsets:
 
         mock_toolset_class = MagicMock()
         mock_params_class = MagicMock()
+        mock_conn_params_class = MagicMock()
 
         with patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset_class):
             with patch(
                 "idun_agent_engine.mcp.registry.StdioServerParameters",
                 mock_params_class,
             ):
-                toolsets = registry.get_adk_toolsets()
+                with patch(
+                    "idun_agent_engine.mcp.registry.StdioConnectionParams",
+                    mock_conn_params_class,
+                ):
+                    toolsets = registry.get_adk_toolsets()
 
-                mock_params_class.assert_called_once()
-                call_kwargs = mock_params_class.call_args[1]
-                assert call_kwargs["command"] == "test-cmd"
-                assert call_kwargs["args"] == ["arg1", "arg2"]
-                assert call_kwargs["env"] == {"KEY": "value"}
+                    mock_params_class.assert_called_once()
+                    call_kwargs = mock_params_class.call_args[1]
+                    assert call_kwargs["command"] == "test-cmd"
+                    assert call_kwargs["args"] == ["arg1", "arg2"]
+                    assert call_kwargs["env"] == {"KEY": "value"}
 
-                mock_toolset_class.assert_called_once()
-                assert len(toolsets) == 1
+                    mock_conn_params_class.assert_called_once()
+
+                    mock_toolset_class.assert_called_once()
+                    toolset_kwargs = mock_toolset_class.call_args[1]
+                    assert isinstance(toolset_kwargs["errlog"], _DeepcopySafeStderr)
+                    assert len(toolsets) == 1
 
     def test_get_adk_toolsets_uses_encoding_defaults(self):
         configs = [
@@ -298,11 +308,15 @@ class TestMCPRegistryGetADKToolsets:
                 "idun_agent_engine.mcp.registry.StdioServerParameters",
                 mock_params_class,
             ):
-                registry.get_adk_toolsets()
+                with patch(
+                    "idun_agent_engine.mcp.registry.StdioConnectionParams",
+                    MagicMock(),
+                ):
+                    registry.get_adk_toolsets()
 
-                call_kwargs = mock_params_class.call_args[1]
-                assert call_kwargs["encoding"] == "utf-8"
-                assert call_kwargs["encoding_error_handler"] == "strict"
+                    call_kwargs = mock_params_class.call_args[1]
+                    assert call_kwargs["encoding"] == "utf-8"
+                    assert call_kwargs["encoding_error_handler"] == "strict"
 
     def test_get_adk_toolsets_returns_toolsets_with_connection_params(self):
         configs = [
@@ -319,6 +333,46 @@ class TestMCPRegistryGetADKToolsets:
 
         assert len(adk_toolsets) > 0
         assert all(hasattr(toolset, "_connection_params") for toolset in adk_toolsets)
+
+
+@pytest.mark.unit
+class TestDeepcopySafeStderr:
+    def test_write_delegates_to_stderr(self, capsys):
+        proxy = _DeepcopySafeStderr()
+        proxy.write("hello from proxy\n")
+        proxy.flush()
+        captured = capsys.readouterr()
+        assert "hello from proxy" in captured.err
+
+    def test_writable_returns_true(self):
+        proxy = _DeepcopySafeStderr()
+        assert proxy.writable() is True
+
+    def test_deepcopy_returns_same_instance(self):
+        proxy = _DeepcopySafeStderr()
+        copied = copy.deepcopy(proxy)
+        assert copied is proxy
+
+    def test_adk_toolset_with_safe_errlog_survives_deepcopy(self):
+        """The core bug scenario: McpToolset with safe errlog can be deep-copied."""
+        configs = [
+            MCPServer(
+                name="test-server",
+                transport="stdio",
+                command="echo",
+                args=["hello"],
+            )
+        ]
+        registry = MCPClientRegistry(configs=configs)
+        toolsets = registry.get_adk_toolsets()
+        assert len(toolsets) == 1
+
+        toolset = toolsets[0]
+        # This is the operation that previously failed with:
+        # TypeError: cannot pickle 'TextIOWrapper' instances
+        copied = copy.deepcopy(toolset)
+        assert copied is not None
+        assert hasattr(copied, "_errlog")
 
 
 @pytest.fixture
