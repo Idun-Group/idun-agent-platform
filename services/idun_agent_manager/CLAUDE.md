@@ -22,6 +22,7 @@ services/idun_agent_manager/
 │   │   └── routers/
 │   │       ├── auth.py            # Google OIDC SSO + username/password auth
 │   │       ├── agents.py          # Agent CRUD + API key generation + config endpoint
+│   │       ├── prompts.py         # Prompt CRUD + versioning + agent assignment
 │   │       ├── guardrails.py      # Guardrail config CRUD
 │   │       ├── mcp_servers.py     # MCP server config CRUD
 │   │       ├── observability.py   # Observability config CRUD
@@ -36,6 +37,8 @@ services/idun_agent_manager/
 │       └── models/
 │           ├── settings.py        # Pydantic Settings (nested: Database, Auth, Google)
 │           ├── managed_agent.py   # ManagedAgentModel
+│           ├── managed_prompt.py  # ManagedPromptModel (append-only versioned prompts)
+│           ├── agent_prompt_assignment.py  # AgentPromptAssignmentModel (many-to-many junction)
 │           ├── managed_guardrail.py
 │           ├── managed_mcp_server.py
 │           ├── managed_memory.py
@@ -57,6 +60,7 @@ All resource routes are prefixed with `/api/v1/` and require authentication (ses
 |---|---|---|---|
 | `/api/v1/auth` | `auth.py` | Public | Login/signup/logout/callback/me |
 | `/api/v1/agents` | `agents.py` | Session + Workspace | Agent CRUD, API key gen, config fetch |
+| `/api/v1/prompts` | `prompts.py` | Session + Workspace | Prompt CRUD, versioning, agent assignment |
 | `/api/v1/guardrails` | `guardrails.py` | Session + Workspace | Guardrail config CRUD |
 | `/api/v1/mcp-servers` | `mcp_servers.py` | Session + Workspace | MCP server config CRUD |
 | `/api/v1/observability` | `observability.py` | Session + Workspace | Observability config CRUD |
@@ -74,6 +78,21 @@ All resource routes are prefixed with `/api/v1/` and require authentication (ses
 - `DELETE /agents/{id}` — Delete agent
 - `GET /agents/key?agent_id=...` — Generate API key (hashed with `scrypt`, stored as `agent_hash`)
 - `GET /agents/config` — Fetch config by API key (Bearer token auth, used by engine `--source manager`)
+
+### Prompt-Specific Endpoints
+
+Prompts use **append-only versioning** — content is immutable after creation. Version numbers auto-increment per `prompt_id` within a workspace. The `latest` tag is auto-managed server-side.
+
+- `POST /prompts/` — Create new version (auto-increments version, shifts `latest` tag)
+- `GET /prompts/` — List prompts (filterable by `prompt_id`, `tag`, `version`; paginated)
+- `GET /prompts/{id}` — Get prompt by UUID
+- `PATCH /prompts/{id}` — Update tags only (content immutable; `latest` re-derived server-side)
+- `DELETE /prompts/{id}` — Delete version; promotes `latest` to next-highest if needed
+- `GET /prompts/agent/{agent_id}` — List prompts assigned to an agent
+- `POST /prompts/{id}/assign/{agent_id}` — Assign a prompt version to an agent
+- `DELETE /prompts/{id}/assign/{agent_id}` — Unassign a prompt from an agent
+
+Assigned prompts are injected into the `engine_config.prompts` list in the `GET /agents/config` endpoint.
 
 ### CRUD Pattern
 
@@ -144,6 +163,8 @@ On signup (SSO or basic), the system:
 | `workspaces` | `id` (UUID PK), `name`, `slug` (unique) |
 | `memberships` | `id` (UUID PK), `user_id` FK, `workspace_id` FK, `role`. Unique: `(user_id, workspace_id)` |
 | `managed_agents` | `id` (UUID PK), `name`, `status`, `engine_config` (JSONB), `agent_hash`, `workspace_id` FK |
+| `managed_prompts` | `id` (UUID PK), `prompt_id`, `version`, `content` (Text), `tags` (JSONB), `workspace_id` FK. Unique: `(workspace_id, prompt_id, version)` |
+| `agent_prompt_assignments` | `agent_id` FK (PK), `prompt_id` FK (PK). Composite PK, CASCADE delete on both FKs |
 | `managed_guardrails` | `id` (UUID PK), `name`, `guardrail_config` (JSONB), `workspace_id` FK |
 | `managed_mcp_servers` | `id` (UUID PK), `name`, `mcp_server_config` (JSONB), `workspace_id` FK |
 | `managed_observabilities` | `id` (UUID PK), `name`, `observability_config` (JSONB), `workspace_id` FK |

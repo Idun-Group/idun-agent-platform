@@ -2020,7 +2020,7 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
-version = "0.4.7"
+version = "0.4.8"
 source = { editable = "libs/idun_agent_engine" }
 dependencies = [
     { name = "ag-ui-adk" },
@@ -2135,7 +2135,7 @@ dev = [
 
 [[package]]
 name = "idun-agent-manager"
-version = "0.4.7"
+version = "0.4.8"
 source = { editable = "services/idun_agent_manager" }
 dependencies = [
     { name = "alembic" },
@@ -2293,15 +2293,17 @@ dev = [
 
 [[package]]
 name = "idun-agent-schema"
-version = "0.4.7"
+version = "0.4.8"
 source = { editable = "libs/idun_agent_schema" }
 dependencies = [
+    { name = "jinja2" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "jinja2", specifier = ">=3.1.0,<4.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0,<3.0.0" },
 ]
