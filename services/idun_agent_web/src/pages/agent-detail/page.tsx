@@ -14,6 +14,7 @@ import {
 } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
+import EnrollmentSection from '../../components/agent-detail/tabs/overview-tab/sections/enrollment-section';
 import {
     ArrowLeft,
     RotateCcw,
@@ -213,6 +214,12 @@ export default function AgentDetailPage() {
                     );
                 })}
             </TabsNav>
+
+            {agent && (
+                <div style={{ marginBottom: '24px' }}>
+                    <EnrollmentSection agent={agent} />
+                </div>
+            )}
 
             <ContentArea>
                 <Suspense fallback={<Loader />}>
