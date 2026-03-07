@@ -11,9 +11,19 @@ import { WorkspaceProvider } from './hooks/use-workspace.tsx';
 import { ToggleThemeModeProvider } from './hooks/use-toggle-theme-mode.tsx';
 import { LoaderProvider } from './hooks/use-loader.tsx';
 import { AuthProvider } from './hooks/use-auth.tsx';
+import { PostHogProvider } from '@posthog/react';
+import { runtimeConfig } from './utils/runtime-config.ts';
+
+const posthogOptions = {
+    api_host: runtimeConfig.POSTHOG_HOST,
+    person_profiles: 'identified_only' as const,
+    capture_pageview: true,
+    capture_pageleave: true,
+};
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
+        <PostHogProvider apiKey={runtimeConfig.POSTHOG_KEY} options={posthogOptions}>
         <BrowserRouter>
             <ToggleThemeModeProvider>
                 <WorkspaceProvider>
@@ -41,6 +51,7 @@ createRoot(document.getElementById('root')!).render(
                 </WorkspaceProvider>
             </ToggleThemeModeProvider>
         </BrowserRouter>
+        </PostHogProvider>
     </StrictMode>
 
 )
