@@ -3,13 +3,23 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.db.session import Base
+
+if TYPE_CHECKING:
+    from app.infrastructure.db.models.agent_guardrail import AgentGuardrailModel
+    from app.infrastructure.db.models.agent_integration import AgentIntegrationModel
+    from app.infrastructure.db.models.agent_mcp_server import AgentMCPServerModel
+    from app.infrastructure.db.models.agent_observability import (
+        AgentObservabilityModel,
+    )
+    from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
+    from app.infrastructure.db.models.managed_sso import ManagedSSOModel
 
 
 class ManagedAgentModel(Base):
@@ -40,4 +50,52 @@ class ManagedAgentModel(Base):
         ForeignKey("workspaces.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+    )
+
+    # 1:1 resource FK columns
+    memory_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("managed_memories.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    sso_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("managed_ssos.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+
+    # 1:1 relationships
+    memory: Mapped[ManagedMemoryModel | None] = relationship(
+        "ManagedMemoryModel", lazy="selectin"
+    )
+    sso: Mapped[ManagedSSOModel | None] = relationship(
+        "ManagedSSOModel", lazy="selectin"
+    )
+
+    # Many-to-many junction relationships
+    guardrail_associations: Mapped[list[AgentGuardrailModel]] = relationship(
+        "AgentGuardrailModel",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    mcp_server_associations: Mapped[list[AgentMCPServerModel]] = relationship(
+        "AgentMCPServerModel",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    observability_associations: Mapped[list[AgentObservabilityModel]] = relationship(
+        "AgentObservabilityModel",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    integration_associations: Mapped[list[AgentIntegrationModel]] = relationship(
+        "AgentIntegrationModel",
+        back_populates="agent",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )

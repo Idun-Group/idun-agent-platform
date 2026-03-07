@@ -368,6 +368,14 @@ const DiscoverSpinner = styled.div`
     animation: ${spin} 0.8s linear infinite;
 `;
 
+const AgentCountBadge = styled.span`
+    font-size: 11px;
+    color: hsl(var(--muted-foreground));
+    display: flex;
+    align-items: center;
+    gap: 4px;
+`;
+
 const BodyActions = styled.div`
     display: flex;
     gap: 10px;
@@ -669,6 +677,12 @@ const MCPPage: React.FC = () => {
                                         </Section>
                                     </BodyGrid>
 
+                                    {(app.agentCount ?? 0) > 0 && (
+                                        <AgentCountBadge>
+                                            Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}
+                                        </AgentCountBadge>
+                                    )}
+
                                     <BodyActions>
                                         <EditBtn onClick={() => handleEdit(app)}>Edit</EditBtn>
                                         <DeleteBtn onClick={() => handleDeleteRequest(app)}>Remove</DeleteBtn>
@@ -695,6 +709,9 @@ const MCPPage: React.FC = () => {
                 onClose={() => setAppToDelete(null)}
                 onConfirm={handleDeleteConfirm}
                 itemName={appToDelete?.name ?? ''}
+                description={(appToDelete?.agentCount ?? 0) > 0
+                    ? `This MCP server is used by ${appToDelete!.agentCount} agent${appToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
+                    : undefined}
             />
         </PageWrapper>
     );

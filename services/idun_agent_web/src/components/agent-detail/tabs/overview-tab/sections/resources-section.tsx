@@ -402,7 +402,7 @@ export default function ResourcesSection({
 
     /** Get currently-assigned resource IDs for a category */
     const getAssignedIdsForCategory = (category: ResourceCategory): string[] => {
-        const currentSelections = extractSelectionsFromAgent(agent.engine_config, framework, resources);
+        const currentSelections = extractSelectionsFromAgent(agent, framework, resources);
         switch (category) {
             case 'Observability': return Object.values(currentSelections.selectedObservabilityApps);
             case 'MCP': return currentSelections.selectedMCPIds;
@@ -434,7 +434,7 @@ export default function ResourcesSection({
         if (!category || !agent) return;
         setIsSavingPicker(true);
         try {
-            const currentSelections = extractSelectionsFromAgent(agent.engine_config, framework, resources);
+            const currentSelections = extractSelectionsFromAgent(agent, framework, resources);
 
             switch (category) {
                 case 'Observability': {
@@ -471,7 +471,7 @@ export default function ResourcesSection({
                 agentType: agent.engine_config?.agent?.type || framework,
                 agentConfig: extractAgentConfig(agent.engine_config),
             };
-            const payload = buildAgentPatchPayload(formState, currentSelections, resources);
+            const payload = buildAgentPatchPayload(formState, currentSelections);
             await patchAgent(agent.id, payload);
             notify.success('Resources updated');
             onAgentRefresh?.();
@@ -491,7 +491,7 @@ export default function ResourcesSection({
         if (!category || !agent) return;
         setIsQuickAddPickerOpen(false);
         try {
-            const currentSelections = extractSelectionsFromAgent(agent.engine_config, framework, resources);
+            const currentSelections = extractSelectionsFromAgent(agent, framework, resources);
 
             if (category === 'Memory') {
                 const app = resources.memoryApps.find(a => a.id === id);
@@ -511,7 +511,7 @@ export default function ResourcesSection({
                 agentType: agent.engine_config?.agent?.type || framework,
                 agentConfig: extractAgentConfig(agent.engine_config),
             };
-            const payload = buildAgentPatchPayload(formState, currentSelections, resources);
+            const payload = buildAgentPatchPayload(formState, currentSelections);
             await patchAgent(agent.id, payload);
             notify.success(`${name} assigned to agent`);
             onAgentRefresh?.();

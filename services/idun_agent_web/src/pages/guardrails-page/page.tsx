@@ -218,6 +218,14 @@ const ConfigValue = styled.span`
     text-align: right;
 `;
 
+const AgentCountBadge = styled.span`
+    font-size: 11px;
+    color: hsl(var(--muted-foreground));
+    display: flex;
+    align-items: center;
+    gap: 4px;
+`;
+
 const CardActions = styled.div`
     display: flex;
     gap: 10px;
@@ -454,6 +462,12 @@ const GuardrailsPage: React.FC = () => {
                                     </>
                                 )}
 
+                                {(app.agentCount ?? 0) > 0 && (
+                                    <AgentCountBadge>
+                                        Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}
+                                    </AgentCountBadge>
+                                )}
+
                                 <CardActions>
                                     <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
                                     <DeleteBtn onClick={() => handleDeleteRequest(app)}>Remove</DeleteBtn>
@@ -480,6 +494,9 @@ const GuardrailsPage: React.FC = () => {
                 onClose={() => setAppToDelete(null)}
                 onConfirm={handleDeleteConfirm}
                 itemName={appToDelete?.name ?? ''}
+                description={(appToDelete?.agentCount ?? 0) > 0
+                    ? `This guardrail is used by ${appToDelete!.agentCount} agent${appToDelete!.agentCount !== 1 ? 's' : ''}. Remove the guardrail from those agents first.`
+                    : undefined}
             />
         </PageWrapper>
     );

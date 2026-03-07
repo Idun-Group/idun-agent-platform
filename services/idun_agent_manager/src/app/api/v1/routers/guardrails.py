@@ -19,7 +19,7 @@ from idun_agent_schema.manager.managed_guardrail import (
     ManagedGuardrailRead,
 )
 from pydantic import TypeAdapter
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
@@ -28,7 +28,9 @@ from app.api.v1.deps import (
     get_session,
     require_workspace,
 )
+from app.infrastructure.db.models.agent_guardrail import AgentGuardrailModel
 from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
+from app.services.engine_config import recompute_engine_config
 
 router = APIRouter()
 
@@ -67,13 +69,16 @@ async def _get_guardrail(
     return model
 
 
-def _model_to_schema(model: ManagedGuardrailModel) -> ManagedGuardrailRead:
+def _model_to_schema(
+    model: ManagedGuardrailModel, agent_count: int = 0
+) -> ManagedGuardrailRead:
     """Transform database model to response schema."""
     guardrail = TypeAdapter(GuardrailConfig).validate_python(model.guardrail_config)
     return ManagedGuardrailRead(
         id=model.id,  # type: ignore
         name=model.name,
         guardrail=guardrail,
+        agent_count=agent_count,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -144,7 +149,20 @@ async def list_guardrails(
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
-    return [_model_to_schema(r) for r in rows]
+    # Batch count agents per guardrail
+    counts: dict[UUID, int] = {}
+    if rows:
+        count_stmt = (
+            select(
+                AgentGuardrailModel.guardrail_id,
+                func.count(func.distinct(AgentGuardrailModel.agent_id)),
+            )
+            .where(AgentGuardrailModel.guardrail_id.in_([r.id for r in rows]))
+            .group_by(AgentGuardrailModel.guardrail_id)
+        )
+        counts = dict(await session.execute(count_stmt))
+
+    return [_model_to_schema(r, counts.get(r.id, 0)) for r in rows]
 
 
 @router.get(
@@ -160,7 +178,11 @@ async def get_guardrail(
 ) -> ManagedGuardrailRead:
     """Get a managed guardrail configuration by ID."""
     model = await _get_guardrail(id, session, workspace_id)
-    return _model_to_schema(model)
+    count_stmt = select(func.count(func.distinct(AgentGuardrailModel.agent_id))).where(
+        AgentGuardrailModel.guardrail_id == model.id
+    )
+    agent_count = await session.scalar(count_stmt) or 0
+    return _model_to_schema(model, agent_count)
 
 
 @router.delete(
@@ -176,6 +198,18 @@ async def delete_guardrail(
 ) -> None:
     """Delete a managed guardrail configuration permanently."""
     model = await _get_guardrail(id, session, workspace_id)
+
+    # RESTRICT: check if any agent references this guardrail
+    stmt = select(AgentGuardrailModel.agent_id).where(
+        AgentGuardrailModel.guardrail_id == model.id
+    )
+    result = await session.execute(stmt)
+    if result.first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete guardrail: it is referenced by one or more agents",
+        )
+
     await session.delete(model)
     await session.flush()
 
@@ -201,6 +235,14 @@ async def patch_guardrail(
     model.updated_at = datetime.now(UTC)
 
     await session.flush()
-    await session.refresh(model)
 
+    # Cascade recompute: update all agents referencing this guardrail
+    stmt = select(AgentGuardrailModel.agent_id).where(
+        AgentGuardrailModel.guardrail_id == model.id
+    )
+    result = await session.execute(stmt)
+    for (agent_id,) in result.all():
+        await recompute_engine_config(session, agent_id)
+
+    await session.refresh(model)
     return _model_to_schema(model)

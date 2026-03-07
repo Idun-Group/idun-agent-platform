@@ -1,7 +1,6 @@
-import type { ApplicationConfig, AppType } from '../types/application.types';
+import type { ApplicationConfig } from '../types/application.types';
 import type { ManagedSSO } from '../services/sso';
 import type { ManagedIntegration } from '../services/integrations';
-import { mapConfigToApi } from '../services/applications';
 
 // Mapping of AgentFramework enum to OpenAPI schema definition names
 export const FRAMEWORK_SCHEMA_MAP: Record<string, string> = {
@@ -12,9 +11,9 @@ export const FRAMEWORK_SCHEMA_MAP: Record<string, string> = {
     'CUSTOM': 'BaseAgentConfig'
 };
 
-export const OBSERVABILITY_TYPES: AppType[] = ['Langfuse', 'Phoenix', 'GoogleCloudLogging', 'GoogleCloudTrace', 'LangSmith'];
+export const OBSERVABILITY_TYPES: string[] = ['Langfuse', 'Phoenix', 'GoogleCloudLogging', 'GoogleCloudTrace', 'LangSmith'];
 
-export const FRAMEWORK_MEMORY_MAP: Record<string, AppType[]> = {
+export const FRAMEWORK_MEMORY_MAP: Record<string, string[]> = {
     'LANGGRAPH': ['PostgreSQL', 'SQLite'],
     'ADK': ['AdkVertexAi', 'AdkDatabase'],
     'HAYSTACK': [],
@@ -33,14 +32,6 @@ export const OBSERVABILITY_PROVIDER_MAP: Record<string, string> = {
     'GCP_TRACE': 'GoogleCloudTrace',
     'langsmith': 'LangSmith',
     'LANGSMITH': 'LangSmith'
-};
-
-export const OBSERVABILITY_PROVIDER_REVERSE_MAP: Record<string, string> = {
-    'Langfuse': 'LANGFUSE',
-    'Phoenix': 'PHOENIX',
-    'GoogleCloudLogging': 'GCP_LOGGING',
-    'GoogleCloudTrace': 'GCP_TRACE',
-    'LangSmith': 'LANGSMITH'
 };
 
 export interface AvailableResources {
@@ -105,145 +96,65 @@ export function extractAgentConfig(engineConfig: any): Record<string, any> {
 }
 
 /**
- * Extract selections from a BackendAgent's engine_config, matching against available resources.
+ * Extract selections from a BackendAgent response.
+ * Reads resource IDs from the `resources` field (relational references).
  */
 export function extractSelectionsFromAgent(
-    engineConfig: any,
+    agentResponse: any,
     framework: string,
     resources: AvailableResources
 ): AgentSelections {
     const selections = getDefaultSelections();
-    const config = engineConfig?.agent?.config || {};
+    const refs = agentResponse?.resources;
 
-    // Memory / Checkpointer
-    const checkpointer = config.checkpointer;
-    const sessionService = config.session_service;
+    if (!refs) {
+        // No resource references — return defaults (in-memory, no resources)
+        selections.selectedMemoryType = framework === 'ADK' ? 'AdkInMemory' : 'InMemoryCheckpointConfig';
+        return selections;
+    }
 
-    if (framework === 'ADK') {
-        if (sessionService) {
-            if (sessionService.type === 'in_memory') {
-                selections.selectedMemoryType = 'AdkInMemory';
-            } else {
-                const typeMap: Record<string, string> = { 'vertex_ai': 'AdkVertexAi', 'database': 'AdkDatabase' };
-                const memType = typeMap[sessionService.type];
-                if (memType) {
-                    selections.selectedMemoryType = memType;
-                    const match = resources.memoryApps.find(app => {
-                        if (app.type !== memType) return false;
-                        if (memType === 'AdkDatabase') return app.config.connectionString === sessionService.db_url;
-                        if (memType === 'AdkVertexAi') return app.config.project_id === sessionService.project_id;
-                        return false;
-                    });
-                    if (match) selections.selectedMemoryAppId = match.id;
-                }
-            }
-        } else {
-            selections.selectedMemoryType = 'AdkInMemory';
-        }
-    } else if (checkpointer) {
-        if (checkpointer.type === 'memory') {
-            selections.selectedMemoryType = 'InMemoryCheckpointConfig';
-        } else {
-            const memType = checkpointer.type === 'sqlite' ? 'SQLite' : 'PostgreSQL';
-            selections.selectedMemoryType = memType;
-            if (checkpointer.db_url) {
-                const match = resources.memoryApps.find(app => app.type === memType && app.config.connectionString === checkpointer.db_url);
-                if (match) selections.selectedMemoryAppId = match.id;
-            }
+    // Memory
+    if (refs.memory_id) {
+        selections.selectedMemoryAppId = refs.memory_id;
+        const memApp = resources.memoryApps.find(a => a.id === refs.memory_id);
+        if (memApp) {
+            selections.selectedMemoryType = memApp.type;
         }
     } else {
-        selections.selectedMemoryType = 'InMemoryCheckpointConfig';
-    }
-
-    // Observability
-    const obs = engineConfig?.observability || config.observability;
-    if (Array.isArray(obs)) {
-        const types: string[] = [];
-        const selectedApps: Record<string, string> = {};
-        for (const o of obs) {
-            if (o.provider && o.enabled !== false) {
-                const type = OBSERVABILITY_PROVIDER_MAP[o.provider];
-                if (type) {
-                    types.push(type);
-                    if (o.config) {
-                        const match = resources.observabilityApps.find(app => {
-                            if (app.type !== type) return false;
-                            const keys = Object.keys(o.config);
-                            return keys.length > 0 && keys.every(k => app.config[k] === o.config[k]);
-                        });
-                        if (match) selectedApps[type] = match.id;
-                    }
-                }
-            }
-        }
-        selections.selectedObservabilityTypes = [...new Set(types)];
-        selections.selectedObservabilityApps = selectedApps;
-    }
-
-    // Guardrails — match by config_id→type mapping, then fall back to name
-    const CONFIG_ID_TO_TYPE: Record<string, AppType> = {
-        ban_list: 'BanList',
-        detect_pii: 'DetectPII',
-        nsfw_text: 'NSFWText',
-        toxic_language: 'ToxicLanguage',
-        gibberish_text: 'GibberishText',
-        bias_check: 'BiasCheck',
-        competition_check: 'CompetitionCheck',
-        correct_language: 'CorrectLanguage',
-        restrict_to_topic: 'RestrictTopic',
-        model_armor: 'ModelArmor',
-        custom_llm_guardrail: 'CustomLLMGuardrail',
-        detect_jailbreak: 'DetectJailbreak',
-        rag_hallucination: 'RagHallucination',
-    };
-    const guards = engineConfig?.guardrails;
-    if (guards?.input && Array.isArray(guards.input)) {
-        const ids: string[] = [];
-        const usedAppIds = new Set<string>();
-        for (const g of guards.input) {
-            const expectedType = g.config_id ? CONFIG_ID_TO_TYPE[g.config_id] : undefined;
-            // Try matching by type first (most reliable), then by name
-            const match = resources.guardApps.find(app =>
-                !usedAppIds.has(app.id) && (
-                    (expectedType && app.type === expectedType) ||
-                    (g.name && app.name === g.name)
-                )
-            );
-            if (match) {
-                ids.push(match.id);
-                usedAppIds.add(match.id);
-            }
-        }
-        selections.selectedGuardIds = [...new Set(ids)];
-    }
-
-    // MCP Servers — handle both snake_case and camelCase field names
-    const mcp = engineConfig?.mcp_servers || engineConfig?.mcpServers;
-    if (Array.isArray(mcp)) {
-        const ids: string[] = [];
-        for (const m of mcp) {
-            const match = resources.mcpApps.find(app => app.name === m.name);
-            if (match) ids.push(match.id);
-        }
-        selections.selectedMCPIds = [...new Set(ids)];
+        selections.selectedMemoryType = framework === 'ADK' ? 'AdkInMemory' : 'InMemoryCheckpointConfig';
     }
 
     // SSO
-    const sso = engineConfig?.sso;
-    if (sso) {
-        const match = resources.ssoConfigs.find(c => c.sso.issuer === sso.issuer && c.sso.clientId === sso.clientId);
-        if (match) selections.selectedSSOId = match.id;
+    if (refs.sso_id) {
+        selections.selectedSSOId = refs.sso_id;
+    }
+
+    // Guardrails
+    if (refs.guardrail_ids && Array.isArray(refs.guardrail_ids)) {
+        selections.selectedGuardIds = refs.guardrail_ids.map((g: any) => typeof g === 'string' ? g : g.id);
+    }
+
+    // MCP servers
+    if (refs.mcp_server_ids && Array.isArray(refs.mcp_server_ids)) {
+        selections.selectedMCPIds = refs.mcp_server_ids;
+    }
+
+    // Observability
+    if (refs.observability_ids && Array.isArray(refs.observability_ids)) {
+        for (const obsId of refs.observability_ids) {
+            const app = resources.observabilityApps.find(a => a.id === obsId);
+            if (app) {
+                if (!selections.selectedObservabilityTypes.includes(app.type)) {
+                    selections.selectedObservabilityTypes.push(app.type);
+                }
+                selections.selectedObservabilityApps[app.type] = app.id;
+            }
+        }
     }
 
     // Integrations
-    const ints = engineConfig?.integrations;
-    if (Array.isArray(ints)) {
-        const ids: string[] = [];
-        for (const i of ints) {
-            const match = resources.integrationConfigs.find(c => c.integration.provider === i.provider);
-            if (match) ids.push(match.id);
-        }
-        selections.selectedIntegrationIds = [...new Set(ids)];
+    if (refs.integration_ids && Array.isArray(refs.integration_ids)) {
+        selections.selectedIntegrationIds = refs.integration_ids;
     }
 
     return selections;
@@ -289,11 +200,12 @@ export function validateAgentForm(state: AgentFormState): string | null {
 
 /**
  * Build the PATCH payload for updating an agent.
+ * Sends resource IDs via a `resources` field — the backend assembles the
+ * full engine_config from relational data.
  */
 export function buildAgentPatchPayload(
     state: AgentFormState,
     selections: AgentSelections,
-    resources: AvailableResources
 ): Record<string, any> {
     const parsedPort = Number(state.serverPort);
     const finalAgentConfig = { ...state.agentConfig };
@@ -309,90 +221,27 @@ export function buildAgentPatchPayload(
         }
     }
 
-    // 1. Memory
-    if (state.agentType === 'ADK') {
-        if (selections.selectedMemoryType === 'AdkInMemory' || !selections.selectedMemoryAppId) {
-            finalAgentConfig.session_service = { type: 'in_memory' };
-        } else if (selections.selectedMemoryAppId) {
-            const memApp = resources.memoryApps.find(a => a.id === selections.selectedMemoryAppId);
-            if (memApp) {
-                const typeMap: Record<string, string> = { 'AdkVertexAi': 'vertex_ai', 'AdkDatabase': 'database' };
-                const type = typeMap[memApp.type];
-                if (type) {
-                    const sessionConfig: Record<string, any> = { type };
-                    if (type === 'vertex_ai') {
-                        sessionConfig.project_id = memApp.config.project_id;
-                        sessionConfig.location = memApp.config.location;
-                        sessionConfig.reasoning_engine_app_name = memApp.config.reasoning_engine_app_name;
-                    } else if (type === 'database') {
-                        sessionConfig.db_url = memApp.config.connectionString || memApp.config.db_url;
-                    }
-                    finalAgentConfig.session_service = sessionConfig;
-                }
-            }
-        }
-        finalAgentConfig.memory_service = null;
-    } else {
-        if (selections.selectedMemoryType === 'InMemoryCheckpointConfig' || !selections.selectedMemoryAppId) {
-            finalAgentConfig.checkpointer = { type: 'memory' };
-        } else if (selections.selectedMemoryAppId) {
-            const memApp = resources.memoryApps.find(a => a.id === selections.selectedMemoryAppId);
-            if (memApp) {
-                const typeMap: Record<string, string> = { 'SQLite': 'sqlite', 'PostgreSQL': 'postgres' };
-                finalAgentConfig.checkpointer = {
-                    type: typeMap[memApp.type] || memApp.type.toLowerCase(),
-                    db_url: memApp.config.connectionString
-                };
-            }
-        }
-    }
+    // Strip any embedded resource fields from agent config — these are
+    // now managed via FK/junction references, not inline config.
+    delete finalAgentConfig.checkpointer;
+    delete finalAgentConfig.session_service;
+    delete finalAgentConfig.memory_service;
 
-    // 2. Observability
-    const observabilityConfigs: any[] = [];
+    // Build guardrail refs with position metadata
+    const guardrailRefs = selections.selectedGuardIds.map((id, index) => ({
+        id,
+        position: 'input' as const,
+        sort_order: index,
+    }));
+
+    // Build observability IDs from the per-type app selections
+    const observabilityIds: string[] = [];
     for (const type of selections.selectedObservabilityTypes) {
         const appId = selections.selectedObservabilityApps[type];
         if (appId) {
-            const app = resources.observabilityApps.find(a => a.id === appId);
-            if (app) {
-                const providerKey = OBSERVABILITY_PROVIDER_REVERSE_MAP[app.type] || app.type.toLowerCase();
-                observabilityConfigs.push({
-                    enabled: true,
-                    provider: providerKey,
-                    config: app.config
-                });
-            }
+            observabilityIds.push(appId);
         }
     }
-
-    // 3. MCP & Guardrails
-    const mcpConfigs = selections.selectedMCPIds
-        .map(id => {
-            const app = resources.mcpApps.find(a => a.id === id);
-            return app ? mapConfigToApi('MCPServer', app.config, app.name) : null;
-        })
-        .filter(Boolean);
-
-    const guardConfigObjects = selections.selectedGuardIds
-        .map(id => {
-            const app = resources.guardApps.find(a => a.id === id);
-            return app ? mapConfigToApi(app.type, app.config) : null;
-        })
-        .filter(Boolean);
-
-    const guardrailsConfig = guardConfigObjects.length > 0
-        ? { input: guardConfigObjects, output: [] }
-        : null;
-
-    // 4. SSO
-    const selectedSSO = selections.selectedSSOId
-        ? resources.ssoConfigs.find(c => c.id === selections.selectedSSOId)
-        : null;
-    const ssoConfig = selectedSSO ? selectedSSO.sso : null;
-
-    // 5. Integrations
-    const integrationsConfig = selections.selectedIntegrationIds
-        .map(id => resources.integrationConfigs.find(c => c.id === id)?.integration)
-        .filter(Boolean);
 
     return {
         name: state.name.trim(),
@@ -401,11 +250,14 @@ export function buildAgentPatchPayload(
         engine_config: {
             server: { api: { port: parsedPort } },
             agent: { type: state.agentType, config: finalAgentConfig },
-            mcp_servers: mcpConfigs.length > 0 ? mcpConfigs : null,
-            guardrails: guardrailsConfig,
-            observability: observabilityConfigs,
-            sso: ssoConfig,
-            integrations: integrationsConfig.length > 0 ? integrationsConfig : null
-        }
+        },
+        resources: {
+            memory_id: selections.selectedMemoryAppId || null,
+            sso_id: selections.selectedSSOId || null,
+            guardrail_ids: guardrailRefs.length > 0 ? guardrailRefs : [],
+            mcp_server_ids: selections.selectedMCPIds,
+            observability_ids: observabilityIds,
+            integration_ids: selections.selectedIntegrationIds,
+        },
     };
 }

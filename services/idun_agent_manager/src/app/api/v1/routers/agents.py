@@ -1,16 +1,12 @@
-"""Managed Agent API (MVP).
+"""Managed Agent API.
 
-This router exposes a minimal set of endpoints to create, read, list, update,
-delete, and fetch configuration for managed agents. Each managed agent stores a
-complete `EngineConfig`.
+This router exposes endpoints to create, read, list, update,
+delete, and fetch configuration for managed agents.
 
-MVP assumptions and behavior:
-- API keys are generated per agent via `/key` and stored on the agent record as
-  `agent_hash`. The API key includes a static prefix and must be sent as a
-  Bearer token to access `/config`.
-- Database access uses SQLAlchemy async sessions. Errors are surfaced as simple
-  HTTP problem responses with relevant status codes.
-- All resource endpoints are scoped to the authenticated user's active workspace.
+Agents reference managed resources (guardrails, MCP servers, observability,
+memory, SSO, integrations) via FK columns and junction tables. The full
+EngineConfig is materialized as a JSONB cache in `engine_config` and
+recomputed on every write that affects the config.
 
 Endpoints:
     POST   /          - Create a new managed agent
@@ -30,6 +26,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.manager import (
+    AgentResourceIds,
     AgentStatus,
     ApiKeyResponse,
     ManagedAgentCreate,
@@ -50,6 +47,11 @@ from app.api.v1.deps import (
 )
 from app.api.v1.routers.auth import encrypt_payload
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
+from app.services.engine_config import (
+    extract_resource_ids,
+    recompute_engine_config,
+    sync_resources,
+)
 
 router = APIRouter()
 
@@ -91,16 +93,19 @@ async def _get_agent(
 
 
 def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
-    """Transform database model to response schema."""
-    engine_config = EngineConfig(**model.engine_config)
+    """Transform database model to response schema.
 
+    Returns the materialized engine_config cache as-is (no JOINs),
+    plus extracted resource IDs from loaded relationships.
+    """
     return ManagedAgentRead(
         id=model.id,  # type: ignore
         base_url=model.base_url,
         name=model.name,
         status=AgentStatus(model.status),
         version=model.version,
-        engine_config=engine_config.model_dump(),  # type: ignore
+        engine_config=model.engine_config,
+        resources=extract_resource_ids(model),
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -122,13 +127,16 @@ async def create_agent(
     """Create a new managed agent."""
     body = await raw_request.json()
 
+    # Extract resources before Pydantic validation
+    resources_data = body.pop("resources", None)
+
+    # Backward compat: convert guardrails in old-format engine_config
     if "engine_config" in body and "guardrails" in body["engine_config"]:
         body["engine_config"]["guardrails"] = convert_guardrail(
             body["engine_config"]["guardrails"]
         )
 
     request = ManagedAgentCreate(**body)
-
     now = datetime.now(UTC)
 
     engine_config = EngineConfig(**request.engine_config.model_dump())
@@ -147,8 +155,14 @@ async def create_agent(
 
     session.add(model)
     await session.flush()
-    await session.refresh(model)
 
+    # Sync resource associations and recompute materialized config
+    resources = AgentResourceIds(**(resources_data or {}))
+    sync_resources(model, resources)
+    await session.flush()
+    await recompute_engine_config(session, model.id)
+
+    await session.refresh(model)
     return _model_to_schema(model)
 
 
@@ -331,6 +345,10 @@ async def patch_agent(
 
     body = await raw_request.json()
 
+    # Extract resources before Pydantic validation
+    resources_data = body.pop("resources", None)
+
+    # Backward compat: convert guardrails in old-format engine_config
     if "engine_config" in body and "guardrails" in body["engine_config"]:
         body["engine_config"]["guardrails"] = convert_guardrail(
             body["engine_config"]["guardrails"]
@@ -344,9 +362,13 @@ async def patch_agent(
     model.engine_config = engine_config.model_dump()
     model.updated_at = datetime.now(UTC)
 
+    # Sync resource associations and recompute materialized config
+    resources = AgentResourceIds(**(resources_data or {}))
+    sync_resources(model, resources)
     await session.flush()
-    await session.refresh(model)
+    await recompute_engine_config(session, model.id)
 
+    await session.refresh(model)
     return _model_to_schema(model)
 
 

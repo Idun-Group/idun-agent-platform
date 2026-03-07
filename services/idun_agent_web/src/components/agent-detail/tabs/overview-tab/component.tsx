@@ -110,7 +110,7 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
             const freshResources = await loadResources();
             if (freshResources && agent) {
                 const extracted = extractSelectionsFromAgent(
-                    agent.engine_config,
+                    agent,
                     agent.framework || 'LANGGRAPH',
                     freshResources
                 );
@@ -153,7 +153,7 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
 
         setIsSaving(true);
         try {
-            const payload = buildAgentPatchPayload(formState, selections, resources);
+            const payload = buildAgentPatchPayload(formState, selections);
             await onSave(payload);
         } finally {
             setIsSaving(false);
