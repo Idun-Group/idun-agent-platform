@@ -154,6 +154,17 @@ def create_observability_handler(
             "provider": "gcp_trace",
         }
 
+    if provider_upper == ObservabilityProvider.LANGSMITH:
+        from .langsmith.langsmith_handler import LangsmithHandler
+
+        handler = LangsmithHandler(options)
+        return handler, {
+            "enabled": True,
+            "provider": "langsmith",
+            "endpoint": os.getenv("LANGSMITH_ENDPOINT"),
+            "project": os.getenv("LANGSMITH_PROJECT"),
+        }
+
     return None, {
         "enabled": False,
         "provider": provider,

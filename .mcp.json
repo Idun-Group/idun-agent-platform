@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@localhost:5432/idun_agents"
+      ],
+      "env": {
+        "POSTGRES_URL": "postgresql://postgres:postgres@localhost:5432/idun_agents"
+      }
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/geoffreyharrazi/Documents/GitHub/idun-agent-platform"
+      ],
+      "env": {
+        "IDUN_PLATFORM_PATH": "/Users/geoffreyharrazi/Documents/GitHub/idun-agent-platform"
+      }
+    },
+    "git": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "mcp-server-git",
+        "--repository",
+        "/Users/geoffreyharrazi/Documents/GitHub/idun-agent-platform"
+      ],
+      "env": {
+        "IDUN_PLATFORM_PATH": "/Users/geoffreyharrazi/Documents/GitHub/idun-agent-platform"
+      }
+    }
+  }
+}

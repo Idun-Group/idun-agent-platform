@@ -2499,12 +2499,6 @@
                         "description": "The unique authentication key from the LangSmith settings page.",
                         "default": ""
                     },
-                    "project_id": {
-                        "type": "string",
-                        "title": "Project Id",
-                        "description": "The project identifier (corresponds to project id in LangSmith).",
-                        "default": ""
-                    },
                     "project_name": {
                         "type": "string",
                         "title": "Project Name",
@@ -2516,24 +2510,6 @@
                         "title": "Endpoint",
                         "description": "The URL endpoint, used primarily if you are self-hosting LangSmith or using a specific enterprise instance. (e.g., https://api.smith.langchain.com)",
                         "default": ""
-                    },
-                    "trace_name": {
-                        "type": "string",
-                        "title": "Trace Name",
-                        "description": "The name for the trace or tracing session.",
-                        "default": ""
-                    },
-                    "tracing_enabled": {
-                        "type": "boolean",
-                        "title": "Tracing Enabled",
-                        "description": "A toggle to globally turn tracing on or off.",
-                        "default": false
-                    },
-                    "capture_inputs_outputs": {
-                        "type": "boolean",
-                        "title": "Capture Inputs Outputs",
-                        "description": "A toggle to decide if the full text of LLM inputs and outputs should be logged.",
-                        "default": false
                     }
                 },
                 "type": "object",

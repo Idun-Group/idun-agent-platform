@@ -60,6 +60,7 @@ dependencies = [
     "openinference-instrumentation-guardrails>=0.1.0,<2.0.0",
     "PyJWT[crypto]>=2.9.0,<3.0.0",
     # Observability and telemetry
+    "langsmith>=0.3.0,<1.0.0",
     "langfuse>=2.60.8,<4.0.0",
     "langfuse-haystack>=2.3.0",
     "arize-phoenix-otel>=0.2.0,<1.0.0",
@@ -214,6 +215,7 @@ markers = [
     "requires_langfuse: Test requires Langfuse service",
     "requires_phoenix: Test requires Phoenix service",
     "requires_postgres: Test requires PostgreSQL",
+    "requires_langsmith: Test requires LangSmith service",
 ]
 
 [tool.coverage.run]

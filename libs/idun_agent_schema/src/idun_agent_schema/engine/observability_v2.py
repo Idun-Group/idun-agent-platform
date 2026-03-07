@@ -155,10 +155,6 @@ class LangsmithConfig(BaseModel):
         default="",
         description="The unique authentication key from the LangSmith settings page.",
     )
-    project_id: str = Field(
-        default="",
-        description="The project identifier (corresponds to project id in LangSmith).",
-    )
     project_name: str = Field(
         default="",
         description="The name of the project in LangSmith to bucket these traces under (e.g., prod-chatbot-v1).",
@@ -166,14 +162,4 @@ class LangsmithConfig(BaseModel):
     endpoint: str = Field(
         default="",
         description="The URL endpoint, used primarily if you are self-hosting LangSmith or using a specific enterprise instance. (e.g., https://api.smith.langchain.com)",
-    )
-    trace_name: str = Field(
-        default="", description="The name for the trace or tracing session."
-    )
-    tracing_enabled: bool = Field(
-        default=False, description="A toggle to globally turn tracing on or off."
-    )
-    capture_inputs_outputs: bool = Field(
-        default=False,
-        description="A toggle to decide if the full text of LLM inputs and outputs should be logged.",
     )

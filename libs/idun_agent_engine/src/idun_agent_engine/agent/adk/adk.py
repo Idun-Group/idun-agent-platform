@@ -183,6 +183,46 @@ class AdkAgent(agent_base.BaseAgent):
                     f"Error checking observability config for ADK instrumentation: {e}"
                 )
 
+        if observability_config:
+            try:
+
+                def _is_langsmith_provider(c: Any) -> bool:
+                    provider = getattr(c, "provider", None)
+                    if provider is None and isinstance(c, dict):
+                        provider = c.get("provider")
+                    if provider is not None and hasattr(provider, "value"):
+                        provider = provider.value
+                    return str(provider).lower() == "langsmith"
+
+                is_langsmith_enabled = any(
+                    _is_langsmith_provider(config)
+                    for config in observability_config
+                )
+
+                if is_langsmith_enabled:
+                    try:
+                        from langsmith.integrations.google_adk import (
+                            configure_google_adk,
+                        )
+
+                        configure_google_adk()
+                        logger.info(
+                            "LangSmith Google ADK integration configured"
+                        )
+                    except ImportError:
+                        logger.warning(
+                            "langsmith[google-adk] not installed, "
+                            "skipping ADK instrumentation"
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to configure LangSmith ADK: {e}"
+                        )
+            except Exception as e:
+                logger.warning(
+                    f"Error checking LangSmith config for ADK instrumentation: {e}"
+                )
+
         # Initialize Session Service
         await self._initialize_session_service()
 
