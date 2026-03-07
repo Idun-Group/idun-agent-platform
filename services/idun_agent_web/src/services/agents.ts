@@ -235,6 +235,41 @@ export async function fetchAgentGraph(baseUrl: string): Promise<string | null> {
     }
 }
 
+export interface EngineHealth {
+    status: string;
+    engineVersion: string | null;
+}
+
+export async function fetchEngineHealth(baseUrl: string): Promise<EngineHealth | null> {
+    const url = baseUrl.endsWith('/') ? `${baseUrl}health` : `${baseUrl}/health`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
+    try {
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return {
+            status: data?.status ?? 'unknown',
+            engineVersion: data?.engine_version ?? data?.version ?? null,
+        };
+    } catch {
+        clearTimeout(timer);
+        return null;
+    }
+}
+
+export async function fetchLatestEngineVersion(): Promise<string | null> {
+    try {
+        const res = await fetch('https://pypi.org/pypi/idun-agent-engine/json');
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data?.info?.version ?? null;
+    } catch {
+        return null;
+    }
+}
+
 interface ApiKeyResponse {
     api_key: string;
 }
