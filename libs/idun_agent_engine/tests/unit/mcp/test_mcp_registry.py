@@ -1,4 +1,5 @@
 import copy
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -347,6 +348,10 @@ class TestDeepcopySafeStderr:
     def test_writable_returns_true(self):
         proxy = _DeepcopySafeStderr()
         assert proxy.writable() is True
+
+    def test_fileno_delegates_to_stderr(self):
+        proxy = _DeepcopySafeStderr()
+        assert proxy.fileno() == sys.stderr.fileno()
 
     def test_deepcopy_returns_same_instance(self):
         proxy = _DeepcopySafeStderr()

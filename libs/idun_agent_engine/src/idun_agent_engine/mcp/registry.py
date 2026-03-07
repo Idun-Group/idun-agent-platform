@@ -46,6 +46,9 @@ class _DeepcopySafeStderr:
     def writable(self) -> bool:
         return True
 
+    def fileno(self) -> int:
+        return sys.stderr.fileno()
+
     def __deepcopy__(self, memo: dict[int, Any]) -> _DeepcopySafeStderr:
         return self
 
