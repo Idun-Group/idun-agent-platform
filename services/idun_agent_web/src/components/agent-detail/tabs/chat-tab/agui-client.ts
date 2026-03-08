@@ -27,12 +27,14 @@ function chatMessagesToAgUI(messages: ChatMessage[]): Message[] {
   });
 }
 
-export function buildCurlCommand(options: Pick<StreamOptions, 'agentUrl' | 'endpoint' | 'threadId' | 'runId' | 'messages' | 'tools' | 'context' | 'forwardedProps' | 'state'>): string {
-  const { agentUrl, endpoint, threadId, runId, messages, tools = [], context = [], forwardedProps = {}, state = {} } = options;
-  const url = `${agentUrl}${endpoint}`;
+export function buildCurlCommand(options: Pick<StreamOptions, 'agentUrl' | 'endpoint' | 'threadId' | 'runId' | 'messages' | 'tools' | 'context' | 'forwardedProps' | 'state'> & { capabilities?: AgentCapabilities | null }): string {
+  const { agentUrl, endpoint, threadId, runId, messages, tools = [], context = [], forwardedProps = {}, state = {}, capabilities } = options;
+
+  // Use /agent/run when capabilities are available
+  const url = capabilities ? `${agentUrl}/agent/run` : `${agentUrl}${endpoint}`;
 
   let body: Record<string, unknown>;
-  if (endpoint === '/agent/copilotkit/stream') {
+  if (capabilities || endpoint === '/agent/copilotkit/stream') {
     body = {
       threadId,
       runId: runId || uuidv4(),

@@ -1185,6 +1185,7 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
             tools: safeParse(toolsJson, []),
             context: safeParse(contextJson, []),
             forwardedProps: safeParse(forwardedPropsJson, {}),
+            capabilities,
           })}
           onClose={() => setCurlOpen(false)}
         />
