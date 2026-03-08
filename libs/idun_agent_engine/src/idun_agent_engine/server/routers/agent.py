@@ -11,12 +11,17 @@ from copilotkit import LangGraphAGUIAgent
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
+from idun_agent_schema.engine.capabilities import AgentCapabilities
 from idun_agent_schema.engine.guardrails import Guardrail
 from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.auth import get_verified_user
-from idun_agent_engine.server.dependencies import get_agent, get_copilotkit_agent
+from idun_agent_engine.server.dependencies import (
+    get_agent,
+    get_capabilities,
+    get_copilotkit_agent,
+)
 
 logger = logging.getLogger(__name__)
 agent_router = APIRouter()
@@ -30,6 +35,76 @@ def _run_guardrails(
     for guard in guardrails:
         if guard.position == position and not guard.validate(text):  # type: ignore[attr-defined]
             raise HTTPException(status_code=429, detail=guard.reject_message)  # type: ignore[attr-defined]
+
+
+@agent_router.get("/capabilities")
+async def capabilities(
+    caps: Annotated[AgentCapabilities, Depends(get_capabilities)],
+):
+    """Return the agent's capability descriptor for UI auto-configuration."""
+    return caps
+
+
+@agent_router.post("/run")
+async def run(
+    input_data: RunAgentInput,
+    request: Request,
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
+):
+    """Canonical AG-UI interaction endpoint.
+
+    Accepts RunAgentInput, returns SSE stream of AG-UI events.
+    """
+    last_msg = input_data.messages[-1] if input_data.messages else None
+    last_content = str(last_msg.content)[:120] if last_msg else "<empty>"
+    logger.info(f"Run — thread_id={input_data.thread_id}, message={last_content}")
+
+    guardrails = getattr(request.app.state, "guardrails", [])
+    if guardrails and input_data.messages:
+        _run_guardrails(
+            guardrails, message=input_data.messages[-1].content, position="input"
+        )
+
+    accept_header = request.headers.get("accept")
+    encoder = EventEncoder(accept=accept_header or "")
+
+    async def event_generator():
+        try:
+            async for event in agent.run(input_data):
+                try:
+                    yield encoder.encode(event)
+                except Exception as encoding_error:
+                    logger.error(
+                        f"Event encoding error: {encoding_error}", exc_info=True
+                    )
+                    from ag_ui.core import EventType, RunErrorEvent
+
+                    error_event = RunErrorEvent(
+                        type=EventType.RUN_ERROR,
+                        message=f"Event encoding failed: {encoding_error}",
+                        code="ENCODING_ERROR",
+                    )
+                    try:
+                        yield encoder.encode(error_event)
+                    except Exception:
+                        yield 'event: error\ndata: {"error": "Event encoding failed"}\n\n'
+                    break
+        except Exception as agent_error:
+            logger.error(f"Agent run error: {agent_error}", exc_info=True)
+            from ag_ui.core import EventType, RunErrorEvent
+
+            error_event = RunErrorEvent(
+                type=EventType.RUN_ERROR,
+                message=f"Agent execution failed: {agent_error}",
+                code="FRAMEWORK_ERROR",
+            )
+            try:
+                yield encoder.encode(error_event)
+            except Exception:
+                yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
+
+    return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
 
 
 @agent_router.get("/graph")
@@ -66,7 +141,8 @@ async def get_config(request: Request):
     return {"config": config}
 
 
-@agent_router.post("/stream")
+# TODO: DEPRECATED — remove when /agent/run migration is complete
+@agent_router.post("/stream", deprecated=True)
 async def stream(
     request: ChatRequest,
     agent: Annotated[BaseAgent, Depends(get_agent)],
@@ -93,7 +169,8 @@ async def stream(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@agent_router.post("/copilotkit/stream")
+# TODO: DEPRECATED — remove when /agent/run migration is complete
+@agent_router.post("/copilotkit/stream", deprecated=True)
 async def copilotkit_stream(
     input_data: RunAgentInput,
     request: Request,
@@ -257,10 +334,12 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
             logger.error(f"Invoke failed: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e)) from e
 
+    # TODO: DEPRECATED — remove when /agent/run migration is complete
     app.add_api_route(
         "/agent/invoke",
         invoke,
         methods=["POST"],
         response_model=ChatResponse,
         tags=["Agent"],
+        deprecated=True,
     )

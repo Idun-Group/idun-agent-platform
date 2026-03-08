@@ -86,6 +86,19 @@ async def configure_app(app: FastAPI, engine_config):
             logger.warning(f"⚠️ Failed to setup AGUI routes: {e}")
             # Continue even if AGUI setup fails
 
+    # Cache agent capabilities for discovery endpoint
+    if hasattr(agent_instance, "discover_capabilities"):
+        try:
+            app.state.capabilities = agent_instance.discover_capabilities()
+            logger.info(
+                f"📋 Agent capabilities discovered: "
+                f"input={app.state.capabilities.input.mode}, "
+                f"output={app.state.capabilities.output.mode}"
+            )
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to discover agent capabilities: {e}")
+            app.state.capabilities = None
+
     # Setup integrations (WhatsApp, etc.)
     if engine_config.integrations:
         from ..integrations import setup_integrations
