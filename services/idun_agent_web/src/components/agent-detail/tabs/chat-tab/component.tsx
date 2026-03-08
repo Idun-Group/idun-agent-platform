@@ -503,6 +503,7 @@ function ErrorBanner({ error, onDismiss }: { error: AgentError; onDismiss: () =>
     <div className="error-banner">
       <div className="error-banner-header">
         <div className="error-banner-title">
+          {error.code && <span className="error-code-badge">{error.code}</span>}
           {error.status && <span className="error-status">{error.status}</span>}
           <span className="error-message">{error.message}</span>
         </div>
@@ -587,25 +588,240 @@ function safeParse<T>(json: string, fallback: T): T {
   try { return json.trim() ? JSON.parse(json) : fallback; } catch { return fallback; }
 }
 
+// --- Schema Field ---
+const TEXTAREA_FIELD_NAMES = ['description', 'content', 'text', 'body', 'message', 'prompt', 'instructions', 'notes'];
+
+function SchemaField({
+  name,
+  prop,
+  required,
+  value,
+  onChange,
+}: {
+  name: string;
+  prop: Record<string, unknown>;
+  required: boolean;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}) {
+  const fieldType = prop.type as string | undefined;
+  const description = prop.description as string | undefined;
+  const isTextarea = fieldType === 'string' && TEXTAREA_FIELD_NAMES.some(t => name.toLowerCase().includes(t));
+
+  if (fieldType === 'boolean') {
+    return (
+      <div className="schema-field">
+        <label className="schema-checkbox">
+          <input
+            type="checkbox"
+            checked={!!value}
+            onChange={e => onChange(e.target.checked)}
+          />
+          <span>
+            {name}
+            {required && <span className="schema-field-required">*</span>}
+          </span>
+        </label>
+        {description && <span className="schema-field-desc">{description}</span>}
+      </div>
+    );
+  }
+
+  if (fieldType === 'number' || fieldType === 'integer') {
+    return (
+      <div className="schema-field">
+        <label className="schema-field-label">
+          {name}
+          {required && <span className="schema-field-required">*</span>}
+        </label>
+        {description && <span className="schema-field-desc">{description}</span>}
+        <input
+          type="number"
+          className="schema-field-input"
+          value={value === null || value === undefined ? '' : String(value)}
+          onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
+          step={fieldType === 'integer' ? 1 : 'any'}
+        />
+      </div>
+    );
+  }
+
+  if (fieldType === 'array' || fieldType === 'object') {
+    const strVal = typeof value === 'string' ? value : JSON.stringify(value ?? (fieldType === 'array' ? [] : {}), null, 2);
+    return (
+      <div className="schema-field">
+        <label className="schema-field-label">
+          {name}
+          {required && <span className="schema-field-required">*</span>}
+        </label>
+        {description && <span className="schema-field-desc">{description}</span>}
+        <textarea
+          className="schema-field-textarea"
+          value={strVal as string}
+          onChange={e => onChange(e.target.value)}
+          rows={4}
+          spellCheck={false}
+        />
+      </div>
+    );
+  }
+
+  // Default: string (or unknown type)
+  if (isTextarea) {
+    return (
+      <div className="schema-field">
+        <label className="schema-field-label">
+          {name}
+          {required && <span className="schema-field-required">*</span>}
+        </label>
+        {description && <span className="schema-field-desc">{description}</span>}
+        <textarea
+          className="schema-field-textarea"
+          value={(value as string) ?? ''}
+          onChange={e => onChange(e.target.value)}
+          rows={3}
+          spellCheck={false}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="schema-field">
+      <label className="schema-field-label">
+        {name}
+        {required && <span className="schema-field-required">*</span>}
+      </label>
+      {description && <span className="schema-field-desc">{description}</span>}
+      <input
+        type="text"
+        className="schema-field-input"
+        value={(value as string) ?? ''}
+        onChange={e => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+// --- Structured Output Viewer ---
+function StructuredOutputViewer({ data, schema: _schema }: {
+  data: unknown;
+  schema?: Record<string, unknown> | null;
+}) {
+  const [rawView, setRawView] = useState(false);
+
+  if (data === null || data === undefined) return null;
+
+  const isScalar = (v: unknown): v is string | number | boolean =>
+    typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
+
+  const isFlatObject = (v: unknown): v is Record<string, string | number | boolean | null> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v) &&
+    Object.values(v as Record<string, unknown>).every(val => val === null || isScalar(val));
+
+  const isArrayOfFlatObjects = (v: unknown): v is Record<string, string | number | boolean | null>[] =>
+    Array.isArray(v) && v.length > 0 && v.every(isFlatObject);
+
+  const renderFormatted = () => {
+    if (typeof data === 'string') return <div>{data}</div>;
+
+    if (isArrayOfFlatObjects(data)) {
+      const keys = Array.from(new Set(data.flatMap(row => Object.keys(row))));
+      return (
+        <div className="output-table-wrap">
+          <table className="output-table">
+            <thead>
+              <tr>{keys.map(k => <th key={k}>{k}</th>)}</tr>
+            </thead>
+            <tbody>
+              {data.map((row, i) => (
+                <tr key={i}>
+                  {keys.map(k => <td key={k}>{row[k] === null ? <span className="output-null">null</span> : String(row[k])}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    if (isFlatObject(data)) {
+      return (
+        <table className="output-kv">
+          <tbody>
+            {Object.entries(data).map(([k, v]) => (
+              <tr key={k}>
+                <td className="output-kv-key">{k}</td>
+                <td className="output-kv-val">{v === null ? <span className="output-null">null</span> : String(v)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+
+    return <pre className="output-json">{JSON.stringify(data, null, 2)}</pre>;
+  };
+
+  return (
+    <div className="structured-output">
+      <div className="structured-output-header">
+        <span className="structured-form-title">Output</span>
+        <button
+          className={`msg-btn ${rawView ? 'active' : ''}`}
+          onClick={() => setRawView(v => !v)}
+        >
+          {rawView ? 'Formatted' : 'Raw JSON'}
+        </button>
+      </div>
+      {rawView
+        ? <pre className="output-json">{JSON.stringify(data, null, 2)}</pre>
+        : renderFormatted()
+      }
+    </div>
+  );
+}
+
 // --- Structured Input Form ---
 function StructuredInputForm({
   schema,
-  outputSchema: _outputSchema,
+  outputSchema,
   onSubmit,
   isStreaming,
   lastResult,
+  error,
 }: {
   schema: Record<string, unknown>;
   outputSchema?: Record<string, unknown> | null;
   onSubmit: (data: unknown) => void;
   isStreaming: boolean;
   lastResult?: unknown;
+  error?: AgentError | null;
 }) {
+  const properties = schema?.properties as Record<string, Record<string, unknown>> | undefined;
+  const requiredFields = (schema?.required as string[]) || [];
+  const hasProperties = properties && typeof properties === 'object' && Object.keys(properties).length > 0;
+
+  const [formMode, setFormMode] = useState<'form' | 'json'>(hasProperties ? 'form' : 'json');
+
+  const [formValues, setFormValues] = useState<Record<string, unknown>>(() => {
+    if (!properties) return {};
+    const initial: Record<string, unknown> = {};
+    for (const [key, prop] of Object.entries(properties)) {
+      if (prop.type === 'string') initial[key] = '';
+      else if (prop.type === 'integer' || prop.type === 'number') initial[key] = null;
+      else if (prop.type === 'boolean') initial[key] = false;
+      else if (prop.type === 'array') initial[key] = '[]';
+      else if (prop.type === 'object') initial[key] = '{}';
+      else initial[key] = '';
+    }
+    return initial;
+  });
+
   const [inputJson, setInputJson] = useState(() => {
-    const properties = (schema as Record<string, unknown>)?.properties;
     if (!properties || typeof properties !== 'object') return '{}';
     const example: Record<string, unknown> = {};
-    for (const [key, prop] of Object.entries(properties as Record<string, Record<string, unknown>>)) {
+    for (const [key, prop] of Object.entries(properties)) {
       if (prop.type === 'string') example[key] = '';
       else if (prop.type === 'integer' || prop.type === 'number') example[key] = 0;
       else if (prop.type === 'boolean') example[key] = false;
@@ -615,81 +831,93 @@ function StructuredInputForm({
   });
   const [parseError, setParseError] = useState<string | null>(null);
 
+  const updateFormValue = (key: string, value: unknown) => {
+    setFormValues(prev => ({ ...prev, [key]: value }));
+  };
+
+  const collectFormData = (): unknown => {
+    if (!properties) return {};
+    const result: Record<string, unknown> = {};
+    for (const [key, prop] of Object.entries(properties)) {
+      const val = formValues[key];
+      if ((prop.type === 'array' || prop.type === 'object') && typeof val === 'string') {
+        try { result[key] = JSON.parse(val); } catch { result[key] = val; }
+      } else {
+        result[key] = val;
+      }
+    }
+    return result;
+  };
+
   const handleSubmit = () => {
-    try {
-      const parsed = JSON.parse(inputJson);
+    if (formMode === 'json') {
+      try {
+        const parsed = JSON.parse(inputJson);
+        setParseError(null);
+        onSubmit(parsed);
+      } catch (e) {
+        setParseError(`Invalid JSON: ${e}`);
+      }
+    } else {
       setParseError(null);
-      onSubmit(parsed);
-    } catch (e) {
-      setParseError(`Invalid JSON: ${e}`);
+      onSubmit(collectFormData());
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', flex: 1, overflow: 'auto' }}>
-      <div>
-        <label style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-          Input
-        </label>
-        <textarea
-          value={inputJson}
-          onChange={(e) => setInputJson(e.target.value)}
-          style={{
-            width: '100%',
-            minHeight: '120px',
-            fontFamily: 'monospace',
-            fontSize: '13px',
-            padding: '12px',
-            border: `1px solid ${parseError ? '#ef4444' : 'var(--border-color, #d1d5db)'}`,
-            borderRadius: '8px',
-            backgroundColor: 'var(--surface-primary, #fff)',
-            color: 'var(--text-primary, #111)',
-            resize: 'vertical',
-            boxSizing: 'border-box',
-          }}
-          spellCheck={false}
-        />
-        {parseError && (
-          <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{parseError}</div>
+    <div className="structured-form">
+      <div className="structured-form-header">
+        <span className="structured-form-title">Input</span>
+        {hasProperties && (
+          <button
+            className={`msg-btn ${formMode === 'json' ? 'active' : ''}`}
+            onClick={() => setFormMode(m => m === 'form' ? 'json' : 'form')}
+          >
+            {formMode === 'form' ? 'Raw JSON' : 'Form'}
+          </button>
         )}
       </div>
+
+      {formMode === 'form' && hasProperties ? (
+        <div className="schema-fields">
+          {Object.entries(properties).map(([name, prop]) => (
+            <SchemaField
+              key={name}
+              name={name}
+              prop={prop}
+              required={requiredFields.includes(name)}
+              value={formValues[name]}
+              onChange={v => updateFormValue(name, v)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="structured-json-input">
+          <textarea
+            className={`schema-field-textarea ${parseError ? 'invalid' : ''}`}
+            value={inputJson}
+            onChange={e => setInputJson(e.target.value)}
+            rows={8}
+            spellCheck={false}
+            placeholder='{"key": "value"}'
+          />
+          {parseError && <span className="structured-parse-error">{parseError}</span>}
+        </div>
+      )}
+
+      {error && (
+        <ErrorBanner error={error} onDismiss={() => { /* managed by parent */ }} />
+      )}
 
       <button
         onClick={handleSubmit}
         disabled={isStreaming}
-        style={{
-          padding: '10px 20px',
-          backgroundColor: isStreaming ? '#9ca3af' : 'var(--primary-color, #3b82f6)',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: isStreaming ? 'not-allowed' : 'pointer',
-          fontWeight: 600,
-          alignSelf: 'flex-start',
-        }}
+        className="btn-send structured-submit"
       >
         {isStreaming ? 'Running...' : 'Run Agent'}
       </button>
 
-      {lastResult !== undefined && lastResult !== null && (
-        <div>
-          <label style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-            Output
-          </label>
-          <pre style={{
-            padding: '12px',
-            backgroundColor: 'var(--surface-secondary, #f3f4f6)',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontFamily: 'monospace',
-            overflow: 'auto',
-            whiteSpace: 'pre-wrap',
-            border: '1px solid var(--border-color, #e5e7eb)',
-          }}>
-            {typeof lastResult === 'string' ? lastResult : JSON.stringify(lastResult, null, 2)}
-          </pre>
-        </div>
-      )}
+      <StructuredOutputViewer data={lastResult} schema={outputSchema} />
     </div>
   );
 }
@@ -834,39 +1062,32 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
 
       {/* Capabilities info bar */}
       {capabilities && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          padding: '8px 16px',
-          fontSize: '13px',
-          color: 'var(--text-secondary, #666)',
-          borderBottom: '1px solid var(--border-color, #e5e7eb)',
-          backgroundColor: 'var(--surface-secondary, #f9fafb)',
-        }}>
-          <span>
+        <div className="capabilities-bar">
+          <span className="capabilities-badge">{capabilities.framework}</span>
+          <span className="capabilities-info">
             Input: <strong>{capabilities.input.mode}</strong>
           </span>
-          <span>
+          <span className="capabilities-info">
             Output: <strong>{capabilities.output.mode}</strong>
+          </span>
+          <span className="capabilities-flags">
+            {capabilities.capabilities.streaming && <span className="capabilities-flag">Streaming</span>}
+            {capabilities.capabilities.history && <span className="capabilities-flag">History</span>}
+            {capabilities.capabilities.threadId && <span className="capabilities-flag">ThreadId</span>}
           </span>
           {capabilities.input.mode === 'structured' && (
             <button
+              className="toolbar-btn capabilities-toggle"
               onClick={() => setViewMode(viewMode === 'chat' ? 'form' : 'chat')}
-              style={{
-                marginLeft: 'auto',
-                padding: '4px 12px',
-                fontSize: '12px',
-                border: '1px solid var(--border-color, #d1d5db)',
-                borderRadius: '6px',
-                backgroundColor: 'transparent',
-                cursor: 'pointer',
-                color: 'inherit',
-              }}
             >
-              Switch to {viewMode === 'chat' ? 'Form' : 'Chat'}
+              {viewMode === 'chat' ? 'Form' : 'Chat'}
             </button>
           )}
+        </div>
+      )}
+      {!capabilities && agentUrl && (
+        <div className="capabilities-bar capabilities-warning">
+          <span className="capabilities-info">Capabilities unavailable — using chat mode</span>
         </div>
       )}
 
@@ -880,6 +1101,7 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
               onSubmit={(jsonData) => sendMessage(JSON.stringify(jsonData))}
               isStreaming={isStreaming}
               lastResult={structuredOutput}
+              error={error}
             />
           ) : (
             <>
