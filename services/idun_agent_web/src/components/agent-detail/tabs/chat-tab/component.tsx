@@ -1123,18 +1123,33 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
       <div className="app-body">
         <div className="chat-panel">
           {viewMode === 'form' ? (
-            <StructuredInputForm
-              schema={capabilities?.input.schema || {}}
-              outputSchema={capabilities?.output.schema}
-              onSubmit={(jsonData) => sendMessage(JSON.stringify(jsonData))}
-              isStreaming={isStreaming}
-              lastResult={structuredOutput}
-              error={error}
-            />
+            <>
+              <StructuredInputForm
+                schema={capabilities?.input.schema || {}}
+                outputSchema={capabilities?.output.schema}
+                onSubmit={(jsonData) => sendMessage(JSON.stringify(jsonData))}
+                isStreaming={isStreaming}
+                lastResult={structuredOutput}
+                error={error}
+              />
+              {/* Show streaming messages in form mode (some agents produce text alongside structured output) */}
+              {messages.filter(m => m.role === 'assistant' && m.content).length > 0 && (
+                <div className="form-messages">
+                  <div className="form-messages-header">
+                    <span className="structured-form-title">Agent Messages</span>
+                  </div>
+                  <div className="form-messages-list">
+                    {messages.filter(m => m.role === 'assistant' && m.content).map(msg => (
+                      <MessageBubble key={msg.id} msg={msg} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <>
               <div className="chat-messages">
-                {messages.length === 0 && (
+                {messages.length === 0 && !structuredOutput && (
                   <div className="empty-state">
                     <p>Send a message to start chatting with your agent.</p>
                     <p className="hint">Use the toolbar to switch endpoints, manage threads, or open the config panel for advanced options.</p>
@@ -1161,6 +1176,12 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                 )}
                 {error && (
                   <ErrorBanner error={error} onDismiss={clearError} />
+                )}
+                {/* Show structured output in chat mode when available */}
+                {structuredOutput && (
+                  <div className="chat-structured-output">
+                    <StructuredOutputViewer data={structuredOutput} schema={capabilities?.output.schema} />
+                  </div>
                 )}
                 <div ref={chatEndRef} />
               </div>

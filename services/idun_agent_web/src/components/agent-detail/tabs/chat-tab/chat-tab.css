@@ -1256,3 +1256,27 @@
   padding: 2px 8px; border-radius: 4px;
   text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0;
 }
+
+/* ── Form Mode Messages (for structured agents that also stream text) ── */
+.agui-chat .form-messages {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--chat-border);
+  margin-top: 4px;
+}
+.agui-chat .form-messages-header {
+  padding: 12px 0 8px;
+}
+.agui-chat .form-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ── Chat Mode Structured Output ── */
+.agui-chat .chat-structured-output {
+  padding: 8px 0;
+  border-top: 1px solid var(--chat-border);
+  margin-top: 8px;
+}
