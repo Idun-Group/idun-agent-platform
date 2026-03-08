@@ -1,10 +1,17 @@
 """ADK agent adapter implementing the BaseAgent protocol."""
 
+from __future__ import annotations
+
 import importlib.util
 import logging
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ag_ui.core import BaseEvent
+    from ag_ui.core.types import RunAgentInput
+    from idun_agent_schema.engine.capabilities import AgentCapabilities
 
 from ag_ui_adk import ADKAgent as ADKAGUIAgent
 from google.adk.apps.app import App
@@ -195,8 +202,7 @@ class AdkAgent(agent_base.BaseAgent):
                     return str(provider).lower() == "langsmith"
 
                 is_langsmith_enabled = any(
-                    _is_langsmith_provider(config)
-                    for config in observability_config
+                    _is_langsmith_provider(config) for config in observability_config
                 )
 
                 if is_langsmith_enabled:
@@ -206,18 +212,14 @@ class AdkAgent(agent_base.BaseAgent):
                         )
 
                         configure_google_adk()
-                        logger.info(
-                            "LangSmith Google ADK integration configured"
-                        )
+                        logger.info("LangSmith Google ADK integration configured")
                     except ImportError:
                         logger.warning(
                             "langsmith[google-adk] not installed, "
                             "skipping ADK instrumentation"
                         )
                     except Exception as e:
-                        logger.warning(
-                            f"Failed to configure LangSmith ADK: {e}"
-                        )
+                        logger.warning(f"Failed to configure LangSmith ADK: {e}")
             except Exception as e:
                 logger.warning(
                     f"Error checking LangSmith config for ADK instrumentation: {e}"
@@ -414,3 +416,56 @@ class AdkAgent(agent_base.BaseAgent):
         # Required to make this a generator
         if False:
             yield
+
+    def discover_capabilities(self) -> AgentCapabilities:
+        """Introspect the ADK agent for input/output schemas."""
+        from idun_agent_schema.engine.agent_framework import AgentFramework
+        from idun_agent_schema.engine.capabilities import (
+            AgentCapabilities,
+            CapabilityFlags,
+            InputDescriptor,
+            OutputDescriptor,
+        )
+
+        # ADK agent instance is wrapped inside an App; the raw agent
+        # was passed to ADKAGUIAgent. Try to access schema from the
+        # underlying agent object stored on the App.
+        agent = getattr(self._agent_instance, "root_agent", None)
+
+        input_schema = getattr(agent, "input_schema", None) if agent else None
+        output_schema = getattr(agent, "output_schema", None) if agent else None
+
+        input_mode: str = "chat"
+        input_json_schema = None
+        if input_schema is not None:
+            input_mode = "structured"
+            if hasattr(input_schema, "model_json_schema"):
+                input_json_schema = input_schema.model_json_schema()
+
+        output_mode: str = "text"
+        output_json_schema = None
+        if output_schema is not None:
+            output_mode = "structured"
+            if hasattr(output_schema, "model_json_schema"):
+                output_json_schema = output_schema.model_json_schema()
+
+        return AgentCapabilities(
+            version="1",
+            framework=AgentFramework.ADK,
+            capabilities=CapabilityFlags(
+                streaming=True,
+                history=True,
+                thread_id=True,
+            ),
+            input=InputDescriptor(mode=input_mode, schema_=input_json_schema),
+            output=OutputDescriptor(mode=output_mode, schema_=output_json_schema),
+        )
+
+    async def run(self, input_data: RunAgentInput) -> AsyncGenerator[BaseEvent, None]:
+        """Canonical AG-UI interaction entry point.
+
+        Delegates to ADKAGUIAgent for event generation.
+        """
+        copilotkit_agent = self.copilotkit_agent_instance
+        async for event in copilotkit_agent.run(input_data):
+            yield event
