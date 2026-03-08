@@ -69,7 +69,11 @@ async def slack_webhook(request: Request) -> Response:
     event = payload.event
 
     if event.type != "message" or event.bot_id:
-        logger.warning("Skipping non-user message event (type=%s, bot_id=%s)", event.type, event.bot_id)
+        logger.warning(
+            "Skipping non-user message event (type=%s, bot_id=%s)",
+            event.type,
+            event.bot_id,
+        )
         return Response(status_code=200)
 
     agent: BaseAgent | None = getattr(request.app.state, "agent", None)
