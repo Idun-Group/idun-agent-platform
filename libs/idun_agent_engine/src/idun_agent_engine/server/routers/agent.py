@@ -60,7 +60,9 @@ async def get_config(request: Request):
         )
 
     config = request.app.state.engine_config.agent
-    logger.debug(f"Returning config for agent '{config.config.name}' (type={config.type})")
+    logger.debug(
+        f"Returning config for agent '{config.config.name}' (type={config.type})"
+    )
     return {"config": config}
 
 
@@ -72,7 +74,9 @@ async def stream(
 ):
     """Process a message with the agent, streaming ag-ui events."""
     query_preview = request.query[:120] + ("..." if len(request.query) > 120 else "")
-    logger.info(f"Stream request — session_id={request.session_id}, query={query_preview}")
+    logger.info(
+        f"Stream request — session_id={request.session_id}, query={query_preview}"
+    )
     try:
 
         async def event_stream():
@@ -208,57 +212,45 @@ async def copilotkit_stream(
 def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
     """Register the /invoke route dynamically with the given input model.
 
-    Called from create_app after config is resolved, so the route
-    uses the correct input model for OpenAPI schema generation.
+    TODO: DEPRECATED — input_model is always ChatRequest now.
+    Remove when /agent/invoke shim is fully removed.
     """
-    is_custom = input_model is not ChatRequest
 
     async def invoke(
         request: Request,
         input_data: input_model,  # type: ignore[valid-type]
         agent: Annotated[BaseAgent, Depends(get_agent)],
         _user: Annotated[dict | None, Depends(get_verified_user)],
-    ) -> ChatResponse | dict:
+    ) -> ChatResponse:
         """Invoke the agent with a message and get a response."""
         guardrails = getattr(request.app.state, "guardrails", [])
         if guardrails:
-            if is_custom:
-                _run_guardrails(
-                    guardrails, message=input_data.model_dump(), position="input"
-                )
-            else:
-                _run_guardrails(
-                    guardrails, message={"query": input_data.query}, position="input"
-                )
+            _run_guardrails(
+                guardrails, message={"query": input_data.query}, position="input"
+            )
 
         try:
-            if is_custom:
+            query = input_data.query[:120]
+            logger.info(f"Invoke session={input_data.session_id} query={query}")
+            message = {
+                "query": input_data.query,
+                "session_id": input_data.session_id,
+            }
+            try:
                 start = time.monotonic()
-                response = await agent.invoke(input_data)
-                logger.info(f"Invoke completed in {time.monotonic() - start:.2f}s")
-                if isinstance(response, dict):
-                    return response
-                return {"result": response}
-            else:
-                query = input_data.query[:120]
-                logger.info(f"Invoke session={input_data.session_id} query={query}")
-                message = {
-                    "query": input_data.query,
-                    "session_id": input_data.session_id,
-                }
-                try:
-                    start = time.monotonic()
-                    response = await agent.invoke(message)
-                    logger.info(f"Invoke session={input_data.session_id} completed in {time.monotonic() - start:.2f}s response={str(response)[:200]}")
-                    return ChatResponse(
-                        session_id=input_data.session_id, response=response
-                    )
-                except Exception as e:
-                    logger.error(f"Invoke session={input_data.session_id} failed: {e}", exc_info=True)
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Make sure your input schema is {'query': 'your input', 'session_id': 'your-session-id'",
-                    ) from e
+                response = await agent.invoke(message)
+                logger.info(
+                    f"Invoke session={input_data.session_id} completed in {time.monotonic() - start:.2f}s response={str(response)[:200]}"
+                )
+                return ChatResponse(session_id=input_data.session_id, response=response)
+            except Exception as e:
+                logger.error(
+                    f"Invoke session={input_data.session_id} failed: {e}", exc_info=True
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Make sure your input schema is {'query': 'your input', 'session_id': 'your-session-id'",
+                ) from e
         except HTTPException:
             raise
         except Exception as e:  # noqa: BLE001
@@ -269,6 +261,6 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         "/agent/invoke",
         invoke,
         methods=["POST"],
-        response_model=ChatResponse | dict,
+        response_model=ChatResponse,
         tags=["Agent"],
     )

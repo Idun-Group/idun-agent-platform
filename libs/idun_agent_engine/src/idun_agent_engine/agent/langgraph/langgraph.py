@@ -42,7 +42,11 @@ def _extract_text_content(content: Any) -> str:
     for block in content:
         if isinstance(block, str):
             parts.append(block)
-        elif isinstance(block, dict) and block.get("type") == "text" and isinstance(block.get("text"), str):
+        elif (
+            isinstance(block, dict)
+            and block.get("type") == "text"
+            and isinstance(block.get("text"), str)
+        ):
             parts.append(block["text"])
     return "".join(parts) if parts else str(content)
 
@@ -56,8 +60,6 @@ class LanggraphAgent(agent_base.BaseAgent):
         self._agent_type = "LangGraph"
         self._input_schema: Any = None
         self._output_schema: Any = None
-        self._custom_input_model: Any = None
-        self._input_state_key: str | None = None
         self._agent_instance: Any = None
         self._copilotkit_agent_instance: LangGraphAGUIAgent | None = None
         self._checkpointer: Any = None
@@ -245,16 +247,8 @@ class LanggraphAgent(agent_base.BaseAgent):
                 self._infos["output_schema"] = str(self._output_schema)
             except Exception:
                 logger.warning("Could not parse schema")
-                self._input_schema = self._configuration.input_schema_definition
-                self._output_schema = self._configuration.output_schema_definition
                 self._infos["input_schema"] = "Cannot extract schema"
                 self._infos["output_schema"] = "Cannot extract schema"
-
-        else:
-            self._input_schema = self._configuration.input_schema_definition
-            self._output_schema = self._configuration.output_schema_definition
-
-        self._setup_custom_input_schema()
 
         self._infos["status"] = "Initialized"
         self._infos["config_used"] = self._configuration.model_dump()
@@ -301,27 +295,6 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         if self._configuration.store:
             raise NotImplementedError("Store functionality is not yet implemented.")
-
-    @property
-    def custom_input_model(self) -> Any:
-        return self._custom_input_model
-
-    def _setup_custom_input_schema(self) -> None:
-        """Configure custom input schema from state annotations if defined."""
-        if not self._configuration.input_schema_definition:
-            return
-
-        field_name = self._configuration.input_schema_definition
-        annotations = self._agent_instance.builder.state_schema.__annotations__
-
-        if field_name not in annotations:
-            raise ValueError(
-                f"Field '{field_name}' not found in state schema. "
-                f"Available fields: {list(annotations.keys())}"
-            )
-
-        self._input_state_key = field_name
-        self._custom_input_model = annotations[field_name]
 
     def _load_graph_builder(self, graph_definition: str) -> StateGraph:
         """Loads a StateGraph instance from a specified path."""
@@ -401,18 +374,6 @@ class LanggraphAgent(agent_base.BaseAgent):
             raise RuntimeError(
                 "Agent not initialized. Call initialize() before processing messages."
             )
-
-        from pydantic import BaseModel
-
-        if isinstance(message, BaseModel) and self._input_state_key:
-            graph_input = {self._input_state_key: message}
-            config = {"configurable": {"thread_id": "structured"}}
-            if self._obs_callbacks:
-                config["callbacks"] = self._obs_callbacks
-                if self._obs_run_name:
-                    config["run_name"] = self._obs_run_name
-            output = await self._agent_instance.ainvoke(graph_input, config)
-            return output
 
         if (
             not isinstance(message, dict)

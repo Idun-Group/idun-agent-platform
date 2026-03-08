@@ -45,7 +45,7 @@ All extend `BaseAgentConfig` (`engine/base_agent.py`):
 
 | Config | Module | Key Fields |
 |---|---|---|
-| `BaseAgentConfig` | `base_agent.py` | `name`, `input_schema_definition`, `output_schema_definition`, `observability` (deprecated) |
+| `BaseAgentConfig` | `base_agent.py` | `name`, `observability` (deprecated) |
 | `LangGraphAgentConfig` | `langgraph.py` | `graph_definition` (str), `checkpointer` (CheckpointConfig), `store` |
 | `AdkAgentConfig` | `adk.py` | `agent` (str), `app_name`, `session_service`, `memory_service` |
 | `HaystackAgentConfig` | `haystack.py` | `component_type` (pipeline\|agent), `component_definition` (str) |
@@ -126,7 +126,7 @@ Uses camelCase aliases (`ConfigDict(alias_generator=to_camel, populate_by_name=T
 
 ### API Payloads
 
-`ChatRequest` / `ChatResponse` (`api.py`): Default request/response for `/agent/invoke` when no custom `input_schema_definition` is set. Fields: `session_id`, `query` / `response`.
+`ChatRequest` / `ChatResponse` (`api.py`): Default request/response for `/agent/invoke`. Fields: `session_id`, `query` / `response`.
 
 ### Templates
 

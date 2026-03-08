@@ -103,7 +103,6 @@ agent:
   config:
     name: "My Agent"
     graph_definition: "./agent.py:app"    # module_path:variable_name
-    input_schema_definition: "field_name" # optional: field in state schema to use as input model
     checkpointer:
       type: "sqlite"                      # sqlite | memory | postgres
       db_url: "sqlite:///checkpoint.db"
@@ -188,7 +187,6 @@ All adapters implement `BaseAgent` (generic ABC parameterized by config type):
 ### LangGraph: Key Details
 
 - **`graph_definition`**: Format `path/to/file.py:variable_name`. Tries file path first, falls back to Python module import.
-- **`input_schema_definition`**: Points to a field name in the graph's `state_schema`. The engine extracts the type annotation and uses it as the `/agent/invoke` input model for OpenAPI schema generation. If not set, defaults to `ChatRequest` (`query` + `session_id`).
 - **Checkpointers**: `InMemorySaver`, `AsyncSqliteSaver`, `AsyncPostgresSaver` — configured via YAML.
 - **Streaming**: Maps LangGraph `astream_events(v2)` to AG-UI events (RunStarted, StepStarted, TextMessageStart/Content/End, ToolCallStart/Args/End, ThinkingStart/End, RunFinished).
 
@@ -206,7 +204,7 @@ All adapters implement `BaseAgent` (generic ABC parameterized by config type):
 | `/health` | GET | Health check |
 | `/docs` | GET | OpenAPI docs |
 | `/reload` | POST | Hot-reload agent config without restarting the server |
-| `/agent/invoke` | POST | Invoke agent (request/response). Input model is dynamic based on `input_schema_definition`. |
+| `/agent/invoke` | POST | Invoke agent (request/response). Uses ChatRequest (deprecated, will be removed). |
 | `/agent/stream` | POST | Stream AG-UI events (custom implementation in agent adapter) |
 | `/agent/copilotkit/stream` | POST | Stream via CopilotKit AG-UI agent wrapper (used by the frontend) |
 | `/agent/config` | GET | Get current agent config |

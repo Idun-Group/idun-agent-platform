@@ -59,7 +59,6 @@ async def configure_app(app: FastAPI, engine_config):
     app.state.agent = agent_instance
     app.state.config = engine_config
     app.state.engine_config = engine_config
-    app.state.custom_input_model = getattr(agent_instance, "custom_input_model", None)
 
     app.state.guardrails = guardrails
 
