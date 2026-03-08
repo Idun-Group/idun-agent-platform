@@ -1,0 +1,10 @@
+server:
+  api:
+    port: 8003
+
+agent:
+  type: ADK
+  config:
+    name: "ADK Chat Agent"
+    app_name: "adk_chat"
+    agent: "./agent.py:root_agent"

@@ -1,0 +1,9 @@
+server:
+  api:
+    port: 8001
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: "Chat Agent"
+    graph_definition: "./agent.py:graph"
