@@ -126,7 +126,9 @@ Uses camelCase aliases (`ConfigDict(alias_generator=to_camel, populate_by_name=T
 
 ### API Payloads
 
-`ChatRequest` / `ChatResponse` (`api.py`): Default request/response for `/agent/invoke`. Fields: `session_id`, `query` / `response`.
+`AgentCapabilities` (`capabilities.py`): Framework-agnostic capability descriptor for `GET /agent/capabilities`. Contains `version`, `framework`, `capabilities` (streaming/history/threadId flags), `input` (mode + JSON Schema), `output` (mode + JSON Schema).
+
+`ChatRequest` / `ChatResponse` (`api.py`): **(Deprecated)** Default request/response for `/agent/invoke`. Use `/agent/run` with AG-UI `RunAgentInput` instead. Fields: `session_id`, `query` / `response`.
 
 ### Templates
 

@@ -28,7 +28,7 @@ idun_agent_engine/
 │   ├── adk/            # Google ADK adapter. Mature. Session + memory services. Stream not yet implemented.
 │   └── haystack/       # Haystack adapter. Accepts Pipeline or Agent. Basic invoke only. Experimental.
 ├── server/             # FastAPI layer
-│   ├── routers/agent   # /agent/invoke, /agent/stream, /agent/copilotkit/stream, /agent/config
+│   ├── routers/agent   # /agent/capabilities, /agent/run, /agent/invoke (deprecated), /agent/stream (deprecated), /agent/copilotkit/stream (deprecated), /agent/config
 │   ├── routers/base    # /, /health, /reload
 │   ├── auth            # OIDCValidator — JWT validation via OIDC JWKS, require_auth dependency
 │   ├── dependencies    # DI: get_agent, get_copilotkit_agent, get_mcp_registry
@@ -176,7 +176,9 @@ agent:
 
 ## Agent Adapters
 
-All adapters implement `BaseAgent` (generic ABC parameterized by config type):
+All adapters implement `BaseAgent` (generic ABC parameterized by config type).
+
+All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) and `run()` (canonical AG-UI interaction, delegates to framework AG-UI wrapper).
 
 | Adapter | Config Model | Graph Loading | Streaming | CopilotKit |
 |---|---|---|---|---|
@@ -204,9 +206,11 @@ All adapters implement `BaseAgent` (generic ABC parameterized by config type):
 | `/health` | GET | Health check |
 | `/docs` | GET | OpenAPI docs |
 | `/reload` | POST | Hot-reload agent config without restarting the server |
-| `/agent/invoke` | POST | Invoke agent (request/response). Uses ChatRequest (deprecated, will be removed). |
-| `/agent/stream` | POST | Stream AG-UI events (custom implementation in agent adapter) |
-| `/agent/copilotkit/stream` | POST | Stream via CopilotKit AG-UI agent wrapper (used by the frontend) |
+| `/agent/capabilities` | GET | Agent capability discovery (input/output schemas, supported modes) |
+| `/agent/run` | POST | Canonical AG-UI interaction endpoint (accepts RunAgentInput, returns SSE) |
+| `/agent/invoke` | POST | **(Deprecated)** Invoke agent. Use `/agent/run` instead. |
+| `/agent/stream` | POST | **(Deprecated)** Stream AG-UI events. Use `/agent/run` instead. |
+| `/agent/copilotkit/stream` | POST | **(Deprecated)** Stream via CopilotKit. Use `/agent/run` instead. |
 | `/agent/config` | GET | Get current agent config |
 | `/integrations/whatsapp/webhook` | GET/POST | WhatsApp webhook (GET: Meta verify, POST: receive messages) |
 | `/integrations/discord/webhook` | POST | Discord Interactions Endpoint (Ed25519 verified, handles PING + slash commands) |
