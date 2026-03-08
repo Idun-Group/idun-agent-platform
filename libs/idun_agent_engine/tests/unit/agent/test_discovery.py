@@ -68,6 +68,47 @@ async def test_langgraph_structured_agent_discovery():
 
 
 @pytest.mark.asyncio
+async def test_langgraph_pydantic_input_discovery():
+    """State with a Pydantic model field (no messages) should discover as structured input."""
+    from idun_agent_engine.core.config_builder import ConfigBuilder
+
+    mock_graph_path = (
+        Path(__file__).parent.parent.parent / "fixtures" / "agents" / "mock_graph.py"
+    )
+
+    config = {
+        "agent": {
+            "type": "LANGGRAPH",
+            "config": {
+                "name": "pydantic_input_agent",
+                "graph_definition": f"{mock_graph_path}:structured_input_graph",
+            },
+        },
+    }
+
+    engine_config = ConfigBuilder.from_dict(config).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+
+    capabilities = agent.discover_capabilities()
+
+    assert capabilities.framework.value == "LANGGRAPH"
+    assert capabilities.input.mode == "structured"
+    assert capabilities.input.schema_ is not None
+
+    # The schema should contain the Pydantic model's fields (TaskRequest)
+    # nested within the StructuredInputState TypedDict.
+    input_schema = capabilities.input.schema_
+    # Resolve $ref/$defs wrapper if present
+    if "$ref" in input_schema and "$defs" in input_schema:
+        ref_name = input_schema["$ref"].split("/")[-1]
+        resolved = input_schema["$defs"][ref_name]
+    else:
+        resolved = input_schema
+    assert resolved["type"] == "object"
+    assert "request" in resolved["properties"]
+
+
+@pytest.mark.asyncio
 async def test_langgraph_structured_discovery_json_schema_shape():
     """Verify the JSON Schema has proper structure for TypedDict schemas."""
     from idun_agent_engine.core.config_builder import ConfigBuilder
