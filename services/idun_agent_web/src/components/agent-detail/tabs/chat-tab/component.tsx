@@ -588,6 +588,33 @@ function safeParse<T>(json: string, fallback: T): T {
   try { return json.trim() ? JSON.parse(json) : fallback; } catch { return fallback; }
 }
 
+/**
+ * Resolve a JSON Schema that may use $ref/$defs to get the actual object schema.
+ * e.g. { "$ref": "#/$defs/InputState", "$defs": { "InputState": { properties: {...} } } }
+ * → returns the InputState schema with properties.
+ */
+function resolveSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  if (!schema) return schema;
+  const ref = schema.$ref as string | undefined;
+  const defs = (schema.$defs ?? schema.definitions) as Record<string, Record<string, unknown>> | undefined;
+  if (ref && defs) {
+    // Parse "#/$defs/InputState" → ["$defs", "InputState"]
+    const parts = ref.replace(/^#\//, '').split('/');
+    let resolved: unknown = { $defs: defs, definitions: defs };
+    for (const part of parts) {
+      if (resolved && typeof resolved === 'object' && part in (resolved as Record<string, unknown>)) {
+        resolved = (resolved as Record<string, unknown>)[part];
+      } else {
+        return schema; // Can't resolve, return as-is
+      }
+    }
+    if (resolved && typeof resolved === 'object') {
+      return resolved as Record<string, unknown>;
+    }
+  }
+  return schema;
+}
+
 // --- Schema Field ---
 const TEXTAREA_FIELD_NAMES = ['description', 'content', 'text', 'body', 'message', 'prompt', 'instructions', 'notes'];
 
@@ -798,8 +825,9 @@ function StructuredInputForm({
   lastResult?: unknown;
   error?: AgentError | null;
 }) {
-  const properties = schema?.properties as Record<string, Record<string, unknown>> | undefined;
-  const requiredFields = (schema?.required as string[]) || [];
+  const resolved = resolveSchema(schema ?? {});
+  const properties = resolved?.properties as Record<string, Record<string, unknown>> | undefined;
+  const requiredFields = (resolved?.required as string[]) || [];
   const hasProperties = properties && typeof properties === 'object' && Object.keys(properties).length > 0;
 
   const [formMode, setFormMode] = useState<'form' | 'json'>(hasProperties ? 'form' : 'json');

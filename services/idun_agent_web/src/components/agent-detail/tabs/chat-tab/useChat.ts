@@ -162,20 +162,71 @@ export function useChat({ agentUrl, endpoint, threadId, state, tools, context, f
         const snapshot = (event as BaseEvent & { snapshot: Record<string, unknown> }).snapshot;
         if (
           capabilities?.output.mode === 'structured' &&
-          capabilities.output.schema?.properties &&
-          typeof capabilities.output.schema.properties === 'object'
+          capabilities.output.schema
         ) {
-          // Extract only the keys defined in the output schema
-          const schemaKeys = Object.keys(capabilities.output.schema.properties as Record<string, unknown>);
-          const extracted: Record<string, unknown> = {};
-          for (const key of schemaKeys) {
-            if (key in snapshot) {
-              extracted[key] = snapshot[key];
+          // Resolve $ref/$defs in the output schema
+          const outputSchema = capabilities.output.schema as Record<string, unknown>;
+          let resolvedSchema = outputSchema;
+          const ref = outputSchema.$ref as string | undefined;
+          const defs = (outputSchema.$defs ?? outputSchema.definitions) as Record<string, Record<string, unknown>> | undefined;
+          if (ref && defs) {
+            const parts = ref.replace(/^#\//, '').split('/');
+            let target: unknown = { $defs: defs, definitions: defs };
+            for (const part of parts) {
+              if (target && typeof target === 'object' && part in (target as Record<string, unknown>)) {
+                target = (target as Record<string, unknown>)[part];
+              }
             }
+            if (target && typeof target === 'object') resolvedSchema = target as Record<string, unknown>;
           }
-          setStructuredOutput(extracted);
+
+          const schemaProps = resolvedSchema.properties as Record<string, unknown> | undefined;
+          if (schemaProps && typeof schemaProps === 'object') {
+            const schemaKeys = Object.keys(schemaProps);
+
+            // Try direct extraction from snapshot top-level keys
+            const extracted: Record<string, unknown> = {};
+            for (const key of schemaKeys) {
+              if (key in snapshot) {
+                extracted[key] = snapshot[key];
+              }
+            }
+
+            if (Object.keys(extracted).length > 0) {
+              setStructuredOutput(extracted);
+            } else {
+              // Fallback: search nested objects for schema keys (ADK wraps results)
+              for (const val of Object.values(snapshot)) {
+                if (val && typeof val === 'object' && !Array.isArray(val)) {
+                  const nested = val as Record<string, unknown>;
+                  const nestedExtracted: Record<string, unknown> = {};
+                  for (const key of schemaKeys) {
+                    if (key in nested) {
+                      nestedExtracted[key] = nested[key];
+                    }
+                  }
+                  if (Object.keys(nestedExtracted).length > 0) {
+                    setStructuredOutput(nestedExtracted);
+                    break;
+                  }
+                }
+              }
+            }
+          } else {
+            // No schema properties — filter out internal keys
+            const filtered: Record<string, unknown> = {};
+            for (const [key, val] of Object.entries(snapshot)) {
+              if (!key.startsWith('_ag_ui_')) filtered[key] = val;
+            }
+            setStructuredOutput(Object.keys(filtered).length > 0 ? filtered : snapshot);
+          }
         } else {
-          setStructuredOutput(snapshot);
+          // Non-structured or no schema — filter internal keys
+          const filtered: Record<string, unknown> = {};
+          for (const [key, val] of Object.entries(snapshot)) {
+            if (!key.startsWith('_ag_ui_')) filtered[key] = val;
+          }
+          setStructuredOutput(Object.keys(filtered).length > 0 ? filtered : snapshot);
         }
         break;
       }
