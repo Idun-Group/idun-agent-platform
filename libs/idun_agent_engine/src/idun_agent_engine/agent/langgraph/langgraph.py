@@ -372,6 +372,7 @@ class LanggraphAgent(agent_base.BaseAgent):
             )
         return graph_builder  # type: ignore[return-value]
 
+    # TODO: DEPRECATED — remove when shim routes are removed
     async def invoke(self, message: Any) -> Any:
         """Process a single input to chat with the agent.
 
@@ -411,6 +412,7 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         return output
 
+    # TODO: DEPRECATED — remove when shim routes are removed
     async def stream(self, message: Any) -> AsyncGenerator[Any]:
         """Processes a single input message and returns a stream of ag-ui events."""
         if self._agent_instance is None:
