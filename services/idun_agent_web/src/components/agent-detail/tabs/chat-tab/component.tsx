@@ -1115,7 +1115,7 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                 {messages.map(msg => (
                   <MessageBubble key={msg.id} msg={msg} />
                 ))}
-                {isStreaming && !messages.findLast(m => m.role === 'assistant')?.content && (
+                {isStreaming && ![...messages].reverse().find((m: ChatMessage) => m.role === 'assistant')?.content && (
                   <div className="thinking-indicator">
                     <div className="thinking-icon">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
