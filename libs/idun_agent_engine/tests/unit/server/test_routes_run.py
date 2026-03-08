@@ -10,17 +10,20 @@ from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.config_builder import ConfigBuilder
 
 
-def _make_config(graph_name: str = "graph") -> dict:
+def _make_config(graph_name: str = "graph", checkpointer: bool = False) -> dict:
     mock_graph_path = (
         Path(__file__).parent.parent.parent / "fixtures" / "agents" / "mock_graph.py"
     )
+    agent_config: dict = {
+        "name": "test_agent",
+        "graph_definition": f"{mock_graph_path}:{graph_name}",
+    }
+    if checkpointer:
+        agent_config["checkpointer"] = {"type": "memory"}
     return {
         "agent": {
             "type": "LANGGRAPH",
-            "config": {
-                "name": "test_agent",
-                "graph_definition": f"{mock_graph_path}:{graph_name}",
-            },
+            "config": agent_config,
         },
     }
 
@@ -79,6 +82,70 @@ class TestRunRoute:
                 headers={"Accept": "text/event-stream"},
             )
             assert response.status_code == 200
+
+    def test_run_structured(self):
+        """POST /agent/run with structured state returns SSE stream with events."""
+        config = ConfigBuilder.from_dict(
+            _make_config("structured_io_graph", checkpointer=True)
+        ).build()
+        app = create_app(engine_config=config)
+
+        structured_input = json.dumps({"user_input": "test data"})
+
+        with TestClient(app) as client:
+            response = client.post(
+                "/agent/run",
+                json={
+                    "threadId": "test-thread-structured",
+                    "runId": "test-run-structured",
+                    "state": {},
+                    "messages": [
+                        {
+                            "id": "msg_1",
+                            "role": "user",
+                            "content": structured_input,
+                        }
+                    ],
+                    "tools": [],
+                    "context": [],
+                    "forwardedProps": {},
+                },
+                headers={"Accept": "text/event-stream"},
+            )
+            assert response.status_code == 200
+            body = response.text
+            assert "RUN_STARTED" in body or "RunStarted" in body or "run_started" in body
+
+    def test_run_structured_invalid_json(self):
+        """POST /agent/run with invalid JSON structured input returns a validation error event."""
+        config = ConfigBuilder.from_dict(
+            _make_config("structured_io_graph", checkpointer=True)
+        ).build()
+        app = create_app(engine_config=config)
+
+        with TestClient(app) as client:
+            response = client.post(
+                "/agent/run",
+                json={
+                    "threadId": "test-thread-invalid",
+                    "runId": "test-run-invalid",
+                    "state": {},
+                    "messages": [
+                        {
+                            "id": "msg_1",
+                            "role": "user",
+                            "content": "this is not valid json {{{",
+                        }
+                    ],
+                    "tools": [],
+                    "context": [],
+                    "forwardedProps": {},
+                },
+                headers={"Accept": "text/event-stream"},
+            )
+            assert response.status_code == 200
+            body = response.text
+            assert "VALIDATION_ERROR" in body
 
 
 @pytest.mark.unit
