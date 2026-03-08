@@ -158,16 +158,38 @@ export function useChat({ agentUrl, endpoint, threadId, state, tools, context, f
         }
         break;
       }
+      case EventType.STATE_SNAPSHOT: {
+        const snapshot = (event as BaseEvent & { snapshot: Record<string, unknown> }).snapshot;
+        if (
+          capabilities?.output.mode === 'structured' &&
+          capabilities.output.schema?.properties &&
+          typeof capabilities.output.schema.properties === 'object'
+        ) {
+          // Extract only the keys defined in the output schema
+          const schemaKeys = Object.keys(capabilities.output.schema.properties as Record<string, unknown>);
+          const extracted: Record<string, unknown> = {};
+          for (const key of schemaKeys) {
+            if (key in snapshot) {
+              extracted[key] = snapshot[key];
+            }
+          }
+          setStructuredOutput(extracted);
+        } else {
+          setStructuredOutput(snapshot);
+        }
+        break;
+      }
       case EventType.RUN_ERROR: {
         const e = event as RunErrorEvent;
         setError({
           message: e.message,
+          code: (e as RunErrorEvent & { code?: string }).code,
           timestamp: Date.now(),
         });
         break;
       }
     }
-  }, [addEvent]);
+  }, [addEvent, capabilities]);
 
   const sendMessage = useCallback(async (content: string) => {
     setError(null);
@@ -189,11 +211,28 @@ export function useChat({ agentUrl, endpoint, threadId, state, tools, context, f
 
     // When capabilities are available, use the canonical /agent/run endpoint
     if (capabilities) {
+      let effectiveState = state;
+      let effectiveMessages = allMessages.map(m => ({ id: m.id, role: m.role, content: m.content }) as import('@ag-ui/client').Message);
+
+      if (capabilities.input.mode === 'structured') {
+        if (capabilities.framework === 'LANGGRAPH') {
+          // LangGraph structured input: parse content as JSON into state, no messages
+          try {
+            effectiveState = JSON.parse(content);
+          } catch {
+            effectiveState = { ...state, input: content };
+          }
+          effectiveMessages = [];
+        }
+        // Non-LangGraph structured (e.g., ADK): content stays as JSON string in messages,
+        // state stays as user-provided — this is the default behavior above
+      }
+
       const input = {
         threadId,
         runId: effectiveRunId,
-        state,
-        messages: allMessages.map(m => ({ id: m.id, role: m.role, content: m.content }) as import('@ag-ui/client').Message),
+        state: effectiveState,
+        messages: effectiveMessages,
         tools,
         context,
         forwardedProps,
