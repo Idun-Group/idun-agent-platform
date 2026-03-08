@@ -2,8 +2,9 @@ import { useState, useRef, useEffect, type FormEvent, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import { useChat } from './useChat';
-import { buildCurlCommand } from './agui-client';
+import { buildCurlCommand, fetchCapabilities } from './agui-client';
 import type { StreamEvent, ChatMessage, AgentError } from './types';
+import type { AgentCapabilities } from '../../../../types/capabilities';
 import type { BackendAgent } from '../../../../services/agents';
 import './chat-tab.css';
 
@@ -586,6 +587,113 @@ function safeParse<T>(json: string, fallback: T): T {
   try { return json.trim() ? JSON.parse(json) : fallback; } catch { return fallback; }
 }
 
+// --- Structured Input Form ---
+function StructuredInputForm({
+  schema,
+  outputSchema: _outputSchema,
+  onSubmit,
+  isStreaming,
+  lastResult,
+}: {
+  schema: Record<string, unknown>;
+  outputSchema?: Record<string, unknown> | null;
+  onSubmit: (data: unknown) => void;
+  isStreaming: boolean;
+  lastResult?: unknown;
+}) {
+  const [inputJson, setInputJson] = useState(() => {
+    const properties = (schema as Record<string, unknown>)?.properties;
+    if (!properties || typeof properties !== 'object') return '{}';
+    const example: Record<string, unknown> = {};
+    for (const [key, prop] of Object.entries(properties as Record<string, Record<string, unknown>>)) {
+      if (prop.type === 'string') example[key] = '';
+      else if (prop.type === 'integer' || prop.type === 'number') example[key] = 0;
+      else if (prop.type === 'boolean') example[key] = false;
+      else example[key] = null;
+    }
+    return JSON.stringify(example, null, 2);
+  });
+  const [parseError, setParseError] = useState<string | null>(null);
+
+  const handleSubmit = () => {
+    try {
+      const parsed = JSON.parse(inputJson);
+      setParseError(null);
+      onSubmit(parsed);
+    } catch (e) {
+      setParseError(`Invalid JSON: ${e}`);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', flex: 1, overflow: 'auto' }}>
+      <div>
+        <label style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+          Input
+        </label>
+        <textarea
+          value={inputJson}
+          onChange={(e) => setInputJson(e.target.value)}
+          style={{
+            width: '100%',
+            minHeight: '120px',
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            padding: '12px',
+            border: `1px solid ${parseError ? '#ef4444' : 'var(--border-color, #d1d5db)'}`,
+            borderRadius: '8px',
+            backgroundColor: 'var(--surface-primary, #fff)',
+            color: 'var(--text-primary, #111)',
+            resize: 'vertical',
+            boxSizing: 'border-box',
+          }}
+          spellCheck={false}
+        />
+        {parseError && (
+          <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{parseError}</div>
+        )}
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        disabled={isStreaming}
+        style={{
+          padding: '10px 20px',
+          backgroundColor: isStreaming ? '#9ca3af' : 'var(--primary-color, #3b82f6)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: isStreaming ? 'not-allowed' : 'pointer',
+          fontWeight: 600,
+          alignSelf: 'flex-start',
+        }}
+      >
+        {isStreaming ? 'Running...' : 'Run Agent'}
+      </button>
+
+      {lastResult !== undefined && lastResult !== null && (
+        <div>
+          <label style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+            Output
+          </label>
+          <pre style={{
+            padding: '12px',
+            backgroundColor: 'var(--surface-secondary, #f3f4f6)',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontFamily: 'monospace',
+            overflow: 'auto',
+            whiteSpace: 'pre-wrap',
+            border: '1px solid var(--border-color, #e5e7eb)',
+          }}>
+            {typeof lastResult === 'string' ? lastResult : JSON.stringify(lastResult, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- Chat Tab ---
 const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
   const agentUrl = (agent?.base_url || '').replace(/\/+$/, '');
@@ -599,7 +707,20 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
   const [contextJson, setContextJson] = useState('[]');
   const [forwardedPropsJson, setForwardedPropsJson] = useState('{}');
   const [extraMessages, setExtraMessages] = useState<{ role: string; content: string }[]>([]);
+  const [capabilities, setCapabilities] = useState<AgentCapabilities | null>(null);
+  const [viewMode, setViewMode] = useState<'chat' | 'form'>('chat');
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (agentUrl) {
+      fetchCapabilities(agentUrl).then((caps) => {
+        if (caps) {
+          setCapabilities(caps);
+          setViewMode(caps.input.mode === 'structured' ? 'form' : 'chat');
+        }
+      });
+    }
+  }, [agentUrl]);
 
   const extraChatMessages = extraMessages
     .filter(m => m.content.trim())
@@ -612,7 +733,7 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
 
   const [curlOpen, setCurlOpen] = useState(false);
 
-  const { messages, events, isStreaming, error, sendMessage, stopStreaming, clearChat, clearError } = useChat({
+  const { messages, events, isStreaming, error, structuredOutput, sendMessage, stopStreaming, clearChat, clearError } = useChat({
     agentUrl,
     endpoint,
     threadId,
@@ -621,6 +742,7 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
     context: safeParse(contextJson, []),
     forwardedProps: safeParse(forwardedPropsJson, {}),
     extraMessages: extraChatMessages,
+    capabilities,
   });
 
   useEffect(() => {
@@ -710,66 +832,116 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
         />
       )}
 
+      {/* Capabilities info bar */}
+      {capabilities && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '8px 16px',
+          fontSize: '13px',
+          color: 'var(--text-secondary, #666)',
+          borderBottom: '1px solid var(--border-color, #e5e7eb)',
+          backgroundColor: 'var(--surface-secondary, #f9fafb)',
+        }}>
+          <span>
+            Input: <strong>{capabilities.input.mode}</strong>
+          </span>
+          <span>
+            Output: <strong>{capabilities.output.mode}</strong>
+          </span>
+          {capabilities.input.mode === 'structured' && (
+            <button
+              onClick={() => setViewMode(viewMode === 'chat' ? 'form' : 'chat')}
+              style={{
+                marginLeft: 'auto',
+                padding: '4px 12px',
+                fontSize: '12px',
+                border: '1px solid var(--border-color, #d1d5db)',
+                borderRadius: '6px',
+                backgroundColor: 'transparent',
+                cursor: 'pointer',
+                color: 'inherit',
+              }}
+            >
+              Switch to {viewMode === 'chat' ? 'Form' : 'Chat'}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Chat + Event Inspector */}
       <div className="app-body">
         <div className="chat-panel">
-          <div className="chat-messages">
-            {messages.length === 0 && (
-              <div className="empty-state">
-                <p>Send a message to start chatting with your agent.</p>
-                <p className="hint">Use the toolbar to switch endpoints, manage threads, or open the config panel for advanced options.</p>
-              </div>
-            )}
-            {messages.map(msg => (
-              <MessageBubble key={msg.id} msg={msg} />
-            ))}
-            {isStreaming && !messages.findLast(m => m.role === 'assistant')?.content && (
-              <div className="thinking-indicator">
-                <div className="thinking-icon">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.5V20a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2.5c2.9-1.2 5-4.1 5-7.5a8 8 0 0 0-8-8z"/>
-                    <line x1="10" y1="22" x2="14" y2="22"/>
-                  </svg>
-                </div>
-                <span className="thinking-label">Thinking</span>
-                <span className="thinking-dots">
-                  <span className="thinking-dot" />
-                  <span className="thinking-dot" />
-                  <span className="thinking-dot" />
-                </span>
-              </div>
-            )}
-            {error && (
-              <ErrorBanner error={error} onDismiss={clearError} />
-            )}
-            <div ref={chatEndRef} />
-          </div>
-          <form className="chat-input" onSubmit={handleSubmit}>
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
-              rows={2}
-              disabled={isStreaming}
+          {viewMode === 'form' ? (
+            <StructuredInputForm
+              schema={capabilities?.input.schema || {}}
+              outputSchema={capabilities?.output.schema}
+              onSubmit={(jsonData) => sendMessage(JSON.stringify(jsonData))}
+              isStreaming={isStreaming}
+              lastResult={structuredOutput}
             />
-            <div className="input-actions">
-              <button
-                type="button"
-                className="btn-curl"
-                onClick={() => setCurlOpen(true)}
-                title="View cURL request for current config"
-              >
-                {'{ }'}
-                <span className="btn-curl-label">cURL</span>
-              </button>
-              {isStreaming ? (
-                <button type="button" onClick={stopStreaming} className="btn-stop">Stop</button>
-              ) : (
-                <button type="submit" disabled={isStreaming} className="btn-send">Send</button>
-              )}
-            </div>
-          </form>
+          ) : (
+            <>
+              <div className="chat-messages">
+                {messages.length === 0 && (
+                  <div className="empty-state">
+                    <p>Send a message to start chatting with your agent.</p>
+                    <p className="hint">Use the toolbar to switch endpoints, manage threads, or open the config panel for advanced options.</p>
+                  </div>
+                )}
+                {messages.map(msg => (
+                  <MessageBubble key={msg.id} msg={msg} />
+                ))}
+                {isStreaming && !messages.findLast(m => m.role === 'assistant')?.content && (
+                  <div className="thinking-indicator">
+                    <div className="thinking-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.5V20a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2.5c2.9-1.2 5-4.1 5-7.5a8 8 0 0 0-8-8z"/>
+                        <line x1="10" y1="22" x2="14" y2="22"/>
+                      </svg>
+                    </div>
+                    <span className="thinking-label">Thinking</span>
+                    <span className="thinking-dots">
+                      <span className="thinking-dot" />
+                      <span className="thinking-dot" />
+                      <span className="thinking-dot" />
+                    </span>
+                  </div>
+                )}
+                {error && (
+                  <ErrorBanner error={error} onDismiss={clearError} />
+                )}
+                <div ref={chatEndRef} />
+              </div>
+              <form className="chat-input" onSubmit={handleSubmit}>
+                <textarea
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
+                  rows={2}
+                  disabled={isStreaming}
+                />
+                <div className="input-actions">
+                  <button
+                    type="button"
+                    className="btn-curl"
+                    onClick={() => setCurlOpen(true)}
+                    title="View cURL request for current config"
+                  >
+                    {'{ }'}
+                    <span className="btn-curl-label">cURL</span>
+                  </button>
+                  {isStreaming ? (
+                    <button type="button" onClick={stopStreaming} className="btn-stop">Stop</button>
+                  ) : (
+                    <button type="submit" disabled={isStreaming} className="btn-send">Send</button>
+                  )}
+                </div>
+              </form>
+            </>
+          )}
         </div>
 
         <EventInspector
