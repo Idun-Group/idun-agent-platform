@@ -82,6 +82,8 @@ class LanggraphAgent(agent_base.BaseAgent):
         # Observability (provider-agnostic)
         self._obs_callbacks: list[Any] | None = None
         self._obs_run_name: str | None = None
+        # Cached capabilities descriptor
+        self._cached_capabilities: AgentCapabilities | None = None
 
     @property
     def id(self) -> str:
@@ -572,6 +574,9 @@ class LanggraphAgent(agent_base.BaseAgent):
 
     def discover_capabilities(self) -> AgentCapabilities:
         """Introspect the compiled graph for input/output schemas."""
+        if self._cached_capabilities is not None:
+            return self._cached_capabilities
+
         from idun_agent_schema.engine.agent_framework import AgentFramework
         from idun_agent_schema.engine.capabilities import (
             AgentCapabilities,
@@ -623,7 +628,7 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         has_checkpointer = self._checkpointer is not None
 
-        return AgentCapabilities(
+        result = AgentCapabilities(
             version="1",
             framework=AgentFramework.LANGGRAPH,
             capabilities=CapabilityFlags(
@@ -634,6 +639,8 @@ class LanggraphAgent(agent_base.BaseAgent):
             input=InputDescriptor(mode=input_mode, schema_=input_json_schema),
             output=OutputDescriptor(mode=output_mode, schema_=output_json_schema),
         )
+        self._cached_capabilities = result
+        return result
 
     @staticmethod
     def _unwrap_schema_fields(schema_cls: type | None) -> dict[str, Any] | None:

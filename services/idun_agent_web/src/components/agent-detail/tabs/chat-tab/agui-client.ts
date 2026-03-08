@@ -198,7 +198,7 @@ export async function streamAgent(options: StreamOptions): Promise<AbortControll
  */
 export async function fetchCapabilities(agentUrl: string): Promise<AgentCapabilities | null> {
   try {
-    const response = await fetch(`${agentUrl}/agent/capabilities`);
+    const response = await agentFetch(`${agentUrl}/agent/capabilities`);
     if (!response.ok) return null;
     return await response.json();
   } catch {

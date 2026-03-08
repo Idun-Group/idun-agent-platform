@@ -40,6 +40,7 @@ def _run_guardrails(
 @agent_router.get("/capabilities")
 async def capabilities(
     caps: Annotated[AgentCapabilities, Depends(get_capabilities)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
 ):
     """Return the agent's capability descriptor for UI auto-configuration."""
     return caps
@@ -62,9 +63,10 @@ async def run(
 
     guardrails = getattr(request.app.state, "guardrails", [])
     if guardrails and input_data.messages:
-        _run_guardrails(
-            guardrails, message=input_data.messages[-1].content, position="input"
-        )
+        last_content = input_data.messages[-1].content
+        if last_content is not None:
+            text = last_content if isinstance(last_content, str) else str(last_content)
+            _run_guardrails(guardrails, message=text, position="input")
 
     accept_header = request.headers.get("accept")
     encoder = EventEncoder(accept=accept_header or "")

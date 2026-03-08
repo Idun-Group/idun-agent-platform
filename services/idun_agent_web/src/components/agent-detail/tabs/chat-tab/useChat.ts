@@ -171,6 +171,7 @@ export function useChat({ agentUrl, endpoint, threadId, state, tools, context, f
 
   const sendMessage = useCallback(async (content: string) => {
     setError(null);
+    setStructuredOutput(null);
     const userMsg: ChatMessage = {
       id: uuidv4(),
       role: 'user',
