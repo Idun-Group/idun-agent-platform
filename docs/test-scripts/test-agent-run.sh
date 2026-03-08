@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Manual smoke test for /agent/run across all 4 agent types.
 # Requires agents running on: 8811 (LG chat), 8825 (LG structured), 8800 (ADK chat), 8830 (ADK structured)
-set -euo pipefail
+set -uo pipefail
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -15,10 +15,10 @@ check() {
   local label="$1" response="$2" pattern="$3"
   if echo "$response" | grep -qi "$pattern"; then
     echo -e "  ${GREEN}PASS${NC} $label"
-    ((pass++))
+    pass=$((pass + 1))
   else
     echo -e "  ${RED}FAIL${NC} $label (expected '$pattern')"
-    ((fail++))
+    fail=$((fail + 1))
   fi
 }
 
@@ -92,10 +92,10 @@ for port in 8811 8825 8800 8830; do
   CAPS=$(curl -s http://localhost:$port/agent/capabilities)
   if echo "$CAPS" | grep -q "framework"; then
     echo -e "  ${GREEN}PASS${NC} :$port /agent/capabilities"
-    ((pass++))
+    pass=$((pass + 1))
   else
     echo -e "  ${RED}FAIL${NC} :$port /agent/capabilities"
-    ((fail++))
+    fail=$((fail + 1))
   fi
 done
 
