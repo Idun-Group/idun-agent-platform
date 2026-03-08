@@ -1,11 +1,18 @@
 """LangGraph agent adapter implementing the BaseAgent protocol."""
 
+from __future__ import annotations
+
 import importlib
 import importlib.util
 import logging
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ag_ui.core import BaseEvent
+    from ag_ui.core.types import RunAgentInput
+    from idun_agent_schema.engine.capabilities import AgentCapabilities
 
 import aiosqlite
 from ag_ui.core import events as ag_events
@@ -560,3 +567,145 @@ class LanggraphAgent(agent_base.BaseAgent):
         yield ag_events.RunFinishedEvent(
             type=ag_events.EventType.RUN_FINISHED, run_id=run_id, thread_id=thread_id
         )
+
+    def discover_capabilities(self) -> AgentCapabilities:
+        """Introspect the compiled graph for input/output schemas."""
+        from idun_agent_schema.engine.agent_framework import AgentFramework
+        from idun_agent_schema.engine.capabilities import (
+            AgentCapabilities,
+            CapabilityFlags,
+            InputDescriptor,
+            OutputDescriptor,
+        )
+
+        graph = self._agent_instance  # This is the compiled StateGraph
+
+        # Get input/output schemas from compiled graph.
+        # LangGraph wraps them in Pydantic wrapper models (LangGraphInput /
+        # LangGraphOutput).  When a separate input/output TypedDict was
+        # supplied to ``StateGraph(state, input=..., output=...)``, the
+        # wrapper's ``model_fields`` contain a single ``root`` entry whose
+        # annotation is the original TypedDict.  Otherwise the wrapper
+        # directly exposes the state fields.
+        input_schema_cls = getattr(graph, "input_schema", None)
+        output_schema_cls = getattr(graph, "output_schema", None)
+
+        input_fields = self._unwrap_schema_fields(input_schema_cls)
+        output_fields = self._unwrap_schema_fields(output_schema_cls)
+
+        # Detect input mode
+        input_mode = "chat"
+        input_json_schema = None
+        if input_fields is not None:
+            has_messages = "messages" in input_fields
+            only_messages = has_messages and len(input_fields) == 1
+
+            if only_messages:
+                input_mode = "chat"
+            else:
+                input_mode = "structured"
+                input_json_schema = self._schema_to_json_schema(input_schema_cls)
+
+        # Detect output mode
+        output_mode = "text"
+        output_json_schema = None
+        if (
+            output_fields is not None
+            and output_schema_cls is not None
+            and output_schema_cls != input_schema_cls
+        ):
+            only_messages = "messages" in output_fields and len(output_fields) == 1
+            if not only_messages:
+                output_mode = "structured"
+                output_json_schema = self._schema_to_json_schema(output_schema_cls)
+
+        has_checkpointer = self._checkpointer is not None
+
+        return AgentCapabilities(
+            version="1",
+            framework=AgentFramework.LANGGRAPH,
+            capabilities=CapabilityFlags(
+                streaming=True,
+                history=has_checkpointer,
+                thread_id=has_checkpointer,
+            ),
+            input=InputDescriptor(mode=input_mode, schema_=input_json_schema),
+            output=OutputDescriptor(mode=output_mode, schema_=output_json_schema),
+        )
+
+    @staticmethod
+    def _unwrap_schema_fields(schema_cls: type | None) -> dict[str, Any] | None:
+        """Extract the logical field names from a LangGraph schema wrapper.
+
+        LangGraph compiles ``StateGraph`` state definitions into Pydantic
+        wrapper models.  When a dedicated input/output TypedDict was
+        provided, the wrapper has a single ``root`` field whose annotation
+        is the original TypedDict.  This helper unwraps that indirection so
+        callers always see the user-defined field names.
+        """
+        if schema_cls is None:
+            return None
+
+        model_fields = getattr(schema_cls, "model_fields", {})
+        if not model_fields:
+            return getattr(schema_cls, "__annotations__", {}) or None
+
+        # If there is a single ``root`` field, unwrap it.
+        if list(model_fields.keys()) == ["root"]:
+            root_type = model_fields["root"].annotation
+            return getattr(root_type, "__annotations__", {}) or model_fields
+
+        return {k: v for k, v in model_fields.items()}
+
+    @staticmethod
+    def _schema_to_json_schema(schema_class: type) -> dict:
+        """Convert a Pydantic model or TypedDict to JSON Schema."""
+        if hasattr(schema_class, "model_json_schema"):
+            return schema_class.model_json_schema()
+        # TypedDict — build schema from annotations
+        properties = {}
+        required = []
+        annotations = getattr(schema_class, "__annotations__", {})
+        type_map = {
+            "str": "string",
+            "int": "integer",
+            "float": "number",
+            "bool": "boolean",
+        }
+        for field_name, field_type in annotations.items():
+            type_name = getattr(field_type, "__name__", str(field_type))
+            json_type = type_map.get(type_name, "string")
+            properties[field_name] = {"type": json_type}
+            required.append(field_name)
+        return {"type": "object", "properties": properties, "required": required}
+
+    async def run(self, input_data: RunAgentInput) -> AsyncGenerator[BaseEvent, None]:
+        """Canonical AG-UI interaction entry point.
+
+        Delegates to LangGraphAGUIAgent for event generation. For structured
+        agents, validates input against the discovered input schema first.
+        """
+        import json as json_module
+
+        from ag_ui.core import EventType, RunErrorEvent
+
+        capabilities = self.discover_capabilities()
+
+        # Validate structured input
+        if capabilities.input.mode == "structured" and input_data.messages:
+            last_msg = input_data.messages[-1]
+            content = str(last_msg.content) if last_msg.content else ""
+            try:
+                json_module.loads(content)
+            except (json_module.JSONDecodeError, TypeError) as e:
+                yield RunErrorEvent(
+                    type=EventType.RUN_ERROR,
+                    message=f"Structured input must be valid JSON: {e}",
+                    code="VALIDATION_ERROR",
+                )
+                return
+
+        # Delegate to the AG-UI wrapper
+        copilotkit_agent = self.copilotkit_agent_instance
+        async for event in copilotkit_agent.run(input_data):
+            yield event
