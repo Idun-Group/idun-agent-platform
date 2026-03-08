@@ -157,7 +157,7 @@ async def list_observabilities(
             .where(AgentObservabilityModel.observability_id.in_([r.id for r in rows]))
             .group_by(AgentObservabilityModel.observability_id)
         )
-        counts = dict(await session.execute(count_stmt))
+        counts = dict((await session.execute(count_stmt)).all())
 
     return [_model_to_schema(r, counts.get(r.id, 0)) for r in rows]
 

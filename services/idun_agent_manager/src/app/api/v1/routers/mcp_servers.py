@@ -164,7 +164,7 @@ async def list_mcp_servers(
             .where(AgentMCPServerModel.mcp_server_id.in_([r.id for r in rows]))
             .group_by(AgentMCPServerModel.mcp_server_id)
         )
-        counts = dict(await session.execute(count_stmt))
+        counts = dict((await session.execute(count_stmt)).all())
 
     return [_model_to_schema(r, counts.get(r.id, 0)) for r in rows]
 

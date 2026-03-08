@@ -158,7 +158,7 @@ async def create_agent(
 
     # Sync resource associations and recompute materialized config
     resources = AgentResourceIds(**(resources_data or {}))
-    sync_resources(model, resources)
+    await sync_resources(session, model, resources)
     await session.flush()
     await recompute_engine_config(session, model.id)
 
@@ -364,7 +364,7 @@ async def patch_agent(
 
     # Sync resource associations and recompute materialized config
     resources = AgentResourceIds(**(resources_data or {}))
-    sync_resources(model, resources)
+    await sync_resources(session, model, resources)
     await session.flush()
     await recompute_engine_config(session, model.id)
 

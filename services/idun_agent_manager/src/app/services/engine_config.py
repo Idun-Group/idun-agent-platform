@@ -13,9 +13,7 @@ from uuid import UUID, uuid4
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from idun_agent_schema.manager.managed_agent import AgentResourceIds
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.infrastructure.db.models.agent_guardrail import AgentGuardrailModel
 from app.infrastructure.db.models.agent_integration import AgentIntegrationModel
@@ -45,12 +43,18 @@ def assemble_engine_config(model: ManagedAgentModel) -> dict[str, Any]:
         mem_config = model.memory.memory_config
         if framework in ("ADK",):
             agent_config["session_service"] = mem_config
+            agent_config.pop("checkpointer", None)
         else:
             agent_config["checkpointer"] = mem_config
+            agent_config.pop("session_service", None)
     else:
-        # Ensure no stale memory config remains
-        agent_config.pop("checkpointer", None)
-        agent_config.pop("session_service", None)
+        # No memory resource linked — use in-memory defaults
+        if framework in ("ADK",):
+            agent_config["session_service"] = {"type": "in_memory"}
+            agent_config.pop("checkpointer", None)
+        else:
+            agent_config["checkpointer"] = {"type": "memory"}
+            agent_config.pop("session_service", None)
 
     agent_section["config"] = agent_config
     base["agent"] = agent_section
@@ -108,7 +112,7 @@ def assemble_engine_config(model: ManagedAgentModel) -> dict[str, Any]:
 
     # Validate through Pydantic to ensure consistency
     engine_config = EngineConfig(**base)
-    return engine_config.model_dump()
+    return engine_config.model_dump(exclude_none=True)
 
 
 async def recompute_engine_config(
@@ -119,101 +123,107 @@ async def recompute_engine_config(
     Loads the agent with all relationships, assembles the full config,
     and writes it to the engine_config JSONB column.
     """
-    stmt = (
-        select(ManagedAgentModel)
-        .where(ManagedAgentModel.id == agent_id)
-        .options(
-            selectinload(ManagedAgentModel.memory),
-            selectinload(ManagedAgentModel.sso),
-            selectinload(ManagedAgentModel.guardrail_associations).selectinload(
-                AgentGuardrailModel.guardrail
-            ),
-            selectinload(ManagedAgentModel.mcp_server_associations).selectinload(
-                AgentMCPServerModel.mcp_server
-            ),
-            selectinload(ManagedAgentModel.observability_associations).selectinload(
-                AgentObservabilityModel.observability
-            ),
-            selectinload(ManagedAgentModel.integration_associations).selectinload(
-                AgentIntegrationModel.integration
-            ),
-        )
-    )
-    result = await session.execute(stmt)
-    model = result.scalar_one_or_none()
+    # Expire first so selectinload re-fetches relationships that may have
+    # changed within this transaction (e.g. memory_id FK was just set).
+    model = await session.get(ManagedAgentModel, agent_id)
     if not model:
         logger.warning("Cannot recompute config: agent %s not found", agent_id)
         return
+
+    await session.refresh(
+        model,
+        attribute_names=[
+            "memory",
+            "sso",
+            "guardrail_associations",
+            "mcp_server_associations",
+            "observability_associations",
+            "integration_associations",
+        ],
+    )
+    # Nested relationships (e.g. guardrail_associations -> guardrail) are
+    # loaded via lazy="selectin" on the junction models.
 
     model.engine_config = assemble_engine_config(model)
     await session.flush()
 
 
-def sync_resources(
+async def sync_resources(
+    session: AsyncSession,
     model: ManagedAgentModel,
     resources: AgentResourceIds,
 ) -> None:
     """Synchronize resource associations on an agent model.
 
-    Sets 1:1 FKs and replaces all junction rows.
-    Must be called within a session context. After calling this,
-    call recompute_engine_config() to update the materialized cache.
+    Loads relationships first (to avoid MissingGreenlet with async drivers),
+    then clears and re-creates all junction rows.
+    Call recompute_engine_config() afterwards to update the materialized cache.
     """
+    # Ensure relationships are loaded before modifying
+    await session.refresh(
+        model,
+        attribute_names=[
+            "guardrail_associations",
+            "mcp_server_associations",
+            "observability_associations",
+            "integration_associations",
+        ],
+    )
+
     # 1:1 FKs
     model.memory_id = resources.memory_id
     model.sso_id = resources.sso_id
 
-    # Clear existing junction rows (ORM cascade handles DELETE)
+    # Clear existing junction rows and flush deletes to DB before
+    # re-inserting — avoids unique constraint violations when the
+    # same (agent_id, resource_id) pair is re-created.
     model.guardrail_associations.clear()
     model.mcp_server_associations.clear()
     model.observability_associations.clear()
     model.integration_associations.clear()
+    await session.flush()
 
     # Re-create guardrail associations
-    if resources.guardrail_ids:
-        for ref in resources.guardrail_ids:
-            model.guardrail_associations.append(
-                AgentGuardrailModel(
-                    id=uuid4(),
-                    agent_id=model.id,
-                    guardrail_id=ref.id,
-                    position=ref.position,
-                    sort_order=ref.sort_order,
-                )
+    for ref in (resources.guardrail_ids or []):
+        model.guardrail_associations.append(
+            AgentGuardrailModel(
+                id=uuid4(),
+                agent_id=model.id,
+                guardrail_id=ref.id,
+                position=ref.position,
+                sort_order=ref.sort_order,
             )
+        )
 
     # Re-create MCP server associations
-    if resources.mcp_server_ids:
-        for mcp_id in resources.mcp_server_ids:
-            model.mcp_server_associations.append(
-                AgentMCPServerModel(
-                    id=uuid4(),
-                    agent_id=model.id,
-                    mcp_server_id=mcp_id,
-                )
+    for mcp_id in (resources.mcp_server_ids or []):
+        model.mcp_server_associations.append(
+            AgentMCPServerModel(
+                id=uuid4(),
+                agent_id=model.id,
+                mcp_server_id=mcp_id,
             )
+        )
 
     # Re-create observability associations
-    if resources.observability_ids:
-        for obs_id in resources.observability_ids:
-            model.observability_associations.append(
-                AgentObservabilityModel(
-                    id=uuid4(),
-                    agent_id=model.id,
-                    observability_id=obs_id,
-                )
+    for obs_id in (resources.observability_ids or []):
+        model.observability_associations.append(
+            AgentObservabilityModel(
+                id=uuid4(),
+                agent_id=model.id,
+                observability_id=obs_id,
             )
+        )
 
     # Re-create integration associations
-    if resources.integration_ids:
-        for int_id in resources.integration_ids:
-            model.integration_associations.append(
-                AgentIntegrationModel(
-                    id=uuid4(),
-                    agent_id=model.id,
-                    integration_id=int_id,
-                )
+    for int_id in (resources.integration_ids or []):
+        model.integration_associations.append(
+            AgentIntegrationModel(
+                id=uuid4(),
+                agent_id=model.id,
+                integration_id=int_id,
             )
+        )
 
 
 def extract_resource_ids(model: ManagedAgentModel) -> AgentResourceIds:

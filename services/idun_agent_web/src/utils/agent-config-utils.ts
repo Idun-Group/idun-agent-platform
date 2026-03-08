@@ -46,8 +46,7 @@ export interface AvailableResources {
 export interface AgentSelections {
     selectedMemoryType: string;
     selectedMemoryAppId: string;
-    selectedObservabilityTypes: string[];
-    selectedObservabilityApps: Record<string, string>;
+    selectedObservabilityIds: string[];
     selectedMCPIds: string[];
     selectedGuardIds: string[];
     selectedSSOId: string;
@@ -58,8 +57,7 @@ export function getDefaultSelections(): AgentSelections {
     return {
         selectedMemoryType: 'InMemoryCheckpointConfig',
         selectedMemoryAppId: '',
-        selectedObservabilityTypes: [],
-        selectedObservabilityApps: {},
+        selectedObservabilityIds: [],
         selectedMCPIds: [],
         selectedGuardIds: [],
         selectedSSOId: '',
@@ -141,15 +139,7 @@ export function extractSelectionsFromAgent(
 
     // Observability
     if (refs.observability_ids && Array.isArray(refs.observability_ids)) {
-        for (const obsId of refs.observability_ids) {
-            const app = resources.observabilityApps.find(a => a.id === obsId);
-            if (app) {
-                if (!selections.selectedObservabilityTypes.includes(app.type)) {
-                    selections.selectedObservabilityTypes.push(app.type);
-                }
-                selections.selectedObservabilityApps[app.type] = app.id;
-            }
-        }
+        selections.selectedObservabilityIds = refs.observability_ids;
     }
 
     // Integrations
@@ -234,15 +224,6 @@ export function buildAgentPatchPayload(
         sort_order: index,
     }));
 
-    // Build observability IDs from the per-type app selections
-    const observabilityIds: string[] = [];
-    for (const type of selections.selectedObservabilityTypes) {
-        const appId = selections.selectedObservabilityApps[type];
-        if (appId) {
-            observabilityIds.push(appId);
-        }
-    }
-
     return {
         name: state.name.trim(),
         version: state.version.trim() || '1.0.0',
@@ -256,7 +237,7 @@ export function buildAgentPatchPayload(
             sso_id: selections.selectedSSOId || null,
             guardrail_ids: guardrailRefs.length > 0 ? guardrailRefs : [],
             mcp_server_ids: selections.selectedMCPIds,
-            observability_ids: observabilityIds,
+            observability_ids: selections.selectedObservabilityIds,
             integration_ids: selections.selectedIntegrationIds,
         },
     };

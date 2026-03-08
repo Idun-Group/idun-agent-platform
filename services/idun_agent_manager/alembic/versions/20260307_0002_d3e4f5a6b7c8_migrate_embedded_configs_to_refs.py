@@ -64,7 +64,7 @@ def upgrade() -> None:
                 sa.text(
                     """SELECT id FROM managed_memories
                     WHERE workspace_id = :ws
-                    AND memory_config @> :config::jsonb
+                    AND memory_config @> CAST(:config AS jsonb)
                     LIMIT 1"""
                 ),
                 {
@@ -79,7 +79,7 @@ def upgrade() -> None:
                     sa.text(
                         """INSERT INTO managed_memories
                         (id, name, agent_framework, memory_config, workspace_id, created_at, updated_at)
-                        VALUES (:id, :name, :fw, :config::jsonb, :ws, :now, :now)"""
+                        VALUES (:id, :name, :fw, CAST(:config AS jsonb), :ws, :now, :now)"""
                     ),
                     {
                         "id": mem_match,
@@ -122,7 +122,7 @@ def upgrade() -> None:
                     sa.text(
                         """INSERT INTO managed_ssos
                         (id, name, sso_config, workspace_id, created_at, updated_at)
-                        VALUES (:id, :name, :config::jsonb, :ws, :now, :now)"""
+                        VALUES (:id, :name, CAST(:config AS jsonb), :ws, :now, :now)"""
                     ),
                     {
                         "id": sso_match,
@@ -168,7 +168,7 @@ def upgrade() -> None:
                             sa.text(
                                 """INSERT INTO managed_guardrails
                                 (id, name, guardrail_config, workspace_id, created_at, updated_at)
-                                VALUES (:id, :name, :config::jsonb, :ws, :now, :now)"""
+                                VALUES (:id, :name, CAST(:config AS jsonb), :ws, :now, :now)"""
                             ),
                             {
                                 "id": guard_match,
@@ -232,7 +232,7 @@ def upgrade() -> None:
                         sa.text(
                             """INSERT INTO managed_mcp_servers
                             (id, name, mcp_server_config, workspace_id, created_at, updated_at)
-                            VALUES (:id, :name, :config::jsonb, :ws, :now, :now)"""
+                            VALUES (:id, :name, CAST(:config AS jsonb), :ws, :now, :now)"""
                         ),
                         {
                             "id": mcp_match,
@@ -290,7 +290,7 @@ def upgrade() -> None:
                         sa.text(
                             """INSERT INTO managed_observabilities
                             (id, name, observability_config, workspace_id, created_at, updated_at)
-                            VALUES (:id, :name, :config::jsonb, :ws, :now, :now)"""
+                            VALUES (:id, :name, CAST(:config AS jsonb), :ws, :now, :now)"""
                         ),
                         {
                             "id": obs_match,
@@ -348,7 +348,7 @@ def upgrade() -> None:
                         sa.text(
                             """INSERT INTO managed_integrations
                             (id, name, integration_config, workspace_id, created_at, updated_at)
-                            VALUES (:id, :name, :config::jsonb, :ws, :now, :now)"""
+                            VALUES (:id, :name, CAST(:config AS jsonb), :ws, :now, :now)"""
                         ),
                         {
                             "id": int_match,
