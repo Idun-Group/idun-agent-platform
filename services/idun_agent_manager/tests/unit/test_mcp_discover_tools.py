@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
     require_workspace,
@@ -23,6 +24,7 @@ from app.api.v1.routers.mcp_servers import _get_transport, _list_tools
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
 
 WORKSPACE_ID = uuid4()
+PROJECT_ID = uuid4()
 FAKE_USER = CurrentUser(
     user_id=str(uuid4()),
     email="test@test.com",
@@ -49,9 +51,20 @@ async def client_with_mcp(db_session: AsyncSession) -> AsyncIterator[AsyncClient
     app.dependency_overrides[get_current_user] = lambda: FAKE_USER
     app.dependency_overrides[require_workspace] = lambda: WORKSPACE_ID
 
+    fake_access = ProjectAccess(
+        project_id=PROJECT_ID,
+        workspace_id=WORKSPACE_ID,
+        role="admin",
+        is_workspace_owner=True,
+    )
+
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
+    with patch(
+        "app.api.v1.routers.mcp_servers.require_project_role",
+        return_value=fake_access,
+    ):
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            yield ac
 
 
 @pytest_asyncio.fixture
@@ -69,6 +82,7 @@ async def seeded_mcp(db_session: AsyncSession) -> ManagedMCPServerModel:
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
         workspace_id=WORKSPACE_ID,
+        project_id=PROJECT_ID,
     )
     db_session.add(model)
     await db_session.flush()
@@ -210,7 +224,7 @@ class TestDiscoverToolsEndpoint:
     @pytest.mark.asyncio
     async def test_nonexistent_server_returns_404(self, client_with_mcp: AsyncClient):
         fake_id = uuid4()
-        resp = await client_with_mcp.post(f"/api/v1/mcp-servers/{fake_id}/tools")
+        resp = await client_with_mcp.post(f"/api/v1/projects/{PROJECT_ID}/mcp-servers/{fake_id}/tools")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -224,7 +238,7 @@ class TestDiscoverToolsEndpoint:
             side_effect=ConnectionError("Failed to connect to MCP server: timeout"),
         ):
             resp = await client_with_mcp.post(
-                f"/api/v1/mcp-servers/{seeded_mcp.id}/tools"
+                f"/api/v1/projects/{PROJECT_ID}/mcp-servers/{seeded_mcp.id}/tools"
             )
         assert resp.status_code == 502
         assert "Failed to connect" in resp.json()["detail"]
@@ -255,7 +269,7 @@ class TestDiscoverToolsEndpoint:
             return_value=fake_tools,
         ):
             resp = await client_with_mcp.post(
-                f"/api/v1/mcp-servers/{seeded_mcp.id}/tools"
+                f"/api/v1/projects/{PROJECT_ID}/mcp-servers/{seeded_mcp.id}/tools"
             )
         assert resp.status_code == 200
         data = resp.json()

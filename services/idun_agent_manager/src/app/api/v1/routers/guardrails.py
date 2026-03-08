@@ -1,8 +1,15 @@
 """Managed Guardrail API.
 
 This router exposes endpoints to create, read, list, update, and delete
-managed guardrail configurations. All endpoints are scoped to the
-authenticated user's active workspace.
+managed guardrail configurations. All CRUD endpoints are project-scoped
+with RBAC enforcement.
+
+Endpoints (mounted at /projects/{project_id}/guardrails):
+    POST   /          - Create a new guardrail config       (contributor)
+    GET    /          - List guardrail configs (pagination)  (reader)
+    GET    /{id}      - Get a specific guardrail by ID       (reader)
+    PATCH  /{id}      - Update a guardrail config            (contributor)
+    DELETE /{id}      - Delete a guardrail config            (admin)
 """
 
 import logging
@@ -26,6 +33,7 @@ from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
     get_session,
+    require_project_role,
     require_workspace,
 )
 from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
@@ -42,9 +50,10 @@ PAGINATION_DEFAULT_LIMIT = 100
 async def _get_guardrail(
     id: str,
     session: AsyncSession,
-    workspace_id: UUID | None = None,
+    workspace_id: UUID,
+    project_id: UUID,
 ) -> ManagedGuardrailModel:
-    """Get guardrail config by ID, optionally scoped to a workspace."""
+    """Get guardrail config by ID, scoped to workspace and project."""
     try:
         uuid_id = UUID(id)
     except ValueError as err:
@@ -54,12 +63,7 @@ async def _get_guardrail(
         ) from err
 
     model = await session.get(ManagedGuardrailModel, uuid_id)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Guardrail config with id '{id}' not found",
-        )
-    if workspace_id is not None and model.workspace_id != workspace_id:
+    if not model or model.workspace_id != workspace_id or model.project_id != project_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Guardrail config with id '{id}' not found",
@@ -86,12 +90,16 @@ def _model_to_schema(model: ManagedGuardrailModel) -> ManagedGuardrailRead:
     summary="Create managed guardrail config",
 )
 async def create_guardrail(
+    project_id: str,
     request: ManagedGuardrailCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedGuardrailRead:
     """Create a new managed guardrail configuration."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+
     now = datetime.now(UTC)
 
     guardrail_config = request.guardrail
@@ -102,7 +110,8 @@ async def create_guardrail(
         guardrail_config=guardrail_config.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=access.workspace_id,
+        project_id=project_uuid,
     )
 
     session.add(model)
@@ -118,6 +127,7 @@ async def create_guardrail(
     summary="List managed guardrail configs",
 )
 async def list_guardrails(
+    project_id: str,
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
@@ -125,6 +135,9 @@ async def list_guardrails(
     workspace_id: UUID = Depends(require_workspace),
 ) -> list[ManagedGuardrailRead]:
     """List managed guardrail configurations with pagination."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -137,7 +150,10 @@ async def list_guardrails(
 
     stmt = (
         select(ManagedGuardrailModel)
-        .where(ManagedGuardrailModel.workspace_id == workspace_id)
+        .where(
+            ManagedGuardrailModel.workspace_id == access.workspace_id,
+            ManagedGuardrailModel.project_id == project_uuid,
+        )
         .limit(limit)
         .offset(offset)
     )
@@ -153,13 +169,16 @@ async def list_guardrails(
     summary="Get managed guardrail config by ID",
 )
 async def get_guardrail(
+    project_id: str,
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedGuardrailRead:
     """Get a managed guardrail configuration by ID."""
-    model = await _get_guardrail(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+    model = await _get_guardrail(id, session, access.workspace_id, project_uuid)
     return _model_to_schema(model)
 
 
@@ -169,13 +188,16 @@ async def get_guardrail(
     summary="Delete managed guardrail config",
 )
 async def delete_guardrail(
+    project_id: str,
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> None:
     """Delete a managed guardrail configuration permanently."""
-    model = await _get_guardrail(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "admin")
+    model = await _get_guardrail(id, session, access.workspace_id, project_uuid)
     await session.delete(model)
     await session.flush()
 
@@ -186,6 +208,7 @@ async def delete_guardrail(
     summary="Update managed guardrail config",
 )
 async def patch_guardrail(
+    project_id: str,
     id: str,
     request: ManagedGuardrailPatch,
     session: AsyncSession = Depends(get_session),
@@ -193,7 +216,9 @@ async def patch_guardrail(
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedGuardrailRead:
     """Update a guardrail configuration."""
-    model = await _get_guardrail(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+    model = await _get_guardrail(id, session, access.workspace_id, project_uuid)
 
     model.name = request.name
     guardrail_config = request.guardrail

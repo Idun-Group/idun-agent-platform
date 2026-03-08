@@ -712,10 +712,10 @@ const getFrameworkForType = (type: AppType): string => {
     return app?.framework || 'LANGGRAPH';
 };
 
-export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
+export const fetchApplications = async (projectId: string): Promise<ApplicationConfig[]> => {
     let observabilityApps: ApplicationConfig[] = [];
     try {
-        const apiApps = await getJson<components["schemas"]["ManagedObservabilityRead"][]>('/api/v1/observability/');
+        const apiApps = await getJson<components["schemas"]["ManagedObservabilityRead"][]>(`/api/v1/projects/${projectId}/observability/`);
         observabilityApps = apiApps.map(mapObservabilityToApp);
     } catch (e) {
         console.error("Failed to fetch observability apps", e);
@@ -723,7 +723,7 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
 
     let memoryApps: ApplicationConfig[] = [];
     try {
-        const apiApps = await getJson<components["schemas"]["ManagedMemoryRead"][]>('/api/v1/memory/');
+        const apiApps = await getJson<components["schemas"]["ManagedMemoryRead"][]>(`/api/v1/projects/${projectId}/memory/`);
         memoryApps = apiApps.map(mapMemoryToApp);
     } catch (e) {
         console.error("Failed to fetch memory apps", e);
@@ -731,7 +731,7 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
 
     let mcpApps: ApplicationConfig[] = [];
     try {
-        const apiApps = await getJson<components["schemas"]["ManagedMCPServerRead"][]>('/api/v1/mcp-servers/');
+        const apiApps = await getJson<components["schemas"]["ManagedMCPServerRead"][]>(`/api/v1/projects/${projectId}/mcp-servers/`);
         mcpApps = apiApps.map(mapMCPServerToApp);
     } catch (e) {
         console.error("Failed to fetch MCP apps", e);
@@ -739,7 +739,7 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
 
     let guardrailApps: ApplicationConfig[] = [];
     try {
-        const apiApps = await getJson<components["schemas"]["ManagedGuardrailRead"][]>('/api/v1/guardrails/');
+        const apiApps = await getJson<components["schemas"]["ManagedGuardrailRead"][]>(`/api/v1/projects/${projectId}/guardrails/`);
         guardrailApps = apiApps.map(mapGuardrailToApp);
     } catch (e) {
         console.error("Failed to fetch guardrail apps", e);
@@ -748,7 +748,7 @@ export const fetchApplications = async (): Promise<ApplicationConfig[]> => {
     return [...observabilityApps, ...memoryApps, ...mcpApps, ...guardrailApps];
 };
 
-export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'createdAt' | 'updatedAt' | 'owner'>): Promise<ApplicationConfig> => {
+export const createApplication = async (projectId: string, app: Omit<ApplicationConfig, 'id' | 'createdAt' | 'updatedAt' | 'owner'>): Promise<ApplicationConfig> => {
     if (app.category === 'Observability') {
         const payload: components["schemas"]["ManagedObservabilityCreate"] = {
             name: app.name,
@@ -758,7 +758,7 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
                 config: mapConfigToApi(app.type, app.config)
             }
         };
-        const res = await postJson<components["schemas"]["ManagedObservabilityRead"]>('/api/v1/observability/', payload);
+        const res = await postJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/projects/${projectId}/observability/`, payload);
         return mapObservabilityToApp(res);
     }
 
@@ -768,7 +768,7 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
             agent_framework: getFrameworkForType(app.type) as any,
             memory: mapConfigToApi(app.type, app.config)
         };
-        const res = await postJson<components["schemas"]["ManagedMemoryRead"]>('/api/v1/memory/', payload);
+        const res = await postJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/projects/${projectId}/memory/`, payload);
         return mapMemoryToApp(res);
     }
 
@@ -777,7 +777,7 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
             name: app.name,
             mcp_server: mapConfigToApi(app.type, app.config, app.name)
         };
-        const res = await postJson<components["schemas"]["ManagedMCPServerRead"]>('/api/v1/mcp-servers/', payload);
+        const res = await postJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/projects/${projectId}/mcp-servers/`, payload);
         return mapMCPServerToApp(res);
     }
 
@@ -787,17 +787,17 @@ export const createApplication = async (app: Omit<ApplicationConfig, 'id' | 'cre
             name: app.name,
             guardrail: guardrailConfig,
         };
-        const res = await postJson<components["schemas"]["ManagedGuardrailRead"]>('/api/v1/guardrails/', payload);
+        const res = await postJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/projects/${projectId}/guardrails/`, payload);
         return mapGuardrailToApp(res);
     }
 
     throw new Error(`Application type ${app.type} is not supported by API yet.`);
 };
 
-export const updateApplication = async (id: string, updates: Partial<ApplicationConfig>): Promise<ApplicationConfig> => {
+export const updateApplication = async (projectId: string, id: string, updates: Partial<ApplicationConfig>): Promise<ApplicationConfig> => {
     if (updates.category === 'Observability') {
         try {
-            const apiApp = await getJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/observability/${id}`);
+            const apiApp = await getJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/projects/${projectId}/observability/${id}`);
             const type = updates.type || mapObservabilityToApp(apiApp).type;
             const payload: components["schemas"]["ManagedObservabilityPatch"] = {
                 name: updates.name || apiApp.name,
@@ -807,7 +807,7 @@ export const updateApplication = async (id: string, updates: Partial<Application
                     config: mapConfigToApi(type, updates.config || mapConfigFromApi(type, apiApp.observability.config))
                 }
             };
-            const res = await patchJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/observability/${id}`, payload);
+            const res = await patchJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/projects/${projectId}/observability/${id}`, payload);
             return mapObservabilityToApp(res);
         } catch (e) {
             console.warn(`Failed to update Observability app ${id} via API.`, e);
@@ -815,14 +815,14 @@ export const updateApplication = async (id: string, updates: Partial<Application
         }
     } else if (updates.category === 'Memory') {
         try {
-            const apiMem = await getJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`);
+            const apiMem = await getJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/projects/${projectId}/memory/${id}`);
             const type = updates.type || mapMemoryToApp(apiMem).type;
             const payload: components["schemas"]["ManagedMemoryPatch"] = {
                 name: updates.name || apiMem.name,
                 agent_framework: getFrameworkForType(type) as any,
                 memory: mapConfigToApi(type, updates.config || mapMemoryToApp(apiMem).config)
             };
-            const res = await patchJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`, payload);
+            const res = await patchJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/projects/${projectId}/memory/${id}`, payload);
             return mapMemoryToApp(res);
         } catch (e) {
             console.warn(`Failed to update Memory app ${id} via API.`, e);
@@ -830,13 +830,13 @@ export const updateApplication = async (id: string, updates: Partial<Application
         }
     } else if (updates.category === 'MCP') {
         try {
-            const apiMcp = await getJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/mcp-servers/${id}`);
+            const apiMcp = await getJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/projects/${projectId}/mcp-servers/${id}`);
             const type = 'MCPServer';
             const payload: components["schemas"]["ManagedMCPServerPatch"] = {
                 name: updates.name || apiMcp.name,
                 mcp_server: mapConfigToApi(type, updates.config || mapMCPServerToApp(apiMcp).config, updates.name || apiMcp.name)
             };
-            const res = await patchJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/mcp-servers/${id}`, payload);
+            const res = await patchJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/projects/${projectId}/mcp-servers/${id}`, payload);
             return mapMCPServerToApp(res);
         } catch (e) {
             console.warn(`Failed to update MCP app ${id} via API.`, e);
@@ -844,7 +844,7 @@ export const updateApplication = async (id: string, updates: Partial<Application
         }
     } else if (updates.category === 'Guardrails') {
         try {
-            const apiGuard = await getJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`);
+            const apiGuard = await getJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/projects/${projectId}/guardrails/${id}`);
             const currentApp = mapGuardrailToApp(apiGuard);
             const type = updates.type || currentApp.type;
             if (isSupportedGuardrailType(type)) {
@@ -854,7 +854,7 @@ export const updateApplication = async (id: string, updates: Partial<Application
                     name: updates.name || apiGuard.name,
                     guardrail: guardrailConfig,
                 };
-                const res = await patchJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`, payload);
+                const res = await patchJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/projects/${projectId}/guardrails/${id}`, payload);
                 return mapGuardrailToApp(res);
             }
         } catch (e) {
@@ -865,7 +865,7 @@ export const updateApplication = async (id: string, updates: Partial<Application
 
     // Fallback logic if category not provided, trying sequentially
     try {
-        const apiApp = await getJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/observability/${id}`);
+        const apiApp = await getJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/projects/${projectId}/observability/${id}`);
         if (apiApp) {
              const type = updates.type || mapObservabilityToApp(apiApp).type;
              const payload: components["schemas"]["ManagedObservabilityPatch"] = {
@@ -876,13 +876,13 @@ export const updateApplication = async (id: string, updates: Partial<Application
                     config: mapConfigToApi(type, updates.config || mapConfigFromApi(type, apiApp.observability.config))
                 }
             };
-            const res = await patchJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/observability/${id}`, payload);
+            const res = await patchJson<components["schemas"]["ManagedObservabilityRead"]>(`/api/v1/projects/${projectId}/observability/${id}`, payload);
             return mapObservabilityToApp(res);
         }
     } catch (e) { /* ignore, try next */ }
 
     try {
-        const apiMem = await getJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`);
+        const apiMem = await getJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/projects/${projectId}/memory/${id}`);
         if (apiMem) {
             const type = updates.type || mapMemoryToApp(apiMem).type;
             const payload: components["schemas"]["ManagedMemoryPatch"] = {
@@ -890,26 +890,26 @@ export const updateApplication = async (id: string, updates: Partial<Application
                 agent_framework: getFrameworkForType(type) as any,
                 memory: mapConfigToApi(type, updates.config || mapMemoryToApp(apiMem).config)
             };
-            const res = await patchJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/memory/${id}`, payload);
+            const res = await patchJson<components["schemas"]["ManagedMemoryRead"]>(`/api/v1/projects/${projectId}/memory/${id}`, payload);
             return mapMemoryToApp(res);
         }
     } catch (e) { /* ignore, try next */ }
 
     try {
-        const apiMcp = await getJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/mcp-servers/${id}`);
+        const apiMcp = await getJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/projects/${projectId}/mcp-servers/${id}`);
         if (apiMcp) {
             const type = 'MCPServer';
             const payload: components["schemas"]["ManagedMCPServerPatch"] = {
                 name: updates.name || apiMcp.name,
                 mcp_server: mapConfigToApi(type, updates.config || mapMCPServerToApp(apiMcp).config, updates.name || apiMcp.name)
             };
-            const res = await patchJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/mcp-servers/${id}`, payload);
+            const res = await patchJson<components["schemas"]["ManagedMCPServerRead"]>(`/api/v1/projects/${projectId}/mcp-servers/${id}`, payload);
             return mapMCPServerToApp(res);
         }
     } catch (e) { /* ignore, try next */ }
 
     try {
-        const apiGuard = await getJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`);
+        const apiGuard = await getJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/projects/${projectId}/guardrails/${id}`);
         if (apiGuard) {
             const currentApp = mapGuardrailToApp(apiGuard);
             const type = updates.type || currentApp.type;
@@ -920,7 +920,7 @@ export const updateApplication = async (id: string, updates: Partial<Application
                     name: updates.name || apiGuard.name,
                     guardrail: guardrailConfig,
                 };
-                const res = await patchJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/guardrails/${id}`, payload);
+                const res = await patchJson<components["schemas"]["ManagedGuardrailRead"]>(`/api/v1/projects/${projectId}/guardrails/${id}`, payload);
                 return mapGuardrailToApp(res);
             }
         }
@@ -935,16 +935,16 @@ export interface MCPTool {
     input_schema: Record<string, unknown> | null;
 }
 
-export const discoverTools = async (id: string): Promise<MCPTool[]> => {
-    const res = await postJson<{ tools: MCPTool[] }>(`/api/v1/mcp-servers/${id}/tools`, {});
+export const discoverTools = async (projectId: string, id: string): Promise<MCPTool[]> => {
+    const res = await postJson<{ tools: MCPTool[] }>(`/api/v1/projects/${projectId}/mcp-servers/${id}/tools`, {});
     return res.tools;
 };
 
-export const deleteApplication = async (id: string): Promise<void> => {
-    try { await deleteRequest(`/api/v1/observability/${id}`); return; } catch (e) { /* ignore */ }
-    try { await deleteRequest(`/api/v1/memory/${id}`); return; } catch (e) { /* ignore */ }
-    try { await deleteRequest(`/api/v1/mcp-servers/${id}`); return; } catch (e) { /* ignore */ }
-    try { await deleteRequest(`/api/v1/guardrails/${id}`); return; } catch (e) { /* ignore */ }
+export const deleteApplication = async (projectId: string, id: string): Promise<void> => {
+    try { await deleteRequest(`/api/v1/projects/${projectId}/observability/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/projects/${projectId}/memory/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/projects/${projectId}/mcp-servers/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/projects/${projectId}/guardrails/${id}`); return; } catch (e) { /* ignore */ }
 
     // If we reached here, it means we couldn't delete from any API
     // throw new Error('Failed to delete application from any source');

@@ -113,9 +113,9 @@ def create_app() -> FastAPI:
 
 def setup_routes(app: FastAPI) -> None:
     """Setup application routes."""
-    # Import minimal routers
     from app.api.v1.routers.agent_frameworks import router as agent_frameworks_router
     from app.api.v1.routers.agents import router as agents_router
+    from app.api.v1.routers.agents import runtime_router as agents_runtime_router
     from app.api.v1.routers.auth import router as auth_router
     from app.api.v1.routers.guardrails import router as guardrails_router
     from app.api.v1.routers.health import router as health_router
@@ -124,69 +124,90 @@ def setup_routes(app: FastAPI) -> None:
     from app.api.v1.routers.members import router as members_router
     from app.api.v1.routers.memory import router as memory_router
     from app.api.v1.routers.observability import router as observability_router
+    from app.api.v1.routers.projects import router as projects_router
     from app.api.v1.routers.sso import router as sso_router
     from app.api.v1.routers.workspaces import router as workspaces_router
 
-    # API v1 routes
+    # --- Infrastructure ---
     app.include_router(
         auth_router,
         prefix="/api/v1/auth",
         tags=["Auth"],
     )
     app.include_router(
-        agents_router,
-        prefix="/api/v1/agents",
-        tags=["Agents"],
-    )
-    app.include_router(
         health_router,
         prefix="/api/v1",
         tags=["Health"],
     )
-    app.include_router(
-        mcp_servers_router,
-        prefix="/api/v1/mcp-servers",
-        tags=["MCP Servers"],
-    )
-    app.include_router(
-        observability_router,
-        prefix="/api/v1/observability",
-        tags=["Observability"],
-    )
-    app.include_router(
-        memory_router,
-        prefix="/api/v1/memory",
-        tags=["Memory"],
-    )
-    app.include_router(
-        agent_frameworks_router,
-        prefix="/api/v1/agent-frameworks",
-        tags=["Agent Frameworks"],
-    )
-    app.include_router(
-        guardrails_router,
-        prefix="/api/v1/guardrails",
-        tags=["Guardrails"],
-    )
+
+    # --- Workspace-level ---
     app.include_router(
         workspaces_router,
         prefix="/api/v1/workspaces",
         tags=["Workspaces"],
     )
     app.include_router(
+        members_router,
+        prefix="/api/v1/workspaces",
+        tags=["Workspace Members"],
+    )
+
+    # --- Projects ---
+    app.include_router(
+        projects_router,
+        prefix="/api/v1/projects",
+        tags=["Projects"],
+    )
+
+    # --- Resources (nested under projects) ---
+    app.include_router(
+        agents_router,
+        prefix="/api/v1/projects/{project_id}/agents",
+        tags=["Agents"],
+    )
+    app.include_router(
+        mcp_servers_router,
+        prefix="/api/v1/projects/{project_id}/mcp-servers",
+        tags=["MCP Servers"],
+    )
+    app.include_router(
+        observability_router,
+        prefix="/api/v1/projects/{project_id}/observability",
+        tags=["Observability"],
+    )
+    app.include_router(
+        memory_router,
+        prefix="/api/v1/projects/{project_id}/memory",
+        tags=["Memory"],
+    )
+    app.include_router(
+        guardrails_router,
+        prefix="/api/v1/projects/{project_id}/guardrails",
+        tags=["Guardrails"],
+    )
+    app.include_router(
         sso_router,
-        prefix="/api/v1/sso",
+        prefix="/api/v1/projects/{project_id}/sso",
         tags=["SSO"],
     )
     app.include_router(
         integrations_router,
-        prefix="/api/v1/integrations",
+        prefix="/api/v1/projects/{project_id}/integrations",
         tags=["Integrations"],
     )
+
+    # --- Flat runtime endpoints (Bearer token auth) ---
     app.include_router(
-        members_router,
-        prefix="/api/v1/workspaces",
-        tags=["Workspace Members"],
+        agents_runtime_router,
+        prefix="/api/v1/agents",
+        tags=["Agents"],
+    )
+
+    # --- Misc ---
+    app.include_router(
+        agent_frameworks_router,
+        prefix="/api/v1/agent-frameworks",
+        tags=["Agent Frameworks"],
     )
 
 

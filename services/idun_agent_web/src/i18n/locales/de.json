@@ -45,11 +45,31 @@
         "workspace": {
             "select": "Arbeitsbereich auswählen"
         },
+        "project": {
+            "all": "Alle Projekte",
+            "manage": "Projekte verwalten"
+        },
         "environment": {
             "select": "Umgebung auswählen",
             "development": "Entwicklung",
             "staging": "Staging",
             "production": "Produktion"
+        }
+    },
+    "projects": {
+        "manage": "Projekte verwalten",
+        "create": "Erstellen",
+        "default": "Standard",
+        "namePlaceholder": "Projektname",
+        "createSuccess": "Projekt erstellt",
+        "createError": "Projekt konnte nicht erstellt werden",
+        "updateSuccess": "Projekt aktualisiert",
+        "updateError": "Projekt konnte nicht aktualisiert werden",
+        "deleteSuccess": "Projekt gelöscht",
+        "deleteError": "Projekt konnte nicht gelöscht werden",
+        "delete": {
+            "confirm": "Dieses Projekt löschen? Ressourcen werden zum Standardprojekt verschoben.",
+            "blocked": "Das Standardprojekt kann nicht gelöscht werden"
         }
     },
     "workspace": {

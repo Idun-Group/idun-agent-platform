@@ -17,8 +17,10 @@ import { fetchApplications, deleteApplication } from '../../services/application
 import type { ApplicationConfig } from '../../types/application.types';
 import { notify } from '../../components/toast/notify';
 import { Loader } from 'lucide-react';
+import { useProject } from '../../hooks/use-project';
 
 const MemoryPage = () => {
+  const { selectedProjectId } = useProject();
   const [memories, setMemories] = useState<ApplicationConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,9 +30,10 @@ const MemoryPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const loadMemories = async () => {
+      if (!selectedProjectId) return;
       setIsLoading(true);
       try {
-          const apps = await fetchApplications();
+          const apps = await fetchApplications(selectedProjectId);
           const memoryApps = apps.filter(app => app.category === 'Memory');
           setMemories(memoryApps);
       } catch (error) {
@@ -43,7 +46,7 @@ const MemoryPage = () => {
 
   useEffect(() => {
       loadMemories();
-  }, []);
+  }, [selectedProjectId]);
 
   // Group memories by framework
   const groupedMemories = useMemo(() => {
@@ -86,8 +89,8 @@ const MemoryPage = () => {
   const handleDeleteRequest = (app: ApplicationConfig) => setAppToDelete(app);
 
   const handleDeleteConfirm = async () => {
-      if (!appToDelete?.id) return;
-      await deleteApplication(appToDelete.id);
+      if (!appToDelete?.id || !selectedProjectId) return;
+      await deleteApplication(selectedProjectId, appToDelete.id);
       notify.success('Memory store removed');
       setAppToDelete(null);
       loadMemories();

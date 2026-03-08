@@ -45,11 +45,31 @@
         "workspace": {
             "select": "Seleziona uno spazio di lavoro"
         },
+        "project": {
+            "all": "Tutti i progetti",
+            "manage": "Gestisci progetti"
+        },
         "environment": {
             "select": "Seleziona un ambiente",
             "development": "Sviluppo",
             "staging": "Staging",
             "production": "Produzione"
+        }
+    },
+    "projects": {
+        "manage": "Gestisci progetti",
+        "create": "Crea",
+        "default": "Predefinito",
+        "namePlaceholder": "Nome del progetto",
+        "createSuccess": "Progetto creato",
+        "createError": "Impossibile creare il progetto",
+        "updateSuccess": "Progetto aggiornato",
+        "updateError": "Impossibile aggiornare il progetto",
+        "deleteSuccess": "Progetto eliminato",
+        "deleteError": "Impossibile eliminare il progetto",
+        "delete": {
+            "confirm": "Eliminare questo progetto? Le risorse verranno spostate nel progetto predefinito.",
+            "blocked": "Impossibile eliminare il progetto predefinito"
         }
     },
     "workspace": {

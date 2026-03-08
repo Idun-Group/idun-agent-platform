@@ -4,6 +4,7 @@ import { CheckCircle2, AlertCircle, Copy, Check, Eye, EyeOff, Loader2 } from 'lu
 import { notify } from '../../../components/toast/notify';
 import { createAgent, patchAgent, getAgentApiKey, performHealthCheck } from '../../../services/agents';
 import { API_BASE_URL } from '../../../utils/api';
+import { useProject } from '../../../hooks/use-project';
 import { type WizardState, resolveBaseUrl, resolveServerPort } from '../types';
 import CodeSnippet from '../components/code-snippet';
 import ConnectionVerifier from '../components/connection-verifier';
@@ -35,6 +36,7 @@ function buildPayload(state: WizardState) {
 }
 
 export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps) {
+    const { selectedProjectId } = useProject();
     const [phase, setPhase] = useState<'creating' | 'updating' | 'error' | 'ready'>(
         state.createdAgentId ? 'ready' : 'creating'
     );
@@ -58,8 +60,8 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
             setPhase('updating');
             (async () => {
                 try {
-                    const updated = await patchAgent(state.createdAgentId!, payload);
-                    performHealthCheck(updated);
+                    const updated = await patchAgent(selectedProjectId!, state.createdAgentId!, payload);
+                    performHealthCheck(selectedProjectId!, updated);
                     setPhase('ready');
                     notify.success('Agent configuration updated');
                 } catch (err) {
@@ -77,11 +79,11 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
 
         (async () => {
             try {
-                const agent = await createAgent(payload);
+                const agent = await createAgent(selectedProjectId!, payload);
                 const apiKey = await getAgentApiKey(agent.id);
                 lastPayloadRef.current = payloadJson;
                 onCreated(agent.id, apiKey);
-                performHealthCheck(agent);
+                performHealthCheck(selectedProjectId!, agent);
                 setShowConfetti(true);
                 setPhase('ready');
             } catch (err) {
@@ -99,13 +101,13 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
         setErrorMessage('');
         try {
             if (isUpdate) {
-                const updated = await patchAgent(state.createdAgentId!, payload);
-                performHealthCheck(updated);
+                const updated = await patchAgent(selectedProjectId!, state.createdAgentId!, payload);
+                performHealthCheck(selectedProjectId!, updated);
             } else {
-                const agent = await createAgent(payload);
+                const agent = await createAgent(selectedProjectId!, payload);
                 const apiKey = await getAgentApiKey(agent.id);
                 onCreated(agent.id, apiKey);
-                performHealthCheck(agent);
+                performHealthCheck(selectedProjectId!, agent);
                 setShowConfetti(true);
             }
             lastPayloadRef.current = JSON.stringify(payload);

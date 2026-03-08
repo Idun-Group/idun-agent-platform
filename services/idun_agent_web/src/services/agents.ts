@@ -100,6 +100,7 @@ const decorateAgent = (agent: ManagedAgent): BackendAgent => {
 export type ListAgentsParams = ListAgentsQuery;
 
 export async function listAgents(
+    projectId: string,
     params: ListAgentsParams = {}
 ): Promise<BackendAgent[]> {
     if (USE_MOCKS) {
@@ -113,47 +114,48 @@ export async function listAgents(
     if (params.offset != null) query.set('offset', String(params.offset));
 
     const qs = query.toString();
-    const path = `/api/v1/agents/${qs ? `?${qs}` : ''}`;
+    const path = `/api/v1/projects/${projectId}/agents/${qs ? `?${qs}` : ''}`;
 
     const result = await getJson<ManagedAgent[]>(path);
     return result.map(decorateAgent);
 }
 
-export async function getAgent(agentId: string): Promise<BackendAgent> {
+export async function getAgent(projectId: string, agentId: string): Promise<BackendAgent> {
     if (USE_MOCKS) {
         const found = MOCK_MANAGED_AGENTS.find((a) => a.id === agentId) ||
             MOCK_MANAGED_AGENTS[0];
         return decorateAgent(found);
     }
 
-    const agent = await getJson<ManagedAgent>(`/api/v1/agents/${agentId}`);
+    const agent = await getJson<ManagedAgent>(`/api/v1/projects/${projectId}/agents/${agentId}`);
     return decorateAgent(agent);
 }
 
-export function createAgent(payload: unknown): Promise<BackendAgent> {
-    return postJson<ManagedAgent, unknown>('/api/v1/agents/', payload).then(
+export function createAgent(projectId: string, payload: unknown): Promise<BackendAgent> {
+    return postJson<ManagedAgent, unknown>(`/api/v1/projects/${projectId}/agents/`, payload).then(
         decorateAgent
     );
 }
 
-export function updateAgent(agentId: string, payload: unknown): Promise<BackendAgent> {
-    return putJson<ManagedAgent, unknown>(`/api/v1/agents/${agentId}`, payload).then(
-        decorateAgent
-    );
-}
-
-export function patchAgent(agentId: string, payload: unknown): Promise<BackendAgent> {
+export function updateAgent(projectId: string, agentId: string, payload: unknown): Promise<BackendAgent> {
     return patchJson<ManagedAgent, unknown>(
-        `/api/v1/agents/${agentId}`,
+        `/api/v1/projects/${projectId}/agents/${agentId}`,
         payload
     ).then(decorateAgent);
 }
 
-export async function deleteAgent(agentId: string): Promise<void> {
+export function patchAgent(projectId: string, agentId: string, payload: unknown): Promise<BackendAgent> {
+    return patchJson<ManagedAgent, unknown>(
+        `/api/v1/projects/${projectId}/agents/${agentId}`,
+        payload
+    ).then(decorateAgent);
+}
+
+export async function deleteAgent(projectId: string, agentId: string): Promise<void> {
     if (USE_MOCKS) {
         return;
     }
-    await deleteRequest(`/api/v1/agents/${agentId}`);
+    await deleteRequest(`/api/v1/projects/${projectId}/agents/${agentId}`);
 }
 
 export async function restartAgent(baseUrl: string): Promise<void> {
@@ -170,11 +172,12 @@ export async function restartAgent(baseUrl: string): Promise<void> {
 }
 
 export function updateAgentStatus(
+    projectId: string,
     agentId: string,
     agentStatus: 'active' | 'draft'
 ): Promise<BackendAgent> {
     return putJson<ManagedAgent, { status: string }>(
-        `/api/v1/agents/${agentId}/status`,
+        `/api/v1/projects/${projectId}/agents/${agentId}/status`,
         { status: agentStatus }
     ).then(decorateAgent);
 }
@@ -188,11 +191,12 @@ const HEALTH_CHECK_TIMEOUT_MS = 5000;
  * Never throws — all errors are swallowed so this can be called without await.
  */
 export function performHealthCheck(
+    projectId: string,
     agent: BackendAgent,
     onStatusChange?: (updated: BackendAgent) => void,
 ): void {
     if (!agent.base_url) {
-        updateAgentStatus(agent.id, 'draft')
+        updateAgentStatus(projectId, agent.id, 'draft')
             .then(updated => onStatusChange?.(updated))
             .catch(() => {});
         return;
@@ -211,12 +215,12 @@ export function performHealthCheck(
         })
         .then(data => {
             const isHealthy = data?.status === 'ok';
-            return updateAgentStatus(agent.id, isHealthy ? 'active' : 'draft');
+            return updateAgentStatus(projectId, agent.id, isHealthy ? 'active' : 'draft');
         })
         .then(updated => onStatusChange?.(updated))
         .catch(() => {
             clearTimeout(timer);
-            updateAgentStatus(agent.id, 'draft')
+            updateAgentStatus(projectId, agent.id, 'draft')
                 .then(updated => onStatusChange?.(updated))
                 .catch(() => {});
         });

@@ -15,6 +15,7 @@ import {
 import Loader from '../../components/general/loader/component';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
 import EnrollmentSection from '../../components/agent-detail/tabs/overview-tab/sections/enrollment-section';
+import { useProject } from '../../hooks/use-project';
 import {
     ArrowLeft,
     RotateCcw,
@@ -45,6 +46,7 @@ const TABS = [
 export default function AgentDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { selectedProjectId } = useProject();
     const [activeTab, setActiveTab] = useState('overview');
     const [agent, setAgent] = useState<BackendAgent | null>(null);
     const [engineVersion, setEngineVersion] = useState<string | null>(null);
@@ -56,11 +58,11 @@ export default function AgentDetailPage() {
     const { isLoading: isAuthLoading } = useAuth();
 
     const loadAgent = () => {
-        if (!id) return;
-        getAgent(id)
+        if (!id || !selectedProjectId) return;
+        getAgent(selectedProjectId, id)
             .then((loaded) => {
                 setAgent(loaded);
-                performHealthCheck(loaded, setAgent);
+                performHealthCheck(selectedProjectId, loaded, setAgent);
                 if (loaded.base_url) {
                     fetchEngineHealth(loaded.base_url).then(health => {
                         if (health?.engineVersion) setEngineVersion(health.engineVersion);
@@ -76,9 +78,9 @@ export default function AgentDetailPage() {
     };
 
     useEffect(() => {
-        if (!id || isAuthLoading) return;
+        if (!id || isAuthLoading || !selectedProjectId) return;
         loadAgent();
-    }, [id, isAuthLoading]);
+    }, [id, isAuthLoading, selectedProjectId]);
 
     const handleTabClick = (tabId: string) => {
         if (isEditing && tabId !== 'overview') return;
@@ -86,13 +88,13 @@ export default function AgentDetailPage() {
     };
 
     const handleEditSave = async (payload: any) => {
-        if (!agent) return;
+        if (!agent || !selectedProjectId) return;
         try {
-            const updatedAgent = await patchAgent(agent.id, payload);
+            const updatedAgent = await patchAgent(selectedProjectId, agent.id, payload);
             setAgent(updatedAgent);
             setIsEditing(false);
             notify.success('Agent updated successfully!');
-            performHealthCheck(updatedAgent, setAgent);
+            performHealthCheck(selectedProjectId, updatedAgent, setAgent);
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to update agent';
             notify.error(errorMsg);

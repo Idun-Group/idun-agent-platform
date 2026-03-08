@@ -80,13 +80,13 @@ class TestBasicSignup:
         assert response.status_code == 200
         assert "sid" in response.cookies
 
-    async def test_signup_does_not_create_workspace(self, client: AsyncClient):
-        """Signup should NOT auto-create a workspace."""
+    async def test_signup_auto_creates_workspace(self, client: AsyncClient):
+        """Signup should auto-create a default workspace + project."""
         response = await _signup(client, email="nows@example.com")
         assert response.status_code == 200
         data = response.json()
-        assert data["workspace_ids"] == []
-        assert data["default_workspace_id"] is None
+        assert len(data["workspace_ids"]) == 1
+        assert data["default_workspace_id"] is not None
 
     async def test_signup_consumes_pending_invitation(
         self, client: AsyncClient, db_session: AsyncSession
@@ -106,7 +106,7 @@ class TestBasicSignup:
             id=uuid4(),
             workspace_id=ws_id,
             email="invited@example.com",
-            role="member",
+            is_owner=False,
         )
         db_session.add(inv)
         await db_session.flush()
@@ -151,7 +151,7 @@ class TestBasicLogin:
         assert "sid" in response.cookies
 
     async def test_login_returns_workspace_ids(self, client: AsyncClient):
-        """After signup + workspace creation, login returns the workspace."""
+        """After signup (auto-creates workspace) + extra workspace, login returns workspaces."""
         await _signup(client, email="wslogin@example.com")
         ws_resp = await _create_workspace(client, name="Login WS")
         assert ws_resp.status_code == 201
@@ -159,7 +159,8 @@ class TestBasicLogin:
         response = await _login(client, email="wslogin@example.com")
         assert response.status_code == 200
         data = response.json()
-        assert len(data["workspace_ids"]) == 1
+        # Signup auto-creates one workspace, plus we created another
+        assert len(data["workspace_ids"]) == 2
         assert data["default_workspace_id"] is not None
 
     async def test_login_backfills_default_workspace_id(
@@ -168,40 +169,28 @@ class TestBasicLogin:
         """Login should set default_workspace_id if user has workspaces but NULL default."""
         from sqlalchemy import select
 
-        from app.infrastructure.db.models.membership import MembershipModel
         from app.infrastructure.db.models.user import UserModel
-        from app.infrastructure.db.models.workspace import WorkspaceModel
 
-        # Signup (no workspace)
+        # Signup (auto-creates a workspace with default_workspace_id)
         await _signup(client, email="backfill@example.com")
 
-        # Create workspace and membership directly in DB (simulating pre-migration state)
+        # Simulate pre-migration state: clear default_workspace_id
         user_result = await db_session.execute(
             select(UserModel).where(UserModel.email == "backfill@example.com")
         )
         user = user_result.scalar_one()
-        # Ensure default_workspace_id is NULL
         user.default_workspace_id = None
         await db_session.flush()
 
-        ws_id = uuid4()
-        ws = WorkspaceModel(id=ws_id, name="Backfill WS", slug="backfill-ws")
-        db_session.add(ws)
-        membership = MembershipModel(
-            id=uuid4(), user_id=user.id, workspace_id=ws_id, role="owner"
-        )
-        db_session.add(membership)
-        await db_session.flush()
-
-        # Login should backfill default_workspace_id
+        # Login should backfill default_workspace_id from existing memberships
         response = await _login(client, email="backfill@example.com")
         assert response.status_code == 200
         data = response.json()
-        assert data["default_workspace_id"] == str(ws_id)
+        assert data["default_workspace_id"] is not None
 
         # Verify in DB
         await db_session.refresh(user)
-        assert user.default_workspace_id == ws_id
+        assert user.default_workspace_id is not None
 
 
 # ---------------------------------------------------------------------------
@@ -221,36 +210,36 @@ class TestAuthMe:
         response = await client.get("/api/v1/auth/me")
         assert response.status_code == 401
 
-    async def test_me_returns_empty_workspace_ids_after_signup(
+    async def test_me_returns_workspace_ids_after_signup(
         self, client: AsyncClient
     ):
-        """After signup with no invitations, /me returns empty workspace_ids."""
+        """After signup with no invitations, /me returns the auto-created workspace."""
         await _signup(client, email="nows-me@example.com")
         response = await client.get("/api/v1/auth/me")
         assert response.status_code == 200
         principal = response.json()["session"]["principal"]
-        assert principal["workspace_ids"] == []
-        assert principal["default_workspace_id"] is None
+        assert len(principal["workspace_ids"]) == 1
+        assert principal["default_workspace_id"] is not None
 
     async def test_me_refreshes_workspace_ids_after_creation(self, client: AsyncClient):
-        """After creating a workspace, /me returns the updated workspace_ids."""
+        """After creating an additional workspace, /me returns updated workspace_ids."""
         await _signup(client, email="refresh@example.com")
 
-        # Verify empty initially
+        # Verify auto-created workspace present
         me_resp = await client.get("/api/v1/auth/me")
-        assert me_resp.json()["session"]["principal"]["workspace_ids"] == []
+        assert len(me_resp.json()["session"]["principal"]["workspace_ids"]) == 1
 
-        # Create workspace
+        # Create additional workspace
         ws_resp = await _create_workspace(client, name="Fresh WS")
         assert ws_resp.status_code == 201
         ws_id = ws_resp.json()["id"]
 
-        # /me should now show the workspace
+        # /me should now show both workspaces
         me_resp = await client.get("/api/v1/auth/me")
         assert me_resp.status_code == 200
         principal = me_resp.json()["session"]["principal"]
         assert ws_id in principal["workspace_ids"]
-        assert principal["default_workspace_id"] == ws_id
+        assert len(principal["workspace_ids"]) == 2
 
     async def test_me_re_signs_cookie_on_workspace_change(self, client: AsyncClient):
         """When workspace data changes, /me should set a new cookie."""
@@ -308,72 +297,68 @@ class TestWorkspaceOnboardingFlow:
         assert data["name"] == "First WS"
         assert "id" in data
 
-    async def test_first_workspace_sets_default(
+    async def test_signup_sets_default_workspace(
         self, client: AsyncClient, db_session: AsyncSession
     ):
-        """Creating the first workspace sets it as default_workspace_id."""
+        """Signup auto-creates a workspace and sets it as default_workspace_id."""
         from sqlalchemy import select
 
         from app.infrastructure.db.models.user import UserModel
 
-        await _signup(client, email="default@example.com")
-        ws_resp = await _create_workspace(client, name="Default WS")
-        assert ws_resp.status_code == 201
-        ws_id = ws_resp.json()["id"]
+        signup_resp = await _signup(client, email="default@example.com")
+        assert signup_resp.status_code == 200
+        auto_ws_id = signup_resp.json()["workspace_ids"][0]
 
         # Verify in DB
         result = await db_session.execute(
             select(UserModel).where(UserModel.email == "default@example.com")
         )
         user = result.scalar_one()
-        assert str(user.default_workspace_id) == ws_id
+        assert str(user.default_workspace_id) == auto_ws_id
 
-    async def test_second_workspace_does_not_change_default(
+    async def test_additional_workspace_does_not_change_default(
         self, client: AsyncClient, db_session: AsyncSession
     ):
-        """Creating a second workspace should not overwrite default_workspace_id."""
+        """Creating additional workspaces should not overwrite default_workspace_id."""
         from sqlalchemy import select
 
         from app.infrastructure.db.models.user import UserModel
 
-        await _signup(client, email="twoworkspaces@example.com")
-        ws1_resp = await _create_workspace(client, name="First")
-        assert ws1_resp.status_code == 201
-        ws1_id = ws1_resp.json()["id"]
+        signup_resp = await _signup(client, email="twoworkspaces@example.com")
+        auto_ws_id = signup_resp.json()["workspace_ids"][0]
 
         ws2_resp = await _create_workspace(client, name="Second")
         assert ws2_resp.status_code == 201
 
-        # Default should still be the first workspace
+        # Default should still be the auto-created workspace from signup
         result = await db_session.execute(
             select(UserModel).where(UserModel.email == "twoworkspaces@example.com")
         )
         user = result.scalar_one()
-        assert str(user.default_workspace_id) == ws1_id
+        assert str(user.default_workspace_id) == auto_ws_id
 
     async def test_full_onboarding_flow(self, client: AsyncClient):
-        """End-to-end: signup → empty workspaces → create workspace → /me has workspace → agents accessible."""
-        # 1. Signup
+        """End-to-end: signup auto-creates workspace → /me has workspace → create another → agents accessible."""
+        # 1. Signup (auto-creates workspace + default project)
         signup_resp = await _signup(client, email="e2e@example.com")
         assert signup_resp.status_code == 200
-        assert signup_resp.json()["workspace_ids"] == []
+        auto_ws_id = signup_resp.json()["workspace_ids"][0]
+        assert signup_resp.json()["default_workspace_id"] == auto_ws_id
 
-        # 2. /me returns empty workspaces
+        # 2. /me returns auto-created workspace
         me_resp = await client.get("/api/v1/auth/me")
-        assert me_resp.json()["session"]["principal"]["workspace_ids"] == []
+        principal = me_resp.json()["session"]["principal"]
+        assert auto_ws_id in principal["workspace_ids"]
+        assert principal["default_workspace_id"] == auto_ws_id
 
-        # 3. Create workspace
+        # 3. Create additional workspace
         ws_resp = await _create_workspace(client, name="E2E Workspace")
         assert ws_resp.status_code == 201
         ws_id = ws_resp.json()["id"]
 
-        # 4. /me returns updated workspaces + re-signs cookie
+        # 4. /me returns both workspaces, default unchanged
         me_resp = await client.get("/api/v1/auth/me")
         principal = me_resp.json()["session"]["principal"]
         assert ws_id in principal["workspace_ids"]
-        assert principal["default_workspace_id"] == ws_id
-        assert "sid" in me_resp.cookies  # Cookie was re-signed
-
-        # 5. Agents endpoint should now work (no 400)
-        agents_resp = await client.get("/api/v1/agents/")
-        assert agents_resp.status_code != 400
+        assert auto_ws_id in principal["workspace_ids"]
+        assert principal["default_workspace_id"] == auto_ws_id

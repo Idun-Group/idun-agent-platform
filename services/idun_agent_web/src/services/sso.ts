@@ -26,22 +26,22 @@ interface ManagedSSOPatch {
     sso: SSOConfig;
 }
 
-export const fetchSSOs = async (): Promise<ManagedSSO[]> => {
-    return getJson<ManagedSSO[]>('/api/v1/sso/');
+export const fetchSSOs = async (projectId: string): Promise<ManagedSSO[]> => {
+    return getJson<ManagedSSO[]>(`/api/v1/projects/${projectId}/sso/`);
 };
 
-export const getSSO = async (id: string): Promise<ManagedSSO> => {
-    return getJson<ManagedSSO>(`/api/v1/sso/${id}`);
+export const getSSO = async (projectId: string, id: string): Promise<ManagedSSO> => {
+    return getJson<ManagedSSO>(`/api/v1/projects/${projectId}/sso/${id}`);
 };
 
-export const createSSO = async (data: ManagedSSOCreate): Promise<ManagedSSO> => {
-    return postJson<ManagedSSO>('/api/v1/sso/', data);
+export const createSSO = async (projectId: string, data: ManagedSSOCreate): Promise<ManagedSSO> => {
+    return postJson<ManagedSSO>(`/api/v1/projects/${projectId}/sso/`, data);
 };
 
-export const updateSSO = async (id: string, data: ManagedSSOPatch): Promise<ManagedSSO> => {
-    return patchJson<ManagedSSO>(`/api/v1/sso/${id}`, data);
+export const updateSSO = async (projectId: string, id: string, data: ManagedSSOPatch): Promise<ManagedSSO> => {
+    return patchJson<ManagedSSO>(`/api/v1/projects/${projectId}/sso/${id}`, data);
 };
 
-export const deleteSSO = async (id: string): Promise<void> => {
-    await deleteRequest(`/api/v1/sso/${id}`);
+export const deleteSSO = async (projectId: string, id: string): Promise<void> => {
+    await deleteRequest(`/api/v1/projects/${projectId}/sso/${id}`);
 };

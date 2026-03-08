@@ -1,10 +1,15 @@
-"""SQLAlchemy model for memberships table."""
+"""SQLAlchemy model for memberships table.
+
+Workspace-level membership. ``is_owner`` distinguishes workspace owners
+from regular members.  Fine-grained project permissions live in
+``project_memberships``.
+"""
 
 from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,7 +38,7 @@ class MembershipModel(Base):
         nullable=False,
         index=True,
     )
-    role: Mapped[str] = mapped_column(String(50), nullable=False, default="member")
+    is_owner: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

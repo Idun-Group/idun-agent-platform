@@ -6,6 +6,7 @@ import CreateIntegrationModal from '../../components/applications/create-integra
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import type { IntegrationProvider } from '../../services/integrations';
 import { useTranslation } from 'react-i18next';
+import { useProject } from '../../hooks/use-project';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -433,6 +434,7 @@ const maskToken = (token: string): string => {
 
 const IntegrationsPage: React.FC = () => {
     const { t } = useTranslation();
+    const { selectedProjectId } = useProject();
     const [configs, setConfigs] = useState<ManagedIntegration[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -442,16 +444,17 @@ const IntegrationsPage: React.FC = () => {
     const [configToDelete, setConfigToDelete] = useState<ManagedIntegration | null>(null);
 
     const loadConfigs = useCallback(async () => {
+        if (!selectedProjectId) return;
         setIsLoading(true);
         try {
-            const data = await fetchIntegrations();
+            const data = await fetchIntegrations(selectedProjectId);
             setConfigs(data);
         } catch (e) {
             console.error('Failed to load integrations', e);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadConfigs(); }, [loadConfigs]);
 
@@ -460,8 +463,8 @@ const IntegrationsPage: React.FC = () => {
     const closeModal = () => { setIsModalOpen(false); setConfigToEdit(null); };
 
     const handleDeleteConfirm = async () => {
-        if (!configToDelete?.id) return;
-        await deleteIntegration(configToDelete.id);
+        if (!configToDelete?.id || !selectedProjectId) return;
+        await deleteIntegration(selectedProjectId, configToDelete.id);
         setConfigToDelete(null);
         loadConfigs();
     };

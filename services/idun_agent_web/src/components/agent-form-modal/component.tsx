@@ -14,6 +14,7 @@ import { fetchSSOs } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
 import { fetchIntegrations } from '../../services/integrations';
 import type { ManagedIntegration } from '../../services/integrations';
+import { useProject } from '../../hooks/use-project';
 
 const DISABLED_FRAMEWORKS = new Set(['CREWAI', 'CUSTOM']);
 
@@ -89,6 +90,7 @@ export interface AgentFormModalProps {
 }
 
 export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentFormModalProps) {
+    const { selectedProjectId } = useProject();
     const [currentStep, setCurrentStep] = useState(1);
     const [name, setName] = useState<string>('');
     const [version, setVersion] = useState<string>('1.0.0');
@@ -144,14 +146,15 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
     const { t } = useTranslation();
 
     const loadApps = () => {
-        fetchApplications().then(apps => {
+        if (!selectedProjectId) return;
+        fetchApplications(selectedProjectId).then(apps => {
             setObservabilityApps(apps.filter(a => a.category === 'Observability'));
             setMemoryApps(apps.filter(a => a.category === 'Memory'));
             setMcpApps(apps.filter(a => a.category === 'MCP'));
             setGuardApps(apps.filter(a => a.category === 'Guardrails'));
         });
-        fetchSSOs().then(setSsoConfigs).catch(err => console.error('Failed to load SSO configs', err));
-        fetchIntegrations().then(setIntegrationConfigs).catch(err => console.error('Failed to load integrations', err));
+        fetchSSOs(selectedProjectId).then(setSsoConfigs).catch(err => console.error('Failed to load SSO configs', err));
+        fetchIntegrations(selectedProjectId).then(setIntegrationConfigs).catch(err => console.error('Failed to load integrations', err));
     };
 
     // Data Fetching

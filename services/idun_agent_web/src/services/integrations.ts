@@ -45,22 +45,22 @@ interface ManagedIntegrationPatch {
     integration: IntegrationConfig;
 }
 
-export const fetchIntegrations = async (): Promise<ManagedIntegration[]> => {
-    return getJson<ManagedIntegration[]>('/api/v1/integrations/');
+export const fetchIntegrations = async (projectId: string): Promise<ManagedIntegration[]> => {
+    return getJson<ManagedIntegration[]>(`/api/v1/projects/${projectId}/integrations/`);
 };
 
-export const getIntegration = async (id: string): Promise<ManagedIntegration> => {
-    return getJson<ManagedIntegration>(`/api/v1/integrations/${id}`);
+export const getIntegration = async (projectId: string, id: string): Promise<ManagedIntegration> => {
+    return getJson<ManagedIntegration>(`/api/v1/projects/${projectId}/integrations/${id}`);
 };
 
-export const createIntegration = async (data: ManagedIntegrationCreate): Promise<ManagedIntegration> => {
-    return postJson<ManagedIntegration>('/api/v1/integrations/', data);
+export const createIntegration = async (projectId: string, data: ManagedIntegrationCreate): Promise<ManagedIntegration> => {
+    return postJson<ManagedIntegration>(`/api/v1/projects/${projectId}/integrations/`, data);
 };
 
-export const updateIntegration = async (id: string, data: ManagedIntegrationPatch): Promise<ManagedIntegration> => {
-    return patchJson<ManagedIntegration>(`/api/v1/integrations/${id}`, data);
+export const updateIntegration = async (projectId: string, id: string, data: ManagedIntegrationPatch): Promise<ManagedIntegration> => {
+    return patchJson<ManagedIntegration>(`/api/v1/projects/${projectId}/integrations/${id}`, data);
 };
 
-export const deleteIntegration = async (id: string): Promise<void> => {
-    await deleteRequest(`/api/v1/integrations/${id}`);
+export const deleteIntegration = async (projectId: string, id: string): Promise<void> => {
+    await deleteRequest(`/api/v1/projects/${projectId}/integrations/${id}`);
 };

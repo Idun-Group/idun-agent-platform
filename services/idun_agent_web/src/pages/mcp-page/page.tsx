@@ -6,6 +6,7 @@ import type { MCPTool } from '../../services/applications';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import type { ApplicationConfig } from '../../types/application.types';
 import CreateMcpModal from '../../components/applications/create-mcp-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Animations ────────────────────────────────────────────────────────────────
 
@@ -664,6 +665,7 @@ const SecretField: React.FC<{ value: string }> = ({ value }) => {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const MCPPage: React.FC = () => {
+    const { selectedProjectId } = useProject();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -677,10 +679,11 @@ const MCPPage: React.FC = () => {
     const [toolErrors, setToolErrors] = useState<Record<string, string>>({});
 
     const handleDiscover = async (appId: string) => {
+        if (!selectedProjectId) return;
         setLoadingTools(prev => ({ ...prev, [appId]: true }));
         setToolErrors(prev => ({ ...prev, [appId]: '' }));
         try {
-            const tools = await discoverTools(appId);
+            const tools = await discoverTools(selectedProjectId, appId);
             setToolsMap(prev => ({ ...prev, [appId]: tools }));
         } catch (e) {
             setToolErrors(prev => ({ ...prev, [appId]: 'Failed to discover tools' }));
@@ -690,24 +693,25 @@ const MCPPage: React.FC = () => {
     };
 
     const loadApps = useCallback(async () => {
+        if (!selectedProjectId) return;
         setIsLoading(true);
         try {
-            const all = await fetchApplications();
+            const all = await fetchApplications(selectedProjectId);
             setApps(all.filter(a => a.category === 'MCP'));
         } catch (e) {
             console.error('Failed to load MCP servers', e);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
     const handleDeleteRequest = (app: ApplicationConfig) => setAppToDelete(app);
 
     const handleDeleteConfirm = async () => {
-        if (!appToDelete?.id) return;
-        await deleteApplication(appToDelete.id);
+        if (!appToDelete?.id || !selectedProjectId) return;
+        await deleteApplication(selectedProjectId, appToDelete.id);
         setAppToDelete(null);
         loadApps();
     };

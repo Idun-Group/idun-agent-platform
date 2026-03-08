@@ -1,8 +1,15 @@
 """Managed Integration configuration API.
 
 This router exposes endpoints to create, read, list, update, and delete
-managed integration configurations. All endpoints are scoped to the
-authenticated user's active workspace.
+managed integration configurations. All CRUD endpoints are project-scoped
+with RBAC enforcement.
+
+Endpoints (mounted at /projects/{project_id}/integrations):
+    POST   /          - Create a new integration config      (contributor)
+    GET    /          - List integration configs (pagination) (reader)
+    GET    /{id}      - Get a specific integration by ID     (reader)
+    PATCH  /{id}      - Update an integration config         (contributor)
+    DELETE /{id}      - Delete an integration config         (admin)
 """
 
 import logging
@@ -23,6 +30,7 @@ from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
     get_session,
+    require_project_role,
     require_workspace,
 )
 from app.infrastructure.db.models.managed_integration import (
@@ -41,9 +49,10 @@ PAGINATION_DEFAULT_LIMIT = 100
 async def _get_integration(
     id: str,
     session: AsyncSession,
-    workspace_id: UUID | None = None,
+    workspace_id: UUID,
+    project_id: UUID,
 ) -> ManagedIntegrationModel:
-    """Get integration config by ID, optionally scoped to a workspace."""
+    """Get integration config by ID, scoped to workspace and project."""
     try:
         uuid_id = UUID(id)
     except ValueError as err:
@@ -53,12 +62,7 @@ async def _get_integration(
         ) from err
 
     model = await session.get(ManagedIntegrationModel, uuid_id)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Integration with id '{id}' not found",
-        )
-    if workspace_id is not None and model.workspace_id != workspace_id:
+    if not model or model.workspace_id != workspace_id or model.project_id != project_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Integration with id '{id}' not found",
@@ -87,12 +91,16 @@ def _model_to_schema(
     summary="Create managed integration",
 )
 async def create_integration(
+    project_id: str,
     request: ManagedIntegrationCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedIntegrationRead:
     """Create a new managed integration configuration."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+
     now = datetime.now(UTC)
 
     integration_config = IntegrationConfig(**request.integration.model_dump())
@@ -103,7 +111,8 @@ async def create_integration(
         integration_config=integration_config.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=access.workspace_id,
+        project_id=project_uuid,
     )
 
     session.add(model)
@@ -119,6 +128,7 @@ async def create_integration(
     summary="List managed integrations",
 )
 async def list_integrations(
+    project_id: str,
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
@@ -126,6 +136,9 @@ async def list_integrations(
     workspace_id: UUID = Depends(require_workspace),
 ) -> list[ManagedIntegrationRead]:
     """List managed integration configurations with pagination."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -139,7 +152,10 @@ async def list_integrations(
 
     stmt = (
         select(ManagedIntegrationModel)
-        .where(ManagedIntegrationModel.workspace_id == workspace_id)
+        .where(
+            ManagedIntegrationModel.workspace_id == access.workspace_id,
+            ManagedIntegrationModel.project_id == project_uuid,
+        )
         .limit(limit)
         .offset(offset)
     )
@@ -155,13 +171,16 @@ async def list_integrations(
     summary="Get managed integration by ID",
 )
 async def get_integration(
+    project_id: str,
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedIntegrationRead:
     """Get a managed integration configuration by ID."""
-    model = await _get_integration(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+    model = await _get_integration(id, session, access.workspace_id, project_uuid)
     return _model_to_schema(model)
 
 
@@ -171,13 +190,16 @@ async def get_integration(
     summary="Delete managed integration",
 )
 async def delete_integration(
+    project_id: str,
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> None:
     """Delete a managed integration configuration permanently."""
-    model = await _get_integration(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "admin")
+    model = await _get_integration(id, session, access.workspace_id, project_uuid)
     await session.delete(model)
     await session.flush()
 
@@ -188,6 +210,7 @@ async def delete_integration(
     summary="Update managed integration",
 )
 async def patch_integration(
+    project_id: str,
     id: str,
     request: ManagedIntegrationPatch,
     session: AsyncSession = Depends(get_session),
@@ -195,7 +218,9 @@ async def patch_integration(
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedIntegrationRead:
     """Update an integration configuration."""
-    model = await _get_integration(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+    model = await _get_integration(id, session, access.workspace_id, project_uuid)
 
     model.name = request.name
     integration_config = IntegrationConfig(

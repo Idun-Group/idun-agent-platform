@@ -3,6 +3,7 @@ import { Database, Eye, Server, Shield, KeyRound, Plug, Plus, Check } from 'luci
 import { notify } from '../../../../toast/notify';
 import type { BackendAgent } from '../../../../../services/agents';
 import { patchAgent } from '../../../../../services/agents';
+import { useProject } from '../../../../../hooks/use-project';
 import type { ApplicationConfig, AppCategory } from '../../../../../types/application.types';
 import type { AgentSelections, AvailableResources } from '../../../../../utils/agent-config-utils';
 import {
@@ -86,6 +87,7 @@ export default function ResourcesSection({
     onResourcesRefresh,
     onAgentRefresh,
 }: ResourcesSectionProps) {
+    const { selectedProjectId } = useProject();
     const framework = agent.framework || 'LANGGRAPH';
 
     const [createTarget, setCreateTarget] = useState<CreateTarget | null>(null);
@@ -472,7 +474,7 @@ export default function ResourcesSection({
                 agentConfig: extractAgentConfig(agent.engine_config),
             };
             const payload = buildAgentPatchPayload(formState, currentSelections, resources);
-            await patchAgent(agent.id, payload);
+            await patchAgent(selectedProjectId!, agent.id, payload);
             notify.success('Resources updated');
             onAgentRefresh?.();
         } catch (err) {
@@ -512,7 +514,7 @@ export default function ResourcesSection({
                 agentConfig: extractAgentConfig(agent.engine_config),
             };
             const payload = buildAgentPatchPayload(formState, currentSelections, resources);
-            await patchAgent(agent.id, payload);
+            await patchAgent(selectedProjectId!, agent.id, payload);
             notify.success(`${name} assigned to agent`);
             onAgentRefresh?.();
         } catch (err) {
@@ -548,9 +550,9 @@ export default function ResourcesSection({
         if (!onResourcesRefresh) return;
         try {
             const [apps, ssos, integrations] = await Promise.all([
-                fetchApplications(),
-                fetchSSOs().catch(() => []),
-                fetchIntegrations().catch(() => []),
+                fetchApplications(selectedProjectId!),
+                fetchSSOs(selectedProjectId!).catch(() => []),
+                fetchIntegrations(selectedProjectId!).catch(() => []),
             ]);
             const newResources: AvailableResources = {
                 observabilityApps: apps.filter(a => a.category === 'Observability'),

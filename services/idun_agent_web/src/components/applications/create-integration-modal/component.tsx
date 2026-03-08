@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { createIntegration, updateIntegration } from '../../../services/integrations';
 import type { ManagedIntegration, IntegrationProvider } from '../../../services/integrations';
+import { useProject } from '../../../hooks/use-project';
 
 interface Props {
     isOpen: boolean;
@@ -294,6 +295,7 @@ const ProviderPickerDesc = styled.span`
 `;
 
 const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit, provider: providerProp }) => {
+    const { selectedProjectId } = useProject();
     const [selectedProvider, setSelectedProvider] = useState<IntegrationProvider>(providerProp ?? 'WHATSAPP');
     const [name, setName] = useState('');
     const [enabled, setEnabled] = useState(true);
@@ -395,10 +397,10 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
         try {
             const integration = { provider, enabled, config };
 
-            if (appToEdit?.id) {
-                await updateIntegration(appToEdit.id, { name: name.trim(), integration });
-            } else {
-                await createIntegration({ name: name.trim(), integration });
+            if (appToEdit?.id && selectedProjectId) {
+                await updateIntegration(selectedProjectId, appToEdit.id, { name: name.trim(), integration });
+            } else if (selectedProjectId) {
+                await createIntegration(selectedProjectId, { name: name.trim(), integration });
             }
             onCreated();
             onClose();

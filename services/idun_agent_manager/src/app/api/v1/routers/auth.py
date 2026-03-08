@@ -165,7 +165,7 @@ async def _consume_pending_invitations(
                 id=uuid4(),
                 user_id=user_id,
                 workspace_id=inv.workspace_id,
-                role=inv.role,
+                is_owner=inv.is_owner,
             )
             db_session.add(membership)
             new_workspace_ids.append(str(inv.workspace_id))
@@ -259,7 +259,10 @@ async def callback(
     user = result.scalar_one_or_none()
 
     if user is None:
-        # First-time login: create user only (no auto-workspace creation)
+        # First-time login: create user
+        from app.infrastructure.db.models.membership import MembershipModel
+        from app.infrastructure.db.models.workspace import WorkspaceModel
+
         user = UserModel(
             id=uuid4(),
             email=email,
@@ -273,7 +276,42 @@ async def callback(
 
         # Consume any pending invitations for this email
         invited_ws_ids = await _consume_pending_invitations(session, user.id, email)
-        workspace_ids = invited_ws_ids
+
+        if invited_ws_ids:
+            workspace_ids = invited_ws_ids
+        else:
+            # No invitations: create default workspace + membership + project
+            workspace = WorkspaceModel(
+                id=uuid4(),
+                name=f"{name or email.split('@')[0]}'s Workspace",
+                slug=f"ws-{uuid4().hex[:8]}",
+            )
+            session.add(workspace)
+            await session.flush()
+
+            membership = MembershipModel(
+                id=uuid4(),
+                user_id=user.id,
+                workspace_id=workspace.id,
+                is_owner=True,
+            )
+            session.add(membership)
+            await session.flush()
+
+            # Auto-create default project for the new workspace
+            from app.infrastructure.db.models.project import ProjectModel
+
+            default_project = ProjectModel(
+                id=uuid4(),
+                name="Default",
+                slug="default",
+                is_default=True,
+                workspace_id=workspace.id,
+            )
+            session.add(default_project)
+            await session.flush()
+
+            workspace_ids = [str(workspace.id)]
 
         # Set default workspace if invitations provided one
         if workspace_ids and user.default_workspace_id is None:
@@ -314,6 +352,7 @@ async def callback(
             "default_workspace_id": str(user.default_workspace_id)
             if user.default_workspace_id
             else None,
+            "session_version": user.session_version,
         },
         "created_at": int(time.time()),
     }
@@ -433,6 +472,9 @@ async def basic_signup(
             detail="Email already registered",
         )
 
+    from app.infrastructure.db.models.membership import MembershipModel
+    from app.infrastructure.db.models.workspace import WorkspaceModel
+
     try:
         user = UserModel(
             id=uuid4(),
@@ -449,9 +491,45 @@ async def basic_signup(
             session, user.id, request.email
         )
 
-        # Set default workspace if invitations provided one
-        if invited_ws_ids and user.default_workspace_id is None:
-            user.default_workspace_id = UUID(invited_ws_ids[0])
+        if invited_ws_ids:
+            workspace_ids = invited_ws_ids
+        else:
+            # No invitations: create default workspace + membership + project
+            workspace = WorkspaceModel(
+                id=uuid4(),
+                name=f"{request.name or request.email.split('@')[0]}'s Workspace",
+                slug=f"ws-{uuid4().hex[:8]}",
+            )
+            session.add(workspace)
+            await session.flush()
+
+            membership = MembershipModel(
+                id=uuid4(),
+                user_id=user.id,
+                workspace_id=workspace.id,
+                is_owner=True,
+            )
+            session.add(membership)
+            await session.flush()
+
+            # Auto-create default project for the new workspace
+            from app.infrastructure.db.models.project import ProjectModel
+
+            default_project = ProjectModel(
+                id=uuid4(),
+                name="Default",
+                slug="default",
+                is_default=True,
+                workspace_id=workspace.id,
+            )
+            session.add(default_project)
+            await session.flush()
+
+            workspace_ids = [str(workspace.id)]
+
+        # Set default workspace if user doesn't have one yet
+        if workspace_ids and user.default_workspace_id is None:
+            user.default_workspace_id = UUID(workspace_ids[0])
             await session.flush()
     except Exception as e:
         logger.error(f"Database error creating user: {e}")
@@ -459,8 +537,6 @@ async def basic_signup(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database error",
         ) from e
-
-    workspace_ids = invited_ws_ids
 
     session_payload = {
         "provider": "local",
@@ -472,6 +548,7 @@ async def basic_signup(
             "default_workspace_id": str(user.default_workspace_id)
             if user.default_workspace_id
             else None,
+            "session_version": user.session_version,
         },
         "created_at": int(time.time()),
     }
@@ -555,6 +632,7 @@ async def basic_login(
             "default_workspace_id": str(user.default_workspace_id)
             if user.default_workspace_id
             else None,
+            "session_version": user.session_version,
         },
         "created_at": int(time.time()),
     }

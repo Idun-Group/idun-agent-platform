@@ -1,115 +1,117 @@
-import { deleteRequest, getJson, patchJson, postJson } from '../utils/api';
+import { getJson, postJson, patchJson, deleteRequest } from '../utils/api';
 
-export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'viewer';
+// --- Types ---
 
-export type WorkspaceMember = {
-    id: string;
-    user_id: string;
-    email: string;
-    name: string | null;
-    picture_url: string | null;
-    role: WorkspaceRole;
-    created_at: string;
-};
+export type ProjectRole = "admin" | "contributor" | "reader";
 
-export type WorkspaceInvitation = {
-    id: string;
-    email: string;
-    role: WorkspaceRole;
-    invited_by: string | null;
-    created_at: string;
-    status: 'pending';
-};
-
-export type MemberListResponse = {
-    members: WorkspaceMember[];
-    invitations: WorkspaceInvitation[];
-    total: number;
-};
-
-export async function listMembers(
-    workspaceId: string,
-    params?: { limit?: number; offset?: number },
-): Promise<MemberListResponse> {
-    const query = new URLSearchParams();
-    if (params?.limit != null) query.set('limit', String(params.limit));
-    if (params?.offset != null) query.set('offset', String(params.offset));
-    const qs = query.toString();
-    return getJson<MemberListResponse>(
-        `/api/v1/workspaces/${workspaceId}/members${qs ? `?${qs}` : ''}`,
-    );
+export interface ProjectAssignment {
+  project_id: string;
+  role: ProjectRole;
 }
 
-export async function addMember(
-    workspaceId: string,
-    body: { email: string; role: WorkspaceRole },
-): Promise<WorkspaceMember> {
-    return postJson<WorkspaceMember, { email: string; role: WorkspaceRole }>(
-        `/api/v1/workspaces/${workspaceId}/members`,
-        body,
-    );
+export interface MemberRead {
+  id: string;
+  user_id: string;
+  email: string;
+  name: string | null;
+  picture_url: string | null;
+  is_owner: boolean;
+  created_at: string;
 }
 
-export async function updateMemberRole(
-    workspaceId: string,
-    membershipId: string,
-    body: { role: WorkspaceRole },
-): Promise<WorkspaceMember> {
-    return patchJson<WorkspaceMember, { role: WorkspaceRole }>(
-        `/api/v1/workspaces/${workspaceId}/members/${membershipId}`,
-        body,
-    );
+export interface InvitationProjectRead {
+  project_id: string;
+  role: ProjectRole;
 }
 
-export async function removeMember(
-    workspaceId: string,
-    membershipId: string,
+export interface InvitationRead {
+  id: string;
+  email: string;
+  is_owner: boolean;
+  invited_by: string | null;
+  created_at: string;
+  project_assignments: InvitationProjectRead[];
+}
+
+export interface MemberListResponse {
+  members: MemberRead[];
+  invitations: InvitationRead[];
+  total: number;
+}
+
+export interface ProjectMemberRead {
+  id: string;
+  user_id: string;
+  email: string;
+  name: string | null;
+  picture_url: string | null;
+  role: ProjectRole;
+  is_workspace_owner: boolean;
+  created_at: string;
+}
+
+export interface ProjectMemberListResponse {
+  members: ProjectMemberRead[];
+  total: number;
+}
+
+// --- Workspace Invitations ---
+
+export async function acceptInvitation(workspaceId: string): Promise<MemberRead> {
+  return postJson<MemberRead>(`/api/v1/workspaces/${workspaceId}/accept-invitation`, {});
+}
+
+// --- Workspace Members ---
+
+export async function listWorkspaceMembers(workspaceId: string): Promise<MemberListResponse> {
+  return getJson<MemberListResponse>(`/api/v1/workspaces/${workspaceId}/members`);
+}
+
+export async function addWorkspaceMember(
+  workspaceId: string,
+  data: { email: string; is_owner?: boolean; project_assignments?: ProjectAssignment[] }
+): Promise<MemberRead | InvitationRead> {
+  return postJson<MemberRead | InvitationRead>(`/api/v1/workspaces/${workspaceId}/members`, data);
+}
+
+export async function removeWorkspaceMember(
+  workspaceId: string,
+  membershipId: string
 ): Promise<void> {
-    await deleteRequest(`/api/v1/workspaces/${workspaceId}/members/${membershipId}`);
+  await deleteRequest(`/api/v1/workspaces/${workspaceId}/members/${membershipId}`);
 }
 
 export async function cancelInvitation(
-    workspaceId: string,
-    invitationId: string,
+  workspaceId: string,
+  invitationId: string
 ): Promise<void> {
-    await deleteRequest(
-        `/api/v1/workspaces/${workspaceId}/invitations/${invitationId}`,
-    );
+  await deleteRequest(`/api/v1/workspaces/${workspaceId}/invitations/${invitationId}`);
 }
 
-/** Labels for display */
-export const ROLE_LABELS: Record<WorkspaceRole, string> = {
-    owner: 'Owner',
-    admin: 'Admin',
-    member: 'Member',
-    viewer: 'Viewer',
-};
+// --- Project Members ---
 
-/** Hierarchy for permission checks */
-export const ROLE_HIERARCHY: Record<WorkspaceRole, number> = {
-    owner: 4,
-    admin: 3,
-    member: 2,
-    viewer: 1,
-};
+export async function listProjectMembers(projectId: string): Promise<ProjectMemberListResponse> {
+  return getJson<ProjectMemberListResponse>(`/api/v1/projects/${projectId}/members`);
+}
 
-/** Permission matrix per role */
-export const ROLE_PERMISSIONS: Record<WorkspaceRole, string[]> = {
-    owner: [
-        'Full workspace control',
-        'Delete workspace',
-        'Manage all members',
-        'Assign any role',
-        'Rename workspace',
-        'Manage spaces',
-        'View all data',
-    ],
-    admin: [
-        'Manage members (member/viewer)',
-        'Rename workspace',
-        'Manage spaces',
-        'View all data',
-    ],
-    member: ['Use agents and tools', 'View spaces', 'View members'],
-    viewer: ['Read-only access', 'View spaces', 'View members'],
-};
+export async function addProjectMember(
+  projectId: string,
+  data: { user_id: string; role: ProjectRole }
+): Promise<ProjectMemberRead> {
+  return postJson<ProjectMemberRead>(`/api/v1/projects/${projectId}/members`, data);
+}
+
+export async function updateProjectMemberRole(
+  projectId: string,
+  membershipId: string,
+  data: { role: ProjectRole }
+): Promise<ProjectMemberRead> {
+  return patchJson<ProjectMemberRead>(`/api/v1/projects/${projectId}/members/${membershipId}`, data);
+}
+
+export async function removeProjectMember(
+  projectId: string,
+  membershipId: string
+): Promise<void> {
+  await deleteRequest(`/api/v1/projects/${projectId}/members/${membershipId}`);
+}

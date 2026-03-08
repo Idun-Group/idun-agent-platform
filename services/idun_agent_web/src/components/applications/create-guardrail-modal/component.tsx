@@ -24,6 +24,7 @@ import {
     validateGuardrailForm,
     isSupportedGuardrailType,
 } from '../../../services/guardrail-payloads';
+import { useProject } from '../../../hooks/use-project';
 
 interface Props {
     isOpen: boolean;
@@ -575,6 +576,7 @@ const BigSpinner = styled.div`
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit }) => {
+    const { selectedProjectId } = useProject();
     const isEditMode = !!appToEdit;
     const [selectedType, setSelectedType] = useState<AppType | null>(null);
     const [guardrailName, setGuardrailName] = useState('');
@@ -634,15 +636,15 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
         setErrorMessage(null);
         try {
             const name = guardrailName.trim() || guardrailType.label;
-            if (isEditMode && appToEdit?.id) {
-                await updateApplication(appToEdit.id, {
+            if (isEditMode && appToEdit?.id && selectedProjectId) {
+                await updateApplication(selectedProjectId, appToEdit.id, {
                     name,
                     type: guardrailType.id,
                     category: 'Guardrails',
                     config: formValues,
                 });
-            } else {
-                await createApplication({
+            } else if (selectedProjectId) {
+                await createApplication(selectedProjectId, {
                     name,
                     type: guardrailType.id,
                     category: 'Guardrails',

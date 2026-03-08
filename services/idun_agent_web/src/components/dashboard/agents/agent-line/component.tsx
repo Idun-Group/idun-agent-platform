@@ -19,6 +19,7 @@ import {
     TableCell,
     TableRow,
 } from '../../table-components/component';
+import { useProject } from '../../../../hooks/use-project';
 
 interface AgentLineProps {
     agent: BackendAgent;
@@ -97,6 +98,7 @@ interface AgentLineProps {
 // `;
 
 export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps) {
+    const { selectedProjectId } = useProject();
     const navigate = useNavigate();
     const selectStatus = (status: BackendAgent['status']) => {
         switch (status) {
@@ -180,8 +182,8 @@ export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps)
                         onClick={async () => {
                             try {
                                 const confirmed = window.confirm('Delete this agent?');
-                                if (!confirmed) return;
-                                await deleteAgent(agent.id);
+                                if (!confirmed || !selectedProjectId) return;
+                                await deleteAgent(selectedProjectId, agent.id);
                                 notify.success('Agent deleted');
                                 onDeleted?.(agent.id);
                             } catch (e) {

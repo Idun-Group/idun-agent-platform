@@ -13,9 +13,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import CurrentUser, get_current_user, get_session
-from app.api.v1.routers.members import require_workspace_role
-from app.api.v1.schemas.workspace_members import WorkspaceRole
 from app.infrastructure.db.models.membership import MembershipModel
+from app.infrastructure.db.models.project import ProjectModel
+from app.infrastructure.db.models.project_membership import ProjectMembershipModel
 from app.infrastructure.db.models.user import UserModel
 from app.infrastructure.db.models.workspace import WorkspaceModel
 
@@ -99,6 +99,7 @@ async def create_workspace(
 ) -> WorkspaceRead:
     """Create a workspace and add the current user as owner."""
     ws_id = uuid4()
+    user_uuid = UUID(user.user_id)
     now = datetime.now(UTC)
 
     workspace = WorkspaceModel(
@@ -113,15 +114,40 @@ async def create_workspace(
 
     membership = MembershipModel(
         id=uuid4(),
-        user_id=UUID(user.user_id),
+        user_id=user_uuid,
         workspace_id=ws_id,
-        role=WorkspaceRole.OWNER.value,
+        is_owner=True,
     )
     session.add(membership)
     await session.flush()
 
+    # Auto-create default project for the new workspace
+    project_id = uuid4()
+    project = ProjectModel(
+        id=project_id,
+        name="Default",
+        slug="default",
+        is_default=True,
+        workspace_id=ws_id,
+        created_by=user_uuid,
+        created_at=now,
+        updated_at=now,
+    )
+    session.add(project)
+    await session.flush()
+
+    # Grant the owner admin access on the default project
+    project_membership = ProjectMembershipModel(
+        id=uuid4(),
+        project_id=project_id,
+        user_id=user_uuid,
+        role="admin",
+    )
+    session.add(project_membership)
+    await session.flush()
+
     # Set as default workspace if user doesn't have one yet
-    user_model = await session.get(UserModel, UUID(user.user_id))
+    user_model = await session.get(UserModel, user_uuid)
     if user_model and user_model.default_workspace_id is None:
         user_model.default_workspace_id = ws_id
         await session.flush()
@@ -144,7 +170,7 @@ async def patch_workspace(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> WorkspaceRead:
-    """Update a workspace name. Requires admin or owner role."""
+    """Update a workspace name (owner only)."""
     try:
         ws_uuid = UUID(workspace_id)
     except ValueError as err:
@@ -153,7 +179,23 @@ async def patch_workspace(
             detail="Invalid workspace id",
         ) from err
 
-    await require_workspace_role(ws_uuid, user, session, WorkspaceRole.ADMIN)
+    # Verify membership
+    mem_stmt = select(MembershipModel).where(
+        MembershipModel.user_id == UUID(user.user_id),
+        MembershipModel.workspace_id == ws_uuid,
+    )
+    mem_result = await session.execute(mem_stmt)
+    membership = mem_result.scalar_one_or_none()
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found",
+        )
+    if not membership.is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only workspace owners can update workspace settings",
+        )
 
     workspace = await session.get(WorkspaceModel, ws_uuid)
     if not workspace:
@@ -195,7 +237,23 @@ async def delete_workspace(
             detail="Invalid workspace id",
         ) from err
 
-    await require_workspace_role(ws_uuid, user, session, WorkspaceRole.OWNER)
+    # Verify owner membership
+    mem_stmt = select(MembershipModel).where(
+        MembershipModel.user_id == UUID(user.user_id),
+        MembershipModel.workspace_id == ws_uuid,
+    )
+    mem_result = await session.execute(mem_stmt)
+    membership = mem_result.scalar_one_or_none()
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found",
+        )
+    if not membership.is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only workspace owners can delete workspaces",
+        )
 
     workspace = await session.get(WorkspaceModel, ws_uuid)
     if not workspace:

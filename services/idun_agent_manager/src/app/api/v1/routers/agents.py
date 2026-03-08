@@ -10,14 +10,18 @@ MVP assumptions and behavior:
   Bearer token to access `/config`.
 - Database access uses SQLAlchemy async sessions. Errors are surfaced as simple
   HTTP problem responses with relevant status codes.
-- All resource endpoints are scoped to the authenticated user's active workspace.
+- All resource CRUD endpoints are project-scoped with RBAC enforcement.
+- The `/config` and `/key` runtime endpoints remain flat (workspace-scoped).
 
-Endpoints:
-    POST   /          - Create a new managed agent
-    GET    /          - List agents (pagination)
-    GET    /{id}      - Get a specific agent by ID
-    PATCH  /{id}      - Partially update an agent's engine configuration
-    DELETE /{id}      - Delete an agent
+Endpoints (project-scoped, mounted at /projects/{project_id}/agents):
+    POST   /          - Create a new managed agent          (contributor)
+    GET    /          - List agents (pagination)             (reader)
+    GET    /{id}      - Get a specific agent by ID           (reader)
+    PATCH  /{id}      - Partially update an agent            (contributor)
+    DELETE /{id}      - Delete an agent                      (admin)
+    PUT    /{id}/status - Update agent status                (contributor)
+
+Endpoints (flat runtime, mounted at /agents):
     GET    /key       - Generate an API key for agent authentication
     GET    /config    - Retrieve agent config using API key (Bearer token)
 """
@@ -46,12 +50,17 @@ from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
     get_session,
+    require_project_role,
     require_workspace,
 )
 from app.api.v1.routers.auth import encrypt_payload
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 
+# Project-scoped CRUD router
 router = APIRouter()
+
+# Flat runtime router (mounted separately at /agents)
+runtime_router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +74,10 @@ API_KEY_PREFIX = "idun-"
 async def _get_agent(
     agent_id: str,
     session: AsyncSession,
-    workspace_id: UUID | None = None,
+    workspace_id: UUID,
+    project_id: UUID,
 ) -> ManagedAgentModel:
-    """Get agent by ID, optionally scoped to a workspace."""
+    """Get agent by ID, scoped to workspace and project."""
     try:
         agent_uuid = UUID(agent_id)
     except ValueError as err:
@@ -77,12 +87,7 @@ async def _get_agent(
         ) from err
 
     model = await session.get(ManagedAgentModel, agent_uuid)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Agent with id '{agent_id}' not found",
-        )
-    if workspace_id is not None and model.workspace_id != workspace_id:
+    if not model or model.workspace_id != workspace_id or model.project_id != project_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id '{agent_id}' not found",
@@ -106,6 +111,11 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
     )
 
 
+# ---------------------------------------------------------------------------
+# Project-scoped CRUD endpoints
+# ---------------------------------------------------------------------------
+
+
 @router.post(
     "/",
     response_model=ManagedAgentRead,
@@ -114,12 +124,16 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
     description="Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
 )
 async def create_agent(
+    project_id: str,
     raw_request: Request,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedAgentRead:
     """Create a new managed agent."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+
     body = await raw_request.json()
 
     if "engine_config" in body and "guardrails" in body["engine_config"]:
@@ -142,7 +156,8 @@ async def create_agent(
         engine_config=engine_config.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=access.workspace_id,
+        project_id=project_uuid,
     )
 
     session.add(model)
@@ -153,6 +168,161 @@ async def create_agent(
 
 
 @router.get(
+    "/",
+    response_model=list[ManagedAgentRead],
+    summary="List managed agents",
+    description="List all managed agents with pagination.",
+)
+async def list_agents(
+    project_id: str,
+    limit: int = PAGINATION_DEFAULT_LIMIT,
+    offset: int = 0,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> list[ManagedAgentRead]:
+    """List managed agents with pagination, scoped to project."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+
+    if not (1 <= limit <= PAGINATION_MAX_LIMIT):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Limit must be between 1 and {PAGINATION_MAX_LIMIT}",
+        )
+    if offset < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
+        )
+
+    stmt = (
+        select(ManagedAgentModel)
+        .where(
+            ManagedAgentModel.workspace_id == access.workspace_id,
+            ManagedAgentModel.project_id == project_uuid,
+        )
+        .limit(limit)
+        .offset(offset)
+    )
+
+    result = await session.execute(stmt)
+    rows = result.scalars().all()
+
+    return [_model_to_schema(r) for r in rows]
+
+
+@router.get(
+    "/{id}",
+    response_model=ManagedAgentRead,
+    summary="Get managed agent by ID",
+    description="Retrieve a specific managed agent by its UUID with complete configuration details.",
+)
+async def get_agent(
+    project_id: str,
+    id: str,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> ManagedAgentRead:
+    """Get a managed agent by ID."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+    model = await _get_agent(id, session, access.workspace_id, project_uuid)
+    return _model_to_schema(model)
+
+
+@router.delete(
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete managed agent",
+    description="Permanently delete a managed agent and all its configuration data.",
+)
+async def delete_agent(
+    project_id: str,
+    id: str,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> None:
+    """Delete a managed agent permanently."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "admin")
+    model = await _get_agent(id, session, access.workspace_id, project_uuid)
+    await session.delete(model)
+    await session.flush()
+
+
+@router.patch(
+    "/{id}",
+    response_model=ManagedAgentRead,
+    summary="Partially update agent (PATCH)",
+    description="Partially update an agent's configuration. Only the name and engine_config field can be updated if provided.",
+)
+async def patch_agent(
+    project_id: str,
+    id: str,
+    raw_request: Request,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> ManagedAgentRead:
+    """Partially update an agent's configuration."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+    model = await _get_agent(id, session, access.workspace_id, project_uuid)
+
+    body = await raw_request.json()
+
+    if "engine_config" in body and "guardrails" in body["engine_config"]:
+        body["engine_config"]["guardrails"] = convert_guardrail(
+            body["engine_config"]["guardrails"]
+        )
+
+    request = ManagedAgentPatch(**body)
+
+    model.name = request.name
+    model.base_url = request.base_url
+    engine_config = EngineConfig(**request.engine_config.model_dump())
+    model.engine_config = engine_config.model_dump()
+    model.updated_at = datetime.now(UTC)
+
+    await session.flush()
+    await session.refresh(model)
+
+    return _model_to_schema(model)
+
+
+@router.put(
+    "/{id}/status",
+    response_model=ManagedAgentRead,
+    summary="Update agent status",
+    description="Update only the status field of an agent. Used by the health check flow to set active/draft without touching config.",
+)
+async def update_agent_status(
+    project_id: str,
+    id: str,
+    request: ManagedAgentStatusUpdate,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> ManagedAgentRead:
+    """Update agent status without modifying other fields."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+    model = await _get_agent(id, session, access.workspace_id, project_uuid)
+    model.status = request.status.value
+    model.updated_at = datetime.now(UTC)
+    await session.flush()
+    await session.refresh(model)
+    return _model_to_schema(model)
+
+
+# ---------------------------------------------------------------------------
+# Flat runtime endpoints (workspace-scoped, no project)
+# ---------------------------------------------------------------------------
+
+
+@runtime_router.get(
     "/key",
     response_model=ApiKeyResponse,
     summary="Generate agent API key",
@@ -200,7 +370,7 @@ async def generate_key(
         ) from e
 
 
-@router.get(
+@runtime_router.get(
     "/config",
     summary="Get agent config by API key",
     description="Retrieve agent configuration using API key authentication (Bearer token).",
@@ -211,7 +381,7 @@ async def config(
 ) -> ManagedAgentRead:
     """Get agent configuration using API key authentication.
 
-    This endpoint does NOT require a session cookie – it uses Bearer token auth.
+    This endpoint does NOT require a session cookie -- it uses Bearer token auth.
     """
     if not auth.startswith("Bearer "):
         raise HTTPException(
@@ -239,134 +409,3 @@ async def config(
         )
 
     return _model_to_schema(agent_model)
-
-
-@router.get(
-    "/",
-    response_model=list[ManagedAgentRead],
-    summary="List managed agents",
-    description="List all managed agents with pagination.",
-)
-async def list_agents(
-    limit: int = PAGINATION_DEFAULT_LIMIT,
-    offset: int = 0,
-    session: AsyncSession = Depends(get_session),
-    user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
-) -> list[ManagedAgentRead]:
-    """List managed agents with pagination, scoped to workspace."""
-    if not (1 <= limit <= PAGINATION_MAX_LIMIT):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Limit must be between 1 and {PAGINATION_MAX_LIMIT}",
-        )
-    if offset < 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Offset must be >= 0"
-        )
-
-    stmt = (
-        select(ManagedAgentModel)
-        .where(ManagedAgentModel.workspace_id == workspace_id)
-        .limit(limit)
-        .offset(offset)
-    )
-
-    result = await session.execute(stmt)
-    rows = result.scalars().all()
-
-    return [_model_to_schema(r) for r in rows]
-
-
-@router.get(
-    "/{id}",
-    response_model=ManagedAgentRead,
-    summary="Get managed agent by ID",
-    description="Retrieve a specific managed agent by its UUID with complete configuration details.",
-)
-async def get_agent(
-    id: str,
-    session: AsyncSession = Depends(get_session),
-    user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
-) -> ManagedAgentRead:
-    """Get a managed agent by ID."""
-    model = await _get_agent(id, session, workspace_id)
-    return _model_to_schema(model)
-
-
-@router.delete(
-    "/{id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete managed agent",
-    description="Permanently delete a managed agent and all its configuration data.",
-)
-async def delete_agent(
-    id: str,
-    session: AsyncSession = Depends(get_session),
-    user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
-) -> None:
-    """Delete a managed agent permanently."""
-    model = await _get_agent(id, session, workspace_id)
-    await session.delete(model)
-    await session.flush()
-
-
-@router.patch(
-    "/{id}",
-    response_model=ManagedAgentRead,
-    summary="Partially update agent (PATCH)",
-    description="Partially update an agent's configuration. Only the name and engine_config field can be updated if provided.",
-)
-async def patch_agent(
-    id: str,
-    raw_request: Request,
-    session: AsyncSession = Depends(get_session),
-    user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
-) -> ManagedAgentRead:
-    """Partially update an agent's configuration."""
-    model = await _get_agent(id, session, workspace_id)
-
-    body = await raw_request.json()
-
-    if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(
-            body["engine_config"]["guardrails"]
-        )
-
-    request = ManagedAgentPatch(**body)
-
-    model.name = request.name
-    model.base_url = request.base_url
-    engine_config = EngineConfig(**request.engine_config.model_dump())
-    model.engine_config = engine_config.model_dump()
-    model.updated_at = datetime.now(UTC)
-
-    await session.flush()
-    await session.refresh(model)
-
-    return _model_to_schema(model)
-
-
-@router.put(
-    "/{id}/status",
-    response_model=ManagedAgentRead,
-    summary="Update agent status",
-    description="Update only the status field of an agent. Used by the health check flow to set active/draft without touching config.",
-)
-async def update_agent_status(
-    id: str,
-    request: ManagedAgentStatusUpdate,
-    session: AsyncSession = Depends(get_session),
-    user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
-) -> ManagedAgentRead:
-    """Update agent status without modifying other fields."""
-    model = await _get_agent(id, session, workspace_id)
-    model.status = request.status.value
-    model.updated_at = datetime.now(UTC)
-    await session.flush()
-    await session.refresh(model)
-    return _model_to_schema(model)

@@ -13,6 +13,7 @@ import {
 import { Button } from '../../general/button/component';
 import type { ApplicationConfig, AppType } from '../../../types/application.types';
 import { createApplication, updateApplication } from '../../../services/applications';
+import { useProject } from '../../../hooks/use-project';
 
 // Types for the internal form state
 interface MemoryFormData {
@@ -60,6 +61,7 @@ const DB_PROVIDERS = [
 ];
 
 export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, onClose, onSaved, appToEdit, initialFramework }) => {
+  const { selectedProjectId } = useProject();
   const isEditMode = !!appToEdit;
   const [selectedFramework, setSelectedFramework] = useState<string>('LANGGRAPH');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -161,16 +163,16 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
         setLoadingText('Verifying schema integrity...');
         setProgress(95);
 
-        if (isEditMode && appToEdit?.id) {
-            await updateApplication(appToEdit.id, {
+        if (isEditMode && appToEdit?.id && selectedProjectId) {
+            await updateApplication(selectedProjectId, appToEdit.id, {
                 name: formData.name,
                 type: formData.provider as any,
                 category: 'Memory',
                 config,
                 framework: selectedFramework,
             });
-        } else {
-            await createApplication({
+        } else if (selectedProjectId) {
+            await createApplication(selectedProjectId, {
                 name: formData.name,
                 type: formData.provider as any,
                 category: 'Memory',

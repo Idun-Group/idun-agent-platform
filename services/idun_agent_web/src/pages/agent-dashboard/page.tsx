@@ -8,6 +8,7 @@ import type { BackendAgent } from '../../services/agents';
 import { listAgents, deleteAgent } from '../../services/agents';
 import AgentCard from '../../components/dashboard/agents/agent-card/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Animations ───────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ const spin = keyframes`
 const AgentDashboardPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { selectedProjectId } = useProject();
 
     const [agents, setAgents] = useState<BackendAgent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -33,15 +35,16 @@ const AgentDashboardPage = () => {
     const [agentToDelete, setAgentToDelete] = useState<BackendAgent | null>(null);
 
     useEffect(() => {
+        if (!selectedProjectId) return;
         setIsLoading(true);
-        listAgents()
+        listAgents(selectedProjectId)
             .then((rows) => setAgents(rows))
             .catch((error) => {
                 const message = error instanceof Error ? error.message : String(error);
                 notify.error(message);
             })
             .finally(() => setIsLoading(false));
-    }, []);
+    }, [selectedProjectId]);
 
     const filteredAgents = useMemo(() => {
         if (!searchTerm) return agents;
@@ -55,9 +58,9 @@ const AgentDashboardPage = () => {
     }, [agents, searchTerm]);
 
     const handleDeleteConfirm = async () => {
-        if (!agentToDelete) return;
+        if (!agentToDelete || !selectedProjectId) return;
         try {
-            await deleteAgent(agentToDelete.id);
+            await deleteAgent(selectedProjectId, agentToDelete.id);
             notify.success('Agent deleted');
             setAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
         } catch (err) {

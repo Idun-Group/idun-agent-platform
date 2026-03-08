@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { createSSO, updateSSO } from '../../../services/sso';
 import type { ManagedSSO } from '../../../services/sso';
+import { useProject } from '../../../hooks/use-project';
 
 interface Props {
     isOpen: boolean;
@@ -243,6 +244,7 @@ const BigSpinner = styled.div`
 `;
 
 const CreateSsoModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit }) => {
+    const { selectedProjectId } = useProject();
     const [name, setName] = useState('');
     const [issuer, setIssuer] = useState('');
     const [clientId, setClientId] = useState('');
@@ -305,10 +307,10 @@ const CreateSsoModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit
                 allowedEmails: emails.length > 0 ? emails : null,
             };
 
-            if (appToEdit?.id) {
-                await updateSSO(appToEdit.id, { name: name.trim(), sso: ssoConfig });
-            } else {
-                await createSSO({ name: name.trim(), sso: ssoConfig });
+            if (appToEdit?.id && selectedProjectId) {
+                await updateSSO(selectedProjectId, appToEdit.id, { name: name.trim(), sso: ssoConfig });
+            } else if (selectedProjectId) {
+                await createSSO(selectedProjectId, { name: name.trim(), sso: ssoConfig });
             }
             onCreated();
             onClose();

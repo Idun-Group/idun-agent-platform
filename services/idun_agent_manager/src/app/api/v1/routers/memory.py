@@ -1,8 +1,15 @@
 """Managed Memory API.
 
 This router exposes endpoints to create, read, list, update, and delete
-managed memory configurations. All endpoints are scoped to the
-authenticated user's active workspace.
+managed memory configurations. All CRUD endpoints are project-scoped
+with RBAC enforcement.
+
+Endpoints (mounted at /projects/{project_id}/memory):
+    POST   /          - Create a new memory config          (contributor)
+    GET    /          - List memory configs (pagination)     (reader)
+    GET    /{id}      - Get a specific memory config by ID   (reader)
+    PATCH  /{id}      - Update a memory config               (contributor)
+    DELETE /{id}      - Delete a memory config               (admin)
 """
 
 import logging
@@ -25,6 +32,7 @@ from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
     get_session,
+    require_project_role,
     require_workspace,
 )
 from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
@@ -41,9 +49,10 @@ PAGINATION_DEFAULT_LIMIT = 100
 async def _get_memory(
     id: str,
     session: AsyncSession,
-    workspace_id: UUID | None = None,
+    workspace_id: UUID,
+    project_id: UUID,
 ) -> ManagedMemoryModel:
-    """Get memory config by ID, optionally scoped to a workspace."""
+    """Get memory config by ID, scoped to workspace and project."""
     try:
         uuid_id = UUID(id)
     except ValueError as err:
@@ -53,12 +62,7 @@ async def _get_memory(
         ) from err
 
     model = await session.get(ManagedMemoryModel, uuid_id)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Memory config with id '{id}' not found",
-        )
-    if workspace_id is not None and model.workspace_id != workspace_id:
+    if not model or model.workspace_id != workspace_id or model.project_id != project_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Memory config with id '{id}' not found",
@@ -88,12 +92,16 @@ def _model_to_schema(model: ManagedMemoryModel) -> ManagedMemoryRead:
     summary="Create managed memory config",
 )
 async def create_memory(
+    project_id: str,
     request: ManagedMemoryCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedMemoryRead:
     """Create a new managed memory configuration."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+
     now = datetime.now(UTC)
 
     model = ManagedMemoryModel(
@@ -103,7 +111,8 @@ async def create_memory(
         memory_config=request.memory.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=access.workspace_id,
+        project_id=project_uuid,
     )
 
     session.add(model)
@@ -119,6 +128,7 @@ async def create_memory(
     summary="List managed memory configs",
 )
 async def list_memories(
+    project_id: str,
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
     agent_framework: AgentFramework | None = None,
@@ -127,6 +137,9 @@ async def list_memories(
     workspace_id: UUID = Depends(require_workspace),
 ) -> list[ManagedMemoryRead]:
     """List managed memory configurations with pagination."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -138,7 +151,8 @@ async def list_memories(
         )
 
     stmt = select(ManagedMemoryModel).where(
-        ManagedMemoryModel.workspace_id == workspace_id
+        ManagedMemoryModel.workspace_id == access.workspace_id,
+        ManagedMemoryModel.project_id == project_uuid,
     )
     if agent_framework:
         stmt = stmt.where(ManagedMemoryModel.agent_framework == agent_framework.value)
@@ -156,13 +170,16 @@ async def list_memories(
     summary="Get managed memory config by ID",
 )
 async def get_memory(
+    project_id: str,
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedMemoryRead:
     """Get a managed memory configuration by ID."""
-    model = await _get_memory(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+    model = await _get_memory(id, session, access.workspace_id, project_uuid)
     return _model_to_schema(model)
 
 
@@ -172,13 +189,16 @@ async def get_memory(
     summary="Delete managed memory config",
 )
 async def delete_memory(
+    project_id: str,
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> None:
     """Delete a managed memory configuration permanently."""
-    model = await _get_memory(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "admin")
+    model = await _get_memory(id, session, access.workspace_id, project_uuid)
     await session.delete(model)
     await session.flush()
 
@@ -189,6 +209,7 @@ async def delete_memory(
     summary="Update managed memory config",
 )
 async def patch_memory(
+    project_id: str,
     id: str,
     request: ManagedMemoryPatch,
     session: AsyncSession = Depends(get_session),
@@ -196,7 +217,9 @@ async def patch_memory(
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedMemoryRead:
     """Update a memory configuration."""
-    model = await _get_memory(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+    model = await _get_memory(id, session, access.workspace_id, project_uuid)
 
     model.name = request.name
     model.agent_framework = request.agent_framework.value

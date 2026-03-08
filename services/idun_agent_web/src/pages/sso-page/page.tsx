@@ -4,6 +4,7 @@ import { fetchSSOs, deleteSSO } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
 import CreateSsoModal from '../../components/applications/create-sso-modal/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Animations ────────────────────────────────────────────────────────────────
 
@@ -326,6 +327,7 @@ const getIssuerLabel = (issuer: string): string => {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const SSOPage: React.FC = () => {
+    const { selectedProjectId } = useProject();
     const [configs, setConfigs] = useState<ManagedSSO[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -334,16 +336,17 @@ const SSOPage: React.FC = () => {
     const [configToDelete, setConfigToDelete] = useState<ManagedSSO | null>(null);
 
     const loadConfigs = useCallback(async () => {
+        if (!selectedProjectId) return;
         setIsLoading(true);
         try {
-            const data = await fetchSSOs();
+            const data = await fetchSSOs(selectedProjectId);
             setConfigs(data);
         } catch (e) {
             console.error('Failed to load SSO configs', e);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadConfigs(); }, [loadConfigs]);
 
@@ -352,8 +355,8 @@ const SSOPage: React.FC = () => {
     const closeModal = () => { setIsModalOpen(false); setConfigToEdit(null); };
 
     const handleDeleteConfirm = async () => {
-        if (!configToDelete?.id) return;
-        await deleteSSO(configToDelete.id);
+        if (!configToDelete?.id || !selectedProjectId) return;
+        await deleteSSO(selectedProjectId, configToDelete.id);
         setConfigToDelete(null);
         loadConfigs();
     };

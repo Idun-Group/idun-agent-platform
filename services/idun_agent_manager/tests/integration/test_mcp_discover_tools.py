@@ -7,6 +7,7 @@ Run with: uv run pytest -m integration
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -17,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
     require_workspace,
@@ -25,6 +27,7 @@ from app.api.v1.routers.mcp_servers import _discover_tools
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
 
 WORKSPACE_ID = uuid4()
+PROJECT_ID = uuid4()
 FAKE_USER = CurrentUser(
     user_id=str(uuid4()),
     email="test@test.com",
@@ -51,9 +54,20 @@ async def client_with_mcp(db_session: AsyncSession) -> AsyncIterator[AsyncClient
     app.dependency_overrides[get_current_user] = lambda: FAKE_USER
     app.dependency_overrides[require_workspace] = lambda: WORKSPACE_ID
 
+    fake_access = ProjectAccess(
+        project_id=PROJECT_ID,
+        workspace_id=WORKSPACE_ID,
+        role="admin",
+        is_workspace_owner=True,
+    )
+
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
+    with patch(
+        "app.api.v1.routers.mcp_servers.require_project_role",
+        return_value=fake_access,
+    ):
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            yield ac
 
 
 @pytest_asyncio.fixture
@@ -75,6 +89,7 @@ async def seeded_stdio_mcp(db_session: AsyncSession) -> ManagedMCPServerModel:
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
         workspace_id=WORKSPACE_ID,
+        project_id=PROJECT_ID,
     )
     db_session.add(model)
     await db_session.flush()
@@ -114,7 +129,7 @@ class TestDiscoverToolsEndpoint:
         seeded_stdio_mcp: ManagedMCPServerModel,
     ):
         resp = await client_with_mcp.post(
-            f"/api/v1/mcp-servers/{seeded_stdio_mcp.id}/tools"
+            f"/api/v1/projects/{PROJECT_ID}/mcp-servers/{seeded_stdio_mcp.id}/tools"
         )
 
         assert resp.status_code == 200

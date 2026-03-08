@@ -8,6 +8,7 @@ export interface SessionPrincipal {
     user_id?: string;
     email?: string;
     roles?: string[];
+    is_owner?: boolean;
     workspace_ids?: string[];
     default_workspace_id?: string | null;
 }
@@ -15,6 +16,7 @@ export interface SessionPrincipal {
 export interface Session {
     provider?: string;
     principal?: SessionPrincipal;
+    expires_at?: number;
 }
 
 export async function loginBasic(params: { email: string; password: string }): Promise<void> {
@@ -38,7 +40,8 @@ export async function getSession(): Promise<Session | null> {
     }
 }
 
-export async function assignRole(params: { user_id: string; role: 'admin' | 'user' }): Promise<{ ok: true }> {
+/** @deprecated Use workspace member management (addWorkspaceMember / removeWorkspaceMember) instead. */
+export async function assignRole(params: { user_id: string; is_owner: boolean }): Promise<{ ok: true }> {
     return postJson('/api/v1/auth/roles/assign', params);
 }
 
@@ -46,10 +49,10 @@ export async function getRoles(): Promise<string[]> {
     try {
         const roles = await getJson<string[]>('/api/v1/auth/roles');
         if (Array.isArray(roles) && roles.length > 0) return roles;
-        return ['admin', 'user'];
+        return ['owner', 'member'];
     } catch {
         // Fallback when route not implemented yet
-        return ['admin', 'user'];
+        return ['owner', 'member'];
     }
 }
 

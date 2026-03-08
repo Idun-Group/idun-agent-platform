@@ -21,6 +21,7 @@ import { fetchApplications, deleteApplication } from '../../services/application
 import type { ApplicationConfig } from '../../types/application.types';
 import CreateGuardrailModal from '../../components/applications/create-guardrail-modal/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Animations ────────────────────────────────────────────────────────────────
 
@@ -353,6 +354,7 @@ const truncate = (s: string, max = 30) => s.length > max ? s.slice(0, max) + '�
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const GuardrailsPage: React.FC = () => {
+    const { selectedProjectId } = useProject();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -361,24 +363,25 @@ const GuardrailsPage: React.FC = () => {
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
 
     const loadApps = useCallback(async () => {
+        if (!selectedProjectId) return;
         setIsLoading(true);
         try {
-            const all = await fetchApplications();
+            const all = await fetchApplications(selectedProjectId);
             setApps(all.filter(a => a.category === 'Guardrails'));
         } catch (e) {
             console.error('Failed to load guardrails', e);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
     const handleDeleteRequest = (app: ApplicationConfig) => setAppToDelete(app);
 
     const handleDeleteConfirm = async () => {
-        if (!appToDelete?.id) return;
-        await deleteApplication(appToDelete.id);
+        if (!appToDelete?.id || !selectedProjectId) return;
+        await deleteApplication(selectedProjectId, appToDelete.id);
         setAppToDelete(null);
         loadApps();
     };

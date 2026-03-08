@@ -7,6 +7,7 @@ import { fetchApplications } from '../../../../services/applications';
 import { fetchSSOs } from '../../../../services/sso';
 import { fetchIntegrations } from '../../../../services/integrations';
 import { API_BASE_URL } from '../../../../utils/api';
+import { useProject } from '../../../../hooks/use-project';
 import {
     extractAgentConfig,
     extractSelectionsFromAgent,
@@ -33,6 +34,7 @@ interface OverviewTabProps {
 }
 
 const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentRefresh }: OverviewTabProps) => {
+    const { selectedProjectId } = useProject();
     // Form state (initialized when entering edit mode)
     const [formState, setFormState] = useState<AgentFormState>({
         name: '',
@@ -69,11 +71,12 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
     }, [agent?.id]);
 
     const loadResources = async () => {
+        if (!selectedProjectId) return null;
         try {
             const [apps, ssos, integrations] = await Promise.all([
-                fetchApplications(),
-                fetchSSOs().catch(() => []),
-                fetchIntegrations().catch(() => []),
+                fetchApplications(selectedProjectId),
+                fetchSSOs(selectedProjectId).catch(() => []),
+                fetchIntegrations(selectedProjectId).catch(() => []),
             ]);
 
             const newResources: AvailableResources = {

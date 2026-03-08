@@ -6,6 +6,7 @@ import { TextInput, Checkbox, TextArea, Select, TagInput } from '../../general/f
 import type { AppType, ApplicationConfig, MarketplaceApp } from '../../../types/application.types';
 import { createApplication, updateApplication, deleteApplication } from '../../../services/applications';
 import { notify } from '../../toast/notify';
+import { useProject } from '../../../hooks/use-project';
 
 interface ApplicationModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ interface ApplicationModalProps {
 }
 
 const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }: ApplicationModalProps) => {
+    const { selectedProjectId } = useProject();
     const [name, setName] = useState('');
     const [config, setConfig] = useState<Record<string, string>>({});
     const [isEditing, setIsEditing] = useState(false);
@@ -67,8 +69,8 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
         setIsSubmitting(true);
         setErrorMessage(null);
         try {
-            if (mode === 'create' && appToCreate) {
-                await createApplication({
+            if (mode === 'create' && appToCreate && selectedProjectId) {
+                await createApplication(selectedProjectId, {
                     name,
                     type: appToCreate.type,
                     category: appToCreate.category,
@@ -76,8 +78,8 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                     imageUrl: appToCreate.imageUrl
                 });
                 notify.success('Application created successfully');
-            } else if (appToEdit) {
-                await updateApplication(appToEdit.id, {
+            } else if (appToEdit && selectedProjectId) {
+                await updateApplication(selectedProjectId, appToEdit.id, {
                     name,
                     config,
                     category: appToEdit.category,
@@ -103,7 +105,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
         setIsSubmitting(true);
         setErrorMessage(null);
         try {
-            await deleteApplication(appToEdit.id);
+            await deleteApplication(selectedProjectId!, appToEdit.id);
             notify.success('Application deleted successfully');
             onSuccess();
             onClose();

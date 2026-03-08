@@ -1,8 +1,15 @@
 """Managed SSO configuration API.
 
 This router exposes endpoints to create, read, list, update, and delete
-managed SSO configurations. All endpoints are scoped to the
-authenticated user's active workspace.
+managed SSO configurations. All CRUD endpoints are project-scoped
+with RBAC enforcement.
+
+Endpoints (mounted at /projects/{project_id}/sso):
+    POST   /          - Create a new SSO config              (contributor)
+    GET    /          - List SSO configs (pagination)         (reader)
+    GET    /{id}      - Get a specific SSO config by ID      (reader)
+    PATCH  /{id}      - Update an SSO config                 (contributor)
+    DELETE /{id}      - Delete an SSO config                  (admin)
 """
 
 import logging
@@ -23,6 +30,7 @@ from app.api.v1.deps import (
     CurrentUser,
     get_current_user,
     get_session,
+    require_project_role,
     require_workspace,
 )
 from app.infrastructure.db.models.managed_sso import ManagedSSOModel
@@ -39,9 +47,10 @@ PAGINATION_DEFAULT_LIMIT = 100
 async def _get_sso(
     id: str,
     session: AsyncSession,
-    workspace_id: UUID | None = None,
+    workspace_id: UUID,
+    project_id: UUID,
 ) -> ManagedSSOModel:
-    """Get SSO config by ID, optionally scoped to a workspace."""
+    """Get SSO config by ID, scoped to workspace and project."""
     try:
         uuid_id = UUID(id)
     except ValueError as err:
@@ -51,12 +60,7 @@ async def _get_sso(
         ) from err
 
     model = await session.get(ManagedSSOModel, uuid_id)
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"SSO config with id '{id}' not found",
-        )
-    if workspace_id is not None and model.workspace_id != workspace_id:
+    if not model or model.workspace_id != workspace_id or model.project_id != project_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"SSO config with id '{id}' not found",
@@ -83,12 +87,16 @@ def _model_to_schema(model: ManagedSSOModel) -> ManagedSSORead:
     summary="Create managed SSO config",
 )
 async def create_sso(
+    project_id: str,
     request: ManagedSSOCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedSSORead:
     """Create a new managed SSO configuration."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+
     now = datetime.now(UTC)
 
     sso_config = SSOConfig(**request.sso.model_dump())
@@ -99,7 +107,8 @@ async def create_sso(
         sso_config=sso_config.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=access.workspace_id,
+        project_id=project_uuid,
     )
 
     session.add(model)
@@ -115,6 +124,7 @@ async def create_sso(
     summary="List managed SSO configs",
 )
 async def list_ssos(
+    project_id: str,
     limit: int = PAGINATION_DEFAULT_LIMIT,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
@@ -122,6 +132,9 @@ async def list_ssos(
     workspace_id: UUID = Depends(require_workspace),
 ) -> list[ManagedSSORead]:
     """List managed SSO configurations with pagination."""
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -134,7 +147,10 @@ async def list_ssos(
 
     stmt = (
         select(ManagedSSOModel)
-        .where(ManagedSSOModel.workspace_id == workspace_id)
+        .where(
+            ManagedSSOModel.workspace_id == access.workspace_id,
+            ManagedSSOModel.project_id == project_uuid,
+        )
         .limit(limit)
         .offset(offset)
     )
@@ -150,13 +166,16 @@ async def list_ssos(
     summary="Get managed SSO config by ID",
 )
 async def get_sso(
+    project_id: str,
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedSSORead:
     """Get a managed SSO configuration by ID."""
-    model = await _get_sso(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "reader")
+    model = await _get_sso(id, session, access.workspace_id, project_uuid)
     return _model_to_schema(model)
 
 
@@ -166,13 +185,16 @@ async def get_sso(
     summary="Delete managed SSO config",
 )
 async def delete_sso(
+    project_id: str,
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> None:
     """Delete a managed SSO configuration permanently."""
-    model = await _get_sso(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "admin")
+    model = await _get_sso(id, session, access.workspace_id, project_uuid)
     await session.delete(model)
     await session.flush()
 
@@ -183,6 +205,7 @@ async def delete_sso(
     summary="Update managed SSO config",
 )
 async def patch_sso(
+    project_id: str,
     id: str,
     request: ManagedSSOPatch,
     session: AsyncSession = Depends(get_session),
@@ -190,7 +213,9 @@ async def patch_sso(
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedSSORead:
     """Update an SSO configuration."""
-    model = await _get_sso(id, session, workspace_id)
+    project_uuid = UUID(project_id)
+    access = await require_project_role(project_uuid, user, session, "contributor")
+    model = await _get_sso(id, session, access.workspace_id, project_uuid)
 
     model.name = request.name
     sso_config = SSOConfig(**request.sso.model_dump())

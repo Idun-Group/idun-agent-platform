@@ -3,6 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { Eye, EyeOff } from 'lucide-react';
 import { createApplication, updateApplication } from '../../../services/applications';
 import type { AppType, ApplicationConfig } from '../../../types/application.types';
+import { useProject } from '../../../hooks/use-project';
 
 interface Props {
     isOpen: boolean;
@@ -353,6 +354,7 @@ const BigSpinner = styled.div`
 `;
 
 const CreateObservabilityModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit }) => {
+    const { selectedProjectId } = useProject();
     const isEditMode = !!appToEdit;
     const [selectedProvider, setSelectedProvider] = useState<AppType | null>(null);
     const [integrationName, setIntegrationName] = useState('');
@@ -412,15 +414,15 @@ const CreateObservabilityModal: React.FC<Props> = ({ isOpen, onClose, onCreated,
         setErrorMessage(null);
         try {
             const name = integrationName.trim() || `${provider.label} Integration`;
-            if (isEditMode && appToEdit?.id) {
-                await updateApplication(appToEdit.id, {
+            if (isEditMode && appToEdit?.id && selectedProjectId) {
+                await updateApplication(selectedProjectId, appToEdit.id, {
                     name,
                     type: provider.id,
                     category: 'Observability',
                     config: formValues,
                 });
-            } else {
-                await createApplication({
+            } else if (selectedProjectId) {
+                await createApplication(selectedProjectId, {
                     name,
                     type: provider.id,
                     category: 'Observability',

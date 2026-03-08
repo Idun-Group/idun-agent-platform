@@ -4,6 +4,7 @@ import { Globe, Radio, Plug, Terminal } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { createApplication, updateApplication } from '../../../services/applications';
 import type { ApplicationConfig } from '../../../types/application.types';
+import { useProject } from '../../../hooks/use-project';
 
 interface Props {
     isOpen: boolean;
@@ -318,6 +319,7 @@ const BigSpinner = styled.div`
 `;
 
 const CreateMcpModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit }) => {
+    const { selectedProjectId } = useProject();
     const [selectedTransport, setSelectedTransport] = useState<TransportType>('StreamableHTTP');
     const [serverName, setServerName] = useState('');
     const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -400,10 +402,10 @@ const CreateMcpModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit
                 config,
             };
 
-            if (appToEdit?.id) {
-                await updateApplication(appToEdit.id, payload);
-            } else {
-                await createApplication(payload);
+            if (appToEdit?.id && selectedProjectId) {
+                await updateApplication(selectedProjectId, appToEdit.id, payload);
+            } else if (selectedProjectId) {
+                await createApplication(selectedProjectId, payload);
             }
             onCreated();
             onClose();

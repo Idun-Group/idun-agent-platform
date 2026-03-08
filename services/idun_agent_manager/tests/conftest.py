@@ -12,6 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.api.v1.deps import get_session
 from app.infrastructure.db.models.invitation import InvitationModel  # noqa: F401
+from app.infrastructure.db.models.invitation_project import (
+    InvitationProjectModel,  # noqa: F401
+)
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel  # noqa: F401
 from app.infrastructure.db.models.managed_guardrail import (
     ManagedGuardrailModel,  # noqa: F401
@@ -28,6 +31,10 @@ from app.infrastructure.db.models.managed_observability import (
 )
 from app.infrastructure.db.models.managed_sso import ManagedSSOModel  # noqa: F401
 from app.infrastructure.db.models.membership import MembershipModel  # noqa: F401
+from app.infrastructure.db.models.project import ProjectModel  # noqa: F401
+from app.infrastructure.db.models.project_membership import (
+    ProjectMembershipModel,  # noqa: F401
+)
 from app.infrastructure.db.models.user import UserModel  # noqa: F401
 from app.infrastructure.db.models.workspace import WorkspaceModel  # noqa: F401
 from app.infrastructure.db.session import Base

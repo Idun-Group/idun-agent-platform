@@ -9,6 +9,7 @@ import { fetchApplications, MARKETPLACE_APPS } from '../../services/applications
 import type { ApplicationConfig, MarketplaceApp, AppCategory } from '../../types/application.types';
 import { Loader, Plus, Wrench } from 'lucide-react';
 import { notify } from '../../components/toast/notify';
+import { useProject } from '../../hooks/use-project';
 
 // Define props to make the component reusable for different categories
 interface ApplicationPageProps {
@@ -17,6 +18,7 @@ interface ApplicationPageProps {
 
 const ApplicationPage = ({ category }: ApplicationPageProps) => {
     const { t } = useTranslation();
+    const { selectedProjectId } = useProject();
     const [currentPage, setCurrentPage] = useState<'configurations' | 'add'>('configurations');
 
     // Data State
@@ -29,9 +31,10 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | undefined>(undefined);
 
     const loadApps = async () => {
+        if (!selectedProjectId) return;
         setIsLoading(true);
         try {
-            const apps = await fetchApplications();
+            const apps = await fetchApplications(selectedProjectId);
             setMyApps(apps);
         } catch (error) {
             console.error("Failed to fetch apps", error);
@@ -44,7 +47,7 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
         if (currentPage === 'configurations') {
             loadApps();
         }
-    }, [currentPage]);
+    }, [currentPage, selectedProjectId]);
 
     const handleMarketplaceAppClick = (app: MarketplaceApp) => {
         setAppToCreate(app);
