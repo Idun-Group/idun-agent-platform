@@ -1117,3 +1117,166 @@
   white-space: nowrap;
   opacity: 0.8;
 }
+
+/* ── Capabilities Bar ── */
+.agui-chat .capabilities-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--chat-text-dim);
+  border-bottom: 1px solid var(--chat-border);
+  background: var(--chat-surface);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-top: 8px;
+  border-radius: 10px 10px 0 0;
+}
+.agui-chat .capabilities-bar.capabilities-warning {
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.agui-chat .capabilities-badge {
+  font-size: 11px; font-family: var(--chat-mono); font-weight: 700;
+  background: rgba(140, 82, 255, 0.12); color: var(--chat-accent);
+  padding: 3px 10px; border-radius: 6px;
+  border: 1px solid rgba(140, 82, 255, 0.18);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.agui-chat .capabilities-info { font-size: 12px; color: var(--chat-text-dim); }
+.agui-chat .capabilities-info strong { color: var(--chat-text); font-weight: 600; }
+.agui-chat .capabilities-flags { display: flex; gap: 6px; margin-left: auto; }
+.agui-chat .capabilities-flag {
+  font-size: 10px; font-family: var(--chat-mono); font-weight: 600;
+  background: rgba(34, 197, 94, 0.1); color: var(--chat-green);
+  padding: 2px 8px; border-radius: 4px;
+  border: 1px solid rgba(34, 197, 94, 0.15);
+}
+.agui-chat .capabilities-toggle { margin-left: 8px; }
+
+/* ── Structured Form ── */
+.agui-chat .structured-form {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px; flex: 1; overflow: auto;
+}
+.agui-chat .structured-form-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.agui-chat .structured-form-title {
+  font-weight: 600; font-size: 14px; color: var(--chat-text);
+}
+.agui-chat .schema-fields { display: flex; flex-direction: column; gap: 12px; }
+.agui-chat .schema-field { display: flex; flex-direction: column; gap: 4px; }
+.agui-chat .schema-field-label {
+  font-size: 12px; font-weight: 600; color: var(--chat-text); text-transform: capitalize;
+}
+.agui-chat .schema-field-required { color: var(--chat-red); margin-left: 2px; }
+.agui-chat .schema-field-desc {
+  font-size: 11px; color: var(--chat-text-dim); line-height: 1.4;
+}
+.agui-chat .schema-field-input {
+  padding: 8px 12px; background: var(--chat-elevated);
+  border: 1px solid var(--chat-border); border-radius: 8px;
+  color: var(--chat-text); font-size: 13px; outline: none;
+  transition: border-color 0.15s;
+}
+.agui-chat .schema-field-input:focus { border-color: var(--chat-accent); }
+.agui-chat .schema-field-textarea {
+  padding: 8px 12px; background: var(--chat-elevated);
+  border: 1px solid var(--chat-border); border-radius: 8px;
+  color: var(--chat-text); font-size: 13px; font-family: var(--chat-mono);
+  outline: none; resize: vertical; min-height: 60px;
+  transition: border-color 0.15s;
+}
+.agui-chat .schema-field-textarea:focus { border-color: var(--chat-accent); }
+.agui-chat .schema-checkbox {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--chat-text); cursor: pointer;
+}
+.agui-chat .schema-checkbox input[type="checkbox"] {
+  width: 16px; height: 16px; cursor: pointer; accent-color: var(--chat-accent);
+}
+.agui-chat .structured-json-input { display: flex; flex-direction: column; gap: 4px; }
+.agui-chat .structured-parse-error {
+  color: var(--chat-red); font-size: 12px; font-family: var(--chat-mono);
+}
+.agui-chat .structured-submit { align-self: flex-start; }
+
+/* ── Structured Output Viewer ── */
+.agui-chat .structured-output {
+  display: flex; flex-direction: column; gap: 8px; margin-top: 8px;
+}
+.agui-chat .structured-output-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.agui-chat .output-json {
+  padding: 12px; background: var(--chat-elevated);
+  border: 1px solid var(--chat-border); border-radius: 8px;
+  font-family: var(--chat-mono); font-size: 12px;
+  overflow: auto; white-space: pre-wrap; word-break: break-all;
+  max-height: 400px; margin: 0; color: var(--chat-text);
+}
+.agui-chat .output-table-wrap {
+  overflow-x: auto; border: 1px solid var(--chat-border); border-radius: 8px;
+}
+.agui-chat .output-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.agui-chat .output-table th {
+  padding: 8px 12px; background: var(--chat-elevated);
+  border-bottom: 1px solid var(--chat-border);
+  font-weight: 600; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--chat-text-dim); text-align: left;
+}
+.agui-chat .output-table td {
+  padding: 8px 12px; border-bottom: 1px solid var(--overlay-subtle); color: var(--chat-text);
+}
+.agui-chat .output-table tr:last-child td { border-bottom: none; }
+.agui-chat .output-kv {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  border: 1px solid var(--chat-border); border-radius: 8px; overflow: hidden;
+}
+.agui-chat .output-kv-key {
+  padding: 8px 12px; background: var(--chat-elevated);
+  font-weight: 600; font-size: 12px; color: var(--chat-text-dim);
+  white-space: nowrap; width: 1%;
+  border-right: 1px solid var(--chat-border);
+  border-bottom: 1px solid var(--overlay-subtle);
+}
+.agui-chat .output-kv-val {
+  padding: 8px 12px; color: var(--chat-text);
+  border-bottom: 1px solid var(--overlay-subtle); word-break: break-word;
+}
+.agui-chat .output-kv tr:last-child td { border-bottom: none; }
+.agui-chat .output-null { color: var(--chat-text-dim); font-style: italic; }
+
+/* ── Error Code Badge ── */
+.agui-chat .error-code-badge {
+  font-family: var(--chat-mono); font-size: 10px; font-weight: 700;
+  background: rgba(239, 68, 68, 0.12); color: var(--chat-red);
+  padding: 2px 8px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0;
+}
+
+/* ── Form Mode Messages (for structured agents that also stream text) ── */
+.agui-chat .form-messages {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--chat-border);
+  margin-top: 4px;
+}
+.agui-chat .form-messages-header {
+  padding: 12px 0 8px;
+}
+.agui-chat .form-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ── Chat Mode Structured Output ── */
+.agui-chat .chat-structured-output {
+  padding: 8px 0;
+  border-top: 1px solid var(--chat-border);
+  margin-top: 8px;
+}

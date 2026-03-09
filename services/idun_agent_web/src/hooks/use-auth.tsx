@@ -1,7 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getSession, loginBasic, logoutBasic, signupBasic } from '../utils/auth';
 import { addUnauthorizedHandler, removeUnauthorizedHandler, API_BASE_URL } from '../utils/api';
 import type { Session, SessionPrincipal } from '../utils/auth';
+import { useAnalytics } from './use-analytics';
 
 interface AuthContextValue {
     session: Session | null;
@@ -29,6 +30,8 @@ function syncActiveWorkspace(principal: SessionPrincipal | undefined) {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const { identify, reset } = useAnalytics();
+    const prevUserId = useRef<string | undefined>(undefined);
 
     const refresh = useCallback(async () => {
         setIsLoading(true);
@@ -60,6 +63,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(s);
         syncActiveWorkspace(s?.principal);
     }, []);
+
+    useEffect(() => {
+        const userId = session?.principal?.user_id;
+        if (userId && userId !== prevUserId.current) {
+            identify(userId, {
+                email: session?.principal?.email,
+                roles: session?.principal?.roles,
+            });
+        } else if (!userId && prevUserId.current) {
+            reset();
+        }
+        prevUserId.current = userId;
+    }, [session, identify, reset]);
 
     useEffect(() => {
         // Attempt to hydrate session on mount

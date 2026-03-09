@@ -14,6 +14,7 @@ import {
 } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
+import EnrollmentSection from '../../components/agent-detail/tabs/overview-tab/sections/enrollment-section';
 import {
     ArrowLeft,
     RotateCcw,
@@ -217,6 +218,12 @@ export default function AgentDetailPage() {
             <ContentArea>
                 <Suspense fallback={<Loader />}>
                     {activeTab === 'overview' && (
+                        <>
+                        {agent && (
+                            <div style={{ marginBottom: '24px' }}>
+                                <EnrollmentSection agent={agent} />
+                            </div>
+                        )}
                         <OverviewTab
                             agent={agent}
                             isEditing={isEditing}
@@ -225,6 +232,7 @@ export default function AgentDetailPage() {
                             saveTrigger={saveTrigger}
                             onAgentRefresh={loadAgent}
                         />
+                        </>
                     )}
                     {activeTab === 'chat' && <ChatTab agent={agent} />}
                     {activeTab === 'gateway' && <GatewayTab agent={agent} />}

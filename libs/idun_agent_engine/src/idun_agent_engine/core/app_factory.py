@@ -80,6 +80,8 @@ def create_app(
     app.include_router(agent_router, prefix="/agent", tags=["Agent"])
     app.include_router(base_router, tags=["Base"])
 
+    # TODO: DEPRECATED — register_invoke_route uses ChatRequest only now.
+    # Remove when /agent/invoke shim is fully removed.
     register_invoke_route(app, input_model)
 
     # Register integration routers based on config

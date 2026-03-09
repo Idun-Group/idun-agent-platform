@@ -39,12 +39,8 @@ const mapConfigFromApi = (type: AppType, config: any): any => {
     if (type === 'LangSmith') {
         return {
             apiKey: config.api_key || config.apiKey,
-            projectId: config.project_id || config.projectId,
             projectName: config.project_name || config.projectName,
             endpoint: config.endpoint,
-            traceName: config.trace_name || config.traceName,
-            tracingEnabled: String(config.tracing_enabled || config.tracingEnabled),
-            captureInputsOutputs: String(config.capture_inputs_outputs || config.captureInputsOutputs)
         };
     }
     if (type === 'PostgreSQL' || type === 'SQLite') {
@@ -93,12 +89,8 @@ export const mapConfigToApi = (type: AppType, config: any, name?: string): any =
     if (type === 'LangSmith') {
         return {
             api_key: config.apiKey,
-            project_id: config.projectId || 'default',
             project_name: config.projectName,
             endpoint: config.endpoint || 'https://api.smith.langchain.com',
-            trace_name: config.traceName || 'default',
-            tracing_enabled: config.tracingEnabled === 'true',
-            capture_inputs_outputs: config.captureInputsOutputs === 'true'
         };
     }
     if (type === 'PostgreSQL') {

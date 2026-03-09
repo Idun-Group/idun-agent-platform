@@ -3,6 +3,12 @@
 from .agent import AgentConfig, BaseAgentConfig  # noqa: F401
 from .agent_framework import AgentFramework  # noqa: F401
 from .api import ChatRequest, ChatResponse  # noqa: F401
+from .capabilities import (  # noqa: F401
+    AgentCapabilities,
+    CapabilityFlags,
+    InputDescriptor,
+    OutputDescriptor,
+)
 from .engine import EngineConfig  # noqa: F401
 from .integrations import (  # noqa: F401
     DiscordIntegrationConfig,

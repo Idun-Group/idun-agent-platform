@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { Eye, EyeOff } from 'lucide-react';
 import { createApplication, updateApplication } from '../../../services/applications';
 import type { AppType, ApplicationConfig } from '../../../types/application.types';
 
@@ -54,6 +55,7 @@ const PROVIDERS: Provider[] = [
         fields: [
             { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'ls__...', required: true },
             { key: 'projectName', label: 'Project Name', type: 'text', placeholder: 'my-project' },
+            { key: 'endpoint', label: 'Endpoint', type: 'text', placeholder: 'https://api.smith.langchain.com' },
         ],
     },
     {
@@ -250,6 +252,27 @@ const Input = styled.input`
     &:focus { border-color: hsl(var(--primary)); }
 `;
 
+const PasswordWrapper = styled.div`
+    position: relative;
+    display: flex;
+    align-items: center;
+`;
+
+const PasswordToggleBtn = styled.button`
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    &:hover { color: hsl(var(--foreground)); }
+`;
+
 const ErrorMsg = styled.p`
     font-size: 13px;
     color: hsl(var(--destructive));
@@ -336,6 +359,7 @@ const CreateObservabilityModal: React.FC<Props> = ({ isOpen, onClose, onCreated,
     const [formValues, setFormValues] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (!isOpen) return;
@@ -357,6 +381,7 @@ const CreateObservabilityModal: React.FC<Props> = ({ isOpen, onClose, onCreated,
             setFormValues({});
         }
         setErrorMessage(null);
+        setVisiblePasswords({});
     }, [isOpen, appToEdit]);
 
     if (!isOpen) return null;
@@ -474,13 +499,32 @@ const CreateObservabilityModal: React.FC<Props> = ({ isOpen, onClose, onCreated,
                                             <Label htmlFor={field.key}>
                                                 {field.label}{field.required && <span style={{ color: 'hsl(var(--destructive))' }}> *</span>}
                                             </Label>
-                                            <Input
-                                                id={field.key}
-                                                type={field.type}
-                                                placeholder={field.placeholder}
-                                                value={formValues[field.key] ?? ''}
-                                                onChange={e => handleChange(field.key, e.target.value)}
-                                            />
+                                            {field.type === 'password' ? (
+                                                <PasswordWrapper>
+                                                    <Input
+                                                        id={field.key}
+                                                        type={visiblePasswords[field.key] ? 'text' : 'password'}
+                                                        placeholder={field.placeholder}
+                                                        value={formValues[field.key] ?? ''}
+                                                        onChange={e => handleChange(field.key, e.target.value)}
+                                                        style={{ paddingRight: 40 }}
+                                                    />
+                                                    <PasswordToggleBtn
+                                                        type="button"
+                                                        onClick={() => setVisiblePasswords(prev => ({ ...prev, [field.key]: !prev[field.key] }))}
+                                                    >
+                                                        {visiblePasswords[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                    </PasswordToggleBtn>
+                                                </PasswordWrapper>
+                                            ) : (
+                                                <Input
+                                                    id={field.key}
+                                                    type={field.type}
+                                                    placeholder={field.placeholder}
+                                                    value={formValues[field.key] ?? ''}
+                                                    onChange={e => handleChange(field.key, e.target.value)}
+                                                />
+                                            )}
                                         </FieldGroup>
                                     ))}
                                 </>

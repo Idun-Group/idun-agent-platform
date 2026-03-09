@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Copy } from 'lucide-react';
 import { fetchApplications, deleteApplication, discoverTools } from '../../services/applications';
 import type { MCPTool } from '../../services/applications';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
@@ -412,6 +412,183 @@ const DeleteBtn = styled.button`
     &:hover { background: rgba(248, 113, 113, 0.18); }
 `;
 
+// ── Quick Start ────────────────────────────────────────────────────────────────
+
+const QuickStart = styled.div`
+    background: hsl(var(--surface-elevated));
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    overflow: hidden;
+`;
+
+const QuickStartHeader = styled.button`
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: hsl(var(--foreground));
+
+    &:hover { background: var(--overlay-subtle); }
+`;
+
+const QuickStartTitle = styled.span`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+`;
+
+const QuickStartBadge = styled.span`
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: hsl(var(--primary) / 0.15);
+    color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary) / 0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+`;
+
+const QuickStartBody = styled.div<{ $open: boolean }>`
+    display: ${p => p.$open ? 'block' : 'none'};
+    border-top: 1px solid var(--border-subtle);
+    padding: 20px;
+`;
+
+const CodeGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    @media (max-width: 640px) { grid-template-columns: 1fr; }
+`;
+
+const CodeLabel = styled.p`
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: hsl(var(--primary));
+    margin: 0 0 8px;
+`;
+
+const CodeBlock = styled.div`
+    position: relative;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 16px;
+
+    pre {
+        margin: 0;
+        font-family: 'Fira Code', 'Cascadia Code', monospace;
+        font-size: 12px;
+        line-height: 1.7;
+        color: hsl(var(--muted-foreground));
+        white-space: pre;
+        overflow-x: auto;
+    }
+`;
+
+const CodeCopyBtn = styled.button`
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: hsl(var(--muted-foreground));
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    &:hover { color: hsl(var(--foreground)); background: var(--overlay-medium); }
+`;
+
+const LANGGRAPH_EXAMPLE = `from idun_agent_engine.mcp.helpers import get_langchain_tools
+
+tools = await get_langchain_tools()`;
+
+const ADK_EXAMPLE = `from idun_agent_engine.mcp.helpers import get_adk_tools
+
+tools = get_adk_tools()`;
+
+// ── Minimal Python syntax tokenizer (no external dependency) ──────────────────
+
+type PyToken = { kind: 'keyword' | 'string' | 'comment' | 'call' | 'cls' | 'plain'; value: string };
+
+const PY_KW = new Set([
+    'from', 'import', 'async', 'await', 'def', 'global', 'if', 'is', 'None',
+    'return', 'else', 'True', 'False', 'not', 'and', 'or', 'in', 'for',
+    'class', 'as', 'with', 'try', 'except', 'pass', 'lambda',
+]);
+
+const PY_COLORS: Record<string, string> = {
+    keyword: '#c792ea',
+    string:  '#c3e88d',
+    comment: '#546e7a',
+    call:    '#82aaff',
+    cls:     '#ffcb6b',
+    plain:   '#9ea7b3',
+};
+
+function tokenizePython(code: string): PyToken[] {
+    const out: PyToken[] = [];
+    let i = 0;
+    while (i < code.length) {
+        // Comment
+        if (code[i] === '#') {
+            const nl = code.indexOf('\n', i);
+            const end = nl === -1 ? code.length : nl;
+            out.push({ kind: 'comment', value: code.slice(i, end) });
+            i = end;
+            continue;
+        }
+        // String
+        if (code[i] === '"' || code[i] === "'") {
+            const q = code[i]; let j = i + 1;
+            while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+            out.push({ kind: 'string', value: code.slice(i, j + 1) });
+            i = j + 1;
+            continue;
+        }
+        // Identifier
+        if (/[a-zA-Z_]/.test(code[i])) {
+            let j = i;
+            while (j < code.length && /\w/.test(code[j])) j++;
+            const word = code.slice(i, j);
+            let k = j; while (k < code.length && code[k] === ' ') k++;
+            if (PY_KW.has(word))         out.push({ kind: 'keyword', value: word });
+            else if (/^[A-Z]/.test(word)) out.push({ kind: 'cls',     value: word });
+            else if (code[k] === '(')     out.push({ kind: 'call',    value: word });
+            else                          out.push({ kind: 'plain',   value: word });
+            i = j;
+            continue;
+        }
+        out.push({ kind: 'plain', value: code[i++] });
+    }
+    return out;
+}
+
+const PyHighlight: React.FC<{ code: string }> = ({ code }) => (
+    <>
+        {tokenizePython(code).map((t, i) => (
+            <span key={i} style={{ color: PY_COLORS[t.kind] }}>{t.value}</span>
+        ))}
+    </>
+);
+
 // ── Add server card ────────────────────────────────────────────────────────────
 
 const AddCard = styled.button`
@@ -499,6 +676,7 @@ const MCPPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [openId, setOpenId] = useState<string | null>(null);
+    const [quickStartOpen, setQuickStartOpen] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
@@ -589,6 +767,40 @@ const MCPPage: React.FC = () => {
                     <StatChip><strong>{apps.length - activeCount}</strong> Inactive</StatChip>
                 </StatsBar>
             )}
+
+            <QuickStart>
+                <QuickStartHeader onClick={() => setQuickStartOpen(o => !o)}>
+                    <QuickStartTitle>
+                        Quick Start
+                        <QuickStartBadge>Guide</QuickStartBadge>
+                    </QuickStartTitle>
+                    <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 12 }}>
+                        {quickStartOpen ? '▲' : '▼'}
+                    </span>
+                </QuickStartHeader>
+                <QuickStartBody $open={quickStartOpen}>
+                    <CodeGrid>
+                        <div>
+                            <CodeLabel>LangGraph</CodeLabel>
+                            <CodeBlock>
+                                <pre><PyHighlight code={LANGGRAPH_EXAMPLE} /></pre>
+                                <CodeCopyBtn onClick={() => navigator.clipboard.writeText(LANGGRAPH_EXAMPLE)}>
+                                    <Copy size={11} /> Copy
+                                </CodeCopyBtn>
+                            </CodeBlock>
+                        </div>
+                        <div>
+                            <CodeLabel>Google ADK</CodeLabel>
+                            <CodeBlock>
+                                <pre><PyHighlight code={ADK_EXAMPLE} /></pre>
+                                <CodeCopyBtn onClick={() => navigator.clipboard.writeText(ADK_EXAMPLE)}>
+                                    <Copy size={11} /> Copy
+                                </CodeCopyBtn>
+                            </CodeBlock>
+                        </div>
+                    </CodeGrid>
+                </QuickStartBody>
+            </QuickStart>
 
             {isLoading ? (
                 <CenterBox>

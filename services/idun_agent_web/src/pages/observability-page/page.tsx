@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ExternalLink } from 'lucide-react';
 import { fetchApplications, deleteApplication } from '../../services/applications';
 import type { ApplicationConfig } from '../../types/application.types';
 import CreateObservabilityModal from '../../components/applications/create-observability-modal/component';
@@ -280,6 +280,26 @@ const DeleteBtn = styled.button`
     &:hover { background: rgba(248, 113, 113, 0.18); }
 `;
 
+const VisitBtn = styled.a`
+    flex: 1;
+    padding: 8px;
+    background: rgba(99, 179, 237, 0.08);
+    border: 1px solid rgba(99, 179, 237, 0.25);
+    border-radius: 8px;
+    color: #63b3ed;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    &:hover { background: rgba(99, 179, 237, 0.18); }
+`;
+
 // ── Add Card ──────────────────────────────────────────────────────────────────
 
 const AddCard = styled.button`
@@ -358,6 +378,35 @@ const flattenConfig = (config: unknown): Record<string, string> => {
         }
     }
     return result;
+};
+
+const getProviderUrl = (app: ApplicationConfig): string | null => {
+    const config = flattenConfig(app.config);
+    switch (app.type) {
+        case 'Langfuse':
+        case 'Phoenix':
+            return config.host || null;
+        case 'LangSmith': {
+            // Derive the UI URL from the API endpoint.
+            // EU API endpoint: https://eu.api.smith.langchain.com → UI: https://eu.smith.langchain.com
+            // US API endpoint: https://api.smith.langchain.com   → UI: https://smith.langchain.com
+            const endpoint = config.endpoint ?? '';
+            if (endpoint.includes('eu.api.smith.langchain.com') || endpoint.includes('eu.smith.langchain.com')) {
+                return 'https://eu.smith.langchain.com';
+            }
+            return 'https://smith.langchain.com';
+        }
+        case 'GoogleCloudLogging':
+            return config.gcpProjectId
+                ? `https://console.cloud.google.com/logs/query?project=${config.gcpProjectId}`
+                : null;
+        case 'GoogleCloudTrace':
+            return config.gcpProjectId
+                ? `https://console.cloud.google.com/traces/list?project=${config.gcpProjectId}`
+                : null;
+        default:
+            return null;
+    }
 };
 
 // ── SecretField component ─────────────────────────────────────────────────────
@@ -447,6 +496,7 @@ const ObservabilityPage: React.FC = () => {
                     {filtered.map(app => {
                         const config = flattenConfig(app.config);
                         const configEntries = Object.entries(config);
+                        const providerUrl = getProviderUrl(app);
                         return (
                             <Card key={app.id}>
                                 <CardHeader>
@@ -487,6 +537,12 @@ const ObservabilityPage: React.FC = () => {
                                 )}
 
                                 <CardActions>
+                                    {providerUrl && (
+                                        <VisitBtn href={providerUrl} target="_blank" rel="noopener noreferrer">
+                                            <ExternalLink size={13} />
+                                            Visit
+                                        </VisitBtn>
+                                    )}
                                     <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
                                     <DeleteBtn onClick={() => handleDeleteRequest(app)}>Remove</DeleteBtn>
                                 </CardActions>
