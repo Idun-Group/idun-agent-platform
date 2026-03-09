@@ -269,29 +269,10 @@ async def callback(
         invited_ws_ids = await _consume_pending_invitations(session, user.id, email)
         workspace_ids = invited_ws_ids
 
-        membership = MembershipModel(
-            id=uuid4(),
-            user_id=user.id,
-            workspace_id=workspace.id,
-            role="admin",
-        )
-        session.add(membership)
-        await session.flush()
-
-        # Auto-create default project for the new workspace
-        from app.infrastructure.db.models.project import ProjectModel
-
-        default_project = ProjectModel(
-            id=uuid4(),
-            name="Default",
-            slug="default",
-            is_default=True,
-            workspace_id=workspace.id,
-        )
-        session.add(default_project)
-        await session.flush()
-
-        workspace_ids = [str(workspace.id)]
+        # Set default_workspace_id if user got invited workspaces
+        if workspace_ids:
+            user.default_workspace_id = UUID(workspace_ids[0])
+            await session.flush()
     else:
         # Update profile fields if changed
         if user.name != name and name:
@@ -462,27 +443,10 @@ async def basic_signup(
             session, user.id, request.email
         )
 
-        membership = MembershipModel(
-            id=uuid4(),
-            user_id=user.id,
-            workspace_id=workspace.id,
-            role="admin",
-        )
-        session.add(membership)
-        await session.flush()
-
-        # Auto-create default project for the new workspace
-        from app.infrastructure.db.models.project import ProjectModel
-
-        default_project = ProjectModel(
-            id=uuid4(),
-            name="Default",
-            slug="default",
-            is_default=True,
-            workspace_id=workspace.id,
-        )
-        session.add(default_project)
-        await session.flush()
+        # Set default_workspace_id if user got invited workspaces
+        if invited_ws_ids:
+            user.default_workspace_id = UUID(invited_ws_ids[0])
+            await session.flush()
     except Exception as e:
         logger.error(f"Database error creating user: {e}")
         raise HTTPException(

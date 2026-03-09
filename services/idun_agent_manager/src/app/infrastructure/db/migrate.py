@@ -10,12 +10,12 @@ import re
 from pathlib import Path
 from time import perf_counter
 
-from alembic.config import Config
-from alembic.util.exc import CommandError
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from alembic import command
+from alembic.config import Config
+from alembic.util.exc import CommandError
 
 # Ordered from newest to oldest: (table_name, revision_that_created_it).
 # Used to determine the closest known revision when the DB has an orphaned
