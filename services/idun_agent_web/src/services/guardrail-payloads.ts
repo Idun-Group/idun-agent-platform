@@ -10,46 +10,64 @@
 
 export interface SimpleBanListConfig {
     config_id: 'ban_list';
+    api_key?: string;
+    reject_message?: string;
     banned_words: string[];
 }
 
 export interface SimplePIIConfig {
     config_id: 'detect_pii';
+    api_key?: string;
+    reject_message?: string;
     pii_entities: string[];
 }
 
 export interface SimpleNSFWTextConfig {
     config_id: 'nsfw_text';
+    api_key?: string;
+    reject_message?: string;
     threshold: number;
 }
 
 export interface SimpleToxicLanguageConfig {
     config_id: 'toxic_language';
+    api_key?: string;
+    reject_message?: string;
     threshold: number;
 }
 
 export interface SimpleGibberishTextConfig {
     config_id: 'gibberish_text';
+    api_key?: string;
+    reject_message?: string;
     threshold: number;
 }
 
 export interface SimpleBiasCheckConfig {
     config_id: 'bias_check';
+    api_key?: string;
+    reject_message?: string;
     threshold: number;
 }
 
 export interface SimpleCompetitionCheckConfig {
     config_id: 'competition_check';
+    api_key?: string;
+    reject_message?: string;
     competitors: string[];
 }
 
 export interface SimpleCorrectLanguageConfig {
     config_id: 'correct_language';
+    api_key?: string;
+    reject_message?: string;
     expected_languages: string[];
 }
 
 export interface SimpleRestrictToTopicConfig {
     config_id: 'restrict_to_topic';
+    api_key?: string;
+    reject_message?: string;
     topics: string[];
 }
 
@@ -120,58 +138,75 @@ export function buildGuardrailConfig(
     appType: string,
     formValues: FormValues,
 ): ManagerGuardrailConfig {
+    const apiKey = formValues.api_key?.trim() || undefined;
+    const rejectMessage = formValues.reject_message?.trim() || undefined;
+
+    const common = {
+        ...(apiKey && { api_key: apiKey }),
+        ...(rejectMessage && { reject_message: rejectMessage }),
+    };
+
     switch (appType) {
         case 'BanList':
             return {
                 config_id: 'ban_list',
+                ...common,
                 banned_words: splitLines(formValues.banned_words),
             };
 
         case 'DetectPII':
             return {
                 config_id: 'detect_pii',
+                ...common,
                 pii_entities: splitComma(formValues.pii_entities),
             };
 
         case 'NSFWText':
             return {
                 config_id: 'nsfw_text',
+                ...common,
                 threshold: parseThreshold(formValues.threshold),
             };
 
         case 'ToxicLanguage':
             return {
                 config_id: 'toxic_language',
+                ...common,
                 threshold: parseThreshold(formValues.threshold),
             };
 
         case 'GibberishText':
             return {
                 config_id: 'gibberish_text',
+                ...common,
                 threshold: parseThreshold(formValues.threshold),
             };
 
         case 'BiasCheck':
             return {
                 config_id: 'bias_check',
+                ...common,
                 threshold: parseThreshold(formValues.threshold),
             };
 
         case 'CompetitionCheck':
             return {
                 config_id: 'competition_check',
+                ...common,
                 competitors: splitLines(formValues.competitors),
             };
 
         case 'CorrectLanguage':
             return {
                 config_id: 'correct_language',
+                ...common,
                 expected_languages: splitLines(formValues.expected_languages),
             };
 
         case 'RestrictTopic':
             return {
                 config_id: 'restrict_to_topic',
+                ...common,
                 topics: splitLines(formValues.valid_topics),
             };
 
@@ -190,6 +225,10 @@ export function validateGuardrailForm(
     formValues: FormValues,
 ): GuardrailValidationError[] {
     const errors: GuardrailValidationError[] = [];
+
+    if (!formValues.api_key?.trim()) {
+        errors.push({ field: 'api_key', message: 'Guardrails AI API key is required' });
+    }
 
     switch (appType) {
         case 'BanList':

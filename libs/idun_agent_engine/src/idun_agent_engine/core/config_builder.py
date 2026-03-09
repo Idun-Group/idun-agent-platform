@@ -22,7 +22,6 @@ from idun_agent_schema.engine.langgraph import (
 from idun_agent_schema.engine.mcp_server import MCPServer
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 from idun_agent_schema.engine.sso import SSOConfig
-from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from yaml import YAMLError
 
 from idun_agent_engine.server.server_config import ServerAPIConfig
@@ -132,8 +131,7 @@ class ConfigBuilder:
                 if not guardrails_data:
                     self._guardrails = None
                 else:
-                    converted_data = convert_guardrail(guardrails_data)
-                    self._guardrails = Guardrails.model_validate(converted_data)
+                    self._guardrails = Guardrails.model_validate(guardrails_data)
 
             except Exception as e:
                 raise YAMLError(f"Failed to parse yaml file for Guardrails: {e}") from e

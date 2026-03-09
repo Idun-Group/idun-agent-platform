@@ -15,6 +15,11 @@ import {
     Globe,
     Target,
     Brain,
+    KeyRound,
+    ExternalLink,
+    Check,
+    Eye,
+    EyeOff,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { fetchApplications, deleteApplication } from '../../services/applications';
@@ -66,6 +71,120 @@ const HeaderActions = styled.div`
     display: flex;
     align-items: center;
     gap: 12px;
+`;
+
+// ── API Key Banner ────────────────────────────────────────────────────────────
+
+const LOCALSTORAGE_KEY = 'guardrails_api_key';
+
+const ApiKeyBanner = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: hsl(var(--surface-elevated));
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    flex-wrap: wrap;
+`;
+
+const ApiKeyLeft = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+`;
+
+const ApiKeyIconBox = styled.div`
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: hsl(var(--primary) / 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+`;
+
+const ApiKeyLabel = styled.span`
+    font-size: 13px;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    white-space: nowrap;
+`;
+
+const ApiKeyInputGroup = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 200px;
+`;
+
+const ApiKeyInput = styled.input`
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    font-size: 13px;
+    font-family: monospace;
+    outline: none;
+    transition: border-color 0.15s;
+
+    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &:focus { border-color: hsl(var(--primary)); }
+`;
+
+const ToggleVisBtn = styled.button`
+    background: transparent;
+    border: none;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+
+    &:hover { color: hsl(var(--foreground)); }
+`;
+
+const SaveKeyBtn = styled.button<{ $saved?: boolean }>`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: ${p => p.$saved ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--primary))'};
+    border: ${p => p.$saved ? '1px solid hsl(var(--primary) / 0.3)' : 'none'};
+    border-radius: 8px;
+    color: ${p => p.$saved ? 'hsl(var(--primary))' : 'hsl(var(--primary-foreground))'};
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+
+    &:hover { opacity: 0.88; }
+`;
+
+const ApiKeyHubLink = styled.a`
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: hsl(var(--primary));
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover { text-decoration: underline; }
+`;
+
+const ApiKeyHint = styled.p`
+    width: 100%;
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+    margin: 4px 0 0;
+    line-height: 1.5;
 `;
 
 const SearchBar = styled.div`
@@ -359,6 +478,9 @@ const GuardrailsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
+    const [globalApiKey, setGlobalApiKey] = useState(() => localStorage.getItem(LOCALSTORAGE_KEY) ?? '');
+    const [apiKeySaved, setApiKeySaved] = useState(() => !!localStorage.getItem(LOCALSTORAGE_KEY));
+    const [showApiKey, setShowApiKey] = useState(false);
 
     const loadApps = useCallback(async () => {
         setIsLoading(true);
@@ -386,6 +508,17 @@ const GuardrailsPage: React.FC = () => {
     const openCreate = () => { setAppToEdit(null); setIsModalOpen(true); };
     const openEdit = (app: ApplicationConfig) => { setAppToEdit(app); setIsModalOpen(true); };
     const closeModal = () => { setIsModalOpen(false); setAppToEdit(null); };
+
+    const handleSaveApiKey = () => {
+        const trimmed = globalApiKey.trim();
+        if (trimmed) {
+            localStorage.setItem(LOCALSTORAGE_KEY, trimmed);
+        } else {
+            localStorage.removeItem(LOCALSTORAGE_KEY);
+        }
+        setApiKeySaved(true);
+        setTimeout(() => setApiKeySaved(false), 2000);
+    };
 
     const filtered = apps.filter(a =>
         !searchTerm ||
@@ -415,6 +548,33 @@ const GuardrailsPage: React.FC = () => {
                 </HeaderActions>
             </PageHeader>
 
+            <ApiKeyBanner>
+                <ApiKeyLeft>
+                    <ApiKeyIconBox><KeyRound size={18} color="hsl(var(--primary))" /></ApiKeyIconBox>
+                    <ApiKeyLabel>Guardrails AI API Key</ApiKeyLabel>
+                </ApiKeyLeft>
+                <ApiKeyInputGroup>
+                    <ApiKeyInput
+                        type={showApiKey ? 'text' : 'password'}
+                        placeholder="Enter your Guardrails AI API key"
+                        value={globalApiKey}
+                        onChange={e => { setGlobalApiKey(e.target.value); setApiKeySaved(false); }}
+                    />
+                    <ToggleVisBtn type="button" onClick={() => setShowApiKey(v => !v)} title={showApiKey ? 'Hide' : 'Show'}>
+                        {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </ToggleVisBtn>
+                    <SaveKeyBtn type="button" $saved={apiKeySaved} onClick={handleSaveApiKey}>
+                        {apiKeySaved ? <><Check size={14} /> Saved</> : 'Save'}
+                    </SaveKeyBtn>
+                </ApiKeyInputGroup>
+                <ApiKeyHubLink href="https://hub.guardrailsai.com" target="_blank" rel="noopener noreferrer">
+                    Get a key <ExternalLink size={12} />
+                </ApiKeyHubLink>
+                <ApiKeyHint>
+                    This key auto-fills into new guardrails. You can override it per-guardrail when creating or editing one.
+                </ApiKeyHint>
+            </ApiKeyBanner>
+
             {isLoading ? (
                 <CenterBox>
                     <LoadingSpinner />
@@ -425,7 +585,7 @@ const GuardrailsPage: React.FC = () => {
                     {filtered.map(app => {
                         const meta = TYPE_META[app.type] ?? { icon: Shield, group: 'Other' };
                         const config = flattenConfig(app.config);
-                        const configEntries = Object.entries(config);
+                        const configEntries = Object.entries(config).filter(([k]) => k !== 'api_key');
 
                         return (
                             <Card key={app.id}>
@@ -474,6 +634,7 @@ const GuardrailsPage: React.FC = () => {
                 onClose={closeModal}
                 onCreated={loadApps}
                 appToEdit={appToEdit}
+                defaultApiKey={globalApiKey.trim()}
             />
             <DeleteConfirmModal
                 isOpen={!!appToDelete}
