@@ -62,9 +62,7 @@ class Serve:
             return config
 
         except Exception as e:
-            raise ValueError(
-                f"Cannot fetch config from {self._path}: {e}"
-            ) from e
+            raise ValueError(f"Cannot fetch config from {self._path}: {e}") from e
 
     def _fetch_from_manager(self) -> EngineConfig | None:
         """Fetches the config from the api."""
@@ -105,7 +103,9 @@ def serve_command(source: str, path: str | None):
 
         case ServerSource.FILE:
             if not path:
-                logger.error("No config path provided. Specify the path of your config.yaml")
+                logger.error(
+                    "No config path provided. Specify the path of your config.yaml"
+                )
                 sys.exit(1)
             s = Serve(source=source, path=path)
             s.serve()

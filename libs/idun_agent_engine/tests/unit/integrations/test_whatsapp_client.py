@@ -33,10 +33,14 @@ class TestWhatsAppClient:
         mock_response = httpx.Response(
             200,
             json={"messages": [{"id": "wamid.123"}]},
-            request=httpx.Request("POST", "https://graph.facebook.com/v21.0/123456/messages"),
+            request=httpx.Request(
+                "POST", "https://graph.facebook.com/v21.0/123456/messages"
+            ),
         )
 
-        with patch.object(client._http, "post", new_callable=AsyncMock, return_value=mock_response) as mock_post:
+        with patch.object(
+            client._http, "post", new_callable=AsyncMock, return_value=mock_response
+        ) as mock_post:
             result = await client.send_text_message(to="33612345678", text="Hello!")
 
             mock_post.assert_called_once_with(
@@ -59,10 +63,14 @@ class TestWhatsAppClient:
         mock_response = httpx.Response(
             401,
             json={"error": {"message": "Invalid token"}},
-            request=httpx.Request("POST", "https://graph.facebook.com/v21.0/123456/messages"),
+            request=httpx.Request(
+                "POST", "https://graph.facebook.com/v21.0/123456/messages"
+            ),
         )
 
-        with patch.object(client._http, "post", new_callable=AsyncMock, return_value=mock_response):
+        with patch.object(
+            client._http, "post", new_callable=AsyncMock, return_value=mock_response
+        ):
             with pytest.raises(httpx.HTTPStatusError):
                 await client.send_text_message(to="123", text="fail")
 

@@ -39,7 +39,7 @@ export default function ConnectionVerifier({ baseUrl }: ConnectionVerifierProps)
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.status === 'healthy') {
+                    if (data.status === 'healthy' || data.status === 'ok') {
                         setStatus('connected');
                         return;
                     }

@@ -2,7 +2,13 @@ import importlib.util
 import logging
 import os
 import uuid
-from typing import Any
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ag_ui.core import BaseEvent
+    from ag_ui.core.types import RunAgentInput
+    from idun_agent_schema.engine.capabilities import AgentCapabilities
 
 os.environ["HAYSTACK_CONTENT_TRACING_ENABLED"] = "true"
 
@@ -276,3 +282,31 @@ class HaystackAgent(BaseAgent):
 
     async def stream(self, message: Any) -> Any:
         pass
+
+    def discover_capabilities(self) -> "AgentCapabilities":
+        """Haystack agents have minimal capabilities."""
+        from idun_agent_schema.engine.agent_framework import AgentFramework
+        from idun_agent_schema.engine.capabilities import (
+            AgentCapabilities,
+            CapabilityFlags,
+            InputDescriptor,
+            OutputDescriptor,
+        )
+
+        return AgentCapabilities(
+            version="1",
+            framework=AgentFramework.HAYSTACK,
+            capabilities=CapabilityFlags(
+                streaming=False, history=False, thread_id=False
+            ),
+            input=InputDescriptor(mode="chat", schema_=None),
+            output=OutputDescriptor(mode="text", schema_=None),
+        )
+
+    async def run(
+        self, input_data: "RunAgentInput"
+    ) -> "AsyncGenerator[BaseEvent, None]":
+        """Not supported for Haystack."""
+        raise NotImplementedError("Haystack does not support the run() interface")
+        if False:  # pragma: no cover
+            yield  # type: ignore[misc]

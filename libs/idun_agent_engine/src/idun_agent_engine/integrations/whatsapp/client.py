@@ -22,7 +22,9 @@ class WhatsAppClient:
             headers={"Authorization": f"Bearer {config.access_token}"},
             timeout=30.0,
         )
-        logger.info(f"WhatsApp client initialized for phone_number_id={config.phone_number_id}")
+        logger.info(
+            f"WhatsApp client initialized for phone_number_id={config.phone_number_id}"
+        )
 
     async def send_text_message(self, *, to: str, text: str) -> dict:
         """Send a text message to a WhatsApp user."""
@@ -42,7 +44,9 @@ class WhatsAppClient:
         except httpx.HTTPStatusError as exc:
             logger.error(
                 "WhatsApp API error sending message to %s: %s %s",
-                to, exc.response.status_code, exc.response.text,
+                to,
+                exc.response.status_code,
+                exc.response.text,
             )
             raise
 

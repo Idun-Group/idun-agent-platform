@@ -6,6 +6,17 @@ Quick guide to configure the required secrets for automated releases.
 
 You need to configure **2 secrets** in your GitHub repository.
 
+## Optional Secrets for Dev Image Publishing
+
+The manual dev image workflow in [`.github/workflows/publish_dev_images.yml`](/Users/geoffreyharrazi/Documents/GitHub/idun-agent-platform/.github/workflows/publish_dev_images.yml) uses Google Cloud authentication and Artifact Registry.
+
+Configure these additional repository secrets if you want to build and push dev/test images manually:
+
+- `GCP_WORKLOAD_ID_PROVIDER`
+- `GCP_SERVICE_ACCOUNT_EMAIL`
+- `GCP_REGION`
+- `GCP_PROJECT_ID`
+
 ## Step-by-Step Setup
 
 ### 1. Docker Hub Token
@@ -13,7 +24,7 @@ You need to configure **2 secrets** in your GitHub repository.
 #### Create Docker Hub Access Token
 
 1. **Login to Docker Hub**
-   - Go to: https://hub.docker.com/
+   - Go to: <https://hub.docker.com/>
    - Sign in with your account (`freezaa9`)
 
 2. **Navigate to Security Settings**
@@ -52,19 +63,21 @@ Instead of API tokens, we use **Trusted Publishing** (more secure, no tokens to 
 #### For idun-agent-schema
 
 1. **Go to PyPI**
-   - Navigate to: https://pypi.org/manage/account/publishing/
+   - Navigate to: <https://pypi.org/manage/account/publishing/>
    - (You need to be logged in)
 
 2. **Add Pending Publisher**
    - Click "Add a new pending publisher"
    - Fill in the form:
-     ```
+
+     ```text
      PyPI Project Name:    idun-agent-schema
      Owner:                your-github-username (or organization)
      Repository name:      idun-agent-platform
      Workflow name:        release.yml
      Environment name:     (leave empty)
      ```
+
    - Click "Add"
 
 #### For idun-agent-engine
@@ -134,6 +147,7 @@ Test the workflow with TestPyPI before going to production:
 ## Security Best Practices
 
 ### ✅ Do's
+
 - ✅ Use access tokens (not passwords)
 - ✅ Use trusted publishing for PyPI (no tokens!)
 - ✅ Set minimal permissions on tokens
@@ -141,10 +155,50 @@ Test the workflow with TestPyPI before going to production:
 - ✅ Use repository secrets (not environment variables in code)
 
 ### ❌ Don'ts
+
 - ❌ Never commit tokens to git
 - ❌ Never share tokens in chat/email
 - ❌ Don't use your Docker Hub password
 - ❌ Don't use classic PyPI tokens (use trusted publishing)
+
+## Manual Dev Image Publishing
+
+CI no longer publishes dev images automatically. Validation remains in [`.github/workflows/ci.yml`](/Users/geoffreyharrazi/Documents/GitHub/idun-agent-platform/.github/workflows/ci.yml), while optional dev/test image publishing is handled manually via [`.github/workflows/publish_dev_images.yml`](/Users/geoffreyharrazi/Documents/GitHub/idun-agent-platform/.github/workflows/publish_dev_images.yml).
+
+### Required CI checks after the split
+
+The CI workflow is now validation-only. The required checks should be:
+
+- `Lint, type-check, and secrets scan`
+- `Test engine (Py3.12)`
+- `Test manager (Py3.12)`
+
+### How to trigger the dev image workflow
+
+1. Open the GitHub repository Actions tab.
+2. Select **Publish Dev Docker Images**.
+3. Click **Run workflow**.
+4. Fill the inputs:
+   - `ref`: branch, tag, or commit SHA to build
+   - `services`: `manager`, `web`, or `both`
+   - `tag`: optional explicit image tag override
+   - `push_latest`: optional boolean to also update `latest`
+5. Approve the `dev` environment when GitHub requests it.
+
+### What happens
+
+The workflow:
+
+- checks out the requested ref
+- authenticates to Google Cloud using Workload Identity
+- pushes selected images to Artifact Registry
+- writes the exact pushed image tags in the workflow summary
+
+### Notes on release workflow reuse
+
+For now, the release Docker publishing flow in [`.github/workflows/release.yml`](/Users/geoffreyharrazi/Documents/GitHub/idun-agent-platform/.github/workflows/release.yml) remains unchanged.
+
+This keeps the change small and low-risk. If dev image publishing stabilizes and needs less duplication later, Docker build/push logic can be extracted into a reusable workflow in a second pass.
 
 ## Troubleshooting
 
@@ -153,11 +207,13 @@ Test the workflow with TestPyPI before going to production:
 **Error**: `Error: Cannot perform an interactive login`
 
 **Check**:
+
 1. Is `DOCKERHUB_USERNAME` set correctly?
 2. Is `DOCKERHUB_TOKEN` a token (not password)?
 3. Is the token still valid? (Check Docker Hub security settings)
 
 **Fix**:
+
 - Regenerate the Docker Hub token
 - Update the `DOCKERHUB_TOKEN` secret
 
@@ -166,11 +222,13 @@ Test the workflow with TestPyPI before going to production:
 **Error**: `Trusted publishing exchange failure`
 
 **Check**:
+
 1. Is the publisher configured on PyPI?
 2. Does the workflow name match exactly? (`release.yml`)
 3. Is the release on the `main` branch?
 
 **Fix**:
+
 - Verify publisher configuration on PyPI
 - Ensure workflow file is named `release.yml`
 - Check that you're releasing from `main` branch
@@ -180,6 +238,7 @@ Test the workflow with TestPyPI before going to production:
 **Error**: `Package 'idun-agent-schema' not found`
 
 **Fix**:
+
 - Do a manual first upload (see "First Time Setup" above)
 - Then configure trusted publishing
 - Then use the automated workflow
@@ -187,17 +246,20 @@ Test the workflow with TestPyPI before going to production:
 ## Quick Reference
 
 ### GitHub Secrets Location
-```
+
+```text
 https://github.com/YOUR-USERNAME/idun-agent-platform/settings/secrets/actions
 ```
 
 ### PyPI Trusted Publishing
-```
+
+```text
 https://pypi.org/manage/account/publishing/
 ```
 
 ### Docker Hub Security
-```
+
+```text
 https://hub.docker.com/settings/security
 ```
 

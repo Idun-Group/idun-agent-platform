@@ -1,0 +1,9 @@
+server:
+  api:
+    port: 8002
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: "Structured Agent"
+    graph_definition: "./agent.py:graph"
