@@ -243,14 +243,15 @@ const PromptsPage = () => {
                 </CenterBox>
             ) : groups.length === 0 ? (
                 <EmptyState>
-                    <EmptyIconWrap>
-                        <FileText size={28} strokeWidth={1.5} />
-                    </EmptyIconWrap>
-                    <EmptyTitle>No prompts yet</EmptyTitle>
-                    <EmptyDesc>Create your first prompt template to get started</EmptyDesc>
-                    <PrimaryBtn onClick={() => setIsModalOpen(true)}>
+                    <EmptyTextBlock>
+                        <EmptyTitle>Create your first prompt</EmptyTitle>
+                        <EmptyDesc>
+                            Versioned templates you can assign to any agent.
+                        </EmptyDesc>
+                    </EmptyTextBlock>
+                    <EmptyCTA onClick={() => setIsModalOpen(true)}>
                         <Plus size={15} /> New Prompt
-                    </PrimaryBtn>
+                    </EmptyCTA>
                 </EmptyState>
             ) : (
                 <GroupList>
@@ -554,35 +555,69 @@ const EmptyState = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    padding: 80px 40px;
+    gap: 32px;
+    padding: 100px 40px 80px;
     text-align: center;
+    position: relative;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 320px;
+        height: 320px;
+        background: radial-gradient(circle, rgba(140, 82, 255, 0.06) 0%, transparent 70%);
+        pointer-events: none;
+    }
 `;
 
-const EmptyIconWrap = styled.div`
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    background: rgba(140, 82, 255, 0.08);
-    border: 1px solid rgba(140, 82, 255, 0.15);
+const EmptyTextBlock = styled.div`
     display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(140, 82, 255, 0.5);
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
 `;
 
 const EmptyTitle = styled.p`
-    font-size: 16px;
-    font-weight: 600;
-    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
     margin: 0;
+    letter-spacing: -0.02em;
 `;
 
 const EmptyDesc = styled.p`
     font-size: 14px;
     color: rgba(255, 255, 255, 0.35);
     margin: 0;
+    line-height: 1.5;
 `;
+
+const EmptyCTA = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    height: 42px;
+    background: rgba(140, 82, 255, 0.12);
+    border: 1px solid rgba(140, 82, 255, 0.25);
+    border-radius: 10px;
+    color: #a78bfa;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: rgba(140, 82, 255, 0.2);
+        border-color: rgba(140, 82, 255, 0.4);
+        color: #c4b5fd;
+        box-shadow: 0 0 24px rgba(140, 82, 255, 0.12);
+    }
+`;
+
 
 /* ── Group Cards ─────────────────────────────────────────────────────────────── */
 

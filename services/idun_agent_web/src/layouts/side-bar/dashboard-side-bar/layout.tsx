@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
 import UserPopover from '../../../components/side-bar/user-popover/component';
 import { useState, useEffect, useCallback, type ComponentType } from 'react';
-import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug, ChevronUp } from 'lucide-react';
+import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug, ChevronUp, FileText } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
@@ -79,6 +79,13 @@ const SideBar = ({}: SideBarProps) => {
             key: 'mcp',
             path: '/mcp',
             onClick: () => navigate('/mcp'),
+        },
+        {
+            icon: FileText,
+            label: t('sidebar.prompts', 'Prompts'),
+            key: 'prompts',
+            path: '/prompts',
+            onClick: () => navigate('/prompts'),
         },
         {
             icon: ShieldCheck,
