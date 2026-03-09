@@ -8,8 +8,6 @@ model attributes — no DB queries are needed.
 from types import SimpleNamespace
 from uuid import uuid4
 
-import pytest
-
 from app.services.engine_config import assemble_engine_config, extract_resource_ids
 
 # Minimal valid EngineConfig bases (must pass Pydantic validation)

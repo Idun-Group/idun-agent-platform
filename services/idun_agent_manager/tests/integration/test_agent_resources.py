@@ -5,7 +5,6 @@ references, verify materialized engine_config, update resources and verify
 cascade recompute, and RESTRICT delete policy.
 """
 
-from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
