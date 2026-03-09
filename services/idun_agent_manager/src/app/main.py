@@ -189,6 +189,11 @@ def setup_routes(app: FastAPI) -> None:
         prefix="/api/v1/workspaces",
         tags=["Workspace Members"],
     )
+    app.include_router(
+        prompts_router,
+        prefix="/api/v1/prompts",
+        tags=["Prompts"],
+    )
 
 
 # Create app instance
