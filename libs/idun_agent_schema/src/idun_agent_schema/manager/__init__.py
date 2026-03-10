@@ -2,7 +2,9 @@
 
 from .api import ApiKeyResponse  # noqa: F401
 from .managed_agent import (  # noqa: F401
+    AgentResourceIds,
     AgentStatus,
+    GuardrailRef,
     ManagedAgentCreate,
     ManagedAgentPatch,
     ManagedAgentRead,
@@ -16,6 +18,11 @@ from .managed_integration import (  # noqa: F401
 from .managed_mcp_server import (  # noqa: F401
     MCPToolSchema,
     MCPToolsResponse,
+)
+from .managed_prompt import (  # noqa: F401
+    ManagedPromptCreate,
+    ManagedPromptPatch,
+    ManagedPromptRead,
 )
 from .managed_sso import (  # noqa: F401
     ManagedSSOCreate,

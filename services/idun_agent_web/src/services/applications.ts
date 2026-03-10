@@ -325,7 +325,8 @@ const mapObservabilityToApp = (obs: components["schemas"]["ManagedObservabilityR
         createdAt: obs.created_at,
         updatedAt: obs.updated_at,
         config: mapConfigFromApi(type, obs.observability.config),
-        imageUrl
+        imageUrl,
+        agentCount: (obs as any).agent_count ?? 0,
     };
 };
 
@@ -371,7 +372,8 @@ const mapMemoryToApp = (mem: components["schemas"]["ManagedMemoryRead"]): Applic
         createdAt: mem.created_at,
         updatedAt: mem.updated_at,
         config: config,
-        imageUrl
+        imageUrl,
+        agentCount: (mem as any).agent_count ?? 0,
     };
 };
 
@@ -407,7 +409,8 @@ const mapMCPServerToApp = (mcp: components["schemas"]["ManagedMCPServerRead"]): 
         createdAt: mcp.created_at,
         updatedAt: mcp.updated_at,
         config,
-        imageUrl: '/img/mcp.svg'
+        imageUrl: '/img/mcp.svg',
+        agentCount: (mcp as any).agent_count ?? 0,
     };
 };
 
@@ -470,7 +473,8 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
         createdAt: guard.created_at,
         updatedAt: guard.updated_at,
         config,
-        imageUrl: '/img/guardrail.svg'
+        imageUrl: '/img/guardrail.svg',
+        agentCount: (guard as any).agent_count ?? 0,
     };
 };
 
@@ -962,12 +966,44 @@ export const discoverTools = async (id: string): Promise<MCPTool[]> => {
     return res.tools;
 };
 
-export const deleteApplication = async (id: string): Promise<void> => {
-    try { await deleteRequest(`/api/v1/observability/${id}`); return; } catch (e) { /* ignore */ }
-    try { await deleteRequest(`/api/v1/memory/${id}`); return; } catch (e) { /* ignore */ }
-    try { await deleteRequest(`/api/v1/mcp-servers/${id}`); return; } catch (e) { /* ignore */ }
-    try { await deleteRequest(`/api/v1/guardrails/${id}`); return; } catch (e) { /* ignore */ }
+const isConflictError = (e: unknown): boolean => {
+    if (!(e instanceof Error)) return false;
+    // The API returns JSON with a "detail" field for 409 errors
+    try {
+        const parsed = JSON.parse(e.message);
+        return typeof parsed.detail === 'string' && parsed.detail.includes('referenced by one or more agents');
+    } catch {
+        return e.message.includes('referenced by one or more agents');
+    }
+};
 
-    // If we reached here, it means we couldn't delete from any API
-    // throw new Error('Failed to delete application from any source');
+const extractConflictMessage = (e: unknown): string => {
+    if (!(e instanceof Error)) return 'Cannot delete: resource is in use by agents';
+    try {
+        const parsed = JSON.parse(e.message);
+        return parsed.detail || e.message;
+    } catch {
+        return e.message;
+    }
+};
+
+export const deleteApplication = async (id: string): Promise<void> => {
+    const endpoints = [
+        `/api/v1/observability/${id}`,
+        `/api/v1/memory/${id}`,
+        `/api/v1/mcp-servers/${id}`,
+        `/api/v1/guardrails/${id}`,
+    ];
+
+    for (const endpoint of endpoints) {
+        try {
+            await deleteRequest(endpoint);
+            return;
+        } catch (e) {
+            if (isConflictError(e)) {
+                throw new Error(extractConflictMessage(e));
+            }
+            // 404 = wrong endpoint, try next
+        }
+    }
 };

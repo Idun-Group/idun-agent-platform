@@ -24,8 +24,7 @@ def test_apply_handle_single_event_patch_is_idempotent():
 
     assert patches._ORIGINAL_HANDLE_SINGLE_EVENT is original_after_first
     assert (
-        patches._ORIGINAL_HANDLE_SINGLE_EVENT
-        is not LangGraphAgent._handle_single_event
+        patches._ORIGINAL_HANDLE_SINGLE_EVENT is not LangGraphAgent._handle_single_event
     )
 
 
@@ -43,7 +42,4 @@ def test_apply_prepare_stream_patch_is_idempotent():
     apply_prepare_stream_patch()
 
     assert patches._ORIGINAL_PREPARE_STREAM is original_after_first
-    assert (
-        patches._ORIGINAL_PREPARE_STREAM
-        is not LangGraphAgent.prepare_stream
-    )
+    assert patches._ORIGINAL_PREPARE_STREAM is not LangGraphAgent.prepare_stream

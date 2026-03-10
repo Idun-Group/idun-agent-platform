@@ -216,6 +216,14 @@ const Tag = styled.span`
     border: 1px solid hsl(var(--primary) / 0.2);
 `;
 
+const AgentCountBadge = styled.span`
+    font-size: 11px;
+    color: hsl(var(--muted-foreground));
+    display: flex;
+    align-items: center;
+    gap: 4px;
+`;
+
 const CardActions = styled.div`
     display: flex;
     gap: 10px;
@@ -440,6 +448,12 @@ const SSOPage: React.FC = () => {
                                     )}
                                 </ConfigList>
 
+                                {(config.agentCount ?? 0) > 0 && (
+                                    <AgentCountBadge>
+                                        Used by {config.agentCount} agent{config.agentCount !== 1 ? 's' : ''}
+                                    </AgentCountBadge>
+                                )}
+
                                 <CardActions>
                                     <EditBtn onClick={() => openEdit(config)}>Edit</EditBtn>
                                     <DeleteBtn onClick={() => setConfigToDelete(config)}>Remove</DeleteBtn>
@@ -466,6 +480,9 @@ const SSOPage: React.FC = () => {
                 onClose={() => setConfigToDelete(null)}
                 onConfirm={handleDeleteConfirm}
                 itemName={configToDelete?.name ?? ''}
+                description={(configToDelete?.agentCount ?? 0) > 0
+                    ? `This SSO config is used by ${configToDelete!.agentCount} agent${configToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
+                    : undefined}
             />
         </PageWrapper>
     );

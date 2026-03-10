@@ -290,6 +290,14 @@ const ConfigValue = styled.span`
     max-width: 180px;
 `;
 
+const AgentCountBadge = styled.span`
+    font-size: 11px;
+    color: hsl(var(--muted-foreground));
+    display: flex;
+    align-items: center;
+    gap: 4px;
+`;
+
 const CardActions = styled.div`
     display: flex;
     gap: 10px;
@@ -582,6 +590,12 @@ const IntegrationsPage: React.FC = () => {
                                             )}
                                         </ConfigList>
 
+                                        {(config.agentCount ?? 0) > 0 && (
+                                            <AgentCountBadge>
+                                                Used by {config.agentCount} agent{config.agentCount !== 1 ? 's' : ''}
+                                            </AgentCountBadge>
+                                        )}
+
                                         <CardActions>
                                             <EditBtn onClick={() => openEdit(config)}>Edit</EditBtn>
                                             <DeleteBtn onClick={() => setConfigToDelete(config)}>Remove</DeleteBtn>
@@ -641,6 +655,9 @@ const IntegrationsPage: React.FC = () => {
                 onClose={() => setConfigToDelete(null)}
                 onConfirm={handleDeleteConfirm}
                 itemName={configToDelete?.name ?? ''}
+                description={(configToDelete?.agentCount ?? 0) > 0
+                    ? `This integration is used by ${configToDelete!.agentCount} agent${configToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
+                    : undefined}
             />
         </PageWrapper>
     );

@@ -33,7 +33,7 @@ CMD ["bash", "-c", "\
     echo '=== Removing PyPI schema from venv ===' && \
     uv pip uninstall --python /app/.venv/bin/python idun-agent-schema && \
     echo '=== Installing local schema into venv ===' && \
-    uv pip install --python /app/.venv/bin/python --no-deps -e /schema && \
+    uv pip install --python /app/.venv/bin/python -e /schema && \
     echo '=== Verifying schema location ===' && \
     /app/.venv/bin/python -c 'import idun_agent_schema; print(f\"Schema: {idun_agent_schema.__file__} v{idun_agent_schema.__version__}\")' && \
     echo '=== Starting uvicorn ===' && \

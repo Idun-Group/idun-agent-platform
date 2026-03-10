@@ -28,9 +28,7 @@ class TestLangsmithHandler:
             )
 
             with patch("langsmith.Client"):
-                LangsmithHandler(
-                    {"endpoint": "https://eu.api.smith.langchain.com"}
-                )
+                LangsmithHandler({"endpoint": "https://eu.api.smith.langchain.com"})
 
             assert (
                 os.environ.get("LANGSMITH_ENDPOINT")
@@ -80,9 +78,7 @@ class TestLangsmithHandler:
             )
 
             with patch("langsmith.Client"):
-                LangsmithHandler(
-                    {"api_key": "", "project_name": "", "endpoint": ""}
-                )
+                LangsmithHandler({"api_key": "", "project_name": "", "endpoint": ""})
 
             assert os.environ.get("LANGSMITH_TRACING") == "true"
             # Empty strings should not be set

@@ -180,14 +180,13 @@ const MemoryPage = () => {
                                            {mem.type} storage for {frameworkName} agents.
                                        </Description>
 
-                                       {/* Stats Grid - Modified as requested: Only Connected Agents */}
+                                       {/* Stats Grid - Connected Agents */}
                                        <StatsGrid>
                                             <StatBox>
                                                 <StatLabel>
                                                     <Users size={10} style={{ marginRight: '4px' }} /> Connected Agents
                                                 </StatLabel>
-                                                {/* Mock connected agents count as we don't have it in ApplicationConfig yet */}
-                                                <StatValue>0</StatValue>
+                                                <StatValue>{mem.agentCount ?? 0}</StatValue>
                                             </StatBox>
                                        </StatsGrid>
 
@@ -230,6 +229,9 @@ const MemoryPage = () => {
          onClose={() => setAppToDelete(null)}
          onConfirm={handleDeleteConfirm}
          itemName={appToDelete?.name ?? ''}
+         description={(appToDelete?.agentCount ?? 0) > 0
+             ? `This memory store is used by ${appToDelete!.agentCount} agent${appToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
+             : undefined}
        />
     </PageContainer>
   );

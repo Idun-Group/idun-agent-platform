@@ -26,6 +26,7 @@ import GuardrailsPage from './pages/guardrails-page/page';
 import SSOPage from './pages/sso-page/page';
 import IntegrationsPage from './pages/integrations-page/page';
 import OnboardingPage from './pages/onboarding/page';
+import PromptsPage from './pages/prompts-page/page';
 // PLOP_IMPORT
 
 function App() {
@@ -142,7 +143,7 @@ function App() {
                                 </ContentLayout>
                             </AppLayout>
                         }
-                    />
+                    /> 
                     <Route
                         path="/observability"
                         element={
@@ -236,6 +237,20 @@ function App() {
                                     <SideBar />
                                     <MainContent>
                                         <IntegrationsPage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
+                    <Route
+                        path="/prompts"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <PromptsPage />
                                     </MainContent>
                                 </ContentLayout>
                             </AppLayout>

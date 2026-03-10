@@ -16,7 +16,7 @@ from idun_agent_schema.manager.managed_integration import (
     ManagedIntegrationPatch,
     ManagedIntegrationRead,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
@@ -25,9 +25,11 @@ from app.api.v1.deps import (
     get_session,
     require_workspace,
 )
+from app.infrastructure.db.models.agent_integration import AgentIntegrationModel
 from app.infrastructure.db.models.managed_integration import (
     ManagedIntegrationModel,
 )
+from app.services.engine_config import recompute_engine_config
 
 router = APIRouter()
 
@@ -67,7 +69,7 @@ async def _get_integration(
 
 
 def _model_to_schema(
-    model: ManagedIntegrationModel,
+    model: ManagedIntegrationModel, agent_count: int = 0
 ) -> ManagedIntegrationRead:
     """Transform database model to response schema."""
     integration = IntegrationConfig(**model.integration_config)
@@ -75,6 +77,7 @@ def _model_to_schema(
         id=model.id,
         name=model.name,
         integration=integration,
+        agent_count=agent_count,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -146,7 +149,20 @@ async def list_integrations(
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
-    return [_model_to_schema(r) for r in rows]
+    # Batch count agents per integration
+    counts: dict[UUID, int] = {}
+    if rows:
+        count_stmt = (
+            select(
+                AgentIntegrationModel.integration_id,
+                func.count(func.distinct(AgentIntegrationModel.agent_id)),
+            )
+            .where(AgentIntegrationModel.integration_id.in_([r.id for r in rows]))
+            .group_by(AgentIntegrationModel.integration_id)
+        )
+        counts = dict((await session.execute(count_stmt)).all())
+
+    return [_model_to_schema(r, counts.get(r.id, 0)) for r in rows]
 
 
 @router.get(
@@ -162,7 +178,11 @@ async def get_integration(
 ) -> ManagedIntegrationRead:
     """Get a managed integration configuration by ID."""
     model = await _get_integration(id, session, workspace_id)
-    return _model_to_schema(model)
+    count_stmt = select(func.count(func.distinct(AgentIntegrationModel.agent_id))).where(
+        AgentIntegrationModel.integration_id == model.id
+    )
+    agent_count = await session.scalar(count_stmt) or 0
+    return _model_to_schema(model, agent_count)
 
 
 @router.delete(
@@ -178,6 +198,17 @@ async def delete_integration(
 ) -> None:
     """Delete a managed integration configuration permanently."""
     model = await _get_integration(id, session, workspace_id)
+
+    stmt = select(AgentIntegrationModel.agent_id).where(
+        AgentIntegrationModel.integration_id == model.id
+    )
+    result = await session.execute(stmt)
+    if result.first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete integration: it is referenced by one or more agents",
+        )
+
     await session.delete(model)
     await session.flush()
 
@@ -205,6 +236,13 @@ async def patch_integration(
     model.updated_at = datetime.now(UTC)
 
     await session.flush()
-    await session.refresh(model)
 
+    stmt = select(AgentIntegrationModel.agent_id).where(
+        AgentIntegrationModel.integration_id == model.id
+    )
+    result = await session.execute(stmt)
+    for (agent_id,) in result.all():
+        await recompute_engine_config(session, agent_id)
+
+    await session.refresh(model)
     return _model_to_schema(model)
