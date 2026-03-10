@@ -1078,6 +1078,11 @@
             "label": "Workspace name",
             "placeholder": "My Workspace"
         },
+        "project": {
+            "label": "First project",
+            "placeholder": "Default",
+            "help": "Projects organize your agents and configurations. You can create more later."
+        },
         "submit": "Create workspace",
         "creating": "Creating...",
         "error": "Failed to create workspace. Please try again."

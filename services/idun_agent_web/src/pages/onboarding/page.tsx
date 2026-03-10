@@ -13,6 +13,7 @@ const OnboardingPage = () => {
     const { session, refresh } = useAuth();
 
     const [name, setName] = useState('');
+    const [projectName, setProjectName] = useState('Default');
     const [error, setError] = useState('');
     const [isCreating, setIsCreating] = useState(false);
 
@@ -31,7 +32,10 @@ const OnboardingPage = () => {
         setError('');
         setIsCreating(true);
         try {
-            await postJson('/api/v1/workspaces/', { name: name.trim() });
+            await postJson('/api/v1/workspaces/', {
+                name: name.trim(),
+                default_project_name: projectName.trim() || 'Default',
+            });
             await refresh();
             navigate('/agents', { replace: true });
         } catch {
@@ -63,6 +67,22 @@ const OnboardingPage = () => {
                         placeholder={t('onboarding.name.placeholder')}
                         required
                     />
+                    <ProjectField>
+                        <TextInput
+                            label={t('onboarding.project.label', 'First project')}
+                            name="project-name"
+                            type="text"
+                            value={projectName}
+                            onChange={(e) => setProjectName(e.target.value)}
+                            placeholder={t('onboarding.project.placeholder', 'Default')}
+                        />
+                        <HelpText>
+                            {t(
+                                'onboarding.project.help',
+                                'Projects organize your agents and configurations. You can create more later.',
+                            )}
+                        </HelpText>
+                    </ProjectField>
                     {error && <ErrorText>{error}</ErrorText>}
                     <SubmitButton type="submit" $variants="base" disabled={isCreating || !name.trim()}>
                         {isCreating ? t('onboarding.creating') : t('onboarding.submit')}
@@ -144,6 +164,20 @@ const SubmitButton = styled(Button)`
     font-weight: 600;
     border-radius: 8px;
     margin-top: 4px;
+`;
+
+const ProjectField = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+`;
+
+const HelpText = styled.p`
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+    line-height: 1.4;
+    margin: 0;
 `;
 
 const ErrorText = styled.p`

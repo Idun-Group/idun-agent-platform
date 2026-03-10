@@ -40,6 +40,7 @@ class WorkspaceRead(BaseModel):
 
 class WorkspaceCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
+    default_project_name: str = Field(default="Default", min_length=1, max_length=255)
 
 
 class WorkspacePatch(BaseModel):
@@ -121,11 +122,13 @@ async def create_workspace(
     await session.flush()
 
     # Auto-create default project for the new workspace
+    project_name = request.default_project_name
+    project_slug = project_name.lower().replace(" ", "-")[:50]
     project_id = uuid4()
     project = ProjectModel(
         id=project_id,
-        name="Default",
-        slug="default",
+        name=project_name,
+        slug=project_slug,
         is_default=True,
         workspace_id=ws_id,
         created_by=user_uuid,
