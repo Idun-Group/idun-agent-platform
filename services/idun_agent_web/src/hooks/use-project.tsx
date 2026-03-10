@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { getJson, postJson, patchJson, deleteRequest } from '../utils/api';
+import { useAuth } from './use-auth';
 
 export type Project = {
     id: string;
@@ -11,10 +12,25 @@ export type Project = {
     updated_at: string;
 };
 
+export type ProjectRole = 'admin' | 'contributor' | 'reader';
+
+type ProjectMemberRead = {
+    user_id: string;
+    role: ProjectRole;
+};
+
+type ProjectMemberListResponse = {
+    members: ProjectMemberRead[];
+    total: number;
+};
+
 interface ProjectContextValue {
     selectedProjectId: string | null;
     setSelectedProjectId: (id: string | null) => void;
     projects: Project[];
+    projectRoles: Record<string, ProjectRole>;
+    isWorkspaceOwner: boolean;
+    canAccessSettings: boolean;
     refreshProjects: () => Promise<void>;
     createProject: (name: string) => Promise<Project>;
     updateProject: (id: string, name: string) => Promise<Project>;
@@ -26,11 +42,14 @@ const ProjectContext = createContext<ProjectContextValue | undefined>(undefined)
 const STORAGE_KEY = 'activeProjectId';
 
 export const ProjectProvider = ({ children }: { children: ReactNode }) => {
+    const { session } = useAuth();
     const [selectedProjectId, setSelectedProjectIdState] = useState<string | null>(() => {
         if (typeof window === 'undefined') return null;
         return localStorage.getItem(STORAGE_KEY);
     });
     const [projects, setProjects] = useState<Project[]>([]);
+    const [projectRoles, setProjectRoles] = useState<Record<string, ProjectRole>>({});
+    const [isWorkspaceOwner, setIsWorkspaceOwner] = useState(false);
 
     const setSelectedProjectId = useCallback((id: string | null) => {
         setSelectedProjectIdState(id);
@@ -45,8 +64,58 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         try {
             const data = await getJson<Project[]>('/api/v1/projects/');
             setProjects(data);
+
+            // Auto-select: if no project selected or selected not in list, pick default
+            const currentId = localStorage.getItem(STORAGE_KEY);
+            const validSelection = currentId && data.some((p) => p.id === currentId);
+            if (!validSelection && data.length > 0) {
+                const defaultProject = data.find((p) => p.is_default) ?? data[0];
+                setSelectedProjectId(defaultProject.id);
+            }
         } catch (error) {
             console.error('Error fetching projects:', error);
+        }
+    }, [setSelectedProjectId]);
+
+    const refreshRoles = useCallback(async (projectList: Project[], userId: string) => {
+        try {
+            const workspaces = await getJson<{ id: string }[]>('/api/v1/workspaces/');
+            if (workspaces.length === 0) return;
+            const wsId = workspaces[0].id;
+
+            const memberRes = await getJson<{
+                members: { user_id: string; is_owner: boolean }[];
+            }>(`/api/v1/workspaces/${wsId}/members`);
+
+            const currentMember = memberRes.members.find((m) => m.user_id === userId);
+            const ownerStatus = currentMember?.is_owner ?? false;
+            setIsWorkspaceOwner(ownerStatus);
+
+            if (ownerStatus) {
+                const roles: Record<string, ProjectRole> = {};
+                for (const p of projectList) {
+                    roles[p.id] = 'admin';
+                }
+                setProjectRoles(roles);
+            } else {
+                const roles: Record<string, ProjectRole> = {};
+                await Promise.all(
+                    projectList.map(async (p) => {
+                        try {
+                            const res = await getJson<ProjectMemberListResponse>(
+                                `/api/v1/projects/${p.id}/members`,
+                            );
+                            const me = res.members.find((m) => m.user_id === userId);
+                            if (me) roles[p.id] = me.role;
+                        } catch {
+                            // ignore
+                        }
+                    }),
+                );
+                setProjectRoles(roles);
+            }
+        } catch {
+            // ignore errors
         }
     }, []);
 
@@ -71,6 +140,14 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         await refreshProjects();
     }, [refreshProjects, selectedProjectId, setSelectedProjectId]);
 
+    // Refresh roles whenever projects list or session changes
+    useEffect(() => {
+        const userId = session?.principal?.user_id;
+        if (userId && projects.length > 0) {
+            refreshRoles(projects, userId);
+        }
+    }, [projects, session, refreshRoles]);
+
     // Clear project selection when workspace changes
     useEffect(() => {
         const handleStorage = (e: StorageEvent) => {
@@ -83,12 +160,18 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         return () => window.removeEventListener('storage', handleStorage);
     }, [setSelectedProjectId]);
 
+    const canAccessSettings =
+        isWorkspaceOwner || Object.values(projectRoles).some((r) => r === 'admin');
+
     return (
         <ProjectContext.Provider
             value={{
                 selectedProjectId,
                 setSelectedProjectId,
                 projects,
+                projectRoles,
+                isWorkspaceOwner,
+                canAccessSettings,
                 refreshProjects,
                 createProject,
                 updateProject,
