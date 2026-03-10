@@ -1,4 +1,6 @@
-"""Tests for guardrail schema: flattened models, backwards compat, api_key defaults."""
+"""Tests for guardrail schema: flattened models, backwards compat, api_key defaults, validate()."""
+
+from unittest.mock import MagicMock, patch
 
 import pytest
 from idun_agent_schema.engine.guardrails_v2 import (
@@ -6,10 +8,12 @@ from idun_agent_schema.engine.guardrails_v2 import (
     BiasCheckConfig,
     CompetitionCheckConfig,
     CorrectLanguageConfig,
+    DetectJailbreakConfig,
     DetectPIIConfig,
     GibberishTextConfig,
     GuardrailsV2,
     NSFWTextConfig,
+    PromptInjectionConfig,
     RestrictToTopicConfig,
     ToxicLanguageConfig,
 )
@@ -161,3 +165,89 @@ class TestGuardrailsV2MixedFormats:
         assert len(guardrails.input) == 3
         assert guardrails.input[0].banned_words == ["old-format"]
         assert guardrails.input[2].banned_words == ["new-format"]
+
+
+class TestGuardUrlCorrectness:
+    """Guard URLs must point to the correct hub package."""
+
+    def test_detect_jailbreak_url(self):
+        config = DetectJailbreakConfig(threshold=0.5)
+        assert config.guard_url == "hub://guardrails/detect_jailbreak"
+
+    def test_prompt_injection_url(self):
+        config = PromptInjectionConfig(threshold=0.5)
+        assert config.guard_url == "hub://guardrails/detect_prompt_injection"
+
+
+@pytest.mark.unit
+class TestGuardrailsHubGuardValidate:
+    """Unit tests for GuardrailsHubGuard.validate() logic."""
+
+    @pytest.fixture(autouse=True)
+    def _require_guardrails(self):
+        try:
+            from idun_agent_engine.guardrails.guardrails_hub.guardrails_hub import (  # noqa: F401
+                GuardrailsHubGuard,
+            )
+        except (ImportError, KeyError):
+            pytest.skip("guardrails runtime not available (spacy/model issue)")
+
+    def _make_guard(self):
+        """Build a GuardrailsHubGuard with all external I/O mocked out."""
+        from idun_agent_engine.guardrails.guardrails_hub.guardrails_hub import (
+            GuardrailsHubGuard,
+        )
+
+        config = BanListConfig(api_key="test-key", banned_words=["bad"])
+        with patch.object(GuardrailsHubGuard, "_install_model"), \
+             patch.object(GuardrailsHubGuard, "setup_guard", return_value=MagicMock()):
+            guard = GuardrailsHubGuard(config, position="input")
+        return guard
+
+    def test_validate_passes_when_validation_passed_is_true(self):
+        guard = self._make_guard()
+        mock_result = MagicMock()
+        mock_result.validation_passed = True
+
+        mock_guard_instance = MagicMock()
+        mock_guard_instance.validate.return_value = mock_result
+
+        with patch("idun_agent_engine.guardrails.guardrails_hub.guardrails_hub.Guard") as mock_guard_cls:
+            mock_guard_cls.return_value.use.return_value = mock_guard_instance
+            assert guard.validate("hello world") is True
+
+    def test_validate_fails_when_validation_passed_is_false(self):
+        guard = self._make_guard()
+        mock_result = MagicMock()
+        mock_result.validation_passed = False
+
+        mock_guard_instance = MagicMock()
+        mock_guard_instance.validate.return_value = mock_result
+
+        with patch("idun_agent_engine.guardrails.guardrails_hub.guardrails_hub.Guard") as mock_guard_cls:
+            mock_guard_cls.return_value.use.return_value = mock_guard_instance
+            assert guard.validate("bad stuff") is False
+
+    def test_validate_returns_false_on_guardrails_validation_error(self):
+        guard = self._make_guard()
+
+        mock_guard_instance = MagicMock()
+
+        from guardrails.errors import ValidationError as GuardrailsValidationError
+
+        mock_guard_instance.validate.side_effect = GuardrailsValidationError("blocked")
+
+        with patch("idun_agent_engine.guardrails.guardrails_hub.guardrails_hub.Guard") as mock_guard_cls:
+            mock_guard_cls.return_value.use.return_value = mock_guard_instance
+            assert guard.validate("bad input") is False
+
+    def test_validate_returns_true_on_unexpected_error(self):
+        """Unexpected errors should fail open (allow the request)."""
+        guard = self._make_guard()
+
+        mock_guard_instance = MagicMock()
+        mock_guard_instance.validate.side_effect = RuntimeError("unexpected")
+
+        with patch("idun_agent_engine.guardrails.guardrails_hub.guardrails_hub.Guard") as mock_guard_cls:
+            mock_guard_cls.return_value.use.return_value = mock_guard_instance
+            assert guard.validate("some input") is True

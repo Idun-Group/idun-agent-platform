@@ -162,7 +162,7 @@ CRUD models for resources managed via the manager API. Each follows the pattern:
 
 **`AgentStatus`** enum: `DRAFT`, `ACTIVE`, `INACTIVE`, `DEPRECATED`, `ERROR`
 
-**`guardrail_configs.py`**: Manager-specific simplified guardrail configs (`SimpleBanListConfig`, `SimplePIIConfig`) + `convert_guardrail()` function that converts manager-format guardrails into engine-format (adds `api_key` from `GUARDRAILS_API_KEY` env var, maps PII entity names, builds `guard_params`).
+**`guardrail_configs.py`**: Manager-specific simplified guardrail configs (`SimpleBanListConfig`, `SimplePIIConfig`, etc.) with `api_key` and `reject_message` fields. These are stored directly in engine-ready format — no conversion step needed.
 
 ## Shared (`shared/`)
 

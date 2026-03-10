@@ -11,7 +11,6 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from idun_agent_schema.engine import EngineConfig
-from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from idun_agent_schema.manager.managed_agent import AgentResourceIds
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -71,8 +70,7 @@ def assemble_engine_config(model: ManagedAgentModel) -> dict[str, Any]:
                 output_guards.append(guard_data)
 
     if input_guards or output_guards:
-        raw_guardrails = {"input": input_guards, "output": output_guards}
-        base["guardrails"] = convert_guardrail(raw_guardrails)
+        base["guardrails"] = {"input": input_guards, "output": output_guards}
     else:
         base.pop("guardrails", None)
 

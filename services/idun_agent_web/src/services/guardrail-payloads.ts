@@ -4,8 +4,8 @@
  * Source of truth: libs/idun_agent_schema/src/idun_agent_schema/manager/guardrail_configs.py
  *
  * The `guardrail` field on ManagedGuardrailCreate is a FLAT union
- * (not wrapped in { input: [...] }). The manager's convert_guardrail()
- * handles expansion to the engine format internally.
+ * (not wrapped in { input: [...] }). Configs include api_key and
+ * reject_message and are stored directly in engine-ready format.
  */
 
 export interface SimpleBanListConfig {

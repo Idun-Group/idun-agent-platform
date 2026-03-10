@@ -49,12 +49,12 @@ from app.infrastructure.db.models.agent_prompt_assignment import (
     AgentPromptAssignmentModel,
 )
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
+from app.infrastructure.db.models.managed_prompt import ManagedPromptModel
 from app.services.engine_config import (
     extract_resource_ids,
     recompute_engine_config,
     sync_resources,
 )
-from app.infrastructure.db.models.managed_prompt import ManagedPromptModel
 
 router = APIRouter()
 
@@ -132,12 +132,6 @@ async def create_agent(
 
     # Extract resources before Pydantic validation
     resources_data = body.pop("resources", None)
-
-    # Backward compat: convert guardrails in old-format engine_config
-    if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(
-            body["engine_config"]["guardrails"]
-        )
 
     request = ManagedAgentCreate(**body)
     now = datetime.now(UTC)
@@ -385,12 +379,6 @@ async def patch_agent(
 
     # Extract resources before Pydantic validation
     resources_data = body.pop("resources", None)
-
-    # Backward compat: convert guardrails in old-format engine_config
-    if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(
-            body["engine_config"]["guardrails"]
-        )
 
     request = ManagedAgentPatch(**body)
 

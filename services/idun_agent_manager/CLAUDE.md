@@ -288,4 +288,4 @@ cd services/idun_agent_manager && uv run pytest tests/ -v
 - Config stored as JSONB, validated in/out via `idun_agent_schema` Pydantic models
 - Router pattern: `_get_<resource>()` helper for fetch + 404, `_model_to_schema()` for DB model → response
 - Workspace scoping via `require_workspace` dependency on all resource endpoints
-- Guardrails from the frontend use simplified configs (`SimpleBanListConfig`, `SimplePIIConfig`) which are converted to full engine format via `convert_guardrail()` (adds `api_key` from `GUARDRAILS_API_KEY` env var)
+- Guardrails from the frontend use simplified configs (`SimpleBanListConfig`, `SimplePIIConfig`, etc.) with `api_key` and `reject_message` included — stored directly in engine-ready format (no conversion step)
