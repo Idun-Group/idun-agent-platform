@@ -142,6 +142,67 @@ def get_project_id(
 
 
 # ---------------------------------------------------------------------------
+# Project access check
+# ---------------------------------------------------------------------------
+
+
+async def check_project_access(
+    user_id: UUID,
+    workspace_id: UUID,
+    project_id: UUID,
+    min_role: "ProjectRole",
+    session: AsyncSession,
+) -> None:
+    """Verify the user has at least min_role on the project.
+
+    Workspace owners implicitly have admin access on all projects.
+    Raises HTTPException 403 if insufficient access, 404 if not a workspace member.
+    """
+    from app.api.v1.schemas.workspace_members import (
+        PROJECT_ROLE_HIERARCHY,
+        ProjectRole,
+    )
+    from app.infrastructure.db.models.membership import MembershipModel
+    from app.infrastructure.db.models.project_membership import ProjectMembershipModel
+
+    from sqlalchemy import select as _select
+
+    # Check workspace membership
+    mem_stmt = _select(MembershipModel).where(
+        MembershipModel.user_id == user_id,
+        MembershipModel.workspace_id == workspace_id,
+    )
+    membership = (await session.execute(mem_stmt)).scalar_one_or_none()
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found",
+        )
+
+    # Owners are implicit admin on all projects
+    if membership.is_owner:
+        return
+
+    # Check project membership
+    pm_stmt = _select(ProjectMembershipModel).where(
+        ProjectMembershipModel.user_id == user_id,
+        ProjectMembershipModel.project_id == project_id,
+    )
+    pm = (await session.execute(pm_stmt)).scalar_one_or_none()
+    if pm is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this project",
+        )
+
+    if PROJECT_ROLE_HIERARCHY.get(ProjectRole(pm.role), 0) < PROJECT_ROLE_HIERARCHY[min_role]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Requires at least {min_role.value} role on this project",
+        )
+
+
+# ---------------------------------------------------------------------------
 # Legacy API-key dependency (kept for backward compatibility)
 # ---------------------------------------------------------------------------
 
