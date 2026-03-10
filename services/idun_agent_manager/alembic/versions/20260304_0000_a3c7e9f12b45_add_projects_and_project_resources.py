@@ -1,7 +1,7 @@
 """add projects and project_resources tables
 
 Revision ID: a3c7e9f12b45
-Revises: 4e21ee5d39eb
+Revises: b5c6d7e8f9a0
 Create Date: 2026-03-04 00:01:00.000000+00:00
 """
 
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "a3c7e9f12b45"
-down_revision: Union[str, None] = "4e21ee5d39eb"
+down_revision: Union[str, None] = "b5c6d7e8f9a0"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

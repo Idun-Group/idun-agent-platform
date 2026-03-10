@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,15 +22,26 @@ from app.infrastructure.db.session import Base
 class ProjectModel(Base):
     __tablename__ = "projects"
 
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "slug", name="uq_project_workspace_slug"),
+        UniqueConstraint("workspace_id", "id", name="uq_project_workspace_id"),
+    )
+
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     workspace_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("workspaces.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+    )
+    created_by: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -32,8 +51,4 @@ class ProjectModel(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
-    )
-
-    __table_args__ = (
-        UniqueConstraint("workspace_id", "slug", name="uq_project_workspace_slug"),
     )

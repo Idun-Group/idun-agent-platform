@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, delete, func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
@@ -30,13 +30,14 @@ from app.api.v1.schemas.workspace_members import (
 from app.infrastructure.db.models.user import UserModel
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
+from app.infrastructure.db.models.managed_integration import ManagedIntegrationModel
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
 from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
 from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
+from app.infrastructure.db.models.managed_sso import ManagedSSOModel
 from app.infrastructure.db.models.membership import MembershipModel
 from app.infrastructure.db.models.project import ProjectModel
 from app.infrastructure.db.models.project_membership import ProjectMembershipModel
-from app.infrastructure.db.models.project_resource import ProjectResourceModel
 
 router = APIRouter()
 
@@ -109,13 +110,15 @@ class ProjectDeleteAction(BaseModel):
 # Resource table registry for delete-preview / migration
 # ---------------------------------------------------------------------------
 
-# Each entry: (model class, name column expression)
+# Each entry: (model class, resource_type label, name column)
 _RESOURCE_TABLES: list[tuple[type, str, str]] = [
     (ManagedAgentModel, "agent", "name"),
     (ManagedMCPServerModel, "mcp_server", "name"),
     (ManagedGuardrailModel, "guardrail", "name"),
     (ManagedObservabilityModel, "observability", "name"),
     (ManagedMemoryModel, "memory", "name"),
+    (ManagedIntegrationModel, "integration", "name"),
+    (ManagedSSOModel, "sso", "name"),
 ]
 
 
@@ -372,59 +375,38 @@ async def delete_project(
 
     pid = model.id
 
-    # Find resources that are ONLY in this project (no other project assignments)
-    # These need to be reassigned to the default project
-    orphan_stmt = (
-        select(
-            ProjectResourceModel.resource_id,
-            ProjectResourceModel.resource_type,
-        )
-        .where(ProjectResourceModel.project_id == pid)
-        .where(
-            ~ProjectResourceModel.resource_id.in_(
-                select(ProjectResourceModel.resource_id).where(
-                    ProjectResourceModel.project_id != pid
-                )
-            )
-        )
+    # Move all resources in this project to a fallback project.
+    # Resources have a direct project_id FK with CASCADE, so without
+    # migration they'd be deleted along with the project.
+    default_stmt = select(ProjectModel).where(
+        ProjectModel.workspace_id == workspace_id,
+        ProjectModel.is_default.is_(True),
     )
-    orphan_result = await session.execute(orphan_stmt)
-    orphans = orphan_result.all()
+    default_project = (await session.execute(default_stmt)).scalar_one_or_none()
 
-    if orphans:
-        # Get the default project for this workspace
-        default_stmt = select(ProjectModel).where(
-            ProjectModel.workspace_id == workspace_id,
-            ProjectModel.is_default.is_(True),
+    # If deleting the default project, pick another as target
+    if default_project is None or default_project.id == pid:
+        fallback_stmt = (
+            select(ProjectModel)
+            .where(
+                ProjectModel.workspace_id == workspace_id,
+                ProjectModel.id != pid,
+            )
+            .limit(1)
         )
-        default_result = await session.execute(default_stmt)
-        default_project = default_result.scalar_one_or_none()
+        default_project = (await session.execute(fallback_stmt)).scalar_one()
 
-        # If deleting the default project, pick another project as target
-        if default_project is None or default_project.id == pid:
-            fallback_stmt = (
-                select(ProjectModel)
-                .where(
-                    ProjectModel.workspace_id == workspace_id,
-                    ProjectModel.id != pid,
-                )
-                .limit(1)
-            )
-            fallback_result = await session.execute(fallback_stmt)
-            default_project = fallback_result.scalar_one()
+    # Migrate resources across all resource tables
+    for model_cls, _rtype, _name_col in _RESOURCE_TABLES:
+        await session.execute(
+            update(model_cls)
+            .where(getattr(model_cls, "project_id") == pid)
+            .values(project_id=default_project.id)
+        )
 
-        for resource_id, resource_type in orphans:
-            assignment = ProjectResourceModel(
-                id=uuid4(),
-                project_id=default_project.id,
-                resource_id=resource_id,
-                resource_type=resource_type,
-            )
-            session.add(assignment)
+    await session.flush()
 
-        await session.flush()
-
-    # CASCADE will delete project_resources and project_memberships rows
+    # CASCADE will delete project_memberships rows
     await session.delete(model)
     await session.flush()
 
@@ -513,20 +495,13 @@ async def delete_project_with_plan(
             request.move_resources_to, session, workspace_id
         )
 
-        # Migrate all 5 resource tables
+        # Migrate all resource tables to the target project
         for model_cls, _resource_type, _name_col in _RESOURCE_TABLES:
             await session.execute(
                 update(model_cls)
                 .where(getattr(model_cls, "project_id") == project.id)
                 .values(project_id=target_project.id)
             )
-
-        # Migrate project_resources rows
-        await session.execute(
-            update(ProjectResourceModel)
-            .where(ProjectResourceModel.project_id == project.id)
-            .values(project_id=target_project.id)
-        )
 
         await session.flush()
 
@@ -560,34 +535,34 @@ async def list_project_resources(
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> list[ResourceAssignmentRead]:
-    """List resource assignments for a project."""
+    """List resources belonging to a project (via direct project_id FK)."""
     project = await _get_project(project_id, session, workspace_id)
 
-    stmt = select(ProjectResourceModel).where(
-        ProjectResourceModel.project_id == project.id
-    )
-    if resource_type:
-        stmt = stmt.where(ProjectResourceModel.resource_type == resource_type)
-
-    result = await session.execute(stmt)
-    rows = result.scalars().all()
-
-    return [
-        ResourceAssignmentRead(
-            id=str(r.id),
-            project_id=str(r.project_id),
-            resource_id=str(r.resource_id),
-            resource_type=r.resource_type,
+    results: list[ResourceAssignmentRead] = []
+    for model_cls, rtype, _name_col in _RESOURCE_TABLES:
+        if resource_type and rtype != resource_type:
+            continue
+        stmt = select(getattr(model_cls, "id")).where(
+            getattr(model_cls, "project_id") == project.id
         )
-        for r in rows
-    ]
+        rows = (await session.execute(stmt)).scalars().all()
+        for rid in rows:
+            results.append(
+                ResourceAssignmentRead(
+                    id=str(rid),
+                    project_id=str(project.id),
+                    resource_id=str(rid),
+                    resource_type=rtype,
+                )
+            )
+    return results
 
 
 @router.post(
     "/{project_id}/resources",
     response_model=ResourceAssignmentRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Assign resource to project",
+    summary="Move a resource to this project",
 )
 async def assign_resource_to_project(
     project_id: str,
@@ -596,7 +571,7 @@ async def assign_resource_to_project(
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ResourceAssignmentRead:
-    """Assign a resource to a project."""
+    """Move a resource to a project by setting its project_id FK."""
     project = await _get_project(project_id, session, workspace_id)
 
     try:
@@ -607,91 +582,41 @@ async def assign_resource_to_project(
             detail="Invalid resource_id format",
         ) from err
 
-    # Check if assignment already exists
-    existing_stmt = select(ProjectResourceModel).where(
-        ProjectResourceModel.project_id == project.id,
-        ProjectResourceModel.resource_id == resource_uuid,
-        ProjectResourceModel.resource_type == request.resource_type,
-    )
-    existing_result = await session.execute(existing_stmt)
-    if existing_result.scalar_one_or_none():
+    # Find the resource in the matching table
+    model_cls = None
+    for cls, rtype, _name_col in _RESOURCE_TABLES:
+        if rtype == request.resource_type:
+            model_cls = cls
+            break
+
+    if model_cls is None:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Resource is already assigned to this project",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown resource_type: {request.resource_type}",
         )
 
-    assignment = ProjectResourceModel(
-        id=uuid4(),
-        project_id=project.id,
-        resource_id=resource_uuid,
-        resource_type=request.resource_type,
-    )
-    session.add(assignment)
+    resource = await session.get(model_cls, resource_uuid)
+    if resource is None or resource.workspace_id != workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resource not found",
+        )
+
+    if resource.project_id == project.id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Resource is already in this project",
+        )
+
+    resource.project_id = project.id
     await session.flush()
 
     return ResourceAssignmentRead(
-        id=str(assignment.id),
-        project_id=str(assignment.project_id),
-        resource_id=str(assignment.resource_id),
-        resource_type=assignment.resource_type,
+        id=str(resource.id),
+        project_id=str(project.id),
+        resource_id=str(resource.id),
+        resource_type=request.resource_type,
     )
-
-
-@router.delete(
-    "/{project_id}/resources/{resource_type}/{resource_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Remove resource from project",
-)
-async def remove_resource_from_project(
-    project_id: str,
-    resource_type: str,
-    resource_id: str,
-    session: AsyncSession = Depends(get_session),
-    user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
-) -> None:
-    """Remove a resource from a project.
-
-    Cannot remove if it's the resource's only project assignment.
-    """
-    project = await _get_project(project_id, session, workspace_id)
-
-    try:
-        resource_uuid = UUID(resource_id)
-    except ValueError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid resource_id format",
-        ) from err
-
-    # Check total assignments for this resource
-    count_stmt = select(ProjectResourceModel).where(
-        ProjectResourceModel.resource_id == resource_uuid,
-        ProjectResourceModel.resource_type == resource_type,
-    )
-    count_result = await session.execute(count_stmt)
-    all_assignments = count_result.scalars().all()
-
-    if len(all_assignments) <= 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot remove resource from its only project. Move it to another project first.",
-        )
-
-    # Delete the specific assignment
-    del_stmt = delete(ProjectResourceModel).where(
-        and_(
-            ProjectResourceModel.project_id == project.id,
-            ProjectResourceModel.resource_id == resource_uuid,
-            ProjectResourceModel.resource_type == resource_type,
-        )
-    )
-    result = await session.execute(del_stmt)
-    if result.rowcount == 0:  # type: ignore[union-attr]
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Resource assignment not found",
-        )
 
 
 # ---------------------------------------------------------------------------

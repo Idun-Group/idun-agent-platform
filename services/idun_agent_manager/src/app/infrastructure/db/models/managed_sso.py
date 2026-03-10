@@ -34,3 +34,10 @@ class ManagedSSOModel(Base):
         nullable=False,
         index=True,
     )
+
+    project_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )

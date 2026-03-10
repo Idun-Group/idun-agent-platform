@@ -159,7 +159,7 @@ async def _consume_pending_invitations(
                 id=uuid4(),
                 user_id=user_id,
                 workspace_id=inv.workspace_id,
-                role=inv.role,
+                is_owner=inv.is_owner,
             )
             db_session.add(membership)
             new_workspace_ids.append(str(inv.workspace_id))

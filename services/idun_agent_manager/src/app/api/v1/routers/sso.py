@@ -21,18 +21,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    check_project_access,
     get_current_user,
     get_project_id,
     get_session,
     require_workspace,
 )
-from app.api.v1.project_helpers import (
-    apply_project_filter,
-    assign_resource_to_default_project,
-    cleanup_resource_project_assignments,
-)
+from app.api.v1.project_helpers import apply_project_filter, resolve_project_id
+from app.api.v1.schemas.workspace_members import ProjectRole
 from app.infrastructure.db.models.managed_sso import ManagedSSOModel
-from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_SSO
 
 router = APIRouter()
 
@@ -98,6 +95,7 @@ async def create_sso(
 ) -> ManagedSSORead:
     """Create a new managed SSO configuration."""
     now = datetime.now(UTC)
+    resolved_project_id = await resolve_project_id(session, workspace_id, project_id)
 
     sso_config = SSOConfig(**request.sso.model_dump())
 
@@ -108,15 +106,12 @@ async def create_sso(
         created_at=now,
         updated_at=now,
         workspace_id=workspace_id,
+        project_id=resolved_project_id,
     )
 
     session.add(model)
     await session.flush()
     await session.refresh(model)
-
-    await assign_resource_to_default_project(
-        session, workspace_id, model.id, RESOURCE_TYPE_SSO, project_id
-    )
 
     return _model_to_schema(model)
 
@@ -146,7 +141,7 @@ async def list_ssos(
         )
 
     stmt = select(ManagedSSOModel).where(ManagedSSOModel.workspace_id == workspace_id)
-    stmt = apply_project_filter(stmt, ManagedSSOModel, RESOURCE_TYPE_SSO, project_id)
+    stmt = apply_project_filter(stmt, ManagedSSOModel, project_id)
     stmt = stmt.limit(limit).offset(offset)
     result = await session.execute(stmt)
     rows = result.scalars().all()
@@ -167,6 +162,10 @@ async def get_sso(
 ) -> ManagedSSORead:
     """Get a managed SSO configuration by ID."""
     model = await _get_sso(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.READER, session,
+    )
     return _model_to_schema(model)
 
 
@@ -183,7 +182,10 @@ async def delete_sso(
 ) -> None:
     """Delete a managed SSO configuration permanently."""
     model = await _get_sso(id, session, workspace_id)
-    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_SSO)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.ADMIN, session,
+    )
     await session.delete(model)
     await session.flush()
 
@@ -202,6 +204,10 @@ async def patch_sso(
 ) -> ManagedSSORead:
     """Update an SSO configuration."""
     model = await _get_sso(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
 
     model.name = request.name
     sso_config = SSOConfig(**request.sso.model_dump())
