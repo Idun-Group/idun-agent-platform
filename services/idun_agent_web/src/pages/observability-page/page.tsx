@@ -236,6 +236,14 @@ const EyeBtn = styled.button`
     &:hover { color: hsl(var(--foreground)); }
 `;
 
+const AgentCountBadge = styled.span`
+    font-size: 11px;
+    color: hsl(var(--muted-foreground));
+    display: flex;
+    align-items: center;
+    gap: 4px;
+`;
+
 const CardActions = styled.div`
     display: flex;
     gap: 10px;
@@ -522,6 +530,12 @@ const ObservabilityPage: React.FC = () => {
                                     </>
                                 )}
 
+                                {(app.agentCount ?? 0) > 0 && (
+                                    <AgentCountBadge>
+                                        Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}
+                                    </AgentCountBadge>
+                                )}
+
                                 <CardActions>
                                     {providerUrl && (
                                         <VisitBtn href={providerUrl} target="_blank" rel="noopener noreferrer">
@@ -554,6 +568,9 @@ const ObservabilityPage: React.FC = () => {
                 onClose={() => setAppToDelete(null)}
                 onConfirm={handleDeleteConfirm}
                 itemName={appToDelete?.name ?? ''}
+                description={(appToDelete?.agentCount ?? 0) > 0
+                    ? `This observability config is used by ${appToDelete!.agentCount} agent${appToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
+                    : undefined}
             />
         </PageWrapper>
     );

@@ -11,6 +11,17 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.api.v1.deps import get_session
+from app.infrastructure.db.models.agent_guardrail import (
+    AgentGuardrailModel,  # noqa: F401
+)
+from app.infrastructure.db.models.agent_integration import (
+    AgentIntegrationModel,  # noqa: F401
+)
+from app.infrastructure.db.models.agent_mcp_server import (
+    AgentMCPServerModel,  # noqa: F401
+)
+from app.infrastructure.db.models.agent_observability import (
+    AgentObservabilityModel,  # noqa: F401
 from app.infrastructure.db.models.agent_prompt_assignment import (
     AgentPromptAssignmentModel,  # noqa: F401
 )

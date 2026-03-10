@@ -112,8 +112,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
     const [selectedMemoryType, setSelectedMemoryType] = useState<string>('InMemoryCheckpointConfig');
     const [selectedMemoryAppId, setSelectedMemoryAppId] = useState<string>('');
 
-    const [selectedObservabilityTypes, setSelectedObservabilityTypes] = useState<string[]>([]);
-    const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({});
+    const [selectedObservabilityIds, setSelectedObservabilityIds] = useState<string[]>([]);
 
     const [selectedMCPIds, setSelectedMCPIds] = useState<string[]>([]);
     const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
@@ -246,17 +245,10 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
     const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 3));
     const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
-    const toggleObservabilityType = (type: string) => {
-        setSelectedObservabilityTypes(prev =>
-            prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    const toggleObservability = (id: string) => {
+        setSelectedObservabilityIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
-    };
-
-    const selectObservabilityApp = (type: string, appId: string) => {
-        setSelectedObservabilityApps(prev => ({
-            ...prev,
-            [type]: appId
-        }));
     };
 
     const getFilteredMemoryApps = () => {
@@ -388,26 +380,23 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
             // 2. Handle Observability
             const observabilityConfigs: any[] = [];
 
-            selectedObservabilityTypes.forEach(type => {
-                const appId = selectedObservabilityApps[type];
-                if (appId) {
-                    const app = observabilityApps.find(a => a.id === appId);
-                    if (app) {
-                        const providerMap: Record<string, string> = {
-                            'Langfuse': 'LANGFUSE',
-                            'Phoenix': 'PHOENIX',
-                            'GoogleCloudLogging': 'GCP_LOGGING',
-                            'GoogleCloudTrace': 'GCP_TRACE',
-                            'LangSmith': 'LANGSMITH'
-                        };
-                        const providerKey = providerMap[app.type] || app.type.toLowerCase();
+            selectedObservabilityIds.forEach(id => {
+                const app = observabilityApps.find(a => a.id === id);
+                if (app) {
+                    const providerMap: Record<string, string> = {
+                        'Langfuse': 'LANGFUSE',
+                        'Phoenix': 'PHOENIX',
+                        'GoogleCloudLogging': 'GCP_LOGGING',
+                        'GoogleCloudTrace': 'GCP_TRACE',
+                        'LangSmith': 'LANGSMITH'
+                    };
+                    const providerKey = providerMap[app.type] || app.type.toLowerCase();
 
-                        observabilityConfigs.push({
-                            enabled: true,
-                            provider: providerKey,
-                            config: app.config
-                        });
-                    }
+                    observabilityConfigs.push({
+                        enabled: true,
+                        provider: providerKey,
+                        config: app.config
+                    });
                 }
             });
 
@@ -684,43 +673,21 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                         {/* Observability Section */}
                                         <FieldWrapper>
                                             <InputLabel><Layers size={14} style={{ marginRight: '6px' }} />Observability</InputLabel>
-                                            <MultiSelectContainer>
-                                                {OBSERVABILITY_TYPES.map(type => (
-                                                    <TypeCheckbox key={type} $checked={selectedObservabilityTypes.includes(type)} onClick={() => toggleObservabilityType(type)}>
-                                                        <span className="checkbox">{selectedObservabilityTypes.includes(type) && <Check size={10} color="white" />}</span>
-                                                        {type}
-                                                    </TypeCheckbox>
-                                                ))}
-                                            </MultiSelectContainer>
-                                            {selectedObservabilityTypes.map(type => (
-                                                <div key={type} style={{ marginTop: '16px' }}>
-                                                    <TypeHeader>
-                                                        {type}
-                                                        <AddButton onClick={() => handleCreateApp(type as AppType, 'Observability')}><Plus size={12} style={{ marginRight: '4px' }} />Add</AddButton>
-                                                    </TypeHeader>
-                                                    <Carousel>
-                                                        <AddConfigCard
-                                                            style={{ minWidth: '140px', height: 'auto', aspectRatio: 'unset' }}
-                                                            onClick={() => handleCreateApp(type as AppType, 'Observability')}
-                                                        >
-                                                            <Plus size={24} color="hsl(var(--primary))" />
-                                                            <span>Add New</span>
-                                                        </AddConfigCard>
-                                                        {getFilteredObservabilityApps(type).map(app => (
-                                                            <ConfigCard key={app.id} $selected={selectedObservabilityApps[type] === app.id} onClick={() => selectObservabilityApp(type, app.id)} style={{ minWidth: '140px', flexShrink: 0 }}>
-                                                                <CardHeader>
-                                                                    <CardTitle>{app.name}</CardTitle>
-                                                                    <MiniIconButton onClick={(e) => handleViewApp(e, app)}><Eye size={12} /></MiniIconButton>
-                                                                </CardHeader>
-                                                                <CardMeta>{formatDate(app.updatedAt)}</CardMeta>
-                                                            </ConfigCard>
-                                                        ))}
-                                                        {getFilteredObservabilityApps(type).length === 0 && (
-                                                            <EmptyText style={{ marginLeft: '12px', alignSelf: 'center' }}>No {type} configs yet.</EmptyText>
-                                                        )}
-                                                    </Carousel>
-                                                </div>
-                                            ))}
+                                            {observabilityApps.length === 0 ? (
+                                                <EmptyText>No observability configs yet.</EmptyText>
+                                            ) : (
+                                                <CardGrid>
+                                                    {observabilityApps.map(app => (
+                                                        <ConfigCard key={app.id} $selected={selectedObservabilityIds.includes(app.id)} onClick={() => toggleObservability(app.id)} style={{ minWidth: '140px', flexShrink: 0 }}>
+                                                            <CardHeader>
+                                                                <CardTitle>{app.name}</CardTitle>
+                                                                <MiniIconButton onClick={(e) => handleViewApp(e, app)}><Eye size={12} /></MiniIconButton>
+                                                            </CardHeader>
+                                                            <CardMeta>{app.type} &middot; {formatDate(app.updatedAt)}</CardMeta>
+                                                        </ConfigCard>
+                                                    ))}
+                                                </CardGrid>
+                                            )}
                                         </FieldWrapper>
                                     </DataColumn>
                                 </StepGrid>

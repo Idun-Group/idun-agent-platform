@@ -2,7 +2,9 @@
 
 from .api import ApiKeyResponse  # noqa: F401
 from .managed_agent import (  # noqa: F401
+    AgentResourceIds,
     AgentStatus,
+    GuardrailRef,
     ManagedAgentCreate,
     ManagedAgentPatch,
     ManagedAgentRead,
