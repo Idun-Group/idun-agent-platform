@@ -59,8 +59,11 @@
         },
         "project": {
             "all": "All Projects",
-            "manage": "Manage Projects"
+            "label": "Project",
+            "filter": "Filter projects...",
+            "manage": "Manage projects"
         },
+        "search": "Search...",
         "environment": {
             "select": "Select an environment",
             "development": "Development",
@@ -70,7 +73,7 @@
     },
     "projects": {
         "manage": "Manage Projects",
-        "create": "Create",
+        "create": "Create project",
         "default": "Default",
         "namePlaceholder": "Project name",
         "createSuccess": "Project created",
@@ -79,8 +82,20 @@
         "updateError": "Failed to update project",
         "deleteSuccess": "Project deleted",
         "deleteError": "Failed to delete project",
+        "rename": "Rename",
+        "noProjects": "No projects yet.",
+        "resourceCount_one": "{{count}} resource",
+        "resourceCount_other": "{{count}} resources",
+        "memberCount_one": "{{count}} member",
+        "memberCount_other": "{{count}} members",
+        "roles": {
+            "admin": "Admin",
+            "contributor": "Contributor",
+            "reader": "Reader"
+        },
         "delete": {
-            "confirm": "Delete this project? Resources will be moved to Default.",
+            "confirm": "Delete this project? Resources will be moved to the default project.",
+            "title": "Delete project",
             "blocked": "Cannot delete the default project"
         }
     },
@@ -634,7 +649,8 @@
         "back_to_dashboard": "Back to dashboard",
         "group": {
             "preferences": "Preferences",
-            "workspaces": "Workspaces"
+            "workspaces": "Workspace",
+            "projectSettings": "Project Settings"
         },
         "preferences": {
             "general": "General",
@@ -646,6 +662,7 @@
         "workspaces": {
             "general": "General",
             "users": "Users",
+            "projects": "Projects",
             "general.rename": "Workspace Name",
             "general.renameDescription": "Change the display name of your workspace.",
             "general.namePlaceholder": "Workspace name",
@@ -680,6 +697,14 @@
             "users.invitationCancelled": "Invitation cancelled",
             "users.cancelInvitation": "Cancel invitation",
             "users.alreadyInvited": "This email has already been invited"
+        },
+        "projects": {
+            "title": "Projects",
+            "description": "Manage projects in this workspace.",
+            "createButton": "New project",
+            "ownerInfo": "Workspace owners have admin access to all projects by default. No project assignment needed.",
+            "projectAccess": "Project access",
+            "projectAccessHelp": "Select which projects this member can access and their role in each."
         },
         "profile": {
             "title": "Profile",
