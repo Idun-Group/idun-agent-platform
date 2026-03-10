@@ -21,18 +21,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    check_project_access,
     get_current_user,
     get_project_id,
     get_session,
     require_workspace,
 )
-from app.api.v1.project_helpers import (
-    apply_project_filter,
-    assign_resource_to_default_project,
-    cleanup_resource_project_assignments,
-)
+from app.api.v1.project_helpers import apply_project_filter, resolve_project_id
+from app.api.v1.schemas.workspace_members import ProjectRole
 from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
-from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_OBSERVABILITY
 
 router = APIRouter()
 
@@ -101,6 +98,8 @@ async def create_observability(
 
     observability_config = ObservabilityConfig(**request.observability.model_dump())
 
+    resolved_project_id = await resolve_project_id(session, workspace_id, project_id)
+
     model = ManagedObservabilityModel(
         id=uuid4(),
         name=request.name,
@@ -108,15 +107,12 @@ async def create_observability(
         created_at=now,
         updated_at=now,
         workspace_id=workspace_id,
+        project_id=resolved_project_id,
     )
 
     session.add(model)
     await session.flush()
     await session.refresh(model)
-
-    await assign_resource_to_default_project(
-        session, workspace_id, model.id, RESOURCE_TYPE_OBSERVABILITY, project_id
-    )
 
     return _model_to_schema(model)
 
@@ -146,7 +142,7 @@ async def list_observabilities(
         )
 
     stmt = select(ManagedObservabilityModel).where(ManagedObservabilityModel.workspace_id == workspace_id)
-    stmt = apply_project_filter(stmt, ManagedObservabilityModel, RESOURCE_TYPE_OBSERVABILITY, project_id)
+    stmt = apply_project_filter(stmt, ManagedObservabilityModel, project_id)
     stmt = stmt.limit(limit).offset(offset)
     result = await session.execute(stmt)
     rows = result.scalars().all()
@@ -167,6 +163,10 @@ async def get_observability(
 ) -> ManagedObservabilityRead:
     """Get a managed observability configuration by ID."""
     model = await _get_observability(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.READER, session,
+    )
     return _model_to_schema(model)
 
 
@@ -183,7 +183,10 @@ async def delete_observability(
 ) -> None:
     """Delete a managed observability configuration permanently."""
     model = await _get_observability(id, session, workspace_id)
-    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_OBSERVABILITY)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
     await session.delete(model)
     await session.flush()
 
@@ -202,6 +205,10 @@ async def patch_observability(
 ) -> ManagedObservabilityRead:
     """Update an observability configuration."""
     model = await _get_observability(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
 
     model.name = request.name
     observability_config = ObservabilityConfig(**request.observability.model_dump())

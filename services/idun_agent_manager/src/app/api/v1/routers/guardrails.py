@@ -24,18 +24,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    check_project_access,
     get_current_user,
     get_project_id,
     get_session,
     require_workspace,
 )
-from app.api.v1.project_helpers import (
-    apply_project_filter,
-    assign_resource_to_default_project,
-    cleanup_resource_project_assignments,
-)
+from app.api.v1.project_helpers import apply_project_filter, resolve_project_id
+from app.api.v1.schemas.workspace_members import ProjectRole
 from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
-from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_GUARDRAIL
 
 router = APIRouter()
 
@@ -104,6 +101,8 @@ async def create_guardrail(
 
     guardrail_config = request.guardrail
 
+    resolved_project_id = await resolve_project_id(session, workspace_id, project_id)
+
     model = ManagedGuardrailModel(
         id=uuid4(),
         name=request.name,
@@ -111,15 +110,12 @@ async def create_guardrail(
         created_at=now,
         updated_at=now,
         workspace_id=workspace_id,
+        project_id=resolved_project_id,
     )
 
     session.add(model)
     await session.flush()
     await session.refresh(model)
-
-    await assign_resource_to_default_project(
-        session, workspace_id, model.id, RESOURCE_TYPE_GUARDRAIL, project_id
-    )
 
     return _model_to_schema(model)
 
@@ -149,7 +145,7 @@ async def list_guardrails(
         )
 
     stmt = select(ManagedGuardrailModel).where(ManagedGuardrailModel.workspace_id == workspace_id)
-    stmt = apply_project_filter(stmt, ManagedGuardrailModel, RESOURCE_TYPE_GUARDRAIL, project_id)
+    stmt = apply_project_filter(stmt, ManagedGuardrailModel, project_id)
     stmt = stmt.limit(limit).offset(offset)
     result = await session.execute(stmt)
     rows = result.scalars().all()
@@ -170,6 +166,10 @@ async def get_guardrail(
 ) -> ManagedGuardrailRead:
     """Get a managed guardrail configuration by ID."""
     model = await _get_guardrail(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.READER, session,
+    )
     return _model_to_schema(model)
 
 
@@ -186,7 +186,10 @@ async def delete_guardrail(
 ) -> None:
     """Delete a managed guardrail configuration permanently."""
     model = await _get_guardrail(id, session, workspace_id)
-    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_GUARDRAIL)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
     await session.delete(model)
     await session.flush()
 
@@ -205,6 +208,10 @@ async def patch_guardrail(
 ) -> ManagedGuardrailRead:
     """Update a guardrail configuration."""
     model = await _get_guardrail(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
 
     model.name = request.name
     guardrail_config = request.guardrail

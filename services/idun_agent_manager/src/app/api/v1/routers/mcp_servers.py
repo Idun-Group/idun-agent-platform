@@ -28,18 +28,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    check_project_access,
     get_current_user,
     get_project_id,
     get_session,
     require_workspace,
 )
-from app.api.v1.project_helpers import (
-    apply_project_filter,
-    assign_resource_to_default_project,
-    cleanup_resource_project_assignments,
-)
+from app.api.v1.project_helpers import apply_project_filter, resolve_project_id
+from app.api.v1.schemas.workspace_members import ProjectRole
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
-from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_MCP_SERVER
 
 router = APIRouter()
 
@@ -108,6 +105,8 @@ async def create_mcp_server(
 
     mcp_server_config = MCPServer(**request.mcp_server.model_dump())
 
+    resolved_project_id = await resolve_project_id(session, workspace_id, project_id)
+
     model = ManagedMCPServerModel(
         id=uuid4(),
         name=request.name,
@@ -115,15 +114,12 @@ async def create_mcp_server(
         created_at=now,
         updated_at=now,
         workspace_id=workspace_id,
+        project_id=resolved_project_id,
     )
 
     session.add(model)
     await session.flush()
     await session.refresh(model)
-
-    await assign_resource_to_default_project(
-        session, workspace_id, model.id, RESOURCE_TYPE_MCP_SERVER, project_id
-    )
 
     return _model_to_schema(model)
 
@@ -153,7 +149,7 @@ async def list_mcp_servers(
         )
 
     stmt = select(ManagedMCPServerModel).where(ManagedMCPServerModel.workspace_id == workspace_id)
-    stmt = apply_project_filter(stmt, ManagedMCPServerModel, RESOURCE_TYPE_MCP_SERVER, project_id)
+    stmt = apply_project_filter(stmt, ManagedMCPServerModel, project_id)
     stmt = stmt.limit(limit).offset(offset)
     result = await session.execute(stmt)
     rows = result.scalars().all()
@@ -174,6 +170,10 @@ async def get_mcp_server(
 ) -> ManagedMCPServerRead:
     """Get a managed MCP server configuration by ID."""
     model = await _get_mcp_server(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.READER, session,
+    )
     return _model_to_schema(model)
 
 
@@ -190,7 +190,10 @@ async def delete_mcp_server(
 ) -> None:
     """Delete a managed MCP server configuration permanently."""
     model = await _get_mcp_server(id, session, workspace_id)
-    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_MCP_SERVER)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
     await session.delete(model)
     await session.flush()
 
@@ -209,6 +212,10 @@ async def patch_mcp_server(
 ) -> ManagedMCPServerRead:
     """Update an MCP server configuration."""
     model = await _get_mcp_server(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
 
     model.name = request.name
     mcp_server_config = MCPServer(**request.mcp_server.model_dump())
@@ -317,6 +324,10 @@ async def discover_tools(
 ) -> MCPToolsResponse:
     """Connect to an MCP server and return its available tools."""
     model = await _get_mcp_server(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.READER, session,
+    )
     config = MCPServer(**model.mcp_server_config)
 
     try:

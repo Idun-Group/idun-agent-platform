@@ -44,19 +44,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    check_project_access,
     get_current_user,
     get_project_id,
     get_session,
     require_workspace,
 )
-from app.api.v1.project_helpers import (
-    apply_project_filter,
-    assign_resource_to_default_project,
-    cleanup_resource_project_assignments,
-)
+from app.api.v1.project_helpers import apply_project_filter, resolve_project_id
 from app.api.v1.routers.auth import encrypt_payload
+from app.api.v1.schemas.workspace_members import ProjectRole
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
-from app.infrastructure.db.models.resource_types import RESOURCE_TYPE_AGENT
 
 router = APIRouter()
 
@@ -141,6 +138,8 @@ async def create_agent(
 
     engine_config = EngineConfig(**request.engine_config.model_dump())
 
+    resolved_project_id = await resolve_project_id(session, workspace_id, project_id)
+
     model = ManagedAgentModel(
         id=uuid4(),
         base_url=request.base_url,
@@ -151,15 +150,12 @@ async def create_agent(
         created_at=now,
         updated_at=now,
         workspace_id=workspace_id,
+        project_id=resolved_project_id,
     )
 
     session.add(model)
     await session.flush()
     await session.refresh(model)
-
-    await assign_resource_to_default_project(
-        session, workspace_id, model.id, RESOURCE_TYPE_AGENT, project_id
-    )
 
     return _model_to_schema(model)
 
@@ -281,9 +277,7 @@ async def list_agents(
     stmt = select(ManagedAgentModel).where(
         ManagedAgentModel.workspace_id == workspace_id
     )
-    stmt = apply_project_filter(
-        stmt, ManagedAgentModel, RESOURCE_TYPE_AGENT, project_id
-    )
+    stmt = apply_project_filter(stmt, ManagedAgentModel, project_id)
     stmt = stmt.limit(limit).offset(offset)
 
     result = await session.execute(stmt)
@@ -306,6 +300,10 @@ async def get_agent(
 ) -> ManagedAgentRead:
     """Get a managed agent by ID."""
     model = await _get_agent(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.READER, session,
+    )
     return _model_to_schema(model)
 
 
@@ -323,7 +321,10 @@ async def delete_agent(
 ) -> None:
     """Delete a managed agent permanently."""
     model = await _get_agent(id, session, workspace_id)
-    await cleanup_resource_project_assignments(session, model.id, RESOURCE_TYPE_AGENT)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
     await session.delete(model)
     await session.flush()
 
@@ -343,6 +344,10 @@ async def patch_agent(
 ) -> ManagedAgentRead:
     """Partially update an agent's configuration."""
     model = await _get_agent(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
 
     body = await raw_request.json()
 
@@ -380,6 +385,10 @@ async def update_agent_status(
 ) -> ManagedAgentRead:
     """Update agent status without modifying other fields."""
     model = await _get_agent(id, session, workspace_id)
+    await check_project_access(
+        UUID(user.user_id), workspace_id, model.project_id,
+        ProjectRole.CONTRIBUTOR, session,
+    )
     model.status = request.status.value
     model.updated_at = datetime.now(UTC)
     await session.flush()
