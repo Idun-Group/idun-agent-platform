@@ -30,7 +30,7 @@ const WorkspaceUsersTab = () => {
     const [loading, setLoading] = useState(true);
     const [showInvite, setShowInvite] = useState(false);
 
-    const currentUserId = (session as any)?.principal?.user_id ?? '';
+    const currentUserId = session?.principal?.user_id ?? '';
     const currentMember = members.find((m) => m.user_id === currentUserId);
     const canManage = currentMember?.is_owner === true;
 
@@ -79,9 +79,14 @@ const WorkspaceUsersTab = () => {
     const handleInvite = async (email: string, isOwner: boolean) => {
         const wsId = await resolveWorkspaceId();
         if (!wsId) return;
-        await addMember(wsId, { email, is_owner: isOwner });
-        notify.success(t('settings.workspaces.users.memberAdded', 'Member added'));
-        fetchMembers();
+        try {
+            await addMember(wsId, { email, is_owner: isOwner });
+            notify.success(t('settings.workspaces.users.memberAdded', 'Member added'));
+            fetchMembers();
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to add member';
+            notify.error(msg);
+        }
     };
 
     const handleCancelInvitation = async (invitation: WorkspaceInvitation) => {
@@ -256,7 +261,8 @@ const MemberRow = ({
                     title={t('settings.workspaces.users.confirmRemoveTitle', 'Remove member')}
                     message={t(
                         'settings.workspaces.users.confirmRemoveMessage',
-                        `Are you sure you want to remove ${member.name || member.email} from this workspace?`,
+                        'Are you sure you want to remove {{name}} from this workspace?',
+                        { name: member.name || member.email },
                     )}
                     confirmLabel={t('settings.workspaces.users.confirmRemove', 'Remove')}
                     onConfirm={() => {
