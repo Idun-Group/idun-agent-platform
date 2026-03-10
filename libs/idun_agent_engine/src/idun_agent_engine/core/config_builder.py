@@ -20,6 +20,7 @@ from idun_agent_schema.engine.langgraph import (
 )
 from idun_agent_schema.engine.mcp_server import MCPServer
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.prompt import PromptConfig
 from idun_agent_schema.engine.sso import SSOConfig
 from yaml import YAMLError
 
@@ -59,6 +60,7 @@ class ConfigBuilder:
         self._guardrails: Guardrails | None = None
         self._sso: SSOConfig | None = None
         self._integrations: list | None = None
+        self._prompts: list[PromptConfig] | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """Set the API port for the server.
@@ -187,6 +189,23 @@ class ConfigBuilder:
                     f"Failed to parse yaml file for Integrations: {e}"
                 ) from e
 
+            try:
+                prompts_list = yaml_config.get("engine_config", {}).get("prompts")
+                if prompts_list:
+                    self._prompts = [
+                        PromptConfig.model_validate(p) for p in prompts_list
+                    ]
+                    logger.info(
+                        f"Loaded {len(self._prompts)} prompt(s) from API config"
+                    )
+                else:
+                    self._prompts = None
+                    logger.debug("No prompts found in API config")
+            except Exception as e:
+                raise YAMLError(
+                    f"Failed to parse yaml file for Prompts: {e}"
+                ) from e
+
             return self
 
         except Exception as e:
@@ -289,6 +308,7 @@ class ConfigBuilder:
             mcp_servers=self._mcp_servers,
             sso=self._sso,
             integrations=self._integrations,
+            prompts=self._prompts,
         )
 
     def build_dict(self) -> dict[str, Any]:  # NOT USED
@@ -671,6 +691,7 @@ class ConfigBuilder:
         builder._mcp_servers = engine_config.mcp_servers
         builder._sso = engine_config.sso
         builder._integrations = engine_config.integrations
+        builder._prompts = engine_config.prompts
         return builder
 
     @classmethod
@@ -704,6 +725,7 @@ class ConfigBuilder:
         builder._mcp_servers = engine_config.mcp_servers
         builder._sso = engine_config.sso
         builder._integrations = engine_config.integrations
+        builder._prompts = engine_config.prompts
 
         return builder
 

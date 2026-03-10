@@ -8,6 +8,7 @@ from .guardrails_v2 import GuardrailsV2 as Guardrails
 from .integrations import IntegrationConfig
 from .mcp_server import MCPServer
 from .observability_v2 import ObservabilityConfig
+from .prompt import PromptConfig
 from .server import ServerConfig
 from .sso import SSOConfig
 
@@ -27,3 +28,4 @@ class EngineConfig(BaseModel):
     observability: list[ObservabilityConfig] | None = None
     sso: SSOConfig | None = None
     integrations: list[IntegrationConfig] | None = None
+    prompts: list[PromptConfig] | None = None

@@ -277,3 +277,4 @@ export async function getAgentApiKey(agentId: string): Promise<string> {
     const result = await getJson<ApiKeyResponse>(`/api/v1/agents/key?agent_id=${encodeURIComponent(agentId)}`);
     return result.api_key;
 }
+

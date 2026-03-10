@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { AlertTriangle } from 'lucide-react';
 
 interface Props {
     isOpen: boolean;
@@ -178,7 +179,7 @@ const DeleteConfirmModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, itemN
         <Overlay onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
             <Modal>
                 <Header>
-                    <IconWrap>🗑️</IconWrap>
+                    <IconWrap><AlertTriangle size={20} color="hsl(var(--destructive))" /></IconWrap>
                     <HeaderText>
                         <Title>Confirm Removal</Title>
                         <Subtitle>This action cannot be undone</Subtitle>
