@@ -186,81 +186,100 @@ export const mapConfigToApi = (type: AppType, config: any, name?: string): any =
             prompt: config.prompt
         };
     }
+    const guardrailApiKey = config.api_key?.trim() || undefined;
+    const rejectMsg = config.reject_message?.trim() || undefined;
+    const guardrailCommon = {
+        ...(guardrailApiKey && { api_key: guardrailApiKey }),
+        ...(rejectMsg && { reject_message: rejectMsg }),
+    };
     if (type === 'BanList') {
         return {
             config_id: 'ban_list',
+            ...guardrailCommon,
             banned_words: config.banned_words ? config.banned_words.split('\n').filter((s: string) => s.trim()) : []
         };
     }
     if (type === 'BiasCheck') {
         return {
             config_id: 'bias_check',
+            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'CompetitionCheck') {
         return {
             config_id: 'competition_check',
+            ...guardrailCommon,
             competitors: config.competitors ? config.competitors.split('\n').filter((s: string) => s.trim()) : []
         };
     }
     if (type === 'CorrectLanguage') {
         return {
             config_id: 'correct_language',
+            ...guardrailCommon,
             expected_languages: config.expected_languages ? config.expected_languages.split('\n').filter((s: string) => s.trim()) : []
         };
     }
     if (type === 'DetectPII') {
         return {
             config_id: 'detect_pii',
+            ...guardrailCommon,
             pii_entities: config.pii_entities ? config.pii_entities.split(',').map((s: string) => s.trim()).filter(Boolean) : []
         };
     }
     if (type === 'GibberishText') {
         return {
             config_id: 'gibberish_text',
+            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'NSFWText') {
         return {
             config_id: 'nsfw_text',
+            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'DetectJailbreak') {
         return {
             config_id: 'detect_jailbreak',
+            ...guardrailCommon,
             threshold: Number(config.threshold || 0.5)
         };
     }
     if (type === 'RestrictTopic') {
         return {
             config_id: 'restrict_to_topic',
+            ...guardrailCommon,
             topics: config.valid_topics ? config.valid_topics.split('\n').filter((s: string) => s.trim()) : []
         };
     }
     if (type === 'PromptInjection') {
         return {
             config_id: 'prompt_injection',
+            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'RagHallucination') {
         return {
             config_id: 'rag_hallucination',
+            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'ToxicLanguage') {
         return {
             config_id: 'toxic_language',
+            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'CodeScanner') {
         return {
             config_id: 'code_scanner',
+            ...guardrailCommon,
             allowed_languages: config.allowed_languages ? config.allowed_languages.split('\n').filter((s: string) => s.trim()) : []
         };
     }
@@ -399,42 +418,45 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
     const guardrail = guard.guardrail as any;
 
     if (guardrail && 'config_id' in guardrail) {
+        const apiKey = guardrail.api_key || '';
+        const rejectMessage = guardrail.reject_message || '';
+        const common = { api_key: apiKey, reject_message: rejectMessage };
         switch (guardrail.config_id) {
             case 'ban_list':
                 type = 'BanList';
-                config = { banned_words: (guardrail.banned_words || []).join('\n') };
+                config = { ...common, banned_words: (guardrail.banned_words || []).join('\n') };
                 break;
             case 'detect_pii':
                 type = 'DetectPII';
-                config = { pii_entities: (guardrail.pii_entities || []).join(',') };
+                config = { ...common, pii_entities: (guardrail.pii_entities || []).join(',') };
                 break;
             case 'nsfw_text':
                 type = 'NSFWText';
-                config = { threshold: String(guardrail.threshold ?? 0.5) };
+                config = { ...common, threshold: String(guardrail.threshold ?? 0.5) };
                 break;
             case 'toxic_language':
                 type = 'ToxicLanguage';
-                config = { threshold: String(guardrail.threshold ?? 0.5) };
+                config = { ...common, threshold: String(guardrail.threshold ?? 0.5) };
                 break;
             case 'gibberish_text':
                 type = 'GibberishText';
-                config = { threshold: String(guardrail.threshold ?? 0.5) };
+                config = { ...common, threshold: String(guardrail.threshold ?? 0.5) };
                 break;
             case 'bias_check':
                 type = 'BiasCheck';
-                config = { threshold: String(guardrail.threshold ?? 0.5) };
+                config = { ...common, threshold: String(guardrail.threshold ?? 0.5) };
                 break;
             case 'competition_check':
                 type = 'CompetitionCheck';
-                config = { competitors: (guardrail.competitors || []).join('\n') };
+                config = { ...common, competitors: (guardrail.competitors || []).join('\n') };
                 break;
             case 'correct_language':
                 type = 'CorrectLanguage';
-                config = { expected_languages: (guardrail.expected_languages || []).join('\n') };
+                config = { ...common, expected_languages: (guardrail.expected_languages || []).join('\n') };
                 break;
             case 'restrict_to_topic':
                 type = 'RestrictTopic';
-                config = { valid_topics: (guardrail.topics || []).join('\n') };
+                config = { ...common, valid_topics: (guardrail.topics || []).join('\n') };
                 break;
         }
     }

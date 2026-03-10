@@ -37,7 +37,6 @@ from idun_agent_schema.manager import (
     ManagedAgentRead,
     ManagedAgentStatusUpdate,
 )
-from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -121,11 +120,6 @@ async def create_agent(
 ) -> ManagedAgentRead:
     """Create a new managed agent."""
     body = await raw_request.json()
-
-    if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(
-            body["engine_config"]["guardrails"]
-        )
 
     request = ManagedAgentCreate(**body)
 
@@ -330,11 +324,6 @@ async def patch_agent(
     model = await _get_agent(id, session, workspace_id)
 
     body = await raw_request.json()
-
-    if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(
-            body["engine_config"]["guardrails"]
-        )
 
     request = ManagedAgentPatch(**body)
 

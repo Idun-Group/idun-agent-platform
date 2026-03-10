@@ -28,8 +28,9 @@ import {
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    onCreated: () => void;
+    onCreated: () => void | Promise<void>;
     appToEdit?: ApplicationConfig | null;
+    defaultApiKey?: string;
 }
 
 type FieldType = 'text' | 'password' | 'number' | 'textarea' | 'select' | 'multicheck';
@@ -54,6 +55,23 @@ interface GuardrailType {
     comingSoon?: boolean;
 }
 
+const API_KEY_FIELD: Field = {
+    key: 'api_key',
+    label: 'Guardrails AI API Key',
+    type: 'password',
+    placeholder: 'Your Guardrails AI API key',
+    required: true,
+    hint: 'Get your key at hub.guardrailsai.com',
+};
+
+const REJECT_MESSAGE_FIELD: Field = {
+    key: 'reject_message',
+    label: 'Rejection Message',
+    type: 'text',
+    placeholder: 'Message shown when this guardrail triggers',
+    hint: 'Leave empty for default',
+};
+
 const GUARDRAIL_TYPES: GuardrailType[] = [
     // Content Safety
     {
@@ -63,7 +81,9 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Content Safety',
         description: 'Block specific words or phrases from appearing in responses',
         fields: [
+            API_KEY_FIELD,
             { key: 'banned_words', label: 'Banned Words / Phrases', type: 'textarea', placeholder: 'word1\nword2\nphrase to ban', hint: 'One word or phrase per line', required: true },
+            REJECT_MESSAGE_FIELD,
         ],
     },
     {
@@ -73,7 +93,9 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Content Safety',
         description: 'Detect and filter adult or inappropriate content',
         fields: [
+            API_KEY_FIELD,
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
+            REJECT_MESSAGE_FIELD,
         ],
     },
     {
@@ -83,7 +105,9 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Content Safety',
         description: 'Filter hate speech, threats, and toxic content',
         fields: [
+            API_KEY_FIELD,
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
+            REJECT_MESSAGE_FIELD,
         ],
     },
     {
@@ -93,7 +117,9 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Content Safety',
         description: 'Detect random, meaningless or garbled text',
         fields: [
+            API_KEY_FIELD,
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
+            REJECT_MESSAGE_FIELD,
         ],
     },
     {
@@ -115,7 +141,9 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Identity & Security',
         description: 'Detect and mask Personally Identifiable Information',
         fields: [
+            API_KEY_FIELD,
             { key: 'pii_entities', label: 'PII Entities to Detect', type: 'multicheck', required: true, options: PII_ENTITIES, hint: 'Select entities to detect' },
+            REJECT_MESSAGE_FIELD,
         ],
     },
     {
@@ -174,7 +202,9 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Context & Quality',
         description: 'Detect and filter biased content in responses',
         fields: [
+            API_KEY_FIELD,
             { key: 'threshold', label: 'Sensitivity Threshold (0–1)', type: 'number', placeholder: '0.5', hint: 'Lower = more sensitive' },
+            REJECT_MESSAGE_FIELD,
         ],
     },
     {
@@ -184,7 +214,9 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Context & Quality',
         description: 'Prevent mention of competitor brands or products',
         fields: [
+            API_KEY_FIELD,
             { key: 'competitors', label: 'Competitor Names', type: 'textarea', placeholder: 'CompetitorA\nCompetitorB', hint: 'One name per line' },
+            REJECT_MESSAGE_FIELD,
         ],
     },
     {
@@ -194,7 +226,9 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Context & Quality',
         description: 'Enforce responses in specific languages only',
         fields: [
+            API_KEY_FIELD,
             { key: 'expected_languages', label: 'Expected Languages', type: 'textarea', placeholder: 'en\nfr\nde', hint: 'One language code per line' },
+            REJECT_MESSAGE_FIELD,
         ],
     },
     {
@@ -204,7 +238,9 @@ const GUARDRAIL_TYPES: GuardrailType[] = [
         group: 'Context & Quality',
         description: 'Limit conversations to specific allowed topics',
         fields: [
+            API_KEY_FIELD,
             { key: 'valid_topics', label: 'Allowed Topics', type: 'textarea', placeholder: 'customer support\nproduct information\ntechnical help', hint: 'One topic per line' },
+            REJECT_MESSAGE_FIELD,
         ],
     },
     {
@@ -574,7 +610,7 @@ const BigSpinner = styled.div`
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit }) => {
+const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit, defaultApiKey }) => {
     const isEditMode = !!appToEdit;
     const [selectedType, setSelectedType] = useState<AppType | null>(null);
     const [guardrailName, setGuardrailName] = useState('');
@@ -599,7 +635,7 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
         } else {
             setSelectedType(null);
             setGuardrailName('');
-            setFormValues({});
+            setFormValues(defaultApiKey ? { api_key: defaultApiKey } : {});
         }
         setErrorMessage(null);
     }, [isOpen, appToEdit]);
@@ -610,7 +646,10 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
 
     const handleSelectType = (id: AppType) => {
         setSelectedType(id);
-        if (!isEditMode) setFormValues({});
+        if (!isEditMode) {
+            const apiKey = formValues.api_key || defaultApiKey || '';
+            setFormValues(apiKey ? { api_key: apiKey } : {});
+        }
         setErrorMessage(null);
     };
 
@@ -649,7 +688,7 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
                     config: formValues,
                 });
             }
-            onCreated();
+            await onCreated();
             onClose();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to save guardrail';
