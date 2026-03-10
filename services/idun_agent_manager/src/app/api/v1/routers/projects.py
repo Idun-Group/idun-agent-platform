@@ -15,10 +15,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    check_project_access,
     get_current_user,
     get_session,
     require_workspace,
 )
+from app.api.v1.schemas.workspace_members import (
+    ProjectMemberAdd,
+    ProjectMemberListResponse,
+    ProjectMemberPatch,
+    ProjectMemberRead,
+    ProjectRole,
+)
+from app.infrastructure.db.models.user import UserModel
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
@@ -683,3 +692,261 @@ async def remove_resource_from_project(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resource assignment not found",
         )
+
+
+# ---------------------------------------------------------------------------
+# Project member management endpoints
+# ---------------------------------------------------------------------------
+
+
+async def _require_owner_or_project_admin(
+    workspace_id: UUID,
+    user: CurrentUser,
+    project_id: UUID,
+    session: AsyncSession,
+) -> None:
+    """Verify the caller is a workspace owner or a project admin.
+
+    Raises 403 if the user lacks sufficient privileges.
+    """
+    await check_project_access(
+        user_id=UUID(user.user_id),
+        workspace_id=workspace_id,
+        project_id=project_id,
+        min_role=ProjectRole.ADMIN,
+        session=session,
+    )
+
+
+def _membership_to_schema(
+    pm: ProjectMembershipModel,
+    u: UserModel,
+    *,
+    is_workspace_owner: bool = False,
+) -> ProjectMemberRead:
+    return ProjectMemberRead(
+        id=str(pm.id),
+        user_id=str(u.id),
+        email=u.email,
+        name=u.name,
+        picture_url=u.picture_url,
+        role=ProjectRole(pm.role),
+        is_workspace_owner=is_workspace_owner,
+        created_at=pm.created_at,
+    )
+
+
+@router.get(
+    "/{project_id}/members",
+    response_model=ProjectMemberListResponse,
+    summary="List project members",
+)
+async def list_project_members(
+    project_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> ProjectMemberListResponse:
+    """List project members. Workspace owners are shown as implicit admin."""
+    # Verify the project exists in this workspace
+    project = await _get_project(str(project_id), session, workspace_id)
+
+    # Verify caller has at least READER access (or is workspace owner)
+    await check_project_access(
+        user_id=UUID(user.user_id),
+        workspace_id=workspace_id,
+        project_id=project.id,
+        min_role=ProjectRole.READER,
+        session=session,
+    )
+
+    # Fetch explicit project memberships with user details
+    pm_stmt = (
+        select(ProjectMembershipModel, UserModel)
+        .join(UserModel, ProjectMembershipModel.user_id == UserModel.id)
+        .where(ProjectMembershipModel.project_id == project.id)
+        .order_by(ProjectMembershipModel.created_at)
+    )
+    pm_result = await session.execute(pm_stmt)
+    explicit_rows = pm_result.all()
+
+    members: list[ProjectMemberRead] = []
+
+    # Add workspace owners as implicit admin entries
+    owner_stmt = (
+        select(MembershipModel, UserModel)
+        .join(UserModel, MembershipModel.user_id == UserModel.id)
+        .where(
+            MembershipModel.workspace_id == workspace_id,
+            MembershipModel.is_owner.is_(True),
+        )
+        .order_by(MembershipModel.created_at)
+    )
+    owner_result = await session.execute(owner_stmt)
+    for row in owner_result.all():
+        m = row.MembershipModel
+        u = row.UserModel
+        members.append(
+            ProjectMemberRead(
+                id=str(m.id),  # use workspace membership id as placeholder
+                user_id=str(u.id),
+                email=u.email,
+                name=u.name,
+                picture_url=u.picture_url,
+                role=ProjectRole.ADMIN,
+                is_workspace_owner=True,
+                created_at=m.created_at,
+            )
+        )
+
+    # Add explicit project members (skip workspace owners already listed)
+    for row in explicit_rows:
+        pm = row.ProjectMembershipModel
+        u = row.UserModel
+        if pm.user_id not in {UUID(m.user_id) for m in members}:
+            members.append(
+                _membership_to_schema(pm, u, is_workspace_owner=False)
+            )
+
+    return ProjectMemberListResponse(members=members, total=len(members))
+
+
+@router.post(
+    "/{project_id}/members",
+    response_model=ProjectMemberRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a workspace member to a project",
+)
+async def add_project_member(
+    project_id: UUID,
+    request: ProjectMemberAdd,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> ProjectMemberRead:
+    """Add a workspace member to a project with a specific role.
+
+    Only workspace owners or project admins can add members.
+    Cannot add workspace owners (they're implicit admin).
+    """
+    project = await _get_project(str(project_id), session, workspace_id)
+
+    # Verify caller is workspace owner or project admin
+    await _require_owner_or_project_admin(workspace_id, user, project.id, session)
+
+    target_user_id = UUID(request.user_id)
+
+    # Verify target user is a workspace member
+    ws_mem_stmt = select(MembershipModel).where(
+        MembershipModel.user_id == target_user_id,
+        MembershipModel.workspace_id == workspace_id,
+    )
+    ws_membership = (await session.execute(ws_mem_stmt)).scalar_one_or_none()
+    if ws_membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User is not a member of this workspace",
+        )
+
+    # Cannot add workspace owners — they are implicit admin
+    if ws_membership.is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Workspace owners are implicit project admins and cannot be added explicitly",
+        )
+
+    # Check for duplicate project membership
+    dup_stmt = select(ProjectMembershipModel).where(
+        ProjectMembershipModel.project_id == project.id,
+        ProjectMembershipModel.user_id == target_user_id,
+    )
+    if (await session.execute(dup_stmt)).scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User is already a member of this project",
+        )
+
+    # Create project membership row
+    now = datetime.now(UTC)
+    pm = ProjectMembershipModel(
+        id=uuid4(),
+        project_id=project.id,
+        user_id=target_user_id,
+        role=request.role.value,
+        created_at=now,
+    )
+    session.add(pm)
+    await session.flush()
+
+    # Fetch user details for the response
+    target_user = await session.get(UserModel, target_user_id)
+    assert target_user is not None  # already verified via workspace membership
+
+    return _membership_to_schema(pm, target_user, is_workspace_owner=False)
+
+
+@router.patch(
+    "/{project_id}/members/{membership_id}",
+    response_model=ProjectMemberRead,
+    summary="Update a project member's role",
+)
+async def update_project_member(
+    project_id: UUID,
+    membership_id: UUID,
+    request: ProjectMemberPatch,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> ProjectMemberRead:
+    """Change a project member's role. Owner or project admin only."""
+    project = await _get_project(str(project_id), session, workspace_id)
+
+    # Verify caller is workspace owner or project admin
+    await _require_owner_or_project_admin(workspace_id, user, project.id, session)
+
+    # Fetch the project membership
+    pm = await session.get(ProjectMembershipModel, membership_id)
+    if pm is None or pm.project_id != project.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project membership not found",
+        )
+
+    pm.role = request.role.value
+    await session.flush()
+    await session.refresh(pm)
+
+    target_user = await session.get(UserModel, pm.user_id)
+    assert target_user is not None
+
+    return _membership_to_schema(pm, target_user, is_workspace_owner=False)
+
+
+@router.delete(
+    "/{project_id}/members/{membership_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a member from a project",
+)
+async def remove_project_member(
+    project_id: UUID,
+    membership_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> None:
+    """Remove a member from a project. Owner or project admin only."""
+    project = await _get_project(str(project_id), session, workspace_id)
+
+    # Verify caller is workspace owner or project admin
+    await _require_owner_or_project_admin(workspace_id, user, project.id, session)
+
+    # Fetch the project membership
+    pm = await session.get(ProjectMembershipModel, membership_id)
+    if pm is None or pm.project_id != project.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project membership not found",
+        )
+
+    await session.delete(pm)
+    await session.flush()
