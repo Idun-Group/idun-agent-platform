@@ -1,74 +1,121 @@
 """Workspace members API.
 
-Endpoints for managing workspace membership: list, add, update role, remove.
+Endpoints for managing workspace-level members and pending invitations.
+Only workspace owners can invite, remove, or cancel invitations.
+Any workspace member can list members.
 """
 
-from __future__ import annotations
-
 import logging
+from collections import defaultdict
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import CurrentUser, get_current_user, get_session
 from app.api.v1.schemas.workspace_members import (
-    ROLE_HIERARCHY,
+    InvitationProjectRead,
     InvitationRead,
     MemberAdd,
     MemberListResponse,
-    MemberPatch,
     MemberRead,
-    WorkspaceRole,
 )
 from app.infrastructure.db.models.invitation import InvitationModel
+from app.infrastructure.db.models.invitation_project import InvitationProjectModel
 from app.infrastructure.db.models.membership import MembershipModel
+from app.infrastructure.db.models.project import ProjectModel
+from app.infrastructure.db.models.project_membership import ProjectMembershipModel
 from app.infrastructure.db.models.user import UserModel
 
 router = APIRouter()
+
 logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Reusable dependency
+# Helpers
 # ---------------------------------------------------------------------------
 
 
-async def require_workspace_role(
+async def _require_workspace_owner(
     workspace_id: UUID,
     user: CurrentUser,
     session: AsyncSession,
-    min_role: WorkspaceRole = WorkspaceRole.VIEWER,
 ) -> MembershipModel:
-    """Verify the user has at least *min_role* in the workspace.
+    """Verify the current user is an owner of the workspace.
 
-    Returns the membership row on success.
-    Raises 404 if no membership, 403 if insufficient role.
+    Returns the MembershipModel on success.
+    Raises 404 if the user is not a member, 403 if not an owner.
     """
     stmt = select(MembershipModel).where(
         MembershipModel.user_id == UUID(user.user_id),
         MembershipModel.workspace_id == workspace_id,
     )
-    result = await session.execute(stmt)
-    membership = result.scalar_one_or_none()
-
+    membership = (await session.execute(stmt)).scalar_one_or_none()
     if membership is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workspace not found",
         )
-
-    user_level = ROLE_HIERARCHY.get(WorkspaceRole(membership.role), 0)
-    required_level = ROLE_HIERARCHY[min_role]
-
-    if user_level < required_level:
+    if not membership.is_owner:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Requires at least {min_role.value} role",
+            detail="Only workspace owners can perform this action",
         )
-
     return membership
+
+
+async def _require_workspace_member(
+    workspace_id: UUID,
+    user: CurrentUser,
+    session: AsyncSession,
+) -> MembershipModel:
+    """Verify the current user is a member of the workspace (any role).
+
+    Returns the MembershipModel on success.
+    Raises 404 if the user is not a member.
+    """
+    stmt = select(MembershipModel).where(
+        MembershipModel.user_id == UUID(user.user_id),
+        MembershipModel.workspace_id == workspace_id,
+    )
+    membership = (await session.execute(stmt)).scalar_one_or_none()
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found",
+        )
+    return membership
+
+
+async def _ensure_not_last_owner(
+    workspace_id: UUID,
+    membership_id: UUID,
+    session: AsyncSession,
+) -> None:
+    """Raise 400 if removing the membership would leave no owners."""
+    target = await session.get(MembershipModel, membership_id)
+    if target is None:
+        return  # Will be handled by the caller
+
+    if not target.is_owner:
+        return  # Not an owner, safe to remove
+
+    owner_count_stmt = (
+        select(func.count())
+        .select_from(MembershipModel)
+        .where(
+            MembershipModel.workspace_id == workspace_id,
+            MembershipModel.is_owner.is_(True),
+        )
+    )
+    owner_count = (await session.execute(owner_count_stmt)).scalar_one()
+    if owner_count <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot remove the last workspace owner",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -79,285 +126,445 @@ async def require_workspace_role(
 @router.get(
     "/{workspace_id}/members",
     response_model=MemberListResponse,
-    summary="List workspace members",
+    summary="List workspace members and pending invitations",
 )
 async def list_members(
-    workspace_id: str,
+    workspace_id: UUID,
     limit: int = 100,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> MemberListResponse:
-    """Return all members of a workspace with user details."""
-    ws_uuid = _parse_uuid(workspace_id)
+    """Return all members of the workspace and any pending invitations.
 
-    # Verify caller is a member (any role)
-    await require_workspace_role(ws_uuid, user, session, WorkspaceRole.VIEWER)
+    Any workspace member can call this endpoint.
+    """
+    await _require_workspace_member(workspace_id, user, session)
 
-    # Count total
-    count_stmt = (
-        select(func.count())
-        .select_from(MembershipModel)
-        .where(MembershipModel.workspace_id == ws_uuid)
-    )
-    total = (await session.execute(count_stmt)).scalar_one()
-
-    # Fetch members joined with users
-    stmt = (
+    # Fetch members with user details
+    members_stmt = (
         select(MembershipModel, UserModel)
         .join(UserModel, UserModel.id == MembershipModel.user_id)
-        .where(MembershipModel.workspace_id == ws_uuid)
-        .order_by(MembershipModel.created_at.asc())
+        .where(MembershipModel.workspace_id == workspace_id)
+        .order_by(MembershipModel.created_at)
         .limit(limit)
         .offset(offset)
     )
-    rows = (await session.execute(stmt)).all()
+    members_result = await session.execute(members_stmt)
+    member_rows = members_result.all()
 
     members = [
         MemberRead(
-            id=str(mem.id),
-            user_id=str(mem.user_id),
+            id=str(membership.id),
+            user_id=str(membership.user_id),
             email=usr.email,
             name=usr.name,
             picture_url=usr.picture_url,
-            role=WorkspaceRole(mem.role),
-            created_at=mem.created_at,
+            is_owner=membership.is_owner,
+            created_at=membership.created_at,
         )
-        for mem, usr in rows
+        for membership, usr in member_rows
     ]
 
-    # Fetch pending invitations
+    # Fetch pending invitations with project assignments in one query (no N+1)
     inv_stmt = (
-        select(InvitationModel)
-        .where(InvitationModel.workspace_id == ws_uuid)
-        .order_by(InvitationModel.created_at.asc())
+        select(InvitationModel, InvitationProjectModel)
+        .outerjoin(
+            InvitationProjectModel,
+            InvitationProjectModel.invitation_id == InvitationModel.id,
+        )
+        .where(InvitationModel.workspace_id == workspace_id)
+        .order_by(InvitationModel.created_at)
     )
-    inv_rows = (await session.execute(inv_stmt)).scalars().all()
+    inv_result = await session.execute(inv_stmt)
+    inv_rows = inv_result.all()
+
+    # Group invitation_projects by invitation
+    inv_map: dict[UUID, InvitationModel] = {}
+    ip_map: dict[UUID, list[InvitationProjectRead]] = defaultdict(list)
+    for inv, ip in inv_rows:
+        inv_map[inv.id] = inv
+        if ip is not None:
+            ip_map[inv.id].append(
+                InvitationProjectRead(
+                    project_id=str(ip.project_id),
+                    role=ip.role,
+                )
+            )
 
     invitations = [
         InvitationRead(
             id=str(inv.id),
             email=inv.email,
-            role=WorkspaceRole(inv.role),
+            is_owner=inv.is_owner,
             invited_by=str(inv.invited_by) if inv.invited_by else None,
             created_at=inv.created_at,
+            project_assignments=ip_map.get(inv.id, []),
         )
-        for inv in inv_rows
+        for inv in inv_map.values()
     ]
 
-    return MemberListResponse(members=members, invitations=invitations, total=total)
+    # Total count of members (not paginated)
+    total_stmt = (
+        select(func.count())
+        .select_from(MembershipModel)
+        .where(MembershipModel.workspace_id == workspace_id)
+    )
+    total = (await session.execute(total_stmt)).scalar_one()
+
+    return MemberListResponse(
+        members=members,
+        invitations=invitations,
+        total=total,
+    )
 
 
 @router.post(
     "/{workspace_id}/members",
     response_model=MemberRead | InvitationRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Add a user to the workspace or create a pending invitation",
+    summary="Invite a user to the workspace",
 )
 async def add_member(
-    workspace_id: str,
-    body: MemberAdd,
+    workspace_id: UUID,
+    request: MemberAdd,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> MemberRead | InvitationRead:
-    """Add an existing user or create a pending invitation by email."""
-    ws_uuid = _parse_uuid(workspace_id)
+    """Invite a user to the workspace by email.
 
-    caller = await require_workspace_role(
-        ws_uuid, user, session, WorkspaceRole.ADMIN
+    If the user already exists in the system, a MembershipModel is created
+    directly and the user gains immediate access.  Otherwise, an invitation
+    is created and project assignments are stored for later materialisation.
+
+    Owners have implicit admin on all projects (no project_membership rows
+    are created). Non-owners only get access to projects they are explicitly
+    assigned to via ``project_assignments``.
+
+    Only workspace owners can invite new members.
+    """
+    await _require_workspace_owner(workspace_id, user, session)
+
+    email = request.email.lower()
+
+    # Check for duplicate invitation
+    dup_inv_stmt = select(InvitationModel).where(
+        InvitationModel.workspace_id == workspace_id,
+        InvitationModel.email == email,
     )
-    _enforce_role_grant(caller, body.role)
-
-    # Try to find user by email
-    stmt = select(UserModel).where(UserModel.email == body.email)
-    target_user = (await session.execute(stmt)).scalar_one_or_none()
-
-    if target_user is not None:
-        # User exists — check for duplicate membership
-        dup_stmt = select(MembershipModel).where(
-            MembershipModel.user_id == target_user.id,
-            MembershipModel.workspace_id == ws_uuid,
+    if (await session.execute(dup_inv_stmt)).scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An invitation for this email already exists",
         )
-        if (await session.execute(dup_stmt)).scalar_one_or_none() is not None:
+
+    # Check if the user already exists in the system
+    user_stmt = select(UserModel).where(UserModel.email == email)
+    existing_user = (await session.execute(user_stmt)).scalar_one_or_none()
+
+    if existing_user is not None:
+        # Check for duplicate membership
+        dup_mem_stmt = select(MembershipModel).where(
+            MembershipModel.user_id == existing_user.id,
+            MembershipModel.workspace_id == workspace_id,
+        )
+        if (await session.execute(dup_mem_stmt)).scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="User is already a member of this workspace",
             )
 
+        # Create membership directly
         membership = MembershipModel(
             id=uuid4(),
-            user_id=target_user.id,
-            workspace_id=ws_uuid,
-            role=body.role.value,
+            user_id=existing_user.id,
+            workspace_id=workspace_id,
+            is_owner=request.is_owner,
         )
         session.add(membership)
         await session.flush()
-        await session.refresh(membership)
+
+        # Create project memberships for explicit assignments (non-owners only)
+        if not request.is_owner:
+            for assignment in request.project_assignments:
+                project_id = UUID(assignment.project_id)
+
+                # Validate project belongs to workspace
+                project = await session.get(ProjectModel, project_id)
+                if project is None or project.workspace_id != workspace_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Project {assignment.project_id} not found in workspace",
+                    )
+
+                pm = ProjectMembershipModel(
+                    id=uuid4(),
+                    project_id=project_id,
+                    user_id=existing_user.id,
+                    role=assignment.role.value,
+                )
+                session.add(pm)
+        # Owners have implicit admin on all projects — no rows needed
+
+        await session.flush()
+
+        logger.info(
+            "User %s added to workspace %s by %s",
+            existing_user.id,
+            workspace_id,
+            user.user_id,
+        )
 
         return MemberRead(
             id=str(membership.id),
-            user_id=str(target_user.id),
-            email=target_user.email,
-            name=target_user.name,
-            picture_url=target_user.picture_url,
-            role=WorkspaceRole(membership.role),
+            user_id=str(existing_user.id),
+            email=existing_user.email,
+            name=existing_user.name,
+            picture_url=existing_user.picture_url,
+            is_owner=membership.is_owner,
             created_at=membership.created_at,
         )
-    else:
-        # User doesn't exist — check for duplicate invitation
-        dup_inv_stmt = select(InvitationModel).where(
-            InvitationModel.email == body.email,
-            InvitationModel.workspace_id == ws_uuid,
-        )
-        if (await session.execute(dup_inv_stmt)).scalar_one_or_none() is not None:
+
+    # User does not exist yet -- create an invitation
+    invitation_id = uuid4()
+    invitation = InvitationModel(
+        id=invitation_id,
+        workspace_id=workspace_id,
+        email=email,
+        is_owner=request.is_owner,
+        invited_by=UUID(user.user_id),
+    )
+    session.add(invitation)
+    await session.flush()
+
+    # Store project assignments on the invitation
+    inv_project_reads: list[InvitationProjectRead] = []
+    for assignment in request.project_assignments:
+        project_id = UUID(assignment.project_id)
+
+        # Validate project belongs to workspace
+        project = await session.get(ProjectModel, project_id)
+        if project is None or project.workspace_id != workspace_id:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="This email has already been invited to this workspace",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Project {assignment.project_id} not found in workspace",
             )
 
-        invitation = InvitationModel(
+        ip = InvitationProjectModel(
             id=uuid4(),
-            workspace_id=ws_uuid,
-            email=body.email,
-            role=body.role.value,
-            invited_by=UUID(user.user_id),
+            invitation_id=invitation_id,
+            project_id=project_id,
+            role=assignment.role.value,
         )
-        session.add(invitation)
-        await session.flush()
-        await session.refresh(invitation)
+        session.add(ip)
 
-        return InvitationRead(
-            id=str(invitation.id),
-            email=invitation.email,
-            role=WorkspaceRole(invitation.role),
-            invited_by=str(invitation.invited_by),
-            created_at=invitation.created_at,
+        inv_project_reads.append(
+            InvitationProjectRead(
+                project_id=str(project_id),
+                role=assignment.role,
+            )
         )
 
+    await session.flush()
 
-@router.patch(
-    "/{workspace_id}/members/{membership_id}",
+    logger.info(
+        "Invitation created for %s to workspace %s by %s",
+        email,
+        workspace_id,
+        user.user_id,
+    )
+
+    return InvitationRead(
+        id=str(invitation.id),
+        email=invitation.email,
+        is_owner=invitation.is_owner,
+        invited_by=str(invitation.invited_by) if invitation.invited_by else None,
+        created_at=invitation.created_at,
+        project_assignments=inv_project_reads,
+    )
+
+
+@router.post(
+    "/{workspace_id}/accept-invitation",
     response_model=MemberRead,
-    summary="Update a member's role",
+    status_code=status.HTTP_201_CREATED,
+    summary="Accept a pending workspace invitation",
 )
-async def update_member_role(
-    workspace_id: str,
-    membership_id: str,
-    body: MemberPatch,
+async def accept_invitation(
+    workspace_id: UUID,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> MemberRead:
-    """Change a workspace member's role."""
-    ws_uuid = _parse_uuid(workspace_id)
-    mem_uuid = _parse_uuid(membership_id, "membership")
+    """Accept a pending workspace invitation for the current user.
 
-    caller = await require_workspace_role(
-        ws_uuid, user, session, WorkspaceRole.ADMIN
+    Looks up the invitation by the authenticated user's email. Creates
+    workspace membership and materialises project assignments from the
+    invitation. Owners have implicit admin on all projects (no
+    project_membership rows are created). Deletes the invitation on success.
+
+    Idempotent: if the user is already a member, returns 409.
+    """
+    # Check the user is not already a member
+    dup_stmt = select(MembershipModel).where(
+        MembershipModel.user_id == UUID(user.user_id),
+        MembershipModel.workspace_id == workspace_id,
     )
-
-    target = await _get_membership(session, mem_uuid, ws_uuid)
-    target_user = await session.get(UserModel, target.user_id)
-
-    # Cannot change the role of the last owner
-    if (
-        WorkspaceRole(target.role) == WorkspaceRole.OWNER
-        and body.role != WorkspaceRole.OWNER
-    ):
-        await _ensure_not_last_owner(session, ws_uuid)
-
-    _enforce_role_grant(caller, body.role)
-
-    # Admin cannot change another admin's or owner's role
-    caller_level = ROLE_HIERARCHY[WorkspaceRole(caller.role)]
-    target_level = ROLE_HIERARCHY[WorkspaceRole(target.role)]
-    if caller_level <= target_level and caller.id != target.id:
+    if (await session.execute(dup_stmt)).scalar_one_or_none():
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot change the role of a member with equal or higher role",
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Already a member of this workspace",
         )
 
-    target.role = body.role.value
+    # Find invitation for this user's email
+    inv_stmt = select(InvitationModel).where(
+        InvitationModel.workspace_id == workspace_id,
+        InvitationModel.email == user.email.lower(),
+    )
+    invitation = (await session.execute(inv_stmt)).scalar_one_or_none()
+    if invitation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No pending invitation found for your email in this workspace",
+        )
+
+    # Create workspace membership
+    membership = MembershipModel(
+        id=uuid4(),
+        user_id=UUID(user.user_id),
+        workspace_id=workspace_id,
+        is_owner=invitation.is_owner,
+    )
+    session.add(membership)
     await session.flush()
-    await session.refresh(target)
+
+    # Fetch invitation project assignments
+    ip_stmt = select(InvitationProjectModel).where(
+        InvitationProjectModel.invitation_id == invitation.id,
+    )
+    ip_rows = (await session.execute(ip_stmt)).scalars().all()
+
+    # Materialise project memberships from invitation (non-owners only)
+    if not invitation.is_owner:
+        for ip in ip_rows:
+            project = await session.get(ProjectModel, ip.project_id)
+            if project is None or project.workspace_id != workspace_id:
+                logger.warning(
+                    "Skipping deleted project %s during invitation acceptance for %s",
+                    ip.project_id,
+                    user.email,
+                )
+                continue
+
+            pm = ProjectMembershipModel(
+                id=uuid4(),
+                project_id=ip.project_id,
+                user_id=UUID(user.user_id),
+                role=ip.role,
+            )
+            session.add(pm)
+    # Owners have implicit admin on all projects — no rows needed
+
+    # Delete the invitation (CASCADE removes invitation_projects)
+    await session.delete(invitation)
+    await session.flush()
+
+    # Fetch user for response
+    user_model = await session.get(UserModel, UUID(user.user_id))
+
+    logger.info(
+        "User %s accepted invitation and joined workspace %s",
+        user.user_id,
+        workspace_id,
+    )
 
     return MemberRead(
-        id=str(target.id),
-        user_id=str(target.user_id),
-        email=target_user.email if target_user else "",
-        name=target_user.name if target_user else None,
-        picture_url=target_user.picture_url if target_user else None,
-        role=WorkspaceRole(target.role),
-        created_at=target.created_at,
+        id=str(membership.id),
+        user_id=user.user_id,
+        email=user_model.email if user_model else user.email,
+        name=user_model.name if user_model else None,
+        picture_url=user_model.picture_url if user_model else None,
+        is_owner=membership.is_owner,
+        created_at=membership.created_at,
     )
 
 
 @router.delete(
     "/{workspace_id}/members/{membership_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    response_model=None,
     summary="Remove a member from the workspace",
 )
 async def remove_member(
-    workspace_id: str,
-    membership_id: str,
+    workspace_id: UUID,
+    membership_id: UUID,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> None:
-    """Remove a member from the workspace."""
-    ws_uuid = _parse_uuid(workspace_id)
-    mem_uuid = _parse_uuid(membership_id, "membership")
+    """Remove a member from the workspace.
 
-    caller = await require_workspace_role(
-        ws_uuid, user, session, WorkspaceRole.ADMIN
+    Cannot remove the last owner.  When removing a member, their project
+    memberships within the workspace are also deleted.
+
+    Only workspace owners can remove members.
+    """
+    await _require_workspace_owner(workspace_id, user, session)
+    await _ensure_not_last_owner(workspace_id, membership_id, session)
+
+    target = await session.get(MembershipModel, membership_id)
+    if target is None or target.workspace_id != workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Membership not found",
+        )
+
+    # Delete project memberships for this user within the workspace
+    project_ids_stmt = select(ProjectModel.id).where(
+        ProjectModel.workspace_id == workspace_id,
     )
+    del_pm_stmt = delete(ProjectMembershipModel).where(
+        ProjectMembershipModel.user_id == target.user_id,
+        ProjectMembershipModel.project_id.in_(project_ids_stmt),
+    )
+    await session.execute(del_pm_stmt)
 
-    target = await _get_membership(session, mem_uuid, ws_uuid)
-
-    # Self-removal is always allowed (except last owner)
-    is_self = caller.id == target.id
-
-    if not is_self:
-        # Admin cannot remove owner or another admin
-        caller_level = ROLE_HIERARCHY[WorkspaceRole(caller.role)]
-        target_level = ROLE_HIERARCHY[WorkspaceRole(target.role)]
-        if caller_level <= target_level:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot remove a member with equal or higher role",
-            )
-
-    # Cannot remove the last owner
-    if WorkspaceRole(target.role) == WorkspaceRole.OWNER:
-        await _ensure_not_last_owner(session, ws_uuid)
+    # Invalidate the removed user's session.
+    removed_user = await session.get(UserModel, target.user_id)
+    if removed_user is not None:
+        removed_user.session_version += 1
 
     await session.delete(target)
     await session.flush()
+
+    logger.info(
+        "Member %s (user %s) removed from workspace %s by %s",
+        membership_id,
+        target.user_id,
+        workspace_id,
+        user.user_id,
+    )
 
 
 @router.delete(
     "/{workspace_id}/invitations/{invitation_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    response_model=None,
     summary="Cancel a pending invitation",
 )
 async def cancel_invitation(
-    workspace_id: str,
-    invitation_id: str,
+    workspace_id: UUID,
+    invitation_id: UUID,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> None:
-    """Cancel a pending workspace invitation."""
-    ws_uuid = _parse_uuid(workspace_id)
-    inv_uuid = _parse_uuid(invitation_id, "invitation")
+    """Cancel a pending workspace invitation.
 
-    await require_workspace_role(ws_uuid, user, session, WorkspaceRole.ADMIN)
+    CASCADE on the foreign key will automatically remove associated
+    InvitationProjectModel rows.
 
-    stmt = select(InvitationModel).where(
-        InvitationModel.id == inv_uuid,
-        InvitationModel.workspace_id == ws_uuid,
-    )
-    invitation = (await session.execute(stmt)).scalar_one_or_none()
-    if invitation is None:
+    Only workspace owners can cancel invitations.
+    """
+    await _require_workspace_owner(workspace_id, user, session)
+
+    invitation = await session.get(InvitationModel, invitation_id)
+    if invitation is None or invitation.workspace_id != workspace_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invitation not found",
@@ -366,87 +573,10 @@ async def cancel_invitation(
     await session.delete(invitation)
     await session.flush()
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _parse_uuid(value: str, label: str = "workspace") -> UUID:
-    try:
-        return UUID(value)
-    except ValueError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid {label} id",
-        ) from err
-
-
-async def _get_user_by_email(session: AsyncSession, email: str) -> UserModel:
-    stmt = select(UserModel).where(UserModel.email == email)
-    result = await session.execute(stmt)
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No user found with email {email}",
-        )
-    return user
-
-
-async def _get_membership(
-    session: AsyncSession, membership_id: UUID, workspace_id: UUID
-) -> MembershipModel:
-    stmt = select(MembershipModel).where(
-        MembershipModel.id == membership_id,
-        MembershipModel.workspace_id == workspace_id,
+    logger.info(
+        "Invitation %s for %s cancelled in workspace %s by %s",
+        invitation_id,
+        invitation.email,
+        workspace_id,
+        user.user_id,
     )
-    result = await session.execute(stmt)
-    membership = result.scalar_one_or_none()
-    if membership is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Membership not found",
-        )
-    return membership
-
-
-async def _ensure_not_last_owner(
-    session: AsyncSession, workspace_id: UUID
-) -> None:
-    count_stmt = (
-        select(func.count())
-        .select_from(MembershipModel)
-        .where(
-            MembershipModel.workspace_id == workspace_id,
-            MembershipModel.role == WorkspaceRole.OWNER.value,
-        )
-    )
-    owner_count = (await session.execute(count_stmt)).scalar_one()
-    if owner_count <= 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot remove or demote the last owner of the workspace",
-        )
-
-
-def _enforce_role_grant(caller: MembershipModel, target_role: WorkspaceRole) -> None:
-    """Ensure the caller is allowed to grant the target role.
-
-    Owners can assign any role including owner.
-    Admins can only assign roles below admin.
-    """
-    caller_role = WorkspaceRole(caller.role)
-    caller_level = ROLE_HIERARCHY[caller_role]
-    target_level = ROLE_HIERARCHY[target_role]
-
-    # Owners can assign any role (including owner)
-    if caller_role == WorkspaceRole.OWNER:
-        return
-
-    # Everyone else cannot assign equal or higher
-    if target_level >= caller_level:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Cannot assign role {target_role.value}; insufficient privileges",
-        )
