@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { notify } from '../../toast/notify';
 import styled, { keyframes } from 'styled-components';
-import { Trash2, UserPlus, Check, X } from 'lucide-react';
+import { Trash2, UserPlus, Check, X, Info } from 'lucide-react';
 import useWorkspace from '../../../hooks/use-workspace';
 import { useAuth } from '../../../hooks/use-auth';
 import { getJson } from '../../../utils/api';
@@ -15,7 +15,10 @@ import {
     WORKSPACE_ROLE_PERMISSIONS,
     type WorkspaceMember,
     type WorkspaceInvitation,
+    type ProjectAssignment,
+    type ProjectRole,
 } from '../../../services/members';
+import { useProject } from '../../../hooks/use-project';
 
 // ===========================================================================
 // Main component
@@ -76,11 +79,19 @@ const WorkspaceUsersTab = () => {
         }
     };
 
-    const handleInvite = async (email: string, isOwner: boolean) => {
+    const handleInvite = async (
+        email: string,
+        isOwner: boolean,
+        projectAssignments: ProjectAssignment[],
+    ) => {
         const wsId = await resolveWorkspaceId();
         if (!wsId) return;
         try {
-            await addMember(wsId, { email, is_owner: isOwner });
+            await addMember(wsId, {
+                email,
+                is_owner: isOwner,
+                project_assignments: isOwner ? [] : projectAssignments,
+            });
             notify.success(t('settings.workspaces.users.memberAdded', 'Member added'));
             fetchMembers();
         } catch (err: unknown) {
@@ -325,7 +336,11 @@ const InvitationRow = ({ invitation, canManage, onCancel }: InvitationRowProps) 
 // ===========================================================================
 
 type InviteMemberDialogProps = {
-    onInvite: (email: string, isOwner: boolean) => Promise<void>;
+    onInvite: (
+        email: string,
+        isOwner: boolean,
+        projectAssignments: ProjectAssignment[],
+    ) => Promise<void>;
     onClose: () => void;
 };
 
@@ -341,6 +356,25 @@ const InviteMemberDialog = ({
 
     const [hoveredRole, setHoveredRole] = useState<'owner' | 'member' | null>(null);
 
+    const { projects } = useProject();
+    const [assignments, setAssignments] = useState<Record<string, ProjectRole | null>>({});
+
+    const toggleProject = (projectId: string) => {
+        setAssignments((prev) => {
+            const next = { ...prev };
+            if (next[projectId]) {
+                next[projectId] = null;
+            } else {
+                next[projectId] = 'contributor';
+            }
+            return next;
+        });
+    };
+
+    const setProjectRole = (projectId: string, role: ProjectRole) => {
+        setAssignments((prev) => ({ ...prev, [projectId]: role }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -350,9 +384,13 @@ const InviteMemberDialog = ({
             return;
         }
 
+        const projectAssignments: ProjectAssignment[] = Object.entries(assignments)
+            .filter(([, role]) => role !== null)
+            .map(([project_id, role]) => ({ project_id, role: role! }));
+
         setSubmitting(true);
         try {
-            await onInvite(email.trim(), isOwner);
+            await onInvite(email.trim(), isOwner, projectAssignments);
             onClose();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to add member';
@@ -455,6 +493,83 @@ const InviteMemberDialog = ({
                             </InviteRoleOption>
                         </InviteRoleGrid>
                     </FieldGroup>
+
+                    {/* Project assignment section */}
+                    {!isOwner ? (
+                        <FieldGroup>
+                            <FieldLabel>
+                                {t('settings.projects.projectAccess', 'Project access')}
+                            </FieldLabel>
+                            <ProjectAccessList>
+                                {projects.map((project) => {
+                                    const assigned = !!assignments[project.id];
+                                    return (
+                                        <ProjectAccessRow
+                                            key={project.id}
+                                            $assigned={assigned}
+                                        >
+                                            <ProjectCheckArea onClick={() => toggleProject(project.id)}>
+                                                <ProjectCheckbox $checked={assigned}>
+                                                    {assigned && (
+                                                        <Check size={11} color="hsl(var(--primary))" />
+                                                    )}
+                                                </ProjectCheckbox>
+                                                <ProjectAccessName $assigned={assigned}>
+                                                    {project.name}
+                                                </ProjectAccessName>
+                                                {project.is_default && (
+                                                    <ProjectDefaultBadge>
+                                                        {t('projects.default', 'Default')}
+                                                    </ProjectDefaultBadge>
+                                                )}
+                                            </ProjectCheckArea>
+                                            {assigned ? (
+                                                <RoleSelect
+                                                    value={assignments[project.id] ?? 'contributor'}
+                                                    onChange={(e) =>
+                                                        setProjectRole(
+                                                            project.id,
+                                                            e.target.value as ProjectRole,
+                                                        )
+                                                    }
+                                                >
+                                                    <option value="admin">
+                                                        {t('projects.roles.admin', 'Admin')}
+                                                    </option>
+                                                    <option value="contributor">
+                                                        {t('projects.roles.contributor', 'Contributor')}
+                                                    </option>
+                                                    <option value="reader">
+                                                        {t('projects.roles.reader', 'Reader')}
+                                                    </option>
+                                                </RoleSelect>
+                                            ) : (
+                                                <RoleDash>—</RoleDash>
+                                            )}
+                                        </ProjectAccessRow>
+                                    );
+                                })}
+                            </ProjectAccessList>
+                            <ProjectAccessHelp>
+                                {t(
+                                    'settings.projects.projectAccessHelp',
+                                    'Select which projects this member can access and their role in each.',
+                                )}
+                            </ProjectAccessHelp>
+                        </FieldGroup>
+                    ) : (
+                        <OwnerInfoBox>
+                            <InfoIcon>
+                                <Info size={16} color="hsl(var(--primary))" />
+                            </InfoIcon>
+                            <OwnerInfoText>
+                                {t(
+                                    'settings.projects.ownerInfo',
+                                    'Workspace owners have admin access to all projects by default. No project assignment needed.',
+                                )}
+                            </OwnerInfoText>
+                        </OwnerInfoBox>
+                    )}
 
                     {error && <ErrorText>{error}</ErrorText>}
 
@@ -969,4 +1084,124 @@ const EmptyText = styled.p`
     text-align: center;
     padding: 24px 0;
     margin: 0;
+`;
+
+// Project assignment styles
+const ProjectAccessList = styled.div`
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    overflow: hidden;
+`;
+
+const ProjectAccessRow = styled.div<{ $assigned: boolean }>`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: ${({ $assigned }) =>
+        $assigned ? 'hsla(var(--primary) / 0.04)' : 'transparent'};
+
+    & + & {
+        border-top: 1px solid var(--border-subtle);
+    }
+`;
+
+const ProjectCheckArea = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    flex: 1;
+`;
+
+const ProjectCheckbox = styled.div<{ $checked: boolean }>`
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid ${({ $checked }) =>
+        $checked ? 'hsl(var(--primary))' : 'var(--border-light)'};
+    background: ${({ $checked }) =>
+        $checked ? 'hsla(var(--primary) / 0.15)' : 'transparent'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 150ms ease;
+    flex-shrink: 0;
+`;
+
+const ProjectAccessName = styled.span<{ $assigned: boolean }>`
+    font-size: 13px;
+    font-weight: ${({ $assigned }) => ($assigned ? '500' : '400')};
+    color: ${({ $assigned }) =>
+        $assigned ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'};
+`;
+
+const ProjectDefaultBadge = styled.span`
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: hsla(var(--primary) / 0.12);
+    color: hsl(var(--primary));
+    font-weight: 500;
+`;
+
+const RoleSelect = styled.select`
+    padding: 4px 10px;
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    padding-right: 24px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23826F95' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+
+    &:focus {
+        outline: none;
+        border-color: hsl(var(--primary));
+    }
+
+    option {
+        background: hsl(var(--popover));
+        color: hsl(var(--foreground));
+    }
+`;
+
+const RoleDash = styled.span`
+    color: hsl(var(--muted-foreground) / 0.3);
+    font-size: 12px;
+    padding: 4px 10px;
+`;
+
+const ProjectAccessHelp = styled.p`
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: hsl(var(--muted-foreground) / 0.6);
+    line-height: 1.4;
+`;
+
+const OwnerInfoBox = styled.div`
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: hsla(var(--primary) / 0.05);
+    border: 1px solid hsla(var(--primary) / 0.12);
+    border-radius: 8px;
+`;
+
+const InfoIcon = styled.span`
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+`;
+
+const OwnerInfoText = styled.span`
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+    line-height: 1.5;
 `;
