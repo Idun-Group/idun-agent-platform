@@ -191,11 +191,6 @@ def setup_routes(app: FastAPI) -> None:
         prefix="/api/v1/workspaces",
         tags=["Workspace Members"],
     )
-    app.include_router(
-        projects_router,
-        prefix="/api/v1/projects",
-        tags=["Projects"],
-    )
 
 
 # Create app instance

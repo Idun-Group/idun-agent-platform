@@ -19,6 +19,7 @@ from app.api.v1.schemas.workspace_members import (
     InvitationRead,
     MemberAdd,
     MemberListResponse,
+    MemberPatch,
     MemberRead,
 )
 from app.infrastructure.db.models.invitation import InvitationModel
@@ -540,6 +541,111 @@ async def remove_member(
         target.user_id,
         workspace_id,
         user.user_id,
+    )
+
+
+@router.patch(
+    "/{workspace_id}/members/{membership_id}",
+    response_model=MemberRead,
+    summary="Promote or demote a workspace member",
+)
+async def update_member(
+    workspace_id: UUID,
+    membership_id: UUID,
+    request: MemberPatch,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+) -> MemberRead:
+    """Promote a member to owner or demote an owner to member.
+
+    Only workspace owners can perform this action.
+    Cannot demote the last owner.
+
+    Promotion (member -> owner):
+    - Deletes all project_memberships (now implicit admin on everything)
+    - Increments session_version to invalidate active sessions
+
+    Demotion (owner -> member):
+    - Creates project_memberships as admin on all projects (preserves access)
+    - Increments session_version to invalidate active sessions
+    """
+    await _require_workspace_owner(workspace_id, user, session)
+
+    target = await session.get(MembershipModel, membership_id)
+    if target is None or target.workspace_id != workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Membership not found",
+        )
+
+    target_user = await session.get(UserModel, target.user_id)
+
+    # No-op if already in desired state
+    if target.is_owner == request.is_owner:
+        return MemberRead(
+            id=str(target.id),
+            user_id=str(target.user_id),
+            email=target_user.email if target_user else "",
+            name=target_user.name if target_user else None,
+            picture_url=target_user.picture_url if target_user else None,
+            is_owner=target.is_owner,
+            created_at=target.created_at,
+        )
+
+    if target.is_owner and not request.is_owner:
+        # Demotion: check not last owner
+        await _ensure_not_last_owner(workspace_id, membership_id, session)
+
+        # Create project_memberships as admin on all projects (preserve access)
+        all_projects_stmt = select(ProjectModel).where(
+            ProjectModel.workspace_id == workspace_id,
+        )
+        all_projects = (await session.execute(all_projects_stmt)).scalars().all()
+        for proj in all_projects:
+            pm = ProjectMembershipModel(
+                id=uuid4(),
+                project_id=proj.id,
+                user_id=target.user_id,
+                role="admin",
+            )
+            session.add(pm)
+
+    elif not target.is_owner and request.is_owner:
+        # Promotion: delete all project_memberships (implicit admin now)
+        project_ids_stmt = select(ProjectModel.id).where(
+            ProjectModel.workspace_id == workspace_id,
+        )
+        del_pm_stmt = delete(ProjectMembershipModel).where(
+            ProjectMembershipModel.user_id == target.user_id,
+            ProjectMembershipModel.project_id.in_(project_ids_stmt),
+        )
+        await session.execute(del_pm_stmt)
+
+    target.is_owner = request.is_owner
+
+    # Invalidate session so user picks up new permissions
+    if target_user is not None:
+        target_user.session_version += 1
+
+    await session.flush()
+
+    logger.info(
+        "Member %s (user %s) %s in workspace %s by %s",
+        membership_id,
+        target.user_id,
+        "promoted to owner" if request.is_owner else "demoted to member",
+        workspace_id,
+        user.user_id,
+    )
+
+    return MemberRead(
+        id=str(target.id),
+        user_id=str(target.user_id),
+        email=target_user.email if target_user else "",
+        name=target_user.name if target_user else None,
+        picture_url=target_user.picture_url if target_user else None,
+        is_owner=target.is_owner,
+        created_at=target.created_at,
     )
 
 
