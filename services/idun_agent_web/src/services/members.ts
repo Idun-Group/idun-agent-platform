@@ -39,9 +39,16 @@ export async function listMembers(
 
 export async function addMember(
     workspaceId: string,
-    body: { email: string; is_owner: boolean },
+    body: {
+        email: string;
+        is_owner: boolean;
+        project_assignments?: ProjectAssignment[];
+    },
 ): Promise<WorkspaceMember | WorkspaceInvitation> {
-    return postJson<WorkspaceMember | WorkspaceInvitation, { email: string; is_owner: boolean }>(
+    return postJson<
+        WorkspaceMember | WorkspaceInvitation,
+        { email: string; is_owner: boolean; project_assignments?: ProjectAssignment[] }
+    >(
         `/api/v1/workspaces/${workspaceId}/members`,
         body,
     );
@@ -62,6 +69,13 @@ export async function cancelInvitation(
         `/api/v1/workspaces/${workspaceId}/invitations/${invitationId}`,
     );
 }
+
+export type ProjectRole = 'admin' | 'contributor' | 'reader';
+
+export type ProjectAssignment = {
+    project_id: string;
+    role: ProjectRole;
+};
 
 /** Labels for workspace-level roles */
 export const WORKSPACE_ROLE_LABELS = {
