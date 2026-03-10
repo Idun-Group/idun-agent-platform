@@ -60,6 +60,10 @@ const CreatePromptModal: FC<Props> = ({ isOpen, onClose, onCreated, initialPromp
         if (e.key === 'Enter') { e.preventDefault(); addTag(); }
     };
 
+    const handleOverlayKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+    };
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!promptId.trim()) { setErrorMessage('Prompt ID is required'); return; }
@@ -80,13 +84,19 @@ const CreatePromptModal: FC<Props> = ({ isOpen, onClose, onCreated, initialPromp
     };
 
     return (
-        <Overlay onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <Overlay
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+            onKeyDown={handleOverlayKeyDown}
+            role="dialog"
+            aria-modal="true"
+            aria-label={lockPromptId ? 'Update prompt' : 'Create prompt'}
+        >
             <Modal>
                 {isLoading && <Blocker><BigSpinner /></Blocker>}
 
                 <Header>
                     <Title>{lockPromptId ? 'Update Prompt' : 'New Prompt'}</Title>
-                    <CloseBtn type="button" onClick={onClose}>×</CloseBtn>
+                    <CloseBtn type="button" onClick={onClose} aria-label="Close">×</CloseBtn>
                 </Header>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
@@ -165,7 +175,7 @@ const CreatePromptModal: FC<Props> = ({ isOpen, onClose, onCreated, initialPromp
                                     {tags.map(tag => (
                                         <Tag key={tag}>
                                             {tag}
-                                            <TagX onClick={() => removeTag(tag)}>×</TagX>
+                                            <TagX onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`}>×</TagX>
                                         </Tag>
                                     ))}
                                 </TagList>
@@ -175,7 +185,7 @@ const CreatePromptModal: FC<Props> = ({ isOpen, onClose, onCreated, initialPromp
 
                     <Footer>
                         <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
-                        <SubmitBtn type="submit" disabled={isLoading}>
+                        <SubmitBtn type="submit" disabled={isLoading} aria-label={lockPromptId ? 'Update prompt' : 'Create prompt'}>
                             {isLoading && <BtnSpinner />}
                             {lockPromptId ? 'Update' : 'Create'}
                         </SubmitBtn>
@@ -192,18 +202,23 @@ export default CreatePromptModal;
 
 const spin = keyframes`from { transform: rotate(0deg); } to { transform: rotate(360deg); }`;
 
+const fadeIn = keyframes`
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+`;
+
 const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: var(--color-surface, #1a1a2e);
+    background: hsl(var(--card));
     border-radius: 16px;
     width: 640px;
     max-width: 95vw;
@@ -212,13 +227,14 @@ const Modal = styled.div`
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-light);
     position: relative;
+    animation: ${fadeIn} 0.15s ease;
 `;
 
 const Header = styled.div`
     padding: 22px 24px 18px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -227,24 +243,24 @@ const Header = styled.div`
 const Title = styled.h2`
     font-size: 16px;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const CloseBtn = styled.button`
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--overlay-light);
     border: none;
     border-radius: 8px;
     width: 30px;
     height: 30px;
-    color: rgba(255, 255, 255, 0.5);
+    color: hsl(var(--text-secondary));
     font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.15s;
-    &:hover { background: rgba(255, 255, 255, 0.12); color: white; }
+    &:hover { background: var(--overlay-medium); color: hsl(var(--foreground)); }
 `;
 
 const FormBody = styled.div`
@@ -261,37 +277,37 @@ const Label = styled.label`
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.6);
+    color: hsl(var(--text-secondary));
     margin-bottom: 8px;
 `;
 
 const Req = styled.span`
-    color: #f87171;
+    color: hsl(var(--destructive));
 `;
 
 const Input = styled.input`
     width: 100%;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
     border-radius: 10px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.15s;
-    &::placeholder { color: rgba(255, 255, 255, 0.25); }
-    &:focus { border-color: hsl(262 83% 58% / 0.5); }
+    &::placeholder { color: hsl(var(--text-tertiary)); }
+    &:focus { border-color: hsl(var(--primary) / 0.5); }
 `;
 
 const HelpText = styled.p`
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.3);
+    color: hsl(var(--text-tertiary));
     margin: 6px 0 0;
 `;
 
 const EditorWrap = styled.div`
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-light);
     border-radius: 10px;
     overflow: hidden;
 `;
@@ -306,7 +322,7 @@ const VarRow = styled.div`
 
 const VarLabel = styled.span`
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.3);
+    color: hsl(var(--text-tertiary));
 `;
 
 const VarPill = styled.span`
@@ -353,7 +369,7 @@ const TagX = styled.button`
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: #f87171;
+    color: hsl(var(--destructive));
     margin: 0 0 16px;
     padding: 10px 14px;
     background: rgba(248, 113, 113, 0.08);
@@ -363,7 +379,7 @@ const ErrorMsg = styled.p`
 
 const Footer = styled.div`
     padding: 16px 24px 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -372,38 +388,38 @@ const Footer = styled.div`
 const CancelBtn = styled.button`
     padding: 9px 18px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--border-medium);
     border-radius: 8px;
-    color: rgba(255, 255, 255, 0.6);
+    color: hsl(var(--text-secondary));
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-    &:hover { background: rgba(255, 255, 255, 0.04); color: white; }
+    &:hover { background: var(--overlay-subtle); color: hsl(var(--foreground)); }
 `;
 
 const SubmitBtn = styled.button`
     padding: 9px 22px;
-    background: #8c52ff;
+    background: hsl(var(--primary));
     border: none;
     border-radius: 8px;
-    color: white;
+    color: hsl(var(--primary-foreground));
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: background 0.15s;
+    transition: opacity 0.15s;
     &:disabled { opacity: 0.5; cursor: not-allowed; }
-    &:hover:not(:disabled) { background: #7a47e6; }
+    &:hover:not(:disabled) { opacity: 0.88; }
 `;
 
 const BtnSpinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+    border: 2px solid hsl(var(--primary-foreground) / 0.3);
+    border-top-color: hsl(var(--primary-foreground));
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
@@ -411,7 +427,7 @@ const BtnSpinner = styled.div`
 const Blocker = styled.div`
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -422,8 +438,8 @@ const Blocker = styled.div`
 const BigSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid rgba(255, 255, 255, 0.15);
-    border-top-color: #8c52ff;
+    border: 3px solid var(--border-light);
+    border-top-color: hsl(var(--primary));
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -438,7 +454,7 @@ const ContentHeader = styled.div`
 const ViewToggle = styled.div`
     display: flex;
     gap: 2px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--overlay-subtle);
     border-radius: 6px;
     padding: 2px;
 `;
@@ -452,22 +468,22 @@ const ToggleBtn = styled.button.attrs({ type: 'button' })<{ $active: boolean }>`
     cursor: pointer;
     transition: all 0.15s;
     background: ${p => p.$active ? 'rgba(140, 82, 255, 0.15)' : 'transparent'};
-    color: ${p => p.$active ? '#a78bfa' : 'rgba(255, 255, 255, 0.35)'};
-    &:hover { color: ${p => p.$active ? '#a78bfa' : 'rgba(255, 255, 255, 0.55)'}; }
+    color: ${p => p.$active ? '#a78bfa' : 'hsl(var(--text-tertiary))'};
+    &:hover { color: ${p => p.$active ? '#a78bfa' : 'hsl(var(--text-secondary))'}; }
 `;
 
 const PreviewWrap = styled.div`
     height: 220px;
     overflow-y: auto;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
     border-radius: 10px;
     padding: 14px 16px;
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.8);
+    color: hsl(var(--foreground) / 0.85);
     line-height: 1.7;
 
-    h1, h2, h3, h4 { color: white; margin: 0.5em 0 0.3em; }
+    h1, h2, h3, h4 { color: hsl(var(--foreground)); margin: 0.5em 0 0.3em; }
     h1 { font-size: 1.3em; }
     h2 { font-size: 1.15em; }
     h3 { font-size: 1.05em; }
@@ -477,10 +493,10 @@ const PreviewWrap = styled.div`
         font-size: 0.9em;
         padding: 2px 6px;
         border-radius: 4px;
-        background: rgba(255, 255, 255, 0.06);
+        background: var(--overlay-light);
     }
     pre {
-        background: rgba(0, 0, 0, 0.3);
+        background: var(--overlay-light);
         padding: 12px;
         border-radius: 8px;
         overflow-x: auto;
@@ -492,28 +508,28 @@ const PreviewWrap = styled.div`
         border-left: 3px solid rgba(140, 82, 255, 0.3);
         padding-left: 12px;
         margin: 0.5em 0;
-        color: rgba(255, 255, 255, 0.6);
+        color: hsl(var(--text-secondary));
     }
     a { color: #a78bfa; }
-    hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 0.8em 0; }
+    hr { border: none; border-top: 1px solid var(--border-light); margin: 0.8em 0; }
 `;
 
 const ContentHint = styled.p`
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.3);
+    color: hsl(var(--text-tertiary));
     margin: 2px 0 8px;
     code {
         font-family: 'SF Mono', 'Fira Code', monospace;
         font-size: 11px;
         padding: 1px 5px;
         border-radius: 3px;
-        background: rgba(255, 255, 255, 0.06);
-        color: rgba(255, 255, 255, 0.4);
+        background: var(--overlay-light);
+        color: hsl(var(--text-tertiary));
     }
 `;
 
 const PreviewPlaceholder = styled.p`
-    color: rgba(255, 255, 255, 0.25);
+    color: hsl(var(--text-tertiary));
     font-style: italic;
     margin: 0;
 `;

@@ -1,14 +1,46 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import styled, { keyframes } from 'styled-components';
 import ReactMarkdown from 'react-markdown';
-import { ChevronRight, Search, Plus, Trash2, Link, Unlink, FileText } from 'lucide-react';
+import { ChevronRight, Search, Plus, Trash2, Link, Unlink, FileText, ExternalLink, Info } from 'lucide-react';
 import { listPrompts, deletePrompt, assignPrompt, unassignPrompt, listAgentPrompts } from '../../services/prompts';
 import type { ManagedPrompt } from '../../services/prompts';
 import { listAgents } from '../../services/agents';
 import type { BackendAgent } from '../../services/agents';
 import { extractVariables } from '../../utils/jinja';
+import { notify } from '../../components/toast/notify';
 import CreatePromptModal from '../../components/prompts/create-prompt-modal/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import CodeSnippet from '../agent-form/components/code-snippet';
+import {
+    PageWrapper, PageHeader, TitleBlock, PageTitle, PageSubtitle, DocsLink,
+    HeaderActions, SearchBar, SearchInput, PrimaryBtn,
+    CenterBox, Spinner, MutedText,
+    EmptyState, EmptyIconWrap, EmptyTextBlock, EmptyTitle, EmptyDesc, EmptyCTA,
+    GroupList, GroupCard, GroupHeader, GroupLeft, GroupRight,
+    ChevronWrap, GroupId, VersionBadge, VersionCount,
+    VarGroup, VarPill, AgentIndicator,
+    ExpandedBody, SectionLabel, UsageSection, UsageHeader, TooltipContainer, TooltipContent, AssignmentSection, SectionRow, AssignBtn,
+    ChipRow, AgentChip, ChipX, EmptyAssign,
+    VersionSection, VersionTable, VersionRow, VersionLeft, VersionRight,
+    VNum, TagRow, TagPill, VDate, DeleteIcon,
+    ViewToggle, ToggleBtn, VersionContent, MarkdownWrap,
+    ModalOverlay, PickerModal, PickerHeader, PickerTitle, CloseBtn,
+    PickerBody, PickerEmpty, PickerItem, PickerName, PickerMeta,
+} from './styled';
+
+const GITHUB_URL = 'https://github.com/Idun-Group/idun-agent-platform';
+
+function generateUsageSnippet(promptId: string, variables: string[]): string {
+    const lines = [
+        'from idun_agent_engine import get_prompt',
+        '',
+        `prompt = get_prompt("${promptId}")`,
+    ];
+    if (variables.length > 0) {
+        const args = variables.map(v => `${v}="..."`).join(', ');
+        lines.push(`rendered = prompt.format(${args})`);
+    }
+    return lines.join('\n');
+}
 
 type PromptGroup = {
     prompt_id: string;
@@ -71,6 +103,7 @@ const PromptsPage = () => {
             setAgentAssignments(assignmentMap);
         } catch (e) {
             console.error('Failed to load data', e);
+            notify.error('Failed to load prompts');
         } finally {
             setIsLoading(false);
         }
@@ -134,8 +167,10 @@ const PromptsPage = () => {
         if (!promptToDelete) return;
         try {
             await deletePrompt(promptToDelete.id);
+            notify.success('Prompt version deleted');
         } catch (e) {
             console.error('Failed to delete prompt', e);
+            notify.error('Failed to delete prompt');
             throw e;
         } finally {
             loadData();
@@ -162,8 +197,10 @@ const PromptsPage = () => {
                 return next;
             });
             setAssigningPrompt(null);
+            notify.success('Prompt assigned to agent');
         } catch (e) {
             console.error('Failed to assign prompt', e);
+            notify.error('Failed to assign prompt');
         }
     };
 
@@ -176,8 +213,10 @@ const PromptsPage = () => {
                 next.set(promptId, existing.filter(id => id !== agentId));
                 return next;
             });
+            notify.success('Prompt unassigned');
         } catch (e) {
             console.error('Failed to unassign prompt', e);
+            notify.error('Failed to unassign prompt');
         }
     };
 
@@ -186,7 +225,6 @@ const PromptsPage = () => {
             if (created.version > 1) {
                 const oldGroup = groups.find(g => g.prompt_id === created.prompt_id);
                 if (oldGroup) {
-                    // Collect agents assigned to ANY old version
                     const agentIdSet = new Set<string>();
                     const oldVersionIds: string[] = [];
                     for (const version of oldGroup.versions) {
@@ -194,11 +232,9 @@ const PromptsPage = () => {
                         ids.forEach(id => agentIdSet.add(id));
                         if (ids.length > 0) oldVersionIds.push(version.id);
                     }
-                    // Assign to new version first
                     await Promise.allSettled(
                         [...agentIdSet].map(agentId => assignPrompt(created.id, agentId))
                     );
-                    // Unassign from all old versions
                     await Promise.allSettled(
                         oldVersionIds.flatMap(versionId => {
                             const ids = agentAssignments.get(versionId) || [];
@@ -209,9 +245,19 @@ const PromptsPage = () => {
             }
         } catch (e) {
             console.error('Failed to migrate assignments to new version', e);
+            notify.warning('Prompt created but some agent assignments could not be migrated');
         } finally {
+            if (created.version === 1) {
+                notify.success(`Prompt created — use get_prompt("${created.prompt_id}") in your agent code`);
+            } else {
+                notify.success('Prompt version updated');
+            }
             loadData();
         }
+    };
+
+    const handlePickerKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') setAssigningPrompt(null);
     };
 
     return (
@@ -219,7 +265,12 @@ const PromptsPage = () => {
             <PageHeader>
                 <TitleBlock>
                     <PageTitle>Prompts</PageTitle>
-                    <PageSubtitle>Versioned prompt templates with Jinja2 variables</PageSubtitle>
+                    <PageSubtitle>
+                        Versioned prompt templates with Jinja2 variables{' · '}
+                        <DocsLink href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+                            Docs <ExternalLink size={10} style={{ verticalAlign: 'middle' }} />
+                        </DocsLink>
+                    </PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -228,9 +279,10 @@ const PromptsPage = () => {
                             placeholder="Search prompts..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
+                            aria-label="Search prompts"
                         />
                     </SearchBar>
-                    <PrimaryBtn onClick={() => setIsModalOpen(true)}>
+                    <PrimaryBtn onClick={() => setIsModalOpen(true)} aria-label="Create new prompt">
                         <Plus size={15} /> New Prompt
                     </PrimaryBtn>
                 </HeaderActions>
@@ -243,13 +295,15 @@ const PromptsPage = () => {
                 </CenterBox>
             ) : groups.length === 0 ? (
                 <EmptyState>
+                    <EmptyIconWrap><FileText size={28} strokeWidth={1.5} /></EmptyIconWrap>
                     <EmptyTextBlock>
                         <EmptyTitle>Create your first prompt</EmptyTitle>
                         <EmptyDesc>
                             Versioned templates you can assign to any agent.
+                            Use <code>get_prompt("id")</code> in your agent code to load them at runtime.
                         </EmptyDesc>
                     </EmptyTextBlock>
-                    <EmptyCTA onClick={() => setIsModalOpen(true)}>
+                    <EmptyCTA onClick={() => setIsModalOpen(true)} aria-label="Create new prompt">
                         <Plus size={15} /> New Prompt
                     </EmptyCTA>
                 </EmptyState>
@@ -262,7 +316,11 @@ const PromptsPage = () => {
 
                         return (
                             <GroupCard key={group.prompt_id} style={{ animationDelay: `${idx * 0.04}s` }}>
-                                <GroupHeader onClick={() => toggleGroup(group.prompt_id)}>
+                                <GroupHeader
+                                    onClick={() => toggleGroup(group.prompt_id)}
+                                    aria-label={`Toggle ${group.prompt_id} details`}
+                                    aria-expanded={isExpanded}
+                                >
                                     <GroupLeft>
                                         <ChevronWrap $expanded={isExpanded}>
                                             <ChevronRight size={14} />
@@ -295,13 +353,32 @@ const PromptsPage = () => {
 
                                 {isExpanded && (
                                     <ExpandedBody>
+                                        <UsageSection>
+                                            <UsageHeader>
+                                                <SectionLabel style={{ marginBottom: 0 }}>Usage</SectionLabel>
+                                                <TooltipContainer>
+                                                    <Info size={13} color="hsl(var(--muted-foreground))" />
+                                                    <TooltipContent>
+                                                        Prompts are not auto-injected. Your agent code must call get_prompt() to load the template, then .format() to render variables before passing it to the LLM.
+                                                    </TooltipContent>
+                                                </TooltipContainer>
+                                            </UsageHeader>
+                                            <CodeSnippet
+                                                code={generateUsageSnippet(group.prompt_id, variables)}
+                                                language="python"
+                                            />
+                                        </UsageSection>
+
                                         <AssignmentSection>
                                             <SectionRow>
                                                 <SectionLabel>Agents</SectionLabel>
-                                                <AssignBtn onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setAssigningPrompt(group.latest);
-                                                }}>
+                                                <AssignBtn
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setAssigningPrompt(group.latest);
+                                                    }}
+                                                    aria-label="Assign to agent"
+                                                >
                                                     <Plus size={12} /> Assign
                                                 </AssignBtn>
                                             </SectionRow>
@@ -310,7 +387,10 @@ const PromptsPage = () => {
                                                     {assigned.map(agent => (
                                                         <AgentChip key={agent.id}>
                                                             <span>{agent.name}</span>
-                                                            <ChipX onClick={() => handleUnassign(group.latest.id, agent.id)}>
+                                                            <ChipX
+                                                                onClick={() => handleUnassign(group.latest.id, agent.id)}
+                                                                aria-label={`Unassign ${agent.name}`}
+                                                            >
                                                                 <Unlink size={10} />
                                                             </ChipX>
                                                         </AgentChip>
@@ -332,11 +412,14 @@ const PromptsPage = () => {
                                                 </AssignBtn>
                                             </SectionRow>
                                             <VersionTable>
-                                                {group.versions.map(v => {
+                                                {group.versions.map((v, i) => {
                                                     const isVersionExpanded = expandedVersions.has(v.id);
                                                     return (
                                                         <div key={v.id}>
-                                                            <VersionRow onClick={() => toggleVersion(v.id)} style={{ cursor: 'pointer' }}>
+                                                            <VersionRow
+                                                                onClick={() => toggleVersion(v.id)}
+                                                                style={{ cursor: 'pointer', animationDelay: `${i * 0.03}s` }}
+                                                            >
                                                                 <VersionLeft>
                                                                     <ChevronWrap $expanded={isVersionExpanded}>
                                                                         <ChevronRight size={12} />
@@ -350,7 +433,10 @@ const PromptsPage = () => {
                                                                 </VersionLeft>
                                                                 <VersionRight>
                                                                     <VDate>{new Date(v.created_at).toLocaleDateString()}</VDate>
-                                                                    <DeleteIcon onClick={(e) => { e.stopPropagation(); setPromptToDelete(v); }}>
+                                                                    <DeleteIcon
+                                                                        onClick={(e) => { e.stopPropagation(); setPromptToDelete(v); }}
+                                                                        aria-label={`Delete version ${v.version}`}
+                                                                    >
                                                                         <Trash2 size={12} />
                                                                     </DeleteIcon>
                                                                 </VersionRight>
@@ -382,18 +468,28 @@ const PromptsPage = () => {
             )}
 
             {assigningPrompt && (
-                <ModalOverlay onClick={(e) => { if (e.target === e.currentTarget) setAssigningPrompt(null); }}>
+                <ModalOverlay
+                    onClick={(e) => { if (e.target === e.currentTarget) setAssigningPrompt(null); }}
+                    onKeyDown={handlePickerKeyDown}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Assign prompt to agent"
+                >
                     <PickerModal>
                         <PickerHeader>
                             <PickerTitle>Assign to Agent</PickerTitle>
-                            <CloseBtn onClick={() => setAssigningPrompt(null)}>×</CloseBtn>
+                            <CloseBtn onClick={() => setAssigningPrompt(null)} aria-label="Close">×</CloseBtn>
                         </PickerHeader>
                         <PickerBody>
                             {getUnassignedAgents(assigningPrompt.id).length === 0 ? (
                                 <PickerEmpty>All agents already assigned</PickerEmpty>
                             ) : (
                                 getUnassignedAgents(assigningPrompt.id).map(agent => (
-                                    <PickerItem key={agent.id} onClick={() => handleAssign(assigningPrompt, agent.id)}>
+                                    <PickerItem
+                                        key={agent.id}
+                                        onClick={() => handleAssign(assigningPrompt, agent.id)}
+                                        aria-label={`Assign to ${agent.name}`}
+                                    >
                                         <PickerName>{agent.name}</PickerName>
                                         <PickerMeta>{agent.framework}</PickerMeta>
                                     </PickerItem>
@@ -428,634 +524,3 @@ const PromptsPage = () => {
 };
 
 export default PromptsPage;
-
-/* ── Animations ─────────────────────────────────────────────────────────────── */
-
-const fadeIn = keyframes`
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-`;
-
-const spin = keyframes`
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-`;
-
-/* ── Layout ─────────────────────────────────────────────────────────────────── */
-
-const PageWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 32px;
-    gap: 24px;
-    animation: ${fadeIn} 0.3s ease;
-    overflow-y: auto;
-`;
-
-const PageHeader = styled.div`
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-`;
-
-const TitleBlock = styled.div``;
-
-const PageTitle = styled.h1`
-    font-size: 24px;
-    font-weight: 700;
-    color: white;
-    margin: 0 0 4px;
-    letter-spacing: -0.02em;
-`;
-
-const PageSubtitle = styled.p`
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.4);
-    margin: 0;
-`;
-
-const HeaderActions = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 12px;
-`;
-
-const SearchBar = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 0 14px;
-    height: 38px;
-    color: rgba(255, 255, 255, 0.35);
-    transition: border-color 0.15s;
-    &:focus-within { border-color: hsl(262 83% 58% / 0.5); }
-`;
-
-const SearchInput = styled.input`
-    background: transparent;
-    border: none;
-    outline: none;
-    color: white;
-    font-size: 14px;
-    width: 200px;
-    &::placeholder { color: rgba(255, 255, 255, 0.3); }
-`;
-
-const PrimaryBtn = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 20px;
-    height: 38px;
-    background: #8c52ff;
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.15s;
-    &:hover { background: #7a47e6; }
-`;
-
-/* ── States ──────────────────────────────────────────────────────────────────── */
-
-const CenterBox = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    padding: 80px;
-`;
-
-const Spinner = styled.div`
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(255, 255, 255, 0.08);
-    border-top-color: #8c52ff;
-    border-radius: 50%;
-    animation: ${spin} 0.8s linear infinite;
-`;
-
-const MutedText = styled.p`
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.35);
-    margin: 0;
-`;
-
-const EmptyState = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 32px;
-    padding: 100px 40px 80px;
-    text-align: center;
-    position: relative;
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 40%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 320px;
-        height: 320px;
-        background: radial-gradient(circle, rgba(140, 82, 255, 0.06) 0%, transparent 70%);
-        pointer-events: none;
-    }
-`;
-
-const EmptyTextBlock = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    position: relative;
-`;
-
-const EmptyTitle = styled.p`
-    font-size: 18px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.9);
-    margin: 0;
-    letter-spacing: -0.02em;
-`;
-
-const EmptyDesc = styled.p`
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.35);
-    margin: 0;
-    line-height: 1.5;
-`;
-
-const EmptyCTA = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 24px;
-    height: 42px;
-    background: rgba(140, 82, 255, 0.12);
-    border: 1px solid rgba(140, 82, 255, 0.25);
-    border-radius: 10px;
-    color: #a78bfa;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-        background: rgba(140, 82, 255, 0.2);
-        border-color: rgba(140, 82, 255, 0.4);
-        color: #c4b5fd;
-        box-shadow: 0 0 24px rgba(140, 82, 255, 0.12);
-    }
-`;
-
-
-/* ── Group Cards ─────────────────────────────────────────────────────────────── */
-
-const GroupList = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-`;
-
-const GroupCard = styled.div`
-    background: var(--color-surface, #1a1a2e);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-left: 3px solid rgba(140, 82, 255, 0.3);
-    border-radius: 16px;
-    overflow: hidden;
-    animation: ${fadeIn} 0.3s ease both;
-    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
-    &:hover {
-        border-color: rgba(140, 82, 255, 0.25);
-        border-left-color: #8c52ff;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-        transform: translateY(-1px);
-    }
-`;
-
-const GroupHeader = styled.button`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 16px 22px;
-    background: transparent;
-    border: none;
-    color: white;
-    cursor: pointer;
-    font-family: inherit;
-    text-align: left;
-    transition: background 0.12s;
-    &:hover { background: rgba(255, 255, 255, 0.015); }
-`;
-
-const GroupLeft = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 10px;
-`;
-
-const ChevronWrap = styled.span<{ $expanded: boolean }>`
-    color: rgba(255, 255, 255, 0.35);
-    display: flex;
-    transition: transform 0.2s ease, color 0.15s;
-    transform: rotate(${p => p.$expanded ? '90deg' : '0deg'});
-`;
-
-const GroupId = styled.span`
-    font-size: 15px;
-    font-weight: 600;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-    letter-spacing: -0.02em;
-`;
-
-const VersionBadge = styled.span`
-    font-size: 11px;
-    font-weight: 500;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    padding: 2px 8px;
-    border-radius: 6px;
-    background: rgba(140, 82, 255, 0.1);
-    color: #a78bfa;
-    border: 1px solid rgba(140, 82, 255, 0.15);
-`;
-
-const VersionCount = styled.span`
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.3);
-`;
-
-const GroupRight = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 12px;
-`;
-
-const VarGroup = styled.div`
-    display: flex;
-    gap: 4px;
-`;
-
-const VarPill = styled.span`
-    font-size: 10px;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    padding: 2px 7px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-`;
-
-const AgentIndicator = styled.span`
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    color: rgba(52, 211, 153, 0.7);
-    padding: 2px 8px;
-    border-radius: 6px;
-    background: rgba(52, 211, 153, 0.08);
-    border: 1px solid rgba(52, 211, 153, 0.12);
-`;
-
-/* ── Expanded Body ───────────────────────────────────────────────────────────── */
-
-const ExpandedBody = styled.div`
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 20px 22px 22px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-`;
-
-const SectionLabel = styled.div`
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.3);
-    margin-bottom: 10px;
-`;
-
-/* ── Assignment ──────────────────────────────────────────────────────────────── */
-
-const AssignmentSection = styled.div``;
-
-const SectionRow = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-`;
-
-const AssignBtn = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    background: rgba(140, 82, 255, 0.08);
-    border: 1px solid rgba(140, 82, 255, 0.18);
-    border-radius: 8px;
-    color: #a78bfa;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    &:hover { background: rgba(140, 82, 255, 0.16); border-color: rgba(140, 82, 255, 0.3); }
-`;
-
-const ChipRow = styled.div`
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-`;
-
-const AgentChip = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.7);
-    transition: border-color 0.15s;
-    &:hover { border-color: rgba(255, 255, 255, 0.15); }
-`;
-
-const ChipX = styled.button`
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.25);
-    cursor: pointer;
-    padding: 2px;
-    display: flex;
-    align-items: center;
-    transition: color 0.15s;
-    &:hover { color: #f87171; }
-`;
-
-const EmptyAssign = styled.span`
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.25);
-`;
-
-/* ── Version History ─────────────────────────────────────────────────────────── */
-
-const VersionSection = styled.div`
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
-    padding-top: 16px;
-`;
-
-const VersionTable = styled.div``;
-
-const VersionRow = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 0;
-    & + & { border-top: 1px solid rgba(255, 255, 255, 0.03); }
-`;
-
-const VersionLeft = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 10px;
-`;
-
-const VNum = styled.span<{ $active?: boolean }>`
-    font-size: 12px;
-    font-weight: 600;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    color: ${p => p.$active ? '#a78bfa' : 'rgba(255, 255, 255, 0.45)'};
-    min-width: 28px;
-`;
-
-const TagRow = styled.div`
-    display: flex;
-    gap: 4px;
-`;
-
-const TagPill = styled.span<{ $latest?: boolean }>`
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 4px;
-    background: ${p => p.$latest ? 'rgba(52, 211, 153, 0.1)' : 'rgba(255, 255, 255, 0.04)'};
-    color: ${p => p.$latest ? '#34d399' : 'rgba(255, 255, 255, 0.4)'};
-    border: 1px solid ${p => p.$latest ? 'rgba(52, 211, 153, 0.18)' : 'rgba(255, 255, 255, 0.06)'};
-`;
-
-const VersionRight = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 12px;
-`;
-
-const VDate = styled.span`
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.25);
-`;
-
-const DeleteIcon = styled.button`
-    display: flex;
-    align-items: center;
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.2);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.15s;
-    &:hover { color: #f87171; background: rgba(248, 113, 113, 0.08); }
-`;
-
-const VersionContent = styled.pre`
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.7);
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    white-space: pre-wrap;
-    word-break: break-word;
-    margin: 0 0 8px;
-    max-height: 180px;
-    overflow-y: auto;
-    line-height: 1.6;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 14px 16px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.04);
-`;
-
-const ViewToggle = styled.div`
-    display: flex;
-    gap: 2px;
-    margin-bottom: 6px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 6px;
-    padding: 2px;
-    width: fit-content;
-`;
-
-const ToggleBtn = styled.button<{ $active: boolean }>`
-    padding: 3px 12px;
-    font-size: 11px;
-    font-weight: 500;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.15s;
-    background: ${p => p.$active ? 'rgba(140, 82, 255, 0.15)' : 'transparent'};
-    color: ${p => p.$active ? '#a78bfa' : 'rgba(255, 255, 255, 0.35)'};
-    &:hover { color: ${p => p.$active ? '#a78bfa' : 'rgba(255, 255, 255, 0.55)'}; }
-`;
-
-const MarkdownWrap = styled.div`
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.8);
-    line-height: 1.7;
-    margin: 0 0 8px;
-    max-height: 180px;
-    overflow-y: auto;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 14px 16px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.04);
-
-    h1, h2, h3, h4 { color: white; margin: 0.5em 0 0.3em; }
-    h1 { font-size: 1.3em; }
-    h2 { font-size: 1.15em; }
-    h3 { font-size: 1.05em; }
-    p { margin: 0.4em 0; }
-    code {
-        font-family: 'SF Mono', 'Fira Code', monospace;
-        font-size: 0.9em;
-        padding: 2px 6px;
-        border-radius: 4px;
-        background: rgba(255, 255, 255, 0.06);
-    }
-    pre {
-        background: rgba(0, 0, 0, 0.3);
-        padding: 12px;
-        border-radius: 8px;
-        overflow-x: auto;
-        code { padding: 0; background: none; }
-    }
-    ul, ol { padding-left: 1.4em; margin: 0.4em 0; }
-    li { margin: 0.2em 0; }
-    blockquote {
-        border-left: 3px solid rgba(140, 82, 255, 0.3);
-        padding-left: 12px;
-        margin: 0.5em 0;
-        color: rgba(255, 255, 255, 0.6);
-    }
-    a { color: #a78bfa; }
-    hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 0.8em 0; }
-`;
-
-/* ── Picker Modal ────────────────────────────────────────────────────────────── */
-
-const ModalOverlay = styled.div`
-    position: fixed;
-    inset: 0;
-    z-index: 1001;
-    background: rgba(0, 0, 0, 0.65);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-`;
-
-const PickerModal = styled.div`
-    background: var(--color-surface, #1a1a2e);
-    border-radius: 16px;
-    width: 420px;
-    max-width: 94vw;
-    max-height: 60vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-`;
-
-const PickerHeader = styled.div`
-    padding: 22px 24px 18px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-`;
-
-const PickerTitle = styled.h3`
-    font-size: 16px;
-    font-weight: 700;
-    color: white;
-    margin: 0;
-`;
-
-const CloseBtn = styled.button`
-    background: rgba(255, 255, 255, 0.06);
-    border: none;
-    border-radius: 8px;
-    width: 30px;
-    height: 30px;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-    &:hover { background: rgba(255, 255, 255, 0.12); color: white; }
-`;
-
-const PickerBody = styled.div`
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-`;
-
-const PickerEmpty = styled.div`
-    padding: 36px;
-    text-align: center;
-    color: rgba(255, 255, 255, 0.35);
-    font-size: 13px;
-`;
-
-const PickerItem = styled.button`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 12px 16px;
-    background: transparent;
-    border: none;
-    border-radius: 10px;
-    color: white;
-    cursor: pointer;
-    font-family: inherit;
-    text-align: left;
-    transition: background 0.12s;
-    &:hover { background: rgba(255, 255, 255, 0.05); }
-`;
-
-const PickerName = styled.span`
-    font-size: 14px;
-    font-weight: 500;
-`;
-
-const PickerMeta = styled.span`
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.3);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-`;
