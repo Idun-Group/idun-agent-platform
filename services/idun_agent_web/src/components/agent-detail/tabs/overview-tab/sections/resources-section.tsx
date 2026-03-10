@@ -389,7 +389,7 @@ export default function ResourcesSection({
             case 'Guardrails': return currentSelections.selectedGuardIds;
             case 'Integrations': return currentSelections.selectedIntegrationIds;
             case 'SSO': return currentSelections.selectedSSOId ? [currentSelections.selectedSSOId] : [];
-            case 'Memory': return currentSelections.selectedMemoryAppId ? [currentSelections.selectedMemoryAppId] : [];
+            case 'Memory': return currentSelections.selectedMemoryAppId ? [currentSelections.selectedMemoryAppId] : [VIRTUAL_IN_MEMORY];
             default: return [];
         }
     };
@@ -468,10 +468,16 @@ export default function ResourcesSection({
             const currentSelections = extractSelectionsFromAgent(agent, framework, resources);
 
             if (category === 'Memory') {
-                const app = resources.memoryApps.find(a => a.id === id);
-                if (app) {
-                    currentSelections.selectedMemoryType = app.type;
-                    currentSelections.selectedMemoryAppId = id;
+                if (id === VIRTUAL_IN_MEMORY) {
+                    const inMemType = framework === 'ADK' ? 'AdkInMemory' : 'InMemoryCheckpointConfig';
+                    currentSelections.selectedMemoryType = inMemType;
+                    currentSelections.selectedMemoryAppId = '';
+                } else {
+                    const app = resources.memoryApps.find(a => a.id === id);
+                    if (app) {
+                        currentSelections.selectedMemoryType = app.type;
+                        currentSelections.selectedMemoryAppId = id;
+                    }
                 }
             } else if (category === 'SSO') {
                 currentSelections.selectedSSOId = id;
@@ -615,7 +621,9 @@ export default function ResourcesSection({
     };
 
     const quickAddExistingConfigs = quickAddCategory && quickAddCategory !== 'SSO' && quickAddCategory !== 'Integrations'
-        ? getExistingConfigsForCategory(quickAddCategory)
+        ? (quickAddCategory === 'Memory'
+            ? [...builtinMemoryItems, ...getExistingConfigsForCategory(quickAddCategory)]
+            : getExistingConfigsForCategory(quickAddCategory))
         : [];
     const quickAddSSOConfigs = quickAddCategory === 'SSO' ? resources.ssoConfigs : [];
     const quickAddIntegrationConfigs = quickAddCategory === 'Integrations' ? resources.integrationConfigs : [];
