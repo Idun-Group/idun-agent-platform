@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useMemo, useEffect } from 'react';
 import styled from 'styled-components';
 import PagedSettingsContainer, {
     type SettingsPage,
 } from '../../components/settings/paged-settings-container/component';
 import Loader from '../../components/general/loader/component';
+import { useProject } from '../../hooks/use-project';
 
 const WorkspaceGeneralTab = lazy(
     () => import('../../components/settings/workspace-general/component'),
@@ -13,46 +14,87 @@ const WorkspaceGeneralTab = lazy(
 const WorkspaceUsersTab = lazy(
     () => import('../../components/settings/workspace-users/component'),
 );
-
-const DEFAULT_PAGE = 'workspace-general';
+const WorkspaceProjectsTab = lazy(
+    () => import('../../components/settings/workspace-projects/component'),
+);
 
 const SettingsPage = () => {
     const { page } = useParams<{ page?: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { canAccessSettings, isWorkspaceOwner } = useProject();
 
-    const activeSlug = page || DEFAULT_PAGE;
+    // Route guard: redirect users without settings access
+    useEffect(() => {
+        if (!canAccessSettings) {
+            navigate('/agents', { replace: true });
+        }
+    }, [canAccessSettings, navigate]);
 
-    const pages: SettingsPage[] = [
-        {
-            title: t('settings.workspaces.general', 'General'),
-            slug: 'workspace-general',
-            group: t('settings.group.workspaces', 'Workspaces'),
-            content: (
-                <Suspense fallback={<Loader />}>
-                    <WorkspaceGeneralTab />
-                </Suspense>
-            ),
-        },
-        {
-            title: t('settings.workspaces.users', 'Users'),
-            slug: 'workspace-users',
-            group: t('settings.group.workspaces', 'Workspaces'),
-            content: (
-                <Suspense fallback={<Loader />}>
-                    <WorkspaceUsersTab />
-                </Suspense>
-            ),
-        },
-    ];
+    const defaultPage = isWorkspaceOwner ? 'workspace-general' : 'workspace-projects';
+    const activeSlug = page || defaultPage;
+
+    const pages = useMemo((): SettingsPage[] => {
+        if (isWorkspaceOwner) {
+            return [
+                {
+                    title: t('settings.workspaces.general', 'General'),
+                    slug: 'workspace-general',
+                    group: t('settings.group.workspaces', 'Workspace'),
+                    content: (
+                        <Suspense fallback={<Loader />}>
+                            <WorkspaceGeneralTab />
+                        </Suspense>
+                    ),
+                },
+                {
+                    title: t('settings.workspaces.users', 'Members'),
+                    slug: 'workspace-users',
+                    group: t('settings.group.workspaces', 'Workspace'),
+                    content: (
+                        <Suspense fallback={<Loader />}>
+                            <WorkspaceUsersTab />
+                        </Suspense>
+                    ),
+                },
+                {
+                    title: t('settings.workspaces.projects', 'Projects'),
+                    slug: 'workspace-projects',
+                    group: t('settings.group.workspaces', 'Workspace'),
+                    content: (
+                        <Suspense fallback={<Loader />}>
+                            <WorkspaceProjectsTab />
+                        </Suspense>
+                    ),
+                },
+            ];
+        }
+
+        // Non-owner project admins: only show projects tab
+        return [
+            {
+                title: t('settings.workspaces.projects', 'Projects'),
+                slug: 'workspace-projects',
+                group: t('settings.group.projectSettings', 'Project Settings'),
+                content: (
+                    <Suspense fallback={<Loader />}>
+                        <WorkspaceProjectsTab />
+                    </Suspense>
+                ),
+            },
+        ];
+    }, [isWorkspaceOwner, t]);
 
     const handlePageChange = (slug: string) => {
-        if (slug === DEFAULT_PAGE) {
+        if (slug === defaultPage) {
             navigate('/settings');
         } else {
             navigate(`/settings/${slug}`);
         }
     };
+
+    // Don't render if user shouldn't be here
+    if (!canAccessSettings) return null;
 
     return (
         <PageContainer>
