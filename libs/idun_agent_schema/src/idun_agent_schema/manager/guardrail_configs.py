@@ -1,3 +1,4 @@
+import os
 from typing import Literal, Union
 
 from pydantic import BaseModel, Field
@@ -93,3 +94,137 @@ ManagerGuardrailConfig = Union[
     SimpleCorrectLanguageConfig,
     SimpleRestrictToTopicConfig,
 ]
+
+def convert_guardrail(guardrails_data: dict) -> dict:
+    if not guardrails_data:
+        return guardrails_data
+
+    api_key = os.getenv("GUARDRAILS_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "GUARDRAILS_API_KEY environment variable must be set to use guardrails"
+        )
+
+    converted = {"input": [], "output": []}
+
+    for position in ["input", "output"]:
+        if position not in guardrails_data:
+            continue
+
+        for guardrail in guardrails_data[position]:
+            config_id = guardrail.get("config_id")
+
+            if (
+                config_id == "ban_list"
+                and "banned_words" in guardrail
+                and "api_key" not in guardrail
+            ):
+                banned_words = []
+                for word in guardrail["banned_words"]:
+                    if "," in word:
+                        banned_words.extend([w.strip() for w in word.split(",")])
+                    else:
+                        banned_words.append(word.strip())
+
+                converted[position].append({
+                    "config_id": "ban_list",
+                    "api_key": api_key,
+                    "reject_message": "ban!!",
+                    "guard_url": "hub://guardrails/ban_list",
+                    "guard_params": {"banned_words": banned_words},
+                })
+
+            elif (
+                config_id == "detect_pii"
+                and "pii_entities" in guardrail
+                and "api_key" not in guardrail
+            ):
+                pii_entity_map = {
+                    "Email": "EMAIL_ADDRESS",
+                    "Phone Number": "PHONE_NUMBER",
+                    "Credit Card": "CREDIT_CARD",
+                    "SSN": "SSN",
+                    "Location": "LOCATION",
+                }
+                mapped_entities = [
+                    pii_entity_map.get(entity, entity)
+                    for entity in guardrail["pii_entities"]
+                ]
+                converted[position].append({
+                    "config_id": "detect_pii",
+                    "api_key": api_key,
+                    "reject_message": "PII detected",
+                    "guard_url": "hub://guardrails/detect_pii",
+                    "guard_params": {
+                        "pii_entities": mapped_entities,
+                        "on_fail": "exception",
+                    },
+                })
+
+            elif config_id == "nsfw_text" and "api_key" not in guardrail:
+                converted[position].append({
+                    "config_id": "nsfw_text",
+                    "api_key": api_key,
+                    "reject_message": "NSFW content detected",
+                    "guard_url": "hub://guardrails/nsfw_text",
+                    "threshold": guardrail["threshold"],
+                })
+
+            elif config_id == "toxic_language" and "api_key" not in guardrail:
+                converted[position].append({
+                    "config_id": "toxic_language",
+                    "api_key": api_key,
+                    "reject_message": "Toxic language detected",
+                    "guard_url": "hub://guardrails/toxic_language",
+                    "threshold": guardrail["threshold"],
+                })
+
+            elif config_id == "gibberish_text" and "api_key" not in guardrail:
+                converted[position].append({
+                    "config_id": "gibberish_text",
+                    "api_key": api_key,
+                    "reject_message": "Gibberish text detected",
+                    "guard_url": "hub://guardrails/gibberish_text",
+                    "threshold": guardrail["threshold"],
+                })
+
+            elif config_id == "bias_check" and "api_key" not in guardrail:
+                converted[position].append({
+                    "config_id": "bias_check",
+                    "api_key": api_key,
+                    "reject_message": "Bias detected",
+                    "guard_url": "hub://guardrails/bias_check",
+                    "threshold": guardrail["threshold"],
+                })
+
+            elif config_id == "competition_check" and "api_key" not in guardrail:
+                converted[position].append({
+                    "config_id": "competition_check",
+                    "api_key": api_key,
+                    "reject_message": "Competitor mentioned",
+                    "guard_url": "hub://guardrails/competitor_check",
+                    "competitors": guardrail["competitors"],
+                })
+
+            elif config_id == "correct_language" and "api_key" not in guardrail:
+                converted[position].append({
+                    "config_id": "correct_language",
+                    "api_key": api_key,
+                    "reject_message": "Incorrect language detected",
+                    "guard_url": "hub://scb-10x/correct_language",
+                    "expected_languages": guardrail["expected_languages"],
+                })
+
+            elif config_id == "restrict_to_topic" and "api_key" not in guardrail:
+                converted[position].append({
+                    "config_id": "restrict_to_topic",
+                    "api_key": api_key,
+                    "reject_message": "Off-topic content detected",
+                    "guard_url": "hub://guardrails/restrict_to_topic",
+                    "topics": guardrail["topics"],
+                })
+
+            else:
+                converted[position].append(guardrail)
+
+    return converted
