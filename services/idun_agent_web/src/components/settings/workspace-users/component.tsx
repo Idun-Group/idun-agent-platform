@@ -1,23 +1,20 @@
-import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { notify } from '../../toast/notify';
 import styled, { keyframes } from 'styled-components';
-import { Trash2, UserPlus, Check, X, ChevronDown } from 'lucide-react';
+import { Trash2, UserPlus, Check, X } from 'lucide-react';
 import useWorkspace from '../../../hooks/use-workspace';
 import { useAuth } from '../../../hooks/use-auth';
 import { getJson } from '../../../utils/api';
 import {
     listMembers,
     addMember,
-    updateMemberRole,
     removeMember,
     cancelInvitation,
-    ROLE_LABELS,
-    ROLE_HIERARCHY,
-    ROLE_PERMISSIONS,
+    WORKSPACE_ROLE_LABELS,
+    WORKSPACE_ROLE_PERMISSIONS,
     type WorkspaceMember,
     type WorkspaceInvitation,
-    type WorkspaceRole,
 } from '../../../services/members';
 
 // ===========================================================================
@@ -35,8 +32,7 @@ const WorkspaceUsersTab = () => {
 
     const currentUserId = (session as any)?.principal?.user_id ?? '';
     const currentMember = members.find((m) => m.user_id === currentUserId);
-    const canManage =
-        currentMember?.role === 'owner' || currentMember?.role === 'admin';
+    const canManage = currentMember?.is_owner === true;
 
     const resolveWorkspaceId = useCallback(async (): Promise<string | null> => {
         if (selectedWorkspaceId) return selectedWorkspaceId;
@@ -67,19 +63,6 @@ const WorkspaceUsersTab = () => {
         fetchMembers();
     }, [fetchMembers]);
 
-    const handleRoleChange = async (member: WorkspaceMember, newRole: WorkspaceRole) => {
-        const wsId = await resolveWorkspaceId();
-        if (!wsId) return;
-        try {
-            await updateMemberRole(wsId, member.id, { role: newRole });
-            notify.success(t('settings.workspaces.users.roleUpdated', 'Role updated'));
-            fetchMembers();
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to update role';
-            notify.error(msg);
-        }
-    };
-
     const handleRemove = async (member: WorkspaceMember) => {
         const wsId = await resolveWorkspaceId();
         if (!wsId) return;
@@ -93,10 +76,10 @@ const WorkspaceUsersTab = () => {
         }
     };
 
-    const handleInvite = async (email: string, role: WorkspaceRole) => {
+    const handleInvite = async (email: string, isOwner: boolean) => {
         const wsId = await resolveWorkspaceId();
         if (!wsId) return;
-        await addMember(wsId, { email, role });
+        await addMember(wsId, { email, is_owner: isOwner });
         notify.success(t('settings.workspaces.users.memberAdded', 'Member added'));
         fetchMembers();
     };
@@ -163,7 +146,6 @@ const WorkspaceUsersTab = () => {
                                 member={member}
                                 currentMember={currentMember}
                                 canManage={canManage}
-                                onRoleChange={handleRoleChange}
                                 onRemove={handleRemove}
                             />
                         ))}
@@ -194,7 +176,6 @@ const WorkspaceUsersTab = () => {
             {/* Invite dialog */}
             {showInvite && (
                 <InviteMemberDialog
-                    currentRole={currentMember?.role ?? 'member'}
                     onInvite={handleInvite}
                     onClose={() => setShowInvite(false)}
                 />
@@ -213,7 +194,6 @@ type MemberRowProps = {
     member: WorkspaceMember;
     currentMember?: WorkspaceMember;
     canManage: boolean;
-    onRoleChange: (member: WorkspaceMember, role: WorkspaceRole) => void;
     onRemove: (member: WorkspaceMember) => void;
 };
 
@@ -221,19 +201,15 @@ const MemberRow = ({
     member,
     currentMember,
     canManage,
-    onRoleChange,
     onRemove,
 }: MemberRowProps) => {
     const { t } = useTranslation();
     const [showConfirm, setShowConfirm] = useState(false);
 
-    const callerLevel = ROLE_HIERARCHY[currentMember?.role ?? 'viewer'];
-    const targetLevel = ROLE_HIERARCHY[member.role];
-    const canChangeRole = canManage && callerLevel > targetLevel;
     const canRemove =
         canManage &&
-        (callerLevel > targetLevel || member.user_id === currentMember?.user_id) &&
-        member.role !== 'owner';
+        !member.is_owner &&
+        member.user_id !== currentMember?.user_id;
 
     const initials = (member.name ?? member.email ?? '?')
         .charAt(0)
@@ -256,17 +232,11 @@ const MemberRow = ({
                     <EmailText>{member.email}</EmailText>
                 </Td>
                 <Td>
-                    {canChangeRole ? (
-                        <RoleSelect
-                            value={member.role}
-                            callerRole={currentMember?.role ?? 'viewer'}
-                            onChange={(role) => onRoleChange(member, role)}
-                        />
-                    ) : (
-                        <RoleBadge $role={member.role}>
-                            {ROLE_LABELS[member.role]}
-                        </RoleBadge>
-                    )}
+                    <RoleBadge $isOwner={member.is_owner}>
+                        {member.is_owner
+                            ? WORKSPACE_ROLE_LABELS.owner
+                            : WORKSPACE_ROLE_LABELS.member}
+                    </RoleBadge>
                 </Td>
                 {canManage && (
                     <Td style={{ textAlign: 'right' }}>
@@ -345,112 +315,25 @@ const InvitationRow = ({ invitation, canManage, onCancel }: InvitationRowProps) 
 };
 
 // ===========================================================================
-// RoleSelect with hover tooltip
-// ===========================================================================
-
-type RoleSelectProps = {
-    value: WorkspaceRole;
-    callerRole: WorkspaceRole;
-    onChange: (role: WorkspaceRole) => void;
-};
-
-const ALL_ROLES: WorkspaceRole[] = ['owner', 'admin', 'member', 'viewer'];
-
-const RoleSelect = ({ value, callerRole, onChange }: RoleSelectProps) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [hoveredRole, setHoveredRole] = useState<WorkspaceRole | null>(null);
-    const ref = useRef<HTMLDivElement>(null);
-
-    const callerLevel = ROLE_HIERARCHY[callerRole];
-    const assignableRoles = ALL_ROLES.filter(
-        (r) => callerRole === 'owner' || ROLE_HIERARCHY[r] < callerLevel,
-    );
-
-    // Close on outside click
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) {
-                setIsOpen(false);
-                setHoveredRole(null);
-            }
-        };
-        if (isOpen) document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [isOpen]);
-
-    return (
-        <RoleSelectContainer ref={ref}>
-            <RoleSelectTrigger onClick={() => setIsOpen(!isOpen)}>
-                <RoleBadge $role={value}>{ROLE_LABELS[value]}</RoleBadge>
-                <ChevronDown size={14} color="hsl(var(--muted-foreground))" />
-            </RoleSelectTrigger>
-
-            {isOpen && (
-                <RoleDropdown>
-                    {assignableRoles.map((role) => (
-                        <RoleOption
-                            key={role}
-                            $isActive={role === value}
-                            onClick={() => {
-                                onChange(role);
-                                setIsOpen(false);
-                                setHoveredRole(null);
-                            }}
-                            onMouseEnter={() => setHoveredRole(role)}
-                            onMouseLeave={() => setHoveredRole(null)}
-                        >
-                            <span>{ROLE_LABELS[role]}</span>
-                            {role === value && <Check size={14} color="hsl(var(--primary))" />}
-                        </RoleOption>
-                    ))}
-
-                    {/* Tooltip card on hover */}
-                    {hoveredRole && (
-                        <RoleTooltip>
-                            <TooltipTitle>{ROLE_LABELS[hoveredRole]}</TooltipTitle>
-                            <TooltipPermissions>
-                                {ROLE_PERMISSIONS[hoveredRole].map((perm) => (
-                                    <PermissionItem key={perm}>
-                                        <Check size={12} color="hsl(var(--primary))" />
-                                        {perm}
-                                    </PermissionItem>
-                                ))}
-                            </TooltipPermissions>
-                        </RoleTooltip>
-                    )}
-                </RoleDropdown>
-            )}
-        </RoleSelectContainer>
-    );
-};
-
-// ===========================================================================
 // InviteMemberDialog
 // ===========================================================================
 
 type InviteMemberDialogProps = {
-    currentRole: WorkspaceRole;
-    onInvite: (email: string, role: WorkspaceRole) => Promise<void>;
+    onInvite: (email: string, isOwner: boolean) => Promise<void>;
     onClose: () => void;
 };
 
 const InviteMemberDialog = ({
-    currentRole,
     onInvite,
     onClose,
 }: InviteMemberDialogProps) => {
     const { t } = useTranslation();
     const [email, setEmail] = useState('');
-    const [role, setRole] = useState<WorkspaceRole>('member');
+    const [isOwner, setIsOwner] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    const callerLevel = ROLE_HIERARCHY[currentRole];
-    const assignableRoles = ALL_ROLES.filter(
-        (r) => currentRole === 'owner' || ROLE_HIERARCHY[r] < callerLevel,
-    );
-
-    const [hoveredRole, setHoveredRole] = useState<WorkspaceRole | null>(null);
+    const [hoveredRole, setHoveredRole] = useState<'owner' | 'member' | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -463,7 +346,7 @@ const InviteMemberDialog = ({
 
         setSubmitting(true);
         try {
-            await onInvite(email.trim(), role);
+            await onInvite(email.trim(), isOwner);
             onClose();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to add member';
@@ -511,36 +394,59 @@ const InviteMemberDialog = ({
                             {t('settings.workspaces.users.roleLabel', 'Role')}
                         </FieldLabel>
                         <InviteRoleGrid>
-                            {assignableRoles.map((r) => (
-                                <InviteRoleOption
-                                    key={r}
-                                    $isSelected={r === role}
-                                    type="button"
-                                    onClick={() => setRole(r)}
-                                    onMouseEnter={() => setHoveredRole(r)}
-                                    onMouseLeave={() => setHoveredRole(null)}
-                                >
-                                    <InviteRoleName>{ROLE_LABELS[r]}</InviteRoleName>
-                                    <InviteRoleDesc>
-                                        {ROLE_PERMISSIONS[r][0]}
-                                    </InviteRoleDesc>
+                            <InviteRoleOption
+                                $isSelected={isOwner}
+                                type="button"
+                                onClick={() => setIsOwner(true)}
+                                onMouseEnter={() => setHoveredRole('owner')}
+                                onMouseLeave={() => setHoveredRole(null)}
+                            >
+                                <InviteRoleName>{WORKSPACE_ROLE_LABELS.owner}</InviteRoleName>
+                                <InviteRoleDesc>
+                                    {WORKSPACE_ROLE_PERMISSIONS.owner[0]}
+                                </InviteRoleDesc>
 
-                                    {/* Hover tooltip */}
-                                    {hoveredRole === r && (
-                                        <InviteRoleTooltip>
-                                            <TooltipTitle>{ROLE_LABELS[r]}</TooltipTitle>
-                                            <TooltipPermissions>
-                                                {ROLE_PERMISSIONS[r].map((perm) => (
-                                                    <PermissionItem key={perm}>
-                                                        <Check size={12} color="hsl(var(--primary))" />
-                                                        {perm}
-                                                    </PermissionItem>
-                                                ))}
-                                            </TooltipPermissions>
-                                        </InviteRoleTooltip>
-                                    )}
-                                </InviteRoleOption>
-                            ))}
+                                {hoveredRole === 'owner' && (
+                                    <InviteRoleTooltip>
+                                        <TooltipTitle>{WORKSPACE_ROLE_LABELS.owner}</TooltipTitle>
+                                        <TooltipPermissions>
+                                            {WORKSPACE_ROLE_PERMISSIONS.owner.map((perm) => (
+                                                <PermissionItem key={perm}>
+                                                    <Check size={12} color="hsl(var(--primary))" />
+                                                    {perm}
+                                                </PermissionItem>
+                                            ))}
+                                        </TooltipPermissions>
+                                    </InviteRoleTooltip>
+                                )}
+                            </InviteRoleOption>
+
+                            <InviteRoleOption
+                                $isSelected={!isOwner}
+                                type="button"
+                                onClick={() => setIsOwner(false)}
+                                onMouseEnter={() => setHoveredRole('member')}
+                                onMouseLeave={() => setHoveredRole(null)}
+                            >
+                                <InviteRoleName>{WORKSPACE_ROLE_LABELS.member}</InviteRoleName>
+                                <InviteRoleDesc>
+                                    {WORKSPACE_ROLE_PERMISSIONS.member[0]}
+                                </InviteRoleDesc>
+
+                                {hoveredRole === 'member' && (
+                                    <InviteRoleTooltip>
+                                        <TooltipTitle>{WORKSPACE_ROLE_LABELS.member}</TooltipTitle>
+                                        <TooltipPermissions>
+                                            {WORKSPACE_ROLE_PERMISSIONS.member.map((perm) => (
+                                                <PermissionItem key={perm}>
+                                                    <Check size={12} color="hsl(var(--primary))" />
+                                                    {perm}
+                                                </PermissionItem>
+                                            ))}
+                                        </TooltipPermissions>
+                                    </InviteRoleTooltip>
+                                )}
+                            </InviteRoleOption>
                         </InviteRoleGrid>
                     </FieldGroup>
 
@@ -738,37 +644,21 @@ const EmailText = styled.span`
     color: hsl(var(--muted-foreground));
 `;
 
-const RoleBadge = styled.span<{ $role: WorkspaceRole }>`
+const RoleBadge = styled.span<{ $isOwner: boolean }>`
     display: inline-flex;
     align-items: center;
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 13px;
     font-weight: 500;
-    background: ${({ $role }) => {
-        switch ($role) {
-            case 'owner':
-                return 'hsla(var(--warning) / 0.12)';
-            case 'admin':
-                return 'hsla(var(--primary) / 0.12)';
-            case 'member':
-                return 'rgba(59, 130, 246, 0.12)';
-            case 'viewer':
-                return 'hsla(var(--muted-foreground) / 0.12)';
-        }
-    }};
-    color: ${({ $role }) => {
-        switch ($role) {
-            case 'owner':
-                return 'hsl(var(--warning))';
-            case 'admin':
-                return '#a78bfa';
-            case 'member':
-                return '#60a5fa';
-            case 'viewer':
-                return 'hsl(var(--muted-foreground))';
-        }
-    }};
+    background: ${({ $isOwner }) =>
+        $isOwner
+            ? 'hsla(var(--warning) / 0.12)'
+            : 'rgba(59, 130, 246, 0.12)'};
+    color: ${({ $isOwner }) =>
+        $isOwner
+            ? 'hsl(var(--warning))'
+            : '#60a5fa'};
 `;
 
 const PendingBadge = styled.span`
@@ -800,78 +690,6 @@ const RemoveButton = styled.button`
         background: hsla(var(--destructive) / 0.1);
         color: hsl(var(--destructive));
     }
-`;
-
-// Role select dropdown
-const RoleSelectContainer = styled.div`
-    position: relative;
-    display: inline-flex;
-`;
-
-const RoleSelectTrigger = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 4px;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 150ms ease;
-
-    &:hover {
-        border-color: var(--border-light);
-        background: var(--overlay-subtle);
-    }
-`;
-
-const RoleDropdown = styled.div`
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 50;
-    margin-top: 4px;
-    min-width: 180px;
-    background: hsl(var(--popover));
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    padding: 4px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-`;
-
-const RoleOption = styled.button<{ $isActive?: boolean }>`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    background: ${({ $isActive }) =>
-        $isActive ? 'hsla(var(--primary) / 0.08)' : 'transparent'};
-    color: hsl(var(--foreground));
-    font-size: 14px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: background 150ms ease;
-
-    &:hover {
-        background: hsla(var(--primary) / 0.12);
-    }
-`;
-
-const RoleTooltip = styled.div`
-    position: absolute;
-    left: calc(100% + 8px);
-    top: 0;
-    width: 240px;
-    background: hsl(var(--popover));
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    padding: 14px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    z-index: 51;
 `;
 
 const TooltipTitle = styled.div`
