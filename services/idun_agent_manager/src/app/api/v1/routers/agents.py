@@ -34,7 +34,6 @@ from idun_agent_schema.manager import (
     ManagedAgentRead,
     ManagedAgentStatusUpdate,
 )
-from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,12 +45,16 @@ from app.api.v1.deps import (
     require_workspace,
 )
 from app.api.v1.routers.auth import encrypt_payload
+from app.infrastructure.db.models.agent_prompt_assignment import (
+    AgentPromptAssignmentModel,
+)
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.services.engine_config import (
     extract_resource_ids,
     recompute_engine_config,
     sync_resources,
 )
+from app.infrastructure.db.models.managed_prompt import ManagedPromptModel
 
 router = APIRouter()
 
@@ -252,7 +255,42 @@ async def config(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invalid API Key"
         )
 
-    return _model_to_schema(agent_model)
+    # Assemble prompts from assignments into the engine config
+    prompt_stmt = (
+        select(ManagedPromptModel)
+        .join(
+            AgentPromptAssignmentModel,
+            AgentPromptAssignmentModel.prompt_id == ManagedPromptModel.id,
+        )
+        .where(AgentPromptAssignmentModel.agent_id == agent_model.id)
+    )
+    prompt_result = await session.execute(prompt_stmt)
+    prompt_models = prompt_result.scalars().all()
+
+    engine_config = EngineConfig(**agent_model.engine_config)
+    engine_config_dict = engine_config.model_dump()
+
+    if prompt_models:
+        engine_config_dict["prompts"] = [
+            {
+                "prompt_id": p.prompt_id,
+                "version": p.version,
+                "content": p.content,
+                "tags": p.tags or [],
+            }
+            for p in prompt_models
+        ]
+
+    return ManagedAgentRead(
+        id=agent_model.id,  # type: ignore
+        base_url=agent_model.base_url,
+        name=agent_model.name,
+        status=AgentStatus(agent_model.status),
+        version=agent_model.version,
+        engine_config=engine_config_dict,  # type: ignore
+        created_at=agent_model.created_at,
+        updated_at=agent_model.updated_at,
+    )
 
 
 @router.get(

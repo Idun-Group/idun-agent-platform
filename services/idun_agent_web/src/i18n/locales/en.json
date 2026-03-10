@@ -1046,6 +1046,18 @@
         "whatsapp": "WhatsApp",
         "discord": "Discord"
     },
+    "integrations": {
+        "title": "Integrations",
+        "subtitle": "Connect external messaging platforms to your agents",
+        "search": "Search integrations...",
+        "add": "Add integration",
+        "addCard": "Add integration",
+        "loading": "Loading integrations…",
+        "active": "Active Integrations",
+        "comingSoon": "Coming Soon",
+        "whatsapp": "WhatsApp",
+        "discord": "Discord"
+    },
     "theme": {
         "toggleToLight": "Switch to light mode",
         "toggleToDark": "Switch to dark mode",

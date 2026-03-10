@@ -33,16 +33,19 @@ services/idun_agent_web/
 │   │   ├── signin/              # User registration
 │   │   ├── home/                # Landing page
 │   │   ├── agent-dashboard/     # Agent list with search/pagination
-│   │   ├── agent-detail/        # Agent view/edit (tabbed: Overview, Gateway, Config, Logs)
+│   │   ├── agent-detail/        # Agent view/edit (tabbed: Overview, Gateway, Config, Prompts, Logs)
 │   │   ├── agent-form/          # Agent creation wizard
 │   │   ├── user-dashboard/      # User management
 │   │   ├── user-form/           # User creation
 │   │   ├── settings/            # Settings (Profile, Security, Appearance, Language, Notifications)
+│   │   ├── prompts-page/        # Prompt management (versioned, grouped by prompt_id)
 │   │   ├── application-page/    # Shared page for Observability, Memory, MCP, Guardrails config
 │   │   └── observation/         # Observation/metrics page
 │   ├── components/
 │   │   ├── general/             # Reusable: Button, Form (TextInput, TextArea, Select, TagInput), Modal, Loader, ToggleButton, DynamicForm
 │   │   ├── auth/                # RequireAuth guard component
+│   │   ├── prompts/             # CreatePromptModal (Monaco editor, markdown preview, tags, Jinja2 variable detection)
+│   │   ├── agent-detail/tabs/prompts-tab/  # Read-only tab showing prompts assigned to an agent
 │   │   └── ...                  # Feature-specific components (agent detail tabs, settings sections, etc.)
 │   ├── layouts/
 │   │   ├── header/              # Top navigation bar
@@ -60,6 +63,7 @@ services/idun_agent_web/
 │   │   └── use-toggle-theme.tsx # ToggleThemeModeProvider — dark/light/system theme
 │   ├── services/                # API service layer
 │   │   ├── agents.ts            # Agent CRUD (list, get, patch, delete)
+│   │   ├── prompts.ts           # Prompt CRUD, agent assignment/unassignment
 │   │   ├── applications.ts     # Integration config CRUD (observability, memory, MCP, guardrails)
 │   │   ├── integrations.ts     # Messaging integrations CRUD (WhatsApp, Discord)
 │   │   └── sso.ts              # SSO/OIDC config CRUD
@@ -67,6 +71,7 @@ services/idun_agent_web/
 │   │   ├── api.ts               # HTTP client (apiFetch, getJson, postJson, patchJson, deleteRequest)
 │   │   ├── agent-config-utils.ts # Agent form state, resource selections, payload building
 │   │   ├── auth.ts              # Auth API calls (getSession, loginBasic, logoutBasic, signupBasic)
+│   │   ├── jinja.ts             # extractVariables() — parses {{ variable }} from prompt content
 │   │   ├── runtime-config.ts    # Runtime config resolution (window.__RUNTIME_CONFIG__ → Vite env → defaults)
 │   │   └── style-variables.ts   # Design tokens (color HSL values for light/dark themes)
 │   ├── generated/

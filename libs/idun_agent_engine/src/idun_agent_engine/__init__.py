@@ -12,6 +12,7 @@ from .core.server_runner import (
     run_server_from_builder,
     run_server_from_config,
 )
+from .prompts import get_prompt
 
 __all__ = [
     "create_app",
@@ -20,5 +21,6 @@ __all__ = [
     "run_server_from_builder",
     "ConfigBuilder",
     "BaseAgent",
+    "get_prompt",
     "__version__",
 ]

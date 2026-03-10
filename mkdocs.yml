@@ -127,6 +127,8 @@ nav:
       - MCP server: mcp/mcp-server.md
   - A2A:
       - Overview: a2a/overview.md
+  - Prompts:
+      - Overview: prompts/overview.md
   - Guardrails:
       - Overview: guardrails/overview.md
   - Integrations:
