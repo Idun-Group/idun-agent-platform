@@ -215,15 +215,15 @@ export default function AgentDetailPage() {
                 })}
             </TabsNav>
 
-            {agent && (
-                <div style={{ marginBottom: '24px' }}>
-                    <EnrollmentSection agent={agent} />
-                </div>
-            )}
-
             <ContentArea>
                 <Suspense fallback={<Loader />}>
                     {activeTab === 'overview' && (
+                        <>
+                        {agent && (
+                            <div style={{ marginBottom: '24px' }}>
+                                <EnrollmentSection agent={agent} />
+                            </div>
+                        )}
                         <OverviewTab
                             agent={agent}
                             isEditing={isEditing}
@@ -232,6 +232,7 @@ export default function AgentDetailPage() {
                             saveTrigger={saveTrigger}
                             onAgentRefresh={loadAgent}
                         />
+                        </>
                     )}
                     {activeTab === 'chat' && <ChatTab agent={agent} />}
                     {activeTab === 'gateway' && <GatewayTab agent={agent} />}

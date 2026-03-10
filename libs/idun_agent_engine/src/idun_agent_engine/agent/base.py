@@ -7,7 +7,10 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from typing import Any
 
+from ag_ui.core import BaseEvent
+from ag_ui.core.types import RunAgentInput
 from idun_agent_schema.engine.agent import BaseAgentConfig
+from idun_agent_schema.engine.capabilities import AgentCapabilities
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 
 
@@ -110,3 +113,24 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
         # Example: async for chunk in agent.stream(message): ...
         if False:  # pragma: no cover (This is just to make it a generator type for static analysis)
             yield
+
+    @abstractmethod
+    def discover_capabilities(self) -> AgentCapabilities:
+        """Return the agent's capability descriptor.
+
+        Called once at startup, result is cached. Adapters introspect
+        the underlying framework agent to determine input/output schemas
+        and supported capabilities.
+        """
+        pass
+
+    @abstractmethod
+    async def run(self, input_data: RunAgentInput) -> AsyncGenerator[BaseEvent]:
+        """Canonical AG-UI interaction entry point.
+
+        Accepts RunAgentInput, yields AG-UI events. Each adapter
+        delegates to its framework's AG-UI wrapper and adds structured
+        input validation and output extraction on top.
+        """
+        if False:  # pragma: no cover
+            yield  # type: ignore[misc]

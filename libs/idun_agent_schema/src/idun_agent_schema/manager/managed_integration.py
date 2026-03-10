@@ -12,9 +12,7 @@ class ManagedIntegrationCreate(BaseModel):
     """Create managed integration configuration request."""
 
     name: str
-    integration: IntegrationConfig = Field(
-        ..., description="Integration configuration"
-    )
+    integration: IntegrationConfig = Field(..., description="Integration configuration")
 
 
 class ManagedIntegrationRead(BaseModel):
@@ -24,9 +22,7 @@ class ManagedIntegrationRead(BaseModel):
 
     id: UUID
     name: str
-    integration: IntegrationConfig = Field(
-        ..., description="Integration configuration"
-    )
+    integration: IntegrationConfig = Field(..., description="Integration configuration")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -35,6 +31,4 @@ class ManagedIntegrationPatch(BaseModel):
     """Update managed integration configuration request."""
 
     name: str
-    integration: IntegrationConfig = Field(
-        ..., description="Integration configuration"
-    )
+    integration: IntegrationConfig = Field(..., description="Integration configuration")
