@@ -49,14 +49,14 @@ fastapi = [
 
 [[package]]
 name = "ag-ui-protocol"
-version = "0.1.13"
+version = "0.1.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/04/b5/fc0b65b561d00d88811c8a7d98ee735833f81554be244340950e7b65820c/ag_ui_protocol-0.1.13.tar.gz", hash = "sha256:811d7d7dcce4783dec252918f40b717ebfa559399bf6b071c4ba47c0c1e21bcb", size = 5671, upload-time = "2026-02-19T18:40:38.602Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/67/bb/5a5ec893eea5805fb9a3db76a9888c3429710dfb6f24bbb37568f2cf7320/ag_ui_protocol-0.1.10.tar.gz", hash = "sha256:3213991c6b2eb24bb1a8c362ee270c16705a07a4c5962267a083d0959ed894f4", size = 6945, upload-time = "2025-11-06T15:17:17.068Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/9f/b833c1ab1999da35ebad54841ae85d2c2764c931da9a6f52d8541b6901b2/ag_ui_protocol-0.1.13-py3-none-any.whl", hash = "sha256:1393fa894c1e8416efe184168a50689e760d05b32f4646eebb8ff423dddf8e8f", size = 8053, upload-time = "2026-02-19T18:40:37.27Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/78/eb55fabaab41abc53f52c0918a9a8c0f747807e5306273f51120fd695957/ag_ui_protocol-0.1.10-py3-none-any.whl", hash = "sha256:c81e6981f30aabdf97a7ee312bfd4df0cd38e718d9fc10019c7d438128b93ab5", size = 7889, upload-time = "2025-11-06T15:17:15.325Z" },
 ]
 
 [[package]]
@@ -1813,7 +1813,7 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
-version = "0.4.8"
+version = "0.4.7"
 source = { editable = "." }
 dependencies = [
     { name = "ag-ui-adk" },
@@ -1840,7 +1840,6 @@ dependencies = [
     { name = "langgraph" },
     { name = "langgraph-checkpoint-postgres" },
     { name = "langgraph-checkpoint-sqlite" },
-    { name = "langsmith" },
     { name = "mcp" },
     { name = "openinference-instrumentation-google-adk" },
     { name = "openinference-instrumentation-guardrails" },
@@ -1882,12 +1881,12 @@ dev = [
 requires-dist = [
     { name = "ag-ui-adk", specifier = ">=0.3.4,<0.6.0" },
     { name = "ag-ui-langgraph", specifier = "==0.0.25" },
-    { name = "ag-ui-protocol", specifier = "==0.1.13" },
+    { name = "ag-ui-protocol", specifier = ">=0.1.8,<0.2.0" },
     { name = "aiosqlite", specifier = ">=0.21.0,<=0.22.1" },
     { name = "arize-phoenix", specifier = ">=11.22.0,<14.0.0" },
     { name = "arize-phoenix-otel", specifier = ">=0.2.0,<1.0.0" },
     { name = "click", specifier = ">=8.2.0,<9.0.0" },
-    { name = "copilotkit", specifier = "==0.1.78" },
+    { name = "copilotkit", specifier = ">=0.1.72,<0.2.0" },
     { name = "deepagents", specifier = ">=0.2.8,<1.0.0" },
     { name = "fastapi", specifier = ">=0.115.0,<=0.134.0" },
     { name = "google-adk", specifier = ">=1.19.0,<2.0.0" },
@@ -1904,7 +1903,6 @@ requires-dist = [
     { name = "langgraph", specifier = ">=1.0.0,<2.0.0" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=3.0.0,<4.0.0" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0.0,<4.0.0" },
-    { name = "langsmith", specifier = ">=0.3.0,<1.0.0" },
     { name = "mcp", specifier = ">=1.0.0,<2.0.0" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.0,<2.0.0" },
     { name = "openinference-instrumentation-guardrails", specifier = ">=0.1.0,<2.0.0" },

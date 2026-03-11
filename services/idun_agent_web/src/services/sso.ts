@@ -14,7 +14,6 @@ export interface ManagedSSO {
     sso: SSOConfig;
     created_at: string;
     updated_at: string;
-    agentCount?: number;
 }
 
 interface ManagedSSOCreate {
@@ -28,11 +27,7 @@ interface ManagedSSOPatch {
 }
 
 export const fetchSSOs = async (): Promise<ManagedSSO[]> => {
-    const raw = await getJson<any[]>('/api/v1/sso/');
-    return raw.map(item => ({
-        ...item,
-        agentCount: item.agent_count ?? 0,
-    }));
+    return getJson<ManagedSSO[]>('/api/v1/sso/');
 };
 
 export const getSSO = async (id: string): Promise<ManagedSSO> => {

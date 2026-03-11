@@ -3,7 +3,6 @@
 import logging
 
 from fastapi import HTTPException, Request, status
-from idun_agent_schema.engine.capabilities import AgentCapabilities
 
 from ..core.config_builder import ConfigBuilder
 from ..mcp import MCPClientRegistry
@@ -40,24 +39,11 @@ async def get_copilotkit_agent(request: Request):
         # This is a fallback for cases where the lifespan event did not run,
         # like in some testing scenarios.
         # Consider logging a warning here.
-        logger.warning(
-            "⚠️ CopilotKit agent not found in app state, initializing fallback agent..."
-        )
+        logger.warning("⚠️ CopilotKit agent not found in app state, initializing fallback agent...")
 
         app_config = ConfigBuilder.load_from_file()
         copilotkit_agent = await ConfigBuilder.initialize_agent_from_config(app_config)
         return copilotkit_agent
-
-
-async def get_capabilities(request: Request) -> AgentCapabilities:
-    """Return cached agent capabilities from app state."""
-    capabilities = getattr(request.app.state, "capabilities", None)
-    if capabilities is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Agent capabilities not yet initialized",
-        )
-    return capabilities
 
 
 def get_mcp_registry(request: Request) -> MCPClientRegistry:

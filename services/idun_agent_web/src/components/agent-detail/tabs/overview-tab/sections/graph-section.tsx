@@ -21,10 +21,9 @@ mermaid.initialize({
 
 interface GraphSectionProps {
     agent: BackendAgent;
-    refreshKey?: number;
 }
 
-const GraphSection = ({ agent, refreshKey }: GraphSectionProps) => {
+const GraphSection = ({ agent }: GraphSectionProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -59,7 +58,7 @@ const GraphSection = ({ agent, refreshKey }: GraphSectionProps) => {
         });
 
         return () => { cancelled = true; };
-    }, [agent.base_url, agent.id, agent.framework, refreshKey]);
+    }, [agent.base_url, agent.id, agent.framework]);
 
     if (agent.framework !== 'LANGGRAPH') return null;
 

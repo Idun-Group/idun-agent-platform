@@ -23,7 +23,6 @@ class ManagedSSORead(BaseModel):
     id: UUID
     name: str
     sso: SSOConfig = Field(..., description="SSO (OIDC) configuration")
-    agent_count: int = Field(0, description="Number of agents using this SSO config")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

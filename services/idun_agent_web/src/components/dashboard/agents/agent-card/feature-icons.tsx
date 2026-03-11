@@ -166,9 +166,9 @@ const IconPill = styled.div<{ $active: boolean; $color: string; $glow: string }>
     justify-content: center;
     transition: all 0.2s ease;
 
-    background: ${(p) => (p.$active ? p.$glow : 'var(--overlay-subtle)')};
-    color: ${(p) => (p.$active ? p.$color : 'hsl(var(--muted-foreground))')};
-    border: 1px solid ${(p) => (p.$active ? `${p.$color}33` : 'var(--overlay-light)')};
+    background: ${(p) => (p.$active ? p.$glow : 'rgba(255, 255, 255, 0.04)')};
+    color: ${(p) => (p.$active ? p.$color : 'rgba(255, 255, 255, 0.18)')};
+    border: 1px solid ${(p) => (p.$active ? `${p.$color}33` : 'rgba(255, 255, 255, 0.06)')};
 `;
 
 const Label = styled.span<{ $active: boolean; $color: string }>`
@@ -176,6 +176,6 @@ const Label = styled.span<{ $active: boolean; $color: string }>`
     font-weight: 600;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: ${(p) => (p.$active ? p.$color : 'hsl(var(--muted-foreground))')};
+    color: ${(p) => (p.$active ? p.$color : 'rgba(255, 255, 255, 0.2)')};
     transition: color 0.2s ease;
 `;

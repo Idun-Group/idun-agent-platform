@@ -1,16 +1,16 @@
 /* AG-UI Chat Tab — platform-integrated styles */
 .agui-chat {
-  --chat-bg: hsl(var(--card));
-  --chat-surface: hsl(var(--surface-elevated));
-  --chat-elevated: var(--overlay-light);
-  --chat-border: var(--border-subtle);
-  --chat-text: hsl(var(--foreground));
-  --chat-text-dim: hsl(var(--muted-foreground));
-  --chat-accent: hsl(var(--primary));
-  --chat-accent-hover: hsl(var(--primary));
-  --chat-green: hsl(var(--success));
-  --chat-red: hsl(var(--destructive));
-  --chat-orange: hsl(var(--warning));
+  --chat-bg: #0f1016;
+  --chat-surface: var(--color-background-secondary, #13131d);
+  --chat-elevated: rgba(255, 255, 255, 0.05);
+  --chat-border: rgba(255, 255, 255, 0.06);
+  --chat-text: #e5e7eb;
+  --chat-text-dim: #9ca3af;
+  --chat-accent: #8c52ff;
+  --chat-accent-hover: #a78bfa;
+  --chat-green: #22c55e;
+  --chat-red: #ef4444;
+  --chat-orange: #f59e0b;
   --chat-mono: 'SF Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
 
   display: flex;
@@ -37,8 +37,8 @@
 
 .agui-chat ::-webkit-scrollbar { width: 6px; height: 6px; }
 .agui-chat ::-webkit-scrollbar-track { background: transparent; }
-.agui-chat ::-webkit-scrollbar-thumb { background: var(--overlay-light); border-radius: 3px; }
-.agui-chat ::-webkit-scrollbar-thumb:hover { background: var(--border-medium); }
+.agui-chat ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+.agui-chat ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
 
 /* ── Toolbar ── */
 .agui-chat .chat-toolbar {
@@ -129,7 +129,7 @@
   transition: all 0.15s;
   white-space: nowrap;
 }
-.agui-chat .toolbar-btn:hover { color: var(--chat-text); border-color: var(--overlay-medium); }
+.agui-chat .toolbar-btn:hover { color: var(--chat-text); border-color: rgba(255,255,255,0.12); }
 .agui-chat .toolbar-btn.active { color: var(--chat-accent); border-color: rgba(140, 82, 255, 0.25); background: rgba(140, 82, 255, 0.08); }
 .agui-chat .toolbar-btn.danger { color: var(--chat-red); }
 .agui-chat .toolbar-btn.danger:hover { border-color: rgba(239, 68, 68, 0.3); }
@@ -298,13 +298,13 @@
 .agui-chat .message.user {
   align-self: flex-end;
   background: var(--chat-accent);
-  color: hsl(var(--primary-foreground));
+  color: white;
   border-bottom-right-radius: 3px;
 }
 
 .agui-chat .message.assistant {
   align-self: flex-start;
-  background: var(--overlay-subtle);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--chat-border);
   border-bottom-left-radius: 3px;
 }
@@ -360,7 +360,7 @@
   transition: all 0.12s;
   line-height: 1.6;
 }
-.agui-chat .msg-btn:hover { color: var(--chat-text); border-color: var(--border-medium); }
+.agui-chat .msg-btn:hover { color: var(--chat-text); border-color: rgba(255,255,255,0.15); }
 .agui-chat .msg-btn.active { color: var(--chat-accent); border-color: var(--chat-accent); }
 .agui-chat .msg-btn.copied { color: var(--chat-green); border-color: var(--chat-green); }
 
@@ -392,12 +392,12 @@
 .agui-chat .message-content.rendered code {
   font-family: var(--chat-mono);
   font-size: 0.85em;
-  background: var(--overlay-strong);
+  background: rgba(0,0,0,0.3);
   padding: 1px 5px;
   border-radius: 4px;
 }
 .agui-chat .message.user .message-content.rendered code {
-  background: var(--overlay-strong);
+  background: rgba(0,0,0,0.2);
 }
 .agui-chat .message-content.rendered pre {
   background: var(--chat-bg);
@@ -456,7 +456,7 @@
 }
 
 .agui-chat .tool-call {
-  background: var(--overlay-strong);
+  background: rgba(0,0,0,0.2);
   border: 1px solid var(--chat-border);
   border-radius: 8px;
   padding: 6px 10px;
@@ -464,7 +464,7 @@
   font-size: 12px;
   transition: border-color 0.15s;
 }
-.agui-chat .tool-call:hover { border-color: var(--overlay-medium); }
+.agui-chat .tool-call:hover { border-color: rgba(255,255,255,0.12); }
 
 .agui-chat .tool-call.complete { border-left: 3px solid var(--chat-green); }
 .agui-chat .tool-call.pending { border-left: 3px solid var(--chat-orange); }
@@ -616,7 +616,7 @@
 .agui-chat .error-body-content {
   font-family: var(--chat-mono);
   font-size: 11px;
-  background: var(--overlay-strong);
+  background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(239, 68, 68, 0.12);
   border-radius: 6px;
   padding: 8px 10px;
@@ -643,7 +643,7 @@
   flex: 1;
   resize: none;
   padding: 10px 14px;
-  background: var(--overlay-subtle);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--chat-border);
   border-radius: 10px;
   color: var(--chat-text);
@@ -700,15 +700,15 @@
 
 .agui-chat .btn-send {
   background: var(--chat-accent);
-  color: hsl(var(--primary-foreground));
+  color: white;
   box-shadow: 0 0 12px rgba(140, 82, 255, 0.2);
 }
-.agui-chat .btn-send:hover:not(:disabled) { background: hsl(var(--primary)); box-shadow: 0 0 18px rgba(140, 82, 255, 0.35); }
+.agui-chat .btn-send:hover:not(:disabled) { background: #7c3aed; box-shadow: 0 0 18px rgba(140, 82, 255, 0.35); }
 .agui-chat .btn-send:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
 .agui-chat .btn-stop {
   background: var(--chat-red);
-  color: hsl(var(--destructive-foreground));
+  color: white;
 }
 .agui-chat .btn-stop:hover { opacity: 0.9; }
 
@@ -716,7 +716,7 @@
 .agui-chat .curl-overlay {
   position: fixed;
   inset: 0;
-  background: var(--overlay-backdrop);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -725,8 +725,8 @@
 }
 
 .agui-chat .curl-modal {
-  background: hsl(var(--card));
-  border: 1px solid var(--overlay-medium);
+  background: #0f1016;
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 12px;
   width: min(720px, 90vw);
   max-height: 80vh;
@@ -762,8 +762,8 @@
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-all;
-  color: hsl(var(--foreground));
-  background: var(--overlay-medium);
+  color: rgba(255,255,255,0.65);
+  background: rgba(0,0,0,0.15);
   border-radius: 0 0 12px 12px;
   flex: 1;
   min-height: 0;
@@ -892,7 +892,7 @@
   cursor: pointer;
   border-radius: 6px;
   transition: background 0.1s;
-  border-bottom: 1px solid var(--overlay-subtle);
+  border-bottom: 1px solid rgba(255,255,255,0.02);
 }
 .agui-chat .event-item:hover { background: var(--chat-elevated); }
 
@@ -907,7 +907,7 @@
 .agui-chat .event-json {
   font-family: var(--chat-mono);
   font-size: 10px;
-  background: var(--overlay-strong);
+  background: rgba(0,0,0,0.2);
   padding: 6px 8px;
   border-radius: 6px;
   margin-top: 4px;
@@ -916,7 +916,7 @@
   word-break: break-all;
   max-height: 250px;
   overflow-y: auto;
-  color: hsl(var(--text-secondary));
+  color: rgba(255,255,255,0.5);
   border: 1px solid var(--chat-border);
 }
 
@@ -971,7 +971,7 @@
 .agui-chat .json-editor .config-description {
   padding: 4px 12px;
   border-top: 1px solid var(--chat-border);
-  background: var(--overlay-medium);
+  background: rgba(0,0,0,0.15);
 }
 
 .agui-chat .extra-messages .config-description { padding: 0 0 4px; }
@@ -980,7 +980,7 @@
   display: block;
   width: 100%;
   padding: 6px 12px;
-  background: var(--overlay-medium);
+  background: rgba(0,0,0,0.15);
   border: none;
   border-top: 1px solid var(--chat-border);
   color: var(--chat-text);
@@ -1000,7 +1000,7 @@
   flex-direction: column;
   gap: 6px;
   border-top: 1px solid var(--chat-border);
-  background: var(--overlay-medium);
+  background: rgba(0,0,0,0.15);
 }
 
 .agui-chat .extra-msg-row { display: flex; gap: 6px; align-items: start; }
@@ -1036,73 +1036,6 @@
 .agui-chat .extra-msg-remove { padding: 4px 8px; font-size: 11px; flex-shrink: 0; }
 .agui-chat .extra-msg-add { align-self: flex-start; font-size: 11px; padding: 3px 10px; }
 
-/* ── Thinking Indicator ── */
-.agui-chat .thinking-indicator {
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: rgba(140, 82, 255, 0.06);
-  border: 1px solid rgba(140, 82, 255, 0.15);
-  border-radius: 12px;
-  border-bottom-left-radius: 3px;
-  animation: agui-fadeIn 0.25s ease-out;
-}
-
-@keyframes agui-fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.agui-chat .thinking-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: rgba(140, 82, 255, 0.12);
-  color: var(--chat-accent);
-  flex-shrink: 0;
-  animation: agui-pulse 2s ease-in-out infinite;
-}
-
-@keyframes agui-pulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
-}
-
-.agui-chat .thinking-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--chat-accent-hover);
-  letter-spacing: 0.01em;
-}
-
-.agui-chat .thinking-dots {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: 2px;
-}
-
-.agui-chat .thinking-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--chat-accent);
-  animation: agui-thinking 1.4s ease-in-out infinite;
-}
-
-.agui-chat .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
-.agui-chat .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes agui-thinking {
-  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
-  40% { opacity: 1; transform: scale(1.1); }
-}
-
 /* Agent URL read-only display */
 .agui-chat .agent-url-display {
   font-size: 12px;
@@ -1116,167 +1049,4 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   opacity: 0.8;
-}
-
-/* ── Capabilities Bar ── */
-.agui-chat .capabilities-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  font-size: 13px;
-  color: var(--chat-text-dim);
-  border-bottom: 1px solid var(--chat-border);
-  background: var(--chat-surface);
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  margin-top: 8px;
-  border-radius: 10px 10px 0 0;
-}
-.agui-chat .capabilities-bar.capabilities-warning {
-  background: rgba(245, 158, 11, 0.06);
-  border-color: rgba(245, 158, 11, 0.2);
-}
-.agui-chat .capabilities-badge {
-  font-size: 11px; font-family: var(--chat-mono); font-weight: 700;
-  background: rgba(140, 82, 255, 0.12); color: var(--chat-accent);
-  padding: 3px 10px; border-radius: 6px;
-  border: 1px solid rgba(140, 82, 255, 0.18);
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
-.agui-chat .capabilities-info { font-size: 12px; color: var(--chat-text-dim); }
-.agui-chat .capabilities-info strong { color: var(--chat-text); font-weight: 600; }
-.agui-chat .capabilities-flags { display: flex; gap: 6px; margin-left: auto; }
-.agui-chat .capabilities-flag {
-  font-size: 10px; font-family: var(--chat-mono); font-weight: 600;
-  background: rgba(34, 197, 94, 0.1); color: var(--chat-green);
-  padding: 2px 8px; border-radius: 4px;
-  border: 1px solid rgba(34, 197, 94, 0.15);
-}
-.agui-chat .capabilities-toggle { margin-left: 8px; }
-
-/* ── Structured Form ── */
-.agui-chat .structured-form {
-  display: flex; flex-direction: column; gap: 12px;
-  padding: 16px; flex: 1; overflow: auto;
-}
-.agui-chat .structured-form-header {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.agui-chat .structured-form-title {
-  font-weight: 600; font-size: 14px; color: var(--chat-text);
-}
-.agui-chat .schema-fields { display: flex; flex-direction: column; gap: 12px; }
-.agui-chat .schema-field { display: flex; flex-direction: column; gap: 4px; }
-.agui-chat .schema-field-label {
-  font-size: 12px; font-weight: 600; color: var(--chat-text); text-transform: capitalize;
-}
-.agui-chat .schema-field-required { color: var(--chat-red); margin-left: 2px; }
-.agui-chat .schema-field-desc {
-  font-size: 11px; color: var(--chat-text-dim); line-height: 1.4;
-}
-.agui-chat .schema-field-input {
-  padding: 8px 12px; background: var(--chat-elevated);
-  border: 1px solid var(--chat-border); border-radius: 8px;
-  color: var(--chat-text); font-size: 13px; outline: none;
-  transition: border-color 0.15s;
-}
-.agui-chat .schema-field-input:focus { border-color: var(--chat-accent); }
-.agui-chat .schema-field-textarea {
-  padding: 8px 12px; background: var(--chat-elevated);
-  border: 1px solid var(--chat-border); border-radius: 8px;
-  color: var(--chat-text); font-size: 13px; font-family: var(--chat-mono);
-  outline: none; resize: vertical; min-height: 60px;
-  transition: border-color 0.15s;
-}
-.agui-chat .schema-field-textarea:focus { border-color: var(--chat-accent); }
-.agui-chat .schema-checkbox {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; color: var(--chat-text); cursor: pointer;
-}
-.agui-chat .schema-checkbox input[type="checkbox"] {
-  width: 16px; height: 16px; cursor: pointer; accent-color: var(--chat-accent);
-}
-.agui-chat .structured-json-input { display: flex; flex-direction: column; gap: 4px; }
-.agui-chat .structured-parse-error {
-  color: var(--chat-red); font-size: 12px; font-family: var(--chat-mono);
-}
-.agui-chat .structured-submit { align-self: flex-start; }
-
-/* ── Structured Output Viewer ── */
-.agui-chat .structured-output {
-  display: flex; flex-direction: column; gap: 8px; margin-top: 8px;
-}
-.agui-chat .structured-output-header {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.agui-chat .output-json {
-  padding: 12px; background: var(--chat-elevated);
-  border: 1px solid var(--chat-border); border-radius: 8px;
-  font-family: var(--chat-mono); font-size: 12px;
-  overflow: auto; white-space: pre-wrap; word-break: break-all;
-  max-height: 400px; margin: 0; color: var(--chat-text);
-}
-.agui-chat .output-table-wrap {
-  overflow-x: auto; border: 1px solid var(--chat-border); border-radius: 8px;
-}
-.agui-chat .output-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.agui-chat .output-table th {
-  padding: 8px 12px; background: var(--chat-elevated);
-  border-bottom: 1px solid var(--chat-border);
-  font-weight: 600; font-size: 11px; text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--chat-text-dim); text-align: left;
-}
-.agui-chat .output-table td {
-  padding: 8px 12px; border-bottom: 1px solid var(--overlay-subtle); color: var(--chat-text);
-}
-.agui-chat .output-table tr:last-child td { border-bottom: none; }
-.agui-chat .output-kv {
-  width: 100%; border-collapse: collapse; font-size: 13px;
-  border: 1px solid var(--chat-border); border-radius: 8px; overflow: hidden;
-}
-.agui-chat .output-kv-key {
-  padding: 8px 12px; background: var(--chat-elevated);
-  font-weight: 600; font-size: 12px; color: var(--chat-text-dim);
-  white-space: nowrap; width: 1%;
-  border-right: 1px solid var(--chat-border);
-  border-bottom: 1px solid var(--overlay-subtle);
-}
-.agui-chat .output-kv-val {
-  padding: 8px 12px; color: var(--chat-text);
-  border-bottom: 1px solid var(--overlay-subtle); word-break: break-word;
-}
-.agui-chat .output-kv tr:last-child td { border-bottom: none; }
-.agui-chat .output-null { color: var(--chat-text-dim); font-style: italic; }
-
-/* ── Error Code Badge ── */
-.agui-chat .error-code-badge {
-  font-family: var(--chat-mono); font-size: 10px; font-weight: 700;
-  background: rgba(239, 68, 68, 0.12); color: var(--chat-red);
-  padding: 2px 8px; border-radius: 4px;
-  text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0;
-}
-
-/* ── Form Mode Messages (for structured agents that also stream text) ── */
-.agui-chat .form-messages {
-  padding: 0 16px 16px;
-  border-top: 1px solid var(--chat-border);
-  margin-top: 4px;
-}
-.agui-chat .form-messages-header {
-  padding: 12px 0 8px;
-}
-.agui-chat .form-messages-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-/* ── Chat Mode Structured Output ── */
-.agui-chat .chat-structured-output {
-  padding: 8px 0;
-  border-top: 1px solid var(--chat-border);
-  margin-top: 8px;
 }

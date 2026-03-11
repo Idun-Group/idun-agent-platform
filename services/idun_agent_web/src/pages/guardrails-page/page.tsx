@@ -15,11 +15,6 @@ import {
     Globe,
     Target,
     Brain,
-    KeyRound,
-    ExternalLink,
-    Check,
-    Eye,
-    EyeOff,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { fetchApplications, deleteApplication } from '../../services/applications';
@@ -57,13 +52,13 @@ const TitleBlock = styled.div``;
 const PageTitle = styled.h1`
     font-size: 24px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: white;
     margin: 0 0 6px;
 `;
 
 const PageSubtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
     margin: 0;
 `;
 
@@ -73,126 +68,12 @@ const HeaderActions = styled.div`
     gap: 12px;
 `;
 
-// ── API Key Banner ────────────────────────────────────────────────────────────
-
-const LOCALSTORAGE_KEY = 'guardrails_api_key';
-
-const ApiKeyBanner = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    flex-wrap: wrap;
-`;
-
-const ApiKeyLeft = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-`;
-
-const ApiKeyIconBox = styled.div`
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: hsl(var(--primary) / 0.12);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-`;
-
-const ApiKeyLabel = styled.span`
-    font-size: 13px;
-    font-weight: 600;
-    color: hsl(var(--foreground));
-    white-space: nowrap;
-`;
-
-const ApiKeyInputGroup = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-    min-width: 200px;
-`;
-
-const ApiKeyInput = styled.input`
-    flex: 1;
-    padding: 8px 12px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    color: hsl(var(--foreground));
-    font-size: 13px;
-    font-family: monospace;
-    outline: none;
-    transition: border-color 0.15s;
-
-    &::placeholder { color: hsl(var(--muted-foreground)); }
-    &:focus { border-color: hsl(var(--primary)); }
-`;
-
-const ToggleVisBtn = styled.button`
-    background: transparent;
-    border: none;
-    color: hsl(var(--muted-foreground));
-    cursor: pointer;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-
-    &:hover { color: hsl(var(--foreground)); }
-`;
-
-const SaveKeyBtn = styled.button<{ $saved?: boolean }>`
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: ${p => p.$saved ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--primary))'};
-    border: ${p => p.$saved ? '1px solid hsl(var(--primary) / 0.3)' : 'none'};
-    border-radius: 8px;
-    color: ${p => p.$saved ? 'hsl(var(--primary))' : 'hsl(var(--primary-foreground))'};
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-
-    &:hover { opacity: 0.88; }
-`;
-
-const ApiKeyHubLink = styled.a`
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: hsl(var(--primary));
-    text-decoration: none;
-    white-space: nowrap;
-
-    &:hover { text-decoration: underline; }
-`;
-
-const ApiKeyHint = styled.p`
-    width: 100%;
-    font-size: 12px;
-    color: hsl(var(--muted-foreground));
-    margin: 4px 0 0;
-    line-height: 1.5;
-`;
-
 const SearchBar = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
@@ -202,11 +83,11 @@ const SearchInput = styled.input`
     background: transparent;
     border: none;
     outline: none;
-    color: hsl(var(--foreground));
+    color: white;
     font-size: 14px;
     width: 180px;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &::placeholder { color: rgba(255, 255, 255, 0.35); }
 `;
 
 const AddButton = styled.button`
@@ -215,10 +96,10 @@ const AddButton = styled.button`
     gap: 8px;
     padding: 0 18px;
     height: 38px;
-    background: hsl(var(--primary));
+    background: var(--color-primary, #6c63ff);
     border: none;
     border-radius: 10px;
-    color: hsl(var(--foreground));
+    color: white;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -239,8 +120,8 @@ const Grid = styled.div`
 // ── Cards ──────────────────────────────────────────────────────────────────────
 
 const Card = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-subtle);
+    background: var(--color-surface, #1a1a2e);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 16px;
     padding: 22px;
     display: flex;
@@ -248,7 +129,7 @@ const Card = styled.div`
     gap: 14px;
     transition: border-color 0.2s;
 
-    &:hover { border-color: hsl(var(--primary) / 0.3); }
+    &:hover { border-color: rgba(108, 99, 255, 0.3); }
 `;
 
 const CardHeader = styled.div`
@@ -267,7 +148,7 @@ const GuardrailIcon = styled.div`
     width: 42px;
     height: 42px;
     border-radius: 10px;
-    background: hsl(var(--primary) / 0.12);
+    background: rgba(108, 99, 255, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -280,13 +161,13 @@ const GuardrailMeta = styled.div``;
 const GuardrailName = styled.p`
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: white;
     margin: 0 0 3px;
 `;
 
 const GuardrailType = styled.p`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
     margin: 0;
 `;
 
@@ -295,15 +176,15 @@ const GroupBadge = styled.span`
     font-weight: 500;
     padding: 3px 8px;
     border-radius: 20px;
-    background: hsl(var(--primary) / 0.1);
-    color: hsl(var(--primary));
-    border: 1px solid hsl(var(--primary) / 0.2);
+    background: rgba(108, 99, 255, 0.1);
+    color: var(--color-primary, #6c63ff);
+    border: 1px solid rgba(108, 99, 255, 0.2);
     white-space: nowrap;
 `;
 
 const Divider = styled.hr`
     border: none;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     margin: 0;
 `;
 
@@ -322,7 +203,7 @@ const ConfigRow = styled.div`
 
 const ConfigKey = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
     text-transform: capitalize;
     flex-shrink: 0;
     padding-top: 1px;
@@ -330,19 +211,11 @@ const ConfigKey = styled.span`
 
 const ConfigValue = styled.span`
     font-size: 12px;
-    color: hsl(var(--text-secondary));
+    color: var(--color-text-secondary, #ccc);
     font-family: monospace;
     word-break: break-all;
     max-width: 170px;
     text-align: right;
-`;
-
-const AgentCountBadge = styled.span`
-    font-size: 11px;
-    color: hsl(var(--muted-foreground));
-    display: flex;
-    align-items: center;
-    gap: 4px;
 `;
 
 const CardActions = styled.div`
@@ -354,16 +227,16 @@ const CardActions = styled.div`
 const EditBtn = styled.button`
     flex: 1;
     padding: 8px;
-    background: var(--border-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: white;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-medium); }
+    &:hover { background: rgba(255, 255, 255, 0.12); }
 `;
 
 const DeleteBtn = styled.button`
@@ -372,7 +245,7 @@ const DeleteBtn = styled.button`
     background: rgba(248, 113, 113, 0.08);
     border: 1px solid rgba(248, 113, 113, 0.2);
     border-radius: 8px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -390,7 +263,7 @@ const AddCard = styled.button`
     justify-content: center;
     gap: 12px;
     background: transparent;
-    border: 2px dashed var(--border-light);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     padding: 40px 24px;
     cursor: pointer;
@@ -398,24 +271,24 @@ const AddCard = styled.button`
     min-height: 180px;
 
     &:hover {
-        border-color: hsl(var(--primary));
-        background: hsl(var(--primary) / 0.05);
+        border-color: var(--color-primary, #6c63ff);
+        background: rgba(108, 99, 255, 0.05);
 
-        span { color: hsl(var(--primary)); }
-        p { color: hsl(var(--foreground)); }
+        span { color: var(--color-primary, #6c63ff); }
+        p { color: rgba(255, 255, 255, 0.7); }
     }
 `;
 
 const AddIcon = styled.span`
     font-size: 28px;
-    color: var(--overlay-strong);
+    color: rgba(255, 255, 255, 0.25);
     transition: color 0.2s;
 `;
 
 const AddLabel = styled.p`
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: rgba(255, 255, 255, 0.4);
     margin: 0;
     transition: color 0.2s;
 `;
@@ -429,15 +302,15 @@ const CenterBox = styled.div`
     justify-content: center;
     gap: 12px;
     padding: 80px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
     text-align: center;
 `;
 
 const LoadingSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid var(--border-light);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--color-primary, #6c63ff);
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -486,9 +359,6 @@ const GuardrailsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
-    const [globalApiKey, setGlobalApiKey] = useState(() => localStorage.getItem(LOCALSTORAGE_KEY) ?? '');
-    const [apiKeySaved, setApiKeySaved] = useState(() => !!localStorage.getItem(LOCALSTORAGE_KEY));
-    const [showApiKey, setShowApiKey] = useState(false);
 
     const loadApps = useCallback(async () => {
         setIsLoading(true);
@@ -517,17 +387,6 @@ const GuardrailsPage: React.FC = () => {
     const openEdit = (app: ApplicationConfig) => { setAppToEdit(app); setIsModalOpen(true); };
     const closeModal = () => { setIsModalOpen(false); setAppToEdit(null); };
 
-    const handleSaveApiKey = () => {
-        const trimmed = globalApiKey.trim();
-        if (trimmed) {
-            localStorage.setItem(LOCALSTORAGE_KEY, trimmed);
-        } else {
-            localStorage.removeItem(LOCALSTORAGE_KEY);
-        }
-        setApiKeySaved(true);
-        setTimeout(() => setApiKeySaved(false), 2000);
-    };
-
     const filtered = apps.filter(a =>
         !searchTerm ||
         (a.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -543,7 +402,7 @@ const GuardrailsPage: React.FC = () => {
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
-                        <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 14 }}>🔍</span>
+                        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14 }}>🔍</span>
                         <SearchInput
                             placeholder="Search guardrails..."
                             value={searchTerm}
@@ -556,33 +415,6 @@ const GuardrailsPage: React.FC = () => {
                 </HeaderActions>
             </PageHeader>
 
-            <ApiKeyBanner>
-                <ApiKeyLeft>
-                    <ApiKeyIconBox><KeyRound size={18} color="hsl(var(--primary))" /></ApiKeyIconBox>
-                    <ApiKeyLabel>Guardrails AI API Key</ApiKeyLabel>
-                </ApiKeyLeft>
-                <ApiKeyInputGroup>
-                    <ApiKeyInput
-                        type={showApiKey ? 'text' : 'password'}
-                        placeholder="Enter your Guardrails AI API key"
-                        value={globalApiKey}
-                        onChange={e => { setGlobalApiKey(e.target.value); setApiKeySaved(false); }}
-                    />
-                    <ToggleVisBtn type="button" onClick={() => setShowApiKey(v => !v)} title={showApiKey ? 'Hide' : 'Show'}>
-                        {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </ToggleVisBtn>
-                    <SaveKeyBtn type="button" $saved={apiKeySaved} onClick={handleSaveApiKey}>
-                        {apiKeySaved ? <><Check size={14} /> Saved</> : 'Save'}
-                    </SaveKeyBtn>
-                </ApiKeyInputGroup>
-                <ApiKeyHubLink href="https://hub.guardrailsai.com" target="_blank" rel="noopener noreferrer">
-                    Get a key <ExternalLink size={12} />
-                </ApiKeyHubLink>
-                <ApiKeyHint>
-                    This key auto-fills into new guardrails. You can override it per-guardrail when creating or editing one.
-                </ApiKeyHint>
-            </ApiKeyBanner>
-
             {isLoading ? (
                 <CenterBox>
                     <LoadingSpinner />
@@ -593,7 +425,7 @@ const GuardrailsPage: React.FC = () => {
                     {filtered.map(app => {
                         const meta = TYPE_META[app.type] ?? { icon: Shield, group: 'Other' };
                         const config = flattenConfig(app.config);
-                        const configEntries = Object.entries(config).filter(([k]) => k !== 'api_key');
+                        const configEntries = Object.entries(config);
 
                         return (
                             <Card key={app.id}>
@@ -622,12 +454,6 @@ const GuardrailsPage: React.FC = () => {
                                     </>
                                 )}
 
-                                {(app.agentCount ?? 0) > 0 && (
-                                    <AgentCountBadge>
-                                        Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}
-                                    </AgentCountBadge>
-                                )}
-
                                 <CardActions>
                                     <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
                                     <DeleteBtn onClick={() => handleDeleteRequest(app)}>Remove</DeleteBtn>
@@ -648,16 +474,12 @@ const GuardrailsPage: React.FC = () => {
                 onClose={closeModal}
                 onCreated={loadApps}
                 appToEdit={appToEdit}
-                defaultApiKey={globalApiKey.trim()}
             />
             <DeleteConfirmModal
                 isOpen={!!appToDelete}
                 onClose={() => setAppToDelete(null)}
                 onConfirm={handleDeleteConfirm}
                 itemName={appToDelete?.name ?? ''}
-                description={(appToDelete?.agentCount ?? 0) > 0
-                    ? `This guardrail is used by ${appToDelete!.agentCount} agent${appToDelete!.agentCount !== 1 ? 's' : ''}. Remove the guardrail from those agents first.`
-                    : undefined}
             />
         </PageWrapper>
     );

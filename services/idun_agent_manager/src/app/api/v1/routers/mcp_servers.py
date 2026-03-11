@@ -23,7 +23,7 @@ from mcp.client.sse import sse_client
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.client.streamable_http import streamablehttp_client
 from mcp.client.websocket import websocket_client
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
@@ -32,9 +32,7 @@ from app.api.v1.deps import (
     get_session,
     require_workspace,
 )
-from app.infrastructure.db.models.agent_mcp_server import AgentMCPServerModel
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
-from app.services.engine_config import recompute_engine_config
 
 router = APIRouter()
 
@@ -73,16 +71,13 @@ async def _get_mcp_server(
     return model
 
 
-def _model_to_schema(
-    model: ManagedMCPServerModel, agent_count: int = 0
-) -> ManagedMCPServerRead:
+def _model_to_schema(model: ManagedMCPServerModel) -> ManagedMCPServerRead:
     """Transform database model to response schema."""
     mcp_server = MCPServer(**model.mcp_server_config)
     return ManagedMCPServerRead(
         id=model.id,
         name=model.name,
         mcp_server=mcp_server,
-        agent_count=agent_count,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -153,20 +148,7 @@ async def list_mcp_servers(
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
-    # Batch count agents per MCP server
-    counts: dict[UUID, int] = {}
-    if rows:
-        count_stmt = (
-            select(
-                AgentMCPServerModel.mcp_server_id,
-                func.count(func.distinct(AgentMCPServerModel.agent_id)),
-            )
-            .where(AgentMCPServerModel.mcp_server_id.in_([r.id for r in rows]))
-            .group_by(AgentMCPServerModel.mcp_server_id)
-        )
-        counts = dict((await session.execute(count_stmt)).all())
-
-    return [_model_to_schema(r, counts.get(r.id, 0)) for r in rows]
+    return [_model_to_schema(r) for r in rows]
 
 
 @router.get(
@@ -182,11 +164,7 @@ async def get_mcp_server(
 ) -> ManagedMCPServerRead:
     """Get a managed MCP server configuration by ID."""
     model = await _get_mcp_server(id, session, workspace_id)
-    count_stmt = select(func.count(func.distinct(AgentMCPServerModel.agent_id))).where(
-        AgentMCPServerModel.mcp_server_id == model.id
-    )
-    agent_count = await session.scalar(count_stmt) or 0
-    return _model_to_schema(model, agent_count)
+    return _model_to_schema(model)
 
 
 @router.delete(
@@ -202,18 +180,6 @@ async def delete_mcp_server(
 ) -> None:
     """Delete a managed MCP server configuration permanently."""
     model = await _get_mcp_server(id, session, workspace_id)
-
-    # RESTRICT: check if any agent references this MCP server
-    stmt = select(AgentMCPServerModel.agent_id).where(
-        AgentMCPServerModel.mcp_server_id == model.id
-    )
-    result = await session.execute(stmt)
-    if result.first():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Cannot delete MCP server: it is referenced by one or more agents",
-        )
-
     await session.delete(model)
     await session.flush()
 
@@ -239,16 +205,8 @@ async def patch_mcp_server(
     model.updated_at = datetime.now(UTC)
 
     await session.flush()
-
-    # Cascade recompute: update all agents referencing this MCP server
-    stmt = select(AgentMCPServerModel.agent_id).where(
-        AgentMCPServerModel.mcp_server_id == model.id
-    )
-    result = await session.execute(stmt)
-    for (agent_id,) in result.all():
-        await recompute_engine_config(session, agent_id)
-
     await session.refresh(model)
+
     return _model_to_schema(model)
 
 

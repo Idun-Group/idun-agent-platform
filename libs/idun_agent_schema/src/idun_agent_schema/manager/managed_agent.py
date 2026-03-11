@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -20,23 +19,17 @@ class AgentStatus(str, Enum):
     ERROR = "error"
 
 
-class GuardrailRef(BaseModel):
-    """Reference to a managed guardrail with position metadata."""
+# class ManagedAgentBase(BaseModel):
+#     """Base model for managed agent configuration."""
 
-    id: UUID
-    position: Literal["input", "output"] = "input"
-    sort_order: int = 0
-
-
-class AgentResourceIds(BaseModel):
-    """Resource IDs for agent associations (source of truth for relations)."""
-
-    memory_id: UUID | None = None
-    sso_id: UUID | None = None
-    guardrail_ids: list[GuardrailRef] | None = None
-    mcp_server_ids: list[UUID] | None = None
-    observability_ids: list[UUID] | None = None
-    integration_ids: list[UUID] | None = None
+#     id: UUID = Field(, description="Agent UUID")
+#     name: str
+#     status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
+#     version: str | None = Field(None, description="Agent version")
+#     engine_config: EngineConfig = Field(..., description="Idun Agent Engine configuration")
+#     created_at: datetime = Field(..., description="Creation timestamp")
+#     updated_at: datetime = Field(..., description="Last update timestamp")
+#     agent_hash: str | None = Field(default=None, description="Agent hash")
 
 
 class ManagedAgentCreate(BaseModel):
@@ -47,9 +40,6 @@ class ManagedAgentCreate(BaseModel):
     base_url: str | None = Field(None, description="Base URL")
     engine_config: EngineConfig = Field(
         ..., description="Idun Agent Engine configuration"
-    )
-    resources: AgentResourceIds | None = Field(
-        None, description="Resource references (FK/junction)"
     )
 
 
@@ -63,11 +53,8 @@ class ManagedAgentRead(BaseModel):
     status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
     version: str | None = Field(None, description="Agent version")
     base_url: str | None = Field(None, description="Base URL")
-    engine_config: dict[str, Any] = Field(
-        ..., description="Materialized EngineConfig (full assembled config)"
-    )
-    resources: AgentResourceIds | None = Field(
-        None, description="Resource references (FK/junction)"
+    engine_config: EngineConfig = Field(
+        ..., description="Idun Agent Engine configuration"
     )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -80,9 +67,6 @@ class ManagedAgentPatch(BaseModel):
     base_url: str | None = Field(None, description="Base URL")
     engine_config: EngineConfig = Field(
         ..., description="Idun Agent Engine configuration"
-    )
-    resources: AgentResourceIds | None = Field(
-        None, description="Resource references (FK/junction)"
     )
 
 

@@ -35,13 +35,13 @@ const TitleBlock = styled.div``;
 const PageTitle = styled.h1`
     font-size: 24px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: white;
     margin: 0 0 6px;
 `;
 
 const PageSubtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
     margin: 0;
 `;
 
@@ -55,8 +55,8 @@ const SearchBar = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
@@ -66,11 +66,11 @@ const SearchInput = styled.input`
     background: transparent;
     border: none;
     outline: none;
-    color: hsl(var(--foreground));
+    color: white;
     font-size: 14px;
     width: 180px;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &::placeholder { color: rgba(255, 255, 255, 0.35); }
 `;
 
 const AddButton = styled.button`
@@ -79,10 +79,10 @@ const AddButton = styled.button`
     gap: 8px;
     padding: 0 18px;
     height: 38px;
-    background: hsl(var(--primary));
+    background: var(--color-primary, #6c63ff);
     border: none;
     border-radius: 10px;
-    color: hsl(var(--foreground));
+    color: white;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -103,8 +103,8 @@ const Grid = styled.div`
 // ── Cards ─────────────────────────────────────────────────────────────────────
 
 const Card = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-subtle);
+    background: var(--color-surface, #1a1a2e);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 16px;
     padding: 24px;
     display: flex;
@@ -112,7 +112,7 @@ const Card = styled.div`
     gap: 16px;
     transition: border-color 0.2s;
 
-    &:hover { border-color: hsl(var(--primary) / 0.3); }
+    &:hover { border-color: rgba(108, 99, 255, 0.3); }
 `;
 
 const CardHeader = styled.div`
@@ -131,7 +131,7 @@ const ProviderIcon = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: var(--border-subtle);
+    background: rgba(255, 255, 255, 0.06);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -144,13 +144,13 @@ const ProviderName = styled.div``;
 const ProviderTitle = styled.p`
     font-size: 15px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: white;
     margin: 0;
 `;
 
 const ProviderType = styled.p`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
     margin: 0;
     margin-top: 2px;
 `;
@@ -160,14 +160,14 @@ const StatusBadge = styled.span<{ $active: boolean }>`
     font-weight: 600;
     padding: 4px 10px;
     border-radius: 20px;
-    background: ${p => p.$active ? 'hsl(var(--success) / 0.15)' : 'var(--border-subtle)'};
-    color: ${p => p.$active ? 'hsl(var(--success))' : 'hsl(var(--muted-foreground))'};
-    border: 1px solid ${p => p.$active ? 'hsl(var(--success) / 0.3)' : 'transparent'};
+    background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'rgba(255, 255, 255, 0.07)'};
+    color: ${p => p.$active ? '#34d399' : '#888'};
+    border: 1px solid ${p => p.$active ? 'rgba(52, 211, 153, 0.3)' : 'transparent'};
 `;
 
 const Divider = styled.hr`
     border: none;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     margin: 0;
 `;
 
@@ -186,13 +186,13 @@ const ConfigRow = styled.div`
 
 const ConfigKey = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
     flex-shrink: 0;
 `;
 
 const ConfigValue = styled.span`
     font-size: 12px;
-    color: hsl(var(--text-secondary));
+    color: var(--color-text-secondary, #ccc);
     font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -211,17 +211,9 @@ const Tag = styled.span`
     font-size: 11px;
     padding: 2px 8px;
     border-radius: 6px;
-    background: hsl(var(--primary) / 0.12);
-    color: hsl(var(--primary));
-    border: 1px solid hsl(var(--primary) / 0.2);
-`;
-
-const AgentCountBadge = styled.span`
-    font-size: 11px;
-    color: hsl(var(--muted-foreground));
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    background: rgba(108, 99, 255, 0.12);
+    color: var(--color-primary, #6c63ff);
+    border: 1px solid rgba(108, 99, 255, 0.2);
 `;
 
 const CardActions = styled.div`
@@ -233,31 +225,31 @@ const CardActions = styled.div`
 const EditBtn = styled.button`
     flex: 1;
     padding: 8px;
-    background: var(--border-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: white;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-medium); }
+    &:hover { background: rgba(255, 255, 255, 0.12); }
 `;
 
 const DeleteBtn = styled.button`
     flex: 1;
     padding: 8px;
-    background: hsl(var(--destructive) / 0.08);
-    border: 1px solid hsl(var(--destructive) / 0.2);
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.2);
     border-radius: 8px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: hsl(var(--destructive) / 0.18); }
+    &:hover { background: rgba(248, 113, 113, 0.18); }
 `;
 
 // ── Add Card ──────────────────────────────────────────────────────────────────
@@ -269,7 +261,7 @@ const AddCard = styled.button`
     justify-content: center;
     gap: 12px;
     background: transparent;
-    border: 2px dashed var(--border-light);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
     border-radius: 16px;
     padding: 40px 24px;
     cursor: pointer;
@@ -277,24 +269,24 @@ const AddCard = styled.button`
     min-height: 200px;
 
     &:hover {
-        border-color: hsl(var(--primary));
-        background: hsl(var(--primary) / 0.05);
+        border-color: var(--color-primary, #6c63ff);
+        background: rgba(108, 99, 255, 0.05);
 
-        span { color: hsl(var(--primary)); }
-        p { color: hsl(var(--foreground)); }
+        span { color: var(--color-primary, #6c63ff); }
+        p { color: rgba(255, 255, 255, 0.7); }
     }
 `;
 
 const AddIcon = styled.span`
     font-size: 32px;
-    color: var(--overlay-strong);
+    color: rgba(255, 255, 255, 0.25);
     transition: color 0.2s;
 `;
 
 const AddLabel = styled.p`
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: rgba(255, 255, 255, 0.4);
     margin: 0;
     transition: color 0.2s;
 `;
@@ -308,15 +300,15 @@ const CenterBox = styled.div`
     justify-content: center;
     gap: 12px;
     padding: 80px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
     text-align: center;
 `;
 
 const LoadingSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid var(--border-light);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--color-primary, #6c63ff);
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -381,7 +373,7 @@ const SSOPage: React.FC = () => {
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
-                        <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 14 }}>🔍</span>
+                        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14 }}>🔍</span>
                         <SearchInput
                             placeholder="Search configs..."
                             value={searchTerm}
@@ -448,12 +440,6 @@ const SSOPage: React.FC = () => {
                                     )}
                                 </ConfigList>
 
-                                {(config.agentCount ?? 0) > 0 && (
-                                    <AgentCountBadge>
-                                        Used by {config.agentCount} agent{config.agentCount !== 1 ? 's' : ''}
-                                    </AgentCountBadge>
-                                )}
-
                                 <CardActions>
                                     <EditBtn onClick={() => openEdit(config)}>Edit</EditBtn>
                                     <DeleteBtn onClick={() => setConfigToDelete(config)}>Remove</DeleteBtn>
@@ -480,9 +466,6 @@ const SSOPage: React.FC = () => {
                 onClose={() => setConfigToDelete(null)}
                 onConfirm={handleDeleteConfirm}
                 itemName={configToDelete?.name ?? ''}
-                description={(configToDelete?.agentCount ?? 0) > 0
-                    ? `This SSO config is used by ${configToDelete!.agentCount} agent${configToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
-                    : undefined}
             />
         </PageWrapper>
     );

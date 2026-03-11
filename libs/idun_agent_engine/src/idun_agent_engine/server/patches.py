@@ -160,7 +160,9 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
             finish_reason = chunk.response_metadata.get("finish_reason")
 
             if finish_reason:
-                has_content = chunk.content and resolve_message_content(chunk.content)
+                has_content = chunk.content and resolve_message_content(
+                    chunk.content
+                )
                 has_tool_calls = bool(chunk.tool_call_chunks)
 
                 if has_content or has_tool_calls:
@@ -267,7 +269,9 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
 
         # --- Case 2: List of outputs (BUG — upstream crashes here) --------
         if isinstance(tool_call_output, list):
-            tool_messages = [m for m in tool_call_output if isinstance(m, ToolMessage)]
+            tool_messages = [
+                m for m in tool_call_output if isinstance(m, ToolMessage)
+            ]
             for tool_msg in tool_messages:
                 for evt in _emit_for_tool_msg(tool_msg):
                     yield evt
@@ -298,7 +302,9 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
                 or event.get("data", {}).get("name")
                 or "tool"
             )
-            parent_message_id = getattr(tool_call_output, "id", None) or tool_call_id
+            parent_message_id = (
+                getattr(tool_call_output, "id", None) or tool_call_id
+            )
             input_payload = event.get("data", {}).get("input", {})
 
             yield self._dispatch_event(
@@ -390,7 +396,9 @@ def apply_prepare_stream_patch() -> None:  # noqa: C901
     try:
         from ag_ui_langgraph.agent import LangGraphAgent
     except ImportError:
-        logger.debug("ag_ui_langgraph not installed — skipping prepare_stream patch")
+        logger.debug(
+            "ag_ui_langgraph not installed — skipping prepare_stream patch"
+        )
         return
 
     _ORIGINAL_PREPARE_STREAM = LangGraphAgent.prepare_stream
@@ -442,9 +450,13 @@ def apply_prepare_stream_patch() -> None:  # noqa: C901
         self.active_run["schema_keys"] = self.get_schema_keys(config)
 
         non_system_messages = [
-            msg for msg in langchain_messages if not isinstance(msg, SystemMessage)
+            msg
+            for msg in langchain_messages
+            if not isinstance(msg, SystemMessage)
         ]
-        if len(agent_state.values.get("messages", [])) > len(non_system_messages):
+        if len(agent_state.values.get("messages", [])) > len(
+            non_system_messages
+        ):
             last_user_message = None
             for i in range(len(langchain_messages) - 1, -1, -1):
                 if isinstance(langchain_messages[i], HumanMessage):
@@ -525,7 +537,9 @@ def apply_prepare_stream_patch() -> None:  # noqa: C901
                 schema_keys=self.active_run["schema_keys"],
             )
             stream_input = (
-                {**forwarded_props, **payload_input} if payload_input else None
+                {**forwarded_props, **payload_input}
+                if payload_input
+                else None
             )
 
         subgraphs_stream_enabled = (

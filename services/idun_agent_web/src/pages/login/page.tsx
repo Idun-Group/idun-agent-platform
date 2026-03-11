@@ -46,14 +46,9 @@ const LoginPage = () => {
 
     useEffect(() => {
         if (session) {
-            const hasWorkspaces = (session.principal?.workspace_ids?.length ?? 0) > 0;
-            if (!hasWorkspaces) {
-                navigate('/onboarding', { replace: true });
-            } else {
-                const returnUrl = sessionStorage.getItem('returnUrl') || '/agents';
-                sessionStorage.removeItem('returnUrl');
-                navigate(returnUrl, { replace: true });
-            }
+            const returnUrl = sessionStorage.getItem('returnUrl') || '/agents';
+            sessionStorage.removeItem('returnUrl');
+            navigate(returnUrl, { replace: true });
         }
     }, [session, navigate]);
 
@@ -258,7 +253,7 @@ const SubmitButton = styled(Button)`
 `;
 
 const ErrorText = styled.p`
-    color: hsl(var(--destructive));
+    color: var(--color-error, #ff4757);
     font-size: 13px;
     margin: 0;
 `;

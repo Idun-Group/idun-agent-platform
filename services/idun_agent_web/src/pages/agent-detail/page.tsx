@@ -8,13 +8,10 @@ import {
     patchAgent,
     restartAgent,
     performHealthCheck,
-    fetchEngineHealth,
-    fetchLatestEngineVersion,
     type BackendAgent,
 } from '../../services/agents';
 import Loader from '../../components/general/loader/component';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
-import EnrollmentSection from '../../components/agent-detail/tabs/overview-tab/sections/enrollment-section';
 import {
     ArrowLeft,
     RotateCcw,
@@ -26,22 +23,17 @@ import {
     Settings,
     Layers,
     MessageSquare,
-    AlertTriangle,
-    CheckCircle2,
-    FileText,
 } from 'lucide-react';
 
 const OverviewTab = lazy(() => import('../../components/agent-detail/tabs/overview-tab/component'));
 const GatewayTab = lazy(() => import('../../components/agent-detail/tabs/gateway-tab/component'));
 const ConfigurationTab = lazy(() => import('../../components/agent-detail/tabs/configuration-tab/component'));
 const ChatTab = lazy(() => import('../../components/agent-detail/tabs/chat-tab/component'));
-const PromptsTab = lazy(() => import('../../components/agent-detail/tabs/prompts-tab/component'));
 
 const TABS = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'chat', label: 'Chat', icon: MessageSquare },
     { id: 'gateway', label: 'API Integration', icon: Webhook },
-    { id: 'prompts', label: 'Prompts', icon: FileText },
     { id: 'configuration', label: 'Configuration', icon: Settings },
 ];
 
@@ -50,8 +42,6 @@ export default function AgentDetailPage() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
     const [agent, setAgent] = useState<BackendAgent | null>(null);
-    const [engineVersion, setEngineVersion] = useState<string | null>(null);
-    const [latestEngineVersion, setLatestEngineVersion] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [saveTrigger, setSaveTrigger] = useState(0);
@@ -64,12 +54,6 @@ export default function AgentDetailPage() {
             .then((loaded) => {
                 setAgent(loaded);
                 performHealthCheck(loaded, setAgent);
-                if (loaded.base_url) {
-                    fetchEngineHealth(loaded.base_url).then(health => {
-                        if (health?.engineVersion) setEngineVersion(health.engineVersion);
-                    });
-                }
-                fetchLatestEngineVersion().then(v => setLatestEngineVersion(v));
             })
             .catch((e) => {
                 const errorMsg = e instanceof Error ? e.message : 'Failed to load agent';
@@ -125,8 +109,8 @@ export default function AgentDetailPage() {
         return (
             <PageContainer>
                 <div style={{ padding: '40px', textAlign: 'center' }}>
-                    <h2 style={{ color: 'hsl(var(--destructive))', marginBottom: '16px' }}>Failed to load agent</h2>
-                    <p style={{ color: 'hsl(var(--muted-foreground))', marginBottom: '24px' }}>{error}</p>
+                    <h2 style={{ color: '#ef4444', marginBottom: '16px' }}>Failed to load agent</h2>
+                    <p style={{ color: '#9ca3af', marginBottom: '24px' }}>{error}</p>
                     <Button onClick={() => window.location.reload()}>Retry</Button>
                 </div>
             </PageContainer>
@@ -160,25 +144,8 @@ export default function AgentDetailPage() {
                             <MetaText>ID: {agent?.id}</MetaText>
                             <Separator>•</Separator>
                             <MetaText style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Layers size={12} color="hsl(var(--primary))" /> {agent?.framework || 'LANGGRAPH'}
+                                <Layers size={12} color="#8c52ff" /> {agent?.framework || 'LANGGRAPH'}
                             </MetaText>
-                            {engineVersion && (
-                                <>
-                                    <Separator>•</Separator>
-                                    <VersionBadge
-                                        $status={!latestEngineVersion ? 'neutral' : engineVersion === latestEngineVersion ? 'ok' : 'outdated'}
-                                        $tooltip={latestEngineVersion && engineVersion === latestEngineVersion ? 'You are running the latest version' : undefined}
-                                    >
-                                        Engine v{engineVersion}
-                                        {latestEngineVersion && engineVersion === latestEngineVersion && (
-                                            <CheckCircle2 size={11} />
-                                        )}
-                                        {latestEngineVersion && engineVersion !== latestEngineVersion && (
-                                            <> — <AlertTriangle size={11} /> Update to v{latestEngineVersion}</>
-                                        )}
-                                    </VersionBadge>
-                                </>
-                            )}
                         </MetaInfo>
                     </div>
                 </div>
@@ -221,12 +188,6 @@ export default function AgentDetailPage() {
             <ContentArea>
                 <Suspense fallback={<Loader />}>
                     {activeTab === 'overview' && (
-                        <>
-                        {agent && (
-                            <div style={{ marginBottom: '24px' }}>
-                                <EnrollmentSection agent={agent} />
-                            </div>
-                        )}
                         <OverviewTab
                             agent={agent}
                             isEditing={isEditing}
@@ -235,11 +196,9 @@ export default function AgentDetailPage() {
                             saveTrigger={saveTrigger}
                             onAgentRefresh={loadAgent}
                         />
-                        </>
                     )}
                     {activeTab === 'chat' && <ChatTab agent={agent} />}
                     {activeTab === 'gateway' && <GatewayTab agent={agent} />}
-                    {activeTab === 'prompts' && <PromptsTab agent={agent} />}
                     {activeTab === 'configuration' && <ConfigurationTab agent={agent} />}
                 </Suspense>
             </ContentArea>
@@ -252,7 +211,7 @@ export default function AgentDetailPage() {
 const PageContainer = styled.div`
     min-height: 100vh;
 
-    color: hsl(var(--foreground));
+    color: white;
     padding: 24px 40px;
     display: flex;
     flex-direction: column;
@@ -269,12 +228,12 @@ const BackButton = styled.button`
     align-items: center;
     background: none;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: #6b7280;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     padding: 0;
-    &:hover { color: hsl(var(--foreground)); }
+    &:hover { color: white; }
 `;
 
 const HeaderSection = styled.div`
@@ -297,15 +256,15 @@ const StatusDot = styled.div<{ $status: string }>`
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    border: 4px solid hsl(var(--card));
-    background-color: ${props => props.$status.toLowerCase() === 'active' ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}; // Emerald or Red (or Gray for draft)
-    ${props => props.$status.toLowerCase() === 'draft' && 'background-color: hsl(var(--muted-foreground));'}
+    border: 4px solid #0f1016;
+    background-color: ${props => props.$status.toLowerCase() === 'active' ? '#10b981' : '#ef4444'}; // Emerald or Red (or Gray for draft)
+    ${props => props.$status.toLowerCase() === 'draft' && 'background-color: #6b7280;'}
 `;
 
 const Title = styled.h1`
     font-size: 32px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: white;
     margin: 0 0 8px 0;
     letter-spacing: -0.02em;
 `;
@@ -335,11 +294,11 @@ const StatusBadge = styled.span<{ $status: string }>`
 `;
 
 const Separator = styled.span`
-    color: hsl(var(--muted-foreground));
+    color: #4b5563;
 `;
 
 const MetaText = styled.span`
-    color: hsl(var(--muted-foreground));
+    color: #9ca3af;
     font-size: 12px;
     font-family: monospace;
 `;
@@ -362,17 +321,17 @@ const HeaderButton = styled.button<{ $primary?: boolean }>`
 
     ${props => props.$primary
         ? `
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
+            background-color: #8c52ff;
+            color: white;
             border: none;
             box-shadow: 0 0 15px rgba(140, 82, 255, 0.3);
-            &:hover { background-color: hsl(var(--primary) / 0.85); box-shadow: 0 0 20px rgba(140, 82, 255, 0.5); }
+            &:hover { background-color: #7c3aed; box-shadow: 0 0 20px rgba(140, 82, 255, 0.5); }
         `
         : `
-            background-color: var(--overlay-light);
-            color: hsl(var(--muted-foreground));
-            border: 1px solid var(--border-light);
-            &:hover { background-color: var(--overlay-medium); color: hsl(var(--foreground)); }
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #d1d5db;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            &:hover { background-color: rgba(255, 255, 255, 0.1); color: white; }
         `
     }
 `;
@@ -380,7 +339,7 @@ const HeaderButton = styled.button<{ $primary?: boolean }>`
 const TabsNav = styled.div`
     display: flex;
     gap: 32px;
-    border-bottom: 1px solid var(--overlay-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     margin-bottom: 32px;
 `;
 
@@ -398,8 +357,8 @@ const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
     opacity: ${props => props.$disabled ? 0.4 : 1};
 
     ${props => props.$active
-        ? `color: hsl(var(--foreground));`
-        : `color: hsl(var(--muted-foreground)); &:hover { color: hsl(var(--foreground)); }`
+        ? `color: white;`
+        : `color: #9ca3af; &:hover { color: #d1d5db; }`
     }
 
     &::after {
@@ -409,18 +368,18 @@ const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
         left: 0;
         right: 0;
         height: 2px;
-        background-color: hsl(var(--primary));
+        background-color: #8c52ff;
         opacity: ${props => props.$active ? 1 : 0};
         transition: opacity 0.2s;
     }
 
     svg {
-        color: ${props => props.$active ? 'hsl(var(--primary))' : 'currentColor'};
+        color: ${props => props.$active ? '#8c52ff' : 'currentColor'};
         transition: color 0.2s;
     }
 
     &:hover svg {
-        color: ${props => props.$active ? 'hsl(var(--primary))' : 'hsl(var(--foreground))'};
+        color: ${props => props.$active ? '#8c52ff' : '#d1d5db'};
     }
 `;
 
@@ -431,63 +390,10 @@ const ContentArea = styled.div`
     min-height: 0;
 `;
 
-const VersionBadge = styled.span<{ $status: 'ok' | 'outdated' | 'neutral'; $tooltip?: string }>`
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: monospace;
-    position: relative;
-    cursor: default;
-    ${props => {
-        if (props.$status === 'ok') return `
-            background-color: rgba(16, 185, 129, 0.1);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        `;
-        if (props.$status === 'outdated') return `
-            background-color: rgba(245, 158, 11, 0.1);
-            color: #f59e0b;
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        `;
-        return `
-            background-color: rgba(140, 82, 255, 0.1);
-            color: hsl(var(--primary));
-            border: 1px solid rgba(140, 82, 255, 0.2);
-        `;
-    }}
-
-    ${props => props.$tooltip && `
-        &::after {
-            content: '${props.$tooltip}';
-            position: absolute;
-            bottom: calc(100% + 6px);
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 500;
-            white-space: nowrap;
-            background-color: hsl(var(--foreground));
-            color: hsl(var(--background));
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.15s;
-        }
-        &:hover::after {
-            opacity: 1;
-        }
-    `}
-`;
-
 const Button = styled.button`
     padding: 8px 16px;
-    background-color: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
+    background-color: #8c52ff;
+    color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;

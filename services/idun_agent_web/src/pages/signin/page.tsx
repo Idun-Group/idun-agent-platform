@@ -66,10 +66,7 @@ const Signin = () => {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        if (session) {
-            const hasWorkspaces = (session.principal?.workspace_ids?.length ?? 0) > 0;
-            navigate(hasWorkspaces ? '/agents' : '/onboarding');
-        }
+        if (session) navigate('/agents');
     }, [navigate, session]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -77,7 +74,7 @@ const Signin = () => {
         setError('');
         try {
             await signup({ email, password, name });
-            // Navigation is handled by the useEffect above once session is set.
+            navigate('/login');
         } catch (err) {
             setError(extractErrorMessage(err));
         }
@@ -124,7 +121,7 @@ const Signin = () => {
 };
 
 const ErrorText = styled.p`
-    color: hsl(var(--destructive));
+    color: var(--color-error, #ff4757);
     font-size: 13px;
     margin: 0;
 `;

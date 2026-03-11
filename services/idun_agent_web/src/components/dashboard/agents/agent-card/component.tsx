@@ -36,14 +36,14 @@ const STATUS_STYLES: Record<string, { color: string; bg: string; border: string;
     },
     inactive: {
         color: '#888',
-        bg: 'var(--overlay-light)',
-        border: 'var(--border-light)',
+        bg: 'rgba(255, 255, 255, 0.06)',
+        border: 'rgba(255, 255, 255, 0.1)',
         accent: '#555',
     },
     draft: {
         color: '#888',
-        bg: 'var(--overlay-light)',
-        border: 'var(--border-light)',
+        bg: 'rgba(255, 255, 255, 0.06)',
+        border: 'rgba(255, 255, 255, 0.1)',
         accent: '#555',
     },
 };
@@ -202,8 +202,8 @@ export default AgentCard;
 // ── Styled components ────────────────────────────────────────────────────────
 
 const Card = styled.div<{ $accent: string }>`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--overlay-light);
+    background: var(--color-surface, #1a1a2e);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-left: 3px solid ${(p) => p.$accent};
     border-radius: 16px;
     padding: 22px 24px 20px;
@@ -247,7 +247,7 @@ const NameBlock = styled.div`
 const AgentName = styled.span`
     font-size: 15px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: white;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -255,7 +255,7 @@ const AgentName = styled.span`
 
 const FrameworkLabel = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
 `;
 
 const HeaderRight = styled.div`
@@ -285,7 +285,7 @@ const MenuWrapper = styled.div`
 const MenuBtn = styled.button`
     background: transparent;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: rgba(255, 255, 255, 0.35);
     cursor: pointer;
     padding: 4px;
     border-radius: 6px;
@@ -295,8 +295,8 @@ const MenuBtn = styled.button`
     transition: all 0.15s;
 
     &:hover {
-        background: var(--overlay-light);
-        color: hsl(var(--foreground));
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
     }
 `;
 
@@ -306,8 +306,8 @@ const MenuPopover = styled.div`
     right: 0;
     z-index: 50;
     min-width: 140px;
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-light);
+    background: var(--color-surface, #1a1a2e);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     padding: 4px;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
@@ -324,19 +324,19 @@ const MenuItem = styled.button<{ $danger?: boolean }>`
     border-radius: 6px;
     font-size: 13px;
     font-weight: 500;
-    color: ${(p) => (p.$danger ? '#f87171' : 'hsl(var(--muted-foreground))')};
+    color: ${(p) => (p.$danger ? '#f87171' : 'var(--color-text-secondary, #ccc)')};
     cursor: pointer;
     transition: background 0.12s;
 
     &:hover {
         background: ${(p) =>
-            p.$danger ? 'rgba(248, 113, 113, 0.1)' : 'var(--overlay-light)'};
+            p.$danger ? 'rgba(248, 113, 113, 0.1)' : 'rgba(255, 255, 255, 0.07)'};
     }
 `;
 
 const MenuDivider = styled.div`
     height: 1px;
-    background: var(--overlay-light);
+    background: rgba(255, 255, 255, 0.06);
     margin: 4px 6px;
 `;
 
@@ -352,7 +352,7 @@ const StatsRow = styled.div`
     display: flex;
     align-items: center;
     padding: 14px 0 0;
-    border-top: 1px solid var(--overlay-light);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const StatItem = styled.div`
@@ -365,19 +365,19 @@ const StatItem = styled.div`
 
 const StatLabel = styled.span`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted, #888);
     white-space: nowrap;
 `;
 
 const StatValue = styled.span`
     font-size: 15px;
     font-weight: 600;
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-secondary, #ccc);
 `;
 
 const StatDivider = styled.div`
     width: 1px;
     height: 28px;
-    background: var(--overlay-light);
+    background: rgba(255, 255, 255, 0.06);
     flex-shrink: 0;
 `;

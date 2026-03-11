@@ -39,8 +39,12 @@ const mapConfigFromApi = (type: AppType, config: any): any => {
     if (type === 'LangSmith') {
         return {
             apiKey: config.api_key || config.apiKey,
+            projectId: config.project_id || config.projectId,
             projectName: config.project_name || config.projectName,
             endpoint: config.endpoint,
+            traceName: config.trace_name || config.traceName,
+            tracingEnabled: String(config.tracing_enabled || config.tracingEnabled),
+            captureInputsOutputs: String(config.capture_inputs_outputs || config.captureInputsOutputs)
         };
     }
     if (type === 'PostgreSQL' || type === 'SQLite') {
@@ -89,8 +93,12 @@ export const mapConfigToApi = (type: AppType, config: any, name?: string): any =
     if (type === 'LangSmith') {
         return {
             api_key: config.apiKey,
+            project_id: config.projectId || 'default',
             project_name: config.projectName,
             endpoint: config.endpoint || 'https://api.smith.langchain.com',
+            trace_name: config.traceName || 'default',
+            tracing_enabled: config.tracingEnabled === 'true',
+            capture_inputs_outputs: config.captureInputsOutputs === 'true'
         };
     }
     if (type === 'PostgreSQL') {
@@ -186,100 +194,81 @@ export const mapConfigToApi = (type: AppType, config: any, name?: string): any =
             prompt: config.prompt
         };
     }
-    const guardrailApiKey = config.api_key?.trim() || undefined;
-    const rejectMsg = config.reject_message?.trim() || undefined;
-    const guardrailCommon = {
-        ...(guardrailApiKey && { api_key: guardrailApiKey }),
-        ...(rejectMsg && { reject_message: rejectMsg }),
-    };
     if (type === 'BanList') {
         return {
             config_id: 'ban_list',
-            ...guardrailCommon,
             banned_words: config.banned_words ? config.banned_words.split('\n').filter((s: string) => s.trim()) : []
         };
     }
     if (type === 'BiasCheck') {
         return {
             config_id: 'bias_check',
-            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'CompetitionCheck') {
         return {
             config_id: 'competition_check',
-            ...guardrailCommon,
             competitors: config.competitors ? config.competitors.split('\n').filter((s: string) => s.trim()) : []
         };
     }
     if (type === 'CorrectLanguage') {
         return {
             config_id: 'correct_language',
-            ...guardrailCommon,
             expected_languages: config.expected_languages ? config.expected_languages.split('\n').filter((s: string) => s.trim()) : []
         };
     }
     if (type === 'DetectPII') {
         return {
             config_id: 'detect_pii',
-            ...guardrailCommon,
             pii_entities: config.pii_entities ? config.pii_entities.split(',').map((s: string) => s.trim()).filter(Boolean) : []
         };
     }
     if (type === 'GibberishText') {
         return {
             config_id: 'gibberish_text',
-            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'NSFWText') {
         return {
             config_id: 'nsfw_text',
-            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'DetectJailbreak') {
         return {
             config_id: 'detect_jailbreak',
-            ...guardrailCommon,
             threshold: Number(config.threshold || 0.5)
         };
     }
     if (type === 'RestrictTopic') {
         return {
             config_id: 'restrict_to_topic',
-            ...guardrailCommon,
             topics: config.valid_topics ? config.valid_topics.split('\n').filter((s: string) => s.trim()) : []
         };
     }
     if (type === 'PromptInjection') {
         return {
             config_id: 'prompt_injection',
-            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'RagHallucination') {
         return {
             config_id: 'rag_hallucination',
-            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'ToxicLanguage') {
         return {
             config_id: 'toxic_language',
-            ...guardrailCommon,
             threshold: Number(config.threshold)
         };
     }
     if (type === 'CodeScanner') {
         return {
             config_id: 'code_scanner',
-            ...guardrailCommon,
             allowed_languages: config.allowed_languages ? config.allowed_languages.split('\n').filter((s: string) => s.trim()) : []
         };
     }
@@ -325,8 +314,7 @@ const mapObservabilityToApp = (obs: components["schemas"]["ManagedObservabilityR
         createdAt: obs.created_at,
         updatedAt: obs.updated_at,
         config: mapConfigFromApi(type, obs.observability.config),
-        imageUrl,
-        agentCount: (obs as any).agent_count ?? 0,
+        imageUrl
     };
 };
 
@@ -372,8 +360,7 @@ const mapMemoryToApp = (mem: components["schemas"]["ManagedMemoryRead"]): Applic
         createdAt: mem.created_at,
         updatedAt: mem.updated_at,
         config: config,
-        imageUrl,
-        agentCount: (mem as any).agent_count ?? 0,
+        imageUrl
     };
 };
 
@@ -409,8 +396,7 @@ const mapMCPServerToApp = (mcp: components["schemas"]["ManagedMCPServerRead"]): 
         createdAt: mcp.created_at,
         updatedAt: mcp.updated_at,
         config,
-        imageUrl: '/img/mcp.svg',
-        agentCount: (mcp as any).agent_count ?? 0,
+        imageUrl: '/img/mcp.svg'
     };
 };
 
@@ -421,45 +407,42 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
     const guardrail = guard.guardrail as any;
 
     if (guardrail && 'config_id' in guardrail) {
-        const apiKey = guardrail.api_key || '';
-        const rejectMessage = guardrail.reject_message || '';
-        const common = { api_key: apiKey, reject_message: rejectMessage };
         switch (guardrail.config_id) {
             case 'ban_list':
                 type = 'BanList';
-                config = { ...common, banned_words: (guardrail.banned_words || []).join('\n') };
+                config = { banned_words: (guardrail.banned_words || []).join('\n') };
                 break;
             case 'detect_pii':
                 type = 'DetectPII';
-                config = { ...common, pii_entities: (guardrail.pii_entities || []).join(',') };
+                config = { pii_entities: (guardrail.pii_entities || []).join(',') };
                 break;
             case 'nsfw_text':
                 type = 'NSFWText';
-                config = { ...common, threshold: String(guardrail.threshold ?? 0.5) };
+                config = { threshold: String(guardrail.threshold ?? 0.5) };
                 break;
             case 'toxic_language':
                 type = 'ToxicLanguage';
-                config = { ...common, threshold: String(guardrail.threshold ?? 0.5) };
+                config = { threshold: String(guardrail.threshold ?? 0.5) };
                 break;
             case 'gibberish_text':
                 type = 'GibberishText';
-                config = { ...common, threshold: String(guardrail.threshold ?? 0.5) };
+                config = { threshold: String(guardrail.threshold ?? 0.5) };
                 break;
             case 'bias_check':
                 type = 'BiasCheck';
-                config = { ...common, threshold: String(guardrail.threshold ?? 0.5) };
+                config = { threshold: String(guardrail.threshold ?? 0.5) };
                 break;
             case 'competition_check':
                 type = 'CompetitionCheck';
-                config = { ...common, competitors: (guardrail.competitors || []).join('\n') };
+                config = { competitors: (guardrail.competitors || []).join('\n') };
                 break;
             case 'correct_language':
                 type = 'CorrectLanguage';
-                config = { ...common, expected_languages: (guardrail.expected_languages || []).join('\n') };
+                config = { expected_languages: (guardrail.expected_languages || []).join('\n') };
                 break;
             case 'restrict_to_topic':
                 type = 'RestrictTopic';
-                config = { ...common, valid_topics: (guardrail.topics || []).join('\n') };
+                config = { valid_topics: (guardrail.topics || []).join('\n') };
                 break;
         }
     }
@@ -473,8 +456,7 @@ const mapGuardrailToApp = (guard: components["schemas"]["ManagedGuardrailRead"])
         createdAt: guard.created_at,
         updatedAt: guard.updated_at,
         config,
-        imageUrl: '/img/guardrail.svg',
-        agentCount: (guard as any).agent_count ?? 0,
+        imageUrl: '/img/guardrail.svg'
     };
 };
 
@@ -966,44 +948,12 @@ export const discoverTools = async (id: string): Promise<MCPTool[]> => {
     return res.tools;
 };
 
-const isConflictError = (e: unknown): boolean => {
-    if (!(e instanceof Error)) return false;
-    // The API returns JSON with a "detail" field for 409 errors
-    try {
-        const parsed = JSON.parse(e.message);
-        return typeof parsed.detail === 'string' && parsed.detail.includes('referenced by one or more agents');
-    } catch {
-        return e.message.includes('referenced by one or more agents');
-    }
-};
-
-const extractConflictMessage = (e: unknown): string => {
-    if (!(e instanceof Error)) return 'Cannot delete: resource is in use by agents';
-    try {
-        const parsed = JSON.parse(e.message);
-        return parsed.detail || e.message;
-    } catch {
-        return e.message;
-    }
-};
-
 export const deleteApplication = async (id: string): Promise<void> => {
-    const endpoints = [
-        `/api/v1/observability/${id}`,
-        `/api/v1/memory/${id}`,
-        `/api/v1/mcp-servers/${id}`,
-        `/api/v1/guardrails/${id}`,
-    ];
+    try { await deleteRequest(`/api/v1/observability/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/memory/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/mcp-servers/${id}`); return; } catch (e) { /* ignore */ }
+    try { await deleteRequest(`/api/v1/guardrails/${id}`); return; } catch (e) { /* ignore */ }
 
-    for (const endpoint of endpoints) {
-        try {
-            await deleteRequest(endpoint);
-            return;
-        } catch (e) {
-            if (isConflictError(e)) {
-                throw new Error(extractConflictMessage(e));
-            }
-            // 404 = wrong endpoint, try next
-        }
-    }
+    // If we reached here, it means we couldn't delete from any API
+    // throw new Error('Failed to delete application from any source');
 };

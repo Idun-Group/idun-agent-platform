@@ -41,9 +41,7 @@ class IntegrationConfig(BaseModel):
         default=True,
         description="Toggle this integration on or off.",
     )
-    config: Union[
-        WhatsAppIntegrationConfig, DiscordIntegrationConfig, SlackIntegrationConfig
-    ] = Field(
+    config: Union[WhatsAppIntegrationConfig, DiscordIntegrationConfig, SlackIntegrationConfig] = Field(
         description="Provider-specific configuration.",
     )
 

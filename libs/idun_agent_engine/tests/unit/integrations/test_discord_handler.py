@@ -39,9 +39,7 @@ class TestDiscordPing:
         private_key, public_key_hex = _generate_keypair()
         app = _make_app(public_key_hex)
 
-        body = json.dumps(
-            {"type": InteractionType.PING, "id": "1", "token": ""}
-        ).encode()
+        body = json.dumps({"type": InteractionType.PING, "id": "1", "token": ""}).encode()
         timestamp = "1234567890"
         signature = _sign_request(private_key, timestamp, body)
 
@@ -62,9 +60,7 @@ class TestDiscordPing:
         _, public_key_hex = _generate_keypair()
         app = _make_app(public_key_hex)
 
-        body = json.dumps(
-            {"type": InteractionType.PING, "id": "1", "token": ""}
-        ).encode()
+        body = json.dumps({"type": InteractionType.PING, "id": "1", "token": ""}).encode()
 
         with TestClient(app) as client:
             resp = client.post(
@@ -90,18 +86,16 @@ class TestDiscordApplicationCommand:
         app.state.agent.invoke = AsyncMock(return_value="Hello from agent")
         app.state.discord_client = AsyncMock()
 
-        body = json.dumps(
-            {
-                "type": InteractionType.APPLICATION_COMMAND,
-                "id": "interaction_1",
-                "token": "interaction_token_abc",
-                "data": {
-                    "name": "ask",
-                    "options": [{"name": "query", "type": 3, "value": "what is AI?"}],
-                },
-                "member": {"user": {"id": "user_123", "username": "testuser"}},
-            }
-        ).encode()
+        body = json.dumps({
+            "type": InteractionType.APPLICATION_COMMAND,
+            "id": "interaction_1",
+            "token": "interaction_token_abc",
+            "data": {
+                "name": "ask",
+                "options": [{"name": "query", "type": 3, "value": "what is AI?"}],
+            },
+            "member": {"user": {"id": "user_123", "username": "testuser"}},
+        }).encode()
         timestamp = "1234567890"
         signature = _sign_request(private_key, timestamp, body)
 
@@ -116,24 +110,19 @@ class TestDiscordApplicationCommand:
                 },
             )
             assert resp.status_code == 200
-            assert (
-                resp.json()["type"]
-                == InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
-            )
+            assert resp.json()["type"] == InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
 
     def test_no_agent_returns_503(self):
         private_key, public_key_hex = _generate_keypair()
         app = _make_app(public_key_hex)
         # No agent or client set on app.state
 
-        body = json.dumps(
-            {
-                "type": InteractionType.APPLICATION_COMMAND,
-                "id": "interaction_1",
-                "token": "token_abc",
-                "data": {"name": "ask", "options": []},
-            }
-        ).encode()
+        body = json.dumps({
+            "type": InteractionType.APPLICATION_COMMAND,
+            "id": "interaction_1",
+            "token": "token_abc",
+            "data": {"name": "ask", "options": []},
+        }).encode()
         timestamp = "1234567890"
         signature = _sign_request(private_key, timestamp, body)
 
@@ -153,13 +142,11 @@ class TestDiscordApplicationCommand:
         private_key, public_key_hex = _generate_keypair()
         app = _make_app(public_key_hex)
 
-        body = json.dumps(
-            {
-                "type": 99,
-                "id": "1",
-                "token": "",
-            }
-        ).encode()
+        body = json.dumps({
+            "type": 99,
+            "id": "1",
+            "token": "",
+        }).encode()
         timestamp = "1234567890"
         signature = _sign_request(private_key, timestamp, body)
 
@@ -185,9 +172,9 @@ class TestDiscordWebhookPayloadParsing:
             DiscordInteraction,
         )
 
-        interaction = DiscordInteraction.model_validate(
-            {"type": 1, "id": "abc", "token": "tok"}
-        )
+        interaction = DiscordInteraction.model_validate({
+            "type": 1, "id": "abc", "token": "tok"
+        })
         assert interaction.type == InteractionType.PING
         assert interaction.id == "abc"
 
@@ -196,18 +183,16 @@ class TestDiscordWebhookPayloadParsing:
             DiscordInteraction,
         )
 
-        interaction = DiscordInteraction.model_validate(
-            {
-                "type": 2,
-                "id": "abc",
-                "token": "tok",
-                "data": {
-                    "name": "ask",
-                    "options": [{"name": "query", "type": 3, "value": "hello world"}],
-                },
-                "member": {"user": {"id": "user_1", "username": "test"}},
-            }
-        )
+        interaction = DiscordInteraction.model_validate({
+            "type": 2,
+            "id": "abc",
+            "token": "tok",
+            "data": {
+                "name": "ask",
+                "options": [{"name": "query", "type": 3, "value": "hello world"}],
+            },
+            "member": {"user": {"id": "user_1", "username": "test"}},
+        })
         assert interaction.extract_command_text() == "hello world"
         assert interaction.resolve_user_id() == "user_1"
 
@@ -216,14 +201,10 @@ class TestDiscordWebhookPayloadParsing:
             DiscordInteraction,
         )
 
-        interaction = DiscordInteraction.model_validate(
-            {
-                "type": 2,
-                "id": "abc",
-                "token": "tok",
-                "data": {"name": "ping", "options": []},
-            }
-        )
+        interaction = DiscordInteraction.model_validate({
+            "type": 2, "id": "abc", "token": "tok",
+            "data": {"name": "ping", "options": []},
+        })
         assert interaction.extract_command_text() == "ping"
 
     def test_resolve_user_id_dm(self):
@@ -231,14 +212,10 @@ class TestDiscordWebhookPayloadParsing:
             DiscordInteraction,
         )
 
-        interaction = DiscordInteraction.model_validate(
-            {
-                "type": 2,
-                "id": "abc",
-                "token": "tok",
-                "user": {"id": "dm_user", "username": "dmuser"},
-            }
-        )
+        interaction = DiscordInteraction.model_validate({
+            "type": 2, "id": "abc", "token": "tok",
+            "user": {"id": "dm_user", "username": "dmuser"},
+        })
         assert interaction.resolve_user_id() == "dm_user"
 
     def test_resolve_user_id_fallback_to_interaction_id(self):
@@ -246,11 +223,7 @@ class TestDiscordWebhookPayloadParsing:
             DiscordInteraction,
         )
 
-        interaction = DiscordInteraction.model_validate(
-            {
-                "type": 2,
-                "id": "fallback_id",
-                "token": "tok",
-            }
-        )
+        interaction = DiscordInteraction.model_validate({
+            "type": 2, "id": "fallback_id", "token": "tok",
+        })
         assert interaction.resolve_user_id() == "fallback_id"

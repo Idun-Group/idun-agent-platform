@@ -1,8 +1,8 @@
 import styled from 'styled-components';
 
 export const SectionCard = styled.div`
-    background: var(--overlay-subtle);
-    border: 1px solid var(--overlay-light);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     padding: 24px;
 `;
@@ -13,13 +13,13 @@ export const SectionHeader = styled.div`
     gap: 10px;
     margin-bottom: 20px;
     padding-bottom: 16px;
-    border-bottom: 1px solid var(--overlay-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 export const SectionTitle = styled.h3`
     font-size: 16px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #ffffff;
     margin: 0;
 `;
 
@@ -55,7 +55,7 @@ export const DetailRow = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 10px 0;
-    border-bottom: 1px solid var(--overlay-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 
     &:last-child {
         border-bottom: none;
@@ -65,13 +65,13 @@ export const DetailRow = styled.div`
 export const DetailLabel = styled.span`
     font-size: 13px;
     font-weight: 500;
-    color: hsl(var(--text-secondary));
+    color: #6b7280;
 `;
 
 export const DetailValue = styled.span`
     font-size: 13px;
     font-weight: 500;
-    color: hsl(var(--foreground));
+    color: #e5e7eb;
     text-align: right;
     max-width: 60%;
     word-break: break-all;
@@ -95,17 +95,17 @@ export const Badge = styled.span<{ $variant?: 'active' | 'draft' | 'error' | 'de
                 return 'background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2);';
             case 'draft':
             default:
-                return `background: rgba(107, 114, 128, 0.1); color: hsl(var(--muted-foreground)); border: 1px solid rgba(107, 114, 128, 0.2);`;
+                return 'background: rgba(107, 114, 128, 0.1); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.2);';
         }
     }}
 `;
 
 export const EditableInput = styled.input`
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     padding: 6px 10px;
-    color: hsl(var(--foreground));
+    color: #e5e7eb;
     font-size: 13px;
     width: 100%;
     max-width: 300px;
@@ -114,16 +114,16 @@ export const EditableInput = styled.input`
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--primary));
+        border-color: #8c52ff;
     }
 `;
 
 export const EditableTextarea = styled.textarea`
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     padding: 8px 10px;
-    color: hsl(var(--foreground));
+    color: #e5e7eb;
     font-size: 13px;
     width: 100%;
     max-width: 300px;
@@ -134,7 +134,7 @@ export const EditableTextarea = styled.textarea`
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--primary));
+        border-color: #8c52ff;
     }
 `;
 
@@ -145,8 +145,8 @@ export const ResourceGrid = styled.div`
 `;
 
 export const ResourceCardContainer = styled.div<{ $configured?: boolean }>`
-    background: var(--overlay-subtle);
-    border: 1px solid ${p => p.$configured ? 'rgba(140, 82, 255, 0.15)' : 'var(--overlay-light)'};
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid ${p => p.$configured ? 'rgba(140, 82, 255, 0.15)' : 'rgba(255, 255, 255, 0.06)'};
     border-radius: 10px;
     padding: 16px;
     transition: border-color 0.2s;
@@ -165,12 +165,12 @@ export const ResourceCardTitle = styled.div`
     gap: 8px;
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e5e7eb;
 `;
 
 export const NotAssignedBadge = styled.span`
     font-size: 11px;
-    color: hsl(var(--text-secondary));
+    color: #6b7280;
     font-weight: 500;
     font-style: italic;
 `;
@@ -194,9 +194,9 @@ export const SelectableCard = styled.button<{ $selected?: boolean }>`
     gap: 12px;
     padding: 12px 14px;
     border-radius: 10px;
-    border: 1px solid ${p => p.$selected ? 'rgba(140, 82, 255, 0.4)' : 'var(--overlay-light)'};
-    background: ${p => p.$selected ? 'rgba(140, 82, 255, 0.08)' : 'var(--overlay-subtle)'};
-    color: hsl(var(--foreground));
+    border: 1px solid ${p => p.$selected ? 'rgba(140, 82, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)'};
+    background: ${p => p.$selected ? 'rgba(140, 82, 255, 0.08)' : 'rgba(255, 255, 255, 0.02)'};
+    color: #e5e7eb;
     cursor: pointer;
     text-align: left;
     width: 100%;
@@ -220,17 +220,17 @@ export const SelectableCardBody = styled.div`
 export const SelectableCardName = styled.span`
     font-weight: 600;
     font-size: 13px;
-    color: hsl(var(--foreground));
+    color: #e5e7eb;
 `;
 
 export const SelectableCardType = styled.span`
     font-size: 11px;
-    color: hsl(var(--text-secondary));
+    color: #6b7280;
 `;
 
 export const SelectableCardDetail = styled.span`
     font-size: 11px;
-    color: hsl(var(--text-tertiary));
+    color: #4b5563;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -264,7 +264,7 @@ export const ActionBar = styled.div`
     gap: 12px;
     padding: 16px 0 0;
     margin-top: 8px;
-    border-top: 1px solid var(--overlay-light);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 export const ActionButton = styled.button<{ $primary?: boolean }>`
@@ -280,17 +280,17 @@ export const ActionButton = styled.button<{ $primary?: boolean }>`
 
     ${p => p.$primary
         ? `
-            background: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
+            background: #8c52ff;
+            color: white;
             border: none;
             &:hover { background: #7c3aed; }
             &:disabled { opacity: 0.5; cursor: not-allowed; }
         `
         : `
             background: transparent;
-            color: hsl(var(--muted-foreground));
-            border: 1px solid var(--border-light);
-            &:hover { color: hsl(var(--foreground)); border-color: var(--overlay-strong); }
+            color: #9ca3af;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            &:hover { color: white; border-color: rgba(255, 255, 255, 0.2); }
         `
     }
 `;
@@ -299,8 +299,8 @@ export const CheckIndicator = styled.div<{ $checked?: boolean }>`
     width: 18px;
     height: 18px;
     border-radius: 4px;
-    border: 1.5px solid ${p => p.$checked ? 'hsl(var(--primary))' : 'var(--border-medium)'};
-    background: ${p => p.$checked ? 'hsl(var(--primary))' : 'transparent'};
+    border: 1.5px solid ${p => p.$checked ? '#8c52ff' : 'rgba(255,255,255,0.15)'};
+    background: ${p => p.$checked ? '#8c52ff' : 'transparent'};
     display: flex;
     align-items: center;
     justify-content: center;
@@ -339,8 +339,8 @@ export const ViewDetailItem = styled.div`
     gap: 4px;
     padding: 10px 12px;
     border-radius: 8px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--overlay-light);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
 `;
 
 export const ViewDetailHeader = styled.div`
@@ -353,7 +353,7 @@ export const ViewDetailHeader = styled.div`
 export const ViewDetailName = styled.span`
     font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e5e7eb;
 `;
 
 export const ViewDetailBadge = styled.span`
@@ -371,7 +371,7 @@ export const ViewDetailBadge = styled.span`
 
 export const ViewDetailMeta = styled.span`
     font-size: 11px;
-    color: hsl(var(--text-secondary));
+    color: #6b7280;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -384,9 +384,9 @@ export const ViewConfigButton = styled.button<{ $active?: boolean }>`
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    border: 1px solid ${p => p.$active ? 'rgba(140, 82, 255, 0.4)' : 'var(--border-light)'};
+    border: 1px solid ${p => p.$active ? 'rgba(140, 82, 255, 0.4)' : 'rgba(255, 255, 255, 0.1)'};
     background: ${p => p.$active ? 'rgba(140, 82, 255, 0.15)' : 'transparent'};
-    color: ${p => p.$active ? '#a78bfa' : 'hsl(var(--text-secondary))'};
+    color: ${p => p.$active ? '#a78bfa' : '#6b7280'};
     cursor: pointer;
     flex-shrink: 0;
     transition: all 0.15s;
@@ -448,7 +448,7 @@ export const ExpandedConfig = styled.div`
     padding: 8px 10px;
     border-radius: 6px;
     background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--overlay-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 export const ExpandedConfigRow = styled.div`
@@ -459,14 +459,14 @@ export const ExpandedConfigRow = styled.div`
 `;
 
 export const ExpandedConfigKey = styled.span`
-    color: hsl(var(--text-secondary));
+    color: #6b7280;
     flex-shrink: 0;
     min-width: 80px;
     font-weight: 500;
 `;
 
 export const ExpandedConfigValue = styled.span`
-    color: hsl(var(--muted-foreground));
+    color: #9ca3af;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

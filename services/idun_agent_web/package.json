@@ -1,7 +1,7 @@
 {
-  "name": "idun-agent-web",
+  "name": "front-end",
   "private": true,
-  "version": "0.4.9",
+  "version": "0.4.7",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,7 +16,6 @@
   "dependencies": {
     "@ag-ui/client": "^0.0.46",
     "@monaco-editor/react": "^4.7.0",
-    "@posthog/react": "^1.8.2",
     "ajv": "^8.12.0",
     "fflate": "^0.8.2",
     "i18next": "^25.3.2",
@@ -25,7 +24,6 @@
     "lucide-react": "^0.525.0",
     "mermaid": "^11.12.3",
     "monaco-editor": "^0.52.2",
-    "posthog-js": "^1.359.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-i18next": "^15.6.0",

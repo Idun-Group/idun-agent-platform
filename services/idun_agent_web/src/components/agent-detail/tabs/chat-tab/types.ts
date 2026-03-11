@@ -24,7 +24,6 @@ export interface StreamEvent {
 
 export interface AgentError {
   message: string;
-  code?: string;
   status?: number;
   statusText?: string;
   url?: string;

@@ -1,21 +1,12 @@
 """Guardrails."""
 
 import logging
-import os
 
 from guardrails import Guard
 from idun_agent_schema.engine.guardrails import Guardrail as GuardrailSchema
 from idun_agent_schema.engine.guardrails_v2 import GuardrailConfigId
 
 from ..base import BaseGuardrail
-
-PII_ENTITY_MAP = {
-    "Email": "EMAIL_ADDRESS",
-    "Phone Number": "PHONE_NUMBER",
-    "Credit Card": "CREDIT_CARD",
-    "SSN": "SSN",
-    "Location": "LOCATION",
-}
 
 logger = logging.getLogger(__name__)
 
@@ -89,15 +80,7 @@ class GuardrailsHubGuard(BaseGuardrail):
         from guardrails import install
 
         try:
-            api_key = (
-                self._guardrail_config.api_key
-                or os.getenv("GUARDRAILS_API_KEY", "")
-            )
-            if not api_key:
-                raise ValueError(
-                    f"Guardrail '{self.guard_id}' requires an api_key. "
-                    "Set it in the guardrail config or via GUARDRAILS_API_KEY env var."
-                )
+            api_key = self._guardrail_config.api_key
 
             logger.info("Configuring guardrails...")
             result = subprocess.run(
@@ -136,50 +119,35 @@ class GuardrailsHubGuard(BaseGuardrail):
                 f"Guard: {self.guard_id} is not yet supported, or does not exist."
             )
 
-        config_dict = self._guardrail_config.model_dump()
-        # Fields handled separately — not passed to the guard constructor
-        exclude_fields = {"config_id", "api_key", "reject_message", "guard_url", "on_fail"}
-        guard_instance_params = {
-            k: v for k, v in config_dict.items() if k not in exclude_fields
-        }
-
-        # Extract on_fail for Guard.use() — defaults to "exception"
-        on_fail = config_dict.get("on_fail", "exception")
-
-        if (
-            guard_name == GuardrailConfigId.DETECT_PII
-            and "pii_entities" in guard_instance_params
-        ):
-            guard_instance_params["pii_entities"] = [
-                PII_ENTITY_MAP.get(e, e)
-                for e in guard_instance_params["pii_entities"]
-            ]
+        if hasattr(self._guardrail_config, "guard_params"):
+            guard_instance_params = self._guardrail_config.guard_params.model_dump()
+        else:
+            config_dict = self._guardrail_config.model_dump()
+            exclude_fields = {"config_id", "api_key", "reject_message", "guard_url"}
+            guard_instance_params = {
+                k: v for k, v in config_dict.items() if k not in exclude_fields
+            }
 
         try:
-            guard_instance = guard(on_fail=on_fail, **guard_instance_params)
+            guard_instance = guard(**guard_instance_params)
+            for param, value in guard_instance_params.items():
+                setattr(guard_instance, param, value)
             return guard_instance
         except SystemError:
             # sentencepiece mutex lock error when loading models in quick succession
             import time
 
             time.sleep(0.5)
-            guard_instance = guard(on_fail=on_fail, **guard_instance_params)
+            guard_instance = guard(**guard_instance_params)
+            for param, value in guard_instance_params.items():
+                setattr(guard_instance, param, value)
             return guard_instance
 
     def validate(self, input: str) -> bool:
-        """Validate input against this guardrail. Returns True if content is allowed."""
-        from guardrails.errors import ValidationError as GuardrailsValidationError
-
+        """TODO."""
         main_guard = Guard().use(self._guard)
         try:
-            result = main_guard.validate(input)
-            return bool(result.validation_passed)
-        except GuardrailsValidationError:
-            return False
-        except Exception:
-            logger.exception(
-                "Guardrail '%s' raised an unexpected error during validation; "
-                "allowing request to proceed.",
-                self.guard_id,
-            )
+            main_guard.validate(input)
             return True
+        except Exception:
+            return False

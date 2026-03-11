@@ -164,7 +164,7 @@ const PageContainer = styled.div`
 const Backdrop = styled.div`
     position: absolute;
     inset: 0;
-    background-color: var(--overlay-backdrop);
+    background-color: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
 `;
 
@@ -172,8 +172,8 @@ const ModalWindow = styled.div`
     position: relative;
     width: 100%;
     max-width: 800px;
-    background-color: hsl(var(--card));
-    border: 1px solid var(--border-light);
+    background-color: #0f1016;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     display: flex;
@@ -187,26 +187,26 @@ const ModalHeader = styled.div`
     align-items: center;
     justify-content: space-between;
     padding: 20px 32px;
-    border-bottom: 1px solid var(--overlay-light);
-    background-color: hsl(var(--accent));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: #0B0A15;
 `;
 
 const ModalTitle = styled.h2`
     font-size: 24px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: white;
     margin: 0;
 `;
 
 const ModalSubtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #9ca3af;
     margin-top: 4px;
 `;
 
 const CloseButton = styled.button`
     padding: 8px;
-    color: hsl(var(--muted-foreground));
+    color: #9ca3af;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -214,8 +214,8 @@ const CloseButton = styled.button`
     transition: all 0.2s;
 
     &:hover {
-        color: hsl(var(--foreground));
-        background-color: var(--overlay-light);
+        color: white;
+        background-color: rgba(255, 255, 255, 0.05);
     }
 `;
 
@@ -223,13 +223,13 @@ const ModalBody = styled.div`
     flex: 1;
     overflow-y: auto;
     padding: 32px;
-    background-color: hsl(var(--background));
+    background-color: #040210;
 `;
 
 const ModalFooter = styled.div`
     padding: 20px 32px;
-    border-top: 1px solid var(--overlay-light);
-    background-color: hsl(var(--accent));
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: #0B0A15;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -239,7 +239,7 @@ const CancelButton = styled.button`
     padding: 10px 20px;
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: #9ca3af;
     background: transparent;
     border: none;
     border-radius: 8px;
@@ -247,8 +247,8 @@ const CancelButton = styled.button`
     transition: color 0.2s;
 
     &:hover {
-        color: hsl(var(--foreground));
-        background-color: var(--overlay-light);
+        color: white;
+        background-color: rgba(255, 255, 255, 0.05);
     }
 `;
 
@@ -256,9 +256,9 @@ const BackButton = styled.button`
     padding: 10px 20px;
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
-    background-color: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    color: #d1d5db;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     cursor: pointer;
     display: flex;
@@ -267,8 +267,8 @@ const BackButton = styled.button`
     transition: all 0.2s;
 
     &:hover {
-        color: hsl(var(--foreground));
-        background-color: var(--overlay-medium);
+        color: white;
+        background-color: rgba(255, 255, 255, 0.1);
     }
 `;
 
@@ -276,8 +276,8 @@ const NextButton = styled.button`
     padding: 10px 24px;
     font-size: 14px;
     font-weight: 700;
-    color: hsl(var(--primary-foreground));
-    background-color: hsl(var(--primary));
+    color: white;
+    background-color: #8c52ff;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -288,7 +288,7 @@ const NextButton = styled.button`
     transition: all 0.2s;
 
     &:hover:not(:disabled) {
-        background-color: hsl(var(--primary) / 0.85);
+        background-color: #7c3aed;
     }
 
     &:disabled {
@@ -301,8 +301,8 @@ const FinalizeButton = styled.button`
     padding: 10px 24px;
     font-size: 14px;
     font-weight: 700;
-    color: hsl(var(--primary-foreground));
-    background-color: hsl(var(--success));
+    color: white;
+    background-color: #10b981;
     border: none;
     border-radius: 8px;
     cursor: pointer;

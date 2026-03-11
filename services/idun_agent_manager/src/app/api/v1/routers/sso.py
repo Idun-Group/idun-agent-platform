@@ -16,7 +16,7 @@ from idun_agent_schema.manager.managed_sso import (
     ManagedSSOPatch,
     ManagedSSORead,
 )
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
@@ -25,9 +25,7 @@ from app.api.v1.deps import (
     get_session,
     require_workspace,
 )
-from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.infrastructure.db.models.managed_sso import ManagedSSOModel
-from app.services.engine_config import recompute_engine_config
 
 router = APIRouter()
 
@@ -66,16 +64,13 @@ async def _get_sso(
     return model
 
 
-def _model_to_schema(
-    model: ManagedSSOModel, agent_count: int = 0
-) -> ManagedSSORead:
+def _model_to_schema(model: ManagedSSOModel) -> ManagedSSORead:
     """Transform database model to response schema."""
     sso = SSOConfig(**model.sso_config)
     return ManagedSSORead(
         id=model.id,
         name=model.name,
         sso=sso,
-        agent_count=agent_count,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -146,20 +141,7 @@ async def list_ssos(
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
-    # Batch count agents per SSO config
-    counts: dict[UUID, int] = {}
-    if rows:
-        count_stmt = (
-            select(
-                ManagedAgentModel.sso_id,
-                func.count(ManagedAgentModel.id),
-            )
-            .where(ManagedAgentModel.sso_id.in_([r.id for r in rows]))
-            .group_by(ManagedAgentModel.sso_id)
-        )
-        counts = dict((await session.execute(count_stmt)).all())
-
-    return [_model_to_schema(r, counts.get(r.id, 0)) for r in rows]
+    return [_model_to_schema(r) for r in rows]
 
 
 @router.get(
@@ -175,11 +157,7 @@ async def get_sso(
 ) -> ManagedSSORead:
     """Get a managed SSO configuration by ID."""
     model = await _get_sso(id, session, workspace_id)
-    count_stmt = select(func.count(ManagedAgentModel.id)).where(
-        ManagedAgentModel.sso_id == model.id
-    )
-    agent_count = await session.scalar(count_stmt) or 0
-    return _model_to_schema(model, agent_count)
+    return _model_to_schema(model)
 
 
 @router.delete(
@@ -195,15 +173,6 @@ async def delete_sso(
 ) -> None:
     """Delete a managed SSO configuration permanently."""
     model = await _get_sso(id, session, workspace_id)
-
-    stmt = select(ManagedAgentModel.id).where(ManagedAgentModel.sso_id == model.id)
-    result = await session.execute(stmt)
-    if result.first():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Cannot delete SSO config: it is referenced by one or more agents",
-        )
-
     await session.delete(model)
     await session.flush()
 
@@ -229,11 +198,6 @@ async def patch_sso(
     model.updated_at = datetime.now(UTC)
 
     await session.flush()
-
-    stmt = select(ManagedAgentModel.id).where(ManagedAgentModel.sso_id == model.id)
-    result = await session.execute(stmt)
-    for (agent_id,) in result.all():
-        await recompute_engine_config(session, agent_id)
-
     await session.refresh(model)
+
     return _model_to_schema(model)

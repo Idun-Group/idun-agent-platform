@@ -33,7 +33,6 @@ export interface ManagedIntegration {
     integration: IntegrationConfig;
     created_at: string;
     updated_at: string;
-    agentCount?: number;
 }
 
 interface ManagedIntegrationCreate {
@@ -47,11 +46,7 @@ interface ManagedIntegrationPatch {
 }
 
 export const fetchIntegrations = async (): Promise<ManagedIntegration[]> => {
-    const raw = await getJson<any[]>('/api/v1/integrations/');
-    return raw.map(item => ({
-        ...item,
-        agentCount: item.agent_count ?? 0,
-    }));
+    return getJson<ManagedIntegration[]>('/api/v1/integrations/');
 };
 
 export const getIntegration = async (id: string): Promise<ManagedIntegration> => {

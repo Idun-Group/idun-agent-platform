@@ -2,8 +2,6 @@ import { HttpAgent } from '@ag-ui/client';
 import type { BaseEvent, RunAgentInput, Message, Tool, Context } from '@ag-ui/client';
 import { v4 as uuidv4 } from 'uuid';
 import type { ChatMessage, AgentError } from './types';
-import type { AgentCapabilities } from '../../../../types/capabilities';
-import { agentFetch } from '../../../../utils/agent-fetch';
 
 export interface StreamOptions {
   agentUrl: string;
@@ -27,14 +25,12 @@ function chatMessagesToAgUI(messages: ChatMessage[]): Message[] {
   });
 }
 
-export function buildCurlCommand(options: Pick<StreamOptions, 'agentUrl' | 'endpoint' | 'threadId' | 'runId' | 'messages' | 'tools' | 'context' | 'forwardedProps' | 'state'> & { capabilities?: AgentCapabilities | null }): string {
-  const { agentUrl, endpoint, threadId, runId, messages, tools = [], context = [], forwardedProps = {}, state = {}, capabilities } = options;
-
-  // Use /agent/run when capabilities are available
-  const url = capabilities ? `${agentUrl}/agent/run` : `${agentUrl}${endpoint}`;
+export function buildCurlCommand(options: Pick<StreamOptions, 'agentUrl' | 'endpoint' | 'threadId' | 'runId' | 'messages' | 'tools' | 'context' | 'forwardedProps' | 'state'>): string {
+  const { agentUrl, endpoint, threadId, runId, messages, tools = [], context = [], forwardedProps = {}, state = {} } = options;
+  const url = `${agentUrl}${endpoint}`;
 
   let body: Record<string, unknown>;
-  if (capabilities || endpoint === '/agent/copilotkit/stream') {
+  if (endpoint === '/agent/copilotkit/stream') {
     body = {
       threadId,
       runId: runId || uuidv4(),
@@ -105,7 +101,7 @@ export async function streamAgent(options: StreamOptions): Promise<AbortControll
     const body = { session_id: threadId, query: lastUserMsg?.content ?? '' };
 
     try {
-      const response = await agentFetch(`${agentUrl}${endpoint}`, {
+      const response = await fetch(`${agentUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -191,54 +187,6 @@ export async function streamAgent(options: StreamOptions): Promise<AbortControll
       }
     }
   }
-
-  return controller;
-}
-
-/**
- * Fetch agent capabilities from the discovery endpoint.
- */
-export async function fetchCapabilities(agentUrl: string): Promise<AgentCapabilities | null> {
-  try {
-    const response = await agentFetch(`${agentUrl}/agent/capabilities`);
-    if (!response.ok) return null;
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Run agent via the canonical /agent/run endpoint using AG-UI protocol.
- */
-export function runAgent(
-  agentUrl: string,
-  input: RunAgentInput,
-  onEvent: (event: BaseEvent) => void,
-  onError: (error: Error) => void,
-  onDone: () => void,
-): AbortController {
-  const controller = new AbortController();
-
-  const agent = new HttpAgent({
-    url: `${agentUrl}/agent/run`,
-  });
-
-  const observable = agent.run(input);
-  const subscription = observable.subscribe({
-    next: (event: BaseEvent) => onEvent(event),
-    error: (err: unknown) => {
-      if ((err as Error).name !== 'AbortError') {
-        onError(err instanceof Error ? err : new Error(String(err)));
-      }
-    },
-    complete: () => onDone(),
-  });
-
-  controller.signal.addEventListener('abort', () => {
-    agent.abortRun();
-    subscription.unsubscribe();
-  });
 
   return controller;
 }

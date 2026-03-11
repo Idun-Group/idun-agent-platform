@@ -11,17 +11,12 @@ from copilotkit import LangGraphAGUIAgent
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
-from idun_agent_schema.engine.capabilities import AgentCapabilities
 from idun_agent_schema.engine.guardrails import Guardrail
 from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.server.auth import get_verified_user
-from idun_agent_engine.server.dependencies import (
-    get_agent,
-    get_capabilities,
-    get_copilotkit_agent,
-)
+from idun_agent_engine.server.dependencies import get_agent, get_copilotkit_agent
 
 logger = logging.getLogger(__name__)
 agent_router = APIRouter()
@@ -35,78 +30,6 @@ def _run_guardrails(
     for guard in guardrails:
         if guard.position == position and not guard.validate(text):  # type: ignore[attr-defined]
             raise HTTPException(status_code=429, detail=guard.reject_message)  # type: ignore[attr-defined]
-
-
-@agent_router.get("/capabilities")
-async def capabilities(
-    caps: Annotated[AgentCapabilities, Depends(get_capabilities)],
-    _user: Annotated[dict | None, Depends(get_verified_user)],
-):
-    """Return the agent's capability descriptor for UI auto-configuration."""
-    return caps
-
-
-@agent_router.post("/run")
-async def run(
-    input_data: RunAgentInput,
-    request: Request,
-    agent: Annotated[BaseAgent, Depends(get_agent)],
-    _user: Annotated[dict | None, Depends(get_verified_user)],
-):
-    """Canonical AG-UI interaction endpoint.
-
-    Accepts RunAgentInput, returns SSE stream of AG-UI events.
-    """
-    last_msg = input_data.messages[-1] if input_data.messages else None
-    last_content = str(last_msg.content)[:120] if last_msg else "<empty>"
-    logger.info(f"Run — thread_id={input_data.thread_id}, message={last_content}")
-
-    guardrails = getattr(request.app.state, "guardrails", [])
-    if guardrails and input_data.messages:
-        last_content = input_data.messages[-1].content
-        if last_content is not None:
-            text = last_content if isinstance(last_content, str) else str(last_content)
-            _run_guardrails(guardrails, message=text, position="input")
-
-    accept_header = request.headers.get("accept")
-    encoder = EventEncoder(accept=accept_header or "")
-
-    async def event_generator():
-        try:
-            async for event in agent.run(input_data):
-                try:
-                    yield encoder.encode(event)
-                except Exception as encoding_error:
-                    logger.error(
-                        f"Event encoding error: {encoding_error}", exc_info=True
-                    )
-                    from ag_ui.core import EventType, RunErrorEvent
-
-                    error_event = RunErrorEvent(
-                        type=EventType.RUN_ERROR,
-                        message=f"Event encoding failed: {encoding_error}",
-                        code="ENCODING_ERROR",
-                    )
-                    try:
-                        yield encoder.encode(error_event)
-                    except Exception:
-                        yield 'event: error\ndata: {"error": "Event encoding failed"}\n\n'
-                    break
-        except Exception as agent_error:
-            logger.error(f"Agent run error: {agent_error}", exc_info=True)
-            from ag_ui.core import EventType, RunErrorEvent
-
-            error_event = RunErrorEvent(
-                type=EventType.RUN_ERROR,
-                message=f"Agent execution failed: {agent_error}",
-                code="FRAMEWORK_ERROR",
-            )
-            try:
-                yield encoder.encode(error_event)
-            except Exception:
-                yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
-
-    return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
 
 
 @agent_router.get("/graph")
@@ -137,14 +60,11 @@ async def get_config(request: Request):
         )
 
     config = request.app.state.engine_config.agent
-    logger.debug(
-        f"Returning config for agent '{config.config.name}' (type={config.type})"
-    )
+    logger.debug(f"Returning config for agent '{config.config.name}' (type={config.type})")
     return {"config": config}
 
 
-# TODO: DEPRECATED — remove when /agent/run migration is complete
-@agent_router.post("/stream", deprecated=True)
+@agent_router.post("/stream")
 async def stream(
     request: ChatRequest,
     agent: Annotated[BaseAgent, Depends(get_agent)],
@@ -152,9 +72,7 @@ async def stream(
 ):
     """Process a message with the agent, streaming ag-ui events."""
     query_preview = request.query[:120] + ("..." if len(request.query) > 120 else "")
-    logger.info(
-        f"Stream request — session_id={request.session_id}, query={query_preview}"
-    )
+    logger.info(f"Stream request — session_id={request.session_id}, query={query_preview}")
     try:
 
         async def event_stream():
@@ -171,8 +89,7 @@ async def stream(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-# TODO: DEPRECATED — remove when /agent/run migration is complete
-@agent_router.post("/copilotkit/stream", deprecated=True)
+@agent_router.post("/copilotkit/stream")
 async def copilotkit_stream(
     input_data: RunAgentInput,
     request: Request,
@@ -291,57 +208,67 @@ async def copilotkit_stream(
 def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
     """Register the /invoke route dynamically with the given input model.
 
-    TODO: DEPRECATED — input_model is always ChatRequest now.
-    Remove when /agent/invoke shim is fully removed.
+    Called from create_app after config is resolved, so the route
+    uses the correct input model for OpenAPI schema generation.
     """
+    is_custom = input_model is not ChatRequest
 
     async def invoke(
         request: Request,
         input_data: input_model,  # type: ignore[valid-type]
         agent: Annotated[BaseAgent, Depends(get_agent)],
         _user: Annotated[dict | None, Depends(get_verified_user)],
-    ) -> ChatResponse:
+    ) -> ChatResponse | dict:
         """Invoke the agent with a message and get a response."""
         guardrails = getattr(request.app.state, "guardrails", [])
         if guardrails:
-            _run_guardrails(
-                guardrails, message={"query": input_data.query}, position="input"
-            )
+            if is_custom:
+                _run_guardrails(
+                    guardrails, message=input_data.model_dump(), position="input"
+                )
+            else:
+                _run_guardrails(
+                    guardrails, message={"query": input_data.query}, position="input"
+                )
 
         try:
-            query = input_data.query[:120]
-            logger.info(f"Invoke session={input_data.session_id} query={query}")
-            message = {
-                "query": input_data.query,
-                "session_id": input_data.session_id,
-            }
-            try:
+            if is_custom:
                 start = time.monotonic()
-                response = await agent.invoke(message)
-                logger.info(
-                    f"Invoke session={input_data.session_id} completed in {time.monotonic() - start:.2f}s response={str(response)[:200]}"
-                )
-                return ChatResponse(session_id=input_data.session_id, response=response)
-            except Exception as e:
-                logger.error(
-                    f"Invoke session={input_data.session_id} failed: {e}", exc_info=True
-                )
-                raise HTTPException(
-                    status_code=400,
-                    detail="Make sure your input schema is {'query': 'your input', 'session_id': 'your-session-id'",
-                ) from e
+                response = await agent.invoke(input_data)
+                logger.info(f"Invoke completed in {time.monotonic() - start:.2f}s")
+                if isinstance(response, dict):
+                    return response
+                return {"result": response}
+            else:
+                query = input_data.query[:120]
+                logger.info(f"Invoke session={input_data.session_id} query={query}")
+                message = {
+                    "query": input_data.query,
+                    "session_id": input_data.session_id,
+                }
+                try:
+                    start = time.monotonic()
+                    response = await agent.invoke(message)
+                    logger.info(f"Invoke session={input_data.session_id} completed in {time.monotonic() - start:.2f}s response={str(response)[:200]}")
+                    return ChatResponse(
+                        session_id=input_data.session_id, response=response
+                    )
+                except Exception as e:
+                    logger.error(f"Invoke session={input_data.session_id} failed: {e}", exc_info=True)
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Make sure your input schema is {'query': 'your input', 'session_id': 'your-session-id'",
+                    ) from e
         except HTTPException:
             raise
         except Exception as e:  # noqa: BLE001
             logger.error(f"Invoke failed: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e)) from e
 
-    # TODO: DEPRECATED — remove when /agent/run migration is complete
     app.add_api_route(
         "/agent/invoke",
         invoke,
         methods=["POST"],
-        response_model=ChatResponse,
+        response_model=ChatResponse | dict,
         tags=["Agent"],
-        deprecated=True,
     )

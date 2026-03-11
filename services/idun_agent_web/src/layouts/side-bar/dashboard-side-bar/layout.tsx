@@ -1,9 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
-import UserPopover from '../../../components/side-bar/user-popover/component';
-import { useState, useEffect, useCallback, type ComponentType } from 'react';
-import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug, ChevronUp, FileText } from 'lucide-react';
+import { useState, useEffect, type ComponentType } from 'react';
+import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
@@ -36,10 +36,7 @@ const SideBar = ({}: SideBarProps) => {
     const [githubDismissed, setGithubDismissed] = useState(() =>
         localStorage.getItem(GITHUB_DISMISSED_KEY) === 'true'
     );
-    const [showUserPopover, setShowUserPopover] = useState(false);
     const { t } = useTranslation();
-
-    const closeUserPopover = useCallback(() => setShowUserPopover(false), []);
 
     const dismissGithub = () => {
         setGithubDismissed(true);
@@ -48,8 +45,7 @@ const SideBar = ({}: SideBarProps) => {
 
     // Effective collapsed state: collapsed when user set collapsed AND not hovered
     // Hovering temporarily expands the sidebar
-    // Keep expanded when user popover is open
-    const collapsed = isCollapsed && !isHovered && !showUserPopover;
+    const collapsed = isCollapsed && !isHovered;
 
     const menuItems: MenuItemConfig[] = [
         {
@@ -79,13 +75,6 @@ const SideBar = ({}: SideBarProps) => {
             key: 'mcp',
             path: '/mcp',
             onClick: () => navigate('/mcp'),
-        },
-        {
-            icon: FileText,
-            label: t('sidebar.prompts', 'Prompts'),
-            key: 'prompts',
-            path: '/prompts',
-            onClick: () => navigate('/prompts'),
         },
         {
             icon: ShieldCheck,
@@ -143,8 +132,8 @@ const SideBar = ({}: SideBarProps) => {
                                 size={17}
                                 color={
                                     location.pathname.startsWith(item.path)
-                                        ? 'hsl(var(--primary))'
-                                        : 'hsl(var(--sidebar-icon-inactive))'
+                                        ? '#8C52FF'
+                                        : '#826F95'
                                 }
                             />
                         ) : null}
@@ -182,64 +171,31 @@ const SideBar = ({}: SideBarProps) => {
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    <Sparkles size={17} color="hsl(var(--warning))" />
+                    <Sparkles size={17} color="#fbbf24" />
                     {!collapsed && <MenuLabel>Upgrade</MenuLabel>}
                 </BottomLink>
                 <BottomLink
                     $collapsed={collapsed}
                     href="mailto:contact@idun-group.com"
                 >
-                    <LifeBuoy size={17} color="hsl(var(--sidebar-icon-inactive))" />
+                    <LifeBuoy size={17} color="#826F95" />
                     {!collapsed && <MenuLabel>Support</MenuLabel>}
                 </BottomLink>
-                <MenuItem
-                    $isActive={!!location.pathname.startsWith('/settings')}
-                    $collapsed={collapsed}
-                    onClick={() => navigate('/settings')}
-                >
-                    <Settings
-                        size={17}
-                        color={
-                            location.pathname.startsWith('/settings')
-                                ? 'hsl(var(--primary))'
-                                : 'hsl(var(--sidebar-icon-inactive))'
-                        }
-                    />
-                    {!collapsed && <MenuLabel>{t('sidebar.settings', 'Settings')}</MenuLabel>}
-                </MenuItem>
-                <UserRowWrapper>
-                    {showUserPopover && <UserPopover onClose={closeUserPopover} />}
-                    <UserRow
-                        $collapsed={collapsed}
-                        $isActive={showUserPopover || !!location.pathname.startsWith('/preferences')}
-                        onClick={() => setShowUserPopover((prev) => !prev)}
-                    >
-                        {collapsed ? (
-                            avatarUrl && !avatarError ? (
-                                <AvatarImg
-                                    src={avatarUrl}
-                                    alt=""
-                                    onError={() => setAvatarError(true)}
-                                />
-                            ) : (
-                                <UserIcon size={17} color="hsl(var(--sidebar-icon-inactive))" />
-                            )
+                <UserRow $collapsed={collapsed}>
+                    {collapsed ? (
+                        avatarUrl && !avatarError ? (
+                            <AvatarImg
+                                src={avatarUrl}
+                                alt=""
+                                onError={() => setAvatarError(true)}
+                            />
                         ) : (
-                            <>
-                                <AccountInfo />
-                                <ChevronUp
-                                    size={15}
-                                    color="hsl(var(--muted-foreground))"
-                                    style={{
-                                        flexShrink: 0,
-                                        transition: 'transform 200ms ease',
-                                        transform: showUserPopover ? 'rotate(0deg)' : 'rotate(180deg)',
-                                    }}
-                                />
-                            </>
-                        )}
-                    </UserRow>
-                </UserRowWrapper>
+                            <UserIcon size={17} color="#826F95" />
+                        )
+                    ) : (
+                        <AccountInfo />
+                    )}
+                </UserRow>
                 {!collapsed && <VersionLabel>v{__APP_VERSION__}</VersionLabel>}
             </BottomSection>
         </SideBarContainer>
@@ -250,9 +206,9 @@ const SideBar = ({}: SideBarProps) => {
 const SideBarContainer = styled.aside<{ $collapsed?: boolean }>`
     width: ${({ $collapsed }) => ($collapsed ? '72px' : '250px')};
     min-height: 100%;
-    background: hsl(var(--sidebar-background));
+    background: #030711;
     color: hsl(var(--sidebar-foreground));
-    border-right: 1px solid hsl(var(--sidebar-border));
+    border-right: 1px solid #25325a;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -275,8 +231,8 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
     padding: 0 16px 0 30px;
     border: none;
     border-radius: 0;
-    background: hsl(var(--sidebar-item-bg));
-    color: hsl(var(--foreground));
+    background: #040210;
+    color: #ffffff;
     cursor: pointer;
     transition: background-color 200ms ease, color 200ms ease;
     text-align: left;
@@ -289,16 +245,16 @@ const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
         $collapsed ? 'center' : 'flex-start'};
 
     &:hover {
-        background: hsl(var(--sidebar-item-hover));
-        color: hsl(var(--foreground));
+        background: #000000;
+        color: #ffffff;
     }
 
     ${({ $isActive }) =>
         $isActive &&
         `
-        background: hsl(var(--sidebar-item-active));
+        background: #000000;
         font-weight: 700;
-        border-right: 3px solid hsl(var(--primary));
+        border-right: 3px solid #8C52FF;
     `}
 `;
 
@@ -310,7 +266,7 @@ const IconMask = styled.span<{ $src: string; $active?: boolean }>`
     width: 17px;
     height: 17px;
     display: inline-block;
-    background-color: ${(props) => (props.$active ? 'hsl(var(--primary))' : 'hsl(var(--sidebar-icon-inactive))')};
+    background-color: ${(props) => (props.$active ? '#8C52FF' : '#826F95')};
     -webkit-mask: url(${(props) => props.$src}) no-repeat center / contain;
     mask: url(${(props) => props.$src}) no-repeat center / contain;
 `;
@@ -325,7 +281,7 @@ const BottomSection = styled.div`
 
 const VersionLabel = styled.span`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #4b5563;
     text-align: center;
     padding: 4px 0 8px;
 `;
@@ -337,8 +293,8 @@ const BottomLink = styled.a<{ $collapsed?: boolean }>`
     justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
     height: 47px;
     padding: 0 16px 0 30px;
-    background: hsl(var(--sidebar-item-bg));
-    color: hsl(var(--foreground));
+    background: #040210;
+    color: #ffffff;
     text-decoration: none;
     font-size: 15px;
     font-weight: 400;
@@ -348,37 +304,20 @@ const BottomLink = styled.a<{ $collapsed?: boolean }>`
     width: 100%;
 
     &:hover {
-        background: hsl(var(--sidebar-item-hover));
-        color: hsl(var(--foreground));
+        background: #000000;
+        color: #ffffff;
     }
 `;
 
-const UserRow = styled.div<{ $collapsed?: boolean; $isActive?: boolean }>`
+const UserRow = styled.div<{ $collapsed?: boolean }>`
     display: flex;
     align-items: center;
     justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
     min-height: 47px;
     padding: 0 16px 0 30px;
-    background: ${({ $isActive }) =>
-        $isActive ? 'hsl(var(--sidebar-item-active))' : 'hsl(var(--sidebar-background))'};
-    border-top: 1px solid var(--border-subtle);
+    background: #030711;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     overflow: hidden;
-    cursor: pointer;
-    transition: background-color 200ms ease;
-
-    &:hover {
-        background: hsl(var(--sidebar-item-hover));
-    }
-
-    ${({ $isActive }) =>
-        $isActive &&
-        `
-        border-right: 3px solid hsl(var(--primary));
-    `}
-`;
-
-const UserRowWrapper = styled.div`
-    position: relative;
 `;
 
 const AvatarImg = styled.img`
@@ -393,8 +332,8 @@ const GithubCard = styled.div`
     margin: 12px 16px;
     padding: 16px;
     border-radius: 8px;
-    background: hsl(var(--muted));
-    border: 1px solid var(--border-light);
+    background: #0d1117;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 `;
 
 const GithubHeader = styled.div`
@@ -407,13 +346,13 @@ const GithubHeader = styled.div`
 const GithubTitle = styled.span`
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #ffffff;
 `;
 
 const GithubDismiss = styled.button`
     background: none;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: rgba(255, 255, 255, 0.3);
     cursor: pointer;
     padding: 0;
     display: flex;
@@ -421,14 +360,14 @@ const GithubDismiss = styled.button`
     justify-content: center;
 
     &:hover {
-        color: hsl(var(--foreground));
+        color: rgba(255, 255, 255, 0.6);
     }
 `;
 
 const GithubDesc = styled.p`
     margin: 0 0 14px 0;
     font-size: 13px;
-    color: hsl(var(--text-secondary));
+    color: rgba(255, 255, 255, 0.45);
     line-height: 1.45;
 `;
 
@@ -438,9 +377,9 @@ const GithubLink = styled.a`
     gap: 6px;
     padding: 6px 12px;
     border-radius: 6px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
-    color: hsl(var(--foreground));
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
     font-size: 13px;
     font-weight: 500;
     text-decoration: none;
@@ -448,7 +387,7 @@ const GithubLink = styled.a`
     transition: background 150ms ease;
 
     &:hover {
-        background: var(--overlay-medium);
-        color: hsl(var(--foreground));
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
     }
 `;

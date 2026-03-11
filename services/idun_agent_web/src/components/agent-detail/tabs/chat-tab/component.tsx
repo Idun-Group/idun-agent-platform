@@ -2,9 +2,8 @@ import { useState, useRef, useEffect, type FormEvent, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import { useChat } from './useChat';
-import { buildCurlCommand, fetchCapabilities } from './agui-client';
+import { buildCurlCommand } from './agui-client';
 import type { StreamEvent, ChatMessage, AgentError } from './types';
-import type { AgentCapabilities } from '../../../../types/capabilities';
 import type { BackendAgent } from '../../../../services/agents';
 import './chat-tab.css';
 
@@ -503,7 +502,6 @@ function ErrorBanner({ error, onDismiss }: { error: AgentError; onDismiss: () =>
     <div className="error-banner">
       <div className="error-banner-header">
         <div className="error-banner-title">
-          {error.code && <span className="error-code-badge">{error.code}</span>}
           {error.status && <span className="error-status">{error.status}</span>}
           <span className="error-message">{error.message}</span>
         </div>
@@ -588,368 +586,6 @@ function safeParse<T>(json: string, fallback: T): T {
   try { return json.trim() ? JSON.parse(json) : fallback; } catch { return fallback; }
 }
 
-/**
- * Resolve a JSON Schema that may use $ref/$defs to get the actual object schema.
- * e.g. { "$ref": "#/$defs/InputState", "$defs": { "InputState": { properties: {...} } } }
- * → returns the InputState schema with properties.
- */
-function resolveSchema(schema: Record<string, unknown>): Record<string, unknown> {
-  if (!schema) return schema;
-  const ref = schema.$ref as string | undefined;
-  const defs = (schema.$defs ?? schema.definitions) as Record<string, Record<string, unknown>> | undefined;
-  if (ref && defs) {
-    // Parse "#/$defs/InputState" → ["$defs", "InputState"]
-    const parts = ref.replace(/^#\//, '').split('/');
-    let resolved: unknown = { $defs: defs, definitions: defs };
-    for (const part of parts) {
-      if (resolved && typeof resolved === 'object' && part in (resolved as Record<string, unknown>)) {
-        resolved = (resolved as Record<string, unknown>)[part];
-      } else {
-        return schema; // Can't resolve, return as-is
-      }
-    }
-    if (resolved && typeof resolved === 'object') {
-      return resolved as Record<string, unknown>;
-    }
-  }
-  return schema;
-}
-
-// --- Schema Field ---
-const TEXTAREA_FIELD_NAMES = ['description', 'content', 'text', 'body', 'message', 'prompt', 'instructions', 'notes'];
-
-function SchemaField({
-  name,
-  prop,
-  required,
-  value,
-  onChange,
-}: {
-  name: string;
-  prop: Record<string, unknown>;
-  required: boolean;
-  value: unknown;
-  onChange: (value: unknown) => void;
-}) {
-  const fieldType = prop.type as string | undefined;
-  const description = prop.description as string | undefined;
-  const isTextarea = fieldType === 'string' && TEXTAREA_FIELD_NAMES.some(t => name.toLowerCase().includes(t));
-
-  if (fieldType === 'boolean') {
-    return (
-      <div className="schema-field">
-        <label className="schema-checkbox">
-          <input
-            type="checkbox"
-            checked={!!value}
-            onChange={e => onChange(e.target.checked)}
-          />
-          <span>
-            {name}
-            {required && <span className="schema-field-required">*</span>}
-          </span>
-        </label>
-        {description && <span className="schema-field-desc">{description}</span>}
-      </div>
-    );
-  }
-
-  if (fieldType === 'number' || fieldType === 'integer') {
-    return (
-      <div className="schema-field">
-        <label className="schema-field-label">
-          {name}
-          {required && <span className="schema-field-required">*</span>}
-        </label>
-        {description && <span className="schema-field-desc">{description}</span>}
-        <input
-          type="number"
-          className="schema-field-input"
-          value={value === null || value === undefined ? '' : String(value)}
-          onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))}
-          step={fieldType === 'integer' ? 1 : 'any'}
-        />
-      </div>
-    );
-  }
-
-  if (fieldType === 'array' || fieldType === 'object') {
-    const strVal = typeof value === 'string' ? value : JSON.stringify(value ?? (fieldType === 'array' ? [] : {}), null, 2);
-    return (
-      <div className="schema-field">
-        <label className="schema-field-label">
-          {name}
-          {required && <span className="schema-field-required">*</span>}
-        </label>
-        {description && <span className="schema-field-desc">{description}</span>}
-        <textarea
-          className="schema-field-textarea"
-          value={strVal as string}
-          onChange={e => onChange(e.target.value)}
-          rows={4}
-          spellCheck={false}
-        />
-      </div>
-    );
-  }
-
-  // Default: string (or unknown type)
-  if (isTextarea) {
-    return (
-      <div className="schema-field">
-        <label className="schema-field-label">
-          {name}
-          {required && <span className="schema-field-required">*</span>}
-        </label>
-        {description && <span className="schema-field-desc">{description}</span>}
-        <textarea
-          className="schema-field-textarea"
-          value={(value as string) ?? ''}
-          onChange={e => onChange(e.target.value)}
-          rows={3}
-          spellCheck={false}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="schema-field">
-      <label className="schema-field-label">
-        {name}
-        {required && <span className="schema-field-required">*</span>}
-      </label>
-      {description && <span className="schema-field-desc">{description}</span>}
-      <input
-        type="text"
-        className="schema-field-input"
-        value={(value as string) ?? ''}
-        onChange={e => onChange(e.target.value)}
-      />
-    </div>
-  );
-}
-
-// --- Structured Output Viewer ---
-function StructuredOutputViewer({ data, schema: _schema }: {
-  data: unknown;
-  schema?: Record<string, unknown> | null;
-}) {
-  const [rawView, setRawView] = useState(false);
-
-  if (data === null || data === undefined) return null;
-
-  const isScalar = (v: unknown): v is string | number | boolean =>
-    typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
-
-  const isFlatObject = (v: unknown): v is Record<string, string | number | boolean | null> =>
-    typeof v === 'object' && v !== null && !Array.isArray(v) &&
-    Object.values(v as Record<string, unknown>).every(val => val === null || isScalar(val));
-
-  const isArrayOfFlatObjects = (v: unknown): v is Record<string, string | number | boolean | null>[] =>
-    Array.isArray(v) && v.length > 0 && v.every(isFlatObject);
-
-  const renderFormatted = () => {
-    if (typeof data === 'string') return <div>{data}</div>;
-
-    if (isArrayOfFlatObjects(data)) {
-      const keys = Array.from(new Set(data.flatMap(row => Object.keys(row))));
-      return (
-        <div className="output-table-wrap">
-          <table className="output-table">
-            <thead>
-              <tr>{keys.map(k => <th key={k}>{k}</th>)}</tr>
-            </thead>
-            <tbody>
-              {data.map((row, i) => (
-                <tr key={i}>
-                  {keys.map(k => <td key={k}>{row[k] === null ? <span className="output-null">null</span> : String(row[k])}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-
-    if (isFlatObject(data)) {
-      return (
-        <table className="output-kv">
-          <tbody>
-            {Object.entries(data).map(([k, v]) => (
-              <tr key={k}>
-                <td className="output-kv-key">{k}</td>
-                <td className="output-kv-val">{v === null ? <span className="output-null">null</span> : String(v)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      );
-    }
-
-    return <pre className="output-json">{JSON.stringify(data, null, 2)}</pre>;
-  };
-
-  return (
-    <div className="structured-output">
-      <div className="structured-output-header">
-        <span className="structured-form-title">Output</span>
-        <button
-          className={`msg-btn ${rawView ? 'active' : ''}`}
-          onClick={() => setRawView(v => !v)}
-        >
-          {rawView ? 'Formatted' : 'Raw JSON'}
-        </button>
-      </div>
-      {rawView
-        ? <pre className="output-json">{JSON.stringify(data, null, 2)}</pre>
-        : renderFormatted()
-      }
-    </div>
-  );
-}
-
-// --- Structured Input Form ---
-function StructuredInputForm({
-  schema,
-  outputSchema,
-  onSubmit,
-  isStreaming,
-  lastResult,
-  error,
-}: {
-  schema: Record<string, unknown>;
-  outputSchema?: Record<string, unknown> | null;
-  onSubmit: (data: unknown) => void;
-  isStreaming: boolean;
-  lastResult?: unknown;
-  error?: AgentError | null;
-}) {
-  const resolved = resolveSchema(schema ?? {});
-  const properties = resolved?.properties as Record<string, Record<string, unknown>> | undefined;
-  const requiredFields = (resolved?.required as string[]) || [];
-  const hasProperties = properties && typeof properties === 'object' && Object.keys(properties).length > 0;
-
-  const [formMode, setFormMode] = useState<'form' | 'json'>(hasProperties ? 'form' : 'json');
-
-  const [formValues, setFormValues] = useState<Record<string, unknown>>(() => {
-    if (!properties) return {};
-    const initial: Record<string, unknown> = {};
-    for (const [key, prop] of Object.entries(properties)) {
-      if (prop.type === 'string') initial[key] = '';
-      else if (prop.type === 'integer' || prop.type === 'number') initial[key] = null;
-      else if (prop.type === 'boolean') initial[key] = false;
-      else if (prop.type === 'array') initial[key] = '[]';
-      else if (prop.type === 'object') initial[key] = '{}';
-      else initial[key] = '';
-    }
-    return initial;
-  });
-
-  const [inputJson, setInputJson] = useState(() => {
-    if (!properties || typeof properties !== 'object') return '{}';
-    const example: Record<string, unknown> = {};
-    for (const [key, prop] of Object.entries(properties)) {
-      if (prop.type === 'string') example[key] = '';
-      else if (prop.type === 'integer' || prop.type === 'number') example[key] = 0;
-      else if (prop.type === 'boolean') example[key] = false;
-      else example[key] = null;
-    }
-    return JSON.stringify(example, null, 2);
-  });
-  const [parseError, setParseError] = useState<string | null>(null);
-
-  const updateFormValue = (key: string, value: unknown) => {
-    setFormValues(prev => ({ ...prev, [key]: value }));
-  };
-
-  const collectFormData = (): unknown => {
-    if (!properties) return {};
-    const result: Record<string, unknown> = {};
-    for (const [key, prop] of Object.entries(properties)) {
-      const val = formValues[key];
-      if ((prop.type === 'array' || prop.type === 'object') && typeof val === 'string') {
-        try { result[key] = JSON.parse(val); } catch { result[key] = val; }
-      } else {
-        result[key] = val;
-      }
-    }
-    return result;
-  };
-
-  const handleSubmit = () => {
-    if (formMode === 'json') {
-      try {
-        const parsed = JSON.parse(inputJson);
-        setParseError(null);
-        onSubmit(parsed);
-      } catch (e) {
-        setParseError(`Invalid JSON: ${e}`);
-      }
-    } else {
-      setParseError(null);
-      onSubmit(collectFormData());
-    }
-  };
-
-  return (
-    <div className="structured-form">
-      <div className="structured-form-header">
-        <span className="structured-form-title">Input</span>
-        {hasProperties && (
-          <button
-            className={`msg-btn ${formMode === 'json' ? 'active' : ''}`}
-            onClick={() => setFormMode(m => m === 'form' ? 'json' : 'form')}
-          >
-            {formMode === 'form' ? 'Raw JSON' : 'Form'}
-          </button>
-        )}
-      </div>
-
-      {formMode === 'form' && hasProperties ? (
-        <div className="schema-fields">
-          {Object.entries(properties).map(([name, prop]) => (
-            <SchemaField
-              key={name}
-              name={name}
-              prop={prop}
-              required={requiredFields.includes(name)}
-              value={formValues[name]}
-              onChange={v => updateFormValue(name, v)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="structured-json-input">
-          <textarea
-            className={`schema-field-textarea ${parseError ? 'invalid' : ''}`}
-            value={inputJson}
-            onChange={e => setInputJson(e.target.value)}
-            rows={8}
-            spellCheck={false}
-            placeholder='{"key": "value"}'
-          />
-          {parseError && <span className="structured-parse-error">{parseError}</span>}
-        </div>
-      )}
-
-      {error && (
-        <ErrorBanner error={error} onDismiss={() => { /* managed by parent */ }} />
-      )}
-
-      <button
-        onClick={handleSubmit}
-        disabled={isStreaming}
-        className="btn-send structured-submit"
-      >
-        {isStreaming ? 'Running...' : 'Run Agent'}
-      </button>
-
-      <StructuredOutputViewer data={lastResult} schema={outputSchema} />
-    </div>
-  );
-}
-
 // --- Chat Tab ---
 const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
   const agentUrl = (agent?.base_url || '').replace(/\/+$/, '');
@@ -963,20 +599,7 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
   const [contextJson, setContextJson] = useState('[]');
   const [forwardedPropsJson, setForwardedPropsJson] = useState('{}');
   const [extraMessages, setExtraMessages] = useState<{ role: string; content: string }[]>([]);
-  const [capabilities, setCapabilities] = useState<AgentCapabilities | null>(null);
-  const [viewMode, setViewMode] = useState<'chat' | 'form'>('chat');
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (agentUrl) {
-      fetchCapabilities(agentUrl).then((caps) => {
-        if (caps) {
-          setCapabilities(caps);
-          setViewMode(caps.input.mode === 'structured' ? 'form' : 'chat');
-        }
-      });
-    }
-  }, [agentUrl]);
 
   const extraChatMessages = extraMessages
     .filter(m => m.content.trim())
@@ -989,7 +612,7 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
 
   const [curlOpen, setCurlOpen] = useState(false);
 
-  const { messages, events, isStreaming, error, structuredOutput, sendMessage, stopStreaming, clearChat, clearError } = useChat({
+  const { messages, events, isStreaming, error, sendMessage, stopStreaming, clearChat, clearError } = useChat({
     agentUrl,
     endpoint,
     threadId,
@@ -998,7 +621,6 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
     context: safeParse(contextJson, []),
     forwardedProps: safeParse(forwardedPropsJson, {}),
     extraMessages: extraChatMessages,
-    capabilities,
   });
 
   useEffect(() => {
@@ -1088,131 +710,50 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
         />
       )}
 
-      {/* Capabilities info bar */}
-      {capabilities && (
-        <div className="capabilities-bar">
-          <span className="capabilities-badge">{capabilities.framework}</span>
-          <span className="capabilities-info">
-            Input: <strong>{capabilities.input.mode}</strong>
-          </span>
-          <span className="capabilities-info">
-            Output: <strong>{capabilities.output.mode}</strong>
-          </span>
-          <span className="capabilities-flags">
-            {capabilities.capabilities.streaming && <span className="capabilities-flag">Streaming</span>}
-            {capabilities.capabilities.history && <span className="capabilities-flag">History</span>}
-            {capabilities.capabilities.threadId && <span className="capabilities-flag">ThreadId</span>}
-          </span>
-          {capabilities.input.mode === 'structured' && (
-            <button
-              className="toolbar-btn capabilities-toggle"
-              onClick={() => setViewMode(viewMode === 'chat' ? 'form' : 'chat')}
-            >
-              {viewMode === 'chat' ? 'Form' : 'Chat'}
-            </button>
-          )}
-        </div>
-      )}
-      {!capabilities && agentUrl && (
-        <div className="capabilities-bar capabilities-warning">
-          <span className="capabilities-info">Capabilities unavailable — using chat mode</span>
-        </div>
-      )}
-
       {/* Chat + Event Inspector */}
       <div className="app-body">
         <div className="chat-panel">
-          {viewMode === 'form' ? (
-            <>
-              <StructuredInputForm
-                schema={capabilities?.input.schema || {}}
-                outputSchema={capabilities?.output.schema}
-                onSubmit={(jsonData) => sendMessage(JSON.stringify(jsonData))}
-                isStreaming={isStreaming}
-                lastResult={structuredOutput}
-                error={error}
-              />
-              {/* Show streaming messages in form mode (some agents produce text alongside structured output) */}
-              {messages.filter(m => m.role === 'assistant' && m.content).length > 0 && (
-                <div className="form-messages">
-                  <div className="form-messages-header">
-                    <span className="structured-form-title">Agent Messages</span>
-                  </div>
-                  <div className="form-messages-list">
-                    {messages.filter(m => m.role === 'assistant' && m.content).map(msg => (
-                      <MessageBubble key={msg.id} msg={msg} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="chat-messages">
-                {messages.length === 0 && !structuredOutput && (
-                  <div className="empty-state">
-                    <p>Send a message to start chatting with your agent.</p>
-                    <p className="hint">Use the toolbar to switch endpoints, manage threads, or open the config panel for advanced options.</p>
-                  </div>
-                )}
-                {messages.map(msg => (
-                  <MessageBubble key={msg.id} msg={msg} />
-                ))}
-                {isStreaming && ![...messages].reverse().find((m: ChatMessage) => m.role === 'assistant')?.content && (
-                  <div className="thinking-indicator">
-                    <div className="thinking-icon">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.5V20a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2.5c2.9-1.2 5-4.1 5-7.5a8 8 0 0 0-8-8z"/>
-                        <line x1="10" y1="22" x2="14" y2="22"/>
-                      </svg>
-                    </div>
-                    <span className="thinking-label">Thinking</span>
-                    <span className="thinking-dots">
-                      <span className="thinking-dot" />
-                      <span className="thinking-dot" />
-                      <span className="thinking-dot" />
-                    </span>
-                  </div>
-                )}
-                {error && (
-                  <ErrorBanner error={error} onDismiss={clearError} />
-                )}
-                {/* Show structured output in chat mode when available */}
-                {structuredOutput && (
-                  <div className="chat-structured-output">
-                    <StructuredOutputViewer data={structuredOutput} schema={capabilities?.output.schema} />
-                  </div>
-                )}
-                <div ref={chatEndRef} />
+          <div className="chat-messages">
+            {messages.length === 0 && (
+              <div className="empty-state">
+                <p>Send a message to start chatting with your agent.</p>
+                <p className="hint">Use the toolbar to switch endpoints, manage threads, or open the config panel for advanced options.</p>
               </div>
-              <form className="chat-input" onSubmit={handleSubmit}>
-                <textarea
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
-                  rows={2}
-                  disabled={isStreaming}
-                />
-                <div className="input-actions">
-                  <button
-                    type="button"
-                    className="btn-curl"
-                    onClick={() => setCurlOpen(true)}
-                    title="View cURL request for current config"
-                  >
-                    {'{ }'}
-                    <span className="btn-curl-label">cURL</span>
-                  </button>
-                  {isStreaming ? (
-                    <button type="button" onClick={stopStreaming} className="btn-stop">Stop</button>
-                  ) : (
-                    <button type="submit" disabled={isStreaming} className="btn-send">Send</button>
-                  )}
-                </div>
-              </form>
-            </>
-          )}
+            )}
+            {messages.map(msg => (
+              <MessageBubble key={msg.id} msg={msg} />
+            ))}
+            {error && (
+              <ErrorBanner error={error} onDismiss={clearError} />
+            )}
+            <div ref={chatEndRef} />
+          </div>
+          <form className="chat-input" onSubmit={handleSubmit}>
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
+              rows={2}
+              disabled={isStreaming}
+            />
+            <div className="input-actions">
+              <button
+                type="button"
+                className="btn-curl"
+                onClick={() => setCurlOpen(true)}
+                title="View cURL request for current config"
+              >
+                {'{ }'}
+                <span className="btn-curl-label">cURL</span>
+              </button>
+              {isStreaming ? (
+                <button type="button" onClick={stopStreaming} className="btn-stop">Stop</button>
+              ) : (
+                <button type="submit" disabled={isStreaming} className="btn-send">Send</button>
+              )}
+            </div>
+          </form>
         </div>
 
         <EventInspector
@@ -1234,7 +775,6 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
             tools: safeParse(toolsJson, []),
             context: safeParse(contextJson, []),
             forwardedProps: safeParse(forwardedPropsJson, {}),
-            capabilities,
           })}
           onClose={() => setCurlOpen(false)}
         />
