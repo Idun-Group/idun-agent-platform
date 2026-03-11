@@ -1010,17 +1010,6 @@
         "comingSoon": "Demnächst",
         "whatsapp": "WhatsApp"
     },
-    "integrations": {
-        "title": "Integrationen",
-        "subtitle": "Verbinden Sie externe Messaging-Plattformen mit Ihren Agenten",
-        "search": "Integrationen suchen...",
-        "add": "Integration hinzufügen",
-        "addCard": "Integration hinzufügen",
-        "loading": "Integrationen werden geladen…",
-        "active": "Aktive Integrationen",
-        "comingSoon": "Demnächst",
-        "whatsapp": "WhatsApp"
-    },
     "theme": {
         "toggleToLight": "In den hellen Modus wechseln",
         "toggleToDark": "In den dunklen Modus wechseln",

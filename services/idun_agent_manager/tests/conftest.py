@@ -22,6 +22,7 @@ from app.infrastructure.db.models.agent_mcp_server import (
 )
 from app.infrastructure.db.models.agent_observability import (
     AgentObservabilityModel,  # noqa: F401
+)
 from app.infrastructure.db.models.agent_prompt_assignment import (
     AgentPromptAssignmentModel,  # noqa: F401
 )
