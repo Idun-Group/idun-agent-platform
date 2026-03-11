@@ -5,10 +5,13 @@ application with their agent integrated. It handles all the complexity of
 setting up routes, dependencies, and lifecycle management behind the scenes.
 """
 
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 from .._version import __version__
 from ..server.lifespan import lifespan
@@ -61,10 +64,9 @@ def create_app(
         redoc_url="/redoc",
     )
 
-    # TODO: Add CORS configuration feature. Default allowed origins should be:
-    #   - https://cloud.idunplatform.com (production SaaS)
-    #   - http://localhost:3000 (local frontend dev)
-    # For now, allow all origins to avoid blocking local agent connections.
+    # TODO: Add a proper CORS configuration feature. We currently keep wildcard
+    # CORS behavior and layer Private Network Access support on top so the
+    # hosted UI can reach localhost agents from the browser.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -72,6 +74,20 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def allow_private_network_access(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        response = await call_next(request)
+
+        if request.headers.get("access-control-request-private-network") != "true":
+            return response
+
+        if "access-control-allow-origin" in response.headers:
+            response.headers["Access-Control-Allow-Private-Network"] = "true"
+
+        return response
 
     # Store configuration in app state for lifespan to use
     app.state.engine_config = validated_config

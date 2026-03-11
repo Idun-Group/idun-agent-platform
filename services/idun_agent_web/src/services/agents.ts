@@ -244,7 +244,7 @@ export async function fetchEngineHealth(baseUrl: string): Promise<EngineHealth |
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
     try {
-        const res = await fetch(url, { signal: controller.signal });
+        const res = await agentFetch(url, { signal: controller.signal });
         clearTimeout(timer);
         if (!res.ok) return null;
         const data = await res.json();
