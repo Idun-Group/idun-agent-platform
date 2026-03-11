@@ -30,6 +30,7 @@ interface ProjectContextValue {
     projects: Project[];
     projectRoles: Record<string, ProjectRole>;
     isWorkspaceOwner: boolean;
+    isProjectDataLoaded: boolean;
     canAccessSettings: boolean;
     refreshProjects: () => Promise<void>;
     createProject: (name: string) => Promise<Project>;
@@ -49,7 +50,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     });
     const [projects, setProjects] = useState<Project[]>([]);
     const [projectRoles, setProjectRoles] = useState<Record<string, ProjectRole>>({});
-    const [isWorkspaceOwner, setIsWorkspaceOwner] = useState(false);
+    const [isProjectDataLoaded, setIsProjectDataLoaded] = useState(false);
 
     const setSelectedProjectId = useCallback((id: string | null) => {
         setSelectedProjectIdState(id);
@@ -59,6 +60,15 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
             localStorage.removeItem(STORAGE_KEY);
         }
     }, []);
+
+    // Derive workspace ownership from the session — no API call needed
+    const activeWorkspaceId = typeof window !== 'undefined'
+        ? localStorage.getItem('activeTenantId')
+        : null;
+    const isWorkspaceOwner = !!(
+        activeWorkspaceId &&
+        session?.principal?.owner_workspace_ids?.includes(activeWorkspaceId)
+    );
 
     const refreshProjects = useCallback(async () => {
         try {
@@ -74,15 +84,15 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
             }
         } catch (error) {
             console.error('Error fetching projects:', error);
+        } finally {
+            setIsProjectDataLoaded(true);
         }
     }, [setSelectedProjectId]);
 
     const refreshRoles = useCallback(async (projectList: Project[], userId: string) => {
         try {
-            // Fetch members for each project — the endpoint includes workspace
-            // owners as implicit admin entries with is_workspace_owner=true
+            // Fetch members for each project to get the user's role per project
             const roles: Record<string, ProjectRole> = {};
-            let detectedOwner = false;
 
             await Promise.all(
                 projectList.map(async (p) => {
@@ -91,14 +101,12 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
                             members: {
                                 user_id: string;
                                 role: ProjectRole;
-                                is_workspace_owner?: boolean;
                             }[];
                             total: number;
                         }>(`/api/v1/projects/${p.id}/members`);
                         const me = res.members.find((m) => m.user_id === userId);
                         if (me) {
                             roles[p.id] = me.role;
-                            if (me.is_workspace_owner) detectedOwner = true;
                         }
                     } catch (err) {
                         console.error(`Failed to fetch members for project ${p.id}:`, err);
@@ -106,7 +114,6 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
                 }),
             );
 
-            setIsWorkspaceOwner(detectedOwner);
             setProjectRoles(roles);
         } catch (err) {
             console.error('Failed to refresh roles:', err);
@@ -165,6 +172,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
                 projects,
                 projectRoles,
                 isWorkspaceOwner,
+                isProjectDataLoaded,
                 canAccessSettings,
                 refreshProjects,
                 createProject,

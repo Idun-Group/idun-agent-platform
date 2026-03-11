@@ -392,14 +392,21 @@ async def me(
 
         try:
             user_uuid = UUID(user_id)
-            ws_stmt = select(MembershipModel.workspace_id).where(
-                MembershipModel.user_id == user_uuid
-            )
+            ws_stmt = select(
+                MembershipModel.workspace_id, MembershipModel.is_owner
+            ).where(MembershipModel.user_id == user_uuid)
             ws_result = await session.execute(ws_stmt)
-            workspace_ids = [str(wid) for (wid,) in ws_result.all()]
+            ws_rows = ws_result.all()
+            workspace_ids = [str(wid) for wid, _ in ws_rows]
+            owner_workspace_ids = [
+                str(wid) for wid, is_owner in ws_rows if is_owner
+            ]
 
             old_ws_ids = principal.get("workspace_ids", [])
             principal["workspace_ids"] = workspace_ids
+
+            old_owner_ws_ids = principal.get("owner_workspace_ids", [])
+            principal["owner_workspace_ids"] = owner_workspace_ids
 
             user = await session.get(UserModel, user_uuid)
             new_default = (
@@ -410,7 +417,11 @@ async def me(
             old_default = principal.get("default_workspace_id")
             principal["default_workspace_id"] = new_default
 
-            if workspace_ids != old_ws_ids or new_default != old_default:
+            if (
+                workspace_ids != old_ws_ids
+                or new_default != old_default
+                or owner_workspace_ids != old_owner_ws_ids
+            ):
                 cookie_dirty = True
         except Exception:
             logger.exception("Failed to refresh workspace data for user %s", user_id)

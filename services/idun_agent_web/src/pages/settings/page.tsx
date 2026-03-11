@@ -22,14 +22,14 @@ const SettingsPage = () => {
     const { page } = useParams<{ page?: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const { canAccessSettings, isWorkspaceOwner } = useProject();
+    const { canAccessSettings, isWorkspaceOwner, isProjectDataLoaded } = useProject();
 
-    // Route guard: redirect users without settings access
+    // Route guard: redirect users without settings access (only after data is loaded)
     useEffect(() => {
-        if (!canAccessSettings) {
+        if (isProjectDataLoaded && !canAccessSettings) {
             navigate('/agents', { replace: true });
         }
-    }, [canAccessSettings, navigate]);
+    }, [canAccessSettings, isProjectDataLoaded, navigate]);
 
     const defaultPage = isWorkspaceOwner ? 'workspace-general' : 'workspace-projects';
     const activeSlug = page || defaultPage;
@@ -93,7 +93,8 @@ const SettingsPage = () => {
         }
     };
 
-    // Don't render if user shouldn't be here
+    // Show loader while project data is loading, hide if user shouldn't be here
+    if (!isProjectDataLoaded) return <Loader />;
     if (!canAccessSettings) return null;
 
     return (
