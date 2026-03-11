@@ -89,9 +89,7 @@ async def discord_webhook(request: Request) -> Response:
         if not agent or not client:
             return Response(status_code=503, content="Discord integration not ready")
 
-        asyncio.create_task(
-            _handle_application_command(interaction, agent, client)
-        )
+        asyncio.create_task(_handle_application_command(interaction, agent, client))
         return _json_response(
             {"type": InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE}
         )

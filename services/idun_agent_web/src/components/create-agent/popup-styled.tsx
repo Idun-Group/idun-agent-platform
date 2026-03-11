@@ -4,14 +4,14 @@ export const SectionTitle = styled.h3`
     margin: 0 0 8px 0;
     font-size: 18px;
     font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     text-align: center;
 `;
 
 export const SectionSubtitle = styled.p`
     margin: 0 0 32px 0;
     font-size: 14px;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     text-align: center;
     line-height: 1.5;
 `;
@@ -19,7 +19,7 @@ export const SectionSubtitle = styled.p`
 export const UploadArea = styled.label`
     position: relative;
     display: block;
-    border: 2px dashed var(--color-border-primary, #2a3f5f);
+    border: 2px dashed hsl(var(--border));
     border-radius: 8px;
     padding: 48px 32px;
     text-align: center;
@@ -28,12 +28,12 @@ export const UploadArea = styled.label`
     transition: all 0.2s;
 
     &:hover {
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         background: rgba(140, 82, 255, 0.05);
     }
 
     svg {
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
         margin-bottom: 16px;
     }
 `;
@@ -45,12 +45,12 @@ export const UploadText = styled.div`
 
     strong {
         font-size: 16px;
-        color: var(--color-text-primary, #ffffff);
+        color: hsl(var(--foreground));
     }
 
     span {
         font-size: 14px;
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
     }
 `;
 
@@ -60,13 +60,13 @@ export const FileInfo = styled.div`
 
     span {
         font-size: 12px;
-        color: var(--color-text-tertiary, #64748b);
+        color: hsl(var(--muted-foreground));
     }
 `;
 
 export const RecommendedStructure = styled.div`
     background: rgba(140, 82, 255, 0.1);
-    border: 1px solid var(--color-primary, #8c52ff);
+    border: 1px solid hsl(var(--primary));
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 32px;
@@ -76,7 +76,7 @@ export const RecommendedStructure = styled.div`
 
     span {
         font-size: 14px;
-        color: var(--color-text-primary, #ffffff);
+        color: hsl(var(--foreground));
     }
 `;
 
@@ -92,28 +92,28 @@ export const Label = styled.label`
     display: block;
     font-size: 14px;
     font-weight: 500;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     margin-bottom: 8px;
 `;
 
 export const Input = styled.input`
     width: 100%;
     padding: 12px 16px;
-    background: var(--color-background-tertiary, #2a3f5f);
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    background: hsl(var(--accent));
+    border: 1px solid hsl(var(--border));
     border-radius: 6px;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     font-size: 14px;
     box-sizing: border-box;
 
     &:focus {
         outline: none;
-        border-color: var(--color-primary, #8c52ff);
+        border-color: hsl(var(--primary));
         box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
     }
 
     &::placeholder {
-        color: var(--color-text-tertiary, #64748b);
+        color: hsl(var(--muted-foreground));
     }
 `;
 
@@ -132,33 +132,33 @@ export const ButtonGroup = styled.div`
 export const SecondaryButton = styled.button`
     padding: 12px 24px;
     background: transparent;
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    border: 1px solid hsl(var(--border));
     border-radius: 6px;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
 
     &:hover {
-        background: var(--color-background-tertiary, #2a3f5f);
-        color: var(--color-text-primary, #ffffff);
+        background: hsl(var(--accent));
+        color: hsl(var(--foreground));
     }
 `;
 
 export const PrimaryButton = styled.button`
     padding: 12px 24px;
-    background: var(--color-primary, #8c52ff);
+    background: hsl(var(--primary));
     border: none;
     border-radius: 6px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
 
     &:hover {
-        background: var(--color-primary-hover, #7c47e8);
+        background: hsl(var(--primary) / 0.85);
     }
 `;
 
@@ -166,7 +166,7 @@ export const PrimaryButton = styled.button`
 export const RemoveFileButton = styled.button`
     margin-top: 16px;
     background: #ff4d4f;
-    color: #fff;
+    color: hsl(var(--foreground));
     border: none;
     border-radius: 4px;
     padding: 8px 16px;

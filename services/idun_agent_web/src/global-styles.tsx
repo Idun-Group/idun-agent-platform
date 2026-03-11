@@ -1,12 +1,9 @@
 import { createGlobalStyle } from 'styled-components';
-// @ts-ignore
 
 import { styleVariables } from './utils/style-variables';
 
 
 const GlobalStyles = createGlobalStyle`
-  /* Tailwind CSS Layers */
-
   @layer components {
     .all-\\[unset\\] {
       all: unset;
@@ -15,7 +12,7 @@ const GlobalStyles = createGlobalStyle`
 
   @layer base {
     :root {
-      /* Mode sombre par défaut - Dashboard theme */
+      /* Dark mode by default */
       --background: ${styleVariables.colors.dark.background};
       --foreground: ${styleVariables.colors.dark.foreground};
       --muted: ${styleVariables.colors.dark.muted};
@@ -37,7 +34,7 @@ const GlobalStyles = createGlobalStyle`
       --ring: ${styleVariables.colors.dark.ring};
       --radius: ${styleVariables.spacing.radius};
 
-      /* Variables de thème personnalisées - Dashboard */
+      /* App custom */
       --app-bg: ${styleVariables.colors.dark.appBg};
       --app-sidebar: ${styleVariables.colors.dark.appSidebar};
       --app-border: ${styleVariables.colors.dark.appBorder};
@@ -45,13 +42,13 @@ const GlobalStyles = createGlobalStyle`
       --app-text-muted: ${styleVariables.colors.dark.appTextMuted};
       --app-purple: ${styleVariables.colors.dark.appPurple};
 
-      /* Variables Header */
+      /* Header */
       --header-bg: ${styleVariables.colors.dark.headerBg};
       --header-border: ${styleVariables.colors.dark.headerBorder};
       --header-text: ${styleVariables.colors.dark.headerText};
       --header-muted: ${styleVariables.colors.dark.headerMuted};
 
-      /* Variables de la sidebar - Dashboard */
+      /* Sidebar */
       --sidebar-background: ${styleVariables.colors.dark.sidebarBackground};
       --sidebar-foreground: ${styleVariables.colors.dark.sidebarForeground};
       --sidebar-primary: ${styleVariables.colors.dark.sidebarPrimary};
@@ -61,7 +58,7 @@ const GlobalStyles = createGlobalStyle`
       --sidebar-border: ${styleVariables.colors.dark.sidebarBorder};
       --sidebar-ring: ${styleVariables.colors.dark.sidebarRing};
 
-      /* Sidebar layout tokens (sizes/spacing/weights) */
+      /* Sidebar layout tokens */
       --sidebar-item-font-size: 14px;
       --sidebar-item-font-weight: 500;
       --sidebar-item-font-weight-active: 600;
@@ -69,10 +66,51 @@ const GlobalStyles = createGlobalStyle`
       --sidebar-item-padding-x: 16px;
       --sidebar-gap: 8px;
       --sidebar-icon-size: 20px;
+
+      /* Surfaces */
+      --surface-elevated: ${styleVariables.colors.dark.surfaceElevated};
+      --surface-overlay: ${styleVariables.colors.dark.surfaceOverlay};
+
+      /* Text */
+      --text-secondary: ${styleVariables.colors.dark.textSecondary};
+      --text-tertiary: ${styleVariables.colors.dark.textTertiary};
+
+      /* Sidebar items */
+      --sidebar-item-bg: ${styleVariables.colors.dark.sidebarItemBg};
+      --sidebar-item-hover: ${styleVariables.colors.dark.sidebarItemHover};
+      --sidebar-item-active: ${styleVariables.colors.dark.sidebarItemActive};
+      --sidebar-icon-inactive: ${styleVariables.colors.dark.sidebarIconInactive};
+
+      /* Semantic */
+      --warning: ${styleVariables.colors.dark.warning};
+      --success: ${styleVariables.colors.dark.success};
+
+      /* Overlays */
+      --overlay-subtle: ${styleVariables.overlays.dark.subtle};
+      --overlay-light: ${styleVariables.overlays.dark.light};
+      --overlay-medium: ${styleVariables.overlays.dark.medium};
+      --overlay-strong: ${styleVariables.overlays.dark.strong};
+      --overlay-backdrop: ${styleVariables.overlays.dark.backdrop};
+      --border-subtle: ${styleVariables.overlays.dark.borderSubtle};
+      --border-light: ${styleVariables.overlays.dark.borderLight};
+      --border-medium: ${styleVariables.overlays.dark.borderMedium};
+
+      /* Background alias */
+      --color-background-primary: hsl(var(--background));
+
+      /* Scrollbar */
+      --scrollbar-track: ${styleVariables.scrollbar.dark.trackColor};
+      --scrollbar-thumb: ${styleVariables.scrollbar.dark.thumbColor};
+      --scrollbar-thumb-border: ${styleVariables.scrollbar.dark.thumbBorder};
+      --scrollbar-thumb-hover: ${styleVariables.scrollbar.dark.thumbHover};
+      --scrollbar-thumb-active: ${styleVariables.scrollbar.dark.thumbActive};
+      --scrollbar-corner: ${styleVariables.scrollbar.dark.cornerColor};
+      --scrollbar-sidebar-track: ${styleVariables.scrollbar.dark.sidebarTrack};
+      --scrollbar-content-track: ${styleVariables.scrollbar.dark.contentTrack};
+      --scrollbar-table-thumb: ${styleVariables.scrollbar.dark.tableThumb};
     }
 
     .light {
-      /* Mode clair explicite - même valeurs que :root */
       --background: ${styleVariables.colors.light.background};
       --foreground: ${styleVariables.colors.light.foreground};
       --muted: ${styleVariables.colors.light.muted};
@@ -93,7 +131,7 @@ const GlobalStyles = createGlobalStyle`
       --destructive-foreground: ${styleVariables.colors.light.destructiveForeground};
       --ring: ${styleVariables.colors.light.ring};
 
-      /* Variables de thème personnalisées - Light */
+      /* App custom */
       --app-bg: ${styleVariables.colors.light.appBg};
       --app-sidebar: ${styleVariables.colors.light.appSidebar};
       --app-border: ${styleVariables.colors.light.appBorder};
@@ -101,7 +139,13 @@ const GlobalStyles = createGlobalStyle`
       --app-text-muted: ${styleVariables.colors.light.appTextMuted};
       --app-purple: ${styleVariables.colors.light.appPurple};
 
-      /* Variables de la sidebar - Light */
+      /* Header */
+      --header-bg: ${styleVariables.colors.light.headerBg};
+      --header-border: ${styleVariables.colors.light.headerBorder};
+      --header-text: ${styleVariables.colors.light.headerText};
+      --header-muted: ${styleVariables.colors.light.headerMuted};
+
+      /* Sidebar */
       --sidebar-background: ${styleVariables.colors.light.sidebarBackground};
       --sidebar-foreground: ${styleVariables.colors.light.sidebarForeground};
       --sidebar-primary: ${styleVariables.colors.light.sidebarPrimary};
@@ -110,10 +154,51 @@ const GlobalStyles = createGlobalStyle`
       --sidebar-accent-foreground: ${styleVariables.colors.light.sidebarAccentForeground};
       --sidebar-border: ${styleVariables.colors.light.sidebarBorder};
       --sidebar-ring: ${styleVariables.colors.light.sidebarRing};
+
+      /* Surfaces */
+      --surface-elevated: ${styleVariables.colors.light.surfaceElevated};
+      --surface-overlay: ${styleVariables.colors.light.surfaceOverlay};
+
+      /* Text */
+      --text-secondary: ${styleVariables.colors.light.textSecondary};
+      --text-tertiary: ${styleVariables.colors.light.textTertiary};
+
+      /* Sidebar items */
+      --sidebar-item-bg: ${styleVariables.colors.light.sidebarItemBg};
+      --sidebar-item-hover: ${styleVariables.colors.light.sidebarItemHover};
+      --sidebar-item-active: ${styleVariables.colors.light.sidebarItemActive};
+      --sidebar-icon-inactive: ${styleVariables.colors.light.sidebarIconInactive};
+
+      /* Semantic */
+      --warning: ${styleVariables.colors.light.warning};
+      --success: ${styleVariables.colors.light.success};
+
+      /* Overlays */
+      --overlay-subtle: ${styleVariables.overlays.light.subtle};
+      --overlay-light: ${styleVariables.overlays.light.light};
+      --overlay-medium: ${styleVariables.overlays.light.medium};
+      --overlay-strong: ${styleVariables.overlays.light.strong};
+      --overlay-backdrop: ${styleVariables.overlays.light.backdrop};
+      --border-subtle: ${styleVariables.overlays.light.borderSubtle};
+      --border-light: ${styleVariables.overlays.light.borderLight};
+      --border-medium: ${styleVariables.overlays.light.borderMedium};
+
+      /* Background alias */
+      --color-background-primary: hsl(var(--background));
+
+      /* Scrollbar */
+      --scrollbar-track: ${styleVariables.scrollbar.light.trackColor};
+      --scrollbar-thumb: ${styleVariables.scrollbar.light.thumbColor};
+      --scrollbar-thumb-border: ${styleVariables.scrollbar.light.thumbBorder};
+      --scrollbar-thumb-hover: ${styleVariables.scrollbar.light.thumbHover};
+      --scrollbar-thumb-active: ${styleVariables.scrollbar.light.thumbActive};
+      --scrollbar-corner: ${styleVariables.scrollbar.light.cornerColor};
+      --scrollbar-sidebar-track: ${styleVariables.scrollbar.light.sidebarTrack};
+      --scrollbar-content-track: ${styleVariables.scrollbar.light.contentTrack};
+      --scrollbar-table-thumb: ${styleVariables.scrollbar.light.tableThumb};
     }
 
     .dark {
-      /* Mode sombre */
       --background: ${styleVariables.colors.dark.background};
       --foreground: ${styleVariables.colors.dark.foreground};
       --muted: ${styleVariables.colors.dark.muted};
@@ -134,7 +219,7 @@ const GlobalStyles = createGlobalStyle`
       --destructive-foreground: ${styleVariables.colors.dark.destructiveForeground};
       --ring: ${styleVariables.colors.dark.ring};
 
-      /* Variables de thème personnalisées - Dark */
+      /* App custom */
       --app-bg: ${styleVariables.colors.dark.appBg};
       --app-sidebar: ${styleVariables.colors.dark.appSidebar};
       --app-border: ${styleVariables.colors.dark.appBorder};
@@ -142,7 +227,13 @@ const GlobalStyles = createGlobalStyle`
       --app-text-muted: ${styleVariables.colors.dark.appTextMuted};
       --app-purple: ${styleVariables.colors.dark.appPurple};
 
-      /* Variables de la sidebar - Dark */
+      /* Header */
+      --header-bg: ${styleVariables.colors.dark.headerBg};
+      --header-border: ${styleVariables.colors.dark.headerBorder};
+      --header-text: ${styleVariables.colors.dark.headerText};
+      --header-muted: ${styleVariables.colors.dark.headerMuted};
+
+      /* Sidebar */
       --sidebar-background: ${styleVariables.colors.dark.sidebarBackground};
       --sidebar-foreground: ${styleVariables.colors.dark.sidebarForeground};
       --sidebar-primary: ${styleVariables.colors.dark.sidebarPrimary};
@@ -151,9 +242,51 @@ const GlobalStyles = createGlobalStyle`
       --sidebar-accent-foreground: ${styleVariables.colors.dark.sidebarAccentForeground};
       --sidebar-border: ${styleVariables.colors.dark.sidebarBorder};
       --sidebar-ring: ${styleVariables.colors.dark.sidebarRing};
+
+      /* Surfaces */
+      --surface-elevated: ${styleVariables.colors.dark.surfaceElevated};
+      --surface-overlay: ${styleVariables.colors.dark.surfaceOverlay};
+
+      /* Text */
+      --text-secondary: ${styleVariables.colors.dark.textSecondary};
+      --text-tertiary: ${styleVariables.colors.dark.textTertiary};
+
+      /* Sidebar items */
+      --sidebar-item-bg: ${styleVariables.colors.dark.sidebarItemBg};
+      --sidebar-item-hover: ${styleVariables.colors.dark.sidebarItemHover};
+      --sidebar-item-active: ${styleVariables.colors.dark.sidebarItemActive};
+      --sidebar-icon-inactive: ${styleVariables.colors.dark.sidebarIconInactive};
+
+      /* Semantic */
+      --warning: ${styleVariables.colors.dark.warning};
+      --success: ${styleVariables.colors.dark.success};
+
+      /* Overlays */
+      --overlay-subtle: ${styleVariables.overlays.dark.subtle};
+      --overlay-light: ${styleVariables.overlays.dark.light};
+      --overlay-medium: ${styleVariables.overlays.dark.medium};
+      --overlay-strong: ${styleVariables.overlays.dark.strong};
+      --overlay-backdrop: ${styleVariables.overlays.dark.backdrop};
+      --border-subtle: ${styleVariables.overlays.dark.borderSubtle};
+      --border-light: ${styleVariables.overlays.dark.borderLight};
+      --border-medium: ${styleVariables.overlays.dark.borderMedium};
+
+      /* Background alias */
+      --color-background-primary: hsl(var(--background));
+
+      /* Scrollbar */
+      --scrollbar-track: ${styleVariables.scrollbar.dark.trackColor};
+      --scrollbar-thumb: ${styleVariables.scrollbar.dark.thumbColor};
+      --scrollbar-thumb-border: ${styleVariables.scrollbar.dark.thumbBorder};
+      --scrollbar-thumb-hover: ${styleVariables.scrollbar.dark.thumbHover};
+      --scrollbar-thumb-active: ${styleVariables.scrollbar.dark.thumbActive};
+      --scrollbar-corner: ${styleVariables.scrollbar.dark.cornerColor};
+      --scrollbar-sidebar-track: ${styleVariables.scrollbar.dark.sidebarTrack};
+      --scrollbar-content-track: ${styleVariables.scrollbar.dark.contentTrack};
+      --scrollbar-table-thumb: ${styleVariables.scrollbar.dark.tableThumb};
     }
 
-    /* Transitions fluides pour les changements de thème */
+    /* Smooth theme transitions */
     * {
       transition: ${styleVariables.transitions.theme};
       box-sizing: border-box;
@@ -178,49 +311,46 @@ const GlobalStyles = createGlobalStyle`
       font-weight: normal;
     }
 
-
     /* Custom Scrollbar Styles */
     * {
       scrollbar-width: thin;
-      scrollbar-color: ${styleVariables.scrollbar.thumbColor} ${styleVariables.scrollbar.trackColor};
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     }
 
-    /* Webkit Scrollbar Styles */
     *::-webkit-scrollbar {
       width: ${styleVariables.scrollbar.width};
       height: ${styleVariables.scrollbar.height};
     }
 
     *::-webkit-scrollbar-track {
-      background: ${styleVariables.scrollbar.trackColor};
+      background: var(--scrollbar-track);
       border-radius: 4px;
     }
 
     *::-webkit-scrollbar-thumb {
-      background: ${styleVariables.scrollbar.thumbColor};
+      background: var(--scrollbar-thumb);
       border-radius: 4px;
-      border: 1px solid ${styleVariables.scrollbar.thumbBorder};
+      border: 1px solid var(--scrollbar-thumb-border);
     }
 
     *::-webkit-scrollbar-thumb:hover {
-      background: ${styleVariables.scrollbar.thumbHover};
+      background: var(--scrollbar-thumb-hover);
     }
 
     *::-webkit-scrollbar-thumb:active {
-      background: ${styleVariables.scrollbar.thumbActive};
+      background: var(--scrollbar-thumb-active);
     }
 
     *::-webkit-scrollbar-corner {
-      background: ${styleVariables.scrollbar.cornerColor};
+      background: var(--scrollbar-corner);
     }
 
-    /* Specific scrollbar styles for different areas */
     .sidebar-scroll::-webkit-scrollbar-track {
-      background: ${styleVariables.scrollbar.sidebarTrack};
+      background: var(--scrollbar-sidebar-track);
     }
 
     .content-scroll::-webkit-scrollbar-track {
-      background: ${styleVariables.scrollbar.contentTrack};
+      background: var(--scrollbar-content-track);
     }
 
     .table-scroll::-webkit-scrollbar {
@@ -229,7 +359,7 @@ const GlobalStyles = createGlobalStyle`
     }
 
     .table-scroll::-webkit-scrollbar-thumb {
-      background: ${styleVariables.scrollbar.tableThumb};
+      background: var(--scrollbar-table-thumb);
       border-radius: 3px;
     }
   }

@@ -112,8 +112,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
     const [selectedMemoryType, setSelectedMemoryType] = useState<string>('InMemoryCheckpointConfig');
     const [selectedMemoryAppId, setSelectedMemoryAppId] = useState<string>('');
 
-    const [selectedObservabilityTypes, setSelectedObservabilityTypes] = useState<string[]>([]);
-    const [selectedObservabilityApps, setSelectedObservabilityApps] = useState<Record<string, string>>({});
+    const [selectedObservabilityIds, setSelectedObservabilityIds] = useState<string[]>([]);
 
     const [selectedMCPIds, setSelectedMCPIds] = useState<string[]>([]);
     const [selectedGuardIds, setSelectedGuardIds] = useState<string[]>([]);
@@ -246,17 +245,10 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
     const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 3));
     const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
-    const toggleObservabilityType = (type: string) => {
-        setSelectedObservabilityTypes(prev =>
-            prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    const toggleObservability = (id: string) => {
+        setSelectedObservabilityIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
-    };
-
-    const selectObservabilityApp = (type: string, appId: string) => {
-        setSelectedObservabilityApps(prev => ({
-            ...prev,
-            [type]: appId
-        }));
     };
 
     const getFilteredMemoryApps = () => {
@@ -388,26 +380,23 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
             // 2. Handle Observability
             const observabilityConfigs: any[] = [];
 
-            selectedObservabilityTypes.forEach(type => {
-                const appId = selectedObservabilityApps[type];
-                if (appId) {
-                    const app = observabilityApps.find(a => a.id === appId);
-                    if (app) {
-                        const providerMap: Record<string, string> = {
-                            'Langfuse': 'LANGFUSE',
-                            'Phoenix': 'PHOENIX',
-                            'GoogleCloudLogging': 'GCP_LOGGING',
-                            'GoogleCloudTrace': 'GCP_TRACE',
-                            'LangSmith': 'LANGSMITH'
-                        };
-                        const providerKey = providerMap[app.type] || app.type.toLowerCase();
+            selectedObservabilityIds.forEach(id => {
+                const app = observabilityApps.find(a => a.id === id);
+                if (app) {
+                    const providerMap: Record<string, string> = {
+                        'Langfuse': 'LANGFUSE',
+                        'Phoenix': 'PHOENIX',
+                        'GoogleCloudLogging': 'GCP_LOGGING',
+                        'GoogleCloudTrace': 'GCP_TRACE',
+                        'LangSmith': 'LANGSMITH'
+                    };
+                    const providerKey = providerMap[app.type] || app.type.toLowerCase();
 
-                        observabilityConfigs.push({
-                            enabled: true,
-                            provider: providerKey,
-                            config: app.config
-                        });
-                    }
+                    observabilityConfigs.push({
+                        enabled: true,
+                        provider: providerKey,
+                        config: app.config
+                    });
                 }
             });
 
@@ -593,7 +582,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                         <FieldWrapper>
                                             <InputLabel>Target Environment</InputLabel>
                                             <div style={{ position: 'relative' }}>
-                                                <Server size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#6b7280' }} />
+                                                <Server size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: 'hsl(var(--muted-foreground))' }} />
                                                 <StyledSelect value={environment || ''} onChange={e => setEnvironment(e.target.value as any)} style={{ paddingLeft: '36px' }}>
                                                     <option value="development">Development</option>
                                                     <option value="staging">Staging</option>
@@ -684,43 +673,21 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                         {/* Observability Section */}
                                         <FieldWrapper>
                                             <InputLabel><Layers size={14} style={{ marginRight: '6px' }} />Observability</InputLabel>
-                                            <MultiSelectContainer>
-                                                {OBSERVABILITY_TYPES.map(type => (
-                                                    <TypeCheckbox key={type} $checked={selectedObservabilityTypes.includes(type)} onClick={() => toggleObservabilityType(type)}>
-                                                        <span className="checkbox">{selectedObservabilityTypes.includes(type) && <Check size={10} color="white" />}</span>
-                                                        {type}
-                                                    </TypeCheckbox>
-                                                ))}
-                                            </MultiSelectContainer>
-                                            {selectedObservabilityTypes.map(type => (
-                                                <div key={type} style={{ marginTop: '16px' }}>
-                                                    <TypeHeader>
-                                                        {type}
-                                                        <AddButton onClick={() => handleCreateApp(type as AppType, 'Observability')}><Plus size={12} style={{ marginRight: '4px' }} />Add</AddButton>
-                                                    </TypeHeader>
-                                                    <Carousel>
-                                                        <AddConfigCard
-                                                            style={{ minWidth: '140px', height: 'auto', aspectRatio: 'unset' }}
-                                                            onClick={() => handleCreateApp(type as AppType, 'Observability')}
-                                                        >
-                                                            <Plus size={24} color="#8c52ff" />
-                                                            <span>Add New</span>
-                                                        </AddConfigCard>
-                                                        {getFilteredObservabilityApps(type).map(app => (
-                                                            <ConfigCard key={app.id} $selected={selectedObservabilityApps[type] === app.id} onClick={() => selectObservabilityApp(type, app.id)} style={{ minWidth: '140px', flexShrink: 0 }}>
-                                                                <CardHeader>
-                                                                    <CardTitle>{app.name}</CardTitle>
-                                                                    <MiniIconButton onClick={(e) => handleViewApp(e, app)}><Eye size={12} /></MiniIconButton>
-                                                                </CardHeader>
-                                                                <CardMeta>{formatDate(app.updatedAt)}</CardMeta>
-                                                            </ConfigCard>
-                                                        ))}
-                                                        {getFilteredObservabilityApps(type).length === 0 && (
-                                                            <EmptyText style={{ marginLeft: '12px', alignSelf: 'center' }}>No {type} configs yet.</EmptyText>
-                                                        )}
-                                                    </Carousel>
-                                                </div>
-                                            ))}
+                                            {observabilityApps.length === 0 ? (
+                                                <EmptyText>No observability configs yet.</EmptyText>
+                                            ) : (
+                                                <CardGrid>
+                                                    {observabilityApps.map(app => (
+                                                        <ConfigCard key={app.id} $selected={selectedObservabilityIds.includes(app.id)} onClick={() => toggleObservability(app.id)} style={{ minWidth: '140px', flexShrink: 0 }}>
+                                                            <CardHeader>
+                                                                <CardTitle>{app.name}</CardTitle>
+                                                                <MiniIconButton onClick={(e) => handleViewApp(e, app)}><Eye size={12} /></MiniIconButton>
+                                                            </CardHeader>
+                                                            <CardMeta>{app.type} &middot; {formatDate(app.updatedAt)}</CardMeta>
+                                                        </ConfigCard>
+                                                    ))}
+                                                </CardGrid>
+                                            )}
                                         </FieldWrapper>
                                     </DataColumn>
                                 </StepGrid>
@@ -750,7 +717,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                                         <SafetyCardContainer key={app.id} $enabled={selectedMCPIds.includes(app.id)} onClick={() => toggleMCP(app.id)}>
                                                             <SafetyCardHeader>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                    <Server size={16} color="#8c52ff" />
+                                                                    <Server size={16} color="hsl(var(--primary))" />
                                                                     <SafetyTitle $enabled={selectedMCPIds.includes(app.id)}>{app.name}</SafetyTitle>
                                                                 </div>
                                                                 <SafetyCheckbox $checked={selectedMCPIds.includes(app.id)}>
@@ -779,7 +746,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                                         <SafetyCardContainer key={app.id} $enabled={selectedGuardIds.includes(app.id)} $risk={risk.label.split(' ')[0]} onClick={() => toggleGuard(app.id)}>
                                                             <SafetyCardHeader>
                                                                 <div>
-                                                                    <Shield size={16} color={risk.color === 'red' ? '#ef4444' : '#8c52ff'} style={{ marginBottom: '4px' }} />
+                                                                    <Shield size={16} color={risk.color === 'red' ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'} style={{ marginBottom: '4px' }} />
                                                                     <SafetyTitle $enabled={selectedGuardIds.includes(app.id)}>{app.name}</SafetyTitle>
                                                                 </div>
                                                                 <SafetyCheckbox $checked={selectedGuardIds.includes(app.id)} $risk={risk.label.split(' ')[0]}>
@@ -801,9 +768,9 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                                 Show available guardrails
                                             </AddButton>
                                         ) : (
-                                            <div style={{ marginTop: '16px', animation: 'fadeIn 0.3s', backgroundColor: '#0B0A15', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                            <div style={{ marginTop: '16px', animation: 'fadeIn 0.3s', backgroundColor: 'hsl(var(--accent))', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                                    <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase' }}>Available Guardrails</span>
+                                                    <span style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', fontWeight: 600, textTransform: 'uppercase' }}>Available Guardrails</span>
                                                     <CloseButton onClick={() => setIsGuardrailMarketplaceVisible(false)} style={{ padding: '4px' }}><X size={14} /></CloseButton>
                                                  </div>
                                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
@@ -835,7 +802,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                                     <SafetyCardContainer key={config.id} $enabled={selectedSSOId === config.id} onClick={() => setSelectedSSOId(prev => prev === config.id ? '' : config.id)}>
                                                         <SafetyCardHeader>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                <KeyRound size={16} color="#eab308" />
+                                                                <KeyRound size={16} color="hsl(var(--warning))" />
                                                                 <SafetyTitle $enabled={selectedSSOId === config.id}>{config.name}</SafetyTitle>
                                                             </div>
                                                             <SafetyCheckbox $checked={selectedSSOId === config.id}>
@@ -929,58 +896,58 @@ const PageContainer = styled.div`
     position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px;
 `;
 const Backdrop = styled.div`
-    position: absolute; inset: 0; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
+    position: absolute; inset: 0; background-color: var(--overlay-backdrop); backdrop-filter: blur(4px);
 `;
 const ModalWindow = styled.div`
-    position: relative; width: 100%; max-width: 1152px; background-color: #0f1016; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden;
+    position: relative; width: 100%; max-width: 1152px; background-color: hsl(var(--card)); border: 1px solid var(--border-light); border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden;
 `;
 const ModalHeader = styled.div`
-    display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); background-color: #0B0A15;
+    display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid var(--border-subtle); background-color: hsl(var(--accent));
 `;
-const ModalTitle = styled.h2` font-size: 24px; font-weight: 700; color: white; margin: 0; `;
-const ModalSubtitle = styled.p` font-size: 14px; color: #9ca3af; margin-top: 4px; `;
-const CloseButton = styled.button` padding: 8px; color: #9ca3af; background: transparent; border: none; cursor: pointer; border-radius: 8px; transition: all 0.2s; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); } `;
-const StepperContainer = styled.div` background-color: #08070f; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding: 16px 32px; `;
+const ModalTitle = styled.h2` font-size: 24px; font-weight: 700; color: hsl(var(--foreground)); margin: 0; `;
+const ModalSubtitle = styled.p` font-size: 14px; color: hsl(var(--muted-foreground)); margin-top: 4px; `;
+const CloseButton = styled.button` padding: 8px; color: hsl(var(--muted-foreground)); background: transparent; border: none; cursor: pointer; border-radius: 8px; transition: all 0.2s; &:hover { color: hsl(var(--foreground)); background-color: var(--overlay-light); } `;
+const StepperContainer = styled.div` background-color: hsl(var(--accent)); border-bottom: 1px solid var(--border-subtle); padding: 16px 32px; `;
 const StepperInner = styled.div` display: flex; align-items: center; justify-content: space-between; max-width: 768px; margin: 0 auto; `;
 const StepItem = styled.div` display: flex; align-items: center; flex: 1; &:last-child { flex: none; } `;
 const StepContent = styled.div` display: flex; align-items: center; position: relative; `;
-const StepCircle = styled.div<{ $isActive: boolean; $isCompleted: boolean }>` width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid; transition: all 0.2s; z-index: 10; ${props => props.$isActive ? `background-color: #8c52ff; border-color: #8c52ff; color: white; box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);` : props.$isCompleted ? `background-color: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #34d399;` : `background-color: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: #6b7280;`} `;
+const StepCircle = styled.div<{ $isActive: boolean; $isCompleted: boolean }>` width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid; transition: all 0.2s; z-index: 10; ${props => props.$isActive ? `background-color: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);` : props.$isCompleted ? `background-color: rgba(16, 185, 129, 0.2); border-color: hsl(var(--success)); color: hsl(var(--success));` : `background-color: var(--overlay-light); border-color: var(--border-light); color: hsl(var(--muted-foreground));`} `;
 const StepInfo = styled.div` margin-left: 12px; `;
-const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>` font-size: 14px; font-weight: 700; color: ${props => (props.$isActive || props.$isCompleted) ? 'white' : '#6b7280'}; margin: 0; `;
-const StepInProgress = styled.p` font-size: 10px; color: #8c52ff; margin: 0; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } `;
-const StepSeparatorLine = styled.div` flex: 1; height: 2px; margin: 0 16px; background-color: rgba(255, 255, 255, 0.1); position: relative; `;
-const StepProgress = styled.div<{ $isCompleted: boolean }>` position: absolute; inset: 0; background-color: #10b981; width: ${props => props.$isCompleted ? '100%' : '0%'}; transition: width 0.5s; `;
-const ModalBody = styled.div` flex: 1; overflow-y: auto; padding: 32px; background-color: #040210; `;
-const ModalFooter = styled.div` padding: 24px; border-top: 1px solid rgba(255, 255, 255, 0.05); background-color: #0B0A15; display: flex; justify-content: space-between; align-items: center; `;
-const CancelButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: #9ca3af; background: transparent; border: none; border-radius: 8px; cursor: pointer; transition: color 0.2s; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); } `;
-const BackButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: #d1d5db; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; display: flex; align-items: center; transition: all 0.2s; &:hover { color: white; background-color: rgba(255, 255, 255, 0.1); } `;
-const NextButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: white; background-color: #8c52ff; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.2); transition: all 0.2s; &:hover { background-color: #7c3aed; } `;
-const DeployButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: white; background-color: #10b981; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2); transition: all 0.2s; &:hover { background-color: #059669; } &:disabled { opacity: 0.6; cursor: not-allowed; } `;
+const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>` font-size: 14px; font-weight: 700; color: ${props => (props.$isActive || props.$isCompleted) ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}; margin: 0; `;
+const StepInProgress = styled.p` font-size: 10px; color: hsl(var(--primary)); margin: 0; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } `;
+const StepSeparatorLine = styled.div` flex: 1; height: 2px; margin: 0 16px; background-color: var(--border-light); position: relative; `;
+const StepProgress = styled.div<{ $isCompleted: boolean }>` position: absolute; inset: 0; background-color: hsl(var(--success)); width: ${props => props.$isCompleted ? '100%' : '0%'}; transition: width 0.5s; `;
+const ModalBody = styled.div` flex: 1; overflow-y: auto; padding: 32px; background-color: hsl(var(--surface-elevated)); `;
+const ModalFooter = styled.div` padding: 24px; border-top: 1px solid var(--border-subtle); background-color: hsl(var(--accent)); display: flex; justify-content: space-between; align-items: center; `;
+const CancelButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: hsl(var(--muted-foreground)); background: transparent; border: none; border-radius: 8px; cursor: pointer; transition: color 0.2s; &:hover { color: hsl(var(--foreground)); background-color: var(--overlay-light); } `;
+const BackButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: hsl(var(--text-secondary)); background-color: var(--overlay-light); border: 1px solid var(--border-light); border-radius: 8px; cursor: pointer; display: flex; align-items: center; transition: all 0.2s; &:hover { color: hsl(var(--foreground)); background-color: var(--overlay-medium); } `;
+const NextButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: hsl(var(--primary-foreground)); background-color: hsl(var(--primary)); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.2); transition: all 0.2s; &:hover { opacity: 0.9; } `;
+const DeployButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: hsl(var(--primary-foreground)); background-color: hsl(var(--success)); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2); transition: all 0.2s; &:hover { opacity: 0.9; } &:disabled { opacity: 0.6; cursor: not-allowed; } `;
 const StepContainer = styled.div` animation: fadeIn 0.3s ease-in-out; height: 100%; @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } `;
 const StepGrid = styled.div` display: grid; grid-template-columns: 1fr; gap: 32px; height: 100%; @media (min-width: 768px) { grid-template-columns: repeat(3, 1fr); } `;
 const IdentityColumn = styled.div` grid-column: span 2; display: flex; flex-direction: column; gap: 24px; `;
 const RuntimeColumn = styled.div` display: flex; flex-direction: column; gap: 24px; `;
 const LogicColumn = styled.div` grid-column: span 2; display: flex; flex-direction: column; gap: 24px; height: 100%; min-height: 400px; `;
 const DataColumn = styled.div` display: flex; flex-direction: column; gap: 24px; `;
-const SectionTitle = styled.h3` font-size: 14px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; margin-bottom: 16px; `;
-const SectionIndicator = styled.span<{ $color?: string }>` width: 4px; height: 16px; background-color: ${props => { switch(props.$color) { case 'blue': return '#3b82f6'; case 'emerald': return '#10b981'; case 'yellow': return '#eab308'; case 'purple': return '#a855f7'; default: return '#8c52ff'; } }}; border-radius: 9999px; margin-right: 8px; `;
+const SectionTitle = styled.h3` font-size: 14px; font-weight: 700; color: hsl(var(--foreground)); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; margin-bottom: 16px; `;
+const SectionIndicator = styled.span<{ $color?: string }>` width: 4px; height: 16px; background-color: ${props => { switch(props.$color) { case 'blue': return '#3b82f6'; case 'emerald': return 'hsl(var(--success))'; case 'yellow': return 'hsl(var(--warning))'; case 'purple': return '#a855f7'; default: return 'hsl(var(--primary))'; } }}; border-radius: 9999px; margin-right: 8px; `;
 const IdentityRow = styled.div` display: flex; gap: 24px; align-items: flex-start; `;
 const AvatarSection = styled.div` flex-shrink: 0; `;
-const AvatarLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; text-align: center; `;
+const AvatarLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: hsl(var(--muted-foreground)); text-transform: uppercase; margin-bottom: 8px; text-align: center; `;
 const AvatarWrapper = styled.div` position: relative; cursor: pointer; &:hover > div { opacity: 1; } `;
-const AvatarOverlay = styled.div` position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.6); opacity: 0; transition: opacity 0.2s; border-radius: 12px; `;
+const AvatarOverlay = styled.div` position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background-color: var(--overlay-backdrop); opacity: 0; transition: opacity 0.2s; border-radius: 12px; `;
 const IdentityFields = styled.div` flex: 1; display: flex; flex-direction: column; gap: 20px; `;
 const Row = styled.div` display: flex; gap: 16px; `;
 const FieldWrapper = styled.div` width: 100%; `;
-const InputLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; `;
-const RequiredAsterisk = styled.span` color: #ef4444; margin-left: 4px; `;
-const StyledInput = styled.input` width: 100%; background-color: #0B0A15; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: white; outline: none; transition: all 0.2s; &:focus { border-color: #8c52ff; box-shadow: 0 0 0 1px #8c52ff; } &::placeholder { color: #374151; } `;
-const StyledTextarea = styled.textarea` width: 100%; background-color: #0B0A15; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: white; outline: none; transition: all 0.2s; resize: none; &:focus { border-color: #8c52ff; box-shadow: 0 0 0 1px #8c52ff; } &::placeholder { color: #374151; } `;
-const StyledSelect = styled.select` width: 100%; background-color: #0B0A15; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: #d1d5db; outline: none; appearance: none; transition: all 0.2s; cursor: pointer; &:focus { border-color: #8c52ff; } &:hover { border-color: rgba(255, 255, 255, 0.2); } `;
+const InputLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: hsl(var(--muted-foreground)); text-transform: uppercase; margin-bottom: 8px; `;
+const RequiredAsterisk = styled.span` color: hsl(var(--destructive)); margin-left: 4px; `;
+const StyledInput = styled.input` width: 100%; background-color: hsl(var(--accent)); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: hsl(var(--foreground)); outline: none; transition: all 0.2s; &:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 1px hsl(var(--primary)); } &::placeholder { color: hsl(var(--muted-foreground)); } `;
+const StyledTextarea = styled.textarea` width: 100%; background-color: hsl(var(--accent)); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: hsl(var(--foreground)); outline: none; transition: all 0.2s; resize: none; &:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 1px hsl(var(--primary)); } &::placeholder { color: hsl(var(--muted-foreground)); } `;
+const StyledSelect = styled.select` width: 100%; background-color: hsl(var(--accent)); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: hsl(var(--text-secondary)); outline: none; appearance: none; transition: all 0.2s; cursor: pointer; &:focus { border-color: hsl(var(--primary)); } &:hover { border-color: var(--border-medium); } `;
 const FrameworkList = styled.div` display: flex; flex-direction: column; gap: 8px; `;
-const FrameworkOption = styled.button<{ $isSelected: boolean }>` width: 100%; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; cursor: pointer; ${props => props.$isSelected ? `background-color: rgba(140, 82, 255, 0.1); border-color: #8c52ff; color: white;` : `background-color: #0B0A15; border-color: rgba(255, 255, 255, 0.1); color: #9ca3af; &:hover { border-color: rgba(255, 255, 255, 0.2); background-color: rgba(255, 255, 255, 0.05); }`} `;
-const CheckCircle = styled.div` width: 16px; height: 16px; background-color: #8c52ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; `;
-const ErrorMessage = styled.p` margin-top: 8px; margin-bottom: 0; font-size: 14px; font-family: inherit; font-weight: 400; color: #ff4757; line-height: 1.5; `;
+const FrameworkOption = styled.button<{ $isSelected: boolean }>` width: 100%; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; cursor: pointer; ${props => props.$isSelected ? `background-color: rgba(140, 82, 255, 0.1); border-color: hsl(var(--primary)); color: hsl(var(--foreground));` : `background-color: hsl(var(--accent)); border-color: var(--border-light); color: hsl(var(--muted-foreground)); &:hover { border-color: var(--border-medium); background-color: var(--overlay-light); }`} `;
+const CheckCircle = styled.div` width: 16px; height: 16px; background-color: hsl(var(--primary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; `;
+const ErrorMessage = styled.p` margin-top: 8px; margin-bottom: 0; font-size: 14px; font-family: inherit; font-weight: 400; color: hsl(var(--destructive)); line-height: 1.5; `;
 
 // Card Components
 const CardGrid = styled.div`
@@ -1003,19 +970,19 @@ const AddConfigCard = styled.button`
     justify-content: center;
     gap: 8px;
     min-height: 80px;
-    color: #8c52ff;
+    color: hsl(var(--primary));
     font-size: 12px;
     font-weight: 600;
 
     &:hover {
         background-color: rgba(140, 82, 255, 0.1);
-        border-color: #8c52ff;
+        border-color: hsl(var(--primary));
     }
 `;
 
 const ConfigCard = styled.div<{ $selected: boolean }>`
-    background-color: ${props => props.$selected ? 'rgba(140, 82, 255, 0.1)' : '#0B0A15'};
-    border: 1px solid ${props => props.$selected ? '#8c52ff' : 'rgba(255, 255, 255, 0.1)'};
+    background-color: ${props => props.$selected ? 'rgba(140, 82, 255, 0.1)' : 'hsl(var(--accent))'};
+    border: 1px solid ${props => props.$selected ? 'hsl(var(--primary))' : 'var(--border-light)'};
     border-radius: 8px;
     padding: 12px;
     cursor: pointer;
@@ -1025,8 +992,8 @@ const ConfigCard = styled.div<{ $selected: boolean }>`
     gap: 8px;
 
     &:hover {
-        border-color: ${props => props.$selected ? '#8c52ff' : 'rgba(255, 255, 255, 0.2)'};
-        background-color: ${props => props.$selected ? 'rgba(140, 82, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)'};
+        border-color: ${props => props.$selected ? 'hsl(var(--primary))' : 'var(--border-medium)'};
+        background-color: ${props => props.$selected ? 'rgba(140, 82, 255, 0.15)' : 'var(--overlay-light)'};
     }
 `;
 
@@ -1039,7 +1006,7 @@ const CardHeader = styled.div`
 const CardTitle = styled.span`
     font-size: 12px;
     font-weight: 600;
-    color: white;
+    color: hsl(var(--foreground));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1048,7 +1015,7 @@ const CardTitle = styled.span`
 const MiniIconButton = styled.div`
     padding: 2px;
     border-radius: 4px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1056,19 +1023,19 @@ const MiniIconButton = styled.div`
     transition: all 0.2s;
 
     &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: white;
+        background-color: var(--overlay-medium);
+        color: hsl(var(--foreground));
     }
 `;
 
 const CardMeta = styled.span`
     font-size: 10px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
 `;
 
 const EmptyText = styled.p`
     font-size: 12px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     font-style: italic;
     margin: 0;
 `;
@@ -1078,8 +1045,8 @@ const MultiSelectContainer = styled.div`
     flex-wrap: wrap;
     gap: 8px;
     padding: 8px;
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
 `;
 
@@ -1088,25 +1055,25 @@ const TypeCheckbox = styled.div<{ $checked: boolean }>`
     align-items: center;
     gap: 8px;
     padding: 6px 12px;
-    background-color: ${props => props.$checked ? 'rgba(140, 82, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
-    border: 1px solid ${props => props.$checked ? '#8c52ff' : 'transparent'};
+    background-color: ${props => props.$checked ? 'rgba(140, 82, 255, 0.2)' : 'var(--overlay-light)'};
+    border: 1px solid ${props => props.$checked ? 'hsl(var(--primary))' : 'transparent'};
     border-radius: 6px;
     font-size: 12px;
-    color: ${props => props.$checked ? 'white' : '#9ca3af'};
+    color: ${props => props.$checked ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'};
     cursor: pointer;
     transition: all 0.2s;
     user-select: none;
 
     &:hover {
-        background-color: ${props => props.$checked ? 'rgba(140, 82, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+        background-color: ${props => props.$checked ? 'rgba(140, 82, 255, 0.3)' : 'var(--overlay-medium)'};
     }
 
     .checkbox {
         width: 14px;
         height: 14px;
         border-radius: 3px;
-        border: 1px solid ${props => props.$checked ? '#8c52ff' : '#4b5563'};
-        background-color: ${props => props.$checked ? '#8c52ff' : 'transparent'};
+        border: 1px solid ${props => props.$checked ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'};
+        background-color: ${props => props.$checked ? 'hsl(var(--primary))' : 'transparent'};
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1143,21 +1110,21 @@ const CarouselButton = styled.button<{ direction: 'left' | 'right' }>`
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background-color: #1f2937;
-    border: 1px solid #374151;
-    color: white;
+    background-color: hsl(var(--muted));
+    border: 1px solid var(--border-medium);
+    color: hsl(var(--foreground));
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     opacity: 0.8;
-    &:hover { opacity: 1; background-color: #374151; }
+    &:hover { opacity: 1; background-color: var(--overlay-strong); }
 `;
 
 const TypeHeader = styled.div`
     font-size: 11px;
     font-weight: 600;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     margin-bottom: 8px;
     display: flex;
@@ -1168,7 +1135,7 @@ const TypeHeader = styled.div`
         content: '';
         flex: 1;
         height: 1px;
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: var(--border-light);
     }
 `;
 
@@ -1184,10 +1151,10 @@ const SafetyCardContainer = styled.div<{ $enabled: boolean, $risk?: string }>`
     border-radius: 12px;
     border: 1px solid ${props => props.$enabled
         ? (props.$risk === 'High' ? 'rgba(239, 68, 68, 0.5)' : props.$risk ? 'rgba(140, 82, 255, 0.5)' : 'rgba(140, 82, 255, 0.5)')
-        : 'rgba(255, 255, 255, 0.1)'};
+        : 'var(--border-light)'};
     background-color: ${props => props.$enabled
         ? (props.$risk === 'High' ? 'rgba(127, 29, 29, 0.1)' : props.$risk ? 'rgba(140, 82, 255, 0.1)' : 'rgba(140, 82, 255, 0.1)')
-        : '#0B0A15'};
+        : 'hsl(var(--accent))'};
     display: flex;
     flex-direction: column;
     transition: all 0.2s;
@@ -1196,7 +1163,7 @@ const SafetyCardContainer = styled.div<{ $enabled: boolean, $risk?: string }>`
     min-height: 120px;
 
     &:hover {
-        border-color: ${props => props.$enabled ? '' : 'rgba(255, 255, 255, 0.2)'};
+        border-color: ${props => props.$enabled ? '' : 'var(--border-medium)'};
     }
 `;
 
@@ -1220,13 +1187,13 @@ const SafetyCheckbox = styled.div<{ $checked: boolean, $risk?: string }>`
 
     ${props => props.$checked
         ? `
-            background-color: ${props.$risk === 'High' ? '#ef4444' : '#8c52ff'};
-            border-color: ${props.$risk === 'High' ? '#ef4444' : '#8c52ff'};
-            color: white;
+            background-color: ${props.$risk === 'High' ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'};
+            border-color: ${props.$risk === 'High' ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'};
+            color: hsl(var(--primary-foreground));
         `
         : `
-            background-color: rgba(0, 0, 0, 0.2);
-            border-color: #374151;
+            background-color: var(--overlay-strong);
+            border-color: var(--border-medium);
         `
     }
 `;
@@ -1234,7 +1201,7 @@ const SafetyCheckbox = styled.div<{ $checked: boolean, $risk?: string }>`
 const SafetyTitle = styled.h4<{ $enabled: boolean }>`
     font-size: 14px;
     font-weight: 700;
-    color: ${props => props.$enabled ? 'white' : '#d1d5db'};
+    color: ${props => props.$enabled ? 'hsl(var(--foreground))' : 'hsl(var(--text-secondary))'};
     margin: 0 0 4px 0;
 `;
 
@@ -1245,7 +1212,7 @@ const SafetyFooter = styled.div`
 
 const SafetyDesc = styled.p`
     font-size: 12px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
@@ -1257,8 +1224,8 @@ const RiskTag = styled.span<{ $color: string }>`
     border: 1px solid;
     ${props => {
         switch(props.$color) {
-            case 'red': return `background-color: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2);`;
-            case 'amber': return `background-color: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2);`;
+            case 'red': return `background-color: rgba(239, 68, 68, 0.1); color: hsl(var(--destructive)); border-color: rgba(239, 68, 68, 0.2);`;
+            case 'amber': return `background-color: rgba(245, 158, 11, 0.1); color: hsl(var(--warning)); border-color: rgba(245, 158, 11, 0.2);`;
             default: return `background-color: rgba(59, 130, 246, 0.1); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2);`;
         }
     }}
@@ -1269,7 +1236,7 @@ const AddButton = styled.button`
     align-items: center;
     padding: 4px 12px;
     background-color: rgba(140, 82, 255, 0.1);
-    color: #8c52ff;
+    color: hsl(var(--primary));
     border: 1px solid rgba(140, 82, 255, 0.2);
     border-radius: 6px;
     font-size: 12px;
@@ -1283,12 +1250,12 @@ const AddButton = styled.button`
 
 const EmptyState = styled.div`
     padding: 32px;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border: 1px dashed var(--border-light);
     border-radius: 12px;
     text-align: center;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     font-size: 13px;
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--overlay-subtle);
 `;
 
 const A2ARow = styled.div`
@@ -1297,14 +1264,14 @@ const A2ARow = styled.div`
     gap: 12px;
     margin-top: 8px;
     padding: 12px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(145deg, var(--overlay-light) 0%, var(--overlay-subtle) 100%);
+    border: 1px solid var(--border-light);
     border-radius: 12px;
     transition: all 0.2s ease;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 
     &:hover {
-        background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+        background: linear-gradient(145deg, var(--overlay-medium) 0%, var(--overlay-light) 100%);
         border-color: rgba(140, 82, 255, 0.3);
         transform: translateY(-1px);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -1322,14 +1289,14 @@ const A2ALabel = styled.label`
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 14px;
     font-weight: 500;
     user-select: none;
 `;
 
 const Checkbox = styled.input`
-    accent-color: #8c52ff;
+    accent-color: hsl(var(--primary));
     width: 16px;
     height: 16px;
     cursor: pointer;

@@ -93,8 +93,8 @@ export default function AgentInfo({
 }
 
 const InfoContainer = styled.div`
-    background: var(--color-background-secondary, #1a1a2e);
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    background: hsl(var(--surface-elevated));
+    border: 1px solid hsl(var(--border));
     border-radius: 12px;
     padding: 24px;
 `;
@@ -106,7 +106,7 @@ const InfoHeader = styled.div`
 const InfoTitle = styled.h3`
     font-size: 18px;
     font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
@@ -125,7 +125,7 @@ const InfoSection = styled.div`
 const SectionLabel = styled.div`
     font-size: 14px;
     font-weight: 500;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
 `;
 
 const Badge = styled.span<{ $color: 'blue' | 'purple' | 'green' }>`
@@ -173,16 +173,16 @@ const SourceInfo = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     font-weight: 500;
 
     svg {
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
     }
 `;
 
 const SourceUrl = styled.a`
-    color: var(--color-primary, #8c52ff);
+    color: hsl(var(--primary));
     font-size: 14px;
     text-decoration: none;
 
@@ -201,11 +201,11 @@ const ToolItem = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     font-size: 14px;
 
     svg {
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
     }
 `;
 
@@ -213,11 +213,11 @@ const LastRunInfo = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     font-weight: 500;
 
     svg {
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
     }
 `;
 

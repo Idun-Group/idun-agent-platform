@@ -61,6 +61,8 @@ class DiscordInteraction(BaseModel):
         if not self.data:
             return ""
         string_values = [
-            str(opt.value) for opt in self.data.options if opt.type == 3 and opt.value is not None
+            str(opt.value)
+            for opt in self.data.options
+            if opt.type == 3 and opt.value is not None
         ]
         return " ".join(string_values) if string_values else self.data.name

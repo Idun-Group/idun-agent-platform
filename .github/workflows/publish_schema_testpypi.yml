@@ -6,10 +6,14 @@ on:
       - '**'  # Trigger on all branches and all commits
 
 jobs:
-  build-and-publish:
+  build-and-validate:
+    name: Build and validate schema package
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      dev_version: ${{ steps.version.outputs.dev_version }}
+      artifact_name: schema-dist-${{ steps.version.outputs.dev_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,8 +59,62 @@ jobs:
         run: |
           uv build --no-sources
 
-      - name: Publish to TestPyPI
+      - name: Check distribution metadata
         working-directory: libs/idun_agent_schema
+        run: |
+          uvx twine check dist/*
+
+      - name: Smoke test wheel install
+        working-directory: libs/idun_agent_schema
+        run: |
+          python -m venv /tmp/schema-wheel-venv
+          source /tmp/schema-wheel-venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install dist/*.whl
+          python -c "import idun_agent_schema; print(idun_agent_schema.__file__)"
+
+      - name: Smoke test sdist install
+        working-directory: libs/idun_agent_schema
+        run: |
+          python -m venv /tmp/schema-sdist-venv
+          source /tmp/schema-sdist-venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install dist/*.tar.gz
+          python -c "import idun_agent_schema; print(idun_agent_schema.__file__)"
+
+      - name: Upload schema distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-dist-${{ steps.version.outputs.dev_version }}
+          path: libs/idun_agent_schema/dist/*
+          if-no-files-found: error
+
+  publish-testpypi:
+    name: Publish schema to TestPyPI (best effort)
+    runs-on: ubuntu-latest
+    needs: build-and-validate
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Download schema distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-and-validate.outputs.artifact_name }}
+          path: dist
+
+      - name: Publish to TestPyPI
+        id: publish
         run: |
           MAX_ATTEMPTS=3
           ATTEMPT=1
@@ -65,7 +123,8 @@ jobs:
           while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
             echo "Publish attempt $ATTEMPT/$MAX_ATTEMPTS..."
 
-            if uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }}; then
+            if uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }} dist/*; then
+              echo "success=true" >> "$GITHUB_OUTPUT"
               echo "Publish succeeded."
               exit 0
             fi
@@ -78,5 +137,18 @@ jobs:
             ATTEMPT=$((ATTEMPT + 1))
           done
 
+          echo "success=false" >> "$GITHUB_OUTPUT"
           echo "Publish failed after $MAX_ATTEMPTS attempts."
           exit 1
+
+      - name: Summarize TestPyPI publish result
+        if: always()
+        run: |
+          echo "## Schema TestPyPI publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.publish.outputs.success }}" = "true" ]; then
+            echo "Published \`${{ needs.build-and-validate.outputs.dev_version }}\` to TestPyPI." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "TestPyPI publish failed for \`${{ needs.build-and-validate.outputs.dev_version }}\`." >> "$GITHUB_STEP_SUMMARY"
+            echo "Local distributions are still available as workflow artifact \`${{ needs.build-and-validate.outputs.artifact_name }}\`." >> "$GITHUB_STEP_SUMMARY"
+          fi

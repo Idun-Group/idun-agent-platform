@@ -710,6 +710,158 @@ class TestConfigBuilderIntegrations:
 
 
 @pytest.mark.unit
+class TestConfigBuilderPrompts:
+    """Test prompts configuration in ConfigBuilder."""
+
+    def test_build_includes_prompts_when_set(self, tmp_path: Path) -> None:
+        """build() includes prompts config in the EngineConfig."""
+        from idun_agent_schema.engine.prompt import PromptConfig
+
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="Prompt Agent", graph_definition=str(tmp_path / "agent.py:graph")
+        )
+        builder._prompts = [
+            PromptConfig(
+                prompt_id="system-prompt",
+                version=1,
+                content="You are a helpful assistant.",
+                tags=["production"],
+            )
+        ]
+        engine_config = builder.build()
+        assert engine_config.prompts is not None
+        assert len(engine_config.prompts) == 1
+        assert engine_config.prompts[0].prompt_id == "system-prompt"
+        assert engine_config.prompts[0].version == 1
+
+    def test_build_prompts_none_by_default(self) -> None:
+        """build() sets prompts to None when not configured."""
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="No Prompts Agent", graph_definition="./agent.py:graph"
+        )
+        engine_config = builder.build()
+        assert engine_config.prompts is None
+
+    def test_from_dict_preserves_prompts(self, tmp_path: Path) -> None:
+        """from_dict copies prompts config into the builder."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "Dict Prompt Agent",
+                    "graph_definition": str(tmp_path / "agent.py:graph"),
+                },
+            },
+            "prompts": [
+                {
+                    "prompt_id": "rag-prompt",
+                    "version": 2,
+                    "content": "Answer: {{ query }}",
+                    "tags": ["rag"],
+                }
+            ],
+        }
+        builder = ConfigBuilder.from_dict(config_dict)
+        assert builder._prompts is not None
+        assert len(builder._prompts) == 1
+
+        engine_config = builder.build()
+        assert engine_config.prompts is not None
+        assert engine_config.prompts[0].prompt_id == "rag-prompt"
+        assert engine_config.prompts[0].version == 2
+
+    def test_from_engine_config_preserves_prompts(self, tmp_path: Path) -> None:
+        """from_engine_config copies prompts config into the builder."""
+        from idun_agent_schema.engine.prompt import PromptConfig
+
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="Prompt Agent", graph_definition=str(tmp_path / "agent.py:graph")
+        )
+        builder._prompts = [
+            PromptConfig(
+                prompt_id="sys",
+                version=1,
+                content="Hello {{ name }}",
+            )
+        ]
+        engine_config = builder.build()
+
+        new_builder = ConfigBuilder.from_engine_config(engine_config)
+        assert new_builder._prompts is not None
+        assert len(new_builder._prompts) == 1
+        assert new_builder._prompts[0].prompt_id == "sys"
+
+    @patch("requests.get")
+    def test_with_config_from_api_parses_prompts(self, mock_get: Mock) -> None:
+        """with_config_from_api parses prompts config from API response."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 8000}},
+                    "agent": {
+                        "type": "LANGGRAPH",
+                        "config": {
+                            "name": "API Prompt Agent",
+                            "graph_definition": "./agent.py:graph",
+                        },
+                    },
+                    "prompts": [
+                        {
+                            "prompt_id": "system",
+                            "version": 3,
+                            "content": "You are {{ role }}.",
+                            "tags": ["v3"],
+                        }
+                    ],
+                }
+            }
+        )
+        mock_get.return_value = mock_response
+
+        builder = ConfigBuilder().with_config_from_api(
+            agent_api_key="test-key", url="http://localhost:8000"
+        )
+
+        engine_config = builder.build()
+        assert engine_config.prompts is not None
+        assert len(engine_config.prompts) == 1
+        assert engine_config.prompts[0].prompt_id == "system"
+        assert engine_config.prompts[0].version == 3
+        assert engine_config.prompts[0].content == "You are {{ role }}."
+
+    @patch("requests.get")
+    def test_with_config_from_api_without_prompts(self, mock_get: Mock) -> None:
+        """with_config_from_api sets prompts to None when not in response."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 8000}},
+                    "agent": {
+                        "type": "LANGGRAPH",
+                        "config": {
+                            "name": "No Prompt API Agent",
+                            "graph_definition": "./agent.py:graph",
+                        },
+                    },
+                }
+            }
+        )
+        mock_get.return_value = mock_response
+
+        builder = ConfigBuilder().with_config_from_api(
+            agent_api_key="test-key", url="http://localhost:8000"
+        )
+
+        engine_config = builder.build()
+        assert engine_config.prompts is None
+
+
+@pytest.mark.unit
 class TestConfigBuilderGetAgentClass:
     """Test getting agent class by type."""
 

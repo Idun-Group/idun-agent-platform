@@ -27,6 +27,7 @@ class ManagedObservabilityRead(BaseModel):
     observability: ObservabilityConfig = Field(
         ..., description="Observability configuration"
     )
+    agent_count: int = Field(0, description="Number of agents using this config")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

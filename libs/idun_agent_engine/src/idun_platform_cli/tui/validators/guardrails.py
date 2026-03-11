@@ -60,7 +60,7 @@ def validate_guardrail(guardrail_id: str, config: dict) -> tuple[any, str]:
                     config_id=GuardrailConfigId.BAN_LIST,
                     api_key=config.get("api_key", ""),
                     reject_message=config.get("reject_message", ""),
-                    guard_params={"banned_words": banned_words},
+                    banned_words=banned_words,
                 )
                 return validated, "ok"
 
@@ -75,7 +75,8 @@ def validate_guardrail(guardrail_id: str, config: dict) -> tuple[any, str]:
                     config_id=GuardrailConfigId.DETECT_PII,
                     api_key=config.get("api_key", ""),
                     reject_message=config.get("reject_message", ""),
-                    guard_params={"pii_entities": pii_entities, "on_fail": "exception"},
+                    pii_entities=pii_entities,
+                    on_fail="exception",
                 )
                 return validated, "ok"
 

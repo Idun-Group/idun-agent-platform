@@ -25,4 +25,5 @@ export interface ApplicationConfig {
     config: Record<string, any>; // For storing keys, urls, etc.
     imageUrl?: string;
     framework?: string;
+    agentCount?: number;
 }

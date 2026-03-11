@@ -278,16 +278,16 @@ const TableScrollContainer = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: #1a1a2e;
+        background: var(--scrollbar-track);
     }
 
     &::-webkit-scrollbar-thumb {
-        background: #8c52ff;
+        background: var(--scrollbar-thumb-active);
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: #7a47e6;
+        background: hsl(var(--primary));
     }
 `;
 
@@ -312,7 +312,7 @@ const Table = styled.table`
 
         td {
             padding: 15px 25px;
-            color: white;
+            color: hsl(var(--foreground));
             font-size: 0.875rem;
             vertical-align: middle;
             white-space: nowrap;
@@ -419,12 +419,12 @@ const ItemsPerPageSelector = styled.div`
 
         &:focus {
             outline: none;
-            border-color: #8c52ff;
+            border-color: hsl(var(--primary));
         }
 
         option {
-            background: #252a45;
-            color: white;
+            background: hsl(var(--accent));
+            color: hsl(var(--foreground));
         }
     }
 `;
@@ -480,9 +480,9 @@ const PaginationButton = styled.button<{ disabled?: boolean }>`
 `;
 
 const PageNumber = styled.button<{ $isActive?: boolean }>`
-    background: ${(props) => (props.$isActive ? '#8c52ff' : '#252a45')};
-    color: white;
-    border: 1px solid ${(props) => (props.$isActive ? '#8c52ff' : '#404040')};
+    background: ${(props) => (props.$isActive ? 'hsl(var(--primary))' : 'hsl(var(--accent))')};
+    color: hsl(var(--foreground));
+    border: 1px solid ${(props) => (props.$isActive ? 'hsl(var(--primary))' : 'hsl(var(--border))')};
     border-radius: 0.25rem;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
@@ -491,13 +491,13 @@ const PageNumber = styled.button<{ $isActive?: boolean }>`
     min-width: 2.5rem;
 
     &:hover {
-        background: #8c52ff;
-        border-color: #8c52ff;
+        background: hsl(var(--primary));
+        border-color: hsl(var(--primary));
     }
 
     &:focus {
         outline: none;
-        border-color: #8c52ff;
+        border-color: hsl(var(--primary));
     }
 `;
 

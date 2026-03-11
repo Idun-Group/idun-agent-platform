@@ -39,7 +39,7 @@ export default function ConnectionVerifier({ baseUrl }: ConnectionVerifierProps)
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.status === 'healthy') {
+                    if (data.status === 'healthy' || data.status === 'ok') {
                         setStatus('connected');
                         return;
                     }
@@ -104,7 +104,7 @@ const VerifyButton = styled.button`
     padding: 10px 20px;
     font-size: 14px;
     font-weight: 600;
-    color: white;
+    color: hsl(var(--foreground));
     background-color: rgba(140, 82, 255, 0.15);
     border: 1px solid rgba(140, 82, 255, 0.3);
     border-radius: 8px;

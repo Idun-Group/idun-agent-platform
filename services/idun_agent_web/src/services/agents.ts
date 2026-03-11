@@ -1,4 +1,5 @@
 import { getJson, postJson, putJson, patchJson, deleteRequest } from '../utils/api';
+import { agentFetch, buildAgentUrl } from '../utils/agent-fetch';
 import type { components, operations } from '../generated/agent-manager';
 import { runtimeConfig } from '../utils/runtime-config';
 
@@ -155,9 +156,17 @@ export async function deleteAgent(agentId: string): Promise<void> {
     await deleteRequest(`/api/v1/agents/${agentId}`);
 }
 
-export function restartAgent(baseUrl: string): Promise<unknown> {
-    const url = baseUrl.endsWith('/') ? `${baseUrl}reload` : `${baseUrl}/reload`;
-    return postJson(url, {});
+export async function restartAgent(baseUrl: string): Promise<void> {
+    const url = buildAgentUrl(baseUrl, '/reload');
+    const res = await agentFetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+    });
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(text || `Reload failed with status ${res.status}`);
+    }
 }
 
 export function updateAgentStatus(
@@ -189,21 +198,19 @@ export function performHealthCheck(
         return;
     }
 
-    const healthUrl = agent.base_url.endsWith('/')
-        ? `${agent.base_url}health`
-        : `${agent.base_url}/health`;
+    const healthUrl = buildAgentUrl(agent.base_url, '/health');
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
 
-    fetch(healthUrl, { signal: controller.signal })
+    agentFetch(healthUrl, { signal: controller.signal })
         .then(res => {
             clearTimeout(timer);
             if (!res.ok) throw new Error(`status ${res.status}`);
             return res.json();
         })
         .then(data => {
-            const isHealthy = data?.status === 'healthy';
+            const isHealthy = data?.status === 'ok';
             return updateAgentStatus(agent.id, isHealthy ? 'active' : 'draft');
         })
         .then(updated => onStatusChange?.(updated))
@@ -216,12 +223,47 @@ export function performHealthCheck(
 }
 
 export async function fetchAgentGraph(baseUrl: string): Promise<string | null> {
-    const url = baseUrl.endsWith('/') ? `${baseUrl}agent/graph` : `${baseUrl}/agent/graph`;
+    const url = buildAgentUrl(baseUrl, '/agent/graph');
     try {
-        const res = await fetch(url);
+        const res = await agentFetch(url);
         if (!res.ok) return null;
         const data = await res.json();
         return data.graph ?? null;
+    } catch {
+        return null;
+    }
+}
+
+export interface EngineHealth {
+    status: string;
+    engineVersion: string | null;
+}
+
+export async function fetchEngineHealth(baseUrl: string): Promise<EngineHealth | null> {
+    const url = baseUrl.endsWith('/') ? `${baseUrl}health` : `${baseUrl}/health`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
+    try {
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return {
+            status: data?.status ?? 'unknown',
+            engineVersion: data?.engine_version ?? data?.version ?? null,
+        };
+    } catch {
+        clearTimeout(timer);
+        return null;
+    }
+}
+
+export async function fetchLatestEngineVersion(): Promise<string | null> {
+    try {
+        const res = await fetch('https://pypi.org/pypi/idun-agent-engine/json');
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data?.info?.version ?? null;
     } catch {
         return null;
     }

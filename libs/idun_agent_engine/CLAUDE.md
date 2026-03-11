@@ -28,7 +28,7 @@ idun_agent_engine/
 │   ├── adk/            # Google ADK adapter. Mature. Session + memory services. Stream not yet implemented.
 │   └── haystack/       # Haystack adapter. Accepts Pipeline or Agent. Basic invoke only. Experimental.
 ├── server/             # FastAPI layer
-│   ├── routers/agent   # /agent/invoke, /agent/stream, /agent/copilotkit/stream, /agent/config
+│   ├── routers/agent   # /agent/capabilities, /agent/run, /agent/invoke (deprecated), /agent/stream (deprecated), /agent/copilotkit/stream (deprecated), /agent/config
 │   ├── routers/base    # /, /health, /reload
 │   ├── auth            # OIDCValidator — JWT validation via OIDC JWKS, require_auth dependency
 │   ├── dependencies    # DI: get_agent, get_copilotkit_agent, get_mcp_registry
@@ -47,6 +47,9 @@ idun_agent_engine/
 │   ├── whatsapp/       # WhatsApp Cloud API: handler (webhook verify + receive), client (send_text_message)
 │   └── discord/        # Discord Interactions Endpoint: handler (Ed25519 verify + slash commands),
 │                       #   client (edit_interaction_response), verify (signature check), integration (app.state setup)
+├── prompts/            # Prompt loading and helpers
+│   ├── __init__        # Re-exports get_prompt
+│   └── helpers         # get_prompt(), get_prompts(), get_prompts_from_file(), get_prompts_from_api()
 ├── mcp/                # MCP tool management
 │   ├── registry        # MCPClientRegistry wrapping langchain-mcp-adapters MultiServerMCPClient
 │   └── helpers         # get_langchain_tools(), get_adk_tools() — convenience functions
@@ -103,7 +106,6 @@ agent:
   config:
     name: "My Agent"
     graph_definition: "./agent.py:app"    # module_path:variable_name
-    input_schema_definition: "field_name" # optional: field in state schema to use as input model
     checkpointer:
       type: "sqlite"                      # sqlite | memory | postgres
       db_url: "sqlite:///checkpoint.db"
@@ -129,6 +131,12 @@ mcp_servers:
     transport: "stdio"
     command: "docker"
     args: ["run", "-i", "--rm", "mcp/time"]
+
+prompts:
+  - prompt_id: "system-prompt"
+    version: 1
+    content: "You are a helpful assistant for {{ domain }}."
+    tags: ["latest"]
 
 sso:
   enabled: true
@@ -177,7 +185,9 @@ agent:
 
 ## Agent Adapters
 
-All adapters implement `BaseAgent` (generic ABC parameterized by config type):
+All adapters implement `BaseAgent` (generic ABC parameterized by config type).
+
+All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) and `run()` (canonical AG-UI interaction, delegates to framework AG-UI wrapper).
 
 | Adapter | Config Model | Graph Loading | Streaming | CopilotKit |
 |---|---|---|---|---|
@@ -188,7 +198,6 @@ All adapters implement `BaseAgent` (generic ABC parameterized by config type):
 ### LangGraph: Key Details
 
 - **`graph_definition`**: Format `path/to/file.py:variable_name`. Tries file path first, falls back to Python module import.
-- **`input_schema_definition`**: Points to a field name in the graph's `state_schema`. The engine extracts the type annotation and uses it as the `/agent/invoke` input model for OpenAPI schema generation. If not set, defaults to `ChatRequest` (`query` + `session_id`).
 - **Checkpointers**: `InMemorySaver`, `AsyncSqliteSaver`, `AsyncPostgresSaver` — configured via YAML.
 - **Streaming**: Maps LangGraph `astream_events(v2)` to AG-UI events (RunStarted, StepStarted, TextMessageStart/Content/End, ToolCallStart/Args/End, ThinkingStart/End, RunFinished).
 
@@ -206,9 +215,11 @@ All adapters implement `BaseAgent` (generic ABC parameterized by config type):
 | `/health` | GET | Health check |
 | `/docs` | GET | OpenAPI docs |
 | `/reload` | POST | Hot-reload agent config without restarting the server |
-| `/agent/invoke` | POST | Invoke agent (request/response). Input model is dynamic based on `input_schema_definition`. |
-| `/agent/stream` | POST | Stream AG-UI events (custom implementation in agent adapter) |
-| `/agent/copilotkit/stream` | POST | Stream via CopilotKit AG-UI agent wrapper (used by the frontend) |
+| `/agent/capabilities` | GET | Agent capability discovery (input/output schemas, supported modes) |
+| `/agent/run` | POST | Canonical AG-UI interaction endpoint (accepts RunAgentInput, returns SSE) |
+| `/agent/invoke` | POST | **(Deprecated)** Invoke agent. Use `/agent/run` instead. |
+| `/agent/stream` | POST | **(Deprecated)** Stream AG-UI events. Use `/agent/run` instead. |
+| `/agent/copilotkit/stream` | POST | **(Deprecated)** Stream via CopilotKit. Use `/agent/run` instead. |
 | `/agent/config` | GET | Get current agent config |
 | `/integrations/whatsapp/webhook` | GET/POST | WhatsApp webhook (GET: Meta verify, POST: receive messages) |
 | `/integrations/discord/webhook` | POST | Discord Interactions Endpoint (Ed25519 verified, handles PING + slash commands) |
@@ -233,6 +244,25 @@ Top-level config. Multiple providers can be active simultaneously. All are lazy-
 | **GCP Logging** | `google.cloud.logging.Client.setup_logging()` | No (hooks into python logging) |
 
 Config values support env var references: `${LANGFUSE_HOST}` syntax in YAML, resolved at load time.
+
+## Prompts
+
+`idun_agent_engine.prompts` provides helpers for loading `PromptConfig` entries from YAML files or the Manager API.
+
+```python
+from idun_agent_engine.prompts import get_prompt
+
+prompt = get_prompt("system-prompt")           # returns PromptConfig | None
+rendered = prompt.format(query="What is AI?")  # Jinja2 rendering
+lc_prompt = prompt.to_langchain()              # LangChain PromptTemplate
+```
+
+Resolution priority in `get_prompts()`:
+1. Explicit `config_path` argument
+2. `IDUN_CONFIG_PATH` environment variable
+3. Manager API (`IDUN_AGENT_API_KEY` + `IDUN_MANAGER_HOST` env vars)
+
+`ConfigBuilder` also reads prompts from config and passes them through to `EngineConfig.prompts`.
 
 ## MCP (Model Context Protocol)
 

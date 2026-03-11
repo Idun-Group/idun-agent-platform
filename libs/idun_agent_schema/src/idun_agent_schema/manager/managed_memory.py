@@ -27,6 +27,7 @@ class ManagedMemoryRead(BaseModel):
     name: str
     agent_framework: AgentFramework = Field(..., description="Agent framework")
     memory: MemoryConfig = Field(..., description="Memory (checkpoint) configuration")
+    agent_count: int = Field(0, description="Number of agents using this memory config")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

@@ -13,7 +13,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import CurrentUser, get_current_user, get_session
+from app.api.v1.routers.members import require_workspace_role
+from app.api.v1.schemas.workspace_members import WorkspaceRole
 from app.infrastructure.db.models.membership import MembershipModel
+from app.infrastructure.db.models.user import UserModel
 from app.infrastructure.db.models.workspace import WorkspaceModel
 
 router = APIRouter()
@@ -88,11 +91,13 @@ async def list_workspaces(
     summary="Create a new workspace",
 )
 async def create_workspace(
+    # NOTE: This endpoint intentionally uses get_current_user (not require_workspace)
+    # because it must remain accessible to users with no workspaces yet (onboarding flow).
     request: WorkspaceCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> WorkspaceRead:
-    """Create a workspace and add the current user as admin."""
+    """Create a workspace and add the current user as owner."""
     ws_id = uuid4()
     now = datetime.now(UTC)
 
@@ -110,10 +115,16 @@ async def create_workspace(
         id=uuid4(),
         user_id=UUID(user.user_id),
         workspace_id=ws_id,
-        role="admin",
+        role=WorkspaceRole.OWNER.value,
     )
     session.add(membership)
     await session.flush()
+
+    # Set as default workspace if user doesn't have one yet
+    user_model = await session.get(UserModel, UUID(user.user_id))
+    if user_model and user_model.default_workspace_id is None:
+        user_model.default_workspace_id = ws_id
+        await session.flush()
 
     return WorkspaceRead(
         id=str(workspace.id),
@@ -133,7 +144,7 @@ async def patch_workspace(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> WorkspaceRead:
-    """Update a workspace name (admin only)."""
+    """Update a workspace name. Requires admin or owner role."""
     try:
         ws_uuid = UUID(workspace_id)
     except ValueError as err:
@@ -142,23 +153,7 @@ async def patch_workspace(
             detail="Invalid workspace id",
         ) from err
 
-    # Verify membership
-    mem_stmt = select(MembershipModel).where(
-        MembershipModel.user_id == UUID(user.user_id),
-        MembershipModel.workspace_id == ws_uuid,
-    )
-    mem_result = await session.execute(mem_stmt)
-    membership = mem_result.scalar_one_or_none()
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found",
-        )
-    if membership.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can update workspace settings",
-        )
+    await require_workspace_role(ws_uuid, user, session, WorkspaceRole.ADMIN)
 
     workspace = await session.get(WorkspaceModel, ws_uuid)
     if not workspace:
@@ -184,14 +179,14 @@ async def patch_workspace(
 @router.delete(
     "/{workspace_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete workspace (admin only)",
+    summary="Delete workspace (owner only)",
 )
 async def delete_workspace(
     workspace_id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> None:
-    """Delete a workspace. Only admins can delete workspaces."""
+    """Delete a workspace. Only owners can delete workspaces."""
     try:
         ws_uuid = UUID(workspace_id)
     except ValueError as err:
@@ -200,23 +195,7 @@ async def delete_workspace(
             detail="Invalid workspace id",
         ) from err
 
-    # Verify admin membership
-    mem_stmt = select(MembershipModel).where(
-        MembershipModel.user_id == UUID(user.user_id),
-        MembershipModel.workspace_id == ws_uuid,
-    )
-    mem_result = await session.execute(mem_stmt)
-    membership = mem_result.scalar_one_or_none()
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Workspace not found",
-        )
-    if membership.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can delete workspaces",
-        )
+    await require_workspace_role(ws_uuid, user, session, WorkspaceRole.OWNER)
 
     workspace = await session.get(WorkspaceModel, ws_uuid)
     if not workspace:
