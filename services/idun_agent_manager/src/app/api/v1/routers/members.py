@@ -7,6 +7,7 @@ Any workspace member can list members.
 
 import logging
 from collections import defaultdict
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -174,7 +175,10 @@ async def list_members(
             InvitationProjectModel,
             InvitationProjectModel.invitation_id == InvitationModel.id,
         )
-        .where(InvitationModel.workspace_id == workspace_id)
+        .where(
+            InvitationModel.workspace_id == workspace_id,
+            InvitationModel.consumed_at.is_(None),
+        )
         .order_by(InvitationModel.created_at)
     )
     inv_result = await session.execute(inv_stmt)
@@ -252,6 +256,7 @@ async def add_member(
     dup_inv_stmt = select(InvitationModel).where(
         InvitationModel.workspace_id == workspace_id,
         InvitationModel.email == email,
+        InvitationModel.consumed_at.is_(None),
     )
     if (await session.execute(dup_inv_stmt)).scalar_one_or_none():
         raise HTTPException(
@@ -420,6 +425,7 @@ async def accept_invitation(
     inv_stmt = select(InvitationModel).where(
         InvitationModel.workspace_id == workspace_id,
         InvitationModel.email == user.email.lower(),
+        InvitationModel.consumed_at.is_(None),
     )
     invitation = (await session.execute(inv_stmt)).scalar_one_or_none()
     if invitation is None:
@@ -465,8 +471,8 @@ async def accept_invitation(
             session.add(pm)
     # Owners have implicit admin on all projects — no rows needed
 
-    # Delete the invitation (CASCADE removes invitation_projects)
-    await session.delete(invitation)
+    # Mark invitation as consumed (soft-delete for audit trail)
+    invitation.consumed_at = datetime.now(UTC)
     await session.flush()
 
     # Fetch user for response
@@ -660,23 +666,25 @@ async def cancel_invitation(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> None:
-    """Cancel a pending workspace invitation.
+    """Cancel a pending workspace invitation (soft-delete).
 
-    CASCADE on the foreign key will automatically remove associated
-    InvitationProjectModel rows.
-
+    Sets consumed_at to mark the invitation as no longer pending.
     Only workspace owners can cancel invitations.
     """
     await _require_workspace_owner(workspace_id, user, session)
 
     invitation = await session.get(InvitationModel, invitation_id)
-    if invitation is None or invitation.workspace_id != workspace_id:
+    if (
+        invitation is None
+        or invitation.workspace_id != workspace_id
+        or invitation.consumed_at is not None
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invitation not found",
         )
 
-    await session.delete(invitation)
+    invitation.consumed_at = datetime.now(UTC)
     await session.flush()
 
     logger.info(

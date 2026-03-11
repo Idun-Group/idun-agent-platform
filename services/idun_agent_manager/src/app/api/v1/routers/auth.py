@@ -17,6 +17,7 @@ import hashlib
 import logging
 import os
 import time
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -137,14 +138,25 @@ def encrypt_payload(payload: str) -> bytes:
 async def _consume_pending_invitations(
     db_session: AsyncSession, user_id: UUID, email: str
 ) -> list[str]:
-    """Find pending invitations for this email, create memberships, delete invitations.
+    """Find pending invitations for this email, create memberships, mark consumed.
+
+    Also materialises project assignments from invitation_projects into
+    project_memberships (for non-owner invitations). Invitations are
+    soft-deleted (consumed_at set) rather than hard-deleted, preserving
+    the audit trail.
 
     Returns list of workspace IDs the user was added to.
     """
     from app.infrastructure.db.models.invitation import InvitationModel
+    from app.infrastructure.db.models.invitation_project import InvitationProjectModel
     from app.infrastructure.db.models.membership import MembershipModel
+    from app.infrastructure.db.models.project import ProjectModel
+    from app.infrastructure.db.models.project_membership import ProjectMembershipModel
 
-    inv_stmt = select(InvitationModel).where(InvitationModel.email == email)
+    inv_stmt = select(InvitationModel).where(
+        InvitationModel.email == email,
+        InvitationModel.consumed_at.is_(None),
+    )
     invitations = (await db_session.execute(inv_stmt)).scalars().all()
 
     new_workspace_ids: list[str] = []
@@ -164,7 +176,32 @@ async def _consume_pending_invitations(
             db_session.add(membership)
             new_workspace_ids.append(str(inv.workspace_id))
 
-        await db_session.delete(inv)
+            # Materialise project assignments (non-owners only; owners have
+            # implicit admin on all projects).
+            if not inv.is_owner:
+                ip_stmt = select(InvitationProjectModel).where(
+                    InvitationProjectModel.invitation_id == inv.id,
+                )
+                ip_rows = (await db_session.execute(ip_stmt)).scalars().all()
+                for ip in ip_rows:
+                    project = await db_session.get(ProjectModel, ip.project_id)
+                    if project is None or project.workspace_id != inv.workspace_id:
+                        logger.warning(
+                            "Skipping deleted project %s during invitation "
+                            "consumption for %s",
+                            ip.project_id,
+                            email,
+                        )
+                        continue
+                    pm = ProjectMembershipModel(
+                        id=uuid4(),
+                        project_id=ip.project_id,
+                        user_id=user_id,
+                        role=ip.role,
+                    )
+                    db_session.add(pm)
+
+        inv.consumed_at = datetime.now(UTC)
 
     if new_workspace_ids:
         await db_session.flush()

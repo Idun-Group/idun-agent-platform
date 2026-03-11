@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,8 +15,12 @@ from app.infrastructure.db.session import Base
 class InvitationModel(Base):
     __tablename__ = "workspace_invitations"
     __table_args__ = (
-        UniqueConstraint(
-            "email", "workspace_id", name="uq_invitation_email_workspace"
+        Index(
+            "uq_invitation_email_workspace_pending",
+            "email",
+            "workspace_id",
+            unique=True,
+            postgresql_where="consumed_at IS NULL",
         ),
     )
 
@@ -36,4 +40,7 @@ class InvitationModel(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    consumed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
     )
