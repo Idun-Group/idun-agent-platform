@@ -79,43 +79,37 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
 
     const refreshRoles = useCallback(async (projectList: Project[], userId: string) => {
         try {
-            const workspaces = await getJson<{ id: string }[]>('/api/v1/workspaces/');
-            if (workspaces.length === 0) return;
-            const wsId = workspaces[0].id;
+            // Fetch members for each project — the endpoint includes workspace
+            // owners as implicit admin entries with is_workspace_owner=true
+            const roles: Record<string, ProjectRole> = {};
+            let detectedOwner = false;
 
-            const memberRes = await getJson<{
-                members: { user_id: string; is_owner: boolean }[];
-            }>(`/api/v1/workspaces/${wsId}/members`);
-
-            const currentMember = memberRes.members.find((m) => m.user_id === userId);
-            const ownerStatus = currentMember?.is_owner ?? false;
-            setIsWorkspaceOwner(ownerStatus);
-
-            if (ownerStatus) {
-                const roles: Record<string, ProjectRole> = {};
-                for (const p of projectList) {
-                    roles[p.id] = 'admin';
-                }
-                setProjectRoles(roles);
-            } else {
-                const roles: Record<string, ProjectRole> = {};
-                await Promise.all(
-                    projectList.map(async (p) => {
-                        try {
-                            const res = await getJson<ProjectMemberListResponse>(
-                                `/api/v1/projects/${p.id}/members`,
-                            );
-                            const me = res.members.find((m) => m.user_id === userId);
-                            if (me) roles[p.id] = me.role;
-                        } catch {
-                            // ignore
+            await Promise.all(
+                projectList.map(async (p) => {
+                    try {
+                        const res = await getJson<{
+                            members: {
+                                user_id: string;
+                                role: ProjectRole;
+                                is_workspace_owner?: boolean;
+                            }[];
+                            total: number;
+                        }>(`/api/v1/projects/${p.id}/members`);
+                        const me = res.members.find((m) => m.user_id === userId);
+                        if (me) {
+                            roles[p.id] = me.role;
+                            if (me.is_workspace_owner) detectedOwner = true;
                         }
-                    }),
-                );
-                setProjectRoles(roles);
-            }
-        } catch {
-            // ignore errors
+                    } catch (err) {
+                        console.error(`Failed to fetch members for project ${p.id}:`, err);
+                    }
+                }),
+            );
+
+            setIsWorkspaceOwner(detectedOwner);
+            setProjectRoles(roles);
+        } catch (err) {
+            console.error('Failed to refresh roles:', err);
         }
     }, []);
 

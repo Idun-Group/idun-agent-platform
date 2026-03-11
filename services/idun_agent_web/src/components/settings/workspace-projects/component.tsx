@@ -1,9 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { Plus, Pencil, Trash2, Check, X, Grid3X3 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Grid3X3, Users } from 'lucide-react';
 import { notify } from '../../toast/notify';
-import { useProject } from '../../../hooks/use-project';
+import { useProject, type ProjectRole } from '../../../hooks/use-project';
+import { getJson } from '../../../utils/api';
+
+type ProjectMember = {
+    user_id: string;
+    role: ProjectRole;
+    email: string;
+    name?: string | null;
+    is_workspace_owner?: boolean;
+};
 
 const WorkspaceProjectsTab = () => {
     const { t } = useTranslation();
@@ -21,11 +30,29 @@ const WorkspaceProjectsTab = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [projectMembers, setProjectMembers] = useState<Record<string, ProjectMember[]>>({});
 
     // Filter projects: owners see all, admins see only their admin projects
     const visibleProjects = isWorkspaceOwner
         ? projects
         : projects.filter((p) => projectRoles[p.id] === 'admin');
+
+    const fetchProjectMembers = useCallback(async (projectList: typeof projects) => {
+        const membersByProject: Record<string, ProjectMember[]> = {};
+        await Promise.all(
+            projectList.map(async (p) => {
+                try {
+                    const res = await getJson<{ members: ProjectMember[]; total: number }>(
+                        `/api/v1/projects/${p.id}/members`,
+                    );
+                    membersByProject[p.id] = res.members;
+                } catch {
+                    membersByProject[p.id] = [];
+                }
+            }),
+        );
+        setProjectMembers(membersByProject);
+    }, []);
 
     const handleCreate = async () => {
         if (!newName.trim()) return;
@@ -41,6 +68,15 @@ const WorkspaceProjectsTab = () => {
             setCreating(false);
         }
     };
+
+    // Re-fetch members when projects change (covers create/delete)
+    const projectIds = visibleProjects.map((p) => p.id).join(',');
+    useEffect(() => {
+        if (visibleProjects.length > 0) {
+            fetchProjectMembers(visibleProjects);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectIds]);
 
     const handleRename = async (id: string) => {
         if (!editName.trim()) return;
@@ -132,19 +168,35 @@ const WorkspaceProjectsTab = () => {
                                             </IconBtn>
                                         </EditRow>
                                     ) : (
-                                        <ProjectNameRow>
-                                            <ProjectName>{project.name}</ProjectName>
-                                            {project.is_default && (
-                                                <Badge $variant="default">
-                                                    {t('projects.default', 'Default')}
-                                                </Badge>
+                                        <>
+                                            <ProjectNameRow>
+                                                <ProjectName>{project.name}</ProjectName>
+                                                {project.is_default && (
+                                                    <Badge $variant="default">
+                                                        {t('projects.default', 'Default')}
+                                                    </Badge>
+                                                )}
+                                                {!isWorkspaceOwner && userRole && (
+                                                    <Badge $variant="role">
+                                                        {t(`projects.roles.${userRole}`, userRole)}
+                                                    </Badge>
+                                                )}
+                                            </ProjectNameRow>
+                                            {projectMembers[project.id] && projectMembers[project.id].length > 0 && (
+                                                <MembersRow>
+                                                    <Users size={12} color="hsl(var(--muted-foreground))" />
+                                                    <MembersText>
+                                                        {projectMembers[project.id].map((m) => {
+                                                            const label = m.name || m.email;
+                                                            const roleLabel = m.is_workspace_owner
+                                                                ? t('projects.roles.owner', 'owner')
+                                                                : t(`projects.roles.${m.role}`, m.role);
+                                                            return `${label} (${roleLabel})`;
+                                                        }).join(', ')}
+                                                    </MembersText>
+                                                </MembersRow>
                                             )}
-                                            {!isWorkspaceOwner && userRole && (
-                                                <Badge $variant="role">
-                                                    {t(`projects.roles.${userRole}`, userRole)}
-                                                </Badge>
-                                            )}
-                                        </ProjectNameRow>
+                                        </>
                                     )}
                                 </ProjectInfo>
                             </ProjectCardLeft>
@@ -458,6 +510,21 @@ const CancelBtn = styled.button`
     &:hover {
         background: var(--overlay-subtle);
     }
+`;
+
+const MembersRow = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+`;
+
+const MembersText = styled.span`
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 `;
 
 const EmptyText = styled.p`
