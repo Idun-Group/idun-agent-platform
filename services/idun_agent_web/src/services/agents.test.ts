@@ -17,7 +17,7 @@ describe('fetchEngineHealth', () => {
         vi.resetModules();
         fetchMock.mockReset();
         fetchMock.mockResolvedValue(
-            new Response(JSON.stringify({ status: 'ok', version: '0.4.9' }), {
+            new Response(JSON.stringify({ status: 'ok', version: '0.5.0' }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' },
             }),
@@ -42,6 +42,6 @@ describe('fetchEngineHealth', () => {
                 targetAddressSpace: 'loopback',
             }),
         );
-        expect(result).toEqual({ status: 'ok', engineVersion: '0.4.9' });
+        expect(result).toEqual({ status: 'ok', engineVersion: '0.5.0' });
     });
 });
