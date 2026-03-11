@@ -2,6 +2,9 @@ interface RuntimeConfig {
     API_URL: string;
     AUTH_DISABLE_USERNAME_PASSWORD: string;
     USE_MOCKS: string;
+    POSTHOG_KEY: string;
+    POSTHOG_HOST: string;
+    POSTHOG_ENABLED: string;
 }
 
 declare global {
@@ -26,4 +29,15 @@ export const runtimeConfig: RuntimeConfig = {
         'false',
     ),
     USE_MOCKS: resolve('USE_MOCKS', 'VITE_USE_MOCKS', 'false'),
+    POSTHOG_KEY: resolve(
+        'POSTHOG_KEY',
+        'VITE_PUBLIC_POSTHOG_KEY',
+        'phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw',
+    ),
+    POSTHOG_HOST: resolve(
+        'POSTHOG_HOST',
+        'VITE_PUBLIC_POSTHOG_HOST',
+        'https://g.idunplatform.com',
+    ),
+    POSTHOG_ENABLED: resolve('POSTHOG_ENABLED', 'VITE_POSTHOG_ENABLED', 'true'),
 };

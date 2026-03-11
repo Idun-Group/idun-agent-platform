@@ -59,7 +59,6 @@ async def configure_app(app: FastAPI, engine_config):
     app.state.agent = agent_instance
     app.state.config = engine_config
     app.state.engine_config = engine_config
-    app.state.custom_input_model = getattr(agent_instance, "custom_input_model", None)
 
     app.state.guardrails = guardrails
 
@@ -86,6 +85,19 @@ async def configure_app(app: FastAPI, engine_config):
         except Exception as e:
             logger.warning(f"⚠️ Failed to setup AGUI routes: {e}")
             # Continue even if AGUI setup fails
+
+    # Cache agent capabilities for discovery endpoint
+    if hasattr(agent_instance, "discover_capabilities"):
+        try:
+            app.state.capabilities = agent_instance.discover_capabilities()
+            logger.info(
+                f"📋 Agent capabilities discovered: "
+                f"input={app.state.capabilities.input.mode}, "
+                f"output={app.state.capabilities.output.mode}"
+            )
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to discover agent capabilities: {e}")
+            app.state.capabilities = None
 
     # Setup integrations (WhatsApp, etc.)
     if engine_config.integrations:

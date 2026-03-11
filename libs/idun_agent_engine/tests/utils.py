@@ -196,7 +196,7 @@ def create_mock_observability_handler(
 # -----------------------------------------------------------------------------
 
 
-def assert_health_response(response: Any, expected_status: str = "healthy") -> None:
+def assert_health_response(response: Any, expected_status: str = "ok") -> None:
     """Assert that a health check response is valid.
 
     Args:

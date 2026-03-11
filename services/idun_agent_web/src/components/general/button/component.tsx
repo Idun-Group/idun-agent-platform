@@ -21,7 +21,7 @@ export const Button = styled.button<{
         }
     }};
     border: none;
-    color: white;
+    color: hsl(var(--foreground));
     padding: 0.5rem 1rem;
     border-radius: 0.25rem;
     cursor: pointer;

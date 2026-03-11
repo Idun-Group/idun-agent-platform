@@ -18,6 +18,11 @@ from app.infrastructure.db.models.workspace import WorkspaceModel  # noqa: F401
 from app.infrastructure.db.models.membership import MembershipModel  # noqa: F401
 from app.infrastructure.db.models.managed_sso import ManagedSSOModel  # noqa: F401
 from app.infrastructure.db.models.managed_integration import ManagedIntegrationModel  # noqa: F401
+from app.infrastructure.db.models.invitation import InvitationModel  # noqa: F401
+from app.infrastructure.db.models.agent_guardrail import AgentGuardrailModel  # noqa: F401
+from app.infrastructure.db.models.agent_mcp_server import AgentMCPServerModel  # noqa: F401
+from app.infrastructure.db.models.agent_observability import AgentObservabilityModel  # noqa: F401
+from app.infrastructure.db.models.agent_integration import AgentIntegrationModel  # noqa: F401
 
 # Initialize application logging for Alembic
 from app.core.logging import setup_logging

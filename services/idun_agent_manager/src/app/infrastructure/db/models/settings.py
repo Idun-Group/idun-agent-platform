@@ -59,6 +59,8 @@ class AuthSettings(BaseSettings):
         default="change-me-to-a-random-secret-at-least-32-chars!"
     )
     session_ttl_seconds: int = Field(default=86400)
+    session_max_lifetime_seconds: int = Field(default=604800)  # 7 days
+    session_refresh_threshold_seconds: int | None = Field(default=None)
     cookie_secure: bool = Field(default=False)
 
     google: GoogleProviderSettings = Field(default_factory=GoogleProviderSettings)

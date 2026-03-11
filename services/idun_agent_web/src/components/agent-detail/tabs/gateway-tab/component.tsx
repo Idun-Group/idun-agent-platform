@@ -6,20 +6,13 @@ import {
     Key,
     Copy,
     ChevronDown,
-    Plus,
-    Trash2,
-    Power,
     Loader2,
     Eye,
     EyeOff,
+    ExternalLink,
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { getJson } from '../../../../utils/api';
-import {
-    FormSelect,
-    FormTextArea,
-    TextInput,
-} from '../../../general/form/component';
+import { agentFetch, buildAgentUrl } from '../../../../utils/agent-fetch';
 
 // --- Keyframes for Animations ---
 const fadeIn = keyframes`
@@ -36,24 +29,22 @@ const spin = keyframes`
 const Container = styled.div`
     flex: 1;
     padding: 24px;
-    background-color: #0f1016;
-    height: 100%;
+    background-color: hsl(var(--background));
     overflow-y: auto;
 `;
 
 const Card = styled.div`
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: hsl(var(--card));
+    border: 1px solid var(--overlay-light);
     border-radius: 12px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
 `;
 
 const CardHeader = styled.div`
     padding: 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    flex-shrink: 0;
+    border-bottom: 1px solid var(--overlay-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 `;
 
 const CardTitleIcon = styled.div`
@@ -65,14 +56,29 @@ const CardTitleIcon = styled.div`
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: white;
+        color: hsl(var(--foreground));
     }
+`;
+
+const DocsLink = styled.a`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(99, 179, 237, 0.08);
+    border: 1px solid rgba(99, 179, 237, 0.25);
+    border-radius: 8px;
+    color: #63b3ed;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.15s;
+
+    &:hover { background: rgba(99, 179, 237, 0.18); }
 `;
 
 const CardContent = styled.div`
     padding: 24px;
-    flex: 1;
-    overflow-y: auto;
 `;
 
 const Section = styled.div`
@@ -84,7 +90,7 @@ const Label = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     margin-bottom: 8px;
 `;
@@ -92,8 +98,8 @@ const Label = styled.label`
 const InputGroup = styled.div`
     display: flex;
     align-items: center;
-    background-color: #05040a;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
 `;
 
@@ -111,9 +117,9 @@ const CodeBlock = styled.code`
 const CopyButton = styled.button`
     background: transparent;
     border: none;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid var(--border-light);
     padding: 12px 16px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
@@ -121,8 +127,8 @@ const CopyButton = styled.button`
     position: relative;
 
     &:hover {
-        color: white;
-        background-color: rgba(255, 255, 255, 0.05);
+        color: hsl(var(--foreground));
+        background-color: var(--overlay-light);
     }
 `;
 
@@ -133,7 +139,7 @@ const CopiedTooltip = styled.div`
     transform: translateX(-50%);
     margin-bottom: 8px;
     background-color: rgba(0, 0, 0, 0.9);
-    color: white;
+    color: hsl(var(--foreground));
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 10px;
@@ -176,7 +182,7 @@ const TokenText = styled.span`
 const ActionButton = styled.button`
     font-size: 12px;
     font-weight: 500;
-    color: #8c52ff;
+    color: hsl(var(--primary));
     background: none;
     border: none;
     padding: 0 16px;
@@ -195,8 +201,8 @@ const EndpointsList = styled.div`
 `;
 
 const EndpointItem = styled.div`
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: hsl(var(--card));
+    border: 1px solid var(--overlay-light);
     border-radius: 8px;
     overflow: hidden;
 `;
@@ -207,7 +213,7 @@ const EndpointHeader = styled.div`
     justify-content: space-between;
     padding: 12px;
     cursor: pointer;
-    &:hover { background-color: rgba(255, 255, 255, 0.05); }
+    &:hover { background-color: var(--overlay-light); }
 `;
 
 const EndpointMeta = styled.div`
@@ -229,7 +235,7 @@ const MethodBadge = styled.span<{ $method: string }>`
             case 'GET': return 'background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2);';
             case 'DELETE': return 'background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2);';
             case 'PUT': return 'background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2);';
-            default: return 'background: rgba(107, 114, 128, 0.1); color: #9ca3af; border-color: rgba(107, 114, 128, 0.2);';
+            default: return `background: rgba(107, 114, 128, 0.1); color: hsl(var(--muted-foreground)); border-color: rgba(107, 114, 128, 0.2);`;
         }
     }}
 `;
@@ -242,14 +248,14 @@ const EndpointPath = styled.code`
 
 const EndpointDetails = styled.div`
     padding: 12px;
-    background-color: #05040a;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: hsl(var(--accent));
+    border-top: 1px solid var(--overlay-light);
     animation: ${fadeIn} 0.2s ease-out;
 `;
 
 const Description = styled.p`
     font-size: 12px;
-    color: #6b7280;
+    color: hsl(var(--text-secondary));
     margin: 0 0 12px 0;
 `;
 
@@ -262,18 +268,18 @@ const SubLabel = styled.label`
     display: block;
     font-size: 10px;
     font-weight: 600;
-    color: #4b5563;
+    color: hsl(var(--text-tertiary));
     text-transform: uppercase;
     margin-bottom: 6px;
 `;
 
 const CodeSnippet = styled.div`
     background-color: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-light);
     border-radius: 6px;
     padding: 8px 12px;
     font-size: 12px;
-    color: #8c52ff;
+    color: hsl(var(--primary));
     font-family: monospace;
     position: relative;
     display: flex;
@@ -282,98 +288,95 @@ const CodeSnippet = styled.div`
 
     pre {
         margin: 0;
-        color: #9ca3af;
+        color: hsl(var(--muted-foreground));
         white-space: pre-wrap;
         overflow-x: auto;
     }
 `;
 
-const AddButton = styled.button`
+
+const ParamTable = styled.table`
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+`;
+
+const ParamTh = styled.th`
+    text-align: left;
+    padding: 6px 8px;
+    color: hsl(var(--text-tertiary));
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-light);
+`;
+
+const ParamTd = styled.td`
+    padding: 6px 8px;
+    color: hsl(var(--text-secondary));
+    border-bottom: 1px solid var(--overlay-light);
+    vertical-align: top;
+`;
+
+const ParamName = styled.code`
+    font-family: monospace;
+    color: hsl(var(--primary));
+    font-size: 12px;
+`;
+
+const InBadge = styled.span`
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--overlay-light);
+    color: hsl(var(--muted-foreground));
+    border: 1px solid var(--border-light);
+`;
+
+const RequiredBadge = styled.span`
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+`;
+
+const CurlBlock = styled.div`
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 12px 12px 12px 12px;
+    position: relative;
+
+    pre {
+        margin: 0;
+        font-family: monospace;
+        font-size: 12px;
+        color: hsl(var(--muted-foreground));
+        white-space: pre-wrap;
+        word-break: break-all;
+        line-height: 1.6;
+        padding-right: 56px;
+    }
+`;
+
+const CurlCopyBtn = styled.button`
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    padding: 3px 6px;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 8px;
-    font-size: 12px;
-    color: #8c52ff;
-    background: rgba(140, 82, 255, 0.1);
-    border: 1px solid rgba(140, 82, 255, 0.2);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    &:hover { background: rgba(140, 82, 255, 0.2); }
-`;
-
-const InactiveBadge = styled.span`
     font-size: 10px;
-    color: #9ca3af;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 2px 6px;
-    border-radius: 4px;
-`;
 
-const RouteActions = styled.div`
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-
-    button {
-        background: none;
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 4px;
-        padding: 4px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        &:hover { background: rgba(255,255,255,0.05); }
-    }
-`;
-
-const ModalOverlay = styled.div`
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-`;
-
-const ModalContent = styled.div`
-    width: 480px;
-    background: #0f1016;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-`;
-
-const ModalHeader = styled.div`
-    margin-bottom: 20px;
-    h3 {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: white;
-    }
-`;
-
-const ModalButton = styled.button<{ $primary?: boolean }>`
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: 8px;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-
-    ${props => props.$primary
-        ? `background-color: #8c52ff; color: white; &:hover { background-color: #7c3aed; }`
-        : `background-color: transparent; color: #9ca3af; &:hover { color: white; background-color: rgba(255, 255, 255, 0.05); }`
-    }
+    &:hover { color: hsl(var(--foreground)); background: var(--overlay-medium); }
 `;
 
 const LoadingSpinner = styled(Loader2)`
@@ -381,97 +384,85 @@ const LoadingSpinner = styled(Loader2)`
 `;
 
 // --- Interfaces ---
+interface ParamDef {
+    name: string;
+    in: string;
+    required: boolean;
+    description?: string;
+    type?: string;
+}
+
 interface RouteItem {
     id: string;
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' | string;
     path: string;
     title: string;
     description?: string;
-    active: boolean;
-    payload?: any;
+    parameters: ParamDef[];
+    requestBodySchema?: Record<string, any> | null;
+    requestBodyExample?: Record<string, unknown> | null;
 }
 
-// --- Main Component Helpers ---
-type NewRouteFormProps = {
-    onCancel: () => void;
-    onCreate: (data: Omit<RouteItem, 'id'>) => void;
+// --- Helpers ---
+const resolveSchema = (schema: any, components: Record<string, any>): any => {
+    if (!schema) return null;
+    if (schema['$ref']) {
+        const refName = schema['$ref'].split('/').pop() as string;
+        return components[refName] ?? schema;
+    }
+    return schema;
 };
 
-const NewRouteForm: React.FC<NewRouteFormProps> = ({ onCancel, onCreate }) => {
-    const [method, setMethod] = useState<string>('GET');
-    const [path, setPath] = useState<string>('');
-    const [title, setTitle] = useState<string>('');
-    const [description, setDescription] = useState<string>('');
-    const [active, setActive] = useState<boolean>(true);
-    const { t } = useTranslation();
+const generateExampleFromSchema = (
+    schema: any,
+    components: Record<string, any> = {},
+): Record<string, unknown> | null => {
+    const resolved = resolveSchema(schema, components);
+    if (!resolved) return null;
+    if (resolved.example) return resolved.example;
+    if (resolved.type === 'object' && resolved.properties) {
+        const result: Record<string, unknown> = {};
+        for (const [key, val] of Object.entries(resolved.properties as Record<string, any>)) {
+            const resolvedVal = resolveSchema(val, components);
+            if (!resolvedVal) { result[key] = null; continue; }
+            if (resolvedVal.example !== undefined) result[key] = resolvedVal.example;
+            else if (resolvedVal.type === 'string') result[key] = resolvedVal.default ?? `<${key}>`;
+            else if (resolvedVal.type === 'integer' || resolvedVal.type === 'number') result[key] = resolvedVal.default ?? 0;
+            else if (resolvedVal.type === 'boolean') result[key] = resolvedVal.default ?? false;
+            else if (resolvedVal.type === 'array') result[key] = [];
+            else result[key] = null;
+        }
+        return result;
+    }
+    return null;
+};
 
-    return (
-        <div>
-            <div style={{ marginBottom: '12px' }}>
-                <FormSelect
-                    label={t('gateway.field.method', 'Method')}
-                    value={method}
-                    onChange={(e) => setMethod(e.target.value)}
-                >
-                    <option value="GET">GET</option>
-                    <option value="POST">POST</option>
-                    <option value="PUT">PUT</option>
-                    <option value="DELETE">DELETE</option>
-                </FormSelect>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-                <TextInput
-                    label={t('gateway.field.path', 'Path')}
-                    placeholder="/api/v1/new-route"
-                    value={path}
-                    onChange={(e) => setPath(e.target.value)}
-                />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-                <TextInput
-                    label={t('gateway.field.title', 'Title')}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-                <FormTextArea
-                    label={t('gateway.field.description', 'Description')}
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
-                <ModalButton onClick={onCancel}>
-                    {t('gateway.cancel', 'Cancel')}
-                </ModalButton>
-                <ModalButton
-                    $primary
-                    onClick={() =>
-                        onCreate({
-                            method: method as any,
-                            path,
-                            title,
-                            description,
-                            active,
-                        })
-                    }
-                >
-                    {t('gateway.create', 'Create')}
-                </ModalButton>
-            </div>
-        </div>
-    );
+const buildCurlCommand = (
+    method: string,
+    url: string,
+    authToken: string | null,
+    body: Record<string, unknown> | null,
+    queryParams: ParamDef[],
+): string => {
+    let fullUrl = url;
+    if (queryParams.length > 0) {
+        const qs = queryParams.map(p => `${p.name}=<${p.name}>`).join('&');
+        fullUrl = `${url}?${qs}`;
+    }
+    const parts = [`curl -X ${method} "${fullUrl}"`];
+    const authVal = authToken ? `Bearer ${authToken}` : 'Bearer <your-api-key>';
+    parts.push(`  -H "Authorization: ${authVal}"`);
+    if (body) {
+        parts.push(`  -H "Content-Type: application/json"`);
+        parts.push(`  -d '${JSON.stringify(body, null, 2)}'`);
+    }
+    return parts.join(' \\\n');
 };
 
 // --- Main Component ---
 const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
     const [routes, setRoutes] = useState<RouteItem[]>([]);
     const [expandedEndpoint, setExpandedEndpoint] = useState<string | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const { t } = useTranslation();
 
     // Auth Token State
     const [authToken, setAuthToken] = useState<string | null>(null);
@@ -483,22 +474,40 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
 
     useEffect(() => {
         if (agent?.base_url) {
-            fetch(`${agent.base_url}/openapi.json`)
+            agentFetch(buildAgentUrl(agent.base_url, '/openapi.json'))
                 .then(res => res.json())
                 .then(data => {
                     if (data && data.paths) {
+                        const components: Record<string, any> = data.components?.schemas ?? {};
                         const newRoutes: RouteItem[] = [];
                         let idCounter = 1;
                         Object.entries(data.paths).forEach(([path, methods]: [string, any]) => {
                             Object.entries(methods).forEach(([method, details]: [string, any]) => {
+                                const parameters: ParamDef[] = (details.parameters ?? []).map((p: any) => ({
+                                    name: p.name,
+                                    in: p.in,
+                                    required: p.required ?? false,
+                                    description: p.description,
+                                    type: p.schema?.type,
+                                }));
+                                const rbContent = details.requestBody?.content?.['application/json'];
+                                const rawSchema = rbContent?.schema ?? null;
+                                // Resolve $ref to the actual schema definition
+                                const requestBodySchema = rawSchema ? resolveSchema(rawSchema, components) : null;
+                                const requestBodyExample =
+                                    rbContent?.example ??
+                                    requestBodySchema?.example ??
+                                    generateExampleFromSchema(requestBodySchema, components) ??
+                                    null;
                                 newRoutes.push({
                                     id: `auto-${idCounter++}`,
                                     method: method.toUpperCase(),
-                                    path: path,
+                                    path,
                                     title: details.summary || details.operationId || 'Endpoint',
                                     description: details.description || '',
-                                    active: true,
-                                    payload: details.requestBody?.content?.['application/json']?.schema?.example || null
+                                    parameters,
+                                    requestBodySchema,
+                                    requestBodyExample,
                                 });
                             });
                         });
@@ -533,19 +542,24 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
         }
     };
 
-    const addRoute = (route: Omit<RouteItem, 'id'>) => {
-        const newRoute: RouteItem = { ...route, id: Date.now().toString() };
-        setRoutes((prev) => [newRoute, ...prev]);
-    };
-
     return (
         <Container>
             <Card>
                         <CardHeader>
                             <CardTitleIcon>
-                                <Terminal size={18} color="#8c52ff" />
+                                <Terminal size={18} color="hsl(var(--primary))" />
                                 <h3>Endpoint Details</h3>
                             </CardTitleIcon>
+                            {agent?.base_url && (
+                                <DocsLink
+                                    href={`${agent.base_url}/docs`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <ExternalLink size={13} />
+                                    View Docs
+                                </DocsLink>
+                            )}
                         </CardHeader>
 
                         <CardContent>
@@ -575,7 +589,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                     {authToken && showAuthToken && (
                                         <CopyButton
                                             onClick={handleCopyToken}
-                                            style={{ borderLeft: '1px solid rgba(255,255,255,0.1)' }}
+                                            style={{ borderLeft: '1px solid var(--border-light)' }}
                                             title="Copy Token"
                                         >
                                             <Copy size={14} />
@@ -620,13 +634,8 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                 </InputGroup>
                             </Section>
 
-                            <Section style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', marginTop: '24px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <Label style={{ marginBottom: 0 }}>Available Endpoints</Label>
-                                    <AddButton onClick={() => setIsModalOpen(true)}>
-                                        <Plus size={12} /> Add
-                                    </AddButton>
-                                </div>
+                            <Section style={{ borderTop: '1px solid var(--overlay-light)', paddingTop: '24px', marginTop: '24px' }}>
+                                <Label style={{ marginBottom: '16px' }}>Available Endpoints</Label>
 
                                 <EndpointsList>
                                     {routes.map((ep) => (
@@ -636,47 +645,83 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                                     <MethodBadge $method={ep.method}>{ep.method}</MethodBadge>
                                                     <EndpointPath>{ep.path}</EndpointPath>
                                                 </EndpointMeta>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    {!ep.active && <InactiveBadge>Disabled</InactiveBadge>}
-                                                    <ChevronDown size={14} style={{ transform: expandedEndpoint === ep.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#6b7280' }} />
-                                                </div>
+                                                                <ChevronDown size={14} style={{ transform: expandedEndpoint === ep.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'hsl(var(--text-secondary))' }} />
                                             </EndpointHeader>
 
                                             {expandedEndpoint === ep.id && (
                                                 <EndpointDetails>
-                                                    <Description>{ep.description}</Description>
+                                                    {ep.description && <Description>{ep.description}</Description>}
 
-                                                    {/* Quick Actions for Route */}
-                                                    <RouteActions>
-                                                        <button onClick={() => {
-                                                            setRoutes(prev => prev.map(r => r.id === ep.id ? { ...r, active: !r.active } : r));
-                                                        }} title={ep.active ? "Disable" : "Enable"}>
-                                                            <Power size={14} color={ep.active ? "#10b981" : "#ef4444"} />
-                                                        </button>
-                                                        <button onClick={() => {
-                                                            setRoutes(prev => prev.filter(r => r.id !== ep.id));
-                                                        }} title="Delete">
-                                                            <Trash2 size={14} color="#ef4444" />
-                                                        </button>
-                                                    </RouteActions>
-
+                                                    {/* Endpoint URL */}
                                                     <DetailSection>
                                                         <SubLabel>Endpoint URL</SubLabel>
                                                         <CodeSnippet>
                                                             <code>{agent?.base_url}{ep.path}</code>
-                                                            <Copy size={12} style={{ cursor: 'pointer' }} onClick={() => navigator.clipboard.writeText(`${agent?.base_url}${ep.path}`)} />
+                                                            <Copy size={12} style={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => navigator.clipboard.writeText(`${agent?.base_url}${ep.path}`)} />
                                                         </CodeSnippet>
                                                     </DetailSection>
 
-                                                    {ep.payload && (
+                                                    {/* Parameters */}
+                                                    {ep.parameters.length > 0 && (
                                                         <DetailSection>
-                                                            <SubLabel>Payload Example</SubLabel>
+                                                            <SubLabel>Parameters</SubLabel>
+                                                            <ParamTable>
+                                                                <thead>
+                                                                    <tr>
+                                                                        <ParamTh>Name</ParamTh>
+                                                                        <ParamTh>In</ParamTh>
+                                                                        <ParamTh>Type</ParamTh>
+                                                                        <ParamTh>Required</ParamTh>
+                                                                        <ParamTh>Description</ParamTh>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {ep.parameters.map(p => (
+                                                                        <tr key={p.name}>
+                                                                            <ParamTd><ParamName>{p.name}</ParamName></ParamTd>
+                                                                            <ParamTd><InBadge>{p.in}</InBadge></ParamTd>
+                                                                            <ParamTd style={{ color: '#fbbf24' }}>{p.type ?? '—'}</ParamTd>
+                                                                            <ParamTd>{p.required ? <RequiredBadge>required</RequiredBadge> : '—'}</ParamTd>
+                                                                            <ParamTd>{p.description ?? '—'}</ParamTd>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </ParamTable>
+                                                        </DetailSection>
+                                                    )}
+
+                                                    {/* Request body schema */}
+                                                    {ep.requestBodySchema && (
+                                                        <DetailSection>
+                                                            <SubLabel>Request Body Schema</SubLabel>
                                                             <CodeSnippet>
-                                                                <pre>{JSON.stringify(ep.payload, null, 2)}</pre>
-                                                                <Copy size={12} style={{ cursor: 'pointer', position: 'absolute', top: '8px', right: '8px' }} onClick={() => navigator.clipboard.writeText(JSON.stringify(ep.payload, null, 2))} />
+                                                                <pre>{JSON.stringify(ep.requestBodySchema, null, 2)}</pre>
                                                             </CodeSnippet>
                                                         </DetailSection>
                                                     )}
+
+                                                    {/* cURL Example */}
+                                                    <DetailSection>
+                                                        <SubLabel>cURL Example</SubLabel>
+                                                        <CurlBlock>
+                                                            <pre>{buildCurlCommand(
+                                                                ep.method,
+                                                                `${agent?.base_url}${ep.path}`,
+                                                                authToken,
+                                                                ep.requestBodyExample ?? null,
+                                                                ep.parameters.filter(p => p.in === 'query'),
+                                                            )}</pre>
+                                                            <CurlCopyBtn onClick={() => navigator.clipboard.writeText(buildCurlCommand(
+                                                                ep.method,
+                                                                `${agent?.base_url}${ep.path}`,
+                                                                authToken,
+                                                                ep.requestBodyExample ?? null,
+                                                                ep.parameters.filter(p => p.in === 'query'),
+                                                            ))}>
+                                                                <Copy size={10} /> Copy
+                                                            </CurlCopyBtn>
+                                                        </CurlBlock>
+                                                    </DetailSection>
                                                 </EndpointDetails>
                                             )}
                                         </EndpointItem>
@@ -685,23 +730,6 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                             </Section>
                         </CardContent>
             </Card>
-
-                {isModalOpen && (
-                    <ModalOverlay onClick={() => setIsModalOpen(false)}>
-                        <ModalContent onClick={(e) => e.stopPropagation()}>
-                            <ModalHeader>
-                                <h3>{t('gateway.newRoute', 'New Route')}</h3>
-                            </ModalHeader>
-                            <NewRouteForm
-                                onCancel={() => setIsModalOpen(false)}
-                                onCreate={(data) => {
-                                    addRoute(data);
-                                    setIsModalOpen(false);
-                                }}
-                            />
-                        </ModalContent>
-                    </ModalOverlay>
-                )}
         </Container>
     );
 };

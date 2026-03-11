@@ -1,0 +1,127 @@
+name: Publish Dev Docker Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref, branch, or SHA to build"
+        required: true
+        default: "develop"
+        type: string
+      services:
+        description: "Which image(s) to publish"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - both
+          - manager
+          - web
+      tag:
+        description: "Optional explicit tag override"
+        required: false
+        default: ""
+        type: string
+      push_latest:
+        description: "Also push the latest tag(s)"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  publish-dev-images:
+    name: Build and push dev Docker images
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_ID_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Configure Docker to use gcloud as a credential helper
+        run: |
+          gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Generate image metadata
+        id: meta
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          TIMESTAMP=$(date -u +%Y%m%dT%H%M%S)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          REF_SLUG=$(printf '%s' "$INPUT_REF" | tr '/:@ ' '-' | tr -cd '[:alnum:]-._')
+
+          if [ -n "$INPUT_TAG" ]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG="dev-${REF_SLUG}-${SHORT_SHA}-${TIMESTAMP}"
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push idun-platform (agent manager)
+        if: inputs.services == 'both' || inputs.services == 'manager'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        run: |
+          BASE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/idun-platform-repo/idun-platform"
+          docker build --platform linux/amd64 -t "$BASE:$TAG" services/idun_agent_manager
+          docker push "$BASE:$TAG"
+
+          if [ "$PUSH_LATEST" = "true" ]; then
+            docker tag "$BASE:$TAG" "$BASE:latest"
+            docker push "$BASE:latest"
+          fi
+
+      - name: Build and push idun-web
+        if: inputs.services == 'both' || inputs.services == 'web'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        run: |
+          BASE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/idun-web-repo/idun-web"
+          docker build --platform linux/amd64 -t "$BASE:$TAG" services/idun_agent_web
+          docker push "$BASE:$TAG"
+
+          if [ "$PUSH_LATEST" = "true" ]; then
+            docker tag "$BASE:$TAG" "$BASE:latest"
+            docker push "$BASE:latest"
+          fi
+
+      - name: Publish summary
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          SERVICES: ${{ inputs.services }}
+          INPUT_REF: ${{ inputs.ref }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        run: |
+          echo "## Dev image publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Ref: \`$INPUT_REF\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${{ steps.meta.outputs.short_sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Services: \`$SERVICES\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tag: \`$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Push latest: \`$PUSH_LATEST\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$SERVICES" = "both" ] || [ "$SERVICES" = "manager" ]; then
+            echo "- Manager image: \`${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/idun-platform-repo/idun-platform:$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$SERVICES" = "both" ] || [ "$SERVICES" = "web" ]; then
+            echo "- Web image: \`${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/idun-web-repo/idun-web:$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          fi

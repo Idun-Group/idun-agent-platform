@@ -1,7 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getSession, loginBasic, logoutBasic, signupBasic } from '../utils/auth';
 import { addUnauthorizedHandler, removeUnauthorizedHandler, API_BASE_URL } from '../utils/api';
-import type { Session } from '../utils/auth';
+import type { Session, SessionPrincipal } from '../utils/auth';
+import { useAnalytics } from './use-analytics';
 
 interface AuthContextValue {
     session: Session | null;
@@ -15,25 +16,29 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function syncActiveWorkspace(workspaceIds: string[] | undefined) {
-    if (typeof window === 'undefined') return;
+function syncActiveWorkspace(principal: SessionPrincipal | undefined) {
+    if (typeof window === 'undefined' || !principal) return;
     const current = localStorage.getItem('activeTenantId');
-    const ids = workspaceIds || [];
+    const ids = principal.workspace_ids || [];
     if (!current || !ids.includes(current)) {
-        if (ids[0]) localStorage.setItem('activeTenantId', ids[0]);
+        const defaultId = principal.default_workspace_id;
+        const activeId = (defaultId && ids.includes(defaultId)) ? defaultId : ids[0];
+        if (activeId) localStorage.setItem('activeTenantId', activeId);
     }
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const { identify, reset } = useAnalytics();
+    const prevUserId = useRef<string | undefined>(undefined);
 
     const refresh = useCallback(async () => {
         setIsLoading(true);
         try {
             const s = await getSession();
             setSession(s);
-            syncActiveWorkspace(s?.principal?.workspace_ids);
+            syncActiveWorkspace(s?.principal);
         } finally {
             setIsLoading(false);
         }
@@ -43,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await loginBasic({ email, password });
         const s = await getSession();
         setSession(s);
-        syncActiveWorkspace(s?.principal?.workspace_ids);
+        syncActiveWorkspace(s?.principal);
         return !!s;
     }, []);
 
@@ -54,7 +59,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const signup = useCallback(async (params: { email: string; password: string; name?: string | null }) => {
         await signupBasic(params);
+        const s = await getSession();
+        setSession(s);
+        syncActiveWorkspace(s?.principal);
     }, []);
+
+    useEffect(() => {
+        const userId = session?.principal?.user_id;
+        if (userId && userId !== prevUserId.current) {
+            identify(userId, {
+                email: session?.principal?.email,
+                roles: session?.principal?.roles,
+            });
+        } else if (!userId && prevUserId.current) {
+            reset();
+        }
+        prevUserId.current = userId;
+    }, [session, identify, reset]);
 
     useEffect(() => {
         // Attempt to hydrate session on mount

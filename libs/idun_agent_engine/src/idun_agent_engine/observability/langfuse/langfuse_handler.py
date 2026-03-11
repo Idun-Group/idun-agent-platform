@@ -53,7 +53,9 @@ class LangfuseHandler(ObservabilityHandlerBase):
                 if self._langfuse_client.auth_check():
                     logger.info("✅ Langfuse client is authenticated and ready!")
                 else:
-                    logger.error("❌ Langfuse authentication failed. Please check your credentials and host.")
+                    logger.error(
+                        "❌ Langfuse authentication failed. Please check your credentials and host."
+                    )
             except Exception as e:
                 logger.error(f"Error during Langfuse client authentication: {e}")
 

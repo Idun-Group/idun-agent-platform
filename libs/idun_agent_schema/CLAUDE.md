@@ -35,6 +35,7 @@ EngineConfig                    # Top-level config (engine/engine.py)
 ├── observability: list[ObservabilityConfig]  # (engine/observability_v2.py)
 ├── guardrails: GuardrailsV2    # (engine/guardrails_v2.py)
 ├── mcp_servers: list[MCPServer]  # (engine/mcp_server.py)
+├── prompts: list[PromptConfig] | None  # (engine/prompt.py) — Managed prompt templates
 ├── sso: SSOConfig | None      # (engine/sso.py) — OIDC JWT validation on protected routes
 └── integrations: list[IntegrationConfig] | None  # (engine/integrations/) — WhatsApp, Discord
 ```
@@ -45,7 +46,7 @@ All extend `BaseAgentConfig` (`engine/base_agent.py`):
 
 | Config | Module | Key Fields |
 |---|---|---|
-| `BaseAgentConfig` | `base_agent.py` | `name`, `input_schema_definition`, `output_schema_definition`, `observability` (deprecated) |
+| `BaseAgentConfig` | `base_agent.py` | `name`, `observability` (deprecated) |
 | `LangGraphAgentConfig` | `langgraph.py` | `graph_definition` (str), `checkpointer` (CheckpointConfig), `store` |
 | `AdkAgentConfig` | `adk.py` | `agent` (str), `app_name`, `session_service`, `memory_service` |
 | `HaystackAgentConfig` | `haystack.py` | `component_type` (pipeline\|agent), `component_definition` (str) |
@@ -124,9 +125,20 @@ Provider-specific integration configs for messaging/webhook channels.
 
 Uses camelCase aliases (`ConfigDict(alias_generator=to_camel, populate_by_name=True)`).
 
+### Prompts
+
+`PromptConfig` (`engine/prompt.py`): Versioned prompt template with Jinja2 variable support.
+- Fields: `prompt_id`, `version`, `content`, `tags`
+- `format(**kwargs) -> str`: Renders Jinja2 variables in content using `SandboxedEnvironment` with `StrictUndefined`. Raises `ValueError` on missing variables or template errors.
+- `to_langchain() -> PromptTemplate`: Converts to a LangChain `PromptTemplate` with `template_format="jinja2"`. Lazy-imports `langchain_core` — raises `ImportError` if not installed.
+
+Uses camelCase aliases (`ConfigDict(alias_generator=to_camel, populate_by_name=True)`).
+
 ### API Payloads
 
-`ChatRequest` / `ChatResponse` (`api.py`): Default request/response for `/agent/invoke` when no custom `input_schema_definition` is set. Fields: `session_id`, `query` / `response`.
+`AgentCapabilities` (`capabilities.py`): Framework-agnostic capability descriptor for `GET /agent/capabilities`. Contains `version`, `framework`, `capabilities` (streaming/history/threadId flags), `input` (mode + JSON Schema), `output` (mode + JSON Schema).
+
+`ChatRequest` / `ChatResponse` (`api.py`): **(Deprecated)** Default request/response for `/agent/invoke`. Use `/agent/run` with AG-UI `RunAgentInput` instead. Fields: `session_id`, `query` / `response`.
 
 ### Templates
 
@@ -145,6 +157,7 @@ CRUD models for resources managed via the manager API. Each follows the pattern:
 | **Observability** | `managed_observability.py` | `name`, `observability` (`ObservabilityConfig` V2) |
 | **SSO** | `managed_sso.py` | `name`, `sso` (`SSOConfig`) |
 | **Integration** | `managed_integration.py` | `name`, `integration` (`IntegrationConfig`) |
+| **Prompt** | `managed_prompt.py` | `prompt_id`, `content`, `tags` (Create); adds `id`, `version`, `created_at`, `updated_at` (Read); `tags` only (Patch) |
 | **API Key** | `api.py` | `api_key` (str) |
 
 **`AgentStatus`** enum: `DRAFT`, `ACTIVE`, `INACTIVE`, `DEPRECATED`, `ERROR`
@@ -162,7 +175,7 @@ CRUD models for resources managed via the manager API. Each follows the pattern:
 - **Env var resolution**: V1 observability supports `${VAR}` syntax in YAML values, resolved via `_resolve_env()`.
 - **Schema changes flow**: Change here first → update engine/manager consumers → update frontend generated types.
 - **Pydantic 2.11+**: Uses `model_validator`, `field_validator`, `ConfigDict`, `Field` with `alias`.
-- **No runtime dependencies beyond Pydantic**: This package must stay lightweight — no framework imports.
+- **No runtime dependencies beyond Pydantic** (+ `jinja2` for `PromptConfig.format()`): This package must stay lightweight. `langchain_core` is lazy-imported only inside `to_langchain()` — not a declared dependency.
 
 ## Development
 

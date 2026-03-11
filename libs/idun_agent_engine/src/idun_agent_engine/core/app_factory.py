@@ -61,6 +61,10 @@ def create_app(
         redoc_url="/redoc",
     )
 
+    # TODO: Add CORS configuration feature. Default allowed origins should be:
+    #   - https://cloud.idunplatform.com (production SaaS)
+    #   - http://localhost:3000 (local frontend dev)
+    # For now, allow all origins to avoid blocking local agent connections.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -76,6 +80,8 @@ def create_app(
     app.include_router(agent_router, prefix="/agent", tags=["Agent"])
     app.include_router(base_router, tags=["Base"])
 
+    # TODO: DEPRECATED — register_invoke_route uses ChatRequest only now.
+    # Remove when /agent/invoke shim is fully removed.
     register_invoke_route(app, input_model)
 
     # Register integration routers based on config

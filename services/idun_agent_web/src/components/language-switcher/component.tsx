@@ -23,7 +23,7 @@ const LanguageSwitcher = () => {
 export default LanguageSwitcher;
 
 const Select = styled.select`
-    background-color: white;
+    background-color: hsl(var(--background));
     border: 1px solid #ccc;
     border-radius: 4px;
     padding: 8px 14px;
@@ -37,7 +37,7 @@ const Select = styled.select`
 `;
 
 const Option = styled.option`
-    background-color: white;
+    background-color: hsl(var(--background));
     border: none;
     padding: 8px 12px;
     font-size: 14px;

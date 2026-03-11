@@ -8,11 +8,12 @@ readme = "README.md"
 license = "GPL-3.0-only"
 dependencies = [
     "cryptography>=46.0.3",
-    "idun-agent-engine>=0.4.8,<0.5.0",
-    "idun-agent-manager>=0.4.8,<0.5.0",
-    "idun-agent-schema>=0.4.8,<0.5.0",
+    "idun-agent-engine>=0.4.9,<0.5.0",
+    "idun-agent-manager>=0.4.9,<0.5.0",
+    "idun-agent-schema>=0.4.9,<0.5.0",
     "posthog>=7.7.0",
     "setuptools>=80.9.0,<83.0.0",
+    "spacy-curated-transformers>=2.1.2",
     "tokenizers>=0.19",
     "transformers>=4.40,<5.0",
 ]

@@ -238,3 +238,66 @@ def create_structured_input_graph() -> StateGraph:
 compiled_graph = create_compiled_echo_graph()
 graph = create_echo_graph()
 structured_input_graph = create_structured_input_graph()
+
+# -----------------------------------------------------------------------------
+# Structured Input/Output Graph (for auto-discovery testing)
+# -----------------------------------------------------------------------------
+
+
+class InputState(TypedDict):
+    """Typed input for structured agents."""
+
+    user_input: str
+
+
+class OutputState(TypedDict):
+    """Typed output for structured agents."""
+
+    graph_output: str
+
+
+class FullState(TypedDict):
+    """Internal state combining input, output, and intermediate data."""
+
+    user_input: str
+    graph_output: str
+    intermediate: str
+
+
+def transform_node(state: FullState) -> dict[str, Any]:
+    """Transform user input into output."""
+    user_input = state.get("user_input", "")
+    intermediate = f"processed: {user_input}"
+    return {"intermediate": intermediate}
+
+
+def output_node(state: FullState) -> dict[str, Any]:
+    """Produce the final output."""
+    intermediate = state.get("intermediate", "")
+    return {"graph_output": f"Result: {intermediate}"}
+
+
+def create_structured_io_graph() -> StateGraph:
+    """Create a graph with explicit input_schema and output_schema.
+
+    This graph uses LangGraph's native input/output schema support:
+    - input_schema=InputState (only user_input)
+    - output_schema=OutputState (only graph_output)
+    """
+    builder = StateGraph(
+        FullState,
+        input=InputState,
+        output=OutputState,
+    )
+
+    builder.add_node("transform", transform_node)
+    builder.add_node("output", output_node)
+    builder.set_entry_point("transform")
+    builder.add_edge("transform", "output")
+    builder.add_edge("output", END)
+
+    return builder
+
+
+# Instances for test loading
+structured_io_graph = create_structured_io_graph()

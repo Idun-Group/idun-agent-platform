@@ -246,17 +246,17 @@ const Page = styled.div`
 const Empty = styled.div`
     text-align: center;
     padding: 80px 20px;
-    color: rgba(255, 255, 255, 0.3);
+    color: hsl(var(--muted-foreground));
     font-size: 14px;
 `;
 
 // ── Collapse ────────────────────────────────────────────────────────────────
 
 const CollapseWrap = styled.div`
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--overlay-light);
     border-radius: 10px;
     overflow: hidden;
-    background: var(--color-background-secondary, #13131d);
+    background: hsl(var(--card));
 `;
 
 const CollapseBar = styled.div`
@@ -280,7 +280,7 @@ const CollapseToggle = styled.button`
 
 const Arrow = styled.span<{ $open: boolean }>`
     display: flex;
-    color: rgba(255, 255, 255, 0.25);
+    color: hsl(var(--muted-foreground));
     transition: transform 0.15s ease;
     transform: rotate(${(p) => (p.$open ? '90deg' : '0deg')});
 `;
@@ -288,7 +288,7 @@ const Arrow = styled.span<{ $open: boolean }>`
 const CollapseLabel = styled.span`
     font-size: 11.5px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.45);
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     letter-spacing: 0.06em;
 `;
@@ -313,8 +313,8 @@ const Pill = styled.div`
     gap: 10px;
     padding: 10px 14px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.04);
+    background: var(--overlay-subtle);
+    border: 1px solid var(--overlay-subtle);
 `;
 
 const PillIcon = styled.span<{ $c: string }>`
@@ -331,7 +331,7 @@ const PillIcon = styled.span<{ $c: string }>`
 const PillLabel = styled.span`
     font-size: 11px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.35);
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     letter-spacing: 0.03em;
 `;
@@ -339,7 +339,7 @@ const PillLabel = styled.span`
 const PillValue = styled.span`
     font-size: 12px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.8);
+    color: hsl(var(--foreground));
 `;
 
 // ── Format / Copy Controls ──────────────────────────────────────────────────
@@ -354,7 +354,7 @@ const FmtToggle = styled.div`
     display: flex;
     border-radius: 6px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--overlay-light);
 `;
 
 const FmtBtn = styled.button<{ $on: boolean }>`
@@ -367,8 +367,8 @@ const FmtBtn = styled.button<{ $on: boolean }>`
     font-family: inherit;
     letter-spacing: 0.02em;
     background: ${(p) => (p.$on ? 'rgba(140, 82, 255, 0.15)' : 'transparent')};
-    color: ${(p) => (p.$on ? '#b197fc' : 'rgba(255,255,255,0.25)')};
-    &:hover { color: ${(p) => (p.$on ? '#b197fc' : 'rgba(255,255,255,0.5)')}; }
+    color: ${(p) => (p.$on ? '#b197fc' : 'hsl(var(--muted-foreground))')};
+    &:hover { color: ${(p) => (p.$on ? '#b197fc' : 'hsl(var(--foreground))')}; }
 `;
 
 const CopyBtn = styled.button`
@@ -376,16 +376,16 @@ const CopyBtn = styled.button`
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--overlay-light);
     border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.1s;
     background: transparent;
-    color: rgba(255, 255, 255, 0.25);
+    color: hsl(var(--muted-foreground));
     font-family: inherit;
-    &:hover { background: rgba(255, 255, 255, 0.03); color: rgba(255,255,255,0.6); }
+    &:hover { background: var(--overlay-subtle); color: hsl(var(--foreground)); }
 `;
 
 // ── Code Block ──────────────────────────────────────────────────────────────
@@ -393,7 +393,7 @@ const CopyBtn = styled.button`
 const CodeWrap = styled.div`
     display: flex;
     overflow: auto;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    border-top: 1px solid var(--overlay-subtle);
     font-family: Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
     font-size: 12.5px;
     line-height: 1.65;
@@ -416,7 +416,7 @@ const Gutter = styled.div`
     min-width: 44px;
     text-align: right;
     user-select: none;
-    border-right: 1px solid rgba(255, 255, 255, 0.03);
+    border-right: 1px solid var(--overlay-subtle);
     background: rgba(0, 0, 0, 0.15);
     flex-shrink: 0;
 `;
@@ -424,14 +424,14 @@ const Gutter = styled.div`
 const G = styled.span`
     padding: 0 10px;
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.1);
+    color: hsl(var(--muted-foreground));
     line-height: 1.65;
 `;
 
 const Code = styled.pre`
     margin: 0;
     padding: 14px 20px;
-    color: rgba(255, 255, 255, 0.65);
+    color: hsl(var(--foreground));
     white-space: pre;
     overflow-x: auto;
     flex: 1;

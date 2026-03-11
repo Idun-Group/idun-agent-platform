@@ -327,29 +327,9 @@ export default function ResourcesSection({
     };
 
     const handleObsToggle = (id: string) => {
-        const app = resources.observabilityApps.find(a => a.id === id);
-        if (!app) return;
-        const type = app.type;
-        const isCurrentlySelected = selections.selectedObservabilityTypes.includes(type) &&
-            selections.selectedObservabilityApps[type] === id;
-
-        if (isCurrentlySelected) {
-            const newTypes = selections.selectedObservabilityTypes.filter(t => t !== type);
-            const newApps = { ...selections.selectedObservabilityApps };
-            delete newApps[type];
-            onSelectionChange({
-                selectedObservabilityTypes: newTypes,
-                selectedObservabilityApps: newApps,
-            });
-        } else {
-            const newTypes = selections.selectedObservabilityTypes.includes(type)
-                ? selections.selectedObservabilityTypes
-                : [...selections.selectedObservabilityTypes, type];
-            onSelectionChange({
-                selectedObservabilityTypes: newTypes,
-                selectedObservabilityApps: { ...selections.selectedObservabilityApps, [type]: id },
-            });
-        }
+        // Single-select: deselect if already selected, otherwise replace
+        const ids = selections.selectedObservabilityIds.includes(id) ? [] : [id];
+        onSelectionChange({ selectedObservabilityIds: ids });
     };
 
     const handleMCPToggle = (id: string) => {
@@ -379,7 +359,7 @@ export default function ResourcesSection({
         onSelectionChange({ selectedIntegrationIds: ids });
     };
 
-    const obsSelectedIds = Object.values(selections.selectedObservabilityApps);
+    const obsSelectedIds = selections.selectedObservabilityIds;
 
     // ── Quick-add / manage flow (view mode): multi-select picker ──
 
@@ -402,14 +382,14 @@ export default function ResourcesSection({
 
     /** Get currently-assigned resource IDs for a category */
     const getAssignedIdsForCategory = (category: ResourceCategory): string[] => {
-        const currentSelections = extractSelectionsFromAgent(agent.engine_config, framework, resources);
+        const currentSelections = extractSelectionsFromAgent(agent, framework, resources);
         switch (category) {
-            case 'Observability': return Object.values(currentSelections.selectedObservabilityApps);
+            case 'Observability': return currentSelections.selectedObservabilityIds;
             case 'MCP': return currentSelections.selectedMCPIds;
             case 'Guardrails': return currentSelections.selectedGuardIds;
             case 'Integrations': return currentSelections.selectedIntegrationIds;
             case 'SSO': return currentSelections.selectedSSOId ? [currentSelections.selectedSSOId] : [];
-            case 'Memory': return currentSelections.selectedMemoryAppId ? [currentSelections.selectedMemoryAppId] : [];
+            case 'Memory': return currentSelections.selectedMemoryAppId ? [currentSelections.selectedMemoryAppId] : [VIRTUAL_IN_MEMORY];
             default: return [];
         }
     };
@@ -423,9 +403,15 @@ export default function ResourcesSection({
     };
 
     const handlePickerToggle = (id: string) => {
-        setPickerSelectedIds(prev =>
-            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-        );
+        const singleSelectCategories: ResourceCategory[] = ['Observability', 'Memory', 'SSO'];
+        if (quickAddCategory && singleSelectCategories.includes(quickAddCategory)) {
+            // Single-select: deselect if already selected, otherwise replace
+            setPickerSelectedIds(prev => prev.includes(id) ? [] : [id]);
+        } else {
+            setPickerSelectedIds(prev =>
+                prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+            );
+        }
     };
 
     /** Save the multi-select picker selection */
@@ -434,24 +420,12 @@ export default function ResourcesSection({
         if (!category || !agent) return;
         setIsSavingPicker(true);
         try {
-            const currentSelections = extractSelectionsFromAgent(agent.engine_config, framework, resources);
+            const currentSelections = extractSelectionsFromAgent(agent, framework, resources);
 
             switch (category) {
-                case 'Observability': {
-                    // Rebuild obs selection from picker IDs
-                    const newTypes: string[] = [];
-                    const newApps: Record<string, string> = {};
-                    for (const id of pickerSelectedIds) {
-                        const app = resources.observabilityApps.find(a => a.id === id);
-                        if (app) {
-                            if (!newTypes.includes(app.type)) newTypes.push(app.type);
-                            newApps[app.type] = id;
-                        }
-                    }
-                    currentSelections.selectedObservabilityTypes = newTypes;
-                    currentSelections.selectedObservabilityApps = newApps;
+                case 'Observability':
+                    currentSelections.selectedObservabilityIds = [...pickerSelectedIds];
                     break;
-                }
                 case 'MCP':
                     currentSelections.selectedMCPIds = [...pickerSelectedIds];
                     break;
@@ -471,7 +445,7 @@ export default function ResourcesSection({
                 agentType: agent.engine_config?.agent?.type || framework,
                 agentConfig: extractAgentConfig(agent.engine_config),
             };
-            const payload = buildAgentPatchPayload(formState, currentSelections, resources);
+            const payload = buildAgentPatchPayload(formState, currentSelections);
             await patchAgent(agent.id, payload);
             notify.success('Resources updated');
             onAgentRefresh?.();
@@ -491,13 +465,19 @@ export default function ResourcesSection({
         if (!category || !agent) return;
         setIsQuickAddPickerOpen(false);
         try {
-            const currentSelections = extractSelectionsFromAgent(agent.engine_config, framework, resources);
+            const currentSelections = extractSelectionsFromAgent(agent, framework, resources);
 
             if (category === 'Memory') {
-                const app = resources.memoryApps.find(a => a.id === id);
-                if (app) {
-                    currentSelections.selectedMemoryType = app.type;
-                    currentSelections.selectedMemoryAppId = id;
+                if (id === VIRTUAL_IN_MEMORY) {
+                    const inMemType = framework === 'ADK' ? 'AdkInMemory' : 'InMemoryCheckpointConfig';
+                    currentSelections.selectedMemoryType = inMemType;
+                    currentSelections.selectedMemoryAppId = '';
+                } else {
+                    const app = resources.memoryApps.find(a => a.id === id);
+                    if (app) {
+                        currentSelections.selectedMemoryType = app.type;
+                        currentSelections.selectedMemoryAppId = id;
+                    }
                 }
             } else if (category === 'SSO') {
                 currentSelections.selectedSSOId = id;
@@ -511,7 +491,7 @@ export default function ResourcesSection({
                 agentType: agent.engine_config?.agent?.type || framework,
                 agentConfig: extractAgentConfig(agent.engine_config),
             };
-            const payload = buildAgentPatchPayload(formState, currentSelections, resources);
+            const payload = buildAgentPatchPayload(formState, currentSelections);
             await patchAgent(agent.id, payload);
             notify.success(`${name} assigned to agent`);
             onAgentRefresh?.();
@@ -641,7 +621,9 @@ export default function ResourcesSection({
     };
 
     const quickAddExistingConfigs = quickAddCategory && quickAddCategory !== 'SSO' && quickAddCategory !== 'Integrations'
-        ? getExistingConfigsForCategory(quickAddCategory)
+        ? (quickAddCategory === 'Memory'
+            ? [...builtinMemoryItems, ...getExistingConfigsForCategory(quickAddCategory)]
+            : getExistingConfigsForCategory(quickAddCategory))
         : [];
     const quickAddSSOConfigs = quickAddCategory === 'SSO' ? resources.ssoConfigs : [];
     const quickAddIntegrationConfigs = quickAddCategory === 'Integrations' ? resources.integrationConfigs : [];
@@ -676,7 +658,7 @@ export default function ResourcesSection({
                     items={resources.observabilityApps.map(app => ({ kind: 'app' as const, data: app }))}
                     selectedIds={obsSelectedIds}
                     isEditing={isEditing}
-                    multiSelect={true}
+                    multiSelect={false}
                     onToggle={handleObsToggle}
                     assignedNames={getObservabilityAssigned()}
                     assignedDetails={getObservabilityDetails()}
@@ -913,8 +895,8 @@ const PickerOverlay = styled.div`
 `;
 
 const PickerPanel = styled.div`
-    background: #1a1a2e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: hsl(var(--surface-elevated));
+    border: 1px solid var(--border-light);
     border-radius: 12px;
     padding: 24px;
     max-width: 520px;
@@ -1002,7 +984,7 @@ const PickerSaveButton = styled.button`
     padding: 10px 20px;
     border-radius: 8px;
     background: #8c52ff;
-    color: white;
+    color: hsl(var(--foreground));
     border: none;
     font-size: 14px;
     font-weight: 600;

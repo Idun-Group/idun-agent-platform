@@ -16,7 +16,7 @@ from idun_agent_schema.manager.managed_observability import (
     ManagedObservabilityPatch,
     ManagedObservabilityRead,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
@@ -25,7 +25,9 @@ from app.api.v1.deps import (
     get_session,
     require_workspace,
 )
+from app.infrastructure.db.models.agent_observability import AgentObservabilityModel
 from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
+from app.services.engine_config import recompute_engine_config
 
 router = APIRouter()
 
@@ -64,13 +66,16 @@ async def _get_observability(
     return model
 
 
-def _model_to_schema(model: ManagedObservabilityModel) -> ManagedObservabilityRead:
+def _model_to_schema(
+    model: ManagedObservabilityModel, agent_count: int = 0
+) -> ManagedObservabilityRead:
     """Transform database model to response schema."""
     observability = ObservabilityConfig(**model.observability_config)
     return ManagedObservabilityRead(
         id=model.id,  # type: ignore
         name=model.name,
         observability=observability,
+        agent_count=agent_count,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -141,7 +146,20 @@ async def list_observabilities(
     result = await session.execute(stmt)
     rows = result.scalars().all()
 
-    return [_model_to_schema(r) for r in rows]
+    # Batch count agents per observability config
+    counts: dict[UUID, int] = {}
+    if rows:
+        count_stmt = (
+            select(
+                AgentObservabilityModel.observability_id,
+                func.count(func.distinct(AgentObservabilityModel.agent_id)),
+            )
+            .where(AgentObservabilityModel.observability_id.in_([r.id for r in rows]))
+            .group_by(AgentObservabilityModel.observability_id)
+        )
+        counts = dict((await session.execute(count_stmt)).all())
+
+    return [_model_to_schema(r, counts.get(r.id, 0)) for r in rows]
 
 
 @router.get(
@@ -157,7 +175,11 @@ async def get_observability(
 ) -> ManagedObservabilityRead:
     """Get a managed observability configuration by ID."""
     model = await _get_observability(id, session, workspace_id)
-    return _model_to_schema(model)
+    count_stmt = select(func.count(func.distinct(AgentObservabilityModel.agent_id))).where(
+        AgentObservabilityModel.observability_id == model.id
+    )
+    agent_count = await session.scalar(count_stmt) or 0
+    return _model_to_schema(model, agent_count)
 
 
 @router.delete(
@@ -173,6 +195,17 @@ async def delete_observability(
 ) -> None:
     """Delete a managed observability configuration permanently."""
     model = await _get_observability(id, session, workspace_id)
+
+    stmt = select(AgentObservabilityModel.agent_id).where(
+        AgentObservabilityModel.observability_id == model.id
+    )
+    result = await session.execute(stmt)
+    if result.first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete observability config: it is referenced by one or more agents",
+        )
+
     await session.delete(model)
     await session.flush()
 
@@ -198,6 +231,13 @@ async def patch_observability(
     model.updated_at = datetime.now(UTC)
 
     await session.flush()
-    await session.refresh(model)
 
+    stmt = select(AgentObservabilityModel.agent_id).where(
+        AgentObservabilityModel.observability_id == model.id
+    )
+    result = await session.execute(stmt)
+    for (agent_id,) in result.all():
+        await recompute_engine_config(session, agent_id)
+
+    await session.refresh(model)
     return _model_to_schema(model)

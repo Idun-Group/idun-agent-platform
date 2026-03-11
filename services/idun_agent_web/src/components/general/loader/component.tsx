@@ -17,7 +17,7 @@ const LoaderContainer = styled.div`
     display: inline-block;
     position: relative;
     border: 6px solid;
-    border-color: #fff #fff transparent transparent;
+    border-color: hsl(var(--foreground)) hsl(var(--foreground)) transparent transparent;
     box-sizing: border-box;
     animation: rotation 1s linear infinite;
 
@@ -44,7 +44,7 @@ const LoaderContainer = styled.div`
     &::before {
         width: 64px;
         height: 64px;
-        border-color: #fff #fff transparent transparent;
+        border-color: hsl(var(--foreground)) hsl(var(--foreground)) transparent transparent;
         animation: rotation s linear infinite;
     }
 

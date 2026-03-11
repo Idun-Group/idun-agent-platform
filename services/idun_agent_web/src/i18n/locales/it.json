@@ -139,7 +139,8 @@
         "observation": "Osservazione",
         "tools": "Strumenti",
         "users": "Utenti",
-        "apps": "App"
+        "apps": "App",
+        "settings": "Impostazioni"
     },
     "signin": {
         "title": "Crea un account",
@@ -574,6 +575,55 @@
     "settings": {
         "title": "Impostazioni",
         "back_to_dashboard": "Torna alla dashboard",
+        "group": {
+            "preferences": "Preferenze",
+            "workspaces": "Aree di lavoro"
+        },
+        "preferences": {
+            "general": "Generale",
+            "appearance": "Aspetto",
+            "appearance.description": "Personalizza l'aspetto dell'applicazione.",
+            "language": "Lingua",
+            "language.description": "Scegli la lingua preferita per l'interfaccia."
+        },
+        "workspaces": {
+            "general": "Generale",
+            "users": "Utenti",
+            "general.rename": "Nome dell'area di lavoro",
+            "general.renameDescription": "Modifica il nome visualizzato della tua area di lavoro.",
+            "general.namePlaceholder": "Nome dell'area di lavoro",
+            "general.renameSuccess": "Area di lavoro rinominata con successo",
+            "general.noWorkspace": "Nessuna area di lavoro selezionata",
+            "general.spaces": "Spazi",
+            "general.spacesDescription": "Spazi all'interno di quest'area di lavoro. Gestisci gli spazi dalla dashboard principale.",
+            "general.spacesComingSoon": "La gestione degli spazi sarà disponibile qui a breve.",
+            "users.title": "Membri",
+            "users.description": "Gestisci chi ha accesso a quest'area di lavoro.",
+            "users.addMember": "Aggiungi membro",
+            "users.name": "Nome",
+            "users.email": "Email",
+            "users.role": "Ruolo",
+            "users.actions": "",
+            "users.remove": "Rimuovi",
+            "users.roleUpdated": "Ruolo aggiornato",
+            "users.memberRemoved": "Membro rimosso",
+            "users.memberAdded": "Membro aggiunto",
+            "users.fetchError": "Errore nel caricamento dei membri",
+            "users.noMembers": "Nessun membro ancora.",
+            "users.confirmRemoveTitle": "Rimuovi membro",
+            "users.confirmRemoveMessage": "Sei sicuro di voler rimuovere questo membro dall'area di lavoro?",
+            "users.confirmRemove": "Rimuovi",
+            "users.inviteTitle": "Aggiungi nuovo membro",
+            "users.inviteDescription": "Invita un utente in quest'area di lavoro tramite email. Se non ha ancora un account, verrà aggiunto al primo accesso.",
+            "users.emailLabel": "Email",
+            "users.roleLabel": "Ruolo",
+            "users.emailRequired": "L'indirizzo email è obbligatorio",
+            "users.grantAccess": "Concedi accesso",
+            "users.pending": "In attesa",
+            "users.invitationCancelled": "Invito annullato",
+            "users.cancelInvitation": "Annulla invito",
+            "users.alreadyInvited": "Questo indirizzo email è già stato invitato"
+        },
         "profile": {
             "title": "Profilo",
             "description": "Gestisci le tue informazioni personali e le tue preferenze.",
@@ -943,7 +993,9 @@
         "close": "Chiudi",
         "comingSoon": "Prossimamente",
         "underDevelopment": "Questa funzionalità è in fase di sviluppo",
-        "back": "Indietro"
+        "back": "Indietro",
+        "saving": "Salvataggio...",
+        "adding": "Aggiunta..."
     },
     "theme": {
         "toggleToLight": "Passa alla modalità chiara",
