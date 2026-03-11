@@ -106,7 +106,6 @@ class TestAppFactoryConfigSources:
         assert agent_config.checkpointer.type == "sqlite"
         assert "test_checkpoint.db" in agent_config.checkpointer.db_url
 
-
 @pytest.mark.unit
 class TestAppFactoryRoutes:
     """Test basic routes on the created app."""
@@ -134,3 +133,74 @@ class TestAppFactoryRoutes:
         resp = client.get("/")
         assert resp.status_code == 200
         assert "agent_endpoints" in resp.json()
+
+
+@pytest.mark.unit
+class TestAppFactoryCors:
+    """Test CORS and Private Network Access behavior on the created app."""
+
+    def test_preflight_allows_any_origin_and_private_network(self, tmp_path) -> None:
+        """Wildcard CORS should still return the private-network allow header."""
+        app = create_app(
+            config_dict={
+                "server": {"api": {"port": 0}},
+                "agent": {
+                    "type": "LANGGRAPH",
+                    "config": {
+                        "name": "Test Agent",
+                        "graph_definition": str(tmp_path / "agent.py:graph"),
+                    },
+                },
+            }
+        )
+        client = TestClient(app)
+
+        response = client.options(
+            "/reload",
+            headers={
+                "Origin": "https://cloud.idunplatform.com",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Private-Network": "true",
+            },
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.headers.get("access-control-allow-origin")
+            == "https://cloud.idunplatform.com"
+        )
+        assert response.headers.get("access-control-allow-private-network") == "true"
+
+    def test_preflight_allows_arbitrary_origin_with_wildcard_cors(
+        self, tmp_path
+    ) -> None:
+        """Private-network support should apply even for non-cloud origins."""
+        app = create_app(
+            config_dict={
+                "server": {"api": {"port": 0}},
+                "agent": {
+                    "type": "LANGGRAPH",
+                    "config": {
+                        "name": "Test Agent",
+                        "graph_definition": str(tmp_path / "agent.py:graph"),
+                    },
+                },
+            }
+        )
+        client = TestClient(app)
+
+        response = client.options(
+            "/agent/capabilities",
+            headers={
+                "Origin": "https://evil.example.com",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Private-Network": "true",
+            },
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.headers.get("access-control-allow-origin")
+            == "https://evil.example.com"
+        )
+        assert response.headers.get("access-control-allow-private-network") == "true"

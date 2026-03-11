@@ -95,6 +95,13 @@ Config resolution priority in `ConfigBuilder.resolve_config()`:
 
 Fields inside `agent.config` change depending on `agent.type`:
 
+### Server API Settings
+
+`server.api` currently exposes only `port`. Browser access behavior is built into the engine app factory:
+
+- CORS remains wildcard (`allow_origins=["*"]`)
+- Qualifying CORS preflights receive `Access-Control-Allow-Private-Network: true` so the hosted UI can reach a localhost agent from the browser
+
 **LangGraph:**
 ```yaml
 server:
@@ -223,6 +230,8 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 | `/agent/config` | GET | Get current agent config |
 | `/integrations/whatsapp/webhook` | GET/POST | WhatsApp webhook (GET: Meta verify, POST: receive messages) |
 | `/integrations/discord/webhook` | POST | Discord Interactions Endpoint (Ed25519 verified, handles PING + slash commands) |
+
+`/reload` is not currently protected by the SSO dependency used on `/agent/*` routes. Because engine CORS remains wildcard, any browser origin that can reach the agent can call `/reload` cross-origin as well.
 
 ## Guardrails
 

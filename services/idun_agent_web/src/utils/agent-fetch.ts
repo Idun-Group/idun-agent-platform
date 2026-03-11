@@ -3,9 +3,9 @@
  *
  * Handles two concerns:
  * 1. URL normalization — eliminates the repeated `endsWith('/')` pattern
- * 2. Local network access — when the cloud frontend calls a localhost agent,
- *    adds `targetAddressSpace: "local"` to signal that the request targets the
- *    local network (Chrome Local Network Access requirement).
+ * 2. Local network access — when the cloud frontend calls a loopback or
+ *    private-network agent, annotate the request with the matching Chrome
+ *    address space (`loopback` or `local`).
  *    Skipped in local dev (both sides are localhost, no PNA rules apply).
  */
 
@@ -17,9 +17,26 @@ function isLoopbackHost(hostname: string): boolean {
     return hostname.startsWith('127.');
 }
 
+function isPrivateIpv4Host(hostname: string): boolean {
+    return (
+        hostname.startsWith('10.') ||
+        hostname.startsWith('192.168.') ||
+        /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
+        hostname.startsWith('169.254.')
+    );
+}
+
 function isLoopbackUrl(url: string): boolean {
     try {
         return isLoopbackHost(new URL(url).hostname);
+    } catch {
+        return false;
+    }
+}
+
+function isLocalNetworkUrl(url: string): boolean {
+    try {
+        return isPrivateIpv4Host(new URL(url).hostname);
     } catch {
         return false;
     }
@@ -40,16 +57,23 @@ export function buildAgentUrl(baseUrl: string, path: string): string {
 
 /**
  * Fetch wrapper for agent endpoints. When the frontend runs on a public
- * domain (e.g. cloud.idunplatform.com) and the agent is on localhost,
- * adds `targetAddressSpace: "local"` to signal local-network intent for
- * Chrome Local Network Access checks.
+ * domain (e.g. cloud.idunplatform.com) and the agent is on loopback or the
+ * local network, adds the matching `targetAddressSpace` for Chrome Local
+ * Network Access checks.
  */
 export function agentFetch(url: string, init?: RequestInit): Promise<Response> {
     const options: RequestInit = { ...init };
 
-    if (!isLoopbackOrigin() && isLoopbackUrl(url)) {
-        (options as RequestInit & { targetAddressSpace?: 'local' }).targetAddressSpace =
-            'local';
+    if (!isLoopbackOrigin()) {
+        const requestOptions = options as RequestInit & {
+            targetAddressSpace?: 'local' | 'loopback';
+        };
+
+        if (isLoopbackUrl(url)) {
+            requestOptions.targetAddressSpace = 'loopback';
+        } else if (isLocalNetworkUrl(url)) {
+            requestOptions.targetAddressSpace = 'local';
+        }
     }
 
     return fetch(url, options);
