@@ -18,9 +18,9 @@ createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
             <ToggleThemeModeProvider>
                 <WorkspaceProvider>
-                    <ProjectProvider>
-                        <LoaderProvider>
-                            <AuthProvider>
+                    <LoaderProvider>
+                        <AuthProvider>
+                            <ProjectProvider>
                             <GlobalStyles />
                             <ToastStyles />
                             <App />
@@ -38,9 +38,9 @@ createRoot(document.getElementById('root')!).render(
                                 transition={Slide}
                                 limit={5}
                             />
-                            </AuthProvider>
-                        </LoaderProvider>
-                    </ProjectProvider>
+                            </ProjectProvider>
+                        </AuthProvider>
+                    </LoaderProvider>
                 </WorkspaceProvider>
             </ToggleThemeModeProvider>
         </BrowserRouter>
