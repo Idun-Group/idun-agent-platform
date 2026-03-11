@@ -241,8 +241,8 @@ class TestAssembleEngineConfig:
         input_guards = result["guardrails"]["input"]
         assert len(input_guards) == 2
         # g1 (sort_order=0) should be first
-        assert input_guards[0]["guard_params"]["banned_words"] == ["first"]
-        assert input_guards[1]["guard_params"]["banned_words"] == ["second"]
+        assert input_guards[0]["banned_words"] == ["first"]
+        assert input_guards[1]["banned_words"] == ["second"]
 
     def test_no_guardrails_removes_key(self):
         import copy
