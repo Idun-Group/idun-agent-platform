@@ -51,6 +51,8 @@ def upgrade() -> None:
             project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
             resource_id UUID NOT NULL,
             resource_type VARCHAR(50) NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             CONSTRAINT uq_project_resource UNIQUE (project_id, resource_id, resource_type)
         )
         """
