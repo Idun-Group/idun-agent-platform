@@ -1052,17 +1052,6 @@
         "comingSoon": "Bientôt disponible",
         "whatsapp": "WhatsApp"
     },
-    "integrations": {
-        "title": "Intégrations",
-        "subtitle": "Connectez des plateformes de messagerie externes à vos agents",
-        "search": "Rechercher des intégrations...",
-        "add": "Ajouter une intégration",
-        "addCard": "Ajouter une intégration",
-        "loading": "Chargement des intégrations…",
-        "active": "Intégrations actives",
-        "comingSoon": "Bientôt disponible",
-        "whatsapp": "WhatsApp"
-    },
     "theme": {
         "toggleToLight": "Passer en mode clair",
         "toggleToDark": "Passer en mode sombre",

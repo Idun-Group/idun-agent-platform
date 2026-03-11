@@ -143,7 +143,7 @@ function App() {
                                 </ContentLayout>
                             </AppLayout>
                         }
-                    /> 
+                    />
                     <Route
                         path="/observability"
                         element={
