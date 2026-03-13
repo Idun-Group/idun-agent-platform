@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
-import { Plus, Pencil, Trash2, Check, X, Grid3X3, Users, ChevronDown } from 'lucide-react';
+import styled, { keyframes } from 'styled-components';
+import { Plus, Pencil, Trash2, Check, X, Grid3X3, Users, ChevronDown, Search } from 'lucide-react';
 import { notify } from '../../toast/notify';
 import { useProject, type ProjectRole } from '../../../hooks/use-project';
 import { useAuth } from '../../../hooks/use-auth';
-import { getJson, patchJson, deleteRequest } from '../../../utils/api';
+import { getJson, patchJson, postJson, deleteRequest } from '../../../utils/api';
+import { listMembers, type WorkspaceMember } from '../../../services/members';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,15 +67,18 @@ const WorkspaceProjectsTab = () => {
         createProject,
         updateProject,
         deleteProject,
+        refreshProjects,
     } = useProject();
 
-    const [newName, setNewName] = useState('');
-    const [creating, setCreating] = useState(false);
+    const [filterQuery, setFilterQuery] = useState('');
+    const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
+    const [editDescription, setEditDescription] = useState('');
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [projectMembers, setProjectMembers] = useState<Record<string, ProjectMember[]>>({});
+    const [addingToProjectId, setAddingToProjectId] = useState<string | null>(null);
 
     const currentUserId = session?.principal?.user_id ?? '';
 
@@ -82,6 +86,13 @@ const WorkspaceProjectsTab = () => {
     const visibleProjects = isWorkspaceOwner
         ? projects
         : projects.filter((p) => projectRoles[p.id] === 'admin');
+
+    // Apply search filter
+    const filteredProjects = useMemo(() => {
+        if (!filterQuery.trim()) return visibleProjects;
+        const q = filterQuery.toLowerCase();
+        return visibleProjects.filter((p) => p.name.toLowerCase().includes(q));
+    }, [visibleProjects, filterQuery]);
 
     const fetchProjectMembers = useCallback(async (projectList: typeof projects) => {
         const membersByProject: Record<string, ProjectMember[]> = {};
@@ -120,29 +131,17 @@ const WorkspaceProjectsTab = () => {
         }
     }, []);
 
-    const handleCreate = async () => {
-        if (!newName.trim()) return;
-        setCreating(true);
-        try {
-            await createProject(newName.trim());
-            setNewName('');
-            notify.success(t('projects.createSuccess', 'Project created'));
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to create project';
-            notify.error(msg);
-        } finally {
-            setCreating(false);
-        }
-    };
-
-    const handleRename = async (id: string) => {
+    const handleSaveEdit = async (id: string) => {
         if (!editName.trim()) return;
         try {
-            await updateProject(id, editName.trim());
+            await updateProject(id, {
+                name: editName.trim(),
+                description: editDescription.trim() || null,
+            });
             setEditingId(null);
             notify.success(t('projects.updateSuccess', 'Project updated'));
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to rename project';
+            const msg = err instanceof Error ? err.message : 'Failed to update project';
             notify.error(msg);
         }
     };
@@ -181,13 +180,21 @@ const WorkspaceProjectsTab = () => {
         }
     };
 
-    const startEdit = (id: string, currentName: string) => {
+    const startEdit = (id: string, currentName: string, currentDescription?: string | null) => {
         setEditingId(id);
         setEditName(currentName);
+        setEditDescription(currentDescription ?? '');
     };
 
     const toggleExpand = (id: string) => {
         setExpandedId((prev) => (prev === id ? null : id));
+    };
+
+    const handleProjectCreated = async () => {
+        setShowCreateDialog(false);
+        // refreshProjects updates the projects list, which triggers
+        // the useEffect on projectIds to re-fetch all project members.
+        await refreshProjects();
     };
 
     return (
@@ -201,26 +208,30 @@ const WorkspaceProjectsTab = () => {
                 </div>
             </HeaderRow>
 
-            {/* Create new project — owners only */}
-            {isWorkspaceOwner && (
-                <CreateRow>
-                    <CreateInput
+            {/* Filter + Create row */}
+            <ToolbarRow>
+                <FilterInputWrapper>
+                    <SearchIcon>
+                        <Search size={15} />
+                    </SearchIcon>
+                    <FilterInput
                         type="text"
-                        placeholder={t('projects.namePlaceholder', 'Project name')}
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                        placeholder={t('projects.filterPlaceholder', 'Filter projects...')}
+                        value={filterQuery}
+                        onChange={(e) => setFilterQuery(e.target.value)}
                     />
-                    <CreateButton onClick={handleCreate} disabled={creating || !newName.trim()}>
+                </FilterInputWrapper>
+                {isWorkspaceOwner && (
+                    <CreateButton onClick={() => setShowCreateDialog(true)}>
                         <Plus size={15} />
                         {t('settings.projects.createButton', 'New project')}
                     </CreateButton>
-                </CreateRow>
-            )}
+                )}
+            </ToolbarRow>
 
             {/* Project list */}
             <ProjectGrid>
-                {visibleProjects.map((project) => {
+                {filteredProjects.map((project) => {
                     const isEditing = editingId === project.id;
                     const isDeleting = deletingId === project.id;
                     const userRole = projectRoles[project.id];
@@ -244,41 +255,58 @@ const WorkspaceProjectsTab = () => {
                                     </ProjectIcon>
                                     <ProjectInfo>
                                         {isEditing ? (
-                                            <EditRow onClick={(e) => e.stopPropagation()}>
-                                                <EditInput
-                                                    value={editName}
-                                                    onChange={(e) => setEditName(e.target.value)}
+                                            <EditForm onClick={(e) => e.stopPropagation()}>
+                                                <EditRow>
+                                                    <EditInput
+                                                        value={editName}
+                                                        onChange={(e) => setEditName(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && !e.shiftKey) handleSaveEdit(project.id);
+                                                            if (e.key === 'Escape') setEditingId(null);
+                                                        }}
+                                                        placeholder={t('projects.namePlaceholder', 'Project name')}
+                                                        autoFocus
+                                                    />
+                                                    <IconBtn onClick={() => handleSaveEdit(project.id)}>
+                                                        <Check size={14} color="hsl(var(--primary))" />
+                                                    </IconBtn>
+                                                    <IconBtn onClick={() => setEditingId(null)}>
+                                                        <X size={14} />
+                                                    </IconBtn>
+                                                </EditRow>
+                                                <EditDescriptionInput
+                                                    value={editDescription}
+                                                    onChange={(e) => setEditDescription(e.target.value)}
+                                                    placeholder={t('projects.descriptionPlaceholder', 'Optional project description...')}
+                                                    rows={2}
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleRename(project.id);
                                                         if (e.key === 'Escape') setEditingId(null);
                                                     }}
-                                                    autoFocus
                                                 />
-                                                <IconBtn onClick={() => handleRename(project.id)}>
-                                                    <Check size={14} color="hsl(var(--primary))" />
-                                                </IconBtn>
-                                                <IconBtn onClick={() => setEditingId(null)}>
-                                                    <X size={14} />
-                                                </IconBtn>
-                                            </EditRow>
+                                            </EditForm>
                                         ) : (
-                                            <ProjectNameRow>
-                                                <ProjectName>{project.name}</ProjectName>
-                                                {project.is_default && (
-                                                    <Badge $variant="default">
-                                                        {t('projects.default', 'Default')}
-                                                    </Badge>
+                                            <>
+                                                <ProjectNameRow>
+                                                    <ProjectName>{project.name}</ProjectName>
+                                                    {project.is_default && (
+                                                        <Badge $variant="default">
+                                                            {t('projects.default', 'Default')}
+                                                        </Badge>
+                                                    )}
+                                                    {!isWorkspaceOwner && userRole && (
+                                                        <Badge $variant="role">
+                                                            {t(`projects.roles.${userRole}`, userRole)}
+                                                        </Badge>
+                                                    )}
+                                                    <MemberCount>
+                                                        <Users size={12} />
+                                                        {memberCount}
+                                                    </MemberCount>
+                                                </ProjectNameRow>
+                                                {project.description && (
+                                                    <ProjectDescription>{project.description}</ProjectDescription>
                                                 )}
-                                                {!isWorkspaceOwner && userRole && (
-                                                    <Badge $variant="role">
-                                                        {t(`projects.roles.${userRole}`, userRole)}
-                                                    </Badge>
-                                                )}
-                                                <MemberCount>
-                                                    <Users size={12} />
-                                                    {memberCount}
-                                                </MemberCount>
-                                            </ProjectNameRow>
+                                            </>
                                         )}
                                     </ProjectInfo>
                                 </ProjectCardLeft>
@@ -287,8 +315,8 @@ const WorkspaceProjectsTab = () => {
                                     {!isEditing && !isDeleting && (
                                         <ProjectActions>
                                             <IconBtn
-                                                onClick={() => startEdit(project.id, project.name)}
-                                                title={t('projects.rename', 'Rename')}
+                                                onClick={() => startEdit(project.id, project.name, project.description)}
+                                                title={t('projects.edit', 'Edit')}
                                             >
                                                 <Pencil size={14} />
                                             </IconBtn>
@@ -358,21 +386,568 @@ const WorkspaceProjectsTab = () => {
                                             {t('projects.members.empty', 'No members assigned to this project.')}
                                         </NoMembersText>
                                     )}
+                                    {(isWorkspaceOwner || (userRole && ROLE_LEVEL[userRole] >= ROLE_LEVEL.admin)) && (
+                                        <AddMemberButtonRow>
+                                            <AddMemberBtn onClick={(e) => {
+                                                e.stopPropagation();
+                                                setAddingToProjectId(project.id);
+                                            }}>
+                                                <Plus size={14} />
+                                                {t('projects.members.addMember', 'Add member')}
+                                            </AddMemberBtn>
+                                        </AddMemberButtonRow>
+                                    )}
                                 </MembersPanel>
                             )}
                         </ProjectCardWrapper>
                     );
                 })}
 
+                {filteredProjects.length === 0 && visibleProjects.length > 0 && (
+                    <EmptyText>{t('projects.noFilterResults', 'No projects match your filter.')}</EmptyText>
+                )}
+
                 {visibleProjects.length === 0 && (
                     <EmptyText>{t('projects.noProjects', 'No projects yet.')}</EmptyText>
                 )}
             </ProjectGrid>
+
+            {/* Create project dialog */}
+            {showCreateDialog && (
+                <CreateProjectDialog
+                    onCreated={handleProjectCreated}
+                    onClose={() => setShowCreateDialog(false)}
+                />
+            )}
+
+            {/* Add member to project dialog */}
+            {addingToProjectId && (() => {
+                const project = visibleProjects.find((p) => p.id === addingToProjectId);
+                if (!project) return null;
+                return (
+                    <AddProjectMembersDialog
+                        projectId={addingToProjectId}
+                        projectName={project.name}
+                        existingMembers={projectMembers[addingToProjectId] ?? []}
+                        onAdded={() => refreshSingleProject(addingToProjectId)}
+                        onClose={() => setAddingToProjectId(null)}
+                    />
+                );
+            })()}
         </Container>
     );
 };
 
 export default WorkspaceProjectsTab;
+
+// ---------------------------------------------------------------------------
+// CreateProjectDialog
+// ---------------------------------------------------------------------------
+
+type CreateProjectDialogProps = {
+    onCreated: () => void;
+    onClose: () => void;
+};
+
+const CreateProjectDialog = ({ onCreated, onClose }: CreateProjectDialogProps) => {
+    const { t } = useTranslation();
+    const { createProject } = useProject();
+    const { session } = useAuth();
+
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState('');
+
+    // Workspace members for selection
+    const [wsMembers, setWsMembers] = useState<WorkspaceMember[]>([]);
+    const [memberSearch, setMemberSearch] = useState('');
+    const [selectedMembers, setSelectedMembers] = useState<
+        Record<string, ProjectRole>
+    >({});
+    const [loadingMembers, setLoadingMembers] = useState(true);
+
+    const activeWorkspaceId =
+        typeof window !== 'undefined' ? localStorage.getItem('activeTenantId') : null;
+
+    // Fetch workspace members on open
+    useEffect(() => {
+        if (!activeWorkspaceId) {
+            setLoadingMembers(false);
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await listMembers(activeWorkspaceId);
+                if (!cancelled) setWsMembers(res.members);
+            } catch {
+                // silently ignore
+            } finally {
+                if (!cancelled) setLoadingMembers(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [activeWorkspaceId]);
+
+    // Filter out owners (they're implicit admins) and the current user
+    const availableMembers = useMemo(() => {
+        return wsMembers.filter((m) => !m.is_owner);
+    }, [wsMembers]);
+
+    // Apply search filter
+    const filteredMembers = useMemo(() => {
+        if (!memberSearch.trim()) return availableMembers;
+        const q = memberSearch.toLowerCase();
+        return availableMembers.filter(
+            (m) =>
+                m.email.toLowerCase().includes(q) ||
+                (m.name && m.name.toLowerCase().includes(q)),
+        );
+    }, [availableMembers, memberSearch]);
+
+    const toggleMember = (userId: string) => {
+        setSelectedMembers((prev) => {
+            const next = { ...prev };
+            if (next[userId]) {
+                delete next[userId];
+            } else {
+                next[userId] = 'contributor';
+            }
+            return next;
+        });
+    };
+
+    const setMemberRole = (userId: string, role: ProjectRole) => {
+        setSelectedMembers((prev) => ({ ...prev, [userId]: role }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        if (!name.trim()) {
+            setError(t('projects.nameRequired', 'Project name is required'));
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const members = Object.entries(selectedMembers).map(
+                ([user_id, role]) => ({ user_id, role }),
+            );
+            await createProject({
+                name: name.trim(),
+                description: description.trim() || undefined,
+                members,
+            });
+            notify.success(t('projects.createSuccess', 'Project created'));
+            onCreated();
+        } catch (err: unknown) {
+            const msg =
+                err instanceof Error ? err.message : 'Failed to create project';
+            setError(msg);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <Overlay onClick={onClose}>
+            <Dialog onClick={(e) => e.stopPropagation()}>
+                <DialogHeader>
+                    <DialogTitle>
+                        {t('projects.createTitle', 'New project')}
+                    </DialogTitle>
+                    <CloseButton onClick={onClose}>
+                        <X size={18} />
+                    </CloseButton>
+                </DialogHeader>
+
+                <DialogDescription>
+                    {t(
+                        'projects.createDescription',
+                        'Create a new project and optionally add members.',
+                    )}
+                </DialogDescription>
+
+                <Form onSubmit={handleSubmit}>
+                    <FieldGroup>
+                        <FieldLabel>
+                            {t('projects.nameLabel', 'Project name')}
+                        </FieldLabel>
+                        <Input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder={t('projects.namePlaceholder', 'Project name')}
+                            autoFocus
+                        />
+                    </FieldGroup>
+
+                    <FieldGroup>
+                        <FieldLabel>
+                            {t('projects.descriptionLabel', 'Description')}
+                        </FieldLabel>
+                        <TextArea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder={t(
+                                'projects.descriptionPlaceholder',
+                                'Optional project description...',
+                            )}
+                            rows={3}
+                        />
+                    </FieldGroup>
+
+                    <FieldGroup>
+                        <FieldLabel>
+                            {t('projects.membersLabel', 'Members')}
+                        </FieldLabel>
+                        <MemberSearchInput
+                            type="text"
+                            placeholder={t(
+                                'projects.searchMembers',
+                                'Search members...',
+                            )}
+                            value={memberSearch}
+                            onChange={(e) => setMemberSearch(e.target.value)}
+                        />
+                        <MemberList>
+                            {loadingMembers ? (
+                                <MemberListEmpty>
+                                    {t('common.loading', 'Loading...')}
+                                </MemberListEmpty>
+                            ) : filteredMembers.length === 0 ? (
+                                <MemberListEmpty>
+                                    {availableMembers.length === 0
+                                        ? t(
+                                              'projects.noAvailableMembers',
+                                              'No non-owner members in this workspace.',
+                                          )
+                                        : t(
+                                              'projects.noMemberResults',
+                                              'No members match your search.',
+                                          )}
+                                </MemberListEmpty>
+                            ) : (
+                                filteredMembers.map((member) => {
+                                    const isSelected = !!selectedMembers[member.user_id];
+                                    const initials = (
+                                        member.name ?? member.email ?? '?'
+                                    )
+                                        .charAt(0)
+                                        .toUpperCase();
+
+                                    return (
+                                        <MemberRow
+                                            key={member.user_id}
+                                            $selected={isSelected}
+                                        >
+                                            <MemberCheckArea
+                                                onClick={() =>
+                                                    toggleMember(member.user_id)
+                                                }
+                                            >
+                                                <MemberCheckbox $checked={isSelected}>
+                                                    {isSelected && (
+                                                        <Check
+                                                            size={11}
+                                                            color="hsl(var(--primary))"
+                                                        />
+                                                    )}
+                                                </MemberCheckbox>
+                                                {member.picture_url ? (
+                                                    <MemberAvatar
+                                                        src={member.picture_url}
+                                                        alt=""
+                                                    />
+                                                ) : (
+                                                    <MemberAvatarFallback>
+                                                        {initials}
+                                                    </MemberAvatarFallback>
+                                                )}
+                                                <MemberInfo>
+                                                    <MemberName>
+                                                        {member.name || member.email}
+                                                    </MemberName>
+                                                    {member.name && (
+                                                        <MemberEmail>
+                                                            {member.email}
+                                                        </MemberEmail>
+                                                    )}
+                                                </MemberInfo>
+                                            </MemberCheckArea>
+                                            {isSelected ? (
+                                                <MemberRoleSelect
+                                                    value={
+                                                        selectedMembers[
+                                                            member.user_id
+                                                        ]
+                                                    }
+                                                    onChange={(e) =>
+                                                        setMemberRole(
+                                                            member.user_id,
+                                                            e.target
+                                                                .value as ProjectRole,
+                                                        )
+                                                    }
+                                                    onClick={(e) =>
+                                                        e.stopPropagation()
+                                                    }
+                                                >
+                                                    <option value="admin">
+                                                        {t(
+                                                            'projects.roles.admin',
+                                                            'Admin',
+                                                        )}
+                                                    </option>
+                                                    <option value="contributor">
+                                                        {t(
+                                                            'projects.roles.contributor',
+                                                            'Contributor',
+                                                        )}
+                                                    </option>
+                                                    <option value="reader">
+                                                        {t(
+                                                            'projects.roles.reader',
+                                                            'Reader',
+                                                        )}
+                                                    </option>
+                                                </MemberRoleSelect>
+                                            ) : (
+                                                <MemberRoleDash>—</MemberRoleDash>
+                                            )}
+                                        </MemberRow>
+                                    );
+                                })
+                            )}
+                        </MemberList>
+                    </FieldGroup>
+
+                    {error && <ErrorText>{error}</ErrorText>}
+
+                    <DialogActions>
+                        <CancelButton type="button" onClick={onClose}>
+                            {t('common.cancel', 'Cancel')}
+                        </CancelButton>
+                        <SubmitButton type="submit" disabled={submitting || !name.trim()}>
+                            {submitting
+                                ? t('common.creating', 'Creating...')
+                                : t('projects.create', 'Create')}
+                        </SubmitButton>
+                    </DialogActions>
+                </Form>
+            </Dialog>
+        </Overlay>
+    );
+};
+
+// ---------------------------------------------------------------------------
+// AddProjectMembersDialog
+// ---------------------------------------------------------------------------
+
+type AddProjectMembersDialogProps = {
+    projectId: string;
+    projectName: string;
+    existingMembers: ProjectMember[];
+    onAdded: () => void;
+    onClose: () => void;
+};
+
+const AddProjectMembersDialog = ({
+    projectId,
+    projectName,
+    existingMembers,
+    onAdded,
+    onClose,
+}: AddProjectMembersDialogProps) => {
+    const { t } = useTranslation();
+    const [wsMembers, setWsMembers] = useState<WorkspaceMember[]>([]);
+    const [search, setSearch] = useState('');
+    const [selected, setSelected] = useState<Record<string, ProjectRole>>({});
+    const [submitting, setSubmitting] = useState(false);
+    const [loadingMembers, setLoadingMembers] = useState(true);
+
+    const activeWorkspaceId =
+        typeof window !== 'undefined' ? localStorage.getItem('activeTenantId') : null;
+
+    useEffect(() => {
+        if (!activeWorkspaceId) {
+            setLoadingMembers(false);
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await listMembers(activeWorkspaceId);
+                if (!cancelled) setWsMembers(res.members);
+            } catch {
+                // ignore
+            } finally {
+                if (!cancelled) setLoadingMembers(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [activeWorkspaceId]);
+
+    const existingUserIds = new Set(existingMembers.map((m) => m.user_id));
+
+    const available = useMemo(() => {
+        return wsMembers.filter(
+            (m) => !m.is_owner && !existingUserIds.has(m.user_id),
+        );
+    }, [wsMembers, existingUserIds]);
+
+    const filtered = useMemo(() => {
+        if (!search.trim()) return available;
+        const q = search.toLowerCase();
+        return available.filter(
+            (m) =>
+                m.email.toLowerCase().includes(q) ||
+                (m.name && m.name.toLowerCase().includes(q)),
+        );
+    }, [available, search]);
+
+    const toggleMember = (userId: string) => {
+        setSelected((prev) => {
+            const next = { ...prev };
+            if (next[userId]) {
+                delete next[userId];
+            } else {
+                next[userId] = 'contributor';
+            }
+            return next;
+        });
+    };
+
+    const setMemberRole = (userId: string, role: ProjectRole) => {
+        setSelected((prev) => ({ ...prev, [userId]: role }));
+    };
+
+    const selectedCount = Object.keys(selected).length;
+
+    const handleSubmit = async () => {
+        if (selectedCount === 0) return;
+        setSubmitting(true);
+        try {
+            await Promise.all(
+                Object.entries(selected).map(([user_id, role]) =>
+                    postJson(`/api/v1/projects/${projectId}/members`, { user_id, role }),
+                ),
+            );
+            notify.success(
+                t('projects.members.addedCount', '{{count}} member(s) added', { count: selectedCount }),
+            );
+            onAdded();
+            onClose();
+        } catch (err: unknown) {
+            const raw = err instanceof Error ? err.message : '';
+            let detail = '';
+            try { detail = JSON.parse(raw).detail ?? ''; } catch { detail = raw; }
+            notify.error(detail || t('projects.members.addError', 'Failed to add members'));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <Overlay onClick={onClose}>
+            <Dialog onClick={(e) => e.stopPropagation()}>
+                <DialogHeader>
+                    <DialogTitle>
+                        {t('projects.members.addTitle', 'Add members to {{name}}', { name: projectName })}
+                    </DialogTitle>
+                    <CloseButton onClick={onClose}>
+                        <X size={18} />
+                    </CloseButton>
+                </DialogHeader>
+                <DialogDescription>
+                    {t('projects.members.addDescription', 'Select workspace members to add to this project.')}
+                </DialogDescription>
+
+                <MemberSearchInput
+                    type="text"
+                    placeholder={t('projects.searchMembers', 'Search members...')}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
+
+                <MemberList style={{ marginTop: 8 }}>
+                    {loadingMembers ? (
+                        <MemberListEmpty>{t('common.loading', 'Loading...')}</MemberListEmpty>
+                    ) : filtered.length === 0 ? (
+                        <MemberListEmpty>
+                            {available.length === 0
+                                ? t('projects.members.allAssigned', 'All workspace members are already in this project.')
+                                : t('projects.noMemberResults', 'No members match your search.')}
+                        </MemberListEmpty>
+                    ) : (
+                        filtered.map((member) => {
+                            const isSelected = !!selected[member.user_id];
+                            const initials = (member.name ?? member.email ?? '?')
+                                .charAt(0)
+                                .toUpperCase();
+                            return (
+                                <MemberRow key={member.user_id} $selected={isSelected}>
+                                    <MemberCheckArea onClick={() => toggleMember(member.user_id)}>
+                                        <MemberCheckbox $checked={isSelected}>
+                                            {isSelected && <Check size={11} color="hsl(var(--primary))" />}
+                                        </MemberCheckbox>
+                                        {member.picture_url ? (
+                                            <MemberAvatar src={member.picture_url} alt="" />
+                                        ) : (
+                                            <MemberAvatarFallback>{initials}</MemberAvatarFallback>
+                                        )}
+                                        <MemberInfo>
+                                            <MemberName>
+                                                {member.name || member.email}
+                                            </MemberName>
+                                            {member.name && (
+                                                <MemberEmail>{member.email}</MemberEmail>
+                                            )}
+                                        </MemberInfo>
+                                    </MemberCheckArea>
+                                    {isSelected ? (
+                                        <MemberRoleSelect
+                                            value={selected[member.user_id]}
+                                            onChange={(e) =>
+                                                setMemberRole(member.user_id, e.target.value as ProjectRole)
+                                            }
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <option value="admin">{t('projects.roles.admin', 'Admin')}</option>
+                                            <option value="contributor">{t('projects.roles.contributor', 'Contributor')}</option>
+                                            <option value="reader">{t('projects.roles.reader', 'Reader')}</option>
+                                        </MemberRoleSelect>
+                                    ) : (
+                                        <MemberRoleDash>—</MemberRoleDash>
+                                    )}
+                                </MemberRow>
+                            );
+                        })
+                    )}
+                </MemberList>
+
+                <DialogActions>
+                    <CancelButton type="button" onClick={onClose}>
+                        {t('common.cancel', 'Cancel')}
+                    </CancelButton>
+                    <SubmitButton
+                        onClick={handleSubmit}
+                        disabled={submitting || selectedCount === 0}
+                    >
+                        {submitting
+                            ? t('common.adding', 'Adding...')
+                            : t('projects.members.addCount', 'Add {{count}} member(s)', { count: selectedCount })}
+                    </SubmitButton>
+                </DialogActions>
+            </Dialog>
+        </Overlay>
+    );
+};
 
 // ---------------------------------------------------------------------------
 // ProjectMemberRow sub-component
@@ -526,16 +1101,32 @@ const PageDescription = styled.p`
     margin: 0;
 `;
 
-const CreateRow = styled.div`
+const ToolbarRow = styled.div`
     display: flex;
     gap: 10px;
     align-items: center;
 `;
 
-const CreateInput = styled.input`
+const FilterInputWrapper = styled.div`
+    position: relative;
     flex: 1;
     max-width: 320px;
-    padding: 9px 14px;
+`;
+
+const SearchIcon = styled.span`
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: hsl(var(--muted-foreground));
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+`;
+
+const FilterInput = styled.input`
+    width: 100%;
+    padding: 9px 14px 9px 36px;
     background: var(--overlay-subtle);
     border: 1px solid var(--border-light);
     border-radius: 8px;
@@ -731,6 +1322,12 @@ const EditRow = styled.div`
     gap: 6px;
 `;
 
+const EditForm = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+`;
+
 const EditInput = styled.input`
     padding: 5px 10px;
     background: var(--overlay-subtle);
@@ -744,6 +1341,37 @@ const EditInput = styled.input`
     &:focus {
         outline: none;
     }
+`;
+
+const EditDescriptionInput = styled.textarea`
+    padding: 5px 10px;
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    color: hsl(var(--foreground));
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 36px;
+
+    &:focus {
+        outline: none;
+        border-color: hsl(var(--primary));
+    }
+
+    &::placeholder {
+        color: hsl(var(--muted-foreground));
+    }
+`;
+
+const ProjectDescription = styled.span`
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 400px;
 `;
 
 const DeleteConfirm = styled.div`
@@ -978,4 +1606,376 @@ const NoMembersText = styled.p`
     text-align: center;
     padding: 20px 16px;
     margin: 0;
+`;
+
+const AddMemberButtonRow = styled.div`
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: center;
+`;
+
+const AddMemberBtn = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px dashed var(--border-light);
+    border-radius: 7px;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 150ms;
+
+    &:hover {
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary));
+        background: hsla(var(--primary) / 0.05);
+    }
+`;
+
+// ---------------------------------------------------------------------------
+// Dialog styled components
+// ---------------------------------------------------------------------------
+
+const fadeIn = keyframes`
+    from { opacity: 0; }
+    to { opacity: 1; }
+`;
+
+const slideUp = keyframes`
+    from { transform: translateY(16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+`;
+
+const Overlay = styled.div`
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--overlay-backdrop);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: ${fadeIn} 150ms ease;
+`;
+
+const Dialog = styled.div`
+    background: hsl(var(--popover));
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 540px;
+    margin: 16px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    animation: ${slideUp} 200ms ease;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+`;
+
+const DialogHeader = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+`;
+
+const DialogTitle = styled.h3`
+    font-size: 18px;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin: 0;
+`;
+
+const CloseButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    transition: all 150ms ease;
+
+    &:hover {
+        background: var(--overlay-light);
+        color: hsl(var(--foreground));
+    }
+`;
+
+const DialogDescription = styled.p`
+    font-size: 14px;
+    color: hsl(var(--muted-foreground));
+    margin: 0 0 20px 0;
+    line-height: 1.5;
+`;
+
+const Form = styled.form`
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+`;
+
+const FieldGroup = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+`;
+
+const FieldLabel = styled.label`
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+`;
+
+const Input = styled.input`
+    padding: 10px 14px;
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 150ms ease;
+
+    &:focus {
+        outline: none;
+        border-color: hsl(var(--primary));
+    }
+
+    &::placeholder {
+        color: hsl(var(--muted-foreground));
+    }
+`;
+
+const TextArea = styled.textarea`
+    padding: 10px 14px;
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 150ms ease;
+    resize: vertical;
+    min-height: 60px;
+
+    &:focus {
+        outline: none;
+        border-color: hsl(var(--primary));
+    }
+
+    &::placeholder {
+        color: hsl(var(--muted-foreground));
+    }
+`;
+
+const MemberSearchInput = styled.input`
+    padding: 8px 12px;
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    font-size: 13px;
+    font-family: inherit;
+
+    &:focus {
+        outline: none;
+        border-color: hsl(var(--primary));
+    }
+
+    &::placeholder {
+        color: hsl(var(--muted-foreground));
+    }
+`;
+
+const MemberList = styled.div`
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: 240px;
+    overflow-y: auto;
+`;
+
+const MemberListEmpty = styled.div`
+    padding: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+`;
+
+const MemberRow = styled.div<{ $selected: boolean }>`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: ${({ $selected }) =>
+        $selected ? 'hsla(var(--primary) / 0.04)' : 'transparent'};
+
+    & + & {
+        border-top: 1px solid var(--border-subtle);
+    }
+`;
+
+const MemberCheckArea = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+`;
+
+const MemberCheckbox = styled.div<{ $checked: boolean }>`
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid ${({ $checked }) =>
+        $checked ? 'hsl(var(--primary))' : 'var(--border-light)'};
+    background: ${({ $checked }) =>
+        $checked ? 'hsla(var(--primary) / 0.15)' : 'transparent'};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 150ms ease;
+    flex-shrink: 0;
+`;
+
+const MemberAvatar = styled.img`
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+`;
+
+const MemberAvatarFallback = styled.div`
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: hsla(var(--primary) / 0.2);
+    color: hsl(var(--primary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+`;
+
+const MemberInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+`;
+
+const MemberName = styled.span`
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`;
+
+const MemberEmail = styled.span`
+    font-size: 11px;
+    color: hsl(var(--muted-foreground));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`;
+
+const MemberRoleSelect = styled.select`
+    padding: 4px 10px;
+    background: var(--overlay-subtle);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    padding-right: 24px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23826F95' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    flex-shrink: 0;
+
+    &:focus {
+        outline: none;
+        border-color: hsl(var(--primary));
+    }
+
+    option {
+        background: hsl(var(--popover));
+        color: hsl(var(--foreground));
+    }
+`;
+
+const MemberRoleDash = styled.span`
+    color: hsl(var(--muted-foreground) / 0.3);
+    font-size: 12px;
+    padding: 4px 10px;
+    flex-shrink: 0;
+`;
+
+const ErrorText = styled.p`
+    font-size: 13px;
+    color: hsl(var(--destructive));
+    margin: 0;
+`;
+
+const DialogActions = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+`;
+
+const CancelButton = styled.button`
+    padding: 9px 16px;
+    background: transparent;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 150ms ease;
+
+    &:hover {
+        background: var(--overlay-subtle);
+    }
+`;
+
+const SubmitButton = styled.button`
+    padding: 9px 16px;
+    background: hsl(var(--primary));
+    border: none;
+    border-radius: 8px;
+    color: hsl(var(--primary-foreground));
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 150ms ease;
+
+    &:hover:not(:disabled) {
+        filter: brightness(0.9);
+    }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
 `;

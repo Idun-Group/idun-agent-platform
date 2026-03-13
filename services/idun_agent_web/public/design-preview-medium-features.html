@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Medium Features — 3 Design Approaches</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a25;
+    --surface-3: #22222f;
+    --border: #2a2a3a;
+    --border-light: #333345;
+    --text: #e8e8f0;
+    --text-muted: #8888a0;
+    --text-dim: #666680;
+    --primary: #8c52ff;
+    --primary-bg: rgba(140, 82, 255, 0.12);
+    --primary-border: rgba(140, 82, 255, 0.3);
+    --warning: #f59e0b;
+    --warning-bg: rgba(245, 158, 11, 0.12);
+    --destructive: #ef4444;
+    --destructive-bg: rgba(239, 68, 68, 0.1);
+    --success: #34d399;
+    --blue: #60a5fa;
+    --blue-bg: rgba(59, 130, 246, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* Navigation */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex; gap: 12px; align-items: center;
+  }
+  .nav-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+  .nav-btn:hover { border-color: var(--primary); color: var(--text); }
+  .nav-btn.active {
+    background: var(--primary-bg);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .nav-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-right: 16px;
+  }
+  .nav-sep {
+    width: 1px; height: 20px;
+    background: var(--border);
+    margin: 0 8px;
+  }
+
+  /* Sections */
+  .approach { display: none; padding: 32px; }
+  .approach.visible { display: block; }
+  .approach-header {
+    margin-bottom: 32px;
+  }
+  .approach-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .approach-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    max-width: 700px;
+    line-height: 1.6;
+  }
+  .feature-section {
+    margin-bottom: 48px;
+  }
+  .feature-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--primary);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .feature-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  /* ========== Shared component styles ========== */
+
+  /* Header bar mockup */
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    margin-bottom: 16px;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-logo {
+    width: 28px; height: 28px;
+    background: var(--primary);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: white;
+  }
+  .header-name { font-size: 14px; font-weight: 600; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .header-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--primary-bg);
+    color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+  }
+
+  /* Dropdown / Select */
+  .ws-trigger {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-2);
+    cursor: pointer;
+    transition: all 150ms;
+    font-size: 13px; font-weight: 500;
+    color: var(--text);
+  }
+  .ws-trigger:hover { border-color: var(--primary-border); }
+  .ws-trigger .chevron { font-size: 10px; color: var(--text-muted); }
+
+  .ws-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 260px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    padding: 6px;
+    z-index: 100;
+  }
+  .ws-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 100ms;
+    font-size: 13px;
+  }
+  .ws-item:hover { background: var(--surface-2); }
+  .ws-item.current { background: var(--primary-bg); }
+  .ws-item-left { display: flex; align-items: center; gap: 10px; }
+  .ws-item-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--surface-3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: var(--text-muted);
+  }
+  .ws-item.current .ws-item-icon {
+    background: var(--primary-bg); color: var(--primary);
+  }
+  .ws-item-name { font-weight: 500; }
+  .ws-item-role {
+    font-size: 11px; padding: 2px 7px; border-radius: 4px;
+    font-weight: 500;
+  }
+  .ws-item-role.owner { background: var(--warning-bg); color: var(--warning); }
+  .ws-item-role.member { background: var(--blue-bg); color: var(--blue); }
+  .ws-check { color: var(--primary); font-size: 14px; }
+
+  /* Table */
+  .table-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 10px 16px;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: var(--surface-2);
+  }
+  td {
+    padding: 12px 16px; font-size: 14px;
+    border-top: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .user-cell { display: flex; align-items: center; gap: 10px; }
+  .avatar-sm {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--primary-bg); color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .email-text { color: var(--text-muted); font-size: 13px; }
+
+  /* Badges */
+  .badge-owner {
+    display: inline-flex; padding: 3px 9px; border-radius: 5px;
+    font-size: 12px; font-weight: 500;
+    background: var(--warning-bg); color: var(--warning);
+  }
+  .badge-member {
+    display: inline-flex; padding: 3px 9px; border-radius: 5px;
+    font-size: 12px; font-weight: 500;
+    background: var(--blue-bg); color: var(--blue);
+  }
+  .badge-default {
+    display: inline-flex; padding: 2px 7px; border-radius: 3px;
+    font-size: 10px; font-weight: 500;
+    background: var(--primary-bg); color: var(--primary);
+  }
+  .badge-role-sm {
+    display: inline-flex; padding: 2px 7px; border-radius: 4px;
+    font-size: 11px; font-weight: 500;
+  }
+
+  /* Role select */
+  .role-select {
+    padding: 4px 24px 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 12px; font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+  .role-select:focus { outline: none; border-color: var(--primary); }
+  .role-select option { background: var(--surface); color: var(--text); }
+
+  /* Buttons */
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    background: var(--primary);
+    border: none; border-radius: 7px;
+    color: white; font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+    transition: filter 150ms;
+  }
+  .btn-primary:hover { filter: brightness(0.9); }
+  .btn-outline {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text); font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+    transition: all 150ms;
+  }
+  .btn-outline:hover { background: var(--surface-2); }
+  .btn-sm {
+    padding: 5px 10px; font-size: 12px; border-radius: 6px;
+  }
+  .btn-destructive {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    background: var(--destructive-bg);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 6px;
+    color: var(--destructive); font-size: 12px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-ghost {
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    padding: 4px; border-radius: 4px;
+    display: flex; align-items: center;
+    transition: all 150ms;
+  }
+  .btn-ghost:hover { color: var(--text); background: var(--surface-2); }
+  .btn-ghost.destructive:hover { color: var(--destructive); background: var(--destructive-bg); }
+
+  /* Add member panel */
+  .add-panel {
+    padding: 16px;
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+  }
+  .add-panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .add-panel-title { font-size: 13px; font-weight: 600; }
+  .add-member-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 7px;
+    transition: background 100ms;
+  }
+  .add-member-row:hover { background: var(--surface-3); }
+  .add-member-left { display: flex; align-items: center; gap: 10px; }
+  .add-member-right { display: flex; align-items: center; gap: 8px; }
+
+  /* Project cards */
+  .project-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+    transition: border-color 150ms;
+  }
+  .project-card:hover { border-color: var(--border-light); }
+  .project-left { display: flex; align-items: center; gap: 12px; }
+  .project-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: var(--primary-bg);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary); font-size: 15px;
+  }
+  .project-info { display: flex; flex-direction: column; gap: 2px; }
+  .project-name-row { display: flex; align-items: center; gap: 8px; }
+  .project-name { font-size: 14px; font-weight: 500; }
+  .member-count {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px; color: var(--text-muted);
+  }
+  .project-desc { font-size: 12px; color: var(--text-muted); }
+  .project-right { display: flex; align-items: center; gap: 8px; }
+
+  /* Workspace settings cards */
+  .ws-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .ws-card + .ws-card { margin-top: 8px; }
+  .ws-card-left { display: flex; align-items: center; gap: 14px; }
+  .ws-card-icon {
+    width: 40px; height: 40px; border-radius: 9px;
+    background: var(--surface-3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 600; color: var(--text-muted);
+  }
+  .ws-card-info { display: flex; flex-direction: column; gap: 3px; }
+  .ws-card-name { font-size: 14px; font-weight: 500; }
+  .ws-card-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+  .ws-card-right { display: flex; align-items: center; gap: 10px; }
+
+  /* Members panel (expanded under project) */
+  .members-panel {
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    margin-top: -1px;
+  }
+
+  /* Inline dialog */
+  .inline-dialog {
+    background: var(--surface-2);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 12px;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0;
+  }
+
+  /* Tooltip style */
+  .hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  /* Relative for positioning dropdowns */
+  .relative { position: relative; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Approach A specific */
+  .role-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .role-toggle-btn {
+    padding: 4px 12px;
+    font-size: 12px; font-weight: 500;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 150ms;
+  }
+  .role-toggle-btn + .role-toggle-btn { border-left: 1px solid var(--border); }
+  .role-toggle-btn.active-owner { background: var(--warning-bg); color: var(--warning); }
+  .role-toggle-btn.active-member { background: var(--blue-bg); color: var(--blue); }
+
+  /* Approach B specific */
+  .modal-overlay {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 12px;
+  }
+  .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .modal-text { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Approach C specific - command palette */
+  .cmd-trigger {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-2);
+    font-size: 12px; color: var(--text-muted);
+  }
+  .cmd-trigger kbd {
+    font-size: 10px; padding: 1px 5px;
+    background: var(--surface-3); border: 1px solid var(--border);
+    border-radius: 3px; font-family: inherit;
+    color: var(--text-dim);
+  }
+  .cmd-palette {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    max-width: 420px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+  .cmd-input {
+    width: 100%; padding: 14px 16px;
+    background: transparent;
+    border: none; border-bottom: 1px solid var(--border);
+    color: var(--text); font-size: 14px; font-family: inherit;
+  }
+  .cmd-input:focus { outline: none; }
+  .cmd-input::placeholder { color: var(--text-dim); }
+  .cmd-group-label {
+    padding: 10px 16px 4px;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-dim); font-weight: 600;
+  }
+  .cmd-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer; transition: background 100ms;
+    font-size: 13px;
+  }
+  .cmd-item:hover { background: var(--surface-2); }
+  .cmd-item-left { display: flex; align-items: center; gap: 10px; }
+  .cmd-item-icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .max-w-700 { max-width: 700px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .gap-8 { gap: 8px; }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .flex-col { flex-direction: column; }
+  .text-sm { font-size: 13px; }
+  .text-muted { color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<div class="nav">
+  <span class="nav-title">Medium Features — Design Approaches</span>
+  <div class="nav-sep"></div>
+  <button class="nav-btn active" onclick="show('a')">A — Inline &amp; Compact</button>
+  <button class="nav-btn" onclick="show('b')">B — Dialog-Driven</button>
+  <button class="nav-btn" onclick="show('c')">C — Command Palette</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- APPROACH A: Inline & Compact -->
+<!-- ============================================================ -->
+<div id="approach-a" class="approach visible">
+  <div class="approach-header">
+    <div class="approach-title">Approach A — Inline &amp; Compact</div>
+    <div class="approach-desc">
+      Everything happens inline — role changes are toggle buttons, adding members is an expandable panel below the table, workspace switching is a simple dropdown. Minimal modal interruptions. Fast for power users.
+    </div>
+  </div>
+
+  <!-- #7: Workspace Switcher -->
+  <div class="feature-section">
+    <div class="feature-label">#7 — Workspace Switching</div>
+    <div class="feature-title">Header dropdown with inline workspace list</div>
+
+    <div class="header-bar">
+      <div class="header-left">
+        <div class="header-logo">I</div>
+        <div class="relative">
+          <div class="ws-trigger">
+            <span>Acme Corp</span>
+            <span class="chevron">▾</span>
+          </div>
+          <div class="ws-dropdown">
+            <div class="ws-item current">
+              <div class="ws-item-left">
+                <div class="ws-item-icon">A</div>
+                <div>
+                  <div class="ws-item-name">Acme Corp</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="ws-item-role owner">Owner</span>
+                <span class="ws-check">✓</span>
+              </div>
+            </div>
+            <div class="ws-item">
+              <div class="ws-item-left">
+                <div class="ws-item-icon">P</div>
+                <div>
+                  <div class="ws-item-name">Partner Labs</div>
+                </div>
+              </div>
+              <span class="ws-item-role member">Member</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-avatar">Y</div>
+      </div>
+    </div>
+    <div class="hint">Click workspace name → dropdown appears. Checkmark = current. Click to switch instantly.</div>
+  </div>
+
+  <!-- #8: Promote/Demote -->
+  <div class="feature-section">
+    <div class="feature-label">#8 — Promote / Demote Members</div>
+    <div class="feature-title">Inline toggle buttons on each member row</div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th style="width:60px"></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">Y</div><span style="font-weight:500">Yassine (you)</span></div></td>
+            <td><span class="email-text">yassine@acme.com</span></td>
+            <td><span class="badge-owner">Owner</span></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">A</div><span style="font-weight:500">Alice Martin</span></div></td>
+            <td><span class="email-text">alice@acme.com</span></td>
+            <td>
+              <div class="role-toggle">
+                <button class="role-toggle-btn">Owner</button>
+                <button class="role-toggle-btn active-member">Member</button>
+              </div>
+            </td>
+            <td><button class="btn-ghost destructive" title="Remove">🗑</button></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">B</div><span style="font-weight:500">Bob Lee</span></div></td>
+            <td><span class="email-text">bob@acme.com</span></td>
+            <td>
+              <div class="role-toggle">
+                <button class="role-toggle-btn active-owner">Owner</button>
+                <button class="role-toggle-btn">Member</button>
+              </div>
+            </td>
+            <td><button class="btn-ghost destructive" title="Remove">🗑</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hint">Toggle button directly in the table. Click "Owner"/"Member" to switch. Confirmation appears inline below the row.</div>
+  </div>
+
+  <!-- #2: Add Members to Project -->
+  <div class="feature-section">
+    <div class="feature-label">#2 — Add Members to Project</div>
+    <div class="feature-title">Expandable panel below members table</div>
+
+    <div class="project-card" style="border-radius: 10px 10px 0 0; margin-bottom: 0;">
+      <div class="project-left">
+        <div class="project-icon">⊞</div>
+        <div class="project-info">
+          <div class="project-name-row">
+            <span class="project-name">Production</span>
+            <span class="badge-default">Default</span>
+            <span class="member-count">👤 2</span>
+          </div>
+          <span class="project-desc">Main production environment</span>
+        </div>
+      </div>
+      <div class="project-right">
+        <span style="color:var(--text-dim);font-size:13px">▾</span>
+      </div>
+    </div>
+    <div class="members-panel">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th style="width:60px"></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">A</div><span style="font-weight:500">Alice Martin</span></div></td>
+            <td><span class="email-text">alice@acme.com</span></td>
+            <td><select class="role-select"><option>Admin</option><option selected>Contributor</option><option>Reader</option></select></td>
+            <td><button class="btn-ghost destructive">🗑</button></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">B</div><span style="font-weight:500">Bob Lee</span></div></td>
+            <td><span class="email-text">bob@acme.com</span></td>
+            <td><select class="role-select"><option>Admin</option><option>Contributor</option><option selected>Reader</option></select></td>
+            <td><button class="btn-ghost destructive">🗑</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="add-panel">
+        <div class="add-panel-header">
+          <span class="add-panel-title">Add members</span>
+        </div>
+        <div class="add-member-row">
+          <div class="add-member-left">
+            <div class="avatar-sm" style="opacity:0.6">C</div>
+            <div><div style="font-size:13px;font-weight:500">Carol Diaz</div><div class="email-text" style="font-size:12px">carol@acme.com</div></div>
+          </div>
+          <div class="add-member-right">
+            <select class="role-select"><option>Contributor</option><option>Reader</option></select>
+            <button class="btn-primary btn-sm">+ Add</button>
+          </div>
+        </div>
+        <div class="add-member-row">
+          <div class="add-member-left">
+            <div class="avatar-sm" style="opacity:0.6">D</div>
+            <div><div style="font-size:13px;font-weight:500">Dave Kim</div><div class="email-text" style="font-size:12px">dave@acme.com</div></div>
+          </div>
+          <div class="add-member-right">
+            <select class="role-select"><option>Contributor</option><option>Reader</option></select>
+            <button class="btn-primary btn-sm">+ Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hint">Available workspace members shown directly in an expandable section below the table. One-click add with role selector.</div>
+  </div>
+
+  <!-- #10: Workspace Settings -->
+  <div class="feature-section">
+    <div class="feature-label">#10 — Workspace Settings</div>
+    <div class="feature-title">Simple card list in Settings tab</div>
+
+    <div class="max-w-700">
+      <div style="margin-bottom:16px">
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px">Workspaces</div>
+        <div class="text-sm text-muted">Manage your workspace memberships and set your default.</div>
+      </div>
+
+      <div class="ws-card">
+        <div class="ws-card-left">
+          <div class="ws-card-icon">A</div>
+          <div class="ws-card-info">
+            <div class="ws-card-name flex items-center gap-8">Acme Corp <span class="badge-default">Default</span></div>
+            <div class="ws-card-meta"><span class="badge-owner" style="font-size:11px;padding:1px 6px">Owner</span> · 5 members</div>
+          </div>
+        </div>
+        <div class="ws-card-right">
+          <span class="text-sm text-muted" style="font-size:12px">Current</span>
+        </div>
+      </div>
+
+      <div class="ws-card">
+        <div class="ws-card-left">
+          <div class="ws-card-icon">P</div>
+          <div class="ws-card-info">
+            <div class="ws-card-name">Partner Labs</div>
+            <div class="ws-card-meta"><span class="badge-member" style="font-size:11px;padding:1px 6px">Member</span> · 12 members</div>
+          </div>
+        </div>
+        <div class="ws-card-right">
+          <button class="btn-outline btn-sm">Set as default</button>
+          <button class="btn-destructive btn-sm">Leave</button>
+        </div>
+      </div>
+    </div>
+    <div class="hint">Card list with inline actions. "Set as default" and "Leave" buttons directly on each card.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- APPROACH B: Dialog-Driven -->
+<!-- ============================================================ -->
+<div id="approach-b" class="approach">
+  <div class="approach-header">
+    <div class="approach-title">Approach B — Dialog-Driven</div>
+    <div class="approach-desc">
+      All state changes go through confirmation dialogs. Role changes, adding members, leaving workspaces — each gets a focused modal explaining the consequences. Safer, more explicit. Better for teams where mistakes are costly.
+    </div>
+  </div>
+
+  <!-- #7: Workspace Switcher -->
+  <div class="feature-section">
+    <div class="feature-label">#7 — Workspace Switching</div>
+    <div class="feature-title">Header dropdown with workspace details</div>
+
+    <div class="header-bar">
+      <div class="header-left">
+        <div class="header-logo">I</div>
+        <div class="relative">
+          <div class="ws-trigger">
+            <div class="ws-item-icon" style="width:22px;height:22px;border-radius:5px;font-size:10px">A</div>
+            <span>Acme Corp</span>
+            <span class="chevron">▾</span>
+          </div>
+          <div class="ws-dropdown" style="min-width:300px">
+            <div style="padding:12px 12px 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);font-weight:600">
+              Your workspaces
+            </div>
+            <div class="ws-item current">
+              <div class="ws-item-left">
+                <div class="ws-item-icon">A</div>
+                <div>
+                  <div class="ws-item-name">Acme Corp</div>
+                  <div style="font-size:11px;color:var(--text-dim);margin-top:1px">5 members · 3 projects</div>
+                </div>
+              </div>
+              <span class="ws-check">✓</span>
+            </div>
+            <div class="ws-item">
+              <div class="ws-item-left">
+                <div class="ws-item-icon">P</div>
+                <div>
+                  <div class="ws-item-name">Partner Labs</div>
+                  <div style="font-size:11px;color:var(--text-dim);margin-top:1px">12 members · 7 projects</div>
+                </div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">
+              <div class="ws-item" style="color:var(--text-muted);font-size:12px">
+                <div class="ws-item-left" style="gap:8px">
+                  <span style="font-size:14px">⚙</span>
+                  <span>Manage workspaces</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-avatar">Y</div>
+      </div>
+    </div>
+    <div class="hint">Richer dropdown with member/project counts. "Manage workspaces" link at bottom goes to Settings.</div>
+  </div>
+
+  <!-- #8: Promote/Demote -->
+  <div class="feature-section">
+    <div class="feature-label">#8 — Promote / Demote Members</div>
+    <div class="feature-title">Dropdown select + confirmation dialog</div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th style="width:60px"></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">Y</div><span style="font-weight:500">Yassine (you)</span></div></td>
+            <td><span class="email-text">yassine@acme.com</span></td>
+            <td><span class="badge-owner">Owner</span></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">A</div><span style="font-weight:500">Alice Martin</span></div></td>
+            <td><span class="email-text">alice@acme.com</span></td>
+            <td>
+              <select class="role-select" style="padding:5px 28px 5px 10px;font-size:13px">
+                <option>Owner</option>
+                <option selected>Member</option>
+              </select>
+            </td>
+            <td><button class="btn-ghost destructive">🗑</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-overlay mt-16" style="max-width:440px">
+      <div class="modal-title">Promote to Owner?</div>
+      <div class="modal-text">
+        <strong>Alice Martin</strong> will get full admin access to all projects in this workspace. Their current project-specific roles will be removed since owners have implicit admin access everywhere.
+      </div>
+      <div class="modal-actions">
+        <button class="btn-outline btn-sm">Cancel</button>
+        <button class="btn-primary btn-sm">Promote to Owner</button>
+      </div>
+    </div>
+    <div class="hint mt-8">Select dropdown triggers a confirmation dialog explaining the consequences before applying.</div>
+  </div>
+
+  <!-- #2: Add Members to Project -->
+  <div class="feature-section">
+    <div class="feature-label">#2 — Add Members to Project</div>
+    <div class="feature-title">Modal dialog for adding project members</div>
+
+    <div class="project-card" style="border-radius: 10px 10px 0 0; margin-bottom: 0;">
+      <div class="project-left">
+        <div class="project-icon">⊞</div>
+        <div class="project-info">
+          <div class="project-name-row">
+            <span class="project-name">Production</span>
+            <span class="badge-default">Default</span>
+            <span class="member-count">👤 2</span>
+          </div>
+          <span class="project-desc">Main production environment</span>
+        </div>
+      </div>
+      <div class="project-right">
+        <button class="btn-primary btn-sm" style="font-size:12px">+ Add member</button>
+        <span style="color:var(--text-dim);font-size:13px">▾</span>
+      </div>
+    </div>
+    <div class="members-panel">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th style="width:60px"></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">A</div><span style="font-weight:500">Alice Martin</span></div></td>
+            <td><span class="email-text">alice@acme.com</span></td>
+            <td><select class="role-select"><option>Admin</option><option selected>Contributor</option><option>Reader</option></select></td>
+            <td><button class="btn-ghost destructive">🗑</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-overlay mt-16" style="max-width:460px">
+      <div class="modal-title">Add members to Production</div>
+      <div class="modal-text" style="margin-bottom:12px">
+        Select workspace members to add to this project.
+      </div>
+      <input type="text" placeholder="Search members..." style="width:100%;padding:9px 12px;background:var(--surface-3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;font-family:inherit;margin-bottom:8px" />
+      <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div class="add-member-row" style="background:var(--primary-bg);padding:10px 14px">
+          <div class="add-member-left">
+            <div style="width:18px;height:18px;border-radius:4px;border:1.5px solid var(--primary);background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--primary)">✓</div>
+            <div><div style="font-size:13px;font-weight:500">Carol Diaz</div><div class="email-text" style="font-size:12px">carol@acme.com</div></div>
+          </div>
+          <select class="role-select"><option selected>Contributor</option><option>Reader</option></select>
+        </div>
+        <div class="add-member-row" style="padding:10px 14px;border-top:1px solid var(--border)">
+          <div class="add-member-left">
+            <div style="width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border);"></div>
+            <div><div style="font-size:13px;font-weight:500;color:var(--text-muted)">Dave Kim</div><div class="email-text" style="font-size:12px">dave@acme.com</div></div>
+          </div>
+          <span style="color:var(--text-dim);font-size:12px;padding:4px 10px">—</span>
+        </div>
+      </div>
+      <div class="modal-actions mt-16">
+        <button class="btn-outline btn-sm">Cancel</button>
+        <button class="btn-primary btn-sm">Add 1 member</button>
+      </div>
+    </div>
+    <div class="hint mt-8">"+ Add member" button on the project card opens a modal. Multi-select with checkboxes, role per member.</div>
+  </div>
+
+  <!-- #10: Workspace Settings -->
+  <div class="feature-section">
+    <div class="feature-label">#10 — Workspace Settings</div>
+    <div class="feature-title">Settings tab with detailed cards</div>
+
+    <div class="max-w-700">
+      <div style="margin-bottom:16px">
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px">Workspaces</div>
+        <div class="text-sm text-muted">Manage your workspace memberships and preferences.</div>
+      </div>
+
+      <div class="ws-card" style="border-color:var(--primary-border)">
+        <div class="ws-card-left">
+          <div class="ws-card-icon" style="background:var(--primary-bg);color:var(--primary)">A</div>
+          <div class="ws-card-info">
+            <div class="ws-card-name flex items-center gap-8">Acme Corp <span class="badge-default">Default</span></div>
+            <div class="ws-card-meta"><span class="badge-owner" style="font-size:11px;padding:1px 6px">Owner</span> · 5 members · 3 projects</div>
+          </div>
+        </div>
+        <div class="ws-card-right">
+          <span style="font-size:12px;color:var(--primary)">Active</span>
+        </div>
+      </div>
+
+      <div class="ws-card">
+        <div class="ws-card-left">
+          <div class="ws-card-icon">P</div>
+          <div class="ws-card-info">
+            <div class="ws-card-name">Partner Labs</div>
+            <div class="ws-card-meta"><span class="badge-member" style="font-size:11px;padding:1px 6px">Member</span> · 12 members · 7 projects</div>
+          </div>
+        </div>
+        <div class="ws-card-right">
+          <button class="btn-outline btn-sm" style="font-size:11px">⭐ Set as default</button>
+          <button class="btn-destructive" style="font-size:11px;padding:5px 10px">Leave</button>
+        </div>
+      </div>
+
+      <div class="modal-overlay mt-16" style="max-width:420px">
+        <div class="modal-title">Leave Partner Labs?</div>
+        <div class="modal-text">
+          You'll lose access to all projects and resources in this workspace. You'll need to be re-invited to rejoin.
+        </div>
+        <div class="modal-actions">
+          <button class="btn-outline btn-sm">Cancel</button>
+          <button class="btn-destructive">Leave workspace</button>
+        </div>
+      </div>
+      <div class="hint mt-8">Same card layout, but "Leave" triggers a confirmation dialog. Active workspace highlighted with primary border.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- APPROACH C: Command Palette -->
+<!-- ============================================================ -->
+<div id="approach-c" class="approach">
+  <div class="approach-header">
+    <div class="approach-title">Approach C — Command Palette + Contextual Actions</div>
+    <div class="approach-desc">
+      Workspace switching uses a command palette (⌘K). Role changes and member additions use contextual action menus. Feels native and keyboard-friendly. Scales well as features grow. Combines the speed of Approach A with the safety of Approach B.
+    </div>
+  </div>
+
+  <!-- #7: Workspace Switcher -->
+  <div class="feature-section">
+    <div class="feature-label">#7 — Workspace Switching</div>
+    <div class="feature-title">Command palette triggered from header</div>
+
+    <div class="header-bar">
+      <div class="header-left">
+        <div class="header-logo">I</div>
+        <div class="ws-trigger">
+          <div class="ws-item-icon" style="width:22px;height:22px;border-radius:5px;font-size:10px">A</div>
+          <span>Acme Corp</span>
+        </div>
+        <div class="cmd-trigger">
+          <span style="font-size:12px;color:var(--text-dim)">Switch workspace</span>
+          <kbd>⌘K</kbd>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-avatar">Y</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="cmd-palette">
+        <input class="cmd-input" placeholder="Switch workspace..." value="" readonly />
+        <div class="cmd-group-label">Workspaces</div>
+        <div class="cmd-item" style="background:var(--primary-bg)">
+          <div class="cmd-item-left">
+            <span class="cmd-item-icon">🏢</span>
+            <div>
+              <div style="font-weight:500">Acme Corp</div>
+              <div style="font-size:11px;color:var(--text-dim)">Owner · 5 members</div>
+            </div>
+          </div>
+          <span style="color:var(--primary);font-size:13px">✓ Active</span>
+        </div>
+        <div class="cmd-item">
+          <div class="cmd-item-left">
+            <span class="cmd-item-icon">🏢</span>
+            <div>
+              <div style="font-weight:500">Partner Labs</div>
+              <div style="font-size:11px;color:var(--text-dim)">Member · 12 members</div>
+            </div>
+          </div>
+          <span style="font-size:11px;color:var(--text-dim)">⏎ to switch</span>
+        </div>
+        <div style="border-top:1px solid var(--border);margin-top:4px">
+          <div class="cmd-item">
+            <div class="cmd-item-left">
+              <span class="cmd-item-icon">⚙</span>
+              <span>Workspace settings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hint mt-8">⌘K opens command palette. Type to filter. Arrow keys + Enter to switch. Also accessible via header click.</div>
+  </div>
+
+  <!-- #8: Promote/Demote -->
+  <div class="feature-section">
+    <div class="feature-label">#8 — Promote / Demote Members</div>
+    <div class="feature-title">Contextual action menu on role badge click</div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th style="width:60px"></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">Y</div><span style="font-weight:500">Yassine (you)</span></div></td>
+            <td><span class="email-text">yassine@acme.com</span></td>
+            <td><span class="badge-owner">Owner</span></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">A</div><span style="font-weight:500">Alice Martin</span></div></td>
+            <td><span class="email-text">alice@acme.com</span></td>
+            <td>
+              <div class="relative">
+                <span class="badge-member" style="cursor:pointer;border:1px solid var(--primary-border)">Member ▾</span>
+                <div class="ws-dropdown" style="min-width:240px;top:calc(100% + 4px);left:0">
+                  <div class="ws-item" style="font-size:12px">
+                    <div class="ws-item-left" style="gap:8px">
+                      <span style="width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--warning-bg);color:var(--warning);font-size:11px;font-weight:600">⇧</span>
+                      <div>
+                        <div style="font-weight:500">Promote to Owner</div>
+                        <div style="font-size:11px;color:var(--text-dim);margin-top:1px">Full admin on all projects</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ws-item current" style="font-size:12px">
+                    <div class="ws-item-left" style="gap:8px">
+                      <span style="width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;background:var(--blue-bg);color:var(--blue);font-size:11px;font-weight:600">—</span>
+                      <div>
+                        <div style="font-weight:500">Member</div>
+                        <div style="font-size:11px;color:var(--text-dim);margin-top:1px">Access assigned projects only</div>
+                      </div>
+                    </div>
+                    <span style="color:var(--primary);font-size:12px">✓</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td><button class="btn-ghost destructive">🗑</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hint">Click the role badge → contextual dropdown with descriptions. Selection triggers a confirmation toast (not modal).</div>
+  </div>
+
+  <!-- #2: Add Members to Project -->
+  <div class="feature-section">
+    <div class="feature-label">#2 — Add Members to Project</div>
+    <div class="feature-title">Inline search + add below members table</div>
+
+    <div class="project-card" style="border-radius: 10px 10px 0 0; margin-bottom: 0;">
+      <div class="project-left">
+        <div class="project-icon">⊞</div>
+        <div class="project-info">
+          <div class="project-name-row">
+            <span class="project-name">Production</span>
+            <span class="badge-default">Default</span>
+            <span class="member-count">👤 2</span>
+          </div>
+          <span class="project-desc">Main production environment</span>
+        </div>
+      </div>
+    </div>
+    <div class="members-panel">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th style="width:60px"></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="user-cell"><div class="avatar-sm">A</div><span style="font-weight:500">Alice Martin</span></div></td>
+            <td><span class="email-text">alice@acme.com</span></td>
+            <td><select class="role-select"><option>Admin</option><option selected>Contributor</option><option>Reader</option></select></td>
+            <td><button class="btn-ghost destructive">🗑</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px">
+        <input type="text" placeholder="Type to add a member..." style="flex:1;padding:7px 12px;background:var(--surface-3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;font-family:inherit" value="car" readonly />
+        <select class="role-select"><option>Contributor</option></select>
+      </div>
+      <div style="padding:0 16px 12px">
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <div class="add-member-row" style="padding:10px 14px;background:var(--surface-2)">
+            <div class="add-member-left">
+              <div class="avatar-sm" style="width:26px;height:26px;font-size:11px">C</div>
+              <div><span style="font-size:13px;font-weight:500">Carol Diaz</span> <span class="email-text" style="font-size:12px">carol@acme.com</span></div>
+            </div>
+            <span style="font-size:11px;color:var(--text-dim)">⏎ to add</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hint">Search-as-you-type input at the bottom of the members table. Results appear inline. Enter to add. No separate dialog.</div>
+  </div>
+
+  <!-- #10: Workspace Settings -->
+  <div class="feature-section">
+    <div class="feature-label">#10 — Workspace Settings</div>
+    <div class="feature-title">Settings tab with star for default + contextual leave</div>
+
+    <div class="max-w-700">
+      <div style="margin-bottom:16px">
+        <div style="font-size:16px;font-weight:600;margin-bottom:4px">Workspaces</div>
+        <div class="text-sm text-muted">Your workspace memberships. Star a workspace to make it your default on login.</div>
+      </div>
+
+      <div class="ws-card">
+        <div class="ws-card-left">
+          <button class="btn-ghost" style="color:var(--warning);font-size:18px" title="Default workspace">★</button>
+          <div class="ws-card-info">
+            <div class="ws-card-name">Acme Corp</div>
+            <div class="ws-card-meta"><span class="badge-owner" style="font-size:11px;padding:1px 6px">Owner</span> · 5 members · 3 projects</div>
+          </div>
+        </div>
+        <div class="ws-card-right">
+          <span style="font-size:12px;color:var(--success)">● Active</span>
+        </div>
+      </div>
+
+      <div class="ws-card">
+        <div class="ws-card-left">
+          <button class="btn-ghost" style="font-size:18px;color:var(--text-dim)" title="Set as default">☆</button>
+          <div class="ws-card-info">
+            <div class="ws-card-name">Partner Labs</div>
+            <div class="ws-card-meta"><span class="badge-member" style="font-size:11px;padding:1px 6px">Member</span> · 12 members · 7 projects</div>
+          </div>
+        </div>
+        <div class="ws-card-right">
+          <button class="btn-ghost destructive" style="font-size:13px;padding:6px 10px">Leave</button>
+        </div>
+      </div>
+    </div>
+    <div class="hint">Star icon for default toggle (☆/★). Minimal actions — just star and leave. Feels like a bookmark list.</div>
+  </div>
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.approach').forEach(el => el.classList.remove('visible'));
+  document.getElementById('approach-' + id).classList.add('visible');
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

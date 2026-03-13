@@ -32,7 +32,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import RedirectResponse
 
-from app.api.v1.deps import get_session
+from app.api.v1.deps import CurrentUser, get_current_user, get_session
 from app.api.v1.schemas.auth import LoginRequest, RegisterRequest
 from app.core.security import hash_password, verify_password
 from app.core.settings import get_settings
@@ -430,6 +430,48 @@ async def me(
         _set_session_cookie(response, payload)
 
     return {"session": payload}
+
+
+from pydantic import BaseModel as PydanticBaseModel
+
+
+class PreferencesUpdate(PydanticBaseModel):
+    default_workspace_id: str | None = None
+
+
+@router.patch("/preferences", summary="Update user preferences")
+async def update_preferences(
+    body: PreferencesUpdate,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    from app.infrastructure.db.models.membership import MembershipModel
+    from app.infrastructure.db.models.user import UserModel
+
+    user_model = await session.get(UserModel, UUID(user.user_id))
+    if not user_model:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if body.default_workspace_id is not None:
+        ws_id = UUID(body.default_workspace_id)
+        membership = await session.execute(
+            select(MembershipModel).where(
+                MembershipModel.user_id == UUID(user.user_id),
+                MembershipModel.workspace_id == ws_id,
+            )
+        )
+        if not membership.scalar_one_or_none():
+            raise HTTPException(
+                status_code=400, detail="Not a member of this workspace"
+            )
+        user_model.default_workspace_id = ws_id
+
+    await session.flush()
+    return {
+        "default_workspace_id": str(user_model.default_workspace_id)
+        if user_model.default_workspace_id
+        else None,
+    }
 
 
 @router.post(

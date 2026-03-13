@@ -5,6 +5,7 @@ import { fetchApplications, deleteApplication } from '../../services/application
 import type { ApplicationConfig } from '../../types/application.types';
 import CreateObservabilityModal from '../../components/applications/create-observability-modal/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Animations ──────────────────────────────────────────────────────────────
 
@@ -367,6 +368,7 @@ const SecretField: React.FC<{ value: string }> = ({ value }) => {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const ObservabilityPage: React.FC = () => {
+    const { selectedProjectId } = useProject();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -387,7 +389,7 @@ const ObservabilityPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 

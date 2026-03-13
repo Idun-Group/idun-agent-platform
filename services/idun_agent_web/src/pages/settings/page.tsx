@@ -17,6 +17,9 @@ const WorkspaceUsersTab = lazy(
 const WorkspaceProjectsTab = lazy(
     () => import('../../components/settings/workspace-projects/component'),
 );
+const WorkspaceListTab = lazy(
+    () => import('../../components/settings/workspace-list/component'),
+);
 
 const SettingsPage = () => {
     const { page } = useParams<{ page?: string }>();
@@ -67,10 +70,20 @@ const SettingsPage = () => {
                         </Suspense>
                     ),
                 },
+                {
+                    title: t('settings.workspaces.list.title', 'Workspaces'),
+                    slug: 'workspaces',
+                    group: t('settings.group.workspaces', 'Workspace'),
+                    content: (
+                        <Suspense fallback={<Loader />}>
+                            <WorkspaceListTab />
+                        </Suspense>
+                    ),
+                },
             ];
         }
 
-        // Non-owner project admins: only show projects tab
+        // Non-owner project admins: show projects + workspaces tabs
         return [
             {
                 title: t('settings.workspaces.projects', 'Projects'),
@@ -79,6 +92,16 @@ const SettingsPage = () => {
                 content: (
                     <Suspense fallback={<Loader />}>
                         <WorkspaceProjectsTab />
+                    </Suspense>
+                ),
+            },
+            {
+                title: t('settings.workspaces.list.title', 'Workspaces'),
+                slug: 'workspaces',
+                group: t('settings.group.account', 'Account'),
+                content: (
+                    <Suspense fallback={<Loader />}>
+                        <WorkspaceListTab />
                     </Suspense>
                 ),
             },

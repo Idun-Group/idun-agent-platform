@@ -10,6 +10,7 @@ import {
     listMembers,
     addMember,
     removeMember,
+    updateMember,
     cancelInvitation,
     WORKSPACE_ROLE_LABELS,
     WORKSPACE_ROLE_PERMISSIONS,
@@ -95,8 +96,21 @@ const WorkspaceUsersTab = () => {
             notify.success(t('settings.workspaces.users.memberAdded', 'Member added'));
             fetchMembers();
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to add member';
-            notify.error(msg);
+            const raw = err instanceof Error ? err.message : '';
+            // Parse backend JSON error to extract detail
+            let detail = '';
+            try {
+                const parsed = JSON.parse(raw);
+                detail = typeof parsed.detail === 'string' ? parsed.detail : '';
+            } catch {
+                detail = raw;
+            }
+            // Show friendly message for known errors
+            if (detail.toLowerCase().includes('already a member')) {
+                notify.error(t('settings.workspaces.users.alreadyInvited', 'This email has already been invited'));
+            } else {
+                notify.error(detail || t('settings.workspaces.users.addError', 'Failed to add member'));
+            }
         }
     };
 
@@ -110,6 +124,30 @@ const WorkspaceUsersTab = () => {
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Failed to cancel invitation';
             notify.error(msg);
+        }
+    };
+
+    const handleRoleChange = async (member: WorkspaceMember, isOwner: boolean) => {
+        const wsId = await resolveWorkspaceId();
+        if (!wsId) return;
+        try {
+            await updateMember(wsId, member.id, { is_owner: isOwner });
+            notify.success(
+                isOwner
+                    ? t('settings.workspaces.users.promoted', 'Member promoted to Owner')
+                    : t('settings.workspaces.users.demoted', 'Owner changed to Member'),
+            );
+            fetchMembers();
+        } catch (err: unknown) {
+            const raw = err instanceof Error ? err.message : '';
+            let detail = '';
+            try {
+                const parsed = JSON.parse(raw);
+                detail = typeof parsed.detail === 'string' ? parsed.detail : '';
+            } catch {
+                detail = raw;
+            }
+            notify.error(detail || t('settings.workspaces.users.roleChangeError', 'Failed to change role'));
         }
     };
 
@@ -163,6 +201,7 @@ const WorkspaceUsersTab = () => {
                                 currentMember={currentMember}
                                 canManage={canManage}
                                 onRemove={handleRemove}
+                                onRoleChange={handleRoleChange}
                             />
                         ))}
                         {invitations.map((inv) => (
@@ -211,6 +250,7 @@ type MemberRowProps = {
     currentMember?: WorkspaceMember;
     canManage: boolean;
     onRemove: (member: WorkspaceMember) => void;
+    onRoleChange: (member: WorkspaceMember, isOwner: boolean) => void;
 };
 
 const MemberRow = ({
@@ -218,18 +258,37 @@ const MemberRow = ({
     currentMember,
     canManage,
     onRemove,
+    onRoleChange,
 }: MemberRowProps) => {
     const { t } = useTranslation();
     const [showConfirm, setShowConfirm] = useState(false);
+    const [showRoleConfirm, setShowRoleConfirm] = useState<boolean | null>(null);
 
     const canRemove =
         canManage &&
         !member.is_owner &&
         member.user_id !== currentMember?.user_id;
 
+    const canChangeRole =
+        canManage &&
+        member.user_id !== currentMember?.user_id;
+
     const initials = (member.name ?? member.email ?? '?')
         .charAt(0)
         .toUpperCase();
+
+    const handleRoleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newIsOwner = e.target.value === 'owner';
+        if (newIsOwner === member.is_owner) return;
+        setShowRoleConfirm(newIsOwner);
+    };
+
+    const confirmRoleChange = () => {
+        if (showRoleConfirm !== null) {
+            onRoleChange(member, showRoleConfirm);
+            setShowRoleConfirm(null);
+        }
+    };
 
     return (
         <>
@@ -248,11 +307,21 @@ const MemberRow = ({
                     <EmailText>{member.email}</EmailText>
                 </Td>
                 <Td>
-                    <RoleBadge $isOwner={member.is_owner}>
-                        {member.is_owner
-                            ? WORKSPACE_ROLE_LABELS.owner
-                            : WORKSPACE_ROLE_LABELS.member}
-                    </RoleBadge>
+                    {canChangeRole ? (
+                        <WorkspaceRoleSelect
+                            value={member.is_owner ? 'owner' : 'member'}
+                            onChange={handleRoleSelect}
+                        >
+                            <option value="owner">{WORKSPACE_ROLE_LABELS.owner}</option>
+                            <option value="member">{WORKSPACE_ROLE_LABELS.member}</option>
+                        </WorkspaceRoleSelect>
+                    ) : (
+                        <RoleBadge $isOwner={member.is_owner}>
+                            {member.is_owner
+                                ? WORKSPACE_ROLE_LABELS.owner
+                                : WORKSPACE_ROLE_LABELS.member}
+                        </RoleBadge>
+                    )}
                 </Td>
                 {canManage && (
                     <Td style={{ textAlign: 'right' }}>
@@ -281,6 +350,35 @@ const MemberRow = ({
                         onRemove(member);
                     }}
                     onCancel={() => setShowConfirm(false)}
+                />
+            )}
+            {showRoleConfirm !== null && (
+                <ConfirmDialog
+                    title={
+                        showRoleConfirm
+                            ? t('settings.workspaces.users.promoteTitle', 'Promote to Owner?')
+                            : t('settings.workspaces.users.demoteTitle', 'Change to Member?')
+                    }
+                    message={
+                        showRoleConfirm
+                            ? t(
+                                  'settings.workspaces.users.promoteMessage',
+                                  '{{name}} will get full admin access to all projects. Their project-specific roles will be removed.',
+                                  { name: member.name || member.email },
+                              )
+                            : t(
+                                  'settings.workspaces.users.demoteMessage',
+                                  "{{name}} will lose owner privileges. They'll be assigned as admin on all existing projects to preserve access.",
+                                  { name: member.name || member.email },
+                              )
+                    }
+                    confirmLabel={
+                        showRoleConfirm
+                            ? t('settings.workspaces.users.promote', 'Promote to Owner')
+                            : t('settings.workspaces.users.demote', 'Change to Member')
+                    }
+                    onConfirm={confirmRoleChange}
+                    onCancel={() => setShowRoleConfirm(null)}
                 />
             )}
         </>
@@ -780,6 +878,31 @@ const RoleBadge = styled.span<{ $isOwner: boolean }>`
         $isOwner
             ? 'hsl(var(--warning))'
             : '#60a5fa'};
+`;
+
+const WorkspaceRoleSelect = styled.select`
+    padding: 5px 28px 5px 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--overlay-subtle);
+    color: hsl(var(--foreground));
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23826F95' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+
+    &:focus {
+        outline: none;
+        border-color: hsl(var(--primary));
+    }
+
+    option {
+        background: hsl(var(--popover));
+        color: hsl(var(--foreground));
+    }
 `;
 
 const PendingBadge = styled.span`

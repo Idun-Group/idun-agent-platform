@@ -640,7 +640,9 @@
         "back_to_dashboard": "Retour au tableau de bord",
         "group": {
             "preferences": "Préférences",
-            "workspaces": "Espaces de travail"
+            "workspaces": "Espaces de travail",
+            "projectSettings": "Paramètres du projet",
+            "account": "Compte"
         },
         "preferences": {
             "general": "Général",
@@ -685,7 +687,30 @@
             "users.pending": "En attente",
             "users.invitationCancelled": "Invitation annulée",
             "users.cancelInvitation": "Annuler l'invitation",
-            "users.alreadyInvited": "Cet e-mail a déjà été invité"
+            "users.alreadyInvited": "Cet e-mail a déjà été invité",
+            "users.promoted": "Membre promu Propriétaire",
+            "users.demoted": "Propriétaire rétrogradé en Membre",
+            "users.roleChangeError": "Échec du changement de rôle",
+            "users.promoteTitle": "Promouvoir en Propriétaire ?",
+            "users.demoteTitle": "Rétrograder en Membre ?",
+            "users.promoteMessage": "{{name}} aura un accès administrateur complet à tous les projets. Ses rôles spécifiques aux projets seront supprimés.",
+            "users.demoteMessage": "{{name}} perdra les privilèges de propriétaire. Il sera assigné comme administrateur sur tous les projets existants pour conserver l'accès.",
+            "users.promote": "Promouvoir en Propriétaire",
+            "users.demote": "Rétrograder en Membre",
+            "list.title": "Espaces de travail",
+            "list.description": "Gérez vos adhésions aux espaces de travail et définissez votre espace par défaut.",
+            "list.default": "Par défaut",
+            "list.active": "Actif",
+            "list.setDefault": "Définir par défaut",
+            "list.leave": "Quitter",
+            "list.leaveTitle": "Quitter {{name}} ?",
+            "list.leaveMessage": "Vous perdrez l'accès à tous les projets et ressources de cet espace de travail. Vous devrez être réinvité pour y accéder à nouveau.",
+            "list.confirmLeave": "Quitter l'espace",
+            "list.defaultSet": "Espace de travail par défaut mis à jour",
+            "list.defaultError": "Échec de la définition par défaut",
+            "list.left": "Vous avez quitté l'espace de travail",
+            "list.leaveError": "Échec de la sortie de l'espace de travail",
+            "list.fetchError": "Échec du chargement des espaces de travail"
         },
         "profile": {
             "title": "Profil",

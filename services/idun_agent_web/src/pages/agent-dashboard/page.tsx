@@ -8,6 +8,7 @@ import type { BackendAgent } from '../../services/agents';
 import { listAgents, deleteAgent } from '../../services/agents';
 import AgentCard from '../../components/dashboard/agents/agent-card/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Animations ───────────────────────────────────────────────────────────────
 
@@ -26,12 +27,14 @@ const spin = keyframes`
 const AgentDashboardPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { selectedProjectId } = useProject();
 
     const [agents, setAgents] = useState<BackendAgent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [agentToDelete, setAgentToDelete] = useState<BackendAgent | null>(null);
 
+    // Re-fetch agents whenever the selected project changes
     useEffect(() => {
         setIsLoading(true);
         listAgents()
@@ -41,7 +44,7 @@ const AgentDashboardPage = () => {
                 notify.error(message);
             })
             .finally(() => setIsLoading(false));
-    }, []);
+    }, [selectedProjectId]);
 
     const filteredAgents = useMemo(() => {
         if (!searchTerm) return agents;

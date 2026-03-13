@@ -200,3 +200,7 @@ poetry.lock
 
 # Editor / tool artifacts
 .specstory/
+.superpowers/
+.claude/worktrees/
+
+docs/superpowers/

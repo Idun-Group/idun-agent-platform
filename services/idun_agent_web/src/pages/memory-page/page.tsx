@@ -17,8 +17,10 @@ import { fetchApplications, deleteApplication } from '../../services/application
 import type { ApplicationConfig } from '../../types/application.types';
 import { notify } from '../../components/toast/notify';
 import { Loader } from 'lucide-react';
+import { useProject } from '../../hooks/use-project';
 
 const MemoryPage = () => {
+  const { selectedProjectId } = useProject();
   const [memories, setMemories] = useState<ApplicationConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,7 +45,7 @@ const MemoryPage = () => {
 
   useEffect(() => {
       loadMemories();
-  }, []);
+  }, [selectedProjectId]);
 
   // Group memories by framework
   const groupedMemories = useMemo(() => {

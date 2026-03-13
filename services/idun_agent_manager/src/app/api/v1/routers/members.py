@@ -655,6 +655,72 @@ async def update_member(
     )
 
 
+@router.post(
+    "/{workspace_id}/leave",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Leave a workspace (self-removal)",
+)
+async def leave_workspace(
+    workspace_id: UUID,
+    session: AsyncSession = Depends(get_session),
+    user: CurrentUser = Depends(get_current_user),
+) -> None:
+    """Leave a workspace voluntarily.
+
+    Non-owners can leave at any time. Sole owners cannot leave
+    (must transfer ownership first). Deletes project memberships
+    within the workspace and clears default_workspace_id if needed.
+    """
+    # Find the user's own membership
+    result = await session.execute(
+        select(MembershipModel).where(
+            MembershipModel.workspace_id == workspace_id,
+            MembershipModel.user_id == UUID(user.user_id),
+        )
+    )
+    membership = result.scalar_one_or_none()
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not a member of this workspace",
+        )
+
+    # Prevent sole owner from leaving
+    await _ensure_not_last_owner(workspace_id, membership.id, session)
+
+    # Delete project memberships for this user within the workspace
+    await session.execute(
+        delete(ProjectMembershipModel).where(
+            ProjectMembershipModel.user_id == UUID(user.user_id),
+            ProjectMembershipModel.project_id.in_(
+                select(ProjectModel.id).where(
+                    ProjectModel.workspace_id == workspace_id
+                )
+            ),
+        )
+    )
+
+    # Delete the membership
+    await session.delete(membership)
+
+    # Clear default_workspace_id if it was this workspace
+    user_model = await session.get(UserModel, UUID(user.user_id))
+    if user_model and user_model.default_workspace_id == workspace_id:
+        user_model.default_workspace_id = None
+
+    # Increment session version to invalidate active sessions
+    if user_model:
+        user_model.session_version = (user_model.session_version or 0) + 1
+
+    await session.flush()
+
+    logger.info(
+        "User %s left workspace %s",
+        user.user_id,
+        workspace_id,
+    )
+
+
 @router.delete(
     "/{workspace_id}/invitations/{invitation_id}",
     status_code=status.HTTP_204_NO_CONTENT,

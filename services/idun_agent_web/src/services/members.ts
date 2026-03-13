@@ -1,4 +1,4 @@
-import { deleteRequest, getJson, postJson } from '../utils/api';
+import { deleteRequest, getJson, patchJson, postJson } from '../utils/api';
 
 export type WorkspaceMember = {
     id: string;
@@ -59,6 +59,23 @@ export async function removeMember(
     membershipId: string,
 ): Promise<void> {
     await deleteRequest(`/api/v1/workspaces/${workspaceId}/members/${membershipId}`);
+}
+
+export async function updateMember(
+    workspaceId: string,
+    membershipId: string,
+    body: { is_owner: boolean },
+): Promise<WorkspaceMember> {
+    return patchJson<WorkspaceMember>(
+        `/api/v1/workspaces/${workspaceId}/members/${membershipId}`,
+        body,
+    );
+}
+
+export async function leaveWorkspace(
+    workspaceId: string,
+): Promise<void> {
+    await postJson(`/api/v1/workspaces/${workspaceId}/leave`, {});
 }
 
 export async function cancelInvitation(

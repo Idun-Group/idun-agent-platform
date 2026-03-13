@@ -3,13 +3,12 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '../../hooks/use-project';
 import { useAuth } from '../../hooks/use-auth';
-import { Search } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import ProjectPickerDropdown from '../../components/project-picker/component';
+import WorkspaceSwitcher from '../../components/workspace-switcher/component';
+import GlobalSearch from '../../components/global-search/component';
 
 const Header = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
     const { refreshProjects } = useProject();
     const { session, isLoading: isAuthLoading } = useAuth();
 
@@ -20,20 +19,17 @@ const Header = () => {
 
     return (
         <HeaderContainer>
-            {/* Left: Logo */}
+            {/* Left: Logo + workspace switcher */}
             <LeftZone>
                 <Title onClick={() => navigate('/agents')} style={{ cursor: 'pointer' }}>
                     <Logo src="/img/logo/favicon.svg" alt="Idun Logo" /> Idun Platform
                 </Title>
+                {session && <WorkspaceSwitcher />}
             </LeftZone>
 
-            {/* Center: Search placeholder */}
+            {/* Center: Global search */}
             <CenterZone>
-                <SearchPlaceholder>
-                    <Search size={14} color="hsl(var(--muted-foreground) / 0.6)" />
-                    <SearchText>{t('header.search', 'Search...')}</SearchText>
-                    <KbdHint>⌘K</KbdHint>
-                </SearchPlaceholder>
+                <GlobalSearch />
             </CenterZone>
 
             {/* Right: Project picker */}
@@ -70,6 +66,7 @@ const HeaderContainer = styled.header`
 const LeftZone = styled.div`
     display: flex;
     align-items: center;
+    gap: 12px;
     min-width: 160px;
 `;
 
@@ -98,30 +95,4 @@ const Title = styled.h1`
     margin: 0;
     font-weight: 600;
     letter-spacing: -0.01em;
-`;
-
-const SearchPlaceholder = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-light);
-    border-radius: 9px;
-    cursor: default;
-`;
-
-const SearchText = styled.span`
-    color: hsl(var(--muted-foreground) / 0.5);
-    font-size: 13px;
-`;
-
-const KbdHint = styled.span`
-    margin-left: auto;
-    color: hsl(var(--muted-foreground) / 0.3);
-    font-size: 11px;
-    border: 1px solid var(--border-light);
-    padding: 2px 7px;
-    border-radius: 4px;
-    font-family: monospace;
 `;

@@ -6,6 +6,7 @@ import type { MCPTool } from '../../services/applications';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import type { ApplicationConfig } from '../../types/application.types';
 import CreateMcpModal from '../../components/applications/create-mcp-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Animations ────────────────────────────────────────────────────────────────
 
@@ -487,6 +488,7 @@ const SecretField: React.FC<{ value: string }> = ({ value }) => {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const MCPPage: React.FC = () => {
+    const { selectedProjectId } = useProject();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -521,7 +523,7 @@ const MCPPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 

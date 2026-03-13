@@ -5,6 +5,7 @@ import { useAuth } from './use-auth';
 export type Project = {
     id: string;
     name: string;
+    description?: string | null;
     slug: string;
     is_default: boolean;
     workspace_id: string;
@@ -24,6 +25,12 @@ type ProjectMemberListResponse = {
     total: number;
 };
 
+export type CreateProjectInput = {
+    name: string;
+    description?: string;
+    members?: { user_id: string; role: ProjectRole }[];
+};
+
 interface ProjectContextValue {
     selectedProjectId: string | null;
     setSelectedProjectId: (id: string | null) => void;
@@ -33,8 +40,8 @@ interface ProjectContextValue {
     isProjectDataLoaded: boolean;
     canAccessSettings: boolean;
     refreshProjects: () => Promise<void>;
-    createProject: (name: string) => Promise<Project>;
-    updateProject: (id: string, name: string) => Promise<Project>;
+    createProject: (input: CreateProjectInput) => Promise<Project>;
+    updateProject: (id: string, data: { name?: string; description?: string | null }) => Promise<Project>;
     deleteProject: (id: string) => Promise<void>;
 }
 
@@ -120,14 +127,28 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
-    const createProject = useCallback(async (name: string): Promise<Project> => {
-        const project = await postJson<Project>('/api/v1/projects/', { name });
+    const createProject = useCallback(async (input: CreateProjectInput): Promise<Project> => {
+        const project = await postJson<Project>('/api/v1/projects/', {
+            name: input.name,
+            description: input.description ?? null,
+        });
+        // Add selected members to the project
+        if (input.members && input.members.length > 0) {
+            await Promise.all(
+                input.members.map((m) =>
+                    postJson(`/api/v1/projects/${project.id}/members`, {
+                        user_id: m.user_id,
+                        role: m.role,
+                    }),
+                ),
+            );
+        }
         await refreshProjects();
         return project;
     }, [refreshProjects]);
 
-    const updateProject = useCallback(async (id: string, name: string): Promise<Project> => {
-        const project = await patchJson<Project>(`/api/v1/projects/${id}`, { name });
+    const updateProject = useCallback(async (id: string, data: { name?: string; description?: string | null }): Promise<Project> => {
+        const project = await patchJson<Project>(`/api/v1/projects/${id}`, data);
         await refreshProjects();
         return project;
     }, [refreshProjects]);

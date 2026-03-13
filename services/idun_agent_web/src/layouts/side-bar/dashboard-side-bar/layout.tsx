@@ -160,7 +160,7 @@ const SideBar = ({}: SideBarProps) => {
                         See the latest releases and help grow the community on GitHub
                     </GithubDesc>
                     <GithubLink
-                        href="https://github.com/idun-corp/idun-agent-platform"
+                        href="https://github.com/Idun-Group/idun-agent-platform/"
                         target="_blank"
                         rel="noopener noreferrer"
                     >

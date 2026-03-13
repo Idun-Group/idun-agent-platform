@@ -52,6 +52,7 @@ logger = logging.getLogger(__name__)
 class ProjectRead(BaseModel):
     id: str
     name: str
+    description: str | None = None
     slug: str
     is_default: bool
     workspace_id: str
@@ -63,10 +64,12 @@ class ProjectRead(BaseModel):
 
 class ProjectCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=1000)
 
 
 class ProjectPatch(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=1000)
 
 
 class ResourceAssignment(BaseModel):
@@ -131,6 +134,7 @@ def _model_to_schema(model: ProjectModel) -> ProjectRead:
     return ProjectRead(
         id=str(model.id),
         name=model.name,
+        description=model.description,
         slug=model.slug,
         is_default=model.is_default,
         workspace_id=str(model.workspace_id),
@@ -284,6 +288,7 @@ async def create_project(
     project = ProjectModel(
         id=project_id,
         name=request.name,
+        description=request.description,
         slug=f"proj-{project_id.hex[:8]}",
         is_default=False,
         workspace_id=workspace_id,
@@ -332,6 +337,8 @@ async def patch_project(
 
     if request.name is not None:
         model.name = request.name
+    if request.description is not None:
+        model.description = request.description
     model.updated_at = datetime.now(UTC)
 
     await session.flush()

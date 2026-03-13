@@ -650,7 +650,8 @@
         "group": {
             "preferences": "Preferences",
             "workspaces": "Workspace",
-            "projectSettings": "Project Settings"
+            "projectSettings": "Project Settings",
+            "account": "Account"
         },
         "preferences": {
             "general": "General",
@@ -696,7 +697,30 @@
             "users.pending": "Pending",
             "users.invitationCancelled": "Invitation cancelled",
             "users.cancelInvitation": "Cancel invitation",
-            "users.alreadyInvited": "This email has already been invited"
+            "users.alreadyInvited": "This email has already been invited",
+            "users.promoted": "Member promoted to Owner",
+            "users.demoted": "Owner changed to Member",
+            "users.roleChangeError": "Failed to change role",
+            "users.promoteTitle": "Promote to Owner?",
+            "users.demoteTitle": "Change to Member?",
+            "users.promoteMessage": "{{name}} will get full admin access to all projects. Their project-specific roles will be removed.",
+            "users.demoteMessage": "{{name}} will lose owner privileges. They'll be assigned as admin on all existing projects to preserve access.",
+            "users.promote": "Promote to Owner",
+            "users.demote": "Change to Member",
+            "list.title": "Workspaces",
+            "list.description": "Manage your workspace memberships and set your default.",
+            "list.default": "Default",
+            "list.active": "Active",
+            "list.setDefault": "Set as default",
+            "list.leave": "Leave",
+            "list.leaveTitle": "Leave {{name}}?",
+            "list.leaveMessage": "You'll lose access to all projects and resources in this workspace. You'll need to be re-invited to rejoin.",
+            "list.confirmLeave": "Leave workspace",
+            "list.defaultSet": "Default workspace updated",
+            "list.defaultError": "Failed to set default",
+            "list.left": "You left the workspace",
+            "list.leaveError": "Failed to leave workspace",
+            "list.fetchError": "Failed to load workspaces"
         },
         "projects": {
             "title": "Projects",

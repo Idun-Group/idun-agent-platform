@@ -122,6 +122,7 @@ def setup_routes(app: FastAPI) -> None:
     from app.api.v1.routers.memory import router as memory_router
     from app.api.v1.routers.observability import router as observability_router
     from app.api.v1.routers.projects import router as projects_router
+    from app.api.v1.routers.search import router as search_router
     from app.api.v1.routers.sso import router as sso_router
     from app.api.v1.routers.workspaces import router as workspaces_router
 
@@ -190,6 +191,11 @@ def setup_routes(app: FastAPI) -> None:
         members_router,
         prefix="/api/v1/workspaces",
         tags=["Workspace Members"],
+    )
+    app.include_router(
+        search_router,
+        prefix="/api/v1/search",
+        tags=["Search"],
     )
 
 

@@ -59,6 +59,9 @@ dependencies = [
 # Avoid installing the current project as a package during sync
 package = false
 
+[tool.uv.sources]
+idun-agent-schema = { path = "../../libs/idun_agent_schema", editable = true }
+
 [dependency-groups]
 dev = [
   # Testing

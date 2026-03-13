@@ -377,3 +377,40 @@ class TestWorkspaceOnboardingFlow:
         # 5. Agents endpoint should now work (no 400)
         agents_resp = await client.get("/api/v1/agents/")
         assert agents_resp.status_code != 400
+
+
+# ---------------------------------------------------------------------------
+# Preferences
+# ---------------------------------------------------------------------------
+
+
+class TestPreferences:
+    async def test_set_default_workspace(self, client: AsyncClient):
+        await _signup(client, "prefs@test.com", "password123", "Prefs User")
+        ws_resp = await _create_workspace(client, "Prefs WS")
+        assert ws_resp.status_code == 201, ws_resp.text
+        ws_id = ws_resp.json()["id"]
+
+        # Create a second workspace so we can change the default
+        ws2_resp = await _create_workspace(client, "Prefs WS 2")
+        assert ws2_resp.status_code == 201
+        ws2_id = ws2_resp.json()["id"]
+
+        resp = await client.patch(
+            "/api/v1/auth/preferences",
+            json={"default_workspace_id": ws2_id},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["default_workspace_id"] == ws2_id
+
+        # Verify persisted via /me
+        me = await client.get("/api/v1/auth/me")
+        assert me.json()["session"]["principal"]["default_workspace_id"] == ws2_id
+
+    async def test_set_default_workspace_non_member_rejected(self, client: AsyncClient):
+        await _signup(client, "prefs2@test.com", "password123", "User")
+        resp = await client.patch(
+            "/api/v1/auth/preferences",
+            json={"default_workspace_id": "00000000-0000-0000-0000-000000000001"},
+        )
+        assert resp.status_code in (400, 404)
