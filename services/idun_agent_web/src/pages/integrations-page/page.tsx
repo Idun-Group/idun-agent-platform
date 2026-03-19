@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { BookOpen, GitPullRequest } from 'lucide-react';
 import { fetchIntegrations, deleteIntegration } from '../../services/integrations';
 import type { ManagedIntegration } from '../../services/integrations';
 import CreateIntegrationModal from '../../components/applications/create-integration-modal/component';
@@ -85,6 +86,8 @@ const PROVIDER_ICONS: Record<string, React.FC> = {
     GOOGLE_CHAT: GoogleChatIcon,
 };
 
+const PROVIDER_GROUPS = ['Messaging', 'Coming Soon'];
+
 // ── Animations ────────────────────────────────────────────────────────────────
 
 const fadeIn = keyframes`from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); }`;
@@ -99,7 +102,7 @@ const PageWrapper = styled.div`
     padding: 32px;
     gap: 24px;
     animation: ${fadeIn} 0.3s ease;
-    overflow-y: auto;
+    overflow: hidden;
 `;
 
 const PageHeader = styled.div`
@@ -108,6 +111,7 @@ const PageHeader = styled.div`
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
+    flex-shrink: 0;
 `;
 
 const TitleBlock = styled.div``;
@@ -131,76 +135,244 @@ const HeaderActions = styled.div`
     gap: 12px;
 `;
 
-const SearchBar = styled.div`
+const DocsButton = styled.a`
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    padding: 0 14px;
+    height: 38px;
     background: var(--overlay-light);
     border: 1px solid var(--border-light);
     border-radius: 10px;
-    padding: 0 14px;
-    height: 38px;
-`;
-
-const SearchInput = styled.input`
-    background: transparent;
-    border: none;
-    outline: none;
-    color: hsl(var(--foreground));
-    font-size: 14px;
-    width: 180px;
-
-    &::placeholder { color: hsl(var(--muted-foreground)); }
-`;
-
-const AddButton = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 18px;
-    height: 38px;
-    background: hsl(var(--primary));
-    border: none;
-    border-radius: 10px;
-    color: hsl(var(--foreground));
-    font-size: 14px;
-    font-weight: 600;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
-    transition: opacity 0.15s;
+    text-decoration: none;
+    transition: all 0.15s;
     white-space: nowrap;
 
-    &:hover { opacity: 0.88; }
+    &:hover {
+        color: hsl(var(--foreground));
+        border-color: var(--border-medium);
+        background: var(--overlay-medium);
+    }
 `;
 
-// ── Section ──────────────────────────────────────────────────────────────────
+// ── Two-column layout ─────────────────────────────────────────────────────────
 
-const SectionTitle = styled.h2`
-    font-size: 14px;
+const MainLayout = styled.div`
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 0;
+`;
+
+// ── Left column: provider picker ──────────────────────────────────────────────
+
+const ProviderColumn = styled.div`
+    width: 260px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-subtle);
+    padding-right: 24px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+`;
+
+const GroupLabel = styled.p`
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: hsl(var(--text-tertiary));
+    margin: 20px 0 8px 10px;
+
+    &:first-child { margin-top: 0; }
+`;
+
+const ProviderBtn = styled.button<{ $disabled?: boolean }>`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--text-secondary))'};
+    font-size: 13px;
+    font-weight: 400;
+    cursor: ${p => p.$disabled ? 'default' : 'pointer'};
+    opacity: ${p => p.$disabled ? 0.5 : 1};
+    transition: all 0.15s ease;
+    text-align: left;
+    margin-bottom: 2px;
+
+    &:hover {
+        background: ${p => p.$disabled ? 'transparent' : 'var(--overlay-light)'};
+        color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))'};
+    }
+`;
+
+const ProviderIconBox = styled.div<{ $color: string }>`
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: ${p => `${p.$color}15`};
+    color: ${p => p.$color};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+`;
+
+const ProviderIconBoxSmall = styled.div<{ $color: string }>`
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: ${p => `${p.$color}15`};
+    color: ${p => p.$color};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    svg {
+        width: 15px;
+        height: 15px;
+    }
+`;
+
+const AddIndicator = styled.span`
+    margin-left: auto;
+    font-size: 16px;
+    color: hsl(var(--muted-foreground));
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+
+    ${ProviderBtn}:hover & {
+        opacity: 1;
+    }
+`;
+
+const ComingSoonBadge = styled.span`
+    font-size: 9px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: var(--overlay-light);
     color: hsl(var(--muted-foreground));
-    margin: 8px 0 12px;
+    margin-left: auto;
+    flex-shrink: 0;
 `;
 
-// ── Grid ─────────────────────────────────────────────────────────────────────
+const RequestBtn = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px dashed var(--border-light);
+    background: transparent;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    margin-top: 16px;
 
-const Grid = styled.div`
+    &:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        color: hsl(var(--foreground));
+        background: hsl(var(--primary) / 0.04);
+    }
+`;
+
+const RequestIcon = styled.span`
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: hsl(var(--primary));
+`;
+
+// ── Right column: configs + empty state ───────────────────────────────────────
+
+const ContentColumn = styled.div`
+    flex: 1;
+    padding-left: 28px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+`;
+
+const EmptyState = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 20px;
+    gap: 16px;
+`;
+
+const EmptyTitle = styled.h3`
+    font-size: 16px;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin: 0;
+`;
+
+const EmptyDescription = styled.p`
+    font-size: 13px;
+    line-height: 1.7;
+    color: hsl(var(--text-secondary));
+    margin: 0;
+    max-width: 420px;
+`;
+
+const EmptyChips = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+`;
+
+const Chip = styled.span<{ $color: string }>`
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    background: ${p => `${p.$color}14`};
+    color: ${p => p.$color};
+    border: 1px solid ${p => `${p.$color}20`};
+    letter-spacing: 0.02em;
+`;
+
+// ── Config cards ──────────────────────────────────────────────────────────────
+
+const CardsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
 `;
-
-// ── Cards ─────────────────────────────────────────────────────────────────────
 
 const Card = styled.div<{ $borderColor?: string }>`
     background: hsl(var(--surface-elevated));
     border: 1px solid ${p => p.$borderColor ? `${p.$borderColor}20` : 'var(--border-subtle)'};
-    border-radius: 16px;
-    padding: 24px;
+    border-radius: 14px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     transition: border-color 0.2s;
 
     &:hover { border-color: ${p => p.$borderColor ? `${p.$borderColor}50` : 'hsl(var(--primary) / 0.3)'}; }
@@ -218,41 +390,29 @@ const ProviderInfo = styled.div`
     gap: 12px;
 `;
 
-const ProviderIconBox = styled.div<{ $color: string }>`
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: ${p => `${p.$color}15`};
-    color: ${p => p.$color};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-`;
-
 const ProviderName = styled.div``;
 
 const ProviderTitle = styled.p`
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const ProviderType = styled.p`
-    font-size: 12px;
+    font-size: 11px;
     color: hsl(var(--muted-foreground));
     margin: 2px 0 0;
 `;
 
 const StatusBadge = styled.span<{ $active: boolean }>`
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 20px;
-    background: ${p => p.$active ? 'hsl(var(--success) / 0.15)' : 'var(--border-subtle)'};
-    color: ${p => p.$active ? 'hsl(var(--success))' : 'hsl(var(--muted-foreground))'};
-    border: 1px solid ${p => p.$active ? 'hsl(var(--success) / 0.3)' : 'transparent'};
+    background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'var(--border-subtle)'};
+    color: ${p => p.$active ? '#34d399' : '#888'};
+    border: 1px solid ${p => p.$active ? 'rgba(52, 211, 153, 0.3)' : 'transparent'};
 `;
 
 const Divider = styled.hr`
@@ -264,7 +424,7 @@ const Divider = styled.hr`
 const ConfigList = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
 `;
 
 const ConfigRow = styled.div`
@@ -287,128 +447,49 @@ const ConfigValue = styled.span`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 180px;
+    max-width: 160px;
 `;
 
 const AgentCountBadge = styled.span`
     font-size: 11px;
     color: hsl(var(--muted-foreground));
-    display: flex;
-    align-items: center;
-    gap: 4px;
 `;
 
 const CardActions = styled.div`
     display: flex;
-    gap: 10px;
+    gap: 8px;
     margin-top: auto;
 `;
 
 const EditBtn = styled.button`
     flex: 1;
-    padding: 8px;
+    padding: 7px;
     background: var(--border-subtle);
     border: 1px solid var(--border-light);
     border-radius: 8px;
     color: hsl(var(--foreground));
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-
     &:hover { background: var(--overlay-medium); }
 `;
 
 const DeleteBtn = styled.button`
     flex: 1;
-    padding: 8px;
-    background: hsl(var(--destructive) / 0.08);
-    border: 1px solid hsl(var(--destructive) / 0.2);
+    padding: 7px;
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.2);
     border-radius: 8px;
-    color: hsl(var(--destructive));
-    font-size: 13px;
+    color: #f87171;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-
-    &:hover { background: hsl(var(--destructive) / 0.18); }
+    &:hover { background: rgba(248, 113, 113, 0.18); }
 `;
 
-// ── Coming Soon Cards ────────────────────────────────────────────────────────
-
-const ComingSoonCard = styled.div<{ $color: string }>`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--overlay-subtle);
-    border-radius: 16px;
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    opacity: 0.5;
-    position: relative;
-    overflow: hidden;
-`;
-
-const ComingSoonBadge = styled.span`
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
-    border-radius: 6px;
-    background: var(--border-light);
-    color: hsl(var(--muted-foreground));
-    margin-left: auto;
-    flex-shrink: 0;
-`;
-
-const ComingSoonName = styled.p`
-    font-size: 14px;
-    font-weight: 600;
-    color: hsl(var(--muted-foreground));
-    margin: 0;
-`;
-
-// ── Add Card ──────────────────────────────────────────────────────────────────
-
-const AddCard = styled.button`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    background: transparent;
-    border: 2px dashed var(--border-light);
-    border-radius: 16px;
-    padding: 40px 24px;
-    cursor: pointer;
-    transition: all 0.2s;
-    min-height: 200px;
-
-    &:hover {
-        border-color: hsl(var(--primary));
-        background: hsl(var(--primary) / 0.05);
-
-        span { color: hsl(var(--primary)); }
-        p { color: hsl(var(--foreground)); }
-    }
-`;
-
-const AddIcon = styled.span`
-    font-size: 32px;
-    color: var(--overlay-strong);
-    transition: color 0.2s;
-`;
-
-const AddLabel = styled.p`
-    font-size: 14px;
-    font-weight: 500;
-    color: hsl(var(--muted-foreground));
-    margin: 0;
-    transition: color 0.2s;
-`;
-
-// ── Empty / Loading ────────────────────────────────────────────────────────────
+// ── Loading ───────────────────────────────────────────────────────────────────
 
 const CenterBox = styled.div`
     display: flex;
@@ -443,7 +524,6 @@ const IntegrationsPage: React.FC = () => {
     const { t } = useTranslation();
     const [configs, setConfigs] = useState<ManagedIntegration[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalProvider, setModalProvider] = useState<IntegrationProvider>('WHATSAPP');
     const [configToEdit, setConfigToEdit] = useState<ManagedIntegration | null>(null);
@@ -474,12 +554,7 @@ const IntegrationsPage: React.FC = () => {
         loadConfigs();
     };
 
-    const filtered = configs.filter(c =>
-        !searchTerm ||
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.integration.provider.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
+    const availableProviders = Object.entries(PROVIDERS).filter(([, meta]) => !meta.comingSoon);
     const comingSoonProviders = Object.entries(PROVIDERS).filter(([, meta]) => meta.comingSoon);
 
     return (
@@ -490,29 +565,74 @@ const IntegrationsPage: React.FC = () => {
                     <PageSubtitle>{t('integrations.subtitle', 'Connect external messaging platforms to your agents')}</PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
-                    <SearchBar>
-                        <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 14 }}>🔍</span>
-                        <SearchInput
-                            placeholder={t('integrations.search', 'Search integrations...')}
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
-                    </SearchBar>
-{/* Add buttons are per-provider cards in the grid below */}
+                    <DocsButton href="https://idun-group.github.io/idun-agent-platform/integrations/overview/" target="_blank" rel="noopener noreferrer">
+                        <BookOpen size={15} /> Docs
+                    </DocsButton>
                 </HeaderActions>
             </PageHeader>
 
-            {isLoading ? (
-                <CenterBox>
-                    <LoadingSpinner />
-                    <p>{t('integrations.loading', 'Loading integrations…')}</p>
-                </CenterBox>
-            ) : (
-                <>
-                    <div>
-                        <SectionTitle>{t('integrations.active', 'Active Integrations')}</SectionTitle>
-                        <Grid>
-                            {filtered.map(config => {
+            <MainLayout>
+                {/* ── Left: Provider picker ──────────────────────── */}
+                <ProviderColumn>
+                    {PROVIDER_GROUPS.map(group => {
+                        const providers = group === 'Messaging' ? availableProviders : comingSoonProviders;
+                        if (providers.length === 0) return null;
+                        return (
+                            <React.Fragment key={group}>
+                                <GroupLabel>{group}</GroupLabel>
+                                {providers.map(([key, meta]) => {
+                                    const Icon = PROVIDER_ICONS[key];
+                                    const isDisabled = !!meta.comingSoon;
+                                    return (
+                                        <ProviderBtn
+                                            key={key}
+                                            type="button"
+                                            $disabled={isDisabled}
+                                            onClick={() => { if (!isDisabled) openCreate(key as IntegrationProvider); }}
+                                        >
+                                            <ProviderIconBoxSmall $color={meta.color}>
+                                                {Icon ? <Icon /> : <span>+</span>}
+                                            </ProviderIconBoxSmall>
+                                            {meta.label}
+                                            {isDisabled ? <ComingSoonBadge>Soon</ComingSoonBadge> : <AddIndicator>+</AddIndicator>}
+                                        </ProviderBtn>
+                                    );
+                                })}
+                            </React.Fragment>
+                        );
+                    })}
+
+                    <RequestBtn
+                        type="button"
+                        onClick={() => window.open('https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=enhancement&template=feature_request.md&title=%5BIntegrations%5D+New+integration+request', '_blank')}
+                    >
+                        <RequestIcon><GitPullRequest size={15} /></RequestIcon>
+                        Request an integration
+                    </RequestBtn>
+                </ProviderColumn>
+
+                {/* ── Right: Configured integrations ────────────────── */}
+                <ContentColumn>
+                    {isLoading ? (
+                        <CenterBox>
+                            <LoadingSpinner />
+                            <p>{t('integrations.loading', 'Loading integrations...')}</p>
+                        </CenterBox>
+                    ) : configs.length === 0 ? (
+                        <EmptyState>
+                            <EmptyTitle>{t('integrations.emptyTitle', 'Connect a messaging platform to get started')}</EmptyTitle>
+                            <EmptyDescription>
+                                {t('integrations.emptyDescription', 'Bridge your AI agents to messaging platforms. Idun handles webhooks, message routing, and bidirectional communication so your agents can interact with users on any channel.')}
+                            </EmptyDescription>
+                            <EmptyChips>
+                                {availableProviders.map(([key, meta]) => (
+                                    <Chip key={key} $color={meta.color}>{meta.label}</Chip>
+                                ))}
+                            </EmptyChips>
+                        </EmptyState>
+                    ) : (
+                        <CardsGrid>
+                            {configs.map(config => {
                                 const provider = config.integration.provider;
                                 const meta = PROVIDERS[provider] ?? { label: provider, color: 'hsl(var(--primary))' };
                                 const Icon = PROVIDER_ICONS[provider];
@@ -522,7 +642,7 @@ const IntegrationsPage: React.FC = () => {
                                         <CardHeader>
                                             <ProviderInfo>
                                                 <ProviderIconBox $color={meta.color}>
-                                                    {Icon ? <Icon /> : <span>⚡</span>}
+                                                    {Icon ? <Icon /> : <span>+</span>}
                                                 </ProviderIconBox>
                                                 <ProviderName>
                                                     <ProviderTitle>{config.name}</ProviderTitle>
@@ -603,45 +723,10 @@ const IntegrationsPage: React.FC = () => {
                                     </Card>
                                 );
                             })}
-
-                            {Object.entries(PROVIDERS)
-                                .filter(([, meta]) => !meta.comingSoon)
-                                .map(([key, meta]) => {
-                                    const Icon = PROVIDER_ICONS[key];
-                                    return (
-                                        <AddCard key={`add-${key}`} onClick={() => openCreate(key as IntegrationProvider)}>
-                                            <ProviderIconBox $color={meta.color}>
-                                                {Icon ? <Icon /> : <span>+</span>}
-                                            </ProviderIconBox>
-                                            <AddLabel>Add {meta.label}</AddLabel>
-                                        </AddCard>
-                                    );
-                                })
-                            }
-                        </Grid>
-                    </div>
-
-                    {comingSoonProviders.length > 0 && (
-                        <div>
-                            <SectionTitle>{t('integrations.comingSoon', 'Coming Soon')}</SectionTitle>
-                            <Grid>
-                                {comingSoonProviders.map(([key, meta]) => {
-                                    const Icon = PROVIDER_ICONS[key];
-                                    return (
-                                        <ComingSoonCard key={key} $color={meta.color}>
-                                            <ProviderIconBox $color={meta.color}>
-                                                {Icon ? <Icon /> : <span>⚡</span>}
-                                            </ProviderIconBox>
-                                            <ComingSoonName>{meta.label}</ComingSoonName>
-                                            <ComingSoonBadge>Coming soon</ComingSoonBadge>
-                                        </ComingSoonCard>
-                                    );
-                                })}
-                            </Grid>
-                        </div>
+                        </CardsGrid>
                     )}
-                </>
-            )}
+                </ContentColumn>
+            </MainLayout>
 
             <CreateIntegrationModal
                 isOpen={isModalOpen}
@@ -649,6 +734,7 @@ const IntegrationsPage: React.FC = () => {
                 onCreated={loadConfigs}
                 appToEdit={configToEdit}
                 provider={modalProvider}
+                providerIcon={PROVIDER_ICONS[modalProvider] ? React.createElement(PROVIDER_ICONS[modalProvider]) : undefined}
             />
             <DeleteConfirmModal
                 isOpen={!!configToDelete}
