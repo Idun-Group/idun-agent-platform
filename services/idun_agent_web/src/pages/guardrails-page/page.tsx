@@ -433,6 +433,12 @@ const Chip = styled.span<{ $color: string }>`
     letter-spacing: 0.02em;
 `;
 
+const EmptyImage = styled.img`
+    width: 100%;
+    max-width: 380px;
+    margin-top: 8px;
+`;
+
 // ── Config cards ─────────────────────────────────────────────────────────────
 
 const CardsGrid = styled.div`
@@ -1291,6 +1297,7 @@ const GuardrailsPage: React.FC = () => {
                                 <Chip $color="#8b5cf6">Enterprise</Chip>
                                 <Chip $color="#10b981">Context &amp; Quality</Chip>
                             </EmptyChips>
+                            <EmptyImage src="/img/guardrails-flow.png" alt="" />
                         </EmptyState>
                     ) : (
                         <CardsGrid>
