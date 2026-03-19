@@ -41,11 +41,11 @@ const OBS_PROVIDERS: ProviderMeta[] = [
         { key: 'projectName', label: 'Project Name', type: 'text', placeholder: 'my-project' },
         { key: 'endpoint', label: 'Endpoint', type: 'text', placeholder: 'https://api.smith.langchain.com' },
     ]},
-    { id: 'GoogleCloudLogging', label: 'GCP Logging', logo: '/img/google-cloud-logo.png', group: 'Cloud', description: 'Google Cloud structured logging', fields: [
+    { id: 'GoogleCloudLogging', label: 'GCP Logging', logo: '/img/google-cloud-logo.svg', group: 'Cloud', description: 'Google Cloud structured logging', fields: [
         { key: 'gcpProjectId', label: 'GCP Project ID', type: 'text', placeholder: 'my-gcp-project', required: true },
         { key: 'region', label: 'Region', type: 'text', placeholder: 'us-central1' },
     ]},
-    { id: 'GoogleCloudTrace', label: 'GCP Trace', logo: '/img/google-cloud-logo.png', group: 'Cloud', description: 'Google Cloud distributed tracing', fields: [
+    { id: 'GoogleCloudTrace', label: 'GCP Trace', logo: '/img/google-cloud-logo.svg', group: 'Cloud', description: 'Google Cloud distributed tracing', fields: [
         { key: 'gcpProjectId', label: 'GCP Project ID', type: 'text', placeholder: 'my-gcp-project', required: true },
         { key: 'region', label: 'Region', type: 'text', placeholder: 'us-central1' },
     ]},

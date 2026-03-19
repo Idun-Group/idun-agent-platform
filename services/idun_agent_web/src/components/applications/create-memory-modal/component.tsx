@@ -253,33 +253,35 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
         </Header>
 
         <ContentWrapper>
-            {/* Sidebar: Framework Selection */}
-            <Sidebar>
-                <SidebarTitle>Select Framework</SidebarTitle>
-                <FrameworkList>
-                    {FRAMEWORKS_LIST.map(fw => {
-                        const Icon = fw.icon;
-                        const isSelected = selectedFramework === fw.id;
-                        return (
-                            <FrameworkButton
-                                key={fw.id}
-                                onClick={() => setSelectedFramework(fw.id)}
-                                isSelected={isSelected}
-                                color={fw.color}
-                            >
-                                <IconWrapper isSelected={isSelected} color={fw.color}>
-                                    <Icon size={18} />
-                                </IconWrapper>
-                                <div>
-                                    <FrameworkName>{fw.name}</FrameworkName>
-                                    <FrameworkDesc>{fw.description}</FrameworkDesc>
-                                </div>
-                                {isSelected && <ArrowRight size={16} style={{ marginLeft: 'auto', color: 'hsl(var(--primary))' }} />}
-                            </FrameworkButton>
-                        );
-                    })}
-                </FrameworkList>
-            </Sidebar>
+            {/* Sidebar: Framework Selection (hidden when framework pre-selected from page) */}
+            {!initialFramework && (
+                <Sidebar>
+                    <SidebarTitle>Select Framework</SidebarTitle>
+                    <FrameworkList>
+                        {FRAMEWORKS_LIST.map(fw => {
+                            const Icon = fw.icon;
+                            const isSelected = selectedFramework === fw.id;
+                            return (
+                                <FrameworkButton
+                                    key={fw.id}
+                                    onClick={() => setSelectedFramework(fw.id)}
+                                    isSelected={isSelected}
+                                    color={fw.color}
+                                >
+                                    <IconWrapper isSelected={isSelected} color={fw.color}>
+                                        <Icon size={18} />
+                                    </IconWrapper>
+                                    <div>
+                                        <FrameworkName>{fw.name}</FrameworkName>
+                                        <FrameworkDesc>{fw.description}</FrameworkDesc>
+                                    </div>
+                                    {isSelected && <ArrowRight size={16} style={{ marginLeft: 'auto', color: 'hsl(var(--primary))' }} />}
+                                </FrameworkButton>
+                            );
+                        })}
+                    </FrameworkList>
+                </Sidebar>
+            )}
 
             {/* Main Content: Form */}
             <FormSection>
