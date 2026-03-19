@@ -330,6 +330,19 @@ const TypeIconBox = styled.span`
     flex-shrink: 0;
 `;
 
+const AddIndicator = styled.span`
+    margin-left: auto;
+    font-size: 16px;
+    color: hsl(var(--muted-foreground));
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+
+    ${TypeBtn}:hover & {
+        opacity: 1;
+    }
+`;
+
 const ComingSoonBadge = styled.span`
     font-size: 9px;
     font-weight: 600;
@@ -1243,7 +1256,7 @@ const GuardrailsPage: React.FC = () => {
                                          id === 'RestrictTopic' ? 'Restrict Topic' :
                                          id === 'RagHallucination' ? 'RAG Hallucination' :
                                          id}
-                                        {meta.comingSoon && <ComingSoonBadge>Soon</ComingSoonBadge>}
+                                        {meta.comingSoon ? <ComingSoonBadge>Soon</ComingSoonBadge> : <AddIndicator>+</AddIndicator>}
                                     </TypeBtn>
                                 ))}
                             </React.Fragment>

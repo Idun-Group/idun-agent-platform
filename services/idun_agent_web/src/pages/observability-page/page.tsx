@@ -21,53 +21,42 @@ interface ProviderMeta {
     label: string;
     logo: string;
     description: string;
+    group: string;
     fields: ProviderField[];
+    comingSoon?: boolean;
 }
 
 const OBS_PROVIDERS: ProviderMeta[] = [
-    {
-        id: 'Langfuse', label: 'Langfuse', logo: '/img/langfuse-logo.png',
-        description: 'Open-source LLM observability, analytics, and evaluation',
-        fields: [
-            { key: 'host', label: 'Host URL', type: 'url', placeholder: 'https://cloud.langfuse.com', required: true },
-            { key: 'publicKey', label: 'Public Key', type: 'text', placeholder: 'pk-lf-...', required: true },
-            { key: 'secretKey', label: 'Secret Key', type: 'password', placeholder: 'sk-lf-...', required: true },
-        ],
-    },
-    {
-        id: 'Phoenix', label: 'Phoenix', logo: '/img/phoenix-logo.png',
-        description: 'AI observability and evaluation from Arize',
-        fields: [
-            { key: 'host', label: 'Host URL', type: 'url', placeholder: 'http://localhost:6006', required: true },
-            { key: 'projectName', label: 'Project Name', type: 'text', placeholder: 'my-project' },
-        ],
-    },
-    {
-        id: 'LangSmith', label: 'LangSmith', logo: '/img/langsmith-logo.png',
-        description: 'LangChain tracing, evaluation, and monitoring',
-        fields: [
-            { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'ls__...', required: true },
-            { key: 'projectName', label: 'Project Name', type: 'text', placeholder: 'my-project' },
-            { key: 'endpoint', label: 'Endpoint', type: 'text', placeholder: 'https://api.smith.langchain.com' },
-        ],
-    },
-    {
-        id: 'GoogleCloudLogging', label: 'GCP Logging', logo: '/img/google-cloud-logo.png',
-        description: 'Google Cloud structured logging',
-        fields: [
-            { key: 'gcpProjectId', label: 'GCP Project ID', type: 'text', placeholder: 'my-gcp-project', required: true },
-            { key: 'region', label: 'Region', type: 'text', placeholder: 'us-central1' },
-        ],
-    },
-    {
-        id: 'GoogleCloudTrace', label: 'GCP Trace', logo: '/img/google-cloud-logo.png',
-        description: 'Google Cloud distributed tracing',
-        fields: [
-            { key: 'gcpProjectId', label: 'GCP Project ID', type: 'text', placeholder: 'my-gcp-project', required: true },
-            { key: 'region', label: 'Region', type: 'text', placeholder: 'us-central1' },
-        ],
-    },
+    { id: 'Langfuse', label: 'Langfuse', logo: '/img/langfuse-logo.png', group: 'LLM Observability', description: 'Open-source LLM observability, analytics, and evaluation', fields: [
+        { key: 'host', label: 'Host URL', type: 'url', placeholder: 'https://cloud.langfuse.com', required: true },
+        { key: 'publicKey', label: 'Public Key', type: 'text', placeholder: 'pk-lf-...', required: true },
+        { key: 'secretKey', label: 'Secret Key', type: 'password', placeholder: 'sk-lf-...', required: true },
+    ]},
+    { id: 'Phoenix', label: 'Phoenix', logo: '/img/phoenix-logo.png', group: 'LLM Observability', description: 'AI observability and evaluation from Arize', fields: [
+        { key: 'host', label: 'Host URL', type: 'url', placeholder: 'http://localhost:6006', required: true },
+        { key: 'projectName', label: 'Project Name', type: 'text', placeholder: 'my-project' },
+    ]},
+    { id: 'LangSmith', label: 'LangSmith', logo: '/img/langsmith-logo.png', group: 'LLM Observability', description: 'LangChain tracing, evaluation, and monitoring', fields: [
+        { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'ls__...', required: true },
+        { key: 'projectName', label: 'Project Name', type: 'text', placeholder: 'my-project' },
+        { key: 'endpoint', label: 'Endpoint', type: 'text', placeholder: 'https://api.smith.langchain.com' },
+    ]},
+    { id: 'GoogleCloudLogging', label: 'GCP Logging', logo: '/img/google-cloud-logo.png', group: 'Cloud', description: 'Google Cloud structured logging', fields: [
+        { key: 'gcpProjectId', label: 'GCP Project ID', type: 'text', placeholder: 'my-gcp-project', required: true },
+        { key: 'region', label: 'Region', type: 'text', placeholder: 'us-central1' },
+    ]},
+    { id: 'GoogleCloudTrace', label: 'GCP Trace', logo: '/img/google-cloud-logo.png', group: 'Cloud', description: 'Google Cloud distributed tracing', fields: [
+        { key: 'gcpProjectId', label: 'GCP Project ID', type: 'text', placeholder: 'my-gcp-project', required: true },
+        { key: 'region', label: 'Region', type: 'text', placeholder: 'us-central1' },
+    ]},
+    // Coming soon
+    { id: 'Datadog' as AppType, label: 'Datadog APM', logo: '/img/datadog-logo.svg', group: 'Coming Soon', description: 'Distributed tracing', fields: [], comingSoon: true },
+    { id: 'AWSXRay' as AppType, label: 'AWS X-Ray', logo: '/img/aws-logo.png', group: 'Coming Soon', description: 'AWS distributed tracing', fields: [], comingSoon: true },
+    { id: 'AzureMonitor' as AppType, label: 'Azure Monitor', logo: '/img/azure-logo.png', group: 'Coming Soon', description: 'Application Insights', fields: [], comingSoon: true },
+    { id: 'Jaeger' as AppType, label: 'Jaeger', logo: '/img/jaeger-logo.svg', group: 'Coming Soon', description: 'Open-source distributed tracing', fields: [], comingSoon: true },
 ];
+
+const PROVIDER_GROUPS = ['LLM Observability', 'Cloud', 'Coming Soon'];
 
 // ── Animations ──────────────────────────────────────────────────────────────
 
@@ -84,7 +73,7 @@ const PageWrapper = styled.div`
     padding: 32px;
     gap: 24px;
     animation: ${fadeIn} 0.3s ease;
-    overflow-y: auto;
+    overflow: hidden;
 `;
 
 const PageHeader = styled.div`
@@ -93,6 +82,7 @@ const PageHeader = styled.div`
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
+    flex-shrink: 0;
 `;
 
 const TitleBlock = styled.div``;
@@ -114,27 +104,6 @@ const HeaderActions = styled.div`
     display: flex;
     align-items: center;
     gap: 12px;
-`;
-
-const SearchBar = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
-    border-radius: 10px;
-    padding: 0 14px;
-    height: 38px;
-`;
-
-const SearchInput = styled.input`
-    background: transparent;
-    border: none;
-    outline: none;
-    color: hsl(var(--foreground));
-    font-size: 14px;
-    width: 180px;
-    &::placeholder { color: hsl(var(--muted-foreground)); }
 `;
 
 const DocsButton = styled.a`
@@ -161,66 +130,210 @@ const DocsButton = styled.a`
     }
 `;
 
-// ── Intro ────────────────────────────────────────────────────────────────────
+// ── Two-column layout ────────────────────────────────────────────────────────
 
-const IntroBlock = styled.div`
+const MainLayout = styled.div`
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 0;
+`;
+
+// ── Left column: provider picker ─────────────────────────────────────────────
+
+const ProviderColumn = styled.div`
+    width: 260px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-subtle);
+    padding-right: 24px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+`;
+
+const GroupLabel = styled.p`
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: hsl(var(--text-tertiary));
+    margin: 20px 0 8px 10px;
+
+    &:first-child { margin-top: 0; }
+`;
+
+const ProviderBtn = styled.button<{ $disabled?: boolean }>`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--text-secondary))'};
+    font-size: 13px;
+    font-weight: 400;
+    cursor: ${p => p.$disabled ? 'default' : 'pointer'};
+    opacity: ${p => p.$disabled ? 0.5 : 1};
+    transition: all 0.15s ease;
+    text-align: left;
+    margin-bottom: 2px;
+
+    &:hover {
+        background: ${p => p.$disabled ? 'transparent' : 'var(--overlay-light)'};
+        color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))'};
+    }
+`;
+
+const ProviderLogo = styled.span`
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+
+    img {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+    }
+`;
+
+const AddIndicator = styled.span`
+    margin-left: auto;
+    font-size: 16px;
+    color: hsl(var(--muted-foreground));
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+
+    ${ProviderBtn}:hover & {
+        opacity: 1;
+    }
+`;
+
+const ComingSoonBadge = styled.span`
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: var(--overlay-light);
+    color: hsl(var(--muted-foreground));
+    margin-left: auto;
+    flex-shrink: 0;
+`;
+
+const RequestBtn = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px dashed var(--border-light);
+    background: transparent;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    margin-top: 16px;
+
+    &:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        color: hsl(var(--foreground));
+        background: hsl(var(--primary) / 0.04);
+    }
+`;
+
+const RequestIcon = styled.span`
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: hsl(var(--primary));
+`;
+
+// ── Right column: configs + empty state ──────────────────────────────────────
+
+const ContentColumn = styled.div`
+    flex: 1;
+    padding-left: 28px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+`;
+
+const EmptyState = styled.div`
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 20px;
     gap: 16px;
 `;
 
-const IntroText = styled.p`
-    font-size: 14px;
+const EmptyTitle = styled.h3`
+    font-size: 16px;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin: 0;
+`;
+
+const EmptyDescription = styled.p`
+    font-size: 13px;
     line-height: 1.7;
     color: hsl(var(--text-secondary));
     margin: 0;
-    max-width: 680px;
+    max-width: 420px;
 `;
 
-const ChipRow = styled.div`
+const EmptyChips = styled.div`
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
 `;
 
 const Chip = styled.span<{ $color: string }>`
-    padding: 5px 14px;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 20px;
-    background: ${p => p.$color}12;
-    color: ${p => p.$color};
-    border: 1px solid ${p => p.$color}25;
-`;
-
-const SectionLabel = styled.h2`
-    font-size: 12px;
+    padding: 4px 12px;
+    font-size: 11px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: hsl(var(--muted-foreground));
-    margin: 8px 0 14px;
+    border-radius: 6px;
+    background: ${p => `${p.$color}14`};
+    color: ${p => p.$color};
+    border: 1px solid ${p => `${p.$color}20`};
+    letter-spacing: 0.02em;
 `;
 
-// ── Grid ─────────────────────────────────────────────────────────────────────
+// ── Config cards ─────────────────────────────────────────────────────────────
 
-const Grid = styled.div`
+const CardsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
 `;
-
-// ── Existing config cards ────────────────────────────────────────────────────
 
 const Card = styled.div`
     background: hsl(var(--surface-elevated));
     border: 1px solid var(--border-subtle);
-    border-radius: 16px;
-    padding: 24px;
+    border-radius: 14px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     transition: border-color 0.2s;
+
     &:hover { border-color: hsl(var(--primary) / 0.3); }
 `;
 
@@ -230,15 +343,15 @@ const CardHeader = styled.div`
     justify-content: space-between;
 `;
 
-const ProviderInfo = styled.div`
+const CardInfo = styled.div`
     display: flex;
     align-items: center;
     gap: 12px;
 `;
 
-const ProviderIcon = styled.div`
-    width: 40px;
-    height: 40px;
+const CardIcon = styled.div`
+    width: 38px;
+    height: 38px;
     border-radius: 10px;
     background: var(--border-subtle);
     display: flex;
@@ -246,28 +359,29 @@ const ProviderIcon = styled.div`
     justify-content: center;
     overflow: hidden;
     flex-shrink: 0;
-    img { width: 26px; height: 26px; object-fit: contain; }
+
+    img { width: 24px; height: 24px; object-fit: contain; }
 `;
 
-const ProviderName = styled.div``;
+const CardMeta = styled.div``;
 
-const ProviderTitle = styled.p`
-    font-size: 15px;
+const CardName = styled.p`
+    font-size: 14px;
     font-weight: 600;
     color: hsl(var(--foreground));
+    margin: 0 0 2px;
+`;
+
+const CardType = styled.p`
+    font-size: 11px;
+    color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
-const ProviderType = styled.p`
-    font-size: 12px;
-    color: hsl(var(--muted-foreground));
-    margin: 2px 0 0;
-`;
-
 const StatusBadge = styled.span<{ $active: boolean }>`
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 20px;
     background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'var(--border-subtle)'};
     color: ${p => p.$active ? '#34d399' : '#888'};
@@ -283,7 +397,7 @@ const Divider = styled.hr`
 const ConfigList = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
 `;
 
 const ConfigRow = styled.div`
@@ -307,14 +421,14 @@ const ConfigValue = styled.span`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 180px;
+    max-width: 160px;
 `;
 
 const SecretValue = styled.div`
     display: flex;
     align-items: center;
     gap: 6px;
-    max-width: 180px;
+    max-width: 160px;
 `;
 
 const SecretText = styled.span<{ $visible: boolean }>`
@@ -340,25 +454,41 @@ const EyeBtn = styled.button`
 const AgentCountBadge = styled.span`
     font-size: 11px;
     color: hsl(var(--muted-foreground));
-    display: flex;
-    align-items: center;
-    gap: 4px;
 `;
 
 const CardActions = styled.div`
     display: flex;
-    gap: 10px;
+    gap: 8px;
     margin-top: auto;
+`;
+
+const VisitBtn = styled.a`
+    flex: 1;
+    padding: 7px;
+    background: rgba(99, 179, 237, 0.08);
+    border: 1px solid rgba(99, 179, 237, 0.25);
+    border-radius: 8px;
+    color: #63b3ed;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    &:hover { background: rgba(99, 179, 237, 0.18); }
 `;
 
 const EditBtn = styled.button`
     flex: 1;
-    padding: 8px;
+    padding: 7px;
     background: var(--border-subtle);
     border: 1px solid var(--border-light);
     border-radius: 8px;
     color: hsl(var(--foreground));
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
@@ -367,155 +497,17 @@ const EditBtn = styled.button`
 
 const DeleteBtn = styled.button`
     flex: 1;
-    padding: 8px;
+    padding: 7px;
     background: rgba(248, 113, 113, 0.08);
     border: 1px solid rgba(248, 113, 113, 0.2);
     border-radius: 8px;
     color: #f87171;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
     &:hover { background: rgba(248, 113, 113, 0.18); }
 `;
-
-const VisitBtn = styled.a`
-    flex: 1;
-    padding: 8px;
-    background: rgba(99, 179, 237, 0.08);
-    border: 1px solid rgba(99, 179, 237, 0.25);
-    border-radius: 8px;
-    color: #63b3ed;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    &:hover { background: rgba(99, 179, 237, 0.18); }
-`;
-
-// ── Provider tiles ───────────────────────────────────────────────────────────
-
-const ProviderTile = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-subtle);
-    border-radius: 14px;
-    padding: 26px 28px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    min-height: 96px;
-
-    &:hover {
-        border-color: hsl(var(--primary) / 0.4);
-        background: hsl(var(--primary) / 0.04);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    }
-`;
-
-const TileLogo = styled.div`
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    background: var(--overlay-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    img { width: 28px; height: 28px; object-fit: contain; }
-`;
-
-const TileContent = styled.div`
-    flex: 1;
-    min-width: 0;
-`;
-
-const TileLabel = styled.p`
-    font-size: 15px;
-    font-weight: 600;
-    color: hsl(var(--foreground));
-    margin: 0 0 3px;
-`;
-
-const TileDescription = styled.p`
-    font-size: 12px;
-    color: hsl(var(--muted-foreground));
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-`;
-
-const TileArrow = styled.span`
-    color: hsl(var(--muted-foreground));
-    font-size: 18px;
-    flex-shrink: 0;
-    transition: transform 0.2s, color 0.2s;
-    ${ProviderTile}:hover & {
-        color: hsl(var(--primary));
-        transform: translateX(2px);
-    }
-`;
-
-// ── Coming soon tiles ────────────────────────────────────────────────────────
-
-interface ComingSoonMeta {
-    label: string;
-    description: string;
-    logo: string;
-}
-
-const COMING_SOON_PROVIDERS: ComingSoonMeta[] = [
-    { label: 'Datadog APM', description: 'Distributed tracing', logo: '/img/datadog-logo.svg' },
-    { label: 'AWS X-Ray', description: 'AWS distributed tracing and analysis', logo: '/img/aws-logo.png' },
-    { label: 'Azure Monitor', description: 'Application Insights', logo: '/img/azure-logo.png' },
-    { label: 'Jaeger', description: 'Open-source distributed tracing', logo: '/img/jaeger-logo.svg' },
-];
-
-const ComingSoonTile = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-subtle);
-    border-radius: 14px;
-    padding: 26px 28px;
-    min-height: 96px;
-    opacity: 0.5;
-`;
-
-const ComingSoonIcon = styled.div`
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    background: var(--overlay-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    img { width: 28px; height: 28px; object-fit: contain; }
-`;
-
-const ComingSoonBadge = styled.span`
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
-    border-radius: 6px;
-    background: var(--border-light);
-    color: hsl(var(--muted-foreground));
-    flex-shrink: 0;
-`;
-
 
 // ── Loading ──────────────────────────────────────────────────────────────────
 
@@ -539,7 +531,7 @@ const LoadingSpinner = styled.div`
     animation: ${spin} 0.8s linear infinite;
 `;
 
-// ── Provider modal ───────────────────────────────────────────────────────────
+// ── Per-provider modal ───────────────────────────────────────────────────────
 
 const Overlay = styled.div`
     position: fixed;
@@ -782,7 +774,7 @@ const SecretField: React.FC<{ value: string }> = ({ value }) => {
     );
 };
 
-// ── Provider-specific modal ──────────────────────────────────────────────────
+// ── Per-provider modal component ─────────────────────────────────────────────
 
 interface ProviderModalProps {
     provider: ProviderMeta;
@@ -854,7 +846,6 @@ const ProviderModal: React.FC<ProviderModalProps> = ({ provider, appToEdit, onCl
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                     <ModalBody>
                         {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
-
                         <FieldGroup>
                             <Label htmlFor="integration-name">Integration Name</Label>
                             <Input
@@ -865,7 +856,6 @@ const ProviderModal: React.FC<ProviderModalProps> = ({ provider, appToEdit, onCl
                                 onChange={e => setIntegrationName(e.target.value)}
                             />
                         </FieldGroup>
-
                         {provider.fields.map(field => (
                             <FieldGroup key={field.key}>
                                 <Label htmlFor={field.key}>
@@ -897,7 +887,6 @@ const ProviderModal: React.FC<ProviderModalProps> = ({ provider, appToEdit, onCl
                             </FieldGroup>
                         ))}
                     </ModalBody>
-
                     <ModalFooter>
                         <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
                         <SubmitBtn type="submit" disabled={isSubmitting}>
@@ -916,9 +905,9 @@ const ProviderModal: React.FC<ProviderModalProps> = ({ provider, appToEdit, onCl
 const ObservabilityPage: React.FC = () => {
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
     const [modalProvider, setModalProvider] = useState<ProviderMeta | null>(null);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
+    const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
 
     const openModal = (provider: ProviderMeta, app?: ApplicationConfig) => {
         setModalProvider(provider);
@@ -940,20 +929,12 @@ const ObservabilityPage: React.FC = () => {
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
-    const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
     const handleDeleteConfirm = async () => {
         if (!appToDelete?.id) return;
         await deleteApplication(appToDelete.id);
         setAppToDelete(null);
         loadApps();
     };
-
-    const filtered = apps.filter(a =>
-        !searchTerm || (a.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (a.type ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const hasConfigs = filtered.length > 0;
 
     return (
         <PageWrapper>
@@ -966,128 +947,116 @@ const ObservabilityPage: React.FC = () => {
                     <DocsButton href="https://idun-group.github.io/idun-agent-platform/observability/overview/" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </DocsButton>
-                    <SearchBar>
-                        <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 14 }}>🔍</span>
-                        <SearchInput placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                    </SearchBar>
                 </HeaderActions>
             </PageHeader>
 
-            <IntroBlock>
-                <IntroText>
-                    Full AI agent monitoring and visibility into every run. Idun auto-instruments your agents with OpenTelemetry and routes traces to any backend without any configuration.
-                </IntroText>
-                <ChipRow>
-                    <Chip $color="#3b82f6">Logging</Chip>
-                    <Chip $color="#f59e0b">Debug</Chip>
-                    <Chip $color="#10b981">Cost tracking</Chip>
-                    <Chip $color="#8b5cf6">Token usage</Chip>
-                    <Chip $color="#ef4444">Latency</Chip>
-                    <Chip $color="#06b6d4">AI compliance</Chip>
-                </ChipRow>
-            </IntroBlock>
+            <MainLayout>
+                {/* ── Left: Provider picker ──────────────────────── */}
+                <ProviderColumn>
+                    {PROVIDER_GROUPS.map(group => {
+                        const providers = OBS_PROVIDERS.filter(p => p.group === group);
+                        if (providers.length === 0) return null;
+                        return (
+                            <React.Fragment key={group}>
+                                <GroupLabel>{group}</GroupLabel>
+                                {providers.map(p => (
+                                    <ProviderBtn
+                                        key={p.id}
+                                        type="button"
+                                        $disabled={!!p.comingSoon}
+                                        onClick={() => { if (!p.comingSoon) openModal(p); }}
+                                    >
+                                        <ProviderLogo><img src={p.logo} alt={p.label} /></ProviderLogo>
+                                        {p.label}
+                                        {p.comingSoon ? <ComingSoonBadge>Soon</ComingSoonBadge> : <AddIndicator>+</AddIndicator>}
+                                    </ProviderBtn>
+                                ))}
+                            </React.Fragment>
+                        );
+                    })}
 
-            {isLoading ? (
-                <CenterBox><LoadingSpinner /><p>Loading…</p></CenterBox>
-            ) : (
-                <>
-                    {hasConfigs && (
-                        <div>
-                            <SectionLabel>Connected</SectionLabel>
-                            <Grid>
-                                {filtered.map(app => {
-                                    const config = flattenConfig(app.config);
-                                    const configEntries = Object.entries(config);
-                                    const providerUrl = getProviderUrl(app);
-                                    const providerMeta = OBS_PROVIDERS.find(p => p.id === app.type);
-                                    return (
-                                        <Card key={app.id}>
-                                            <CardHeader>
-                                                <ProviderInfo>
-                                                    <ProviderIcon><img src={app.imageUrl} alt={app.type ?? ''} /></ProviderIcon>
-                                                    <ProviderName>
-                                                        <ProviderTitle>{app.name}</ProviderTitle>
-                                                        <ProviderType>{app.type}</ProviderType>
-                                                    </ProviderName>
-                                                </ProviderInfo>
-                                                <StatusBadge $active={true}>Active</StatusBadge>
-                                            </CardHeader>
-                                            {configEntries.length > 0 && (
-                                                <>
-                                                    <Divider />
-                                                    <ConfigList>
-                                                        {configEntries.slice(0, 4).map(([k, v]) => (
-                                                            <ConfigRow key={k}>
-                                                                <ConfigKey>{k.replace(/_/g, ' ')}</ConfigKey>
-                                                                {isSecretKey(k) ? <SecretField value={v} /> : <ConfigValue title={v}>{v}</ConfigValue>}
-                                                            </ConfigRow>
-                                                        ))}
-                                                    </ConfigList>
-                                                </>
+                    <RequestBtn
+                        type="button"
+                        onClick={() => window.open('https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=enhancement&template=feature_request.md&title=%5BObservability%5D+New+provider+request', '_blank')}
+                    >
+                        <RequestIcon><GitPullRequest size={15} /></RequestIcon>
+                        Request a provider
+                    </RequestBtn>
+                </ProviderColumn>
+
+                {/* ── Right: Configured providers ────────────────── */}
+                <ContentColumn>
+                    {isLoading ? (
+                        <CenterBox>
+                            <LoadingSpinner />
+                            <p>Loading…</p>
+                        </CenterBox>
+                    ) : apps.length === 0 ? (
+                        <EmptyState>
+                            <EmptyTitle>Connect a provider to get started</EmptyTitle>
+                            <EmptyDescription>
+                                Full AI agent monitoring and visibility into every run. Idun auto-instruments your agents with OpenTelemetry and routes traces to any backend without any configuration.
+                            </EmptyDescription>
+                            <EmptyChips>
+                                <Chip $color="#3b82f6">Logging</Chip>
+                                <Chip $color="#f59e0b">Debug</Chip>
+                                <Chip $color="#10b981">Cost tracking</Chip>
+                                <Chip $color="#8b5cf6">Token usage</Chip>
+                                <Chip $color="#ef4444">Latency</Chip>
+                                <Chip $color="#06b6d4">AI compliance</Chip>
+                            </EmptyChips>
+                        </EmptyState>
+                    ) : (
+                        <CardsGrid>
+                            {apps.map(app => {
+                                const config = flattenConfig(app.config);
+                                const configEntries = Object.entries(config);
+                                const providerUrl = getProviderUrl(app);
+                                const providerMeta = OBS_PROVIDERS.find(p => p.id === app.type);
+                                return (
+                                    <Card key={app.id}>
+                                        <CardHeader>
+                                            <CardInfo>
+                                                <CardIcon><img src={app.imageUrl} alt={app.type ?? ''} /></CardIcon>
+                                                <CardMeta>
+                                                    <CardName>{app.name}</CardName>
+                                                    <CardType>{app.type}</CardType>
+                                                </CardMeta>
+                                            </CardInfo>
+                                            <StatusBadge $active={true}>Active</StatusBadge>
+                                        </CardHeader>
+                                        {configEntries.length > 0 && (
+                                            <>
+                                                <Divider />
+                                                <ConfigList>
+                                                    {configEntries.slice(0, 4).map(([k, v]) => (
+                                                        <ConfigRow key={k}>
+                                                            <ConfigKey>{k.replace(/_/g, ' ')}</ConfigKey>
+                                                            {isSecretKey(k) ? <SecretField value={v} /> : <ConfigValue title={v}>{v}</ConfigValue>}
+                                                        </ConfigRow>
+                                                    ))}
+                                                </ConfigList>
+                                            </>
+                                        )}
+                                        {(app.agentCount ?? 0) > 0 && (
+                                            <AgentCountBadge>Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}</AgentCountBadge>
+                                        )}
+                                        <CardActions>
+                                            {providerUrl && (
+                                                <VisitBtn href={providerUrl} target="_blank" rel="noopener noreferrer">
+                                                    <ExternalLink size={12} /> Visit
+                                                </VisitBtn>
                                             )}
-                                            {(app.agentCount ?? 0) > 0 && (
-                                                <AgentCountBadge>Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}</AgentCountBadge>
-                                            )}
-                                            <CardActions>
-                                                {providerUrl && (
-                                                    <VisitBtn href={providerUrl} target="_blank" rel="noopener noreferrer">
-                                                        <ExternalLink size={13} /> Visit
-                                                    </VisitBtn>
-                                                )}
-                                                <EditBtn onClick={() => providerMeta && openModal(providerMeta, app)}>Edit</EditBtn>
-                                                <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
-                                            </CardActions>
-                                        </Card>
-                                    );
-                                })}
-                            </Grid>
-                        </div>
+                                            <EditBtn onClick={() => providerMeta && openModal(providerMeta, app)}>Edit</EditBtn>
+                                            <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
+                                        </CardActions>
+                                    </Card>
+                                );
+                            })}
+                        </CardsGrid>
                     )}
-
-                    <div>
-                        <SectionLabel>Available Providers</SectionLabel>
-                        <Grid>
-                            {OBS_PROVIDERS.map(p => (
-                                <ProviderTile key={p.id} onClick={() => openModal(p)}>
-                                    <TileLogo><img src={p.logo} alt={p.label} /></TileLogo>
-                                    <TileContent>
-                                        <TileLabel>{p.label}</TileLabel>
-                                        <TileDescription>{p.description}</TileDescription>
-                                    </TileContent>
-                                    <TileArrow>›</TileArrow>
-                                </ProviderTile>
-                            ))}
-                        </Grid>
-                    </div>
-
-                    <div>
-                        <SectionLabel>Coming Soon</SectionLabel>
-                        <Grid>
-                            {COMING_SOON_PROVIDERS.map(p => (
-                                <ComingSoonTile key={p.label}>
-                                    <ComingSoonIcon><img src={p.logo} alt={p.label} /></ComingSoonIcon>
-                                    <TileContent>
-                                        <TileLabel>{p.label}</TileLabel>
-                                        <TileDescription>{p.description}</TileDescription>
-                                    </TileContent>
-                                    <ComingSoonBadge>Soon</ComingSoonBadge>
-                                </ComingSoonTile>
-                            ))}
-                        </Grid>
-                    </div>
-
-                    <Grid>
-                        <ProviderTile as="a" href="https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=enhancement&template=feature_request.md&title=%5BObservability%5D+New+provider+request" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                            <TileLogo><GitPullRequest size={22} color="hsl(var(--primary))" /></TileLogo>
-                            <TileContent>
-                                <TileLabel>Request a provider</TileLabel>
-                                <TileDescription>Need a different integration? Open a feature request.</TileDescription>
-                            </TileContent>
-                            <TileArrow>›</TileArrow>
-                        </ProviderTile>
-                    </Grid>
-                </>
-            )}
+                </ContentColumn>
+            </MainLayout>
 
             {modalProvider && (
                 <ProviderModal
