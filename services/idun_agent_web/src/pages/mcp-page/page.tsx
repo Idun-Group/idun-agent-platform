@@ -348,7 +348,6 @@ const SearchBar = styled.div`
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
-    margin-bottom: 16px;
 `;
 
 const SearchInput = styled.input`
@@ -1392,6 +1391,14 @@ const MCPPage: React.FC = () => {
                     <PageSubtitle>Model Context Protocol integrations for your agents</PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
+                    <SearchBar>
+                        <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+                        <SearchInput
+                            placeholder="Search servers..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                        />
+                    </SearchBar>
                     <HeaderBtn href="https://idun-group.github.io/idun-agent-platform/mcp/overview/" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </HeaderBtn>
@@ -1446,15 +1453,6 @@ const MCPPage: React.FC = () => {
                         </EmptyState>
                     ) : (
                         <>
-                            <SearchBar>
-                                <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
-                                <SearchInput
-                                    placeholder="Search servers..."
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
-                                />
-                            </SearchBar>
-
                             <StatsBar>
                                 <StatChip><strong>{apps.length}</strong> Total servers</StatChip>
                                 <StatChip><strong>{activeCount}</strong> Active</StatChip>

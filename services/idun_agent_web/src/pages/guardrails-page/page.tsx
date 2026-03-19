@@ -24,6 +24,7 @@ import {
     AlertCircle,
     GitPullRequest,
     X,
+    Search,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { fetchApplications, deleteApplication, createApplication, updateApplication } from '../../services/applications';
@@ -175,6 +176,27 @@ const RequiredBadge = styled.span`
 `;
 
 // ── API Key Dropdown ─────────────────────────────────────────────────────────
+
+const SearchBar = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 0 14px;
+    height: 38px;
+`;
+
+const SearchInput = styled.input`
+    background: transparent;
+    border: none;
+    outline: none;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    width: 160px;
+    &::placeholder { color: hsl(var(--muted-foreground)); }
+`;
 
 const LOCALSTORAGE_KEY = 'guardrails_api_key';
 
@@ -1122,6 +1144,7 @@ const truncate = (s: string, max = 28) => s.length > max ? s.slice(0, max) + '�
 const GuardrailsPage: React.FC = () => {
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // API key dropdown
     const [globalApiKey, setGlobalApiKey] = useState(() => localStorage.getItem(LOCALSTORAGE_KEY) ?? '');
@@ -1192,6 +1215,10 @@ const GuardrailsPage: React.FC = () => {
                     <PageSubtitle>Enforce safety rules and content policies on your agents</PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
+                    <SearchBar>
+                        <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+                        <SearchInput placeholder="Search guardrails..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    </SearchBar>
                     <DropdownWrapper ref={dropdownRef}>
                         <ApiKeyBtn type="button" onClick={() => setDropdownOpen(v => !v)}>
                             <KeyRound size={14} />
@@ -1301,7 +1328,11 @@ const GuardrailsPage: React.FC = () => {
                         </EmptyState>
                     ) : (
                         <CardsGrid>
-                            {apps.map(app => {
+                            {apps.filter(a => {
+                                if (!searchTerm) return true;
+                                const term = searchTerm.toLowerCase();
+                                return (a.name?.toLowerCase().includes(term) || a.type?.toLowerCase().includes(term));
+                            }).map(app => {
                                 const meta = TYPE_META[app.type] ?? { icon: Shield, group: 'Other', description: '' };
                                 const config = flattenConfig(app.config);
                                 const configEntries = Object.entries(config).filter(([k]) => k !== 'api_key');

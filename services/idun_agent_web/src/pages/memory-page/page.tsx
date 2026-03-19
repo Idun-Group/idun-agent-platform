@@ -9,6 +9,7 @@ import {
     BookOpen,
     GitPullRequest,
     X,
+    Search,
 } from 'lucide-react';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import { fetchApplications, deleteApplication, createApplication, updateApplication } from '../../services/applications';
@@ -112,6 +113,27 @@ const HeaderBtn = styled.a`
     }
 `;
 
+const SearchBar = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 0 14px;
+    height: 38px;
+`;
+
+const SearchInput = styled.input`
+    background: transparent;
+    border: none;
+    outline: none;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    width: 160px;
+    &::placeholder { color: hsl(var(--muted-foreground)); }
+`;
+
 // ── Two-column layout ────────────────────────────────────────────────────────
 
 const MainLayout = styled.div`
@@ -134,17 +156,19 @@ const TypeColumn = styled.div`
 `;
 
 const GroupLabel = styled.p`
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: hsl(var(--foreground));
-    margin: 24px 0 12px 10px;
+    letter-spacing: 0.12em;
+    color: hsl(var(--text-tertiary));
+    margin: 24px 0 10px 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     gap: 8px;
 
-    &:first-child { margin-top: 0; }
+    &:first-child { margin-top: 0; padding-top: 0; border-top: none; }
 `;
 
 const GroupLogo = styled.img`
@@ -165,7 +189,8 @@ const TypeBtn = styled.button`
     align-items: center;
     gap: 10px;
     width: 100%;
-    padding: 10px 12px;
+    padding: 10px 12px 10px 18px;
+    margin-left: 10px;
     border-radius: 10px;
     border: 1px solid transparent;
     background: transparent;
@@ -810,6 +835,7 @@ const LoadingSpinner = styled.div`
 const MemoryPage: React.FC = () => {
     const [memories, setMemories] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Modal
     const [modalProvider, setModalProvider] = useState<ProviderMeta | null>(null);
@@ -872,6 +898,10 @@ const MemoryPage: React.FC = () => {
                     <PageSubtitle>Manage vector databases and state persistence by agent framework.</PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
+                    <SearchBar>
+                        <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+                        <SearchInput placeholder="Search stores..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    </SearchBar>
                     <HeaderBtn href="https://idun-group.github.io/idun-agent-platform/memory/overview/" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </HeaderBtn>
@@ -935,7 +965,11 @@ const MemoryPage: React.FC = () => {
                         </EmptyState>
                     ) : (
                         <CardsGrid>
-                            {memories.map(mem => {
+                            {memories.filter(m => {
+                                if (!searchTerm) return true;
+                                const term = searchTerm.toLowerCase();
+                                return (m.name?.toLowerCase().includes(term) || m.type?.toLowerCase().includes(term));
+                            }).map(mem => {
                                 const frameworkLabel = mem.framework === 'LANGGRAPH' ? 'LangGraph' : (mem.framework ?? 'Unknown');
                                 const allProviders = [...LANGGRAPH_PROVIDERS, ...ADK_PROVIDERS];
                                 const providerMeta = allProviders.find(p => p.id === mem.type);

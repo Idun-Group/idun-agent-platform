@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Eye, EyeOff, ExternalLink, X, BookOpen, GitPullRequest } from 'lucide-react';
+import { Eye, EyeOff, ExternalLink, X, BookOpen, GitPullRequest, Search } from 'lucide-react';
 import { fetchApplications, deleteApplication, createApplication, updateApplication } from '../../services/applications';
 import type { ApplicationConfig } from '../../types/application.types';
 import type { AppType } from '../../types/application.types';
@@ -128,6 +128,27 @@ const DocsButton = styled.a`
         border-color: var(--border-medium);
         background: var(--overlay-medium);
     }
+`;
+
+const SearchBar = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 0 14px;
+    height: 38px;
+`;
+
+const SearchInput = styled.input`
+    background: transparent;
+    border: none;
+    outline: none;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    width: 160px;
+    &::placeholder { color: hsl(var(--muted-foreground)); }
 `;
 
 // ── Two-column layout ────────────────────────────────────────────────────────
@@ -905,6 +926,7 @@ const ProviderModal: React.FC<ProviderModalProps> = ({ provider, appToEdit, onCl
 const ObservabilityPage: React.FC = () => {
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
     const [modalProvider, setModalProvider] = useState<ProviderMeta | null>(null);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
@@ -944,6 +966,10 @@ const ObservabilityPage: React.FC = () => {
                     <PageSubtitle>Monitor and trace your AI agent activity</PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
+                    <SearchBar>
+                        <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+                        <SearchInput placeholder="Search providers..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    </SearchBar>
                     <DocsButton href="https://idun-group.github.io/idun-agent-platform/observability/overview/" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </DocsButton>
@@ -1008,7 +1034,11 @@ const ObservabilityPage: React.FC = () => {
                         </EmptyState>
                     ) : (
                         <CardsGrid>
-                            {apps.map(app => {
+                            {apps.filter(a => {
+                                if (!searchTerm) return true;
+                                const term = searchTerm.toLowerCase();
+                                return (a.name?.toLowerCase().includes(term) || a.type?.toLowerCase().includes(term));
+                            }).map(app => {
                                 const config = flattenConfig(app.config);
                                 const configEntries = Object.entries(config);
                                 const providerUrl = getProviderUrl(app);

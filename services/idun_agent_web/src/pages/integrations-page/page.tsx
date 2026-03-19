@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { BookOpen, GitPullRequest } from 'lucide-react';
+import { BookOpen, GitPullRequest, Search } from 'lucide-react';
 import { fetchIntegrations, deleteIntegration } from '../../services/integrations';
 import type { ManagedIntegration } from '../../services/integrations';
 import CreateIntegrationModal from '../../components/applications/create-integration-modal/component';
@@ -157,6 +157,27 @@ const DocsButton = styled.a`
         border-color: var(--border-medium);
         background: var(--overlay-medium);
     }
+`;
+
+const SearchBar = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 0 14px;
+    height: 38px;
+`;
+
+const SearchInput = styled.input`
+    background: transparent;
+    border: none;
+    outline: none;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    width: 160px;
+    &::placeholder { color: hsl(var(--muted-foreground)); }
 `;
 
 // ── Two-column layout ─────────────────────────────────────────────────────────
@@ -524,6 +545,7 @@ const IntegrationsPage: React.FC = () => {
     const { t } = useTranslation();
     const [configs, setConfigs] = useState<ManagedIntegration[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalProvider, setModalProvider] = useState<IntegrationProvider>('WHATSAPP');
     const [configToEdit, setConfigToEdit] = useState<ManagedIntegration | null>(null);
@@ -565,6 +587,10 @@ const IntegrationsPage: React.FC = () => {
                     <PageSubtitle>{t('integrations.subtitle', 'Connect external messaging platforms to your agents')}</PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
+                    <SearchBar>
+                        <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+                        <SearchInput placeholder="Search integrations..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    </SearchBar>
                     <DocsButton href="https://idun-group.github.io/idun-agent-platform/integrations/overview/" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </DocsButton>
@@ -632,7 +658,12 @@ const IntegrationsPage: React.FC = () => {
                         </EmptyState>
                     ) : (
                         <CardsGrid>
-                            {configs.map(config => {
+                            {configs.filter(c => {
+                                if (!searchTerm) return true;
+                                const term = searchTerm.toLowerCase();
+                                const providerLabel = PROVIDERS[c.integration.provider]?.label ?? c.integration.provider;
+                                return (c.name?.toLowerCase().includes(term) || providerLabel.toLowerCase().includes(term));
+                            }).map(config => {
                                 const provider = config.integration.provider;
                                 const meta = PROVIDERS[provider] ?? { label: provider, color: 'hsl(var(--primary))' };
                                 const Icon = PROVIDER_ICONS[provider];
