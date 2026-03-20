@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Annotated, Any
+from typing import Annotated
 
 from ag_ui.core.types import RunAgentInput
 from ag_ui.encoder import EventEncoder
@@ -27,43 +27,14 @@ logger = logging.getLogger(__name__)
 agent_router = APIRouter()
 
 
-def _extract_text_values(data: Any) -> list[str]:
-    """Extract all non-empty string values from structured input."""
-    if isinstance(data, str):
-        return [data] if data.strip() else []
-    if isinstance(data, dict):
-        return [t for v in data.values() for t in _extract_text_values(v)]
-    if isinstance(data, list):
-        return [t for item in data for t in _extract_text_values(item)]
-    return []
-
-
-def _guardrail_input_from(input_data: RunAgentInput) -> dict | str | None:
-    """Return the text payload to validate: last message content, or state."""
-    if input_data.messages:
-        content = input_data.messages[-1].content
-        if content is not None:
-            return content if isinstance(content, str) else str(content)
-    if input_data.state:
-        return input_data.state
-    return None
-
-
 def _run_guardrails(
     guardrails: list[Guardrail], message: dict[str, str] | str, position: str
 ) -> None:
-    """Validate message text against guardrails matching the given position."""
-    if isinstance(message, dict):
-        texts = _extract_text_values(message)
-    else:
-        texts = [message]
-
+    """Validates the request's message, by running it on given guardrails. If input is a dict -> input, else its an output guardrails."""
+    text = message["query"] if isinstance(message, dict) else message
     for guard in guardrails:
-        if guard.position != position:  # type: ignore[attr-defined]
-            continue
-        for text in texts:
-            if not guard.validate(text):  # type: ignore[attr-defined]
-                raise HTTPException(status_code=429, detail=guard.reject_message)  # type: ignore[attr-defined]
+        if guard.position == position and not guard.validate(text):  # type: ignore[attr-defined]
+            raise HTTPException(status_code=429, detail=guard.reject_message)  # type: ignore[attr-defined]
 
 
 @agent_router.get("/capabilities")
@@ -91,10 +62,11 @@ async def run(
     logger.info(f"Run — thread_id={input_data.thread_id}, message={last_content}")
 
     guardrails = getattr(request.app.state, "guardrails", [])
-    if guardrails:
-        guardrail_input = _guardrail_input_from(input_data)
-        if guardrail_input is not None:
-            _run_guardrails(guardrails, message=guardrail_input, position="input")
+    if guardrails and input_data.messages:
+        last_content = input_data.messages[-1].content
+        if last_content is not None:
+            text = last_content if isinstance(last_content, str) else str(last_content)
+            _run_guardrails(guardrails, message=text, position="input")
 
     accept_header = request.headers.get("accept")
     encoder = EventEncoder(accept=accept_header or "")
