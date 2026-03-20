@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from typing import TYPE_CHECKING, Any, cast
 
@@ -51,6 +52,29 @@ class _DeepcopySafeStderr:
 
     def __deepcopy__(self, memo: dict[int, Any]) -> _DeepcopySafeStderr:
         return self
+
+
+logger = logging.getLogger(__name__)
+
+
+def _sanitize_schema(schema: Any) -> None:
+    """Recursively patch array nodes missing ``items`` in JSON Schema.
+
+    Some MCP servers omit ``items`` on array properties. Most LLM providers
+    reject these with a 400 error, so we default to ``{"type": "string"}``.
+    """
+    if isinstance(schema, dict):
+        if schema.get("type") == "array" and "items" not in schema:
+            schema["items"] = {"type": "string"}
+            logger.warning(
+                "MCP tool schema had array without 'items', defaulted to string: %s",
+                schema,
+            )
+        for value in schema.values():
+            _sanitize_schema(value)
+    elif isinstance(schema, list):
+        for item in schema:
+            _sanitize_schema(item)
 
 
 class MCPClientRegistry:
@@ -109,7 +133,11 @@ class MCPClientRegistry:
         """Load tools from all servers or a specific one."""
         if not self._client:
             raise RuntimeError("MCP client registry is not enabled.")
-        return await self._client.get_tools(server_name=name)
+        tools = await self._client.get_tools(server_name=name)
+        for tool in tools:
+            if hasattr(tool, "args_schema"):
+                _sanitize_schema(tool.args_schema)
+        return tools
 
     async def get_langchain_tools(self, name: str | None = None) -> list[Any]:
         """Alias for get_tools to make intent explicit when using LangChain/LangGraph agents."""
