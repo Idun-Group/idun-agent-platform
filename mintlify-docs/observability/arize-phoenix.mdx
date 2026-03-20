@@ -1,0 +1,81 @@
+---
+title: "Arize Phoenix"
+description: "Set up Arize Phoenix observability to trace, evaluate, and troubleshoot your agents."
+keywords: ["Arize Phoenix", "observability", "tracing", "evaluation", "AI monitoring"]
+---
+
+This guide walks you through setting up Arize Phoenix to add observability to your agents. Once enabled, you can track agent execution, view traces, and analyze performance in your Phoenix dashboard.
+
+Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Agent Platform.
+
+## Set up Phoenix observability
+
+<Steps>
+  <Step title="Get your Phoenix details">
+    <Tabs>
+      <Tab title="Phoenix Cloud">
+        1. Go to [Arize Phoenix](https://phoenix.arize.com)
+        2. Sign up or log in to your account
+        3. Create a new project or select an existing one
+        4. Note your **Project Name** and the **Collector Endpoint** (typically `https://collector.phoenix.com`)
+      </Tab>
+      <Tab title="Self-hosted">
+        If you are hosting Phoenix yourself, have your collector endpoint URL ready. This is the URL where your Phoenix instance accepts trace data.
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Create an observability configuration">
+    1. On the Idun Agent Platform main page, navigate to **Observability**
+    2. Click **Add configuration**
+    3. Select **Phoenix**
+    4. Enter a **Configuration Name** (for example, "Phoenix Prod")
+    5. Fill in the required details:
+        - **Collector Endpoint**: The URL of the Phoenix collector (for example, `https://collector.phoenix.com` or your custom endpoint)
+        - **Project Name**: The name of your project in Phoenix
+
+    6. Click **Create configuration**
+
+    <Info>
+      Observability configurations are saved and reusable across multiple agents.
+    </Info>
+  </Step>
+  <Step title="Attach Phoenix to your agent">
+    1. Navigate to the agent you want to trace
+    2. Click **Edit Agent**
+    3. Click **Next** to reach the observability configuration step
+    4. Select **Phoenix** as the observability provider
+    5. Select the Phoenix configuration you want to use
+    6. Click **Next**
+    7. Click **Save changes** to finalize
+
+    After saving, click **Restart** on your agent page to reload the configuration and enable Phoenix observability.
+  </Step>
+</Steps>
+
+## View observability data
+
+Once your agent is running with observability enabled:
+
+1. Interact with your agent through the Manager UI or API
+2. Open your Phoenix dashboard
+3. Navigate to your project to view traces
+
+You will see detailed traces showing agent execution flows, tool usage, and performance metrics.
+
+## Best practices
+
+- Use descriptive names for observability configurations
+- Monitor latency using Phoenix's performance tools
+- Check traces regularly to understand agent behavior
+
+## Troubleshooting
+
+<Warning>
+  ADK does not currently support simultaneous tracing with multiple providers.
+</Warning>
+
+### Observability not working?
+
+1. **Check collector endpoint**: Verify the URL is correct and accessible from the agent environment
+2. **Verify project name**: Confirm it matches the project name in Phoenix exactly
+3. **Check network**: Confirm your agent environment can reach the Phoenix collector

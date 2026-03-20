@@ -1,0 +1,61 @@
+---
+title: "Agent frameworks"
+description: "Connect LangGraph, Google ADK, or Haystack agents to Idun Agent Platform and run them as production-ready services."
+keywords: ["agent frameworks", "LangGraph", "Google ADK", "Haystack", "framework adapter", "AG-UI streaming"]
+---
+
+Idun Agent Platform wraps your agent code into a FastAPI service through framework-specific adapters. You write your agent in the framework you prefer, and the engine handles streaming, checkpointing, guardrails, and observability through a unified API.
+
+Each adapter implements a common `BaseAgent` protocol. Your clients talk to the same HTTP API regardless of the underlying framework.
+
+## Supported frameworks
+
+<Columns cols={2}>
+  <Card title="LangGraph" icon="diagram-project" href="/frameworks/langgraph">
+    Graph-based agents with full AG-UI streaming, checkpointing (in-memory, SQLite, PostgreSQL), and CopilotKit support. The primary integration with the deepest feature coverage.
+  </Card>
+  <Card title="Google ADK" icon="google" href="/frameworks/adk">
+    Google's Agent Development Kit for Gemini-powered agents. Supports session and memory services through in-memory, Vertex AI, or database backends.
+  </Card>
+</Columns>
+
+<Note>
+  **Haystack** is available as an experimental integration. It supports pipeline and agent component types but does not include streaming or CopilotKit support. If you need Haystack in production, [open a GitHub issue](https://github.com/Idun-Group/idun-agent-platform/issues) to discuss your use case.
+</Note>
+
+## Feature comparison
+
+| Feature | LangGraph | Google ADK | Haystack |
+|---|---|---|---|
+| AG-UI streaming | Yes | Yes | No |
+| Checkpointing / memory | In-memory, SQLite, PostgreSQL | In-memory, Vertex AI, Database | No |
+| CopilotKit support | Yes | No | No |
+| Guardrails | Yes | Yes | Yes |
+| Observability | Yes | Yes | Yes |
+| MCP tool governance | Yes | Yes | Yes |
+| Status | Stable | Stable | Experimental |
+
+## How adapters work
+
+Under the hood, the engine loads your agent through the adapter specified in your configuration. This gives you:
+
+- **Unified API**: All agents expose the same HTTP endpoints for invoke, streaming, and chat.
+- **Shared platform features**: Observability, guardrails, MCP tools, and memory work the same way across frameworks.
+- **Consistent deployment**: Run agents through the Idun Agent Engine standalone or managed by the Agent Manager.
+
+You select the framework in the `agent` section of your `config.yaml`:
+
+```yaml
+agent:
+  type: LANGGRAPH    # or ADK, HAYSTACK
+  config:
+    # framework-specific fields
+```
+
+The engine validates that the `config` type matches the selected `type` at startup.
+
+## Next steps
+
+- [LangGraph integration guide](/frameworks/langgraph)
+- [Google ADK integration guide](/frameworks/adk)
+- [Configuration reference](/configuration)

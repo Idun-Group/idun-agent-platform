@@ -1,0 +1,220 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "Idun Platform",
+  "colors": {
+    "primary": "#8C52FF",
+    "light": "#0ED4A5",
+    "dark": "#8C52FF"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://idunplatform.com"
+  },
+  "fonts": {
+    "body": {
+      "family": "Figtree",
+      "weight": 400
+    },
+    "heading": {
+      "family": "Space Grotesk",
+      "weight": 600
+    }
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "background": {
+    "decoration": "grid"
+  },
+  "styling": {
+    "eyebrows": "breadcrumbs",
+    "codeblocks": "dark"
+  },
+  "search": {
+    "prompt": "Search Idun docs..."
+  },
+  "seo": {
+    "metatags": {
+      "og:site_name": "Idun Platform Documentation",
+      "og:locale": "en_US"
+    },
+    "indexing": "navigable"
+  },
+  "metadata": {
+    "timestamp": true
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "index",
+              "quickstart",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Agent frameworks",
+            "pages": [
+              "frameworks/overview",
+              "frameworks/langgraph",
+              "frameworks/adk"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration",
+              "prompts"
+            ]
+          },
+          {
+            "group": "Guardrails",
+            "pages": [
+              "guardrails/overview",
+              "guardrails/reference"
+            ]
+          },
+          {
+            "group": "Memory",
+            "pages": [
+              "memory/overview",
+              "memory/langgraph",
+              "memory/adk"
+            ]
+          },
+          {
+            "group": "Observability",
+            "pages": [
+              "observability/overview",
+              "observability/langfuse",
+              "observability/arize-phoenix",
+              "observability/langsmith",
+              "observability/gcp-trace",
+              "observability/gcp-logging"
+            ]
+          },
+          {
+            "group": "Tool governance",
+            "pages": [
+              "tool-governance/overview",
+              "tool-governance/docker-toolkit"
+            ]
+          },
+          {
+            "group": "Authentication",
+            "pages": [
+              "auth/overview"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/discord",
+              "integrations/slack",
+              "integrations/whatsapp"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/overview",
+              "deployment/gcp"
+            ]
+          },
+          {
+            "group": "Manager",
+            "pages": [
+              "manager/overview"
+            ]
+          },
+          {
+            "group": "CLI",
+            "pages": [
+              "cli/overview"
+            ]
+          },
+          {
+            "group": "More",
+            "pages": [
+              "faq"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/Idun-Group/idun-agent-platform",
+          "icon": "github"
+        }
+      ]
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "type": "github",
+        "href": "https://github.com/Idun-Group/idun-agent-platform"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get started",
+      "href": "/quickstart"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/Idun-Group/idun-agent-platform",
+      "linkedin": "https://www.linkedin.com/in/geoffrey-harrazi9/"
+    },
+    "links": [
+      {
+        "header": "Product",
+        "items": [
+          { "label": "Website", "href": "https://idunplatform.com" },
+          { "label": "Cloud", "href": "https://cloud.idunplatform.com" }
+        ]
+      },
+      {
+        "header": "Resources",
+        "items": [
+          { "label": "GitHub", "href": "https://github.com/Idun-Group/idun-agent-platform" },
+          { "label": "Book a demo", "href": "https://calendar.app.google/LKq6g4bHZtFPbXNt9" }
+        ]
+      }
+    ]
+  }
+}

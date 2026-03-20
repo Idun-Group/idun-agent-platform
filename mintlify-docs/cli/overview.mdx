@@ -1,0 +1,142 @@
+---
+title: "CLI"
+description: "Use the Idun CLI to configure, deploy, and test agents through an interactive terminal interface or direct commands."
+keywords: ["CLI", "command line", "TUI", "terminal", "idun init", "idun agent serve", "configuration"]
+---
+
+The Idun CLI provides an interactive Terminal User Interface (TUI) for configuring and running agents, and a set of commands for direct operation. It is included in the `idun-agent-engine` package.
+
+## Installation
+
+```bash
+pip install idun-agent-engine
+```
+
+## Operating modes
+
+<Tabs>
+  <Tab title="Interactive (TUI)">
+    Launch the interactive setup with:
+
+    ```bash
+    idun init
+    ```
+
+    The TUI walks you through agent configuration step by step:
+
+    1. **Agent information**: Name, framework (LangGraph, ADK, Haystack), port, Python file, and variable selection
+    2. **Memory**: Checkpoint type (in-memory, SQLite, PostgreSQL)
+    3. **Observability**: Provider selection (Langfuse, Phoenix, LangSmith, GCP)
+    4. **Guardrails**: Add safety filters (bias check, PII detection, ban list, and more)
+    5. **MCP servers**: Configure external tool servers
+    6. **Validate and run**: Preview the YAML config, save, and start the agent
+    7. **Chat**: Test the agent with a built-in chat interface
+
+    The TUI saves configuration to `~/.idun/<agent-name>.yaml`.
+  </Tab>
+  <Tab title="Direct commands">
+    Run agents directly from a config file or the Manager:
+
+    <CodeGroup>
+    ```bash From a config file
+    idun agent serve --source file --path config.yaml
+    ```
+
+    ```bash From the Manager
+    export IDUN_AGENT_API_KEY=your-agent-api-key
+    export IDUN_MANAGER_HOST=https://manager.example.com
+    idun agent serve --source manager
+    ```
+
+    ```bash From a saved TUI config
+    idun agent serve --source file --path ~/.idun/my-agent.yaml
+    ```
+    </CodeGroup>
+  </Tab>
+</Tabs>
+
+## Key commands
+
+| Command | Description |
+|---|---|
+| `idun init` | Launch the interactive TUI for agent configuration |
+| `idun agent serve` | Start an agent from a config source |
+| `idun agent serve --source file --path <path>` | Start from a YAML config file |
+| `idun agent serve --source manager` | Start from the Manager API (requires `IDUN_AGENT_API_KEY` and `IDUN_MANAGER_HOST`) |
+
+## Configuration file structure
+
+The TUI generates a YAML config file with this structure:
+
+```yaml ~/.idun/my-agent.yaml
+server:
+  api:
+    port: 8008
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: my-agent
+    graph_definition: ./agent.py:app
+    checkpointer:
+      type: memory
+
+observability:
+  provider: OFF
+
+guardrails: []
+
+mcp_servers: []
+```
+
+## TUI features
+
+### Agent variable selection
+
+The CLI parses your Python file and lists all available variables. Select the variable that contains your agent or graph instance.
+
+### Configuration preview
+
+Before running, the TUI displays your complete YAML configuration with syntax highlighting and line numbers.
+
+### Built-in chat
+
+After starting the agent, the Chat section provides:
+
+- Real-time messaging with the agent
+- Connection status indicators
+- Thinking indicator while the agent processes
+- Word wrapping for long responses
+
+### Server management
+
+The Validate and Run section provides two options:
+
+- **Save and Run**: Saves config and starts the agent server. The button changes to **Kill Server** while running
+- **Save and Exit**: Saves config to disk without starting. The server must be stopped first
+
+## API access
+
+Once deployed, your agent exposes a REST API:
+
+```bash
+# Health check
+curl http://localhost:8008/health
+
+# Invoke agent
+curl -X POST http://localhost:8008/agent/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "test-session", "query": "Hello"}'
+
+# API documentation
+open http://localhost:8008/docs
+```
+
+## Keyboard shortcuts
+
+| Key | Action |
+|---|---|
+| `Enter` | Send message or select option |
+| `Tab` | Navigate between sections and inputs |
+| Arrow keys | Navigate lists and options |
+| `Ctrl+Q` | Exit the CLI (stop the server first) |

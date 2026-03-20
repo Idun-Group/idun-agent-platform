@@ -1,0 +1,65 @@
+---
+title: "Google Cloud Logging"
+description: "Set up Google Cloud Logging to capture structured logs from your agents."
+keywords: ["Google Cloud Logging", "GCP", "structured logging", "observability", "log management"]
+---
+
+This guide walks you through setting up Google Cloud Logging to add structured logging to your agents. Once enabled, you can centralize logs for agent execution, errors, and custom events in Google Cloud Logging.
+
+Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Agent Platform.
+
+## Set up GCP Logging observability
+
+<Steps>
+  <Step title="Prepare your Google Cloud project">
+    1. Create a Google Cloud project if you do not have one
+    2. Enable the **Cloud Logging API** in your project
+    3. Verify that the environment where your agent runs has credentials with permission to write logs (the `Logs Writer` role)
+  </Step>
+  <Step title="Create an observability configuration">
+    1. On the Idun Agent Platform main page, navigate to **Observability**
+    2. Click **Add configuration**
+    3. Select **GCP Logging**
+    4. Enter a **Configuration Name** (for example, "GCP Logging Prod")
+    5. Fill in the required details:
+        - **Project ID**: Your Google Cloud Project ID
+        - **Log Name**: Identifier for the log stream (for example, `idun-agent-logs`)
+        - **Resource Type**: (Optional) For example, `global` or `gce_instance`
+        - **Severity**: Minimum level to record (for example, `INFO`, `WARNING`, `ERROR`)
+        - **Transport**: Delivery method (default `BackgroundThread`)
+    6. Click **Create configuration**
+  </Step>
+  <Step title="Attach GCP Logging to your agent">
+    1. Navigate to the agent you want to add logging to
+    2. Click **Edit Agent**
+    3. Click **Next** to reach the observability configuration step
+    4. Select **GCP Logging** as the observability provider
+    5. Select the configuration you created
+    6. Click **Next**
+    7. Click **Save changes** to finalize
+
+    After saving, click **Restart** on your agent page to reload the configuration.
+  </Step>
+</Steps>
+
+## View log data
+
+Once your agent is running with observability enabled:
+
+1. Interact with your agent
+2. Open the [Google Cloud Console](https://console.cloud.google.com/)
+3. Navigate to **Logging** > **Logs Explorer**
+
+Filter by the **Log Name** you configured to see your agent's logs.
+
+## Best practices
+
+- **Use structured logging**: The agent platform sends structured logs, which are easier to query in GCP
+- **Set appropriate severity**: Filter out debug noise in production by setting severity to `INFO` or `WARNING`
+
+## Troubleshooting
+
+### Logs not showing up?
+
+1. **Check permissions**: Verify the `Logs Writer` role is assigned to the agent's service account
+2. **Check log name**: Confirm you are filtering by the correct log name in Logs Explorer

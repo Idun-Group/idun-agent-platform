@@ -1,0 +1,124 @@
+---
+title: "Configuration"
+description: "Engine configuration reference for server settings, agent framework, observability, guardrails, memory, MCP, SSO, and integrations."
+keywords: ["configuration", "config.yaml", "EngineConfig", "environment variables", "YAML"]
+---
+
+A single `EngineConfig` controls every aspect of your agent service. Define it as a YAML file or fetch it from the [manager API](/manager/overview). The structure is identical in both cases.
+
+## Complete config example
+
+```yaml
+server:
+  api:
+    port: 8001
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "Support Agent"
+    graph_definition: "./agent.py:graph"
+    checkpointer:
+      type: "sqlite"
+      db_url: "sqlite:///checkpoints.db"
+
+observability:
+  - provider: "LANGFUSE"
+    enabled: true
+    config:
+      host: "https://cloud.langfuse.com"
+      public_key: "${LANGFUSE_PUBLIC_KEY}"
+      secret_key: "${LANGFUSE_SECRET_KEY}"
+
+guardrails:
+  input:
+    - config_id: "DETECT_PII"
+      on_fail: "reject"
+      reject_message: "Request contains personal information."
+  output:
+    - config_id: "TOXIC_LANGUAGE"
+      on_fail: "reject"
+
+mcp_servers:
+  - name: "time"
+    transport: "stdio"
+    command: "docker"
+    args: ["run", "-i", "--rm", "mcp/time"]
+
+prompts:
+  - prompt_id: "system-prompt"
+    version: 1
+    content: "You are a support agent for {{ company_name }}."
+    tags: ["latest"]
+
+sso:
+  enabled: true
+  issuer: "https://accounts.google.com"
+  client_id: "123456789.apps.googleusercontent.com"
+  allowed_domains: ["yourcompany.com"]
+
+integrations:
+  - provider: "WHATSAPP"
+    enabled: true
+    config:
+      access_token: "${WHATSAPP_ACCESS_TOKEN}"
+      phone_number_id: "${WHATSAPP_PHONE_ID}"
+      verify_token: "${WHATSAPP_VERIFY_TOKEN}"
+```
+
+Values support `${ENV_VAR}` syntax for referencing environment variables at load time.
+
+## Config sections
+
+**`server`** -- HTTP server binding. Exposes `api.port` (default: `8000`). CORS allows all origins. The engine adds `Access-Control-Allow-Private-Network: true` so hosted UIs can reach local agents.
+
+**`agent`** -- Framework type and framework-specific settings. The `config` fields change based on the `type` value. Supported types: `LANGGRAPH`, `ADK`, `HAYSTACK`. See the [frameworks overview](/frameworks/overview) for per-framework config details.
+
+For LangGraph, provide an uncompiled `StateGraph` via `graph_definition` (`path/to/file.py:variable_name`). The engine compiles it with the configured checkpointer.
+
+**`observability`** -- A list of providers, each with `provider`, `enabled`, and `config`. Multiple providers can be active simultaneously. Supported: `LANGFUSE`, `PHOENIX`, `GCP_TRACE`, `GCP_LOGGING`, `LANGSMITH`. See [observability guides](/observability/overview).
+
+**`guardrails`** -- Split into `input` (validated before invocation) and `output` (validated after). Uses [Guardrails AI Hub](https://hub.guardrailsai.com/) guards, downloaded and run locally. Available guards: `BAN_LIST`, `DETECT_PII`, `NSFW_TEXT`, `COMPETITION_CHECK`, `BIAS_CHECK`, `CORRECT_LANGUAGE`, `GIBBERISH_TEXT`, `TOXIC_LANGUAGE`, `RESTRICT_TO_TOPIC`. See [guardrails reference](/guardrails/reference).
+
+**`mcp_servers`** -- Model Context Protocol servers that provide tools to your agent. Supports `stdio`, `sse`, `streamable_http`, and `websocket` transports. See [tool governance](/tool-governance/overview).
+
+**`prompts`** -- Versioned prompt templates with Jinja2 variable support (`{{ variable }}`). Each entry has `prompt_id`, `version`, `content`, and `tags`.
+
+**`sso`** -- OIDC JWT validation on agent endpoints. When enabled, requests to `/agent/run` must include a valid token. Supports `allowed_domains` and `allowed_emails` filtering. See [authentication overview](/auth/overview).
+
+**`integrations`** -- Messaging platform connections. Each integration adds webhook endpoints to the engine. Supported: `WHATSAPP`, `DISCORD`.
+
+**`checkpointer`** (inside `agent.config` for LangGraph) -- Conversation memory. Types: `memory` (in-process), `sqlite`, `postgres`. For ADK, use `session_service` and `memory_service` instead. See [memory guides](/memory/overview).
+
+## Config sources
+
+### File-based (standalone)
+
+Place a `config.yaml` next to your agent code and serve it directly.
+
+```bash
+idun agent serve --source file --path config.yaml
+```
+
+### Manager-based (managed)
+
+Set two environment variables and the engine fetches its config from the manager API at startup.
+
+```bash
+export IDUN_AGENT_API_KEY=your-agent-api-key
+export IDUN_MANAGER_HOST=https://manager.example.com
+idun agent serve --source manager
+```
+
+The API key is generated in the manager UI or via `GET /api/v1/agents/key?agent_id=<id>`.
+
+## Environment variables
+
+| Variable | Purpose |
+|---|---|
+| `IDUN_AGENT_API_KEY` | API key for fetching config from the manager |
+| `IDUN_MANAGER_HOST` | Manager API base URL |
+| `IDUN_CONFIG_PATH` | Path to config.yaml (alternative to `--path` flag) |
+| `IDUN_TELEMETRY_ENABLED` | Set to `false` to disable anonymous usage telemetry |
+
+The engine resolves `${VAR_NAME}` references in YAML values at config load time, so you can keep secrets out of your config files.

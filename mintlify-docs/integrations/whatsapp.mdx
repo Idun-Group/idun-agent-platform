@@ -1,0 +1,89 @@
+---
+title: "WhatsApp"
+description: "Connect your Idun agent to WhatsApp so users can interact with it through messages using the Meta Business API."
+keywords: ["WhatsApp", "integration", "Meta", "messaging", "webhook", "WhatsApp Business"]
+---
+
+Connect your Idun agent to WhatsApp so users can interact with it through messages.
+
+## Prerequisites
+
+- A running Idun agent (engine)
+- A [Meta Business](https://business.facebook.com/) account
+- A WhatsApp Business API app set up in the [Meta Developer Portal](https://developers.facebook.com/)
+- Your engine must be publicly reachable (use [ngrok](https://ngrok.com) for local development)
+
+## Setup
+
+<Steps>
+  <Step title="Create a Meta app">
+    1. Go to the [Meta Developer Portal](https://developers.facebook.com/apps/)
+    2. Click **Create App** > select **Business** type
+    3. Fill in the app name and select your Business account
+    4. On the app dashboard, add the **WhatsApp** product
+  </Step>
+
+  <Step title="Get your credentials">
+    1. Go to **WhatsApp > API Setup**
+    2. Copy the following values:
+       - **Phone Number ID**: The ID of the phone number you send from
+       - **Permanent Access Token**: Generate one under **System Users** in your Meta Business settings (or use the temporary token for testing)
+    3. Choose a **Verify Token**: Any secret string you will use to verify the webhook
+  </Step>
+
+  <Step title="Configure the integration">
+    Add the WhatsApp integration to your engine config:
+
+    ```yaml config.yaml
+    integrations:
+      - provider: "WHATSAPP"
+        enabled: true
+        config:
+          access_token: "EAAxxxxxxx..."
+          phone_number_id: "123456789012345"
+          verify_token: "my-webhook-verify-secret"
+          api_version: "v21.0"
+    ```
+
+    Or configure it through the Manager UI on the **Integrations** page.
+
+    | Field | Description |
+    |---|---|
+    | `access_token` | Meta Graph API permanent access token |
+    | `phone_number_id` | WhatsApp Business phone number ID from step 2 |
+    | `verify_token` | Webhook verification token (must match what you configure in the Meta App Dashboard) |
+    | `api_version` | (Optional) Meta Graph API version, defaults to `v21.0` |
+  </Step>
+
+  <Step title="Set up the webhook">
+    1. Make sure your engine is running and publicly reachable
+    2. In the Meta Developer Portal, go to **WhatsApp > Configuration**
+    3. Under **Webhook**, click **Edit** and set:
+       - **Callback URL**: `https://<your-domain>/integrations/whatsapp/webhook`
+       - **Verify Token**: The same `verify_token` from your config
+    4. Click **Verify and Save** (Meta sends a GET request to verify the endpoint)
+    5. Subscribe to the **messages** webhook field
+  </Step>
+
+  <Step title="Test it">
+    1. Open WhatsApp on your phone
+    2. Send a message to the WhatsApp Business number
+    3. Your agent processes the message and replies directly in the chat
+
+    <Note>
+      With a test phone number, you can only send messages to numbers registered in the Meta Developer Portal under **WhatsApp > API Setup > Test Numbers**.
+    </Note>
+  </Step>
+</Steps>
+
+## How it works
+
+1. User sends a message to the WhatsApp Business number
+2. Meta POSTs the webhook payload to your engine
+3. Engine verifies the payload structure
+4. Engine invokes the agent with the message text
+5. Engine sends the agent's reply back via the Meta Graph API
+
+**Session tracking**: The sender's phone number is used as the session ID, so conversation context is maintained per user.
+
+**Webhook verification**: On setup, Meta sends a GET request with a challenge token. The engine verifies it against your `verify_token` and responds automatically.

@@ -1,0 +1,63 @@
+---
+title: "Observability"
+description: "Monitor, trace, and debug your agents with built-in integrations for popular observability platforms."
+keywords: ["observability", "tracing", "monitoring", "OpenTelemetry", "Langfuse", "Phoenix", "LangSmith", "GCP"]
+---
+
+Idun Agent Platform provides built-in observability that gives you visibility into agent execution, performance, and behavior. The platform uses OpenTelemetry-based auto-instrumentation to capture traces, logs, and metrics from your agents with minimal configuration.
+
+You configure observability once in the Manager UI, then attach configurations to any agent. Each configuration stores your provider credentials and settings, and you can reuse it across multiple agents.
+
+## Supported providers
+
+<Cards>
+  <Card
+    title="Langfuse"
+    icon="chart-mixed"
+    href="/observability/langfuse"
+  >
+    Open-source observability and analytics for LLM applications. Self-hosted or cloud.
+  </Card>
+  <Card
+    title="Arize Phoenix"
+    icon="fire"
+    href="/observability/arize-phoenix"
+  >
+    AI observability for tracing, evaluation, and troubleshooting. Cloud or self-hosted.
+  </Card>
+  <Card
+    title="LangSmith"
+    icon="link"
+    href="/observability/langsmith"
+  >
+    Debugging, testing, evaluating, and monitoring for LangChain-based agents.
+  </Card>
+  <Card
+    title="Google Cloud Trace"
+    icon="cloud"
+    href="/observability/gcp-trace"
+  >
+    Distributed tracing to find latency bottlenecks in Google Cloud environments.
+  </Card>
+  <Card
+    title="Google Cloud Logging"
+    icon="file-lines"
+    href="/observability/gcp-logging"
+  >
+    Structured log management and analysis in Google Cloud.
+  </Card>
+</Cards>
+
+## How it works
+
+When you attach an observability configuration to an agent, the platform automatically instruments the agent runtime. Depending on the provider, you get:
+
+- **Traces** showing agent execution flow, LLM calls, and tool invocations
+- **Latency metrics** for each step in the agent graph
+- **Cost tracking** based on token usage
+- **Error traces** with full context for debugging
+- **Structured logs** for centralized log analysis
+
+<Note>
+  Observability configurations are saved at the workspace level and can be reused across multiple agents. You only need to set up provider credentials once.
+</Note>

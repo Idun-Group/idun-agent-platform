@@ -1,0 +1,89 @@
+---
+title: "Langfuse"
+description: "Set up Langfuse observability to monitor, trace, and debug your agents in real time."
+keywords: ["Langfuse", "observability", "tracing", "monitoring", "LLM analytics"]
+---
+
+This guide walks you through setting up Langfuse to add observability to your agents. Once enabled, you can track agent execution, view traces, and analyze performance in your Langfuse dashboard.
+
+Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Agent Platform.
+
+## Set up Langfuse observability
+
+<Steps>
+  <Step title="Get your Langfuse API keys">
+    If you do not have Langfuse API keys yet:
+
+    1. Go to [Langfuse Cloud](https://cloud.langfuse.com) or your [self-hosted](https://langfuse.com/self-hosting) instance
+    2. Sign up or log in to your account
+    3. Create a new project or select an existing one
+    4. Navigate to **Settings** > **API Keys**
+    5. Click **Create New API Key**
+    6. Copy the **Public Key** and **Secret Key**
+  </Step>
+  <Step title="Create an observability configuration">
+    1. On the Idun Agent Platform main page, navigate to **Observability**
+    2. Click **Add configuration**
+    3. Select **Langfuse**
+    4. Enter a **Configuration Name** (for example, "Langfuse Server 1")
+    5. Fill in the required API credentials:
+        - **Host URL**: Your Langfuse instance URL (for example, `https://cloud.langfuse.com` or your self-hosted URL)
+        - **Public Key**: Your Langfuse public key (starts with `pk-lf-...`)
+        - **Secret Key**: Your Langfuse secret key (starts with `sk-lf-...`)
+    6. Click **Create configuration**
+
+    <Warning>
+      Keep your secret key secure. Do not commit it to version control or share it publicly.
+    </Warning>
+
+    <Info>
+      Observability configurations are saved and reusable across multiple agents. You only need to set up your API keys once.
+    </Info>
+  </Step>
+  <Step title="Attach Langfuse to your agent">
+    1. Navigate to the agent you want to trace
+    2. Click **Edit Agent**
+    3. Click **Next** to reach the observability configuration step
+    4. Select **Langfuse** as the observability provider
+    5. Select the Langfuse configuration you want to use
+    6. Click **Next**
+    7. Click **Save changes** to finalize
+
+    After saving, click **Restart** on your agent page to reload the configuration and enable Langfuse observability.
+  </Step>
+</Steps>
+
+## View observability data
+
+Once your agent is running with observability enabled:
+
+1. Interact with your agent through the Manager UI or API
+2. Open your Langfuse dashboard at [cloud.langfuse.com](https://cloud.langfuse.com)
+3. Navigate to your project to view traces
+
+You will see detailed traces showing:
+
+- Agent execution flow
+- LLM calls and responses
+- Tool usage and results
+- Execution time and costs
+- Error traces and debugging information
+
+## Best practices
+
+- Use descriptive names for observability configurations to identify them when managing multiple agents
+- Enable observability during development to catch issues early
+- Monitor costs through your Langfuse dashboard to track token usage
+
+## Troubleshooting
+
+<Warning>
+  ADK does not currently support simultaneous tracing with both Langfuse and GCP tracing. If you need this feature, open an issue on [GitHub](https://github.com/Idun-Group/idun-agent-platform/issues) or join the [Discord server](https://discord.gg/KCZ6nW2jQe).
+</Warning>
+
+### Observability not working?
+
+1. **Check API keys**: Verify that your public and secret keys are correct
+2. **Verify host URL**: Confirm the URL is accessible and correctly formatted
+3. **Check agent logs**: Look for connection errors in the agent runtime logs
+4. **Test connectivity**: Verify your agent can reach the Langfuse host

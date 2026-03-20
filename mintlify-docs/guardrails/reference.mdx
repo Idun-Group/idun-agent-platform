@@ -1,0 +1,320 @@
+---
+title: "Guardrails reference"
+description: "Reference for all 15 guardrail types available in Idun Agent Platform, including configuration fields and usage positions."
+keywords: ["guardrails", "safety", "PII", "jailbreak", "prompt injection", "toxic language", "content filter", "Model Armor"]
+---
+
+Idun Agent Platform supports 15 guardrail types that validate agent inputs, outputs, or both. Each guardrail has a `config_id`, a reject message returned when the guard triggers, and type-specific configuration fields.
+
+## Guardrail positions
+
+Guardrails are placed in one of two positions:
+
+- **Input**: Applied to user messages before they reach the agent
+- **Output**: Applied to agent responses before they are returned to the user
+
+You can place the same guardrail type in both positions.
+
+```yaml config.yaml
+guardrails:
+  input:
+    - config_id: detect_pii
+      reject_message: "PII detected in your input"
+      pii_entities: ["EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD"]
+      on_fail: exception
+
+  output:
+    - config_id: toxic_language
+      reject_message: "Response contains inappropriate language"
+      threshold: 0.7
+```
+
+## Guardrail types
+
+### BAN_LIST
+
+Blocks messages containing specific words or phrases.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `ban_list` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `banned_words` | `list[string]` | Words or phrases to block |
+
+```yaml
+- config_id: ban_list
+  reject_message: "Message contains banned content"
+  banned_words: ["banned-word", "another phrase"]
+```
+
+### DETECT_PII
+
+Detects personally identifiable information in text.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `detect_pii` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `pii_entities` | `list[string]` | PII entity types to detect (e.g., `EMAIL_ADDRESS`, `PHONE_NUMBER`, `CREDIT_CARD`, `SSN`) |
+| `on_fail` | `string` | Action on detection. Default: `exception` |
+
+```yaml
+- config_id: detect_pii
+  reject_message: "Personal information detected"
+  pii_entities: ["EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD"]
+  on_fail: exception
+```
+
+### NSFW_TEXT
+
+Detects not-safe-for-work content.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `nsfw_text` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `threshold` | `float` | Sensitivity level (0.0 to 1.0). Lower values are more sensitive |
+
+```yaml
+- config_id: nsfw_text
+  reject_message: "Inappropriate content detected"
+  threshold: 0.5
+```
+
+### COMPETITION_CHECK
+
+Flags mentions of competitor companies or products.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `competition_check` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `competitors` | `list[string]` | Names of competitor companies or products |
+
+```yaml
+- config_id: competition_check
+  reject_message: "Competitor reference detected"
+  competitors: ["CompetitorA", "CompetitorB"]
+```
+
+### BIAS_CHECK
+
+Detects biased language in text.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `bias_check` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `threshold` | `float` | Sensitivity level (0.0 to 1.0) |
+
+```yaml
+- config_id: bias_check
+  reject_message: "Biased language detected"
+  threshold: 0.7
+```
+
+### CORRECT_LANGUAGE
+
+Validates that text is in one of the expected languages.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `correct_language` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `expected_languages` | `list[string]` | Valid ISO language codes (e.g., `en`, `fr`, `es`) |
+
+```yaml
+- config_id: correct_language
+  reject_message: "Please use English or French"
+  expected_languages: ["en", "fr"]
+```
+
+### GIBBERISH_TEXT
+
+Filters nonsensical or garbled input.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `gibberish_text` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `threshold` | `float` | Sensitivity level (0.0 to 1.0) |
+
+```yaml
+- config_id: gibberish_text
+  reject_message: "Input appears to be nonsensical"
+  threshold: 0.8
+```
+
+### TOXIC_LANGUAGE
+
+Detects toxic or harmful language.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `toxic_language` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `threshold` | `float` | Sensitivity level (0.0 to 1.0) |
+
+```yaml
+- config_id: toxic_language
+  reject_message: "Toxic language detected"
+  threshold: 0.7
+```
+
+### RESTRICT_TO_TOPIC
+
+Keeps conversations within a defined set of allowed topics.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `restrict_to_topic` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `topics` | `list[string]` | List of allowed topics |
+
+```yaml
+- config_id: restrict_to_topic
+  reject_message: "That topic is outside the scope of this agent"
+  topics: ["customer support", "product information", "billing"]
+```
+
+### DETECT_JAILBREAK
+
+Detects jailbreak attempts in user input.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `detect_jailbreak` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `threshold` | `float` | Sensitivity level (0.0 to 1.0) |
+
+```yaml
+- config_id: detect_jailbreak
+  reject_message: "Jailbreak attempt detected"
+  threshold: 0.5
+```
+
+### PROMPT_INJECTION
+
+Detects prompt injection attacks.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `prompt_injection` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `threshold` | `float` | Sensitivity level (0.0 to 1.0) |
+
+```yaml
+- config_id: prompt_injection
+  reject_message: "Prompt injection detected"
+  threshold: 0.5
+```
+
+### RAG_HALLUCINATION
+
+Detects hallucinations in RAG (Retrieval-Augmented Generation) responses by comparing the response against the retrieved context.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `rag_hallucination` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `threshold` | `float` | Sensitivity level (0.0 to 1.0) |
+
+```yaml
+- config_id: rag_hallucination
+  reject_message: "Response may contain unsupported claims"
+  threshold: 0.7
+```
+
+### CODE_SCANNER
+
+Scans and validates code in messages, restricting to allowed programming languages.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `code_scanner` | |
+| `reject_message` | `string` | Message returned when triggered |
+| `allowed_languages` | `list[string]` | List of allowed programming languages |
+
+```yaml
+- config_id: code_scanner
+  reject_message: "Code in this language is not allowed"
+  allowed_languages: ["python", "javascript", "sql"]
+```
+
+### MODEL_ARMOR (Google Cloud)
+
+Uses Google Cloud's Model Armor service for content safety evaluation.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `model_armor` | |
+| `name` | `string` | Name of the armor configuration |
+| `project_id` | `string` | Google Cloud project ID |
+| `location` | `string` | Google Cloud region (e.g., `us-central1`) |
+| `template_id` | `string` | Model Armor template ID |
+
+```yaml
+- config_id: model_armor
+  name: production-armor
+  project_id: my-gcp-project
+  location: us-central1
+  template_id: my-armor-template
+```
+
+<Note>
+  Model Armor requires a Google Cloud project with the Model Armor API enabled. This guardrail type does not use the Guardrails AI hub.
+</Note>
+
+### CUSTOM_LLM
+
+Uses a large language model as a custom guardrail with a prompt you define.
+
+| Field | Type | Description |
+|---|---|---|
+| `config_id` | `custom_llm` | |
+| `name` | `string` | Name of the custom guardrail |
+| `model` | `string` | LLM model to use for evaluation |
+| `prompt` | `string` | System instruction prompt that defines the guardrail logic |
+
+Supported models:
+
+| Model ID | Name |
+|---|---|
+| `Gemini 2.5 flash lite` | Gemini 2.5 Flash Lite |
+| `Gemini 2.5 flash` | Gemini 2.5 Flash |
+| `Gemini 2.5 pro` | Gemini 2.5 Pro |
+| `Gemini 3 pro` | Gemini 3 Pro |
+| `OpenAi GPT-5.1` | OpenAI GPT-5.1 |
+| `OpenAi GPT-5 mini` | OpenAI GPT-5 Mini |
+| `OpenAi GPT-5 nano` | OpenAI GPT-5 Nano |
+
+```yaml
+- config_id: custom_llm
+  name: compliance-check
+  model: "Gemini 2.5 flash"
+  prompt: "Evaluate the following text for regulatory compliance violations. Return PASS if compliant, FAIL if not."
+```
+
+<Note>
+  Custom LLM guardrails use a separate LLM call for evaluation. This adds latency and cost to each guarded request.
+</Note>
+
+## Summary table
+
+| Type | Config ID | Position | Key config fields |
+|---|---|---|---|
+| Ban list | `ban_list` | Input/Output | `banned_words` |
+| Detect PII | `detect_pii` | Input/Output | `pii_entities`, `on_fail` |
+| NSFW text | `nsfw_text` | Input/Output | `threshold` |
+| Competition check | `competition_check` | Input/Output | `competitors` |
+| Bias check | `bias_check` | Input/Output | `threshold` |
+| Correct language | `correct_language` | Input/Output | `expected_languages` |
+| Gibberish text | `gibberish_text` | Input/Output | `threshold` |
+| Toxic language | `toxic_language` | Input/Output | `threshold` |
+| Restrict to topic | `restrict_to_topic` | Input/Output | `topics` |
+| Detect jailbreak | `detect_jailbreak` | Input | `threshold` |
+| Prompt injection | `prompt_injection` | Input | `threshold` |
+| RAG hallucination | `rag_hallucination` | Output | `threshold` |
+| Code scanner | `code_scanner` | Input/Output | `allowed_languages` |
+| Model Armor | `model_armor` | Input/Output | `project_id`, `location`, `template_id` |
+| Custom LLM | `custom_llm` | Input/Output | `model`, `prompt` |
