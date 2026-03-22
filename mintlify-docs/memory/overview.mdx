@@ -49,6 +49,21 @@ Checkpointing saves your agent's state during execution. Each interaction is ass
 ## Quick configuration examples
 
 <Tabs>
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Browse the backend catalog">
+        Navigate to **Memory Stores** in the sidebar. The catalog shows backend cards: SQLite, PostgreSQL, In Memory, Vertex AI, and Database.
+        ![Memory catalog](/images/ui/memory-catalog.png)
+      </Step>
+      <Step title="Add a backend">
+        Click **+** on your backend and configure the connection details.
+        ![Create PostgreSQL memory config](/images/ui/memory-create-postgres.png)
+      </Step>
+      <Step title="Attach to an agent">
+        Attach the configuration to agents from the agent detail page.
+      </Step>
+    </Steps>
+  </Tab>
   <Tab title="Config file">
     <Tabs>
       <Tab title="LangGraph">
@@ -73,21 +88,6 @@ Checkpointing saves your agent's state during execution. Each interaction is ass
         ```
       </Tab>
     </Tabs>
-  </Tab>
-  <Tab title="Manager UI">
-    <Steps>
-      <Step title="Browse the backend catalog">
-        Navigate to **Memory Stores** in the sidebar. The catalog shows backend cards: SQLite, PostgreSQL, In Memory, Vertex AI, and Database.
-        ![Memory catalog](/images/ui/memory-catalog.png)
-      </Step>
-      <Step title="Add a backend">
-        Click **+** on your backend and configure the connection details.
-        ![Create PostgreSQL memory config](/images/ui/memory-create-postgres.png)
-      </Step>
-      <Step title="Attach to an agent">
-        Attach the configuration to agents from the agent detail page.
-      </Step>
-    </Steps>
   </Tab>
 </Tabs>
 

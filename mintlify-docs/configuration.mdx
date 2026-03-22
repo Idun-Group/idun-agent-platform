@@ -93,6 +93,13 @@ For LangGraph, provide an uncompiled `StateGraph` via `graph_definition` (`path/
 ## Config sources
 
 <Tabs>
+  <Tab title="Manager UI">
+    Open an agent and go to the **Configuration** tab. This shows the full materialized engine config that the agent receives from the platform when it connects.
+
+    Toggle between JSON and YAML views. Use the Copy button to grab the config for local testing or debugging. Note that `${ENV_VAR}` references aren't resolved here; the engine resolves them at load time.
+
+    ![Agent detail Configuration tab](/images/ui/agents-detail-config.png)
+  </Tab>
   <Tab title="Config file">
     ### File-based (standalone)
 
@@ -113,13 +120,6 @@ For LangGraph, provide an uncompiled `StateGraph` via `graph_definition` (`path/
     ```
 
     The API key is generated in the manager UI or via `GET /api/v1/agents/key?agent_id=<id>`.
-  </Tab>
-  <Tab title="Manager UI">
-    Open an agent and go to the **Configuration** tab. This shows the full materialized engine config that the agent receives from the platform when it connects.
-
-    Toggle between JSON and YAML views. Use the Copy button to grab the config for local testing or debugging. Note that `${ENV_VAR}` references aren't resolved here; the engine resolves them at load time.
-
-    ![Agent detail Configuration tab](/images/ui/agents-detail-config.png)
   </Tab>
 </Tabs>
 

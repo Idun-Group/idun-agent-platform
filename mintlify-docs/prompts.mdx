@@ -18,6 +18,13 @@ Prompt management lets you version, store, and assign prompt templates to agents
 ## Define prompts
 
 <Tabs>
+  <Tab title="Manager UI">
+    Prompts are assigned to agents from the agent detail **Prompts** tab.
+
+    ![Agent detail prompts tab](/images/ui/agents-detail-prompts.png)
+
+    The Prompts page in the sidebar shows all prompts in your workspace. Create prompts with a name, content (using the built-in editor), and tags.
+  </Tab>
   <Tab title="Config file">
     ```yaml config.yaml
     prompts:
@@ -43,13 +50,6 @@ Prompt management lets you version, store, and assign prompt templates to agents
     | `version` | `integer` | Version number (auto-incremented when using the Manager) |
     | `content` | `string` | Prompt text, supports Jinja2 `{{ variables }}` |
     | `tags` | `list[string]` | Metadata tags. `latest` is auto-managed by the Manager |
-  </Tab>
-  <Tab title="Manager UI">
-    Prompts are assigned to agents from the agent detail **Prompts** tab.
-
-    ![Agent detail prompts tab](/images/ui/agents-detail-prompts.png)
-
-    The Prompts page in the sidebar shows all prompts in your workspace. Create prompts with a name, content (using the built-in editor), and tags.
   </Tab>
 </Tabs>
 

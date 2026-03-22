@@ -83,6 +83,23 @@ Protected routes:
 ### SSO config
 
 <Tabs>
+  <Tab title="Manager UI">
+    **SSO/OIDC configuration**
+
+    Navigate to the SSO page to manage SSO configurations for your workspace.
+
+    ![SSO page](/images/ui/sso-page.png)
+
+    Click **Add SSO config** and fill in the issuer URL, client ID, and allowed domains.
+
+    **User management**
+
+    The User Management page shows a table of workspace members with their assigned roles.
+
+    ![Workspace users list](/images/ui/users-list.png)
+
+    From this page you can invite new users by email and assign them a role: **Owner**, **Admin**, **Member**, or **Viewer**. You can also update an existing member's role or remove them from the workspace.
+  </Tab>
   <Tab title="Config file">
     Configure per-agent SSO directly in YAML:
 
@@ -106,23 +123,6 @@ Protected routes:
     | `audience` | Expected JWT `aud` claim. Defaults to `client_id` if not set |
     | `allowed_domains` | Optional list of allowed email domains (e.g., `["company.com"]`) |
     | `allowed_emails` | Optional list of specific email addresses allowed access |
-  </Tab>
-  <Tab title="Manager UI">
-    **SSO/OIDC configuration**
-
-    Navigate to the SSO page to manage SSO configurations for your workspace.
-
-    ![SSO page](/images/ui/sso-page.png)
-
-    Click **Add SSO config** and fill in the issuer URL, client ID, and allowed domains.
-
-    **User management**
-
-    The User Management page shows a table of workspace members with their assigned roles.
-
-    ![Workspace users list](/images/ui/users-list.png)
-
-    From this page you can invite new users by email and assign them a role: **Owner**, **Admin**, **Member**, or **Viewer**. You can also update an existing member's role or remove them from the workspace.
   </Tab>
 </Tabs>
 

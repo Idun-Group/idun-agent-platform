@@ -41,18 +41,6 @@ Under the hood, the engine loads your agent through the adapter specified in you
 You select the framework when configuring your agent:
 
 <Tabs>
-  <Tab title="Config file">
-    Set the `type` field in the `agent` section of your `config.yaml`:
-
-    ```yaml
-    agent:
-      type: LANGGRAPH    # or ADK
-      config:
-        # framework-specific fields
-    ```
-
-    The engine validates that the `config` type matches the selected `type` at startup.
-  </Tab>
   <Tab title="Manager UI">
     In the agent creation wizard, Step 1 asks you to select a framework:
 
@@ -64,6 +52,18 @@ You select the framework when configuring your agent:
     Step 2 configures framework-specific settings such as the graph definition, port, and host.
 
     ![Framework-specific settings in step 2](/images/ui/agents-create-step2.png)
+  </Tab>
+  <Tab title="Config file">
+    Set the `type` field in the `agent` section of your `config.yaml`:
+
+    ```yaml
+    agent:
+      type: LANGGRAPH    # or ADK
+      config:
+        # framework-specific fields
+    ```
+
+    The engine validates that the `config` type matches the selected `type` at startup.
   </Tab>
 </Tabs>
 

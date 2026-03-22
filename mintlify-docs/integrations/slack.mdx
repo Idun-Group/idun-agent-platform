@@ -15,6 +15,29 @@ Connect your Idun agent to Slack so users can interact with it through direct me
 ## Setup
 
 <Tabs>
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Open the integrations catalog">
+        Navigate to **Integrations**. The channel catalog shows WhatsApp, Discord, and Slack as active channels.
+
+        ![Integrations catalog](/images/ui/integrations-catalog.png)
+      </Step>
+
+      <Step title="Create the Slack integration">
+        Click **+** on Slack and fill in the bot token and signing secret.
+
+        | Field | Value |
+        |---|---|
+        | `bot_token` | Bot User OAuth Token from your Slack app (`xoxb-...`) |
+        | `signing_secret` | Signing secret from your Slack app |
+      </Step>
+
+      <Step title="Assign to an agent">
+        After saving, open the agent you want to connect and select the Slack integration from the **Integrations** field.
+      </Step>
+    </Steps>
+  </Tab>
+
   <Tab title="Config file">
     <Steps>
       <Step title="Create a Slack app">
@@ -88,29 +111,6 @@ Connect your Idun agent to Slack so users can interact with it through direct me
         1. Open Slack
         2. Send a direct message to your bot, or post in a channel it has been invited to
         3. Your agent processes the message and replies in the same conversation
-      </Step>
-    </Steps>
-  </Tab>
-
-  <Tab title="Manager UI">
-    <Steps>
-      <Step title="Open the integrations catalog">
-        Navigate to **Integrations**. The channel catalog shows WhatsApp, Discord, and Slack as active channels.
-
-        ![Integrations catalog](/images/ui/integrations-catalog.png)
-      </Step>
-
-      <Step title="Create the Slack integration">
-        Click **+** on Slack and fill in the bot token and signing secret.
-
-        | Field | Value |
-        |---|---|
-        | `bot_token` | Bot User OAuth Token from your Slack app (`xoxb-...`) |
-        | `signing_secret` | Signing secret from your Slack app |
-      </Step>
-
-      <Step title="Assign to an agent">
-        After saving, open the agent you want to connect and select the Slack integration from the **Integrations** field.
       </Step>
     </Steps>
   </Tab>

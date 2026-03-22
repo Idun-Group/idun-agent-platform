@@ -9,19 +9,6 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
 ## Deployment modes
 
 <Tabs>
-  <Tab title="Standalone engine">
-    Run a single agent from a YAML config file. No Manager, no database, no web UI required.
-
-    ```bash
-    pip install idun-agent-engine
-    idun agent serve --source file --path config.yaml
-    ```
-
-    This mode suits:
-    - Local development and testing
-    - Single-agent deployments
-    - CI/CD pipelines where you version config in Git
-  </Tab>
   <Tab title="Managed (full stack)">
     Deploy the Manager API, PostgreSQL database, and web UI together. Agents fetch their config from the Manager at startup.
 
@@ -38,11 +25,33 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
     - Workspace isolation and RBAC
     - Non-technical team members who prefer a UI
   </Tab>
+  <Tab title="Standalone engine">
+    Run a single agent from a YAML config file. No Manager, no database, no web UI required.
+
+    ```bash
+    pip install idun-agent-engine
+    idun agent serve --source file --path config.yaml
+    ```
+
+    This mode suits:
+    - Local development and testing
+    - Single-agent deployments
+    - CI/CD pipelines where you version config in Git
+  </Tab>
 </Tabs>
 
 ## Agent lifecycle management
 
 <Tabs>
+  <Tab title="Manager UI">
+    From the agent detail page, manage the agent lifecycle:
+
+    - The status badge shows **Draft** or **Active**
+    - Click **Restart** to call `/reload` on the running engine, which re-fetches config from the platform
+    - The Overview tab includes **Connect to Platform** instructions for enrollment
+
+    ![Agent detail overview tab](/images/ui/agents-detail-overview.png)
+  </Tab>
   <Tab title="Config file">
     With file-based deployment, manage your agent by restarting the process or updating the config file and restarting:
 
@@ -55,15 +64,6 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
     ```
 
     For managed deployments, restart the agent container to force a fresh config fetch from the Manager.
-  </Tab>
-  <Tab title="Manager UI">
-    From the agent detail page, manage the agent lifecycle:
-
-    - The status badge shows **Draft** or **Active**
-    - Click **Restart** to call `/reload` on the running engine, which re-fetches config from the platform
-    - The Overview tab includes **Connect to Platform** instructions for enrollment
-
-    ![Agent detail overview tab](/images/ui/agents-detail-overview.png)
   </Tab>
 </Tabs>
 

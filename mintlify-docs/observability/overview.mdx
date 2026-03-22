@@ -65,19 +65,6 @@ When you attach an observability configuration to an agent, the platform automat
 ## Configuration
 
 <Tabs>
-  <Tab title="Config file">
-    Add an `observability` section to your `config.yaml` with the provider and its credentials:
-
-    ```yaml config.yaml
-    observability:
-      provider: "langfuse"
-      public_key: "pk-lf-..."
-      secret_key: "sk-lf-..."
-      host: "https://cloud.langfuse.com"
-    ```
-
-    See the provider-specific pages for the full list of fields each provider requires.
-  </Tab>
   <Tab title="Manager UI">
     <Steps>
       <Step title="Browse the provider catalog">
@@ -92,5 +79,18 @@ When you attach an observability configuration to an agent, the platform automat
         Attach the configuration to agents from the agent detail **Overview** tab.
       </Step>
     </Steps>
+  </Tab>
+  <Tab title="Config file">
+    Add an `observability` section to your `config.yaml` with the provider and its credentials:
+
+    ```yaml config.yaml
+    observability:
+      provider: "langfuse"
+      public_key: "pk-lf-..."
+      secret_key: "sk-lf-..."
+      host: "https://cloud.langfuse.com"
+    ```
+
+    See the provider-specific pages for the full list of fields each provider requires.
   </Tab>
 </Tabs>
