@@ -1,17 +1,13 @@
 version: 2
 updates:
   - package-ecosystem: "uv"
-    directories:
-      - "/"
-      - "/libs/idun_agent_engine"
-      - "/libs/idun_agent_schema"
-      - "/services/idun_agent_manager"
+    directory: "/"
     schedule:
       interval: "monthly"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 1
     rebase-strategy: "disabled"
     groups:
-      all:
+      python-all:
         patterns:
           - "*"
     ignore:
@@ -23,10 +19,10 @@ updates:
     directory: "/services/idun_agent_web"
     schedule:
       interval: "monthly"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 1
     rebase-strategy: "disabled"
     groups:
-      all:
+      web-all:
         patterns:
           - "*"
     ignore:
@@ -38,10 +34,10 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 1
     rebase-strategy: "disabled"
     groups:
-      all:
+      actions-all:
         patterns:
           - "*"
     ignore:
