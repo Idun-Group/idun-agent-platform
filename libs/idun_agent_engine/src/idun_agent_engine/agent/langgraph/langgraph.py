@@ -235,11 +235,6 @@ class LanggraphAgent(agent_base.BaseAgent):
             self._agent_instance = graph_builder.compile(
                 checkpointer=self._checkpointer, store=self._store
             )
-        elif isinstance(graph_builder, CompiledStateGraph):
-            # TODO: this was made for supporting langgraph's DeepAgent, modernize.
-            raise TypeError(
-                "Expected StateGraph, Got CompiledStateGraph. Make sure not to run `compile` on your agent's graph."
-            )
 
         self._copilotkit_agent_instance = LangGraphAGUIAgent(
             name=self._name,
@@ -375,13 +370,21 @@ class LanggraphAgent(agent_base.BaseAgent):
     def _validate_graph_builder(
         self, graph_builder: Any, module_path: str, graph_variable_name: str
     ) -> StateGraph:
-        if not isinstance(graph_builder, StateGraph) and not isinstance(
-            graph_builder, CompiledStateGraph
-        ):
+        if isinstance(graph_builder, CompiledStateGraph):
+            logger.warning(
+                "Received a CompiledStateGraph for '%s' from %s — extracting the "
+                "original StateGraph via .builder and recompiling with the "
+                "engine-managed checkpointer/store. Consider exporting the "
+                "uncompiled StateGraph directly.",
+                graph_variable_name,
+                module_path,
+            )
+            return graph_builder.builder
+        if not isinstance(graph_builder, StateGraph):
             raise TypeError(
                 f"The variable '{graph_variable_name}' from {module_path} is not a StateGraph instance."
             )
-        return graph_builder  # type: ignore[return-value]
+        return graph_builder
 
     # TODO: DEPRECATED — remove when shim routes are removed
     async def invoke(self, message: Any) -> Any:
