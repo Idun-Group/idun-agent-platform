@@ -3,9 +3,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 const MANAGER_URL = process.env.MANAGER_URL ?? 'http://localhost:8000';
-const EMAIL = 'admin@idunplatform.com';
-const PASSWORD = 'admin123';
+const EMAIL = process.env.DOCS_EMAIL ?? 'admin@idunplatform.com';
+const PASSWORD = process.env.DOCS_PASSWORD ?? 'admin123';
 const IMAGES_DIR = path.resolve(__dirname, '../images/ui');
+
+// Usage: DOCS_EMAIL=user@example.com DOCS_PASSWORD=secret BASE_URL=http://localhost:3000 npx playwright test
 
 async function save(page: import('@playwright/test').Page, name: string) {
   const dest = path.join(IMAGES_DIR, `${name}.png`);
@@ -18,133 +20,8 @@ async function settle(page: import('@playwright/test').Page) {
   await page.waitForTimeout(500);
 }
 
-test('capture documentation screenshots', async ({ page, request }) => {
-  // -----------------------------------------------------------------------
-  // 1. Seed data via Manager API
-  // -----------------------------------------------------------------------
-
-  // Signup (ignore errors — user may already exist)
-  await request.post(`${MANAGER_URL}/api/v1/auth/basic/signup`, {
-    data: {
-      email: EMAIL,
-      password: PASSWORD,
-      first_name: 'Admin',
-      last_name: 'User',
-    },
-    failOnStatusCode: false,
-  });
-
-  // Login to get session cookie
-  const loginRes = await request.post(`${MANAGER_URL}/api/v1/auth/basic/login`, {
-    data: { email: EMAIL, password: PASSWORD },
-    failOnStatusCode: false,
-  });
-
-  // Extract Set-Cookie header for subsequent seeding requests
-  const setCookie = loginRes.headers()['set-cookie'] ?? '';
-  const sessionCookie = setCookie.split(';')[0]; // e.g. "session=..."
-
-  const headers: Record<string, string> = sessionCookie
-    ? { Cookie: sessionCookie }
-    : {};
-
-  // Create workspace
-  await request.post(`${MANAGER_URL}/api/v1/workspaces/`, {
-    data: { name: 'Demo Workspace', slug: 'demo-workspace' },
-    headers,
-    failOnStatusCode: false,
-  });
-
-  // Create guardrail
-  await request.post(`${MANAGER_URL}/api/v1/guardrails/`, {
-    data: {
-      name: 'Demo Guardrail',
-      guardrail_config: {
-        type: 'topic_restriction',
-        allowed_topics: ['support', 'sales'],
-      },
-    },
-    headers,
-    failOnStatusCode: false,
-  });
-
-  // Create observability config
-  await request.post(`${MANAGER_URL}/api/v1/observability/`, {
-    data: {
-      name: 'Demo Observability',
-      observability_config: {
-        type: 'langfuse',
-        public_key: 'pk-demo',
-        secret_key: 'sk-demo',
-        host: 'https://cloud.langfuse.com',
-      },
-    },
-    headers,
-    failOnStatusCode: false,
-  });
-
-  // Create memory config
-  await request.post(`${MANAGER_URL}/api/v1/memory/`, {
-    data: {
-      name: 'Demo Memory',
-      agent_framework: 'langgraph',
-      memory_config: {
-        type: 'in_memory',
-      },
-    },
-    headers,
-    failOnStatusCode: false,
-  });
-
-  // Create MCP server
-  await request.post(`${MANAGER_URL}/api/v1/mcp-servers/`, {
-    data: {
-      name: 'Demo MCP Server',
-      mcp_server_config: {
-        type: 'stdio',
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-filesystem', '/tmp'],
-      },
-    },
-    headers,
-    failOnStatusCode: false,
-  });
-
-  // Create prompt
-  await request.post(`${MANAGER_URL}/api/v1/prompts/`, {
-    data: {
-      prompt_id: 'demo-system-prompt',
-      content: 'You are a helpful assistant for the Demo Workspace.',
-      tags: ['demo', 'system'],
-    },
-    headers,
-    failOnStatusCode: false,
-  });
-
-  // Create agent
-  const agentRes = await request.post(`${MANAGER_URL}/api/v1/agents/`, {
-    data: {
-      name: 'Demo Agent',
-      version: '1.0.0',
-      description: 'A demonstration LangGraph agent.',
-      engine_config: {
-        framework: 'langgraph',
-        agent_module: 'demo_agent.graph',
-        agent_attribute: 'graph',
-        env_vars: {},
-      },
-    },
-    headers,
-    failOnStatusCode: false,
-  });
-
+test('capture documentation screenshots', async ({ page }) => {
   let agentId: string | null = null;
-  try {
-    const agentJson = await agentRes.json();
-    agentId = agentJson?.id ?? agentJson?.agent_id ?? null;
-  } catch {
-    // ignore parse errors
-  }
 
   // -----------------------------------------------------------------------
   // 2. Capture login page BEFORE logging in
