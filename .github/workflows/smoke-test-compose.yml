@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
     paths:
       - "docker-compose.yml"
+      - "docker-compose.build.yml"
       - "services/idun_agent_manager/Dockerfile"
       - "services/idun_agent_web/Dockerfile"
       - "services/idun_agent_web/nginx.conf"
@@ -14,6 +15,7 @@ on:
     branches: [main, develop]
     paths:
       - "docker-compose.yml"
+      - "docker-compose.build.yml"
       - "services/idun_agent_manager/Dockerfile"
       - "services/idun_agent_web/Dockerfile"
       - "services/idun_agent_web/nginx.conf"
@@ -21,17 +23,45 @@ on:
       - ".github/workflows/smoke-test-compose.yml"
 
 jobs:
+  validate-compose:
+    name: Validate compose file syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: docker compose -f docker-compose.yml config --quiet
+
+      - name: Validate docker-compose.build.yml
+        run: docker compose -f docker-compose.build.yml config --quiet
+
   smoke-test:
-    name: Smoke test prod compose (pre-built images)
+    name: Smoke test (build from source)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Start stack (manager + db + web)
-        # Only bring up the three infrastructure services; skip the agent
-        # service which requires a local build from the examples directory.
+      - name: Build manager and web images
+        # Build the production Dockerfiles and tag them to match the image
+        # names expected by docker-compose.yml. This lets the smoke test run
+        # the exact same compose configuration that end-users would use, without
+        # requiring the published Docker Hub images to exist yet.
+        run: |
+          docker build \
+            -f services/idun_agent_manager/Dockerfile \
+            -t freezaa9/idun-ai:0.5.1 \
+            services/idun_agent_manager
+          docker build \
+            -f services/idun_agent_web/Dockerfile \
+            -t freezaa9/idun-ai-web:0.5.1 \
+            services/idun_agent_web
+
+      - name: Start stack (db + manager + web)
+        # Skip the agent service — it builds from an examples directory and
+        # is tested separately. Only the infrastructure services are needed.
         run: |
           docker compose up -d db manager web
 
