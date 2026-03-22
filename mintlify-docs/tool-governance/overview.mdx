@@ -6,6 +6,10 @@ keywords: ["MCP", "Model Context Protocol", "tool governance", "MCP servers", "a
 
 Idun Agent Platform uses the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) to extend agent capabilities with external tools. You define MCP servers at the platform level, then attach specific servers to individual agents. Each agent can only access the tools from its assigned servers, so you control exactly what each agent can do.
 
+<Tip>
+  The [langgraph-tool-local template](/templates) shows how to mix local tools with MCP tools from the platform in a single agent.
+</Tip>
+
 ## How tool governance works
 
 1. **Register MCP servers** in the Manager UI or YAML config with transport settings and connection details
