@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
+from fastapi import HTTPException
 
 
 @pytest.fixture
@@ -80,23 +81,20 @@ async def test_ban_list_guardrail_blocks_banned_words(
     engine_config = ConfigBuilder.from_dict(
         langgraph_config_with_ban_list_guardrail
     ).build()
-    agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+    await ConfigBuilder.initialize_agent_from_config(engine_config)
 
     guardrails = _parse_guardrails(engine_config.guardrails)
 
     banned_message = "This message contains a badword in it"
-    message = {"query": banned_message, "session_id": "test123"}
 
-    try:
-        _run_guardrails(guardrails, message, position="input")
-        _response = await agent.invoke(message)
-        assert False, "Expected guardrail to block the message but it passed"  # noqa: B011
-    except Exception as e:
-        error_message = str(e)
-        assert (
-            "banned words" in error_message.lower()
-            or "badword" in error_message.lower()
+    with pytest.raises(HTTPException) as exc_info:
+        _run_guardrails(
+            guardrails,
+            {"query": banned_message, "session_id": "test123"},
+            position="input",
         )
+    assert exc_info.value.status_code == 429
+    assert "banned words" in exc_info.value.detail.lower()
 
 
 @pytest.mark.integration
@@ -134,20 +132,19 @@ async def test_pii_guardrail_blocks_email_addresses(
     from idun_agent_engine.server.routers.agent import _run_guardrails
 
     engine_config = ConfigBuilder.from_dict(langgraph_config_with_pii_guardrail).build()
-    agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+    await ConfigBuilder.initialize_agent_from_config(engine_config)
 
     guardrails = _parse_guardrails(engine_config.guardrails)
 
     message_with_email = "Please contact me at user@example.com for more info"
-    message = {"query": message_with_email, "session_id": "test123"}
 
-    try:
-        _run_guardrails(guardrails, message, position="input")
-        _response = await agent.invoke(message)
-        raise AssertionError("Expected PII guardrail to block email but it passed")
-    except Exception as e:
-        error_message = str(e)
-        assert "pii" in error_message.lower() or "email" in error_message.lower()
+    with pytest.raises(HTTPException) as exc_info:
+        _run_guardrails(
+            guardrails,
+            {"query": message_with_email, "session_id": "test123"},
+            position="input",
+        )
+    assert exc_info.value.status_code == 429
 
 
 @pytest.mark.integration
@@ -218,32 +215,26 @@ async def test_multiple_guardrails_all_must_pass(skip_if_no_guardrails_api_key):
 
     guardrails = _parse_guardrails(engine_config.guardrails)
 
-    message_with_banned_word = "This is spam content"
-    message_with_pii = "Contact test@example.com"
+    # Banned word should be blocked
+    with pytest.raises(HTTPException) as exc_info:
+        _run_guardrails(
+            guardrails,
+            {"query": "This is spam content", "session_id": "test123"},
+            position="input",
+        )
+    assert exc_info.value.status_code == 429
+
+    # PII should be blocked
+    with pytest.raises(HTTPException) as exc_info:
+        _run_guardrails(
+            guardrails,
+            {"query": "Contact test@example.com", "session_id": "test123"},
+            position="input",
+        )
+    assert exc_info.value.status_code == 429
+
+    # Clean message should pass
     clean_message = "This is a clean message"
-
-    try:
-        _run_guardrails(
-            guardrails,
-            {"query": message_with_banned_word, "session_id": "test123"},
-            position="input",
-        )
-        await agent.invoke({"query": message_with_banned_word, "session_id": "test123"})
-        raise AssertionError("Expected ban_list guardrail to block spam")
-    except Exception:
-        pass
-
-    try:
-        _run_guardrails(
-            guardrails,
-            {"query": message_with_pii, "session_id": "test123"},
-            position="input",
-        )
-        await agent.invoke({"query": message_with_pii, "session_id": "test123"})
-        raise AssertionError("Expected PII guardrail to block email")
-    except Exception:
-        pass
-
     message = {"query": clean_message, "session_id": "test123"}
     _run_guardrails(guardrails, message, position="input")
     response = await agent.invoke(message)
