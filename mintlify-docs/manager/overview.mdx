@@ -88,14 +88,76 @@ Each resource endpoint returns an `agent_count` field showing how many agents us
   </Tab>
 </Tabs>
 
+## Workspace management
+
+Workspaces provide multi-tenant isolation. Each workspace has its own agents, resources, and members. Resources created in one workspace are not visible to users in another workspace.
+
+You manage workspaces from the workspace selector in the top navigation. Switching workspaces changes which agents and resources you see across the entire UI.
+
+![User and member management table](/images/ui/users-list.png)
+
+## User and role management
+
+Each workspace has its own member list. Invite users by email and assign them a role per workspace.
+
+| Role | Permissions |
+|---|---|
+| Owner | Full access, including workspace deletion and billing |
+| Admin | Manage agents, resources, and members |
+| Member | Create and edit agents and resources |
+| Viewer | Read-only access |
+
+A user can have different roles in different workspaces.
+
+## Agent API keys
+
+Each agent has an API key you can generate from its detail page. The engine uses this key to authenticate with the Manager and fetch its materialized config at startup.
+
+To generate a key, open an agent in the Manager UI, navigate to the **API key** section, and click **Generate key**. Copy the key immediately. It is not shown again.
+
+Pass the key to the engine at runtime:
+
+```bash
+export IDUN_AGENT_API_KEY=<your-agent-api-key>
+export IDUN_MANAGER_HOST=https://manager.example.com
+idun agent serve --source manager
+```
+
+## Resource overview
+
+All resources (guardrails, memory, observability, MCP servers, SSO, integrations) are managed as card grids in the Manager UI. Each card shows a **Used by N agents** badge. A resource with active references cannot be deleted (the API returns 409 Conflict).
+
+Dedicated documentation for each resource type:
+
+<Cards>
+  <Card title="Guardrails" icon="shield" href="/guardrails/overview">
+    PII detection, topic restriction, toxicity filtering, and ban lists.
+  </Card>
+  <Card title="Memory" icon="database" href="/memory/overview">
+    Checkpoint backends for conversation history and agent state.
+  </Card>
+  <Card title="Observability" icon="chart-line" href="/observability/overview">
+    Langfuse, Phoenix, LangSmith, and GCP tracing.
+  </Card>
+  <Card title="Tool governance" icon="wrench" href="/tool-governance/overview">
+    MCP server configuration and Docker-based tool isolation.
+  </Card>
+  <Card title="Authentication" icon="lock" href="/auth/overview">
+    Username/password and Google OIDC SSO.
+  </Card>
+  <Card title="Integrations" icon="plug" href="/integrations/discord">
+    Discord, Slack, and WhatsApp messaging integrations.
+  </Card>
+</Cards>
+
 ## Next steps
 
 <Cards>
   <Card title="API reference" icon="code" href="/api-reference/introduction">
     Explore the Manager API endpoints and resource schemas.
   </Card>
-  <Card title="Authentication" icon="lock" href="/auth/overview">
-    Configure username/password or SSO authentication.
+  <Card title="CLI" icon="terminal" href="/cli/overview">
+    Run and configure agents from the command line without the Manager UI.
   </Card>
   <Card title="Deployment" icon="cloud" href="/deployment/overview">
     Deploy the Manager to production.

@@ -7,6 +7,7 @@
     "light": "#0ED4A5",
     "dark": "#8C52FF"
   },
+  "css": "/styles.css",
   "favicon": "/favicon.svg",
   "logo": {
     "light": "/logo/light.svg",
@@ -45,6 +46,9 @@
   },
   "metadata": {
     "timestamp": true
+  },
+  "api": {
+    "openapi": ["/api-reference/openapi.json"]
   },
   "navigation": {
     "tabs": [
@@ -131,7 +135,8 @@
           {
             "group": "Manager",
             "pages": [
-              "manager/overview"
+              "manager/overview",
+              "manager/tutorial"
             ]
           },
           {
@@ -156,6 +161,10 @@
             "pages": [
               "api-reference/introduction"
             ]
+          },
+          {
+            "group": "Endpoints",
+            "openapi": "/api-reference/openapi.json"
           }
         ]
       }
@@ -216,5 +225,44 @@
         ]
       }
     ]
+  },
+  "redirects": [
+    { "source": "/getting-started/quickstart", "destination": "/quickstart" },
+    { "source": "/architecture/overview", "destination": "/architecture" },
+    { "source": "/agent-frameworks/overview", "destination": "/frameworks/overview" },
+    { "source": "/agent-frameworks/langgraph", "destination": "/frameworks/langgraph" },
+    { "source": "/agent-frameworks/adk", "destination": "/frameworks/adk" },
+    { "source": "/observability/overview", "destination": "/observability/overview" },
+    { "source": "/observability/langfuse", "destination": "/observability/langfuse" },
+    { "source": "/observability/arize-phoenix", "destination": "/observability/arize-phoenix" },
+    { "source": "/observability/langsmith", "destination": "/observability/langsmith" },
+    { "source": "/observability/gcp-trace", "destination": "/observability/gcp-trace" },
+    { "source": "/observability/gcp-logging", "destination": "/observability/gcp-logging" },
+    { "source": "/memory/index", "destination": "/memory/overview" },
+    { "source": "/memory/memory-langgraph", "destination": "/memory/langgraph" },
+    { "source": "/memory/memory-adk", "destination": "/memory/adk" },
+    { "source": "/mcp/overview", "destination": "/tool-governance/overview" },
+    { "source": "/mcp/docker-mcp", "destination": "/tool-governance/docker-toolkit" },
+    { "source": "/sso-rbac/overview", "destination": "/auth/overview" },
+    { "source": "/integrations/discord", "destination": "/integrations/discord" },
+    { "source": "/integrations/slack", "destination": "/integrations/slack" },
+    { "source": "/integrations/whatsapp", "destination": "/integrations/whatsapp" },
+    { "source": "/deployment/overview", "destination": "/deployment/overview" },
+    { "source": "/deployment/gcp-self-hosted", "destination": "/deployment/gcp" },
+    { "source": "/cli/overview", "destination": "/cli/overview" },
+    { "source": "/prompts/overview", "destination": "/prompts" },
+    { "source": "/guardrails/overview", "destination": "/guardrails/overview" },
+    { "source": "/more/faq", "destination": "/faq" },
+    { "source": "/concepts/overview", "destination": "/architecture" },
+    { "source": "/agent-manager/overview", "destination": "/manager/overview" }
+  ],
+  "integrations": {
+    "posthog": {
+      "apiKey": "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw",
+      "apiHost": "https://us.i.posthog.com"
+    },
+    "ga4": {
+      "measurementId": "G-ECVQKEEWCG"
+    }
   }
 }

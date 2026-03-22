@@ -27,10 +27,6 @@ Idun Agent Platform supports multiple memory and checkpointing strategies depend
   </Card>
 </Cards>
 
-<Note>
-  Haystack agents run as stateless pipelines and do not have built-in memory support.
-</Note>
-
 ## How checkpointing works
 
 Checkpointing saves your agent's state during execution. Each interaction is associated with a unique session or thread identifier, and the platform saves state snapshots at each step of the agent graph. This enables:
@@ -53,26 +49,44 @@ Checkpointing saves your agent's state during execution. Each interaction is ass
 ## Quick configuration examples
 
 <Tabs>
-  <Tab title="LangGraph">
-    ```yaml
-    agent:
-      type: "LANGGRAPH"
-      config:
-        checkpointer:
-          type: "postgres"
-          db_url: "postgresql://user:pass@localhost:5432/dbname"
-    ```
+  <Tab title="Config file">
+    <Tabs>
+      <Tab title="LangGraph">
+        ```yaml
+        agent:
+          type: "LANGGRAPH"
+          config:
+            checkpointer:
+              type: "postgres"
+              db_url: "postgresql://user:pass@localhost:5432/dbname"
+        ```
+      </Tab>
+      <Tab title="ADK">
+        ```yaml
+        agent:
+          type: "ADK"
+          config:
+            session_service:
+              type: "in_memory"
+            memory_service:
+              type: "in_memory"
+        ```
+      </Tab>
+    </Tabs>
   </Tab>
-  <Tab title="ADK">
-    ```yaml
-    agent:
-      type: "ADK"
-      config:
-        session_service:
-          type: "in_memory"
-        memory_service:
-          type: "in_memory"
-    ```
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Open memory">
+        Navigate to **Memory** in the sidebar to see all configured memory backends.
+        ![Memory list](/images/ui/memory-list.png)
+      </Step>
+      <Step title="Create a memory configuration">
+        Click **Create** and fill in the configuration form. Select a backend from the dropdown: in-memory, SQLite, or PostgreSQL. For SQLite and PostgreSQL, provide the connection details.
+      </Step>
+      <Step title="Assign to an agent">
+        Open your agent, edit it, and select the memory configuration from the memory section.
+      </Step>
+    </Steps>
   </Tab>
 </Tabs>
 

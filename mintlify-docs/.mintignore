@@ -10,3 +10,6 @@ CLAUDE.md
 drafts/
 *.draft.mdx
 **/internal/**
+
+# Playwright screenshot tooling
+scripts/

@@ -4,7 +4,7 @@ description: "Configure checkpointing for LangGraph agents to persist conversati
 keywords: ["LangGraph", "checkpointing", "memory", "SQLite", "PostgreSQL", "state persistence"]
 ---
 
-LangGraph agents use **checkpointing** to save state during execution. The platform saves a snapshot of the graph state at every super-step, enabling recovery from failures, conversation continuity, and context maintenance across interactions.
+LangGraph agents use **checkpointing** to save state during execution. The platform saves a snapshot of the graph state at every super-step, so conversations survive failures and restarts.
 
 For more details, see the [LangGraph checkpointing persistence documentation](https://docs.langchain.com/oss/python/langgraph/persistence).
 

@@ -4,7 +4,7 @@ description: "Monitor, trace, and debug your agents with built-in integrations f
 keywords: ["observability", "tracing", "monitoring", "OpenTelemetry", "Langfuse", "Phoenix", "LangSmith", "GCP"]
 ---
 
-Idun Agent Platform provides built-in observability that gives you visibility into agent execution, performance, and behavior. The platform uses OpenTelemetry-based auto-instrumentation to capture traces, logs, and metrics from your agents with minimal configuration.
+Idun Agent Platform includes built-in observability backed by OpenTelemetry auto-instrumentation. It captures traces, logs, and metrics from your agents with minimal configuration.
 
 You configure observability once in the Manager UI, then attach configurations to any agent. Each configuration stores your provider credentials and settings, and you can reuse it across multiple agents.
 
@@ -61,3 +61,35 @@ When you attach an observability configuration to an agent, the platform automat
 <Note>
   Observability configurations are saved at the workspace level and can be reused across multiple agents. You only need to set up provider credentials once.
 </Note>
+
+## Configuration
+
+<Tabs>
+  <Tab title="Config file">
+    Add an `observability` section to your `config.yaml` with the provider and its credentials:
+
+    ```yaml config.yaml
+    observability:
+      provider: "langfuse"
+      public_key: "pk-lf-..."
+      secret_key: "sk-lf-..."
+      host: "https://cloud.langfuse.com"
+    ```
+
+    See the provider-specific pages for the full list of fields each provider requires.
+  </Tab>
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Open observability">
+        Navigate to **Observability** in the sidebar to see all configured observability integrations.
+        ![Observability list](/images/ui/observability-list.png)
+      </Step>
+      <Step title="Create an observability configuration">
+        Click **Create** and fill in the configuration form. Select a provider from the dropdown (Langfuse, Arize Phoenix, LangSmith, Google Cloud Trace, or Google Cloud Logging) and enter the required credentials for that provider.
+      </Step>
+      <Step title="Assign to an agent">
+        Open your agent, edit it, and select the observability configuration from the observability section.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>

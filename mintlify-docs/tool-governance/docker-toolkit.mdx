@@ -6,10 +6,10 @@ keywords: ["Docker MCP", "MCP toolkit", "fetch MCP", "Docker container", "agent 
 
 The Docker MCP toolkit is a collection of pre-built MCP servers packaged as Docker containers. These servers provide common functionality (web fetching, file system access, database operations) without requiring you to write or maintain custom MCP server code.
 
-- **Zero setup**: Pull and run pre-configured MCP servers
+- **No custom code**: Pull and run pre-configured MCP servers
 - **Isolation**: Each server runs in its own container with controlled resource limits
-- **Standardized**: Community-maintained implementations following MCP specifications
-- **Portable**: Works consistently across development and production environments
+- **Community-maintained**: Implementations follow the MCP specification
+- **Portable**: Works the same in development and production
 
 This guide walks through integrating the Fetch MCP server from the Docker toolkit with an existing agent.
 
@@ -192,7 +192,7 @@ docker logs $(docker ps -q --filter ancestor=mcp/fetch)
 
 ### Multiple MCP servers
 
-Add more MCP servers through the Manager UI to extend your agent's capabilities.
+Add more MCP servers through the Manager UI to give your agent access to additional tools.
 
 **Filesystem access:**
 
@@ -214,7 +214,7 @@ Allows the agent to read, write, and manipulate files within specified directori
 | **Command** | `docker` |
 | **Args** | `["run", "-i", "--rm", "your-registry/your-mcp:latest"]` |
 
-Deploy your own MCP servers for specialized functionality like database access, API integrations, or internal tools.
+Deploy your own MCP servers for database access, API integrations, or internal tools.
 
 ## Troubleshooting
 
@@ -277,4 +277,4 @@ Deploy your own MCP servers for specialized functionality like database access, 
   ["run", "-i", "--rm", "--log-driver=json-file", "--log-opt=max-size=10m", "mcp/fetch"]
   ```
 - **Credentials**: Never hardcode sensitive information in MCP configurations. Use environment variables
-- **Monitoring**: Use [observability](/observability/overview) to track MCP server latency and identify performance bottlenecks
+- **Monitoring**: Use [observability](/observability/overview) to track MCP server latency and error rates

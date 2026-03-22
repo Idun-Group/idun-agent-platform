@@ -1,7 +1,7 @@
 ---
 title: "Authentication and authorization"
 description: "Configure user authentication with username/password or Google OIDC SSO, and manage access with role-based access control."
-keywords: ["authentication", "authorization", "SSO", "OIDC", "RBAC", "roles", "Google OAuth", "Okta", "Auth0", "Azure AD"]
+keywords: ["authentication", "authorization", "SSO", "OIDC", "RBAC", "roles", "Google OAuth", "Google OIDC"]
 ---
 
 Idun Agent Platform supports two authentication modes for the Manager and a per-agent SSO layer for engine route protection. Role-based access control (RBAC) governs what authenticated users can do within each workspace.
@@ -82,37 +82,59 @@ Protected routes:
 
 ### SSO config
 
-Configure SSO through the Manager UI or directly in YAML:
+<Tabs>
+  <Tab title="Config file">
+    Configure per-agent SSO directly in YAML:
 
-```yaml config.yaml
-sso:
-  enabled: true
-  issuer: "https://accounts.google.com"
-  client_id: "your-oauth-client-id"
-  audience: "your-oauth-client-id"
-  allowed_domains:
-    - "company.com"
-  allowed_emails:
-    - "admin@partner.com"
-```
+    ```yaml config.yaml
+    sso:
+      enabled: true
+      issuer: "https://accounts.google.com"
+      client_id: "your-oauth-client-id"
+      audience: "your-oauth-client-id"
+      allowed_domains:
+        - "company.com"
+      allowed_emails:
+        - "admin@partner.com"
+    ```
 
-| Field | Description |
-|---|---|
-| `enabled` | Toggle SSO enforcement on protected routes |
-| `issuer` | OIDC issuer URL. Used to discover the JWKS endpoint via `.well-known/openid-configuration` |
-| `client_id` | OAuth 2.0 client ID. Used as the default audience for JWT validation |
-| `audience` | Expected JWT `aud` claim. Defaults to `client_id` if not set |
-| `allowed_domains` | Optional list of allowed email domains (e.g., `["company.com"]`) |
-| `allowed_emails` | Optional list of specific email addresses allowed access |
+    | Field | Description |
+    |---|---|
+    | `enabled` | Toggle SSO enforcement on protected routes |
+    | `issuer` | OIDC issuer URL. Used to discover the JWKS endpoint via `.well-known/openid-configuration` |
+    | `client_id` | OAuth 2.0 client ID. Used as the default audience for JWT validation |
+    | `audience` | Expected JWT `aud` claim. Defaults to `client_id` if not set |
+    | `allowed_domains` | Optional list of allowed email domains (e.g., `["company.com"]`) |
+    | `allowed_emails` | Optional list of specific email addresses allowed access |
+  </Tab>
+  <Tab title="Manager UI">
+    The Manager UI provides pages for managing SSO configuration and workspace users.
+
+    **SSO configurations**
+
+    Navigate to **Settings > SSO** to view and create SSO configurations.
+
+    ![SSO configurations list](/images/ui/sso-list.png)
+
+    Create a new SSO config by providing the issuer URL, client ID, and optional domain or email allowlists.
+
+    **User management**
+
+    Navigate to **Settings > Users** to view all workspace members and their roles.
+
+    ![Workspace users list](/images/ui/users-list.png)
+
+    From this page you can invite new users by email and assign them a role: **Owner**, **Admin**, **Member**, or **Viewer**. You can also update an existing member's role or remove them from the workspace.
+  </Tab>
+</Tabs>
 
 ### Supported providers
 
-The engine validates JWTs against any OIDC-compliant provider's JWKS endpoint. Tested providers include:
+The Manager currently supports **Google OIDC** for SSO authentication, configured through environment variables. GitHub and Azure AD are planned as future providers.
+
+For per-agent SSO, the engine validates JWTs against any OIDC-compliant provider's JWKS endpoint. The tested and supported provider is:
 
 - **Google Workspace** (issuer: `https://accounts.google.com`)
-- **Okta** (audience: typically `api://default` for client credentials tokens)
-- **Auth0**
-- **Microsoft Azure AD**
 
 <Note>
   Domain and email allowlists are applied after JWT signature verification. A valid token from an allowed provider is still rejected if the email domain or address is not in the allowlist.

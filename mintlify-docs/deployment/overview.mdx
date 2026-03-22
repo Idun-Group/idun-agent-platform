@@ -40,6 +40,37 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
   </Tab>
 </Tabs>
 
+## Agent lifecycle management
+
+<Tabs>
+  <Tab title="Config file">
+    With file-based deployment, manage your agent by restarting the process or updating the config file and restarting:
+
+    ```bash
+    # Stop the running agent
+    pkill -f "idun agent serve"
+
+    # Update config.yaml, then restart
+    idun agent serve --source file --path config.yaml
+    ```
+
+    For managed deployments, restart the agent container to force a fresh config fetch from the Manager.
+  </Tab>
+  <Tab title="Manager UI">
+    Open an agent in the Manager UI and go to the **Overview** tab to manage its lifecycle.
+
+    ![Agent detail overview tab](/images/ui/agents-detail-overview.png)
+
+    From this tab you can:
+
+    - **Toggle the status** to enable or disable the agent without deleting it
+    - **Run a health check** to verify the agent engine is reachable and responding
+    - **Restart the agent** to apply config changes or recover from an error state
+
+    Status changes are reflected immediately in the agents list and propagated to any connected engine instances on their next config fetch.
+  </Tab>
+</Tabs>
+
 ## Full stack architecture
 
 In managed mode, the platform consists of three services and a database:
@@ -97,6 +128,6 @@ For production workloads, deploy the platform on your own cloud infrastructure.
 
 <Cards>
   <Card title="Google Cloud Platform" icon="google" href="/deployment/gcp">
-    Cloud Run for Manager and UI, Cloud SQL for PostgreSQL. Terraform modules available.
+    Cloud Run for Manager and UI, Cloud SQL for PostgreSQL. Contact us for Terraform modules.
   </Card>
 </Cards>

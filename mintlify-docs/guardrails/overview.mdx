@@ -17,25 +17,44 @@ You can configure multiple guardrails at each position. All guardrails at a give
 
 ## Configuration
 
-Add guardrails in the `guardrails` section of your `config.yaml`. Each guardrail has a `config_id` that identifies the type and parameters specific to that type.
+<Tabs>
+  <Tab title="Config file">
+    Add guardrails in the `guardrails` section of your `config.yaml`. Each guardrail has a `config_id` that identifies the type and parameters specific to that type.
 
-```yaml config.yaml
-guardrails:
-  input:
-    - config_id: "ban_list"
-      banned_words: ["spam", "scam", "phishing"]
-    - config_id: "detect_pii"
-      pii_entities: ["EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD_NUMBER"]
-    - config_id: "detect_jailbreak"
-      threshold: 0.8
-  output:
-    - config_id: "toxic_language"
-      threshold: 0.7
-    - config_id: "gibberish_text"
-      threshold: 0.8
-```
+    ```yaml config.yaml
+    guardrails:
+      input:
+        - config_id: "ban_list"
+          banned_words: ["spam", "scam", "phishing"]
+        - config_id: "detect_pii"
+          pii_entities: ["EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD_NUMBER"]
+        - config_id: "detect_jailbreak"
+          threshold: 0.8
+      output:
+        - config_id: "toxic_language"
+          threshold: 0.7
+        - config_id: "gibberish_text"
+          threshold: 0.8
+    ```
 
-Infrastructure fields (`api_key`, `guard_url`, `reject_message`) are populated automatically. The `api_key` is read from the `GUARDRAILS_API_KEY` environment variable. You only need to specify the `config_id` and guard-specific parameters.
+    Infrastructure fields (`api_key`, `guard_url`, `reject_message`) are populated automatically. The `api_key` is read from the `GUARDRAILS_API_KEY` environment variable. You only need to specify the `config_id` and guard-specific parameters.
+  </Tab>
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Open guardrails">
+        Navigate to **Guardrails** in the sidebar to see all configured guardrails.
+        ![Guardrails list](/images/ui/guardrails-list.png)
+      </Step>
+      <Step title="Create a guardrail">
+        Click **Create** and fill in the configuration form. Select a guardrail type from the dropdown (for example, "Ban List" or "PII Detector") and set the guard-specific parameters.
+        ![Guardrail create form](/images/ui/guardrails-create-form.png)
+      </Step>
+      <Step title="Assign to an agent">
+        Open your agent, edit it, and select the guardrail from the guardrails section. Choose whether it applies at the input position, output position, or both.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
 
 <Warning>
   Guardrails require the `GUARDRAILS_API_KEY` environment variable. Get your API key from [Guardrails AI](https://guardrailsai.com). Set it in your `.env` file or in the service environment for Manager deployments.

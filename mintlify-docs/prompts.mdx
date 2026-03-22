@@ -15,32 +15,49 @@ Prompt management lets you version, store, and assign prompt templates to agents
 | **Latest tag** | The `latest` tag always points to the highest version and is managed automatically |
 | **Agent assignment** | Specific prompt versions are assigned to agents. Agents are pinned to a version until you reassign |
 
-## Define prompts in YAML
+## Define prompts
 
-```yaml config.yaml
-prompts:
-  - prompt_id: "system-prompt"
-    version: 1
-    content: "You are a helpful assistant specializing in {{ domain }}."
-    tags: ["latest"]
+<Tabs>
+  <Tab title="Config file">
+    ```yaml config.yaml
+    prompts:
+      - prompt_id: "system-prompt"
+        version: 1
+        content: "You are a helpful assistant specializing in {{ domain }}."
+        tags: ["latest"]
 
-  - prompt_id: "rag-query"
-    version: 1
-    content: |
-      Answer the question based on the following context.
+      - prompt_id: "rag-query"
+        version: 1
+        content: |
+          Answer the question based on the following context.
 
-      Context: {{ context }}
+          Context: {{ context }}
 
-      Question: {{ query }}
-    tags: ["latest"]
-```
+          Question: {{ query }}
+        tags: ["latest"]
+    ```
 
-| Field | Type | Description |
-|---|---|---|
-| `prompt_id` | `string` | Logical identifier for the prompt family |
-| `version` | `integer` | Version number (auto-incremented when using the Manager) |
-| `content` | `string` | Prompt text, supports Jinja2 `{{ variables }}` |
-| `tags` | `list[string]` | Metadata tags. `latest` is auto-managed by the Manager |
+    | Field | Type | Description |
+    |---|---|---|
+    | `prompt_id` | `string` | Logical identifier for the prompt family |
+    | `version` | `integer` | Version number (auto-incremented when using the Manager) |
+    | `content` | `string` | Prompt text, supports Jinja2 `{{ variables }}` |
+    | `tags` | `list[string]` | Metadata tags. `latest` is auto-managed by the Manager |
+  </Tab>
+  <Tab title="Manager UI">
+    Navigate to **Prompts** in the sidebar to manage all prompt versions across your workspace.
+
+    ![Prompts list](/images/ui/prompts-list.png)
+
+    Click **New Prompt** to open the prompt editor.
+
+    ![Create prompt form](/images/ui/prompts-create-form.png)
+
+    The editor uses Monaco with Jinja2 variable detection. Variables found in the content are displayed as pills below the editor so you can verify all placeholders before saving.
+
+    After creating a prompt, assign it to one or more agents directly from the prompt version row using the link icon. Assigned prompts are injected into the agent's engine config automatically when the engine fetches its configuration.
+  </Tab>
+</Tabs>
 
 ## Manager API
 
@@ -165,17 +182,6 @@ result = lc_prompt.format(context="AI is...", query="What is AI?")
 <Note>
   `to_langchain()` requires `langchain-core`. Install it with `pip install langchain-core`.
 </Note>
-
-## Manager UI
-
-The Prompts page in the web dashboard provides a visual interface:
-
-1. Navigate to **Prompts** in the sidebar
-2. Click **New Prompt** to create a prompt with a Prompt ID, content, and tags
-3. Detected Jinja2 variables are displayed as pills below the editor
-4. Click a prompt group to expand and view all versions
-5. Click **Update** to create a new version (pre-filled with the latest content)
-6. Click the link icon on a prompt version to assign it to an agent
 
 ## Best practices
 

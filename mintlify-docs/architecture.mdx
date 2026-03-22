@@ -35,7 +35,7 @@ When you create or update an agent through the manager, it materializes a full `
 
 ### Idun Agent Engine
 
-A Python SDK that wraps agent frameworks (LangGraph, Google ADK, Haystack) into production-ready FastAPI services. You provide your agent code and a configuration, and the engine adds streaming (AG-UI protocol), memory/checkpointing, observability, guardrails, MCP tool management, SSO, and messaging integrations.
+A Python SDK that wraps agent frameworks (LangGraph and Google ADK) into production-ready FastAPI services. You provide your agent code and a configuration, and the engine adds streaming (AG-UI protocol), memory/checkpointing, observability, guardrails, MCP tool management, SSO, and messaging integrations.
 
 The engine exposes these endpoints:
 
@@ -103,7 +103,7 @@ The config structure is identical in both modes. Moving from standalone to manag
 
 <CardGroup cols={3}>
   <Card title="Supported frameworks" icon="layer-group" href="/frameworks/overview">
-    LangGraph, Google ADK, and Haystack adapters.
+    LangGraph and Google ADK adapters.
   </Card>
   <Card title="Configuration reference" icon="gear" href="/configuration">
     Full config.yaml structure and environment variables.

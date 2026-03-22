@@ -72,7 +72,7 @@ Values support `${ENV_VAR}` syntax for referencing environment variables at load
 
 **`server`** -- HTTP server binding. Exposes `api.port` (default: `8000`). CORS allows all origins. The engine adds `Access-Control-Allow-Private-Network: true` so hosted UIs can reach local agents.
 
-**`agent`** -- Framework type and framework-specific settings. The `config` fields change based on the `type` value. Supported types: `LANGGRAPH`, `ADK`, `HAYSTACK`. See the [frameworks overview](/frameworks/overview) for per-framework config details.
+**`agent`** -- Framework type and framework-specific settings. The `config` fields change based on the `type` value. Supported types: `LANGGRAPH`, `ADK`. See the [frameworks overview](/frameworks/overview) for per-framework config details.
 
 For LangGraph, provide an uncompiled `StateGraph` via `graph_definition` (`path/to/file.py:variable_name`). The engine compiles it with the configured checkpointer.
 
@@ -92,25 +92,36 @@ For LangGraph, provide an uncompiled `StateGraph` via `graph_definition` (`path/
 
 ## Config sources
 
-### File-based (standalone)
+<Tabs>
+  <Tab title="Config file">
+    ### File-based (standalone)
 
-Place a `config.yaml` next to your agent code and serve it directly.
+    Place a `config.yaml` next to your agent code and serve it directly.
 
-```bash
-idun agent serve --source file --path config.yaml
-```
+    ```bash
+    idun agent serve --source file --path config.yaml
+    ```
 
-### Manager-based (managed)
+    ### Manager-based (managed)
 
-Set two environment variables and the engine fetches its config from the manager API at startup.
+    Set two environment variables and the engine fetches its config from the manager API at startup.
 
-```bash
-export IDUN_AGENT_API_KEY=your-agent-api-key
-export IDUN_MANAGER_HOST=https://manager.example.com
-idun agent serve --source manager
-```
+    ```bash
+    export IDUN_AGENT_API_KEY=your-agent-api-key
+    export IDUN_MANAGER_HOST=https://manager.example.com
+    idun agent serve --source manager
+    ```
 
-The API key is generated in the manager UI or via `GET /api/v1/agents/key?agent_id=<id>`.
+    The API key is generated in the manager UI or via `GET /api/v1/agents/key?agent_id=<id>`.
+  </Tab>
+  <Tab title="Manager UI">
+    In the Manager UI, open an agent and go to the **Config** tab. The full `EngineConfig` YAML is displayed in a Monaco editor where you can edit it directly and save.
+
+    ![Engine config editor in the agent detail Config tab](/images/ui/agents-detail-config.png)
+
+    Changes take effect the next time the agent engine fetches its config from the Manager (at startup or on reconnect). All `${ENV_VAR}` references are resolved by the engine at load time, not stored as plain values.
+  </Tab>
+</Tabs>
 
 ## Environment variables
 

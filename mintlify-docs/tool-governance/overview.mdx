@@ -4,7 +4,7 @@ description: "Control which MCP tools each agent can access through per-agent al
 keywords: ["MCP", "Model Context Protocol", "tool governance", "MCP servers", "agent tools", "stdio", "SSE", "WebSocket"]
 ---
 
-Idun Agent Platform uses the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) to extend agent capabilities with external tools. You define MCP servers at the platform level, then attach specific servers to individual agents. Each agent can only access the tools from its assigned servers, giving you fine-grained control over what each agent can do.
+Idun Agent Platform uses the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) to extend agent capabilities with external tools. You define MCP servers at the platform level, then attach specific servers to individual agents. Each agent can only access the tools from its assigned servers, so you control exactly what each agent can do.
 
 ## How tool governance works
 
@@ -60,12 +60,18 @@ Define MCP servers in your `config.yaml` or through the Manager API:
     ```
   </Tab>
   <Tab title="Manager UI">
-    In the Manager web interface:
-
-    1. Navigate to **MCP Servers** in the sidebar
-    2. Click **Create MCP Server**
-    3. Fill in the name, transport type, and connection details
-    4. Save, then attach the server to your agent under the agent's edit page
+    <Steps>
+      <Step title="Open MCP servers">
+        Navigate to **MCP Servers** in the sidebar to see all registered servers.
+        ![MCP server list](/images/ui/mcp-list.png)
+      </Step>
+      <Step title="Create an MCP server">
+        Click **Create** and fill in the configuration form. Select a transport type (stdio, SSE, or HTTP) and provide the corresponding connection details: command and args for stdio, or a URL for remote transports.
+      </Step>
+      <Step title="Assign to an agent">
+        Open your agent, edit it, and select the MCP server from the MCP servers section.
+      </Step>
+    </Steps>
   </Tab>
 </Tabs>
 
@@ -73,10 +79,10 @@ Define MCP servers in your `config.yaml` or through the Manager API:
 
 <Cards>
   <Card title="Docker MCP toolkit" icon="docker" href="/tool-governance/docker-toolkit">
-    Pre-built MCP servers packaged as Docker containers. Pull, configure, and attach to agents with zero custom code.
+    Pre-built MCP servers packaged as Docker containers. Pull, configure, and attach to agents without writing server code.
   </Card>
   <Card title="Custom MCP servers" icon="code" href="/tool-governance/docker-toolkit#advanced-configuration">
-    Host your own MCP servers for custom business logic, proprietary data sources, or specialized functionality.
+    Host your own MCP servers for custom business logic, proprietary data sources, or internal APIs.
   </Card>
 </Cards>
 

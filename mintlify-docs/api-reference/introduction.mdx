@@ -1,43 +1,16 @@
 ---
 title: "API reference"
-description: "Overview of the Idun Agent Platform Manager API at /api/v1/ and the per-agent engine endpoints."
+description: "Complete reference for the Idun Agent Manager REST API and per-agent engine endpoints."
 keywords: ["API", "REST", "endpoints", "Manager API", "engine API", "OpenAPI", "reference"]
 ---
 
-Idun Agent Platform exposes two sets of APIs: the Manager API for centralized configuration, and per-agent engine endpoints for interacting with deployed agents.
+The Idun Agent Platform exposes two sets of APIs: the **Manager API** for centralized configuration, and **per-agent engine endpoints** for interacting with deployed agents.
 
 ## Manager API
 
 The Manager API is served at `/api/v1/` and provides CRUD operations for all platform resources. All resource endpoints require session authentication and are scoped to the user's active workspace (set via the `X-Workspace-Id` header).
 
-### Resource groups
-
-| Group | Prefix | Description |
-|---|---|---|
-| **Authentication** | `/api/v1/auth` | Login, signup, logout, OIDC callback, session info |
-| **Agents** | `/api/v1/agents` | Agent CRUD, API key generation, materialized config retrieval |
-| **Prompts** | `/api/v1/prompts` | Prompt CRUD, immutable versioning, agent assignment |
-| **Guardrails** | `/api/v1/guardrails` | Guardrail configuration CRUD |
-| **MCP servers** | `/api/v1/mcp-servers` | MCP server configuration CRUD |
-| **Observability** | `/api/v1/observability` | Observability provider configuration CRUD |
-| **Memory** | `/api/v1/memory` | Memory and checkpoint configuration CRUD |
-| **SSO** | `/api/v1/sso` | SSO/OIDC configuration CRUD for per-agent route protection |
-| **Integrations** | `/api/v1/integrations` | Messaging integration configuration CRUD (Discord, Slack, WhatsApp) |
-| **Workspaces** | `/api/v1/workspaces` | Workspace CRUD and management |
-| **Frameworks** | `/api/v1/agent-frameworks` | List supported agent frameworks (read-only) |
-| **Health** | `/api/v1/healthz` | Health and readiness checks |
-
-### Common patterns
-
-All resource endpoints follow the same CRUD pattern:
-
-| Method | Path | Description |
-|---|---|---|
-| `POST /` | Create a new resource (workspace-scoped) |
-| `GET /` | List resources with pagination (`limit`, `offset`). Returns `agent_count` per resource |
-| `GET /{id}` | Get a resource by ID. Includes `agent_count` |
-| `PATCH /{id}` | Update a resource. Automatically recomputes `engine_config` for all agents referencing it |
-| `DELETE /{id}` | Delete a resource. Returns 409 Conflict if any agents reference it |
+Use the sidebar to browse each endpoint group. Every endpoint includes request/response schemas generated from the OpenAPI specification.
 
 ### Authentication
 
@@ -56,6 +29,18 @@ curl http://localhost:8000/api/v1/agents/config \
   -H "Authorization: Bearer <agent-api-key>"
 ```
 
+### Common patterns
+
+All resource endpoints follow the same CRUD pattern:
+
+| Method | Path | Description |
+|---|---|---|
+| `POST /` | Create a new resource (workspace-scoped) |
+| `GET /` | List resources with pagination (`limit`, `offset`). Returns `agent_count` per resource |
+| `GET /{id}` | Get a resource by ID. Includes `agent_count` |
+| `PATCH /{id}` | Update a resource. Automatically recomputes `engine_config` for all agents referencing it |
+| `DELETE /{id}` | Delete a resource. Returns 409 Conflict if any agents reference it |
+
 ## Engine API
 
 Each deployed agent exposes its own set of endpoints. These are per-agent-service, not part of the Manager.
@@ -70,12 +55,12 @@ Each deployed agent exposes its own set of endpoints. These are per-agent-servic
 
 When per-agent SSO is enabled, `/agent/run` requires a valid OIDC JWT in the `Authorization` header.
 
-## OpenAPI specification
+## Base URL
 
-The Manager generates an OpenAPI specification at runtime. Access the interactive documentation at:
+For local development, the Manager API runs at:
 
 ```
-http://localhost:8000/docs
+http://localhost:8000
 ```
 
-This provides a Swagger UI for exploring all endpoints, request/response schemas, and testing API calls directly.
+All API paths documented in this reference are relative to this base URL.

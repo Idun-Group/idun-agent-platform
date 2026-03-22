@@ -4,6 +4,10 @@ description: "Use the Idun CLI to configure, deploy, and test agents through an 
 keywords: ["CLI", "command line", "TUI", "terminal", "idun init", "idun agent serve", "configuration"]
 ---
 
+<Note>
+  For a visual interface, see [Getting started with the Manager](/manager/tutorial).
+</Note>
+
 The Idun CLI provides an interactive Terminal User Interface (TUI) for configuring and running agents, and a set of commands for direct operation. It is included in the `idun-agent-engine` package.
 
 ## Installation
@@ -24,7 +28,7 @@ pip install idun-agent-engine
 
     The TUI walks you through agent configuration step by step:
 
-    1. **Agent information**: Name, framework (LangGraph, ADK, Haystack), port, Python file, and variable selection
+    1. **Agent information**: Name, framework (LangGraph, ADK), port, Python file, and variable selection
     2. **Memory**: Checkpoint type (in-memory, SQLite, PostgreSQL)
     3. **Observability**: Provider selection (Langfuse, Phoenix, LangSmith, GCP)
     4. **Guardrails**: Add safety filters (bias check, PII detection, ban list, and more)
