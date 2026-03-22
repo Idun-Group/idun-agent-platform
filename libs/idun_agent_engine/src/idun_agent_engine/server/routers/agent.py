@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Annotated
+from typing import Annotated, Any
 
 from ag_ui.core.types import RunAgentInput
 from ag_ui.encoder import EventEncoder
@@ -27,13 +27,42 @@ logger = logging.getLogger(__name__)
 agent_router = APIRouter()
 
 
+def _extract_text_values(data: Any) -> list[str]:
+    """Extract all non-empty string values from structured input."""
+    if isinstance(data, str):
+        return [data] if data.strip() else []
+    if isinstance(data, dict):
+        return [t for v in data.values() for t in _extract_text_values(v)]
+    if isinstance(data, list):
+        return [t for item in data for t in _extract_text_values(item)]
+    return []
+
+
+def _guardrail_text_from_state(state: dict) -> str:
+    """Join all text values from structured state into a single string for validation."""
+    texts = _extract_text_values(state)
+    return "\n".join(texts)
+
+
+def _guardrail_input_from(input_data: RunAgentInput) -> str | None:
+    """Return the text payload to validate: last message content, or state text."""
+    if input_data.messages:
+        content = input_data.messages[-1].content
+        if content is not None:
+            return content if isinstance(content, str) else str(content)
+    if input_data.state:
+        return _guardrail_text_from_state(input_data.state)
+    return None
+
+
 def _run_guardrails(
-    guardrails: list[Guardrail], message: dict[str, str] | str, position: str
+    guardrails: list[Guardrail], text: str, position: str
 ) -> None:
-    """Validates the request's message, by running it on given guardrails. If input is a dict -> input, else its an output guardrails."""
-    text = message["query"] if isinstance(message, dict) else message
+    """Validate text against guardrails matching the given position."""
     for guard in guardrails:
-        if guard.position == position and not guard.validate(text):  # type: ignore[attr-defined]
+        if guard.position != position:  # type: ignore[attr-defined]
+            continue
+        if not guard.validate(text):  # type: ignore[attr-defined]
             raise HTTPException(status_code=429, detail=guard.reject_message)  # type: ignore[attr-defined]
 
 
@@ -62,11 +91,10 @@ async def run(
     logger.info(f"Run — thread_id={input_data.thread_id}, message={last_content}")
 
     guardrails = getattr(request.app.state, "guardrails", [])
-    if guardrails and input_data.messages:
-        last_content = input_data.messages[-1].content
-        if last_content is not None:
-            text = last_content if isinstance(last_content, str) else str(last_content)
-            _run_guardrails(guardrails, message=text, position="input")
+    if guardrails:
+        guardrail_input = _guardrail_input_from(input_data)
+        if guardrail_input is not None:
+            _run_guardrails(guardrails, text=guardrail_input, position="input")
 
     accept_header = request.headers.get("accept")
     encoder = EventEncoder(accept=accept_header or "")
@@ -197,7 +225,7 @@ async def copilotkit_stream(
     if guardrails:
         logger.debug(f"Running {len(guardrails)} input guardrails")
         _run_guardrails(
-            guardrails, message=input_data.messages[-1].content, position="input"
+            guardrails, text=str(input_data.messages[-1].content), position="input"
         )
     if isinstance(copilotkit_agent, LangGraphAGUIAgent):
         try:
@@ -305,7 +333,7 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         guardrails = getattr(request.app.state, "guardrails", [])
         if guardrails:
             _run_guardrails(
-                guardrails, message={"query": input_data.query}, position="input"
+                guardrails, text=input_data.query, position="input"
             )
 
         try:

@@ -23,7 +23,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.manager import (
     AgentResourceIds,
@@ -122,18 +122,12 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
     description="Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
 )
 async def create_agent(
-    raw_request: Request,
+    request: ManagedAgentCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedAgentRead:
     """Create a new managed agent."""
-    body = await raw_request.json()
-
-    # Extract resources before Pydantic validation
-    resources_data = body.pop("resources", None)
-
-    request = ManagedAgentCreate(**body)
     now = datetime.now(UTC)
 
     engine_config = EngineConfig(**request.engine_config.model_dump())
@@ -154,7 +148,7 @@ async def create_agent(
     await session.flush()
 
     # Sync resource associations and recompute materialized config
-    resources = AgentResourceIds(**(resources_data or {}))
+    resources = request.resources or AgentResourceIds()
     await sync_resources(session, model, resources)
     await session.flush()
     await recompute_engine_config(session, model.id)
@@ -367,20 +361,13 @@ async def delete_agent(
 )
 async def patch_agent(
     id: str,
-    raw_request: Request,
+    request: ManagedAgentPatch,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedAgentRead:
     """Partially update an agent's configuration."""
     model = await _get_agent(id, session, workspace_id)
-
-    body = await raw_request.json()
-
-    # Extract resources before Pydantic validation
-    resources_data = body.pop("resources", None)
-
-    request = ManagedAgentPatch(**body)
 
     model.name = request.name
     model.base_url = request.base_url
@@ -389,7 +376,7 @@ async def patch_agent(
     model.updated_at = datetime.now(UTC)
 
     # Sync resource associations and recompute materialized config
-    resources = AgentResourceIds(**(resources_data or {}))
+    resources = request.resources or AgentResourceIds()
     await sync_resources(session, model, resources)
     await session.flush()
     await recompute_engine_config(session, model.id)
