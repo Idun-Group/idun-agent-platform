@@ -64,18 +64,18 @@
             ]
           },
           {
+            "group": "Manager",
+            "pages": [
+              "manager/overview",
+              "manager/tutorial"
+            ]
+          },
+          {
             "group": "Agent frameworks",
             "pages": [
               "frameworks/overview",
               "frameworks/langgraph",
               "frameworks/adk"
-            ]
-          },
-          {
-            "group": "Configuration",
-            "pages": [
-              "configuration",
-              "prompts"
             ]
           },
           {
@@ -133,21 +133,11 @@
             ]
           },
           {
-            "group": "Manager",
+            "group": "Advanced",
             "pages": [
-              "manager/overview",
-              "manager/tutorial"
-            ]
-          },
-          {
-            "group": "CLI",
-            "pages": [
-              "cli/overview"
-            ]
-          },
-          {
-            "group": "More",
-            "pages": [
+              "configuration",
+              "prompts",
+              "cli/overview",
               "faq"
             ]
           }
