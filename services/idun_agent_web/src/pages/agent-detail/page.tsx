@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/use-auth';
 import {
     getAgent,
     restartAgent,
+    patchAgent,
     performHealthCheck,
     fetchEngineHealth,
     fetchLatestEngineVersion,
@@ -46,6 +47,8 @@ export default function AgentDetailPage() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
     const [agent, setAgent] = useState<BackendAgent | null>(null);
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [nameInput, setNameInput] = useState('');
     const [engineVersion, setEngineVersion] = useState<string | null>(null);
     const [latestEngineVersion, setLatestEngineVersion] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -76,6 +79,31 @@ export default function AgentDetailPage() {
         if (!id || isAuthLoading) return;
         loadAgent();
     }, [id, isAuthLoading]);
+
+    const handleNameSave = async () => {
+        if (!nameInput.trim()) {
+            setIsEditingName(false);
+            return;
+        }
+        if (!agent) return;
+        try {
+            await patchAgent(agent.id, { name: nameInput.trim() });
+            loadAgent();
+            setIsEditingName(false);
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to rename agent';
+            notify.error(errorMsg);
+        }
+    };
+
+    const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleNameSave();
+        } else if (e.key === 'Escape') {
+            setNameInput(agent?.name || '');
+            setIsEditingName(false);
+        }
+    };
 
     const handleRestart = async () => {
         if (!agent?.base_url) {
@@ -121,7 +149,22 @@ export default function AgentDetailPage() {
                     </AvatarContainer>
 
                     <div>
-                        <Title>{agent?.name}</Title>
+                        {isEditingName ? (
+                            <NameInput
+                                value={nameInput}
+                                onChange={e => setNameInput(e.target.value)}
+                                onKeyDown={handleNameKeyDown}
+                                onBlur={handleNameSave}
+                                autoFocus
+                            />
+                        ) : (
+                            <Title
+                                onClick={() => { setNameInput(agent?.name || ''); setIsEditingName(true); }}
+                                title="Click to rename"
+                            >
+                                {agent?.name}
+                            </Title>
+                        )}
                         <MetaInfo>
                             <StatusBadge $status={agent?.status || 'draft'}>
                                 {agent?.status || 'DRAFT'}
@@ -263,6 +306,28 @@ const Title = styled.h1`
     color: hsl(var(--foreground));
     margin: 0 0 8px 0;
     letter-spacing: -0.02em;
+    cursor: pointer;
+    &:hover {
+        opacity: 0.8;
+    }
+    transition: opacity 0.15s;
+`;
+
+const NameInput = styled.input`
+    font-size: 32px;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid hsl(var(--primary));
+    outline: none;
+    padding: 0 0 2px 0;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.02em;
+    min-width: 200px;
+    width: auto;
+    max-width: 500px;
+    font-family: inherit;
 `;
 
 const MetaInfo = styled.div`

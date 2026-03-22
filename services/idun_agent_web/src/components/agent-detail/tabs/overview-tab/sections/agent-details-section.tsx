@@ -105,6 +105,15 @@ export default function AgentDetailsSection({ agent, onAgentRefresh }: AgentDeta
         setIsEditing(false);
     };
 
+    useEffect(() => {
+        if (!isEditing) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') handleCancel();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isEditing]);
+
     return (
         <SectionCard>
             <SectionHeader>

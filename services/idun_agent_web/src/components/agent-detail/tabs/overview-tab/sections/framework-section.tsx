@@ -109,6 +109,15 @@ export default function FrameworkSection({ agent, onAgentRefresh }: FrameworkSec
         setIsEditing(false);
     };
 
+    useEffect(() => {
+        if (!isEditing) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') handleCancel();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isEditing]);
+
     const schema = getCurrentSchema();
 
     return (

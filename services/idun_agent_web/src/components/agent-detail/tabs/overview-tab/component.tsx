@@ -76,10 +76,6 @@ const OverviewTab = ({ agent, onAgentRefresh }: OverviewTabProps) => {
         }
     };
 
-    const handleSelectionChange = (updated: Partial<AgentSelections>) => {
-        setSelections(prev => ({ ...prev, ...updated }));
-    };
-
     if (!agent) return null;
 
     return (
@@ -103,7 +99,6 @@ const OverviewTab = ({ agent, onAgentRefresh }: OverviewTabProps) => {
                     agent={agent}
                     resources={resources}
                     selections={selections}
-                    onSelectionChange={handleSelectionChange}
                     onResourcesRefresh={setResources}
                     onAgentRefresh={onAgentRefresh}
                 />

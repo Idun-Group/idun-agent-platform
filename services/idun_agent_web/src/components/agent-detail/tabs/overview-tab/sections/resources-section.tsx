@@ -71,7 +71,7 @@ interface ResourcesSectionProps {
     agent: BackendAgent;
     resources: AvailableResources;
     selections: AgentSelections;
-    onSelectionChange: (updated: Partial<AgentSelections>) => void;
+    onSelectionChange?: (updated: Partial<AgentSelections>) => void;
     onResourcesRefresh?: (resources: AvailableResources) => void;
     onAgentRefresh?: () => void;
 }
