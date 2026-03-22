@@ -1,6 +1,6 @@
 # CLAUDE.md — Idun Platform Documentation
 
-This file governs all documentation work in `/mintlify-docs`.
+This file governs all documentation work in `/docs`.
 
 ## Working relationship
 

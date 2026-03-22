@@ -12,7 +12,8 @@ Idun Agent Platform is a self-hosted control plane that wraps LangGraph/ADK agen
 - `libs/idun_agent_engine/` — SDK runtime that wraps agents into FastAPI services (published to PyPI)
 - `services/idun_agent_manager/` — FastAPI + PostgreSQL backend for agent config CRUD, auth, policy enforcement
 - `services/idun_agent_web/` — React 19 + Vite + TypeScript admin dashboard
-- `docs/` — MkDocs Material documentation site
+- `docs/` — Mintlify documentation site (deployed to docs.idunplatform.com)
+- `old-docs/` — Legacy MkDocs documentation (archived, do not edit)
 
 ## Per-Service Documentation
 

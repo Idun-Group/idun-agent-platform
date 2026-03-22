@@ -16,40 +16,40 @@
 
 | File | Responsibility |
 |------|---------------|
-| `mintlify-docs/scripts/package.json` | Playwright dependency for screenshot script |
-| `mintlify-docs/scripts/playwright.config.ts` | Playwright configuration (base URL, viewport, timeout) |
-| `mintlify-docs/scripts/capture-screenshots.ts` | Screenshot automation: seed data, navigate routes, capture PNGs |
-| `mintlify-docs/images/ui/*.png` | ~30 captured screenshots |
-| `mintlify-docs/manager/tutorial.mdx` | Manager onboarding tutorial page |
+| `docs/scripts/package.json` | Playwright dependency for screenshot script |
+| `docs/scripts/playwright.config.ts` | Playwright configuration (base URL, viewport, timeout) |
+| `docs/scripts/capture-screenshots.ts` | Screenshot automation: seed data, navigate routes, capture PNGs |
+| `docs/images/ui/*.png` | ~30 captured screenshots |
+| `docs/manager/tutorial.mdx` | Manager onboarding tutorial page |
 
 ### Modified files
 
 | File | Change |
 |------|--------|
-| `mintlify-docs/docs.json` | Add `manager/tutorial` to Manager nav group |
-| `mintlify-docs/quickstart.mdx` | Add screenshots inside existing Manager tab |
-| `mintlify-docs/frameworks/overview.mdx` | Add Manager UI tab |
-| `mintlify-docs/configuration.mdx` | Add Manager UI tab |
-| `mintlify-docs/guardrails/overview.mdx` | Add Manager UI tab |
-| `mintlify-docs/memory/overview.mdx` | Add Manager UI tab |
-| `mintlify-docs/observability/overview.mdx` | Add Manager UI tab |
-| `mintlify-docs/tool-governance/overview.mdx` | Add Manager UI tab |
-| `mintlify-docs/auth/overview.mdx` | Add Manager UI tab |
-| `mintlify-docs/integrations/discord.mdx` | Add Manager UI tab |
-| `mintlify-docs/integrations/slack.mdx` | Add Manager UI tab |
-| `mintlify-docs/integrations/whatsapp.mdx` | Add Manager UI tab |
-| `mintlify-docs/prompts.mdx` | Add Manager UI tab |
-| `mintlify-docs/deployment/overview.mdx` | Add Manager UI tab |
-| `mintlify-docs/manager/overview.mdx` | Expand with workspace/user screenshots |
-| `mintlify-docs/cli/overview.mdx` | Add note linking to Manager |
+| `docs/docs.json` | Add `manager/tutorial` to Manager nav group |
+| `docs/quickstart.mdx` | Add screenshots inside existing Manager tab |
+| `docs/frameworks/overview.mdx` | Add Manager UI tab |
+| `docs/configuration.mdx` | Add Manager UI tab |
+| `docs/guardrails/overview.mdx` | Add Manager UI tab |
+| `docs/memory/overview.mdx` | Add Manager UI tab |
+| `docs/observability/overview.mdx` | Add Manager UI tab |
+| `docs/tool-governance/overview.mdx` | Add Manager UI tab |
+| `docs/auth/overview.mdx` | Add Manager UI tab |
+| `docs/integrations/discord.mdx` | Add Manager UI tab |
+| `docs/integrations/slack.mdx` | Add Manager UI tab |
+| `docs/integrations/whatsapp.mdx` | Add Manager UI tab |
+| `docs/prompts.mdx` | Add Manager UI tab |
+| `docs/deployment/overview.mdx` | Add Manager UI tab |
+| `docs/manager/overview.mdx` | Expand with workspace/user screenshots |
+| `docs/cli/overview.mdx` | Add note linking to Manager |
 
 ---
 
 ## Task 1: Playwright project setup
 
 **Files:**
-- Create: `mintlify-docs/scripts/package.json`
-- Create: `mintlify-docs/scripts/playwright.config.ts`
+- Create: `docs/scripts/package.json`
+- Create: `docs/scripts/playwright.config.ts`
 
 - [ ] **Step 1: Create package.json**
 
@@ -67,7 +67,7 @@
 }
 ```
 
-Save to `mintlify-docs/scripts/package.json`.
+Save to `docs/scripts/package.json`.
 
 - [ ] **Step 2: Create playwright.config.ts**
 
@@ -88,17 +88,17 @@ export default defineConfig({
 });
 ```
 
-Save to `mintlify-docs/scripts/playwright.config.ts`.
+Save to `docs/scripts/playwright.config.ts`.
 
 - [ ] **Step 3: Install dependencies**
 
-Run: `cd mintlify-docs/scripts && npm install && npx playwright install chromium`
+Run: `cd docs/scripts && npm install && npx playwright install chromium`
 Expected: `node_modules` created, Chromium browser downloaded.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add mintlify-docs/scripts/package.json mintlify-docs/scripts/playwright.config.ts
+git add docs/scripts/package.json docs/scripts/playwright.config.ts
 git commit -m "chore: add Playwright project for docs screenshots"
 ```
 
@@ -107,7 +107,7 @@ git commit -m "chore: add Playwright project for docs screenshots"
 ## Task 2: Screenshot capture script
 
 **Files:**
-- Create: `mintlify-docs/scripts/capture-screenshots.ts`
+- Create: `docs/scripts/capture-screenshots.ts`
 
 - [ ] **Step 1: Write the capture script**
 
@@ -316,7 +316,7 @@ test('capture all screenshots', async ({ page, request }) => {
 });
 ```
 
-Save to `mintlify-docs/scripts/capture-screenshots.ts`.
+Save to `docs/scripts/capture-screenshots.ts`.
 
 **Notes:**
 - `failOnStatusCode: false` on all API calls makes seeding idempotent (duplicates return 409, script continues).
@@ -324,18 +324,18 @@ Save to `mintlify-docs/scripts/capture-screenshots.ts`.
 
 - [ ] **Step 2: Test the script runs (requires dev stack)**
 
-Run: `cd mintlify-docs/scripts && npx playwright test`
-Expected: Screenshots appear in `mintlify-docs/images/ui/`. Some may fail if the dev stack routes differ from expected selectors. Adjust selectors as needed.
+Run: `cd docs/scripts && npx playwright test`
+Expected: Screenshots appear in `docs/images/ui/`. Some may fail if the dev stack routes differ from expected selectors. Adjust selectors as needed.
 
 - [ ] **Step 3: Verify screenshots**
 
-Run: `ls -la mintlify-docs/images/ui/*.png | wc -l`
+Run: `ls -la docs/images/ui/*.png | wc -l`
 Expected: 15+ PNG files (list views, detail views, settings).
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add mintlify-docs/scripts/capture-screenshots.ts mintlify-docs/images/ui/
+git add docs/scripts/capture-screenshots.ts docs/images/ui/
 git commit -m "feat: add Playwright screenshot capture script and initial screenshots"
 ```
 
@@ -344,7 +344,7 @@ git commit -m "feat: add Playwright screenshot capture script and initial screen
 ## Task 3: Update docs.json navigation
 
 **Files:**
-- Modify: `mintlify-docs/docs.json`
+- Modify: `docs/docs.json`
 
 - [ ] **Step 1: Add tutorial page to Manager group**
 
@@ -368,7 +368,7 @@ Expected: Warning about missing `manager/tutorial` page (we create it next task)
 - [ ] **Step 3: Commit**
 
 ```bash
-git add mintlify-docs/docs.json
+git add docs/docs.json
 git commit -m "chore: add manager tutorial to navigation"
 ```
 
@@ -377,11 +377,11 @@ git commit -m "chore: add manager tutorial to navigation"
 ## Task 4: Manager tutorial page
 
 **Files:**
-- Create: `mintlify-docs/manager/tutorial.mdx`
+- Create: `docs/manager/tutorial.mdx`
 
 - [ ] **Step 1: Write the tutorial page**
 
-Create `mintlify-docs/manager/tutorial.mdx` with:
+Create `docs/manager/tutorial.mdx` with:
 - Frontmatter: title "Getting started with the Manager", description, keywords
 - Prerequisites section linking to /quickstart
 - Steps component walking through: Login, Create workspace, Create agent, Attach guardrails, Add observability, Verify agent, View logs
@@ -409,7 +409,7 @@ Expected: Both pass.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add mintlify-docs/manager/tutorial.mdx
+git add docs/manager/tutorial.mdx
 git commit -m "feat: add Manager UI tutorial page"
 ```
 
@@ -418,11 +418,11 @@ git commit -m "feat: add Manager UI tutorial page"
 ## Task 5: Add UI tabs to quickstart page
 
 **Files:**
-- Modify: `mintlify-docs/quickstart.mdx`
+- Modify: `docs/quickstart.mdx`
 
 - [ ] **Step 1: Read the current page**
 
-Read `mintlify-docs/quickstart.mdx`. The page already has `<Tabs>` with three tabs: "Manager (recommended)", "CLI", "Manual".
+Read `docs/quickstart.mdx`. The page already has `<Tabs>` with three tabs: "Manager (recommended)", "CLI", "Manual".
 
 - [ ] **Step 2: Add screenshots inside the Manager tab**
 
@@ -448,7 +448,7 @@ Expected: Both pass.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add mintlify-docs/quickstart.mdx
+git add docs/quickstart.mdx
 git commit -m "feat: add UI screenshots to quickstart Manager tab"
 ```
 
@@ -457,10 +457,10 @@ git commit -m "feat: add UI screenshots to quickstart Manager tab"
 ## Task 6: Add UI tabs to feature overview pages (batch 1)
 
 **Files:**
-- Modify: `mintlify-docs/guardrails/overview.mdx`
-- Modify: `mintlify-docs/memory/overview.mdx`
-- Modify: `mintlify-docs/observability/overview.mdx`
-- Modify: `mintlify-docs/tool-governance/overview.mdx`
+- Modify: `docs/guardrails/overview.mdx`
+- Modify: `docs/memory/overview.mdx`
+- Modify: `docs/observability/overview.mdx`
+- Modify: `docs/tool-governance/overview.mdx`
 
 For each page, the pattern is the same:
 
@@ -529,7 +529,7 @@ Expected: Both pass.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add mintlify-docs/guardrails/overview.mdx mintlify-docs/memory/overview.mdx mintlify-docs/observability/overview.mdx mintlify-docs/tool-governance/overview.mdx
+git add docs/guardrails/overview.mdx docs/memory/overview.mdx docs/observability/overview.mdx docs/tool-governance/overview.mdx
 git commit -m "feat: add Manager UI tabs to guardrails, memory, observability, tool governance"
 ```
 
@@ -538,11 +538,11 @@ git commit -m "feat: add Manager UI tabs to guardrails, memory, observability, t
 ## Task 7: Add UI tabs to remaining pages (batch 2)
 
 **Files:**
-- Modify: `mintlify-docs/frameworks/overview.mdx`
-- Modify: `mintlify-docs/configuration.mdx`
-- Modify: `mintlify-docs/auth/overview.mdx`
-- Modify: `mintlify-docs/prompts.mdx`
-- Modify: `mintlify-docs/deployment/overview.mdx`
+- Modify: `docs/frameworks/overview.mdx`
+- Modify: `docs/configuration.mdx`
+- Modify: `docs/auth/overview.mdx`
+- Modify: `docs/prompts.mdx`
+- Modify: `docs/deployment/overview.mdx`
 
 - [ ] **Step 1: Add tabs to frameworks/overview.mdx**
 
@@ -572,7 +572,7 @@ Expected: Both pass.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add mintlify-docs/frameworks/overview.mdx mintlify-docs/configuration.mdx mintlify-docs/auth/overview.mdx mintlify-docs/prompts.mdx mintlify-docs/deployment/overview.mdx
+git add docs/frameworks/overview.mdx docs/configuration.mdx docs/auth/overview.mdx docs/prompts.mdx docs/deployment/overview.mdx
 git commit -m "feat: add Manager UI tabs to frameworks, config, auth, prompts, deployment"
 ```
 
@@ -581,9 +581,9 @@ git commit -m "feat: add Manager UI tabs to frameworks, config, auth, prompts, d
 ## Task 8: Add UI tabs to integration pages
 
 **Files:**
-- Modify: `mintlify-docs/integrations/discord.mdx`
-- Modify: `mintlify-docs/integrations/slack.mdx`
-- Modify: `mintlify-docs/integrations/whatsapp.mdx`
+- Modify: `docs/integrations/discord.mdx`
+- Modify: `docs/integrations/slack.mdx`
+- Modify: `docs/integrations/whatsapp.mdx`
 
 - [ ] **Step 1: Add tabs to discord.mdx**
 
@@ -605,7 +605,7 @@ Expected: Both pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mintlify-docs/integrations/
+git add docs/integrations/
 git commit -m "feat: add Manager UI tabs to integration pages"
 ```
 
@@ -614,8 +614,8 @@ git commit -m "feat: add Manager UI tabs to integration pages"
 ## Task 9: Expand manager overview and add CLI cross-link
 
 **Files:**
-- Modify: `mintlify-docs/manager/overview.mdx`
-- Modify: `mintlify-docs/cli/overview.mdx`
+- Modify: `docs/manager/overview.mdx`
+- Modify: `docs/cli/overview.mdx`
 
 - [ ] **Step 1: Expand manager/overview.mdx**
 
@@ -642,7 +642,7 @@ Expected: Both pass.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add mintlify-docs/manager/overview.mdx mintlify-docs/cli/overview.mdx
+git add docs/manager/overview.mdx docs/cli/overview.mdx
 git commit -m "feat: expand manager overview with screenshots, add CLI cross-link"
 ```
 
@@ -662,15 +662,15 @@ Expected: "success no broken links found"
 
 - [ ] **Step 3: Verify image references**
 
-Run: `grep -r "images/ui/" mintlify-docs/*.mdx mintlify-docs/**/*.mdx | wc -l`
+Run: `grep -r "images/ui/" docs/*.mdx docs/**/*.mdx | wc -l`
 Expected: 20+ image references across pages.
 
 - [ ] **Step 4: Spot-check pages**
 
 Read 3 modified pages to verify the tab structure renders correctly:
-- `mintlify-docs/guardrails/overview.mdx` (representative feature page)
-- `mintlify-docs/quickstart.mdx` (special case: existing tabs)
-- `mintlify-docs/manager/tutorial.mdx` (new page)
+- `docs/guardrails/overview.mdx` (representative feature page)
+- `docs/quickstart.mdx` (special case: existing tabs)
+- `docs/manager/tutorial.mdx` (new page)
 
 - [ ] **Step 5: Commit any fixes**
 
