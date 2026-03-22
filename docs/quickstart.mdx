@@ -30,9 +30,18 @@ Before you begin, install the following:
       <Step title="Start the platform">
         <Note>Make sure the Docker daemon is running before you proceed.</Note>
 
-        ```bash
-        docker compose -f docker-compose.dev.yml up --build
-        ```
+        <Tabs>
+          <Tab title="Production (pre-built images)">
+            ```bash
+            docker compose up -d
+            ```
+          </Tab>
+          <Tab title="Development (build from source)">
+            ```bash
+            docker compose -f docker-compose.dev.yml up --build
+            ```
+          </Tab>
+        </Tabs>
 
         This starts PostgreSQL, the Manager API, and the web UI.
 

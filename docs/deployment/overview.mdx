@@ -9,8 +9,26 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
 ## Deployment modes
 
 <Tabs>
-  <Tab title="Managed (full stack)">
-    Deploy the Manager API, PostgreSQL database, and web UI together. Agents fetch their config from the Manager at startup.
+  <Tab title="Production (pre-built images)">
+    Pull published Docker images from Docker Hub and start the full stack. No build step required — this is the recommended approach for production and self-hosted deployments.
+
+    ```bash
+    git clone https://github.com/Idun-Group/idun-agent-platform.git
+    cd idun-agent-platform
+    # Edit docker-compose.yml: set AUTH__SECRET_KEY to a strong random value
+    docker compose up -d
+    ```
+
+    The Manager API is available at `http://localhost:8000` and the web UI at `http://localhost:3000`.
+
+    This mode suits:
+    - Production deployments
+    - Self-hosted environments
+    - Multi-agent deployments
+    - Teams that need centralized configuration and RBAC
+  </Tab>
+  <Tab title="Development (hot reload)">
+    Build images locally from source with hot reload enabled for the Manager and web UI. Requires the full repository checkout.
 
     ```bash
     git clone https://github.com/Idun-Group/idun-agent-platform.git
@@ -20,10 +38,8 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
     ```
 
     This mode suits:
-    - Multi-agent deployments
-    - Teams that need centralized configuration
-    - Workspace isolation and RBAC
-    - Non-technical team members who prefer a UI
+    - Local development and testing
+    - Contributing to the platform
   </Tab>
   <Tab title="Standalone engine">
     Run a single agent from a YAML config file. No Manager, no database, no web UI required.
@@ -34,7 +50,6 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
     ```
 
     This mode suits:
-    - Local development and testing
     - Single-agent deployments
     - CI/CD pipelines where you version config in Git
   </Tab>
@@ -78,33 +93,36 @@ In managed mode, the platform consists of three services and a database:
 | **PostgreSQL** | Stores agent configs, user accounts, workspace data | 5432 |
 | **Agent engines** | Your agent services, each running the Idun engine SDK | 8008+ |
 
-```yaml docker-compose.dev.yml
+```yaml docker-compose.yml (excerpt)
 services:
-  postgres:
+  db:
     image: postgres:16
     environment:
-      POSTGRES_USER: idun
-      POSTGRES_PASSWORD: idun
-      POSTGRES_DB: idun
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: idun_agents
     ports:
       - "5432:5432"
 
   manager:
-    build:
-      context: .
-      dockerfile: services/idun_agent_manager/Dockerfile
+    image: freezaa9/idun-ai:latest
     ports:
       - "8000:8000"
     environment:
-      DATABASE__URL: postgresql+asyncpg://idun:idun@postgres:5432/idun
+      DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
+      AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long
+      PORT: 8000
     depends_on:
-      - postgres
+      db:
+        condition: service_healthy
 
   web:
-    build:
-      context: services/idun_agent_web
+    image: freezaa9/idun-ai-web:latest
     ports:
-      - "3000:3000"
+      # nginx inside the container listens on 8080
+      - "3000:8080"
+    environment:
+      - API_URL=http://localhost:8000
     depends_on:
       - manager
 ```
