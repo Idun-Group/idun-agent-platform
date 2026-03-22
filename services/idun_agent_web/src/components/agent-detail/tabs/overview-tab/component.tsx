@@ -25,14 +25,10 @@ import { ActionBar, ActionButton, TwoColumnGrid, ColumnStack } from './sections/
 
 interface OverviewTabProps {
     agent: BackendAgent | null;
-    isEditing: boolean;
-    onSave: (payload: any) => void;
-    onCancel: () => void;
-    saveTrigger?: number;
     onAgentRefresh?: () => void;
 }
 
-const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentRefresh }: OverviewTabProps) => {
+const OverviewTab = ({ agent, onAgentRefresh }: OverviewTabProps) => {
     // Form state (initialized when entering edit mode)
     const [formState, setFormState] = useState<AgentFormState>({
         name: '',
@@ -159,12 +155,6 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
             setIsSaving(false);
         }
     };
-
-    useEffect(() => {
-        if (saveTrigger && saveTrigger > 0 && isEditing) {
-            handleSave();
-        }
-    }, [saveTrigger]);
 
     if (!agent) return null;
 

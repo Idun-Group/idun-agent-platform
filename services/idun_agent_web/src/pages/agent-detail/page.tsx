@@ -5,7 +5,6 @@ import { notify } from '../../components/toast/notify';
 import { useAuth } from '../../hooks/use-auth';
 import {
     getAgent,
-    patchAgent,
     restartAgent,
     performHealthCheck,
     fetchEngineHealth,
@@ -18,9 +17,6 @@ import EnrollmentSection from '../../components/agent-detail/tabs/overview-tab/s
 import {
     ArrowLeft,
     RotateCcw,
-    Edit3,
-    X,
-    Save,
     LayoutDashboard,
     Webhook,
     Settings,
@@ -53,8 +49,6 @@ export default function AgentDetailPage() {
     const [engineVersion, setEngineVersion] = useState<string | null>(null);
     const [latestEngineVersion, setLatestEngineVersion] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [saveTrigger, setSaveTrigger] = useState(0);
 
     const { isLoading: isAuthLoading } = useAuth();
 
@@ -82,30 +76,6 @@ export default function AgentDetailPage() {
         if (!id || isAuthLoading) return;
         loadAgent();
     }, [id, isAuthLoading]);
-
-    const handleTabClick = (tabId: string) => {
-        if (isEditing && tabId !== 'overview') return;
-        setActiveTab(tabId);
-    };
-
-    const handleEditSave = async (payload: any) => {
-        if (!agent) return;
-        try {
-            const updatedAgent = await patchAgent(agent.id, payload);
-            setAgent(updatedAgent);
-            setIsEditing(false);
-            notify.success('Agent updated successfully!');
-            performHealthCheck(updatedAgent, setAgent);
-        } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'Failed to update agent';
-            notify.error(errorMsg);
-        }
-    };
-
-    const handleEditToggle = () => {
-        setIsEditing(true);
-        setActiveTab('overview');
-    };
 
     const handleRestart = async () => {
         if (!agent?.base_url) {
@@ -184,18 +154,8 @@ export default function AgentDetailPage() {
                 </div>
 
                 <Actions>
-                    {!isEditing && (
-                        <HeaderButton onClick={handleRestart}>
-                            <RotateCcw size={16} /> Restart
-                        </HeaderButton>
-                    )}
-                    {isEditing && (
-                        <HeaderButton $primary onClick={() => setSaveTrigger(t => t + 1)}>
-                            <Save size={16} /> Save Changes
-                        </HeaderButton>
-                    )}
-                    <HeaderButton $primary={!isEditing} onClick={isEditing ? () => setIsEditing(false) : handleEditToggle}>
-                        {isEditing ? <><X size={16} /> Cancel Edit</> : <><Edit3 size={16} /> Edit Agent</>}
+                    <HeaderButton onClick={handleRestart}>
+                        <RotateCcw size={16} /> Restart
                     </HeaderButton>
                 </Actions>
             </HeaderSection>
@@ -208,8 +168,7 @@ export default function AgentDetailPage() {
                         <TabButton
                             key={tab.id}
                             $active={isActive}
-                            $disabled={isEditing && tab.id !== 'overview'}
-                            onClick={() => handleTabClick(tab.id)}
+                            onClick={() => setActiveTab(tab.id)}
                         >
                             <Icon size={16} style={{ marginRight: '8px' }} />
                             {tab.label}
@@ -229,10 +188,6 @@ export default function AgentDetailPage() {
                         )}
                         <OverviewTab
                             agent={agent}
-                            isEditing={isEditing}
-                            onSave={handleEditSave}
-                            onCancel={() => setIsEditing(false)}
-                            saveTrigger={saveTrigger}
                             onAgentRefresh={loadAgent}
                         />
                         </>
@@ -384,7 +339,7 @@ const TabsNav = styled.div`
     margin-bottom: 32px;
 `;
 
-const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
+const TabButton = styled.button<{ $active: boolean }>`
     display: flex;
     align-items: center;
     background: none;
@@ -392,10 +347,9 @@ const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
     padding: 16px 4px;
     font-size: 14px;
     font-weight: 500;
-    cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
+    cursor: pointer;
     position: relative;
     transition: all 0.2s;
-    opacity: ${props => props.$disabled ? 0.4 : 1};
 
     ${props => props.$active
         ? `color: hsl(var(--foreground));`
