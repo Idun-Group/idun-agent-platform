@@ -22,19 +22,19 @@ No separate "admin" section. UI content lives inside existing pages via Mintlify
 
 ### Script
 
-- **File:** `mintlify-docs/scripts/capture-screenshots.ts`
-- **Config:** `mintlify-docs/scripts/playwright.config.ts`
-- **Runtime:** Playwright, installed as a devDependency in `mintlify-docs/scripts/package.json`
+- **File:** `docs/scripts/capture-screenshots.ts`
+- **Config:** `docs/scripts/playwright.config.ts`
+- **Runtime:** Playwright, installed as a devDependency in `docs/scripts/package.json`
 - **Prerequisite:** Dev stack running via `docker compose -f docker-compose.dev.yml up`
-- **Output:** PNG files in `mintlify-docs/images/ui/`
+- **Output:** PNG files in `docs/images/ui/`
 - **Resolution:** 1280x800 viewport
 - **Base URL:** `http://localhost:5173` (Vite dev server default). Configurable via `BASE_URL` env var for Docker setups that expose port 3000.
-- **Run command:** `cd mintlify-docs/scripts && npx playwright test`
+- **Run command:** `cd docs/scripts && npx playwright test`
 
 ### Playwright config
 
 ```ts
-// mintlify-docs/scripts/playwright.config.ts
+// docs/scripts/playwright.config.ts
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
@@ -137,7 +137,7 @@ Run the script after UI changes. Screenshots overwrite existing files at the sam
 
 ## Deliverable 2: Manager tutorial page
 
-### File: `mintlify-docs/manager/tutorial.mdx`
+### File: `docs/manager/tutorial.mdx`
 
 A step-by-step guided walkthrough for first-time Manager UI users.
 
@@ -292,7 +292,7 @@ Alt text describes the screen content for accessibility and AI indexing.
 
 ## Dependencies
 
-- Playwright (installed in `mintlify-docs/scripts/package.json`)
+- Playwright (installed in `docs/scripts/package.json`)
 - Dev stack running (PostgreSQL + Manager + Web UI)
 - Manager API accessible at `http://localhost:8000`
 - Web UI accessible at `http://localhost:5173` (or `http://localhost:3000` via Docker)
