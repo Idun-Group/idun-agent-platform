@@ -10,38 +10,77 @@ LangGraph is the primary framework integration in Idun Agent Platform. It suppor
   Want to start from working code? The [agent templates](/templates) include 7 LangGraph examples covering tool calling, structured I/O, and multi-step workflows.
 </Tip>
 
-## Configuration
+## Create a LangGraph agent
 
-Set `agent.type` to `LANGGRAPH` and provide the `graph_definition` field pointing to your graph object.
+<Tabs>
+  <Tab title="Manager UI">
+    The fastest path. Create the agent in the Manager, then connect your code.
 
-```yaml config.yaml
-server:
-  api:
-    port: 8008
+    <Steps>
+      <Step title="Open the agent wizard">
+        From the [Agent Dashboard](/manager/overview), click **Create an agent**. In step 1, enter a name and select **LangGraph**.
 
-agent:
-  type: LANGGRAPH
-  config:
-    name: "my-langgraph-agent"
-    graph_definition: "my_agent/agent.py:graph"
-    checkpointer:
-      type: memory
-```
+        ![Agent creation wizard with LangGraph selected](/images/ui/agents-create-step1.png)
+      </Step>
+      <Step title="Configure the framework">
+        In step 2, fill in:
 
-### The `graph_definition` field
+        - **Graph Definition**: path to your graph file and variable, e.g. `./agent/graph.py:graph`
+        - **Agent Host**: Localhost (for local development) or Remote
+        - **Server Port**: the port your agent will listen on
 
-The `graph_definition` value follows the format `file_path:variable_name`:
+        ![LangGraph framework configuration step](/images/ui/agents-create-step2.png)
 
-- **File path**: Relative path to the Python file containing your graph (for example, `my_agent/agent.py`)
-- **Variable name**: The name of the `StateGraph` variable in that file (for example, `graph`)
+        The graph definition format is `file_path:variable_name`. The file path is relative to where you run the agent. The variable must be an **uncompiled** `StateGraph` (the engine compiles it with the checkpointer).
+      </Step>
+      <Step title="Enroll your agent">
+        Step 3 gives you the enrollment instructions. In your agent's project directory:
 
-The two parts are separated by a colon.
+        ```bash
+        pip install idun-agent-engine langgraph langchain-openai
+        export IDUN_MANAGER_HOST=http://localhost:8000
+        export IDUN_AGENT_API_KEY=<your-api-key>
+        idun agent serve --source manager
+        ```
 
-<Warning>
-  You must export an **uncompiled** `StateGraph` object. The engine compiles the graph internally to attach the checkpointer and other platform features. If you export a `CompiledStateGraph` (the result of calling `.compile()`), the engine will raise an error at startup.
-</Warning>
+        Get the API key from the **API Integration** tab on your agent's detail page. The agent connects to the Manager, fetches its config, and starts.
+      </Step>
+      <Step title="Add memory from the UI">
+        Back in the Manager, open your agent's **Overview** tab and click **Manage** next to Memory. Pick a backend:
 
-## Minimal agent example
+        - **In-memory**: fast, data lost on restart (good for development)
+        - **SQLite**: persists locally, single-instance
+        - **PostgreSQL**: persists to a database, production-ready
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Config file">
+    Set `agent.type` to `LANGGRAPH` and provide the `graph_definition` field.
+
+    ```yaml config.yaml
+    server:
+      api:
+        port: 8008
+
+    agent:
+      type: LANGGRAPH
+      config:
+        name: "my-langgraph-agent"
+        graph_definition: "my_agent/agent.py:graph"
+        checkpointer:
+          type: memory
+    ```
+
+    Then run:
+
+    ```bash
+    pip install idun-agent-engine langgraph langchain-openai
+    idun agent serve --source file --path config.yaml
+    ```
+  </Tab>
+</Tabs>
+
+## Write your agent code
 
 Create a file at the path matching your `graph_definition`:
 
@@ -73,105 +112,55 @@ graph.add_edge("chatbot", END)
 # Export the uncompiled StateGraph.
 ```
 
-The engine loads this file, compiles the graph with the configured checkpointer, and serves it behind the Idun API.
+<Warning>
+  You must export an **uncompiled** `StateGraph`. The engine compiles the graph internally to attach the checkpointer and platform features. Exporting a `CompiledStateGraph` (the result of `.compile()`) will raise an error at startup.
+</Warning>
+
+## The `graph_definition` field
+
+The value follows the format `file_path:variable_name`:
+
+- **File path**: relative path to the Python file (e.g., `my_agent/agent.py`)
+- **Variable name**: the `StateGraph` variable in that file (e.g., `graph`)
+
+The engine tries the file path first, then falls back to Python module import notation.
 
 ## Checkpointing
 
-Checkpointing persists conversation state so that threads survive restarts. Configure it in the `checkpointer` section of your agent config.
+Checkpointing persists conversation state so threads survive restarts. When using the Manager UI, you configure this from the Memory section of your agent's Overview tab. With a config file, set it in the `checkpointer` section.
 
 <Tabs>
   <Tab title="In-memory">
-    State is held in process memory. Data is lost when the agent restarts. Use this for development and testing.
+    State is held in process memory. Data is lost when the agent restarts. Good for development.
 
     ```yaml
-    agent:
-      type: LANGGRAPH
-      config:
-        name: "my-agent"
-        graph_definition: "my_agent/agent.py:graph"
-        checkpointer:
-          type: memory
+    checkpointer:
+      type: memory
     ```
   </Tab>
   <Tab title="SQLite">
-    State is persisted to a local SQLite file. Good for single-instance deployments where you need data to survive restarts.
+    State persists to a local file. Good for single-instance deployments.
 
     ```yaml
-    agent:
-      type: LANGGRAPH
-      config:
-        name: "my-agent"
-        graph_definition: "my_agent/agent.py:graph"
-        checkpointer:
-          type: sqlite
-          db_url: "sqlite:///checkpoints.db"
+    checkpointer:
+      type: sqlite
+      db_url: "sqlite:///checkpoints.db"
     ```
 
-    The `db_url` must start with `sqlite:///`. Install the `aiosqlite` package in your agent environment:
-
-    ```bash
-    pip install aiosqlite
-    ```
+    Requires `aiosqlite`: `pip install aiosqlite`
   </Tab>
   <Tab title="PostgreSQL">
-    State is persisted to a PostgreSQL database. Use this for production deployments with multiple instances.
+    State persists to PostgreSQL. Use this in production.
 
     ```yaml
-    agent:
-      type: LANGGRAPH
-      config:
-        name: "my-agent"
-        graph_definition: "my_agent/agent.py:graph"
-        checkpointer:
-          type: postgres
-          db_url: "postgresql://user:password@localhost:5432/checkpoints"
+    checkpointer:
+      type: postgres
+      db_url: "postgresql://user:password@localhost:5432/checkpoints"
     ```
-
-    The `db_url` must start with `postgresql://` or `postgres://`.
   </Tab>
 </Tabs>
 
-If you omit the `checkpointer` field, no checkpointing is configured and conversation state is not persisted.
-
-## Running the agent
-
-<Steps>
-  <Step title="Install dependencies">
-    ```bash
-    pip install idun-agent-engine langgraph langchain-openai
-    ```
-  </Step>
-  <Step title="Set environment variables">
-    Create a `.env` file in your project directory:
-
-    ```bash .env
-    OPENAI_API_KEY=your-openai-api-key
-    ```
-
-    To run in managed mode (pulling config from the Agent Manager), add:
-
-    ```bash .env
-    IDUN_MANAGER_HOST=http://localhost:8000
-    IDUN_AGENT_API_KEY=ag-your-key-from-manager
-    ```
-  </Step>
-  <Step title="Start the engine">
-    <Tabs>
-      <Tab title="Local config">
-        ```bash
-        idun agent serve --source local --config config.yaml
-        ```
-      </Tab>
-      <Tab title="Managed mode">
-        ```bash
-        idun agent serve --source manager
-        ```
-
-        The engine pulls the configuration from the Agent Manager using the API key.
-      </Tab>
-    </Tabs>
-  </Step>
-</Steps>
+If you omit the `checkpointer` field entirely, no checkpointing is configured.
 
 ## Next steps
 

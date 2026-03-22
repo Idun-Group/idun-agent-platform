@@ -10,42 +10,76 @@ Google ADK (Agent Development Kit) is Google's framework for building Gemini-pow
   Want to start from working code? The [agent templates](/templates) include ADK examples for tool calling and structured I/O.
 </Tip>
 
-## Configuration
+## Create an ADK agent
 
-Set `agent.type` to `ADK` and provide the `agent` definition path and `app_name`.
+<Tabs>
+  <Tab title="Manager UI">
+    Create the agent in the Manager, then connect your code.
 
-```yaml config.yaml
-server:
-  api:
-    port: 8008
+    <Steps>
+      <Step title="Open the agent wizard">
+        From the [Agent Dashboard](/manager/overview), click **Create an agent**. In step 1, enter a name and select **Google ADK**.
 
-agent:
-  type: ADK
-  config:
-    name: "my-adk-agent"
-    agent: "my_agent.agent:root_agent"
-    app_name: "myagent"
-```
+        ![Agent creation wizard with ADK selected](/images/ui/agents-create-step1.png)
+      </Step>
+      <Step title="Configure the framework">
+        In step 2, fill in:
 
-### Configuration fields
+        - **Agent definition**: Python module path and variable, e.g. `my_agent.agent:root_agent`
+        - **App name**: application name for ADK session/memory scoping
+        - **Agent Host**: Localhost or Remote
+        - **Server Port**: the port your agent will listen on
 
-| Field | Required | Description |
-|---|---|---|
-| `agent` | Yes | Agent definition in `module.path:variable_name` format. Points to the agent instance in your Python module. |
-| `app_name` | Yes | Application name required by ADK. Used internally for session and memory scoping. |
-| `session_service` | No | Session persistence backend. Defaults to in-memory if omitted. |
-| `memory_service` | No | Memory persistence backend. Defaults to in-memory if omitted. |
+        The agent definition uses Python module path notation (`module.path:variable`), not a file path. This differs from LangGraph.
+      </Step>
+      <Step title="Enroll your agent">
+        Step 3 gives you the enrollment instructions. In your agent's project directory:
 
-### The `agent` field
+        ```bash
+        pip install idun-agent-engine google-adk
+        export IDUN_MANAGER_HOST=http://localhost:8000
+        export IDUN_AGENT_API_KEY=<your-api-key>
+        idun agent serve --source manager
+        ```
 
-The `agent` value uses Python module path notation with a colon separator:
+        Get the API key from the **API Integration** tab on your agent's detail page.
+      </Step>
+      <Step title="Add session and memory backends">
+        Back in the Manager, open your agent's **Overview** tab and click **Manage** next to Memory. ADK supports:
 
-- **Module path**: Dotted Python module path (for example, `my_agent.agent`)
-- **Variable name**: The name of the agent instance in that module (for example, `root_agent`)
+        - **Session services**: In-memory, Database (PostgreSQL), Vertex AI
+        - **Memory services**: In-memory, Vertex AI
 
-This differs from LangGraph's `graph_definition`, which uses a file path instead of a module path.
+        The defaults are in-memory for both. Switch to Database or Vertex AI for production persistence.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Config file">
+    Set `agent.type` to `ADK` and provide the agent definition path and `app_name`.
 
-## Minimal agent example
+    ```yaml config.yaml
+    server:
+      api:
+        port: 8008
+
+    agent:
+      type: ADK
+      config:
+        name: "my-adk-agent"
+        agent: "my_agent.agent:root_agent"
+        app_name: "myagent"
+    ```
+
+    Then run:
+
+    ```bash
+    pip install idun-agent-engine google-adk
+    idun agent serve --source file --path config.yaml
+    ```
+  </Tab>
+</Tabs>
+
+## Write your agent code
 
 Create an ADK agent at the module path matching your configuration:
 
@@ -61,139 +95,78 @@ root_agent = Agent(
 ```
 
 <Note>
-  If you use Vertex AI models, authenticate with `gcloud auth application-default login` before running the agent. Use `gemini-2.5-flash` unless you have Gemini 3 preview enabled in your region.
+  If you use Vertex AI models, authenticate with `gcloud auth application-default login` before running the agent.
 </Note>
+
+### The `agent` field
+
+The value uses Python module path notation with a colon separator:
+
+- **Module path**: dotted Python module path (e.g., `my_agent.agent`)
+- **Variable name**: the agent instance in that module (e.g., `root_agent`)
+
+This differs from LangGraph's `graph_definition`, which uses a file path.
 
 ## Session services
 
-Session services control how ADK persists session state. Configure the `session_service` field to choose a backend.
+Session services control how ADK persists session state. When using the Manager UI, configure this from the Memory section. With a config file, set the `session_service` field.
 
 <Tabs>
   <Tab title="In-memory (default)">
-    Sessions are held in process memory. Data is lost on restart. This is the default when `session_service` is omitted.
+    Sessions are held in process memory. Lost on restart. This is the default.
 
     ```yaml
-    agent:
-      type: ADK
-      config:
-        name: "my-agent"
-        agent: "my_agent.agent:root_agent"
-        app_name: "myagent"
-        session_service:
-          type: in_memory
+    session_service:
+      type: in_memory
     ```
   </Tab>
   <Tab title="Database">
-    Sessions are persisted to a database (PostgreSQL or other SQLAlchemy-compatible backend).
+    Sessions persist to PostgreSQL or another SQLAlchemy-compatible database.
 
     ```yaml
-    agent:
-      type: ADK
-      config:
-        name: "my-agent"
-        agent: "my_agent.agent:root_agent"
-        app_name: "myagent"
-        session_service:
-          type: database
-          db_url: "postgresql://user:password@localhost:5432/sessions"
+    session_service:
+      type: database
+      db_url: "postgresql://user:password@localhost:5432/sessions"
     ```
   </Tab>
   <Tab title="Vertex AI">
-    Sessions are managed by Google Vertex AI's Reasoning Engine.
+    Sessions are managed by Google Vertex AI Reasoning Engine.
 
     ```yaml
-    agent:
-      type: ADK
-      config:
-        name: "my-agent"
-        agent: "my_agent.agent:root_agent"
-        app_name: "myagent"
-        session_service:
-          type: vertex_ai
-          project_id: "my-gcp-project"
-          location: "us-central1"
-          reasoning_engine_app_name: "my-reasoning-engine-app"
+    session_service:
+      type: vertex_ai
+      project_id: "my-gcp-project"
+      location: "us-central1"
+      reasoning_engine_app_name: "my-reasoning-engine-app"
     ```
   </Tab>
 </Tabs>
 
 ## Memory services
 
-Memory services control long-term memory persistence for ADK agents. Configure the `memory_service` field separately from session services.
+Memory services control long-term memory persistence, separate from session state.
 
 <Tabs>
   <Tab title="In-memory (default)">
-    Memory is held in process memory. This is the default when `memory_service` is omitted.
+    Memory is held in process memory. This is the default.
 
     ```yaml
-    agent:
-      type: ADK
-      config:
-        name: "my-agent"
-        agent: "my_agent.agent:root_agent"
-        app_name: "myagent"
-        memory_service:
-          type: in_memory
+    memory_service:
+      type: in_memory
     ```
   </Tab>
   <Tab title="Vertex AI">
     Memory is managed by Google Vertex AI Memory Bank.
 
     ```yaml
-    agent:
-      type: ADK
-      config:
-        name: "my-agent"
-        agent: "my_agent.agent:root_agent"
-        app_name: "myagent"
-        memory_service:
-          type: vertex_ai
-          project_id: "my-gcp-project"
-          location: "us-central1"
-          memory_bank_id: "my-memory-bank-id"
+    memory_service:
+      type: vertex_ai
+      project_id: "my-gcp-project"
+      location: "us-central1"
+      memory_bank_id: "my-memory-bank-id"
     ```
   </Tab>
 </Tabs>
-
-## Running the agent
-
-<Steps>
-  <Step title="Install dependencies">
-    ```bash
-    pip install idun-agent-engine google-adk
-    ```
-  </Step>
-  <Step title="Set environment variables">
-    Create a `.env` file in your project directory:
-
-    ```bash .env
-    GOOGLE_CLOUD_PROJECT=my-gcp-project
-    ```
-
-    To run in managed mode (pulling config from the Agent Manager), add:
-
-    ```bash .env
-    IDUN_MANAGER_HOST=http://localhost:8000
-    IDUN_AGENT_API_KEY=ag-your-key-from-manager
-    ```
-  </Step>
-  <Step title="Start the engine">
-    <Tabs>
-      <Tab title="Local config">
-        ```bash
-        idun agent serve --source local --config config.yaml
-        ```
-      </Tab>
-      <Tab title="Managed mode">
-        ```bash
-        idun agent serve --source manager
-        ```
-
-        The engine pulls the configuration from the Agent Manager using the API key.
-      </Tab>
-    </Tabs>
-  </Step>
-</Steps>
 
 <Warning>
   ADK does not support folder paths that contain spaces. Make sure your project directory path has no spaces.
