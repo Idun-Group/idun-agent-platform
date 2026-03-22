@@ -67,16 +67,27 @@ export default function AgentDetailsSection({ agent, onAgentRefresh }: AgentDeta
     }, [agent, isEditing]);
 
     const handleSave = async () => {
+        if (!localForm.name.trim()) {
+            notify.error('Agent name is required');
+            return;
+        }
         setIsSaving(true);
         try {
             const port = parseInt(localForm.serverPort, 10);
+            const existingEngineConfig = agent.engine_config || {};
             await patchAgent(agent.id, {
                 name: localForm.name,
                 version: localForm.version,
-                description: localForm.description,
                 base_url: localForm.baseUrl,
                 engine_config: {
-                    server: { api: { port: isNaN(port) ? 8000 : port } },
+                    ...existingEngineConfig,
+                    server: {
+                        ...(existingEngineConfig.server || {}),
+                        api: {
+                            ...((existingEngineConfig.server as Record<string, unknown>)?.api as Record<string, unknown> || {}),
+                            port: isNaN(port) ? 8000 : port,
+                        },
+                    },
                 },
             } as any);
             setIsEditing(false);

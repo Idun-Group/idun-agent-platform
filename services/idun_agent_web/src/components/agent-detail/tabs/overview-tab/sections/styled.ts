@@ -258,43 +258,6 @@ export const CreateNewButton = styled.button`
     }
 `;
 
-export const ActionBar = styled.div`
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 0 0;
-    margin-top: 8px;
-    border-top: 1px solid var(--overlay-light);
-`;
-
-export const ActionButton = styled.button<{ $primary?: boolean }>`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    ${p => p.$primary
-        ? `
-            background: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
-            border: none;
-            &:hover { background: #7c3aed; }
-            &:disabled { opacity: 0.5; cursor: not-allowed; }
-        `
-        : `
-            background: transparent;
-            color: hsl(var(--muted-foreground));
-            border: 1px solid var(--border-light);
-            &:hover { color: hsl(var(--foreground)); border-color: var(--overlay-strong); }
-        `
-    }
-`;
-
 export const CheckIndicator = styled.div<{ $checked?: boolean }>`
     width: 18px;
     height: 18px;
@@ -521,7 +484,7 @@ export const SectionSaveButton = styled.button`
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover:not(:disabled) { background: #7c3aed; }
+    &:hover:not(:disabled) { background: hsl(var(--primary) / 0.85); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 

@@ -371,6 +371,8 @@ async def patch_agent(
 
     model.name = request.name
     model.base_url = request.base_url
+    if request.version is not None:
+        model.version = request.version
     engine_config = EngineConfig(**request.engine_config.model_dump())
     model.engine_config = engine_config.model_dump()
     model.updated_at = datetime.now(UTC)

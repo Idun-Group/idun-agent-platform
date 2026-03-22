@@ -5,7 +5,7 @@ import { FRAMEWORK_SCHEMA_MAP, extractAgentConfig } from '../../../../../utils/a
 import type { BackendAgent } from '../../../../../services/agents';
 import { patchAgent } from '../../../../../services/agents';
 import { notify } from '../../../../toast/notify';
-import { API_BASE_URL } from '../../../../../utils/api';
+import { getJson } from '../../../../../utils/api';
 import {
     SectionCard,
     SectionHeader,
@@ -37,8 +37,7 @@ export default function FrameworkSection({ agent, onAgentRefresh }: FrameworkSec
     // Fetch schema when entering edit mode
     useEffect(() => {
         if (!isEditing || rootSchema) return;
-        fetch(`${API_BASE_URL}/api/openapi.json`)
-            .then(r => r.json())
+        getJson('/api/openapi.json')
             .then(setRootSchema)
             .catch(console.error);
     }, [isEditing, rootSchema]);
@@ -84,9 +83,13 @@ export default function FrameworkSection({ agent, onAgentRefresh }: FrameworkSec
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            const existingEngineConfig = agent.engine_config || {};
             await patchAgent(agent.id, {
+                name: agent.name,
                 engine_config: {
+                    ...existingEngineConfig,
                     agent: {
+                        ...(existingEngineConfig.agent || {}),
                         config: agentConfig,
                     },
                 },
