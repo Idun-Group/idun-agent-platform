@@ -44,15 +44,9 @@ Google ADK (Agent Development Kit) is Google's framework for building Gemini-pow
 
         Get the API key from the **API Integration** tab on your agent's detail page.
       </Step>
-      <Step title="Add session and memory backends">
-        Back in the Manager, open your agent's **Overview** tab and click **Manage** next to Memory. ADK supports:
-
-        - **Session services**: In-memory, Database (PostgreSQL), Vertex AI
-        - **Memory services**: In-memory, Vertex AI
-
-        The defaults are in-memory for both. Switch to Database or Vertex AI for production persistence.
-      </Step>
     </Steps>
+
+    The Manager sets in-memory session and memory services by default. To switch to Database or Vertex AI, see [Memory](/memory/adk).
   </Tab>
   <Tab title="Config file">
     Set `agent.type` to `ADK` and provide the agent definition path and `app_name`.

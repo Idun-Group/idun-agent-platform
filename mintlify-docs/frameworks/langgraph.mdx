@@ -45,14 +45,9 @@ LangGraph is the primary framework integration in Idun Agent Platform. It suppor
 
         Get the API key from the **API Integration** tab on your agent's detail page. The agent connects to the Manager, fetches its config, and starts.
       </Step>
-      <Step title="Add memory from the UI">
-        Back in the Manager, open your agent's **Overview** tab and click **Manage** next to Memory. Pick a backend:
-
-        - **In-memory**: fast, data lost on restart (good for development)
-        - **SQLite**: persists locally, single-instance
-        - **PostgreSQL**: persists to a database, production-ready
-      </Step>
     </Steps>
+
+    The Manager sets in-memory checkpointing by default. To switch to SQLite or PostgreSQL, see [Memory](/memory/langgraph).
   </Tab>
   <Tab title="Config file">
     Set `agent.type` to `LANGGRAPH` and provide the `graph_definition` field.
