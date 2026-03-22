@@ -170,13 +170,16 @@ class GuardrailsHubGuard(BaseGuardrail):
         """Validate input against this guardrail. Returns True if content is allowed."""
         from guardrails.classes.validation.validation_result import FailResult
 
+        # Defensive: ensure input is always a plain string for hub validators
+        text = str(input) if not isinstance(input, str) else input
+
         try:
-            result = self._guard.validate(input, metadata={})
+            result = self._guard.validate(text, metadata={})
             return not isinstance(result, FailResult)
         except Exception:
             logger.exception(
                 "Guardrail '%s' raised an unexpected error during validation; "
-                "allowing request to proceed.",
+                "blocking request (fail-closed).",
                 self.guard_id,
             )
-            return True
+            return False
