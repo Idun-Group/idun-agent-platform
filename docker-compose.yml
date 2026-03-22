@@ -15,27 +15,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # networks:
-    #   - idun_network
+    networks:
+      - idun_network
 
   manager:
     image: freezaa9/idun-ai:0.5.1
     container_name: idun-manager
     ports:
       - "8000:8000"
-    volumes:
-      - ./services/idun_agent_manager/alembic:/app/alembic
-      - ./services/idun_agent_manager/src:/app/src
     environment:
       # Database connection
       DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
-      DATABASEAUTO_MIGRATE: true
-      AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
+      # Auth — replace with a strong random secret in production
+      AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long
       ENVIRONMENT: production
-      # Server configuration
+      # Server — must match the exposed port above
       PORT: 8000
       WORKERS: 2
-
       # Database tuning
       DATABASE__ECHO: "false"
       DATABASE__POOL_SIZE: 10
@@ -44,25 +40,26 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
-    # networks:
-    #   - idun_network
+    networks:
+      - idun_network
     restart: unless-stopped
 
   web:
     image: freezaa9/idun-ai-web:0.5.1
     container_name: idun-web
     ports:
-      - "3000:3000"
+      # nginx inside the container listens on 8080; expose it on host port 3000
+      - "3000:8080"
     environment:
-      - VITE_API_URL=http://localhost:8000 # http://host.docker.internal:8000
-      - CHOKIDAR_USEPOLLING=true
-    # networks:
-    #   - idun_network
+      # Base URL of the Manager API as seen from the browser
+      - API_URL=http://localhost:8000
+    networks:
+      - idun_network
     depends_on:
       - manager
 
@@ -80,13 +77,13 @@ services:
     depends_on:
       manager:
         condition: service_healthy
-    # networks:
-    #   - idun_network
+    networks:
+      - idun_network
     restart: unless-stopped
 
 volumes:
   postgres_data:
 
-# networks:
-#   idun_network:
-#     driver: bridge
+networks:
+  idun_network:
+    driver: bridge
