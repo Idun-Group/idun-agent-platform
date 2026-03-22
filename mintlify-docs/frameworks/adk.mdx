@@ -101,66 +101,9 @@ The value uses Python module path notation with a colon separator:
 
 This differs from LangGraph's `graph_definition`, which uses a file path.
 
-## Session services
+## Session and memory services
 
-Session services control how ADK persists session state. When using the Manager UI, configure this from the Memory section. With a config file, set the `session_service` field.
-
-<Tabs>
-  <Tab title="In-memory (default)">
-    Sessions are held in process memory. Lost on restart. This is the default.
-
-    ```yaml
-    session_service:
-      type: in_memory
-    ```
-  </Tab>
-  <Tab title="Database">
-    Sessions persist to PostgreSQL or another SQLAlchemy-compatible database.
-
-    ```yaml
-    session_service:
-      type: database
-      db_url: "postgresql://user:password@localhost:5432/sessions"
-    ```
-  </Tab>
-  <Tab title="Vertex AI">
-    Sessions are managed by Google Vertex AI Reasoning Engine.
-
-    ```yaml
-    session_service:
-      type: vertex_ai
-      project_id: "my-gcp-project"
-      location: "us-central1"
-      reasoning_engine_app_name: "my-reasoning-engine-app"
-    ```
-  </Tab>
-</Tabs>
-
-## Memory services
-
-Memory services control long-term memory persistence, separate from session state.
-
-<Tabs>
-  <Tab title="In-memory (default)">
-    Memory is held in process memory. This is the default.
-
-    ```yaml
-    memory_service:
-      type: in_memory
-    ```
-  </Tab>
-  <Tab title="Vertex AI">
-    Memory is managed by Google Vertex AI Memory Bank.
-
-    ```yaml
-    memory_service:
-      type: vertex_ai
-      project_id: "my-gcp-project"
-      location: "us-central1"
-      memory_bank_id: "my-memory-bank-id"
-    ```
-  </Tab>
-</Tabs>
+ADK agents have two persistence layers: session services (conversation state) and memory services (long-term recall). Both default to in-memory when using the Manager. See [Memory and sessions for ADK](/memory/adk) for backend options including Database (PostgreSQL) and Vertex AI.
 
 <Warning>
   ADK does not support folder paths that contain spaces. Make sure your project directory path has no spaces.

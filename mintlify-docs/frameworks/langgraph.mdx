@@ -122,40 +122,7 @@ The engine tries the file path first, then falls back to Python module import no
 
 ## Checkpointing
 
-Checkpointing persists conversation state so threads survive restarts. When using the Manager UI, you configure this from the Memory section of your agent's Overview tab. With a config file, set it in the `checkpointer` section.
-
-<Tabs>
-  <Tab title="In-memory">
-    State is held in process memory. Data is lost when the agent restarts. Good for development.
-
-    ```yaml
-    checkpointer:
-      type: memory
-    ```
-  </Tab>
-  <Tab title="SQLite">
-    State persists to a local file. Good for single-instance deployments.
-
-    ```yaml
-    checkpointer:
-      type: sqlite
-      db_url: "sqlite:///checkpoints.db"
-    ```
-
-    Requires `aiosqlite`: `pip install aiosqlite`
-  </Tab>
-  <Tab title="PostgreSQL">
-    State persists to PostgreSQL. Use this in production.
-
-    ```yaml
-    checkpointer:
-      type: postgres
-      db_url: "postgresql://user:password@localhost:5432/checkpoints"
-    ```
-  </Tab>
-</Tabs>
-
-If you omit the `checkpointer` field entirely, no checkpointing is configured.
+LangGraph agents can persist conversation state across restarts using checkpointers. The Manager sets in-memory checkpointing by default. You can switch to SQLite or PostgreSQL for durability. See [Memory and checkpointing for LangGraph](/memory/langgraph) for backend options and configuration.
 
 ## Next steps
 
