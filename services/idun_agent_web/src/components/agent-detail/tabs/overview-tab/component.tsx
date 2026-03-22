@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { notify } from '../../../toast/notify';
 import { Save } from 'lucide-react';
 import type { BackendAgent } from '../../../../services/agents';
+import { patchAgent } from '../../../../services/agents';
 import { fetchApplications } from '../../../../services/applications';
 import { fetchSSOs } from '../../../../services/sso';
 import { fetchIntegrations } from '../../../../services/integrations';
@@ -29,6 +30,8 @@ interface OverviewTabProps {
 }
 
 const OverviewTab = ({ agent, onAgentRefresh }: OverviewTabProps) => {
+    const [isEditing, setIsEditing] = useState(false);
+
     // Form state (initialized when entering edit mode)
     const [formState, setFormState] = useState<AgentFormState>({
         name: '',
@@ -141,6 +144,8 @@ const OverviewTab = ({ agent, onAgentRefresh }: OverviewTabProps) => {
     };
 
     const handleSave = async () => {
+        if (!agent) return;
+
         const error = validateAgentForm(formState);
         if (error) {
             notify.error(error);
@@ -150,7 +155,10 @@ const OverviewTab = ({ agent, onAgentRefresh }: OverviewTabProps) => {
         setIsSaving(true);
         try {
             const payload = buildAgentPatchPayload(formState, selections);
-            await onSave(payload);
+            await patchAgent(agent.id, payload);
+            onAgentRefresh?.();
+            setIsEditing(false);
+            notify.success('Agent saved successfully');
         } finally {
             setIsSaving(false);
         }
@@ -193,7 +201,7 @@ const OverviewTab = ({ agent, onAgentRefresh }: OverviewTabProps) => {
 
             {isEditing && (
                 <ActionBar>
-                    <ActionButton onClick={onCancel}>Cancel</ActionButton>
+                    <ActionButton onClick={() => setIsEditing(false)}>Cancel</ActionButton>
                     <ActionButton $primary onClick={handleSave} disabled={isSaving}>
                         <Save size={16} /> {isSaving ? 'Saving...' : 'Save Changes'}
                     </ActionButton>
