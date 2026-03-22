@@ -68,8 +68,10 @@ The open-source platform that turns any **LangGraph** or **ADK** agent into a **
   <img src="old-docs/images/logo/phoenix.svg"           alt="Phoenix"               style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="old-docs/images/logo/langsmith-color.png"   alt="LangSmith"             style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="old-docs/images/logo/google-cloud.png"      alt="Google Cloud"          style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="old-docs/images/logo/Okta-Logo.png"         alt="Okta"                  style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="old-docs/images/logo/guardrails-ai.png"     alt="Guardrails AI"         style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="old-docs/images/logo/langchain-color.png"   alt="LangChain"             style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="old-docs/images/logo/A2A.png"               alt="A2A"                   style="height:36px; margin:6px; vertical-align:middle;" />
   <img src="old-docs/images/logo/ag-ui.png"             alt="AG-UI"                 style="height:36px; margin:6px; vertical-align:middle;" />
 </p>
 
