@@ -3,7 +3,7 @@
 import logging
 import os
 
-from guardrails.validator_base import Validator
+from guardrails import Validator
 from idun_agent_schema.engine.guardrails import Guardrail as GuardrailSchema
 from idun_agent_schema.engine.guardrails_v2 import GuardrailConfigId
 
