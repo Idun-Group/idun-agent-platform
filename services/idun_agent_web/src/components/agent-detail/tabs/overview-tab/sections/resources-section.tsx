@@ -69,7 +69,6 @@ type CreateTarget =
 
 interface ResourcesSectionProps {
     agent: BackendAgent;
-    isEditing: boolean;
     resources: AvailableResources;
     selections: AgentSelections;
     onSelectionChange: (updated: Partial<AgentSelections>) => void;
@@ -79,13 +78,14 @@ interface ResourcesSectionProps {
 
 export default function ResourcesSection({
     agent,
-    isEditing,
     resources,
     selections,
     onSelectionChange,
     onResourcesRefresh,
     onAgentRefresh,
 }: ResourcesSectionProps) {
+    // Resources are always interactive (view mode with quick-add)
+    const isEditing = false;
     const framework = agent.framework || 'LANGGRAPH';
 
     const [createTarget, setCreateTarget] = useState<CreateTarget | null>(null);
