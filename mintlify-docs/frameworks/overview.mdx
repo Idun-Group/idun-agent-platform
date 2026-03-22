@@ -41,6 +41,18 @@ Under the hood, the engine loads your agent through the adapter specified in you
 You select the framework when configuring your agent:
 
 <Tabs>
+  <Tab title="Manager UI">
+    In the agent creation wizard, Step 1 asks you to select a framework:
+
+    - **LangGraph**: Build stateful, multi-actor agents with LangGraph
+    - **Google ADK**: Build agents with Google's Agent Development Kit
+
+    ![Select framework in the agent creation wizard](/images/ui/agents-create-step1.png)
+
+    Step 2 configures framework-specific settings such as the graph definition, port, and host.
+
+    ![Framework-specific settings in step 2](/images/ui/agents-create-step2.png)
+  </Tab>
   <Tab title="Config file">
     Set the `type` field in the `agent` section of your `config.yaml`:
 
@@ -52,13 +64,6 @@ You select the framework when configuring your agent:
     ```
 
     The engine validates that the `config` type matches the selected `type` at startup.
-  </Tab>
-  <Tab title="Manager UI">
-    When creating a new agent in the Manager UI, the first step of the creation wizard asks you to select a framework.
-
-    ![Select framework in the agent creation wizard](/images/ui/agents-create-framework.png)
-
-    Choose **LangGraph** or **ADK**. The form fields in subsequent steps adapt to the selected framework. You can view and change the framework selection from the agent detail page before the agent is deployed.
   </Tab>
 </Tabs>
 

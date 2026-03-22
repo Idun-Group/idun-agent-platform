@@ -9,19 +9,6 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
 ## Deployment modes
 
 <Tabs>
-  <Tab title="Standalone engine">
-    Run a single agent from a YAML config file. No Manager, no database, no web UI required.
-
-    ```bash
-    pip install idun-agent-engine
-    idun agent serve --source file --path config.yaml
-    ```
-
-    This mode suits:
-    - Local development and testing
-    - Single-agent deployments
-    - CI/CD pipelines where you version config in Git
-  </Tab>
   <Tab title="Managed (full stack)">
     Deploy the Manager API, PostgreSQL database, and web UI together. Agents fetch their config from the Manager at startup.
 
@@ -38,11 +25,33 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
     - Workspace isolation and RBAC
     - Non-technical team members who prefer a UI
   </Tab>
+  <Tab title="Standalone engine">
+    Run a single agent from a YAML config file. No Manager, no database, no web UI required.
+
+    ```bash
+    pip install idun-agent-engine
+    idun agent serve --source file --path config.yaml
+    ```
+
+    This mode suits:
+    - Local development and testing
+    - Single-agent deployments
+    - CI/CD pipelines where you version config in Git
+  </Tab>
 </Tabs>
 
 ## Agent lifecycle management
 
 <Tabs>
+  <Tab title="Manager UI">
+    From the agent detail page, manage the agent lifecycle:
+
+    - The status badge shows **Draft** or **Active**
+    - Click **Restart** to call `/reload` on the running engine, which re-fetches config from the platform
+    - The Overview tab includes **Connect to Platform** instructions for enrollment
+
+    ![Agent detail overview tab](/images/ui/agents-detail-overview.png)
+  </Tab>
   <Tab title="Config file">
     With file-based deployment, manage your agent by restarting the process or updating the config file and restarting:
 
@@ -55,19 +64,6 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
     ```
 
     For managed deployments, restart the agent container to force a fresh config fetch from the Manager.
-  </Tab>
-  <Tab title="Manager UI">
-    Open an agent in the Manager UI and go to the **Overview** tab to manage its lifecycle.
-
-    ![Agent detail overview tab](/images/ui/agents-detail-overview.png)
-
-    From this tab you can:
-
-    - **Toggle the status** to enable or disable the agent without deleting it
-    - **Run a health check** to verify the agent engine is reachable and responding
-    - **Restart the agent** to apply config changes or recover from an error state
-
-    Status changes are reflected immediately in the agents list and propagated to any connected engine instances on their next config fetch.
   </Tab>
 </Tabs>
 
@@ -128,6 +124,6 @@ For production workloads, deploy the platform on your own cloud infrastructure.
 
 <Cards>
   <Card title="Google Cloud Platform" icon="google" href="/deployment/gcp">
-    Cloud Run for Manager and UI, Cloud SQL for PostgreSQL. Contact us for Terraform modules.
+    Cloud Run for Manager and UI, Cloud SQL for PostgreSQL. [Contact us](https://calendar.app.google/RSzm7EM5VZY8xVnN9) for Terraform modules.
   </Card>
 </Cards>

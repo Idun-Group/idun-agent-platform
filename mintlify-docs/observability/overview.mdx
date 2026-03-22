@@ -65,6 +65,21 @@ When you attach an observability configuration to an agent, the platform automat
 ## Configuration
 
 <Tabs>
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Browse the provider catalog">
+        Navigate to **Observability** in the sidebar. The catalog shows provider cards: Langfuse, Phoenix, LangSmith, GCP Logging, and GCP Trace are active. Datadog APM, AWS X-Ray, Azure Monitor, and Jaeger are planned.
+        ![Observability catalog](/images/ui/observability-catalog.png)
+      </Step>
+      <Step title="Add a provider">
+        Click **+** on your provider and fill in the credentials.
+        ![Create Langfuse config](/images/ui/observability-create-langfuse.png)
+      </Step>
+      <Step title="Attach to an agent">
+        Attach the configuration to agents from the agent detail **Overview** tab.
+      </Step>
+    </Steps>
+  </Tab>
   <Tab title="Config file">
     Add an `observability` section to your `config.yaml` with the provider and its credentials:
 
@@ -77,19 +92,5 @@ When you attach an observability configuration to an agent, the platform automat
     ```
 
     See the provider-specific pages for the full list of fields each provider requires.
-  </Tab>
-  <Tab title="Manager UI">
-    <Steps>
-      <Step title="Open observability">
-        Navigate to **Observability** in the sidebar to see all configured observability integrations.
-        ![Observability list](/images/ui/observability-list.png)
-      </Step>
-      <Step title="Create an observability configuration">
-        Click **Create** and fill in the configuration form. Select a provider from the dropdown (Langfuse, Arize Phoenix, LangSmith, Google Cloud Trace, or Google Cloud Logging) and enter the required credentials for that provider.
-      </Step>
-      <Step title="Assign to an agent">
-        Open your agent, edit it, and select the observability configuration from the observability section.
-      </Step>
-    </Steps>
   </Tab>
 </Tabs>

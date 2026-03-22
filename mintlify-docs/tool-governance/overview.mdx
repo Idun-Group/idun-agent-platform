@@ -6,6 +6,10 @@ keywords: ["MCP", "Model Context Protocol", "tool governance", "MCP servers", "a
 
 Idun Agent Platform uses the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) to extend agent capabilities with external tools. You define MCP servers at the platform level, then attach specific servers to individual agents. Each agent can only access the tools from its assigned servers, so you control exactly what each agent can do.
 
+<Tip>
+  The [langgraph-tool-local template](/templates) shows how to mix local tools with MCP tools from the platform in a single agent.
+</Tip>
+
 ## How tool governance works
 
 1. **Register MCP servers** in the Manager UI or YAML config with transport settings and connection details
@@ -37,6 +41,21 @@ MCP servers connect to the engine through one of four transport protocols:
 Define MCP servers in your `config.yaml` or through the Manager API:
 
 <Tabs>
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Browse the transport catalog">
+        Navigate to **MCP Servers** in the sidebar. The catalog shows transport type cards: Streamable HTTP, SSE, WebSocket, and STDIO.
+        ![MCP server catalog](/images/ui/mcp-catalog.png)
+      </Step>
+      <Step title="Add an MCP server">
+        Click **+** on your transport type and configure the command/URL and connection details. The page includes a Quick Start Guide and a "Discover tools" button on existing server configs.
+        ![Create STDIO MCP server](/images/ui/mcp-create-stdio.png)
+      </Step>
+      <Step title="Attach to an agent">
+        Attach the server to agents from the agent detail page.
+      </Step>
+    </Steps>
+  </Tab>
   <Tab title="YAML config">
     ```yaml config.yaml
     mcp_servers:
@@ -58,20 +77,6 @@ Define MCP servers in your `config.yaml` or through the Manager API:
         headers:
           Authorization: "Bearer ${MCP_API_TOKEN}"
     ```
-  </Tab>
-  <Tab title="Manager UI">
-    <Steps>
-      <Step title="Open MCP servers">
-        Navigate to **MCP Servers** in the sidebar to see all registered servers.
-        ![MCP server list](/images/ui/mcp-list.png)
-      </Step>
-      <Step title="Create an MCP server">
-        Click **Create** and fill in the configuration form. Select a transport type (stdio, SSE, or HTTP) and provide the corresponding connection details: command and args for stdio, or a URL for remote transports.
-      </Step>
-      <Step title="Assign to an agent">
-        Open your agent, edit it, and select the MCP server from the MCP servers section.
-      </Step>
-    </Steps>
   </Tab>
 </Tabs>
 

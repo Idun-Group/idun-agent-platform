@@ -1,0 +1,86 @@
+---
+title: "Agent templates"
+description: "Clone a runnable agent template to get started faster. Nine examples covering common LangGraph and ADK patterns."
+keywords: ["templates", "starter kit", "examples", "LangGraph", "ADK", "agent code", "boilerplate"]
+---
+
+If you'd rather start from working code than write an agent from scratch, the [idun-agent-template](https://github.com/Idun-Group/idun-agent-template) repository has nine runnable examples you can clone and adapt.
+
+Each template is a self-contained folder with its own config, dependencies, and agent code. Pick the one closest to what you're building and modify from there.
+
+## LangGraph templates
+
+| Template | What it demonstrates |
+|----------|---------------------|
+| `langgraph-simple` | Basic two-step planning pattern. Good starting point |
+| `langgraph-tool-node` | Tool calling with LangGraph's built-in ToolNode (recommended pattern) |
+| `langgraph-tool` | Manual tool invocation for cases where you need full control |
+| `langgraph-tool-local` | Mixing local tools with MCP tools from the platform |
+| `langgraph-structured` | Separate input/output schemas with typed state |
+| `langgraph-editorial-loop` | Multi-step researcher/writer/reviewer workflow with conditional routing |
+| `langgraph-copy-paste` | Minimal file operations example |
+
+## ADK templates
+
+| Template | What it demonstrates |
+|----------|---------------------|
+| `adk-tool` | Basic LlmAgent with tool integration |
+| `adk-structured` | Structured input/output with typed schemas |
+
+## Get started
+
+<Steps>
+  <Step title="Clone the template repo">
+    ```bash
+    git clone https://github.com/Idun-Group/idun-agent-template.git
+    cd idun-agent-template
+    ```
+  </Step>
+  <Step title="Pick a template">
+    ```bash
+    cd langgraph-tool-node
+    ```
+  </Step>
+  <Step title="Install dependencies and configure">
+    ```bash
+    pip install -r requirements.txt
+    cp .env.example .env
+    # Edit .env with your API keys
+    ```
+  </Step>
+  <Step title="Run standalone">
+    ```bash
+    idun web --port 8010
+    ```
+
+    This runs the agent locally without the Manager. Good for testing your agent logic before connecting to the platform.
+  </Step>
+  <Step title="Connect to the platform">
+    Once your agent works locally, connect it to the Manager for centralized management:
+
+    ```bash
+    export IDUN_MANAGER_HOST=http://localhost:8000
+    export IDUN_AGENT_API_KEY=<your-api-key>
+    idun agent serve --source manager
+    ```
+
+    The agent fetches its config from the platform. Guardrails, observability, memory, and MCP tools configured in the Manager UI are applied automatically.
+
+    <Info>
+      Get your API key from the **API Integration** tab on the agent detail page in the [Manager UI](/manager/tutorial).
+    </Info>
+  </Step>
+</Steps>
+
+## Which template should you pick?
+
+- **First time with Idun?** Start with `langgraph-simple`. It's the shortest path to a running agent.
+- **Need tool calling?** Use `langgraph-tool-node`. It follows the recommended LangGraph pattern.
+- **Want MCP tools from the platform AND local tools?** Use `langgraph-tool-local`.
+- **Building with Google ADK?** Start with `adk-tool`.
+- **Need typed input/output schemas?** Look at `langgraph-structured` or `adk-structured`.
+- **Building a multi-step workflow?** The `langgraph-editorial-loop` shows a researcher/writer/reviewer pattern with conditional routing.
+
+## Templates vs. the quickstart
+
+The [quickstart](/quickstart) walks you through the minimal steps to run an agent (a few lines of code). Templates give you more structure: proper project layout, config files, environment management, and patterns you'll need as your agent grows. Both paths end at the same place: an agent connected to the platform.

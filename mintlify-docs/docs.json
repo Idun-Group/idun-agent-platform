@@ -60,7 +60,15 @@
             "pages": [
               "index",
               "quickstart",
+              "templates",
               "architecture"
+            ]
+          },
+          {
+            "group": "Manager",
+            "pages": [
+              "manager/overview",
+              "manager/tutorial"
             ]
           },
           {
@@ -69,13 +77,6 @@
               "frameworks/overview",
               "frameworks/langgraph",
               "frameworks/adk"
-            ]
-          },
-          {
-            "group": "Configuration",
-            "pages": [
-              "configuration",
-              "prompts"
             ]
           },
           {
@@ -133,21 +134,11 @@
             ]
           },
           {
-            "group": "Manager",
+            "group": "Advanced",
             "pages": [
-              "manager/overview",
-              "manager/tutorial"
-            ]
-          },
-          {
-            "group": "CLI",
-            "pages": [
-              "cli/overview"
-            ]
-          },
-          {
-            "group": "More",
-            "pages": [
+              "configuration",
+              "prompts",
+              "cli/overview",
               "faq"
             ]
           }
@@ -221,7 +212,7 @@
         "header": "Resources",
         "items": [
           { "label": "GitHub", "href": "https://github.com/Idun-Group/idun-agent-platform" },
-          { "label": "Book a demo", "href": "https://calendar.app.google/LKq6g4bHZtFPbXNt9" }
+          { "label": "Book a demo", "href": "https://calendar.app.google/RSzm7EM5VZY8xVnN9" }
         ]
       }
     ]
