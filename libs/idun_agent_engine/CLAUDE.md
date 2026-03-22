@@ -54,7 +54,7 @@ idun_agent_engine/
 │   ├── registry        # MCPClientRegistry wrapping langchain-mcp-adapters MultiServerMCPClient
 │   └── helpers         # get_langchain_tools(), get_adk_tools() — convenience functions
 ├── templates/          # Pre-built LangGraph agents (translation, correction, deep_research). Ignore.
-└── telemetry/          # Anonymous usage telemetry (PostHog). Opt-out: IDUN_TELEMETRY_ENABLED=false
+└── telemetry/          # Anonymous usage telemetry (PostHog). Opt-out: IDUN_TELEMETRY_ENABLED=false. Tag deployment: IDUN_DEPLOYMENT_TYPE=cloud|self-hosted
 
 idun_platform_cli/
 ├── main.py             # CLI entry: `idun agent serve`, `idun init`

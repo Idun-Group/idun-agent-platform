@@ -21,7 +21,7 @@ from typing import Any
 
 from platformdirs import user_cache_dir
 
-from .config import telemetry_enabled
+from .config import get_deployment_type, telemetry_enabled
 
 _POSTHOG_HOST = "https://us.i.posthog.com"
 _POSTHOG_PROJECT_API_KEY = "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw"
@@ -140,6 +140,7 @@ def _common_properties() -> dict[str, Any]:
         "platform": sys.platform,
         "os": platform.system(),
         "os_version": platform.release(),
+        "deployment_type": get_deployment_type(),
     }
 
 
