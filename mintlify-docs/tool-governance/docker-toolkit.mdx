@@ -1,0 +1,280 @@
+---
+title: "Docker MCP toolkit"
+description: "Add external tool capabilities to your agents using pre-built MCP servers from the Docker MCP toolkit."
+keywords: ["Docker MCP", "MCP toolkit", "fetch MCP", "Docker container", "agent tools", "Model Context Protocol"]
+---
+
+The Docker MCP toolkit is a collection of pre-built MCP servers packaged as Docker containers. These servers provide common functionality (web fetching, file system access, database operations) without requiring you to write or maintain custom MCP server code.
+
+- **No custom code**: Pull and run pre-configured MCP servers
+- **Isolation**: Each server runs in its own container with controlled resource limits
+- **Community-maintained**: Implementations follow the MCP specification
+- **Portable**: Works the same in development and production
+
+This guide walks through integrating the Fetch MCP server from the Docker toolkit with an existing agent.
+
+<Info>
+  By the end of this guide, you will have an agent that can retrieve and analyze content from any URL through the Fetch MCP tool.
+</Info>
+
+## Prerequisites
+
+Before starting, you need:
+
+- A working agent deployed with Idun (see the [quickstart](/quickstart))
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+
+Pull the Fetch MCP server image:
+
+```bash
+docker pull mcp/fetch
+```
+
+## Set up the Fetch MCP server
+
+<Steps>
+  <Step title="Configure Docker Desktop">
+    Open Docker Desktop and verify:
+
+    1. Docker Desktop is running
+    2. The `mcp/fetch` image appears in the **Images** section
+  </Step>
+
+  <Step title="Create the MCP server in the Manager">
+    Access the Manager web interface at `http://localhost:3000`.
+
+    1. Click **MCP Servers** in the main navigation
+    2. Click **Create MCP Server**
+    3. Fill in the configuration:
+
+    | Field | Value | Description |
+    |---|---|---|
+    | **Name** | `fetch` | Identifier for this MCP server |
+    | **Transport** | `stdio` | Communication via standard I/O |
+    | **Command** | `docker` | Docker CLI command |
+    | **Args** | `["run", "-i", "--rm", "mcp/fetch"]` | Docker run arguments as JSON array |
+
+    4. Click **Save**
+
+    <Tip>
+      The Args field must be a valid JSON array. Copy the value including brackets: `["run", "-i", "--rm", "mcp/fetch"]`
+    </Tip>
+
+    The args breakdown:
+
+    - `run`: Execute a new container
+    - `-i`: Interactive mode (keeps STDIN open for MCP communication)
+    - `--rm`: Remove container when it stops
+    - `mcp/fetch`: The Docker image to run
+  </Step>
+
+  <Step title="Attach the MCP server to your agent">
+    1. Navigate to **Agents** in the main navigation
+    2. Find your agent and click **Edit**
+    3. Scroll to the **MCP Servers** section
+    4. Click **Add MCP Server** and select **fetch** from the dropdown
+    5. Click **Save**
+  </Step>
+
+  <Step title="Integrate MCP tools in your agent code">
+    Set the environment variables so the engine can fetch config and authenticate:
+
+    ```bash
+    export IDUN_MANAGER_HOST="http://localhost:8080"
+    export IDUN_AGENT_API_KEY="YOUR_AGENT_API_KEY"
+    ```
+
+    <Tip>
+      Find your agent's API key in the Manager UI under the agent's details page.
+    </Tip>
+
+    Import MCP tools in your agent code:
+
+    <Tabs>
+      <Tab title="ADK">
+        ```python
+        from google.adk.agents import LlmAgent
+        from idun_agent_engine.mcp import get_adk_tools
+        import os
+
+        os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
+        os.environ["GOOGLE_CLOUD_PROJECT"] = "your-project-id"
+        os.environ["GOOGLE_CLOUD_LOCATION"] = "us-central1"
+
+        def get_current_time(city: str) -> dict:
+            """Returns the current time in a specified city."""
+            return {"status": "success", "city": city, "time": "10:30 AM"}
+
+        idun_tools = get_adk_tools()
+        tools = [get_current_time] + idun_tools
+
+        root_agent = LlmAgent(
+            model="gemini-2.5-flash",
+            name="root_agent",
+            description="Tells the current time in a specified city.",
+            instruction="You are a helpful assistant.",
+            tools=tools,
+        )
+        ```
+      </Tab>
+      <Tab title="LangGraph">
+        ```python
+        from langgraph.prebuilt import create_react_agent
+        from langchain_openai import ChatOpenAI
+        from idun_agent_engine.mcp import get_langchain_tools
+
+        model = ChatOpenAI(model="gpt-4")
+
+        mcp_tools = await get_langchain_tools()
+
+        agent = create_react_agent(
+            model=model,
+            tools=mcp_tools,
+            state_modifier="You are a helpful assistant with access to web content fetching.",
+        )
+        ```
+      </Tab>
+    </Tabs>
+
+    `get_adk_tools()` and `get_langchain_tools()` discover all MCP servers attached to your agent and make their tools available. You do not need to configure individual tools.
+  </Step>
+
+  <Step title="Launch the agent">
+    Navigate to your agent directory and start the engine:
+
+    ```bash
+    idun agent serve --source manager
+    ```
+
+    The engine will:
+
+    1. Fetch agent config from the Manager API
+    2. Initialize your agent framework
+    3. Start the Fetch MCP server as a Docker container
+    4. Register the fetch tool with your agent
+    5. Start the API server at `http://localhost:8000`
+  </Step>
+
+  <Step title="Test MCP integration">
+    In the Manager UI, navigate to your agent and open the **API Integration** tab. Use the chat interface to test:
+
+    ```
+    Give me the information on this website: https://www.idun-group.com/idun-agent-platform
+    ```
+
+    ```
+    Go to https://news.ycombinator.com and summarize the top 3 stories
+    ```
+
+    ```
+    Fetch https://github.com/trending and list the trending repositories
+    ```
+
+    When you send a query, the agent recognizes it needs web content, invokes the Fetch MCP tool, and the Docker container retrieves the URL content for the agent to analyze.
+  </Step>
+</Steps>
+
+## Verify the MCP server
+
+Check that the Docker container is running:
+
+```bash
+docker ps | grep mcp/fetch
+```
+
+View MCP server logs for debugging:
+
+```bash
+docker logs $(docker ps -q --filter ancestor=mcp/fetch)
+```
+
+## Advanced configuration
+
+### Multiple MCP servers
+
+Add more MCP servers through the Manager UI to give your agent access to additional tools.
+
+**Filesystem access:**
+
+| Field | Value |
+|---|---|
+| **Name** | `filesystem` |
+| **Transport** | `stdio` |
+| **Command** | `npx` |
+| **Args** | `["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"]` |
+
+Allows the agent to read, write, and manipulate files within specified directories.
+
+**Custom Docker MCP server:**
+
+| Field | Value |
+|---|---|
+| **Name** | `custom` |
+| **Transport** | `stdio` |
+| **Command** | `docker` |
+| **Args** | `["run", "-i", "--rm", "your-registry/your-mcp:latest"]` |
+
+Deploy your own MCP servers for database access, API integrations, or internal tools.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="MCP server fails to connect">
+    **Symptoms:** Agent starts but MCP tools are not available.
+
+    **Solutions:**
+
+    - Verify Docker Desktop is running: `docker info`
+    - Check the image exists: `docker images | grep mcp/fetch`
+    - Test the container manually: `docker run -i --rm mcp/fetch`
+    - Review Docker Desktop logs
+  </Accordion>
+
+  <Accordion title="Agent does not use the fetch tool">
+    **Symptoms:** Agent responds but does not fetch web content.
+
+    **Solutions:**
+
+    - Check Docker container is running: `docker ps | grep mcp/fetch`
+    - Review MCP server logs: `docker logs <container_id>`
+    - Try an explicit query: "Use the fetch tool to get https://example.com"
+    - Restart the agent
+    - Verify MCP config saved correctly in the Manager UI
+  </Accordion>
+
+  <Accordion title="Args format invalid">
+    **Symptoms:** "Invalid args format" error when saving.
+
+    **Solution:** Args must be a properly formatted JSON array.
+
+    Correct:
+    ```json
+    ["run", "-i", "--rm", "mcp/fetch"]
+    ```
+
+    Incorrect:
+    ```
+    run -i --rm mcp/fetch
+    ```
+
+    Incorrect:
+    ```
+    ["run -i --rm mcp/fetch"]
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best practices
+
+- **Naming**: Use descriptive, lowercase names for MCP servers: `fetch`, `filesystem`, `database`
+- **Incremental testing**: Add one MCP server at a time. Test functionality before adding more
+- **Resource limits**: In production, set Docker resource constraints to prevent runaway usage:
+  ```json
+  ["run", "-i", "--rm", "--memory=512m", "--cpus=0.5", "mcp/fetch"]
+  ```
+- **Logging**: Configure Docker logging for better observability:
+  ```json
+  ["run", "-i", "--rm", "--log-driver=json-file", "--log-opt=max-size=10m", "mcp/fetch"]
+  ```
+- **Credentials**: Never hardcode sensitive information in MCP configurations. Use environment variables
+- **Monitoring**: Use [observability](/observability/overview) to track MCP server latency and error rates

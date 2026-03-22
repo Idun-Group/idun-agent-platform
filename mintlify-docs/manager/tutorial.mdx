@@ -1,0 +1,112 @@
+---
+title: "Getting started with the Manager"
+description: "Deploy and manage your first agent using the Idun web dashboard."
+keywords: ["manager", "web UI", "dashboard", "tutorial", "agent management"]
+---
+
+<Info>
+  This tutorial assumes the full Idun stack is already running. If you have not set it up yet, follow the [quickstart](/quickstart) first, then return here.
+
+  Start the stack with:
+
+  ```bash
+  docker compose -f docker-compose.dev.yml up --build
+  ```
+</Info>
+
+<Steps>
+
+<Step title="Log in">
+  Open [http://localhost:3000](http://localhost:3000) in your browser. If you are running the Vite dev server directly, use [http://localhost:5173](http://localhost:5173) instead.
+
+  ![Login page](/images/ui/login.png)
+
+  Enter your email and password. If your workspace has Google OIDC configured, you can sign in with Google instead.
+</Step>
+
+<Step title="Create a workspace">
+  First-time users land on the onboarding screen. Workspaces isolate your agents, resources, and team members from other tenants on the same Manager instance.
+
+  ![Workspace creation](/images/ui/onboarding-workspace.png)
+
+  Enter a workspace name and submit the form. You are redirected to the dashboard once the workspace is created.
+</Step>
+
+<Step title="Create an agent">
+  Navigate to **Agents** in the sidebar and click **Create**.
+
+  ![Agent creation wizard](/images/ui/agents-create-framework.png)
+
+  Select a framework (LangGraph or Google ADK), then enter:
+
+  - **Name** — a unique identifier for this agent within the workspace
+  - **Version** — a semantic version string (e.g., `1.0.0`)
+  - **Graph definition path** — the Python import path to your compiled graph or ADK agent (e.g., `my_package.graph:graph`)
+
+  Click **Next** to proceed to the resource selection step.
+
+  ![Resource selection](/images/ui/agents-create-resources.png)
+
+  Attach any existing guardrails, MCP servers, observability configs, or memory configs. You can skip this step and attach resources later.
+</Step>
+
+<Step title="Add guardrails">
+  Navigate to **Guardrails** in the sidebar.
+
+  ![Guardrails](/images/ui/guardrails-list.png)
+
+  Click **Create** and configure a PII detection guardrail:
+
+  - Set the type to `pii_anonymization`
+  - Choose the position (`input`, `output`, or both)
+  - Configure the sensitivity threshold if needed
+
+  After saving, go back to your agent, open the **Edit** view, and attach the new guardrail at the `input` position. The Manager recomputes the agent's materialized config automatically.
+</Step>
+
+<Step title="Connect observability">
+  Navigate to **Observability** in the sidebar.
+
+  ![Observability](/images/ui/observability-list.png)
+
+  Click **Create** and select **Langfuse** as the provider. Enter your Langfuse public key, secret key, and host URL.
+
+  After saving, open your agent's **Edit** view and attach the observability config. The engine will send traces to Langfuse on every agent invocation.
+</Step>
+
+<Step title="Verify the agent">
+  Open your agent's detail page.
+
+  ![Agent overview](/images/ui/agents-detail-overview.png)
+
+  Review the status indicators for the agent and its attached resources. Use the **Health check** button to confirm the agent process can reach the Manager and fetch its config successfully.
+
+  The detail page also displays the generated API key for this agent. Copy it to use with `IDUN_AGENT_API_KEY` when running the engine in managed mode.
+</Step>
+
+<Step title="View logs">
+  Click the **Logs** tab on the agent detail page.
+
+  ![Agent logs](/images/ui/agents-detail-logs.png)
+
+  The real-time log viewer streams agent execution output as it arrives. Use this to confirm that guardrail checks, tool calls, and observability spans are being emitted correctly.
+</Step>
+
+</Steps>
+
+## Next steps
+
+<Columns>
+  <Card title="Guardrails" icon="shield" href="/guardrails/overview">
+    Configure PII detection, topic restriction, and toxicity filtering.
+  </Card>
+  <Card title="Observability" icon="chart-line" href="/observability/overview">
+    Send traces to Langfuse, Arize Phoenix, LangSmith, or GCP.
+  </Card>
+  <Card title="Memory" icon="database" href="/memory/overview">
+    Persist agent state across sessions with checkpointing backends.
+  </Card>
+  <Card title="Tool governance" icon="wrench" href="/tool-governance/overview">
+    Manage MCP servers and control which tools agents can access.
+  </Card>
+</Columns>

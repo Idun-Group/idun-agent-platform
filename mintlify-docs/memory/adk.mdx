@@ -1,0 +1,172 @@
+---
+title: "ADK memory"
+description: "Configure session services and memory services for ADK agents to manage conversation state and long-term knowledge."
+keywords: ["ADK", "session service", "memory service", "Vertex AI", "state management", "long-term memory"]
+---
+
+ADK agents use **session services** and **memory services** to manage conversational context. Session services handle conversation state for individual interactions. Memory services store long-term knowledge that spans multiple sessions.
+
+For more details, see the [ADK Sessions documentation](https://google.github.io/adk-docs/sessions/).
+
+## Session services vs memory services
+
+| | Session service | Memory service |
+|---|---|---|
+| **Purpose** | Manages individual conversation state | Stores long-term knowledge across sessions |
+| **Scope** | Single conversation (events, temporary state) | Cross-session (searchable knowledge base) |
+| **Required** | Yes | Optional |
+| **Options** | In Memory, Vertex AI, Database | In Memory, Vertex AI |
+
+## Set up ADK memory
+
+<Steps>
+  <Step title="Navigate to the memory step">
+    During agent creation or editing, navigate to the **Memory** step in the agent form.
+  </Step>
+  <Step title="Configure your session service">
+    Choose a session service backend (required for conversation state):
+    - **In Memory**: For development and testing
+    - **Vertex AI**: For production on Google Cloud
+    - **Database**: For production with SQL persistence
+
+    Fill in connection details if required.
+  </Step>
+  <Step title="Configure your memory service">
+    Choose a memory service backend (optional, for long-term memory):
+    - **In Memory**: For development and testing
+    - **Vertex AI**: For production with long-term storage
+
+    Fill in connection details if required.
+  </Step>
+  <Step title="Save and restart">
+    Click **Next** to continue, then finalize with **Save changes**. Restart the agent to apply the new configuration.
+  </Step>
+</Steps>
+
+## Session service options
+
+Session services manage conversation state and events for individual sessions.
+
+### In-memory session service
+
+The `InMemorySessionService` stores session data in the application's memory.
+
+| Property | Detail |
+|---|---|
+| **Persistence** | None. Data is lost when the application restarts. |
+| **Performance** | Fastest option, no I/O overhead. |
+| **Use cases** | Development, testing, quick prototyping. |
+
+**Configuration**: No additional configuration required.
+
+### Vertex AI session service
+
+The `VertexAiSessionService` uses Google Cloud's Vertex AI infrastructure for session management.
+
+| Property | Detail |
+|---|---|
+| **Persistence** | Cloud-native, persistent storage. |
+| **Scalability** | Handles high-volume, distributed deployments. |
+| **Integration** | Works with other Google Cloud services. |
+| **Use cases** | Production deployments on Google Cloud. |
+
+**Configuration**: Requires the following fields:
+
+- `project_id`: Google Cloud project ID
+- `location`: GCP region (for example, `us-central1`)
+- `reasoning_engine_app_name`: Vertex AI Reasoning Engine application name
+
+### Database session service
+
+The `DatabaseSessionService` connects to a relational database (PostgreSQL, MySQL) for persistent session storage using SQLAlchemy.
+
+| Property | Detail |
+|---|---|
+| **Persistence** | SQL-based storage with transaction support. |
+| **Scalability** | Supports multi-instance deployments. |
+| **Reliability** | Production-grade features including transactions and backups. |
+| **Use cases** | Production deployments requiring SQL persistence. |
+
+**Configuration**: Requires a database connection string.
+
+```yaml
+agent:
+  type: "ADK"
+  config:
+    session_service:
+      type: "database"
+      db_url: "postgresql://user:pass@localhost:5432/dbname"
+```
+
+## Memory service options
+
+Memory services manage long-term knowledge storage that persists across multiple sessions.
+
+### In-memory memory service
+
+The `InMemoryMemoryService` provides ephemeral memory storage.
+
+| Property | Detail |
+|---|---|
+| **Persistence** | None. Data is lost when the application restarts. |
+| **Performance** | Fast access, no external dependencies. |
+| **Use cases** | Development, testing, scenarios where long-term memory is not required. |
+
+**Configuration**: No additional configuration required.
+
+### Vertex AI memory service
+
+The `VertexAiMemoryService` provides cloud-backed memory with long-term storage using Vertex AI Memory Banks.
+
+| Property | Detail |
+|---|---|
+| **Persistence** | Long-term, persistent storage across sessions. |
+| **Scalability** | Cloud-native, handles large knowledge bases. |
+| **Search** | Semantic search capabilities for retrieving relevant memories. |
+| **Use cases** | Production deployments requiring long-term memory. |
+
+**Configuration**: Requires the following fields:
+
+- `project_id`: Google Cloud project ID
+- `location`: GCP region
+- `memory_bank_resource_id`: Vertex AI Memory Bank resource ID
+
+## Best practices
+
+### Session services
+
+- **Use in-memory for local development**: No setup required, fast iteration
+- **Use Database for production**: Reliable SQL-based persistence with multi-instance support
+- **Use Vertex AI for Google Cloud production**: Cloud-native and scalable
+- **Configure session isolation**: Each conversation should have a unique session ID to prevent state leakage
+
+### Memory services
+
+- **Use in-memory for development**: Fast iteration, no external dependencies
+- **Use Vertex AI for production**: Long-term persistence with semantic search capabilities
+- **Ingest session data into memory**: Periodically move important information from sessions to long-term memory
+
+### General
+
+- **Separate concerns**: Use session services for conversation state and memory services for long-term knowledge
+- **Monitor storage usage**: Long-running sessions and large memory stores can consume significant resources
+- **Implement backup strategies**: Set up regular backups for production database and Vertex AI configurations
+
+## Troubleshooting
+
+### Session service issues
+
+1. **Database connection errors**: Verify the connection string format, credentials, and that the database server is accessible from the agent
+2. **Vertex AI authentication**: Verify Google Cloud credentials are configured and the service account has the required permissions
+3. **Session not persisting**: Confirm the session service is initialized and session IDs are used consistently
+
+### Memory service issues
+
+1. **Vertex AI Memory Bank**: Verify the Memory Bank resource ID is correct, the bank exists in the specified project and location, and IAM permissions are set
+2. **Memory not accessible**: Confirm the memory service is initialized and its configuration matches your setup
+
+### General
+
+1. **Review logs**: Check agent logs for session and memory-related errors
+2. **Check permissions**: Verify the agent has access to all required storage resources
+3. **Verify configuration**: Double-check all connection strings, credentials, and resource IDs

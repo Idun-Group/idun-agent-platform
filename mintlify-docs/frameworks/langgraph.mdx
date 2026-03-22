@@ -1,0 +1,177 @@
+---
+title: "LangGraph"
+description: "Connect a LangGraph agent to Idun Agent Platform with graph-based workflows, AG-UI streaming, and persistent checkpointing."
+keywords: ["LangGraph", "StateGraph", "graph_definition", "checkpointing", "AG-UI streaming", "LangGraph agent"]
+---
+
+LangGraph is the primary framework integration in Idun Agent Platform. It supports full AG-UI streaming, CopilotKit, and persistent checkpointing through in-memory, SQLite, or PostgreSQL backends.
+
+## Configuration
+
+Set `agent.type` to `LANGGRAPH` and provide the `graph_definition` field pointing to your graph object.
+
+```yaml config.yaml
+server:
+  api:
+    port: 8008
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: "my-langgraph-agent"
+    graph_definition: "my_agent/agent.py:graph"
+    checkpointer:
+      type: memory
+```
+
+### The `graph_definition` field
+
+The `graph_definition` value follows the format `file_path:variable_name`:
+
+- **File path**: Relative path to the Python file containing your graph (for example, `my_agent/agent.py`)
+- **Variable name**: The name of the `StateGraph` variable in that file (for example, `graph`)
+
+The two parts are separated by a colon.
+
+<Warning>
+  You must export an **uncompiled** `StateGraph` object. The engine compiles the graph internally to attach the checkpointer and other platform features. If you export a `CompiledStateGraph` (the result of calling `.compile()`), the engine will raise an error at startup.
+</Warning>
+
+## Minimal agent example
+
+Create a file at the path matching your `graph_definition`:
+
+```python my_agent/agent.py
+from typing import Annotated, TypedDict
+
+from langchain_openai import ChatOpenAI
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+
+
+llm = ChatOpenAI(model="gpt-4o-mini")
+
+
+def chatbot(state: State):
+    return {"messages": [llm.invoke(state["messages"])]}
+
+
+graph = StateGraph(State)
+graph.add_node("chatbot", chatbot)
+graph.add_edge(START, "chatbot")
+graph.add_edge("chatbot", END)
+
+# Do NOT call graph.compile() here.
+# Export the uncompiled StateGraph.
+```
+
+The engine loads this file, compiles the graph with the configured checkpointer, and serves it behind the Idun API.
+
+## Checkpointing
+
+Checkpointing persists conversation state so that threads survive restarts. Configure it in the `checkpointer` section of your agent config.
+
+<Tabs>
+  <Tab title="In-memory">
+    State is held in process memory. Data is lost when the agent restarts. Use this for development and testing.
+
+    ```yaml
+    agent:
+      type: LANGGRAPH
+      config:
+        name: "my-agent"
+        graph_definition: "my_agent/agent.py:graph"
+        checkpointer:
+          type: memory
+    ```
+  </Tab>
+  <Tab title="SQLite">
+    State is persisted to a local SQLite file. Good for single-instance deployments where you need data to survive restarts.
+
+    ```yaml
+    agent:
+      type: LANGGRAPH
+      config:
+        name: "my-agent"
+        graph_definition: "my_agent/agent.py:graph"
+        checkpointer:
+          type: sqlite
+          db_url: "sqlite:///checkpoints.db"
+    ```
+
+    The `db_url` must start with `sqlite:///`. Install the `aiosqlite` package in your agent environment:
+
+    ```bash
+    pip install aiosqlite
+    ```
+  </Tab>
+  <Tab title="PostgreSQL">
+    State is persisted to a PostgreSQL database. Use this for production deployments with multiple instances.
+
+    ```yaml
+    agent:
+      type: LANGGRAPH
+      config:
+        name: "my-agent"
+        graph_definition: "my_agent/agent.py:graph"
+        checkpointer:
+          type: postgres
+          db_url: "postgresql://user:password@localhost:5432/checkpoints"
+    ```
+
+    The `db_url` must start with `postgresql://` or `postgres://`.
+  </Tab>
+</Tabs>
+
+If you omit the `checkpointer` field, no checkpointing is configured and conversation state is not persisted.
+
+## Running the agent
+
+<Steps>
+  <Step title="Install dependencies">
+    ```bash
+    pip install idun-agent-engine langgraph langchain-openai
+    ```
+  </Step>
+  <Step title="Set environment variables">
+    Create a `.env` file in your project directory:
+
+    ```bash .env
+    OPENAI_API_KEY=your-openai-api-key
+    ```
+
+    To run in managed mode (pulling config from the Agent Manager), add:
+
+    ```bash .env
+    IDUN_MANAGER_HOST=http://localhost:8000
+    IDUN_AGENT_API_KEY=ag-your-key-from-manager
+    ```
+  </Step>
+  <Step title="Start the engine">
+    <Tabs>
+      <Tab title="Local config">
+        ```bash
+        idun agent serve --source local --config config.yaml
+        ```
+      </Tab>
+      <Tab title="Managed mode">
+        ```bash
+        idun agent serve --source manager
+        ```
+
+        The engine pulls the configuration from the Agent Manager using the API key.
+      </Tab>
+    </Tabs>
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Memory and checkpointing details](/memory/langgraph)
+- [Guardrails](/guardrails/overview)
+- [Observability](/observability/overview)
+- [Tool governance](/tool-governance/overview)

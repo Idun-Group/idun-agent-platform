@@ -1,0 +1,132 @@
+---
+title: "LangGraph memory"
+description: "Configure checkpointing for LangGraph agents to persist conversation state across interactions."
+keywords: ["LangGraph", "checkpointing", "memory", "SQLite", "PostgreSQL", "state persistence"]
+---
+
+LangGraph agents use **checkpointing** to save state during execution. The platform saves a snapshot of the graph state at every super-step, so conversations survive failures and restarts.
+
+For more details, see the [LangGraph checkpointing persistence documentation](https://docs.langchain.com/oss/python/langgraph/persistence).
+
+## What checkpointing provides
+
+Checkpoints are saved to a **thread**, identified by a unique `thread_id`. This enables:
+
+- **Memory**: Maintain context between interactions in conversations
+- **Human-in-the-loop**: Inspect, interrupt, and approve graph steps
+- **Time travel**: Replay prior executions and debug specific steps
+- **Fault tolerance**: Resume from the last successful step after failures
+
+## Set up checkpointing
+
+<Steps>
+  <Step title="Navigate to the checkpointing step">
+    During agent creation or editing, navigate to the **Checkpointing** step in the agent form.
+  </Step>
+  <Step title="Choose a backend">
+    Select the checkpointing backend that matches your deployment needs. See the sections below for details on each option.
+  </Step>
+  <Step title="Fill in connection details">
+    Enter the required configuration for your chosen backend (file path for SQLite, connection string for PostgreSQL).
+  </Step>
+  <Step title="Save and restart">
+    Click **Next** to continue, then finalize with **Save changes**. Restart the agent to apply the new configuration.
+  </Step>
+</Steps>
+
+## Checkpointing backends
+
+### In-memory
+
+The `InMemorySaver` stores checkpoints in the application's memory. This is the default option with no external dependencies.
+
+| Property | Detail |
+|---|---|
+| **Persistence** | None. Data is lost when the application restarts. |
+| **Performance** | Fastest option, no I/O overhead. |
+| **Use cases** | Development, testing, stateless workflows. |
+
+**Configuration**: No additional configuration required.
+
+### SQLite
+
+The `SqliteSaver` uses a file-based SQLite database to store checkpoints.
+
+| Property | Detail |
+|---|---|
+| **Persistence** | Data persists on disk in a single file. |
+| **Performance** | Fast for single-process applications. |
+| **Concurrency** | Limited to single-writer scenarios. |
+| **Use cases** | Local development, small-scale applications. |
+
+**Configuration**: Requires a database file path.
+
+```yaml
+agent:
+  type: "LANGGRAPH"
+  config:
+    checkpointer:
+      type: "sqlite"
+      db_url: "checkpoints.db"
+```
+
+### PostgreSQL
+
+The `PostgresSaver` uses PostgreSQL for checkpoint storage. This is the recommended backend for production deployments.
+
+| Property | Detail |
+|---|---|
+| **Persistence** | Production-grade database storage. |
+| **Performance** | Optimized for multi-process and concurrent access. |
+| **Scalability** | Supports multiple agent instances. |
+| **Use cases** | Production deployments, multi-instance setups. |
+
+**Configuration**: Requires a PostgreSQL connection string.
+
+```yaml
+agent:
+  type: "LANGGRAPH"
+  config:
+    checkpointer:
+      type: "postgres"
+      db_url: "postgresql://user:pass@localhost:5432/dbname"
+```
+
+## Threads and state
+
+### Threads
+
+A **thread** is a unique identifier (`thread_id`) that groups related checkpoints together. Each conversation or interaction should use a unique `thread_id` to maintain isolation between sessions.
+
+When invoking a graph with a checkpointer, you must specify a `thread_id`:
+
+```python
+config = {"configurable": {"thread_id": "user-123-session-1"}}
+```
+
+### State snapshots
+
+Each checkpoint contains a `StateSnapshot` with:
+
+- **values**: The state channel values at that point in time
+- **config**: Configuration associated with the checkpoint
+- **metadata**: Additional metadata about the checkpoint
+- **next**: Nodes to execute next in the graph
+
+You can retrieve the latest state or a specific checkpoint using `graph.get_state(config)`.
+
+## Best practices
+
+- **Use SQLite for local development**: No server setup required, file-based storage
+- **Use PostgreSQL for production**: Multi-process support, reliability, and scalability
+- **Use in-memory for testing**: Fastest option for stateless testing scenarios
+- **Configure thread isolation**: Each conversation should have a unique `thread_id`
+- **Monitor checkpoint storage**: Long-running conversations can accumulate significant state
+
+## Troubleshooting
+
+1. **Verify database connection**: Test the connection string independently before configuring
+2. **Check permissions**: Confirm the agent has read/write access to the database or file system
+3. **Thread ID required**: Always provide a `thread_id` in the config when using checkpointers
+4. **Database schema**: PostgreSQL checkpointers automatically create required tables on first use
+5. **Review logs**: Check agent logs for checkpoint-related errors

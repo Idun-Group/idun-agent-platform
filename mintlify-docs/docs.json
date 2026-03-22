@@ -1,0 +1,268 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "Idun Platform",
+  "colors": {
+    "primary": "#8C52FF",
+    "light": "#0ED4A5",
+    "dark": "#8C52FF"
+  },
+  "css": "/styles.css",
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://idunplatform.com"
+  },
+  "fonts": {
+    "body": {
+      "family": "Figtree",
+      "weight": 400
+    },
+    "heading": {
+      "family": "Space Grotesk",
+      "weight": 600
+    }
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "background": {
+    "decoration": "grid"
+  },
+  "styling": {
+    "eyebrows": "breadcrumbs",
+    "codeblocks": "dark"
+  },
+  "search": {
+    "prompt": "Search Idun docs..."
+  },
+  "seo": {
+    "metatags": {
+      "og:site_name": "Idun Platform Documentation",
+      "og:locale": "en_US"
+    },
+    "indexing": "navigable"
+  },
+  "metadata": {
+    "timestamp": true
+  },
+  "api": {
+    "openapi": ["/api-reference/openapi.json"]
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "index",
+              "quickstart",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Agent frameworks",
+            "pages": [
+              "frameworks/overview",
+              "frameworks/langgraph",
+              "frameworks/adk"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration",
+              "prompts"
+            ]
+          },
+          {
+            "group": "Guardrails",
+            "pages": [
+              "guardrails/overview",
+              "guardrails/reference"
+            ]
+          },
+          {
+            "group": "Memory",
+            "pages": [
+              "memory/overview",
+              "memory/langgraph",
+              "memory/adk"
+            ]
+          },
+          {
+            "group": "Observability",
+            "pages": [
+              "observability/overview",
+              "observability/langfuse",
+              "observability/arize-phoenix",
+              "observability/langsmith",
+              "observability/gcp-trace",
+              "observability/gcp-logging"
+            ]
+          },
+          {
+            "group": "Tool governance",
+            "pages": [
+              "tool-governance/overview",
+              "tool-governance/docker-toolkit"
+            ]
+          },
+          {
+            "group": "Authentication",
+            "pages": [
+              "auth/overview"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/discord",
+              "integrations/slack",
+              "integrations/whatsapp"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/overview",
+              "deployment/gcp"
+            ]
+          },
+          {
+            "group": "Manager",
+            "pages": [
+              "manager/overview",
+              "manager/tutorial"
+            ]
+          },
+          {
+            "group": "CLI",
+            "pages": [
+              "cli/overview"
+            ]
+          },
+          {
+            "group": "More",
+            "pages": [
+              "faq"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "openapi": "/api-reference/openapi.json"
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/Idun-Group/idun-agent-platform",
+          "icon": "github"
+        }
+      ]
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "type": "github",
+        "href": "https://github.com/Idun-Group/idun-agent-platform"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get started",
+      "href": "/quickstart"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/Idun-Group/idun-agent-platform",
+      "linkedin": "https://www.linkedin.com/in/geoffrey-harrazi9/"
+    },
+    "links": [
+      {
+        "header": "Product",
+        "items": [
+          { "label": "Website", "href": "https://idunplatform.com" },
+          { "label": "Cloud", "href": "https://cloud.idunplatform.com" }
+        ]
+      },
+      {
+        "header": "Resources",
+        "items": [
+          { "label": "GitHub", "href": "https://github.com/Idun-Group/idun-agent-platform" },
+          { "label": "Book a demo", "href": "https://calendar.app.google/LKq6g4bHZtFPbXNt9" }
+        ]
+      }
+    ]
+  },
+  "redirects": [
+    { "source": "/getting-started/quickstart", "destination": "/quickstart" },
+    { "source": "/architecture/overview", "destination": "/architecture" },
+    { "source": "/agent-frameworks/overview", "destination": "/frameworks/overview" },
+    { "source": "/agent-frameworks/langgraph", "destination": "/frameworks/langgraph" },
+    { "source": "/agent-frameworks/adk", "destination": "/frameworks/adk" },
+    { "source": "/observability/overview", "destination": "/observability/overview" },
+    { "source": "/observability/langfuse", "destination": "/observability/langfuse" },
+    { "source": "/observability/arize-phoenix", "destination": "/observability/arize-phoenix" },
+    { "source": "/observability/langsmith", "destination": "/observability/langsmith" },
+    { "source": "/observability/gcp-trace", "destination": "/observability/gcp-trace" },
+    { "source": "/observability/gcp-logging", "destination": "/observability/gcp-logging" },
+    { "source": "/memory/index", "destination": "/memory/overview" },
+    { "source": "/memory/memory-langgraph", "destination": "/memory/langgraph" },
+    { "source": "/memory/memory-adk", "destination": "/memory/adk" },
+    { "source": "/mcp/overview", "destination": "/tool-governance/overview" },
+    { "source": "/mcp/docker-mcp", "destination": "/tool-governance/docker-toolkit" },
+    { "source": "/sso-rbac/overview", "destination": "/auth/overview" },
+    { "source": "/integrations/discord", "destination": "/integrations/discord" },
+    { "source": "/integrations/slack", "destination": "/integrations/slack" },
+    { "source": "/integrations/whatsapp", "destination": "/integrations/whatsapp" },
+    { "source": "/deployment/overview", "destination": "/deployment/overview" },
+    { "source": "/deployment/gcp-self-hosted", "destination": "/deployment/gcp" },
+    { "source": "/cli/overview", "destination": "/cli/overview" },
+    { "source": "/prompts/overview", "destination": "/prompts" },
+    { "source": "/guardrails/overview", "destination": "/guardrails/overview" },
+    { "source": "/more/faq", "destination": "/faq" },
+    { "source": "/concepts/overview", "destination": "/architecture" },
+    { "source": "/agent-manager/overview", "destination": "/manager/overview" }
+  ],
+  "integrations": {
+    "posthog": {
+      "apiKey": "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw",
+      "apiHost": "https://us.i.posthog.com"
+    },
+    "ga4": {
+      "measurementId": "G-ECVQKEEWCG"
+    }
+  }
+}

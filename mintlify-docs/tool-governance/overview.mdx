@@ -1,0 +1,111 @@
+---
+title: "Tool governance"
+description: "Control which MCP tools each agent can access through per-agent allowlists at the platform level."
+keywords: ["MCP", "Model Context Protocol", "tool governance", "MCP servers", "agent tools", "stdio", "SSE", "WebSocket"]
+---
+
+Idun Agent Platform uses the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) to extend agent capabilities with external tools. You define MCP servers at the platform level, then attach specific servers to individual agents. Each agent can only access the tools from its assigned servers, so you control exactly what each agent can do.
+
+## How tool governance works
+
+1. **Register MCP servers** in the Manager UI or YAML config with transport settings and connection details
+2. **Attach servers to agents** through per-agent allowlists, so each agent only sees the tools you assign
+3. **The engine discovers tools** from each configured MCP server at startup
+4. **Agents invoke tools** during conversations as needed, with results passed back for response generation
+
+## Per-agent tool allowlists
+
+Every agent has its own list of MCP servers. An MCP server registered in the platform is not available to an agent until you attach it. This means you can:
+
+- Give a customer support agent access to a CRM tool but not a database query tool
+- Let a research agent fetch web content but block file system access
+- Share the same MCP server across multiple agents or restrict it to one
+
+## Transport types
+
+MCP servers connect to the engine through one of four transport protocols:
+
+| Transport | Use case | Required fields |
+|---|---|---|
+| `stdio` | Local processes, Docker containers | `command`, `args` |
+| `sse` | Remote servers with Server-Sent Events | `url` |
+| `streamable_http` | Remote servers with HTTP streaming (default) | `url` |
+| `websocket` | Persistent bidirectional connections | `url` |
+
+## Configuration example
+
+Define MCP servers in your `config.yaml` or through the Manager API:
+
+<Tabs>
+  <Tab title="YAML config">
+    ```yaml config.yaml
+    mcp_servers:
+      - name: fetch
+        transport: stdio
+        command: docker
+        args: ["run", "-i", "--rm", "mcp/fetch"]
+
+      - name: filesystem
+        transport: stdio
+        command: npx
+        args: ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
+        env:
+          ALLOWED_DIRECTORY: /data
+
+      - name: custom-api
+        transport: streamable_http
+        url: https://mcp.example.com/api
+        headers:
+          Authorization: "Bearer ${MCP_API_TOKEN}"
+    ```
+  </Tab>
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Open MCP servers">
+        Navigate to **MCP Servers** in the sidebar to see all registered servers.
+        ![MCP server list](/images/ui/mcp-list.png)
+      </Step>
+      <Step title="Create an MCP server">
+        Click **Create** and fill in the configuration form. Select a transport type (stdio, SSE, or HTTP) and provide the corresponding connection details: command and args for stdio, or a URL for remote transports.
+      </Step>
+      <Step title="Assign to an agent">
+        Open your agent, edit it, and select the MCP server from the MCP servers section.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Integration approaches
+
+<Cards>
+  <Card title="Docker MCP toolkit" icon="docker" href="/tool-governance/docker-toolkit">
+    Pre-built MCP servers packaged as Docker containers. Pull, configure, and attach to agents without writing server code.
+  </Card>
+  <Card title="Custom MCP servers" icon="code" href="/tool-governance/docker-toolkit#advanced-configuration">
+    Host your own MCP servers for custom business logic, proprietary data sources, or internal APIs.
+  </Card>
+</Cards>
+
+## Framework integration
+
+The engine provides helper functions to load MCP tools into your agent code:
+
+<CodeGroup>
+```python ADK
+from idun_agent_engine.mcp import get_adk_tools
+
+idun_tools = get_adk_tools()
+```
+
+```python LangGraph
+from idun_agent_engine.mcp import get_langchain_tools
+
+mcp_tools = await get_langchain_tools()
+```
+</CodeGroup>
+
+These functions discover all MCP servers attached to your agent and make their tools available. You do not need to configure individual tools.
+
+<Warning>
+  `get_langchain_tools()` is an async function. Use `await` when calling it.
+</Warning>

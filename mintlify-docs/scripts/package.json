@@ -1,0 +1,11 @@
+{
+  "name": "idun-docs-screenshots",
+  "private": true,
+  "scripts": {
+    "capture": "playwright test",
+    "install-browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

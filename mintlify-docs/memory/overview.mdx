@@ -1,0 +1,98 @@
+---
+title: "Memory"
+description: "Enable agents to maintain state and context across conversations using checkpointing and session services."
+keywords: ["memory", "checkpointing", "state persistence", "sessions", "LangGraph", "ADK"]
+---
+
+Memory enables agents to maintain state and context across conversations. With memory configured, agents remember previous interactions and can resume conversations after failures or restarts.
+
+Idun Agent Platform supports multiple memory and checkpointing strategies depending on your agent framework.
+
+## Framework support
+
+<Cards>
+  <Card
+    title="LangGraph memory"
+    icon="diagram-project"
+    href="/memory/langgraph"
+  >
+    Checkpointing for conversation state persistence. Supports in-memory, SQLite, and PostgreSQL backends.
+  </Card>
+  <Card
+    title="ADK memory"
+    icon="brain"
+    href="/memory/adk"
+  >
+    Session services for conversation state and memory services for long-term knowledge storage.
+  </Card>
+</Cards>
+
+## How checkpointing works
+
+Checkpointing saves your agent's state during execution. Each interaction is associated with a unique session or thread identifier, and the platform saves state snapshots at each step of the agent graph. This enables:
+
+- **Conversation continuity**: Maintain context between interactions
+- **Fault tolerance**: Resume from the last successful step after a failure
+- **Thread isolation**: Each `session_id` maps to a unique thread, keeping conversations separate
+- **Concurrent conversations**: Multiple users can interact with the same agent simultaneously
+
+## Backend comparison
+
+| Backend | Persistence | Concurrency | Best for |
+|---|---|---|---|
+| **In-memory** | None (lost on restart) | Single process | Development and testing |
+| **SQLite** | File-based | Single writer | Local development, single-instance deployments |
+| **PostgreSQL** | Database | Multi-process | Production, multi-instance deployments |
+| **Vertex AI** | Cloud-native | Distributed | Production on Google Cloud (ADK only) |
+| **Database (SQL)** | SQL-based | Multi-process | Production with SQL persistence (ADK only) |
+
+## Quick configuration examples
+
+<Tabs>
+  <Tab title="Config file">
+    <Tabs>
+      <Tab title="LangGraph">
+        ```yaml
+        agent:
+          type: "LANGGRAPH"
+          config:
+            checkpointer:
+              type: "postgres"
+              db_url: "postgresql://user:pass@localhost:5432/dbname"
+        ```
+      </Tab>
+      <Tab title="ADK">
+        ```yaml
+        agent:
+          type: "ADK"
+          config:
+            session_service:
+              type: "in_memory"
+            memory_service:
+              type: "in_memory"
+        ```
+      </Tab>
+    </Tabs>
+  </Tab>
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Open memory">
+        Navigate to **Memory** in the sidebar to see all configured memory backends.
+        ![Memory list](/images/ui/memory-list.png)
+      </Step>
+      <Step title="Create a memory configuration">
+        Click **Create** and fill in the configuration form. Select a backend from the dropdown: in-memory, SQLite, or PostgreSQL. For SQLite and PostgreSQL, provide the connection details.
+      </Step>
+      <Step title="Assign to an agent">
+        Open your agent, edit it, and select the memory configuration from the memory section.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Best practices
+
+- **Use in-memory for development**: No setup required, fastest iteration
+- **Use PostgreSQL or Database for production**: Multi-process support, reliability, and crash recovery
+- **Configure thread isolation**: Each conversation should have a unique `session_id` to prevent state leakage
+- **Monitor storage usage**: Long-running conversations can accumulate significant state over time

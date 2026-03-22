@@ -1,0 +1,66 @@
+---
+title: "API reference"
+description: "Complete reference for the Idun Agent Manager REST API and per-agent engine endpoints."
+keywords: ["API", "REST", "endpoints", "Manager API", "engine API", "OpenAPI", "reference"]
+---
+
+The Idun Agent Platform exposes two sets of APIs: the **Manager API** for centralized configuration, and **per-agent engine endpoints** for interacting with deployed agents.
+
+## Manager API
+
+The Manager API is served at `/api/v1/` and provides CRUD operations for all platform resources. All resource endpoints require session authentication and are scoped to the user's active workspace (set via the `X-Workspace-Id` header).
+
+Use the sidebar to browse each endpoint group. Every endpoint includes request/response schemas generated from the OpenAPI specification.
+
+### Authentication
+
+The Manager uses session-based authentication via signed HTTP-only cookies. Include the session cookie in all requests:
+
+```bash
+curl http://localhost:8000/api/v1/agents/ \
+  -b "sid=<session_cookie>" \
+  -H "X-Workspace-Id: <workspace-uuid>"
+```
+
+Agent config retrieval uses API key authentication:
+
+```bash
+curl http://localhost:8000/api/v1/agents/config \
+  -H "Authorization: Bearer <agent-api-key>"
+```
+
+### Common patterns
+
+All resource endpoints follow the same CRUD pattern:
+
+| Method | Path | Description |
+|---|---|---|
+| `POST /` | Create a new resource (workspace-scoped) |
+| `GET /` | List resources with pagination (`limit`, `offset`). Returns `agent_count` per resource |
+| `GET /{id}` | Get a resource by ID. Includes `agent_count` |
+| `PATCH /{id}` | Update a resource. Automatically recomputes `engine_config` for all agents referencing it |
+| `DELETE /{id}` | Delete a resource. Returns 409 Conflict if any agents reference it |
+
+## Engine API
+
+Each deployed agent exposes its own set of endpoints. These are per-agent-service, not part of the Manager.
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/` | GET | Service info |
+| `/health` | GET | Health check |
+| `/agent/run` | POST | AG-UI interaction endpoint (SSE streaming) |
+| `/agent/config` | GET | Current agent configuration |
+| `/agent/capabilities` | GET | Agent capability discovery (framework, streaming support, input/output schemas) |
+
+When per-agent SSO is enabled, `/agent/run` requires a valid OIDC JWT in the `Authorization` header.
+
+## Base URL
+
+For local development, the Manager API runs at:
+
+```
+http://localhost:8000
+```
+
+All API paths documented in this reference are relative to this base URL.

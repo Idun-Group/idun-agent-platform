@@ -1,0 +1,165 @@
+---
+title: "Manager"
+description: "The Manager is the control plane API that stores agent configurations, manages workspaces, and handles authentication for Idun Agent Platform."
+keywords: ["Manager", "control plane", "API", "agent configuration", "workspaces", "multi-tenant", "FastAPI"]
+---
+
+The Manager is a FastAPI + PostgreSQL control plane that provides CRUD operations for agents and all associated resources. It supports multi-tenant workspaces, role-based access control, and materializes engine configurations so agents can fetch their config at startup with zero overhead.
+
+## What the Manager does
+
+- **Agent management**: Create, update, delete, and configure agents
+- **Resource management**: CRUD for guardrails, MCP servers, observability configs, memory configs, SSO, integrations, and prompts
+- **Multi-tenant workspaces**: Isolate resources and team members by workspace
+- **Authentication**: Username/password or Google OIDC SSO
+- **Config materialization**: Pre-computes a full `EngineConfig` JSON snapshot for each agent, so the engine fetches it in a single API call with zero database joins
+
+## API routes
+
+All resource endpoints are prefixed with `/api/v1/` and scoped to the authenticated user's active workspace.
+
+| Prefix | Description |
+|---|---|
+| `/api/v1/auth` | Login, signup, logout, OIDC callback, session info |
+| `/api/v1/agents` | Agent CRUD, API key generation, config endpoint |
+| `/api/v1/prompts` | Prompt CRUD, versioning, agent assignment |
+| `/api/v1/guardrails` | Guardrail configuration CRUD |
+| `/api/v1/mcp-servers` | MCP server configuration CRUD |
+| `/api/v1/observability` | Observability configuration CRUD |
+| `/api/v1/memory` | Memory/checkpoint configuration CRUD |
+| `/api/v1/sso` | SSO/OIDC configuration CRUD |
+| `/api/v1/integrations` | Messaging integration configuration CRUD |
+| `/api/v1/workspaces` | Workspace CRUD |
+| `/api/v1/agent-frameworks` | List supported agent frameworks |
+| `/api/v1/healthz` | Health check |
+
+## How agents fetch config
+
+When you deploy an agent in managed mode, the engine authenticates with the Manager using an API key and fetches its materialized config:
+
+```bash
+export IDUN_AGENT_API_KEY=your-agent-api-key
+export IDUN_MANAGER_HOST=https://manager.example.com
+idun agent serve --source manager
+```
+
+Under the hood, the engine calls `GET /api/v1/agents/config` with the API key in the `Authorization` header. The Manager returns the pre-computed `EngineConfig` JSON, which includes agent settings, guardrails, MCP servers, observability, memory, SSO, integrations, and prompts.
+
+### Materialized config pattern
+
+The `engine_config` is stored as a JSONB column in PostgreSQL. It is recomputed whenever:
+
+- Agent resource associations change (on create or update)
+- A linked managed resource is updated (e.g., editing a guardrail recomputes config for all agents that use it)
+
+This pattern means the engine's read path has zero joins and instant response times, regardless of how many resources an agent references.
+
+## Resource lifecycle
+
+All managed resources (guardrails, MCP servers, observability, memory, SSO, integrations) follow the same pattern:
+
+1. **Create**: Register a resource in a workspace
+2. **Attach**: Link the resource to one or more agents
+3. **Update**: Modify the resource. The Manager automatically recomputes the materialized config for all agents that reference it
+4. **Delete**: Only allowed when no agents reference the resource (returns 409 Conflict otherwise)
+
+Each resource endpoint returns an `agent_count` field showing how many agents use that resource.
+
+## Running the Manager
+
+<Tabs>
+  <Tab title="Docker Compose (recommended)">
+    ```bash
+    git clone https://github.com/Idun-Group/idun-agent-platform.git
+    cd idun-agent-platform
+    cp .env.example .env
+    docker compose -f docker-compose.dev.yml up --build
+    ```
+
+    This starts PostgreSQL, the Manager API (port 8000), and the web UI (port 3000).
+  </Tab>
+  <Tab title="Local">
+    ```bash
+    cd services/idun_agent_manager
+    make dev
+    ```
+
+    Requires a running PostgreSQL instance. Configure `DATABASE__URL` in your environment.
+  </Tab>
+</Tabs>
+
+## Workspace management
+
+Workspaces provide multi-tenant isolation. Each workspace has its own agents, resources, and members. Resources created in one workspace are not visible to users in another workspace.
+
+You manage workspaces from the workspace selector in the top navigation. Switching workspaces changes which agents and resources you see across the entire UI.
+
+![User and member management table](/images/ui/users-list.png)
+
+## User and role management
+
+Each workspace has its own member list. Invite users by email and assign them a role per workspace.
+
+| Role | Permissions |
+|---|---|
+| Owner | Full access, including workspace deletion and billing |
+| Admin | Manage agents, resources, and members |
+| Member | Create and edit agents and resources |
+| Viewer | Read-only access |
+
+A user can have different roles in different workspaces.
+
+## Agent API keys
+
+Each agent has an API key you can generate from its detail page. The engine uses this key to authenticate with the Manager and fetch its materialized config at startup.
+
+To generate a key, open an agent in the Manager UI, navigate to the **API key** section, and click **Generate key**. Copy the key immediately. It is not shown again.
+
+Pass the key to the engine at runtime:
+
+```bash
+export IDUN_AGENT_API_KEY=<your-agent-api-key>
+export IDUN_MANAGER_HOST=https://manager.example.com
+idun agent serve --source manager
+```
+
+## Resource overview
+
+All resources (guardrails, memory, observability, MCP servers, SSO, integrations) are managed as card grids in the Manager UI. Each card shows a **Used by N agents** badge. A resource with active references cannot be deleted (the API returns 409 Conflict).
+
+Dedicated documentation for each resource type:
+
+<Cards>
+  <Card title="Guardrails" icon="shield" href="/guardrails/overview">
+    PII detection, topic restriction, toxicity filtering, and ban lists.
+  </Card>
+  <Card title="Memory" icon="database" href="/memory/overview">
+    Checkpoint backends for conversation history and agent state.
+  </Card>
+  <Card title="Observability" icon="chart-line" href="/observability/overview">
+    Langfuse, Phoenix, LangSmith, and GCP tracing.
+  </Card>
+  <Card title="Tool governance" icon="wrench" href="/tool-governance/overview">
+    MCP server configuration and Docker-based tool isolation.
+  </Card>
+  <Card title="Authentication" icon="lock" href="/auth/overview">
+    Username/password and Google OIDC SSO.
+  </Card>
+  <Card title="Integrations" icon="plug" href="/integrations/discord">
+    Discord, Slack, and WhatsApp messaging integrations.
+  </Card>
+</Cards>
+
+## Next steps
+
+<Cards>
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Explore the Manager API endpoints and resource schemas.
+  </Card>
+  <Card title="CLI" icon="terminal" href="/cli/overview">
+    Run and configure agents from the command line without the Manager UI.
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/deployment/overview">
+    Deploy the Manager to production.
+  </Card>
+</Cards>
