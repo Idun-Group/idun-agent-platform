@@ -264,6 +264,12 @@ class LanggraphAgent(agent_base.BaseAgent):
 
     async def close(self):
         """Closes any open resources, like database connections."""
+        # Exit the Postgres context manager if we entered one
+        pg_cm = getattr(self, "_pg_cm", None)
+        if pg_cm is not None:
+            await pg_cm.__aexit__(None, None, None)
+            self._pg_cm = None
+            logger.debug("Postgres checkpointer connection closed.")
         if self._connection:
             await self._connection.close()
             self._connection = None
@@ -290,9 +296,12 @@ class LanggraphAgent(agent_base.BaseAgent):
                     self._configuration.checkpointer.model_dump()
                 )
             elif isinstance(self._configuration.checkpointer, PostgresCheckpointConfig):
-                self._checkpointer = AsyncPostgresSaver.from_conn_string(
+                # from_conn_string is an async context manager; enter it and
+                # keep a reference so we can clean up on shutdown.
+                self._pg_cm = AsyncPostgresSaver.from_conn_string(
                     self._configuration.checkpointer.db_url
                 )
+                self._checkpointer = await self._pg_cm.__aenter__()
                 await self._checkpointer.setup()
                 self._infos["checkpointer"] = (
                     self._configuration.checkpointer.model_dump()

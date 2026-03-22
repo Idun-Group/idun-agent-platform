@@ -77,7 +77,7 @@ export default function FrameworkSection({ agent, isEditing, agentConfig, rootSc
                             rootSchema={rootSchema}
                             data={agentConfig}
                             onChange={onConfigChange}
-                            excludeFields={['name', 'checkpointer', 'session_service', 'memory_service', 'observability', 'a2a']}
+                            excludeFields={['name', 'checkpointer', 'session_service', 'memory_service', 'observability', 'a2a', 'store']}
                         />
                     </div>
                 ) : (
