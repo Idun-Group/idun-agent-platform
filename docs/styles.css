@@ -1,0 +1,84 @@
+/* Idun Platform — Mintlify custom styles
+   Only overrides that docs.json cannot control.
+   Mintlify includes Tailwind v3; use utility classes in MDX where possible. */
+
+/* ── Brand custom properties ───────────────────────────────────── */
+
+:root {
+  --idun-dark: #040210;
+  --idun-card: #121122;
+  --idun-purple: #8C52FF;
+  --idun-green: #0ED4A5;
+  --idun-red: #FF2970;
+  --idun-yellow: #FFDC68;
+}
+
+/* ── Dark-mode surface refinements ─────────────────────────────── */
+
+html.dark {
+  --tw-bg-opacity: 1;
+}
+
+html.dark body {
+  background-color: var(--idun-dark);
+}
+
+/* Code blocks: darker surface to match the landing-page aesthetic */
+html.dark pre[class*="language-"],
+html.dark div[class*="codeblock"],
+html.dark .ch-codeblock {
+  background-color: var(--idun-card) !important;
+  border: 1px solid rgba(140, 82, 255, 0.12);
+  border-radius: 8px;
+}
+
+/* Inline code in dark mode */
+html.dark :not(pre) > code {
+  background-color: var(--idun-card);
+  border: 1px solid rgba(140, 82, 255, 0.15);
+  border-radius: 4px;
+}
+
+/* ── Typography reinforcement ──────────────────────────────────── */
+/* Mintlify loads fonts via docs.json; these ensure fallback chains. */
+
+body {
+  font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── Focus outlines (purple accent, matches landing page) ──────── */
+
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(140, 82, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── Scrollbar styling (Webkit / Blink) ────────────────────────── */
+
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: var(--idun-dark);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: var(--idun-card);
+  border: 1px solid var(--idun-purple);
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--idun-purple);
+}

@@ -34,9 +34,9 @@ export function detectAgentFeatures(agent: BackendAgent) {
         ((Array.isArray(guardrails.input) && guardrails.input.length > 0) ||
             (Array.isArray(guardrails.output) && guardrails.output.length > 0));
 
-    // MCP servers: array at top level of engine_config
-    const hasMcp =
-        Array.isArray(engineConfig?.mcpServers) && engineConfig.mcpServers.length > 0;
+    // MCP servers: array at top level of engine_config (snake_case from backend, camelCase from some clients)
+    const mcpServers = (engineConfig as Record<string, unknown>)?.mcp_servers ?? engineConfig?.mcpServers;
+    const hasMcp = Array.isArray(mcpServers) && mcpServers.length > 0;
 
     // SSO: sso config at engine_config.sso
     const ssoConfig = (engineConfig as Record<string, unknown>)?.sso;

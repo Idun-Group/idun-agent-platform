@@ -9,6 +9,7 @@ interface Props {
     onCreated: () => void;
     appToEdit?: ManagedIntegration | null;
     provider?: IntegrationProvider;
+    providerIcon?: React.ReactNode;
 }
 
 const spin = keyframes`from { transform: rotate(0deg); } to { transform: rotate(360deg); }`;
@@ -42,14 +43,28 @@ const PanelHeader = styled.div`
     border-bottom: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 14px;
 `;
 
 const PanelTitle = styled.h2`
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     color: hsl(var(--foreground));
     margin: 0;
+`;
+
+const PanelSubtitle = styled.p`
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+    margin: 2px 0 0;
+`;
+
+const PanelTitleIcon = styled.span<{ $color: string }>`
+    color: ${p => p.$color};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 `;
 
 const CloseBtn = styled.button`
@@ -293,7 +308,7 @@ const ProviderPickerDesc = styled.span`
     color: hsl(var(--text-tertiary));
 `;
 
-const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit, provider: providerProp }) => {
+const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit, provider: providerProp, providerIcon }) => {
     const [selectedProvider, setSelectedProvider] = useState<IntegrationProvider>(providerProp ?? 'WHATSAPP');
     const [name, setName] = useState('');
     const [enabled, setEnabled] = useState(true);
@@ -416,7 +431,23 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                 {isLoading && <LoadingOverlay><BigSpinner $color={PROVIDER_META[provider].color} /></LoadingOverlay>}
 
                 <PanelHeader>
-                    <PanelTitle>{appToEdit ? 'Edit Integration' : showProviderPicker ? 'Choose Provider' : 'Add Integration'}</PanelTitle>
+                    {!showProviderPicker && providerIcon && (
+                        <PanelTitleIcon $color={PROVIDER_META[provider].color}>
+                            {providerIcon}
+                        </PanelTitleIcon>
+                    )}
+                    <div style={{ flex: 1 }}>
+                        <PanelTitle>
+                            {appToEdit
+                                ? `Edit ${PROVIDER_META[provider].label.split(' ')[0]}`
+                                : showProviderPicker
+                                    ? 'Choose Provider'
+                                    : PROVIDER_META[provider].label.split(' ')[0]}
+                        </PanelTitle>
+                        {!showProviderPicker && (
+                            <PanelSubtitle>{PROVIDER_META[provider].label}</PanelSubtitle>
+                        )}
+                    </div>
                     <CloseBtn type="button" onClick={onClose}>×</CloseBtn>
                 </PanelHeader>
 
@@ -442,10 +473,6 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                     <FormBody>
                         {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
-
-                        <ProviderBanner $color={PROVIDER_META[provider].color}>
-                            {PROVIDER_META[provider].label}
-                        </ProviderBanner>
 
                         <FieldGroup>
                             <Label htmlFor="int-name">
@@ -622,7 +649,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                         <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
                         <SubmitBtn type="submit" disabled={isLoading} $color={PROVIDER_META[provider].color}>
                             {isLoading && <Spinner />}
-                            {appToEdit ? 'Save Changes' : 'Add Integration'}
+                            {appToEdit ? 'Save Changes' : `Connect ${PROVIDER_META[provider].label.split(' ')[0]}`}
                         </SubmitBtn>
                     </Footer>
                 </form>

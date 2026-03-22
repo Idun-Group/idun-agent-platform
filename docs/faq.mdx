@@ -1,0 +1,89 @@
+---
+title: "FAQ"
+description: "Frequently asked questions about Idun Agent Platform, covering frameworks, authentication, data storage, guardrails, and licensing."
+keywords: ["FAQ", "questions", "help", "troubleshooting", "frameworks", "auth", "guardrails", "open source"]
+---
+
+## What agent frameworks are supported?
+
+Idun Agent Platform supports two agent frameworks:
+
+- **LangGraph** (primary): Full support for graph definitions, checkpointing, memory, and streaming
+- **Google ADK** (Agent Development Kit): Support for agent definitions, session services, and memory services
+
+The framework is specified in the `agent.type` config field. Each framework has its own adapter in the engine that handles initialization, execution, and streaming. See [Frameworks](/frameworks/overview) for details.
+
+## How does authentication work?
+
+The platform has two layers of authentication:
+
+**Manager authentication** controls access to the Manager API and web UI. Two modes are available:
+
+- **Username/password** (default): Users register and log in with email and password. Active when `AUTH__DISABLE_USERNAME_PASSWORD` is `false`
+- **Google OIDC SSO**: Users authenticate through Google. Active when `AUTH__DISABLE_USERNAME_PASSWORD` is `true`
+
+**Per-agent SSO** protects individual agent API endpoints. When enabled, clients must provide a valid OIDC JWT to call agent routes. This is configured per agent through the SSO config.
+
+See [Authentication](/auth/overview) for setup instructions.
+
+## Where is data stored?
+
+- **Agent configurations**: Stored in PostgreSQL as materialized JSON snapshots (JSONB column). Managed by the Manager API
+- **Conversation state (checkpoints)**: Depends on the checkpointer type: in-memory (lost on restart), SQLite (local file), or PostgreSQL (production-grade)
+- **User accounts and workspaces**: Stored in PostgreSQL by the Manager
+- **Agent code**: Lives in your repository. The engine wraps your code at runtime; it does not copy or store it
+
+In standalone mode (no Manager), configuration is read from a YAML file. No database is required.
+
+## Can I run without the Manager?
+
+Yes. The engine runs standalone from a YAML config file:
+
+```bash
+pip install idun-agent-engine
+idun agent serve --source file --path config.yaml
+```
+
+No Manager, no database, no web UI required. You define your agent configuration, guardrails, MCP servers, and observability in the YAML file. This mode works well for local development, single-agent deployments, and CI/CD pipelines. See the [quickstart](/quickstart) to get started.
+
+## How do guardrails work?
+
+Guardrails validate agent inputs and outputs against configurable rules. You define guardrails as input guards, output guards, or both:
+
+- **Input guardrails** check user messages before they reach the agent (e.g., jailbreak detection, PII detection)
+- **Output guardrails** check agent responses before they are returned to the user (e.g., toxic language filtering, topic restriction)
+
+Each guardrail has a type, a reject message, and type-specific configuration (threshold, word list, topic list). The engine evaluates guardrails in order and returns the reject message if a guard triggers.
+
+The platform supports 15 guardrail types, including `BAN_LIST`, `DETECT_PII`, `TOXIC_LANGUAGE`, `DETECT_JAILBREAK`, `PROMPT_INJECTION`, `RESTRICT_TO_TOPIC`, `MODEL_ARMOR` (Google Cloud), and `CUSTOM_LLM`. See the [guardrails reference](/guardrails/reference) for the full list.
+
+## What is the difference between the Engine and the Manager?
+
+| | Engine | Manager |
+|---|---|---|
+| **Role** | Runtime SDK that wraps your agent code into a production API | Control plane API for centralized configuration and management |
+| **Runs** | Per agent (one instance per deployed agent) | Once (shared by all agents) |
+| **Requires** | Python 3.12+, your agent code | PostgreSQL, Docker (recommended) |
+| **Config source** | YAML file or Manager API | Internal (stored in PostgreSQL) |
+| **Endpoints** | `/health`, `/agent/run`, `/agent/config`, `/agent/capabilities` | `/api/v1/agents`, `/api/v1/guardrails`, `/api/v1/prompts`, and more |
+
+The Engine can run without the Manager (standalone mode). The Manager provides a centralized way to configure and manage multiple agents, but is not required for single-agent deployments.
+
+## Is it free and open source?
+
+Yes. Idun Agent Platform is open source and available on [GitHub](https://github.com/Idun-Group/idun-agent-platform). The engine SDK (`idun-agent-engine`) and schema library (`idun-agent-schema`) are published to PyPI.
+
+## How do I report a bug or request a feature?
+
+- **Bugs and feature requests**: [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues)
+- **Questions and discussions**: [Discord](https://discord.gg/KCZ6nW2jQe)
+
+## How does observability work?
+
+The engine uses OpenTelemetry-based auto-instrumentation to capture traces, logs, and metrics from your agents. You configure an observability provider (Langfuse, Arize Phoenix, LangSmith, GCP Trace, or GCP Logging) and the engine instruments the agent runtime automatically.
+
+Observability configurations are saved at the workspace level and can be reused across multiple agents. See [Observability](/observability/overview) for provider setup.
+
+## Can I use multiple MCP servers with one agent?
+
+Yes. You can attach any number of MCP servers to a single agent. The engine discovers tools from all attached MCP servers at startup and makes them available to the agent. Each server can use a different transport type (stdio, SSE, streamable HTTP, WebSocket). See [Tool governance](/tool-governance/overview) for details.

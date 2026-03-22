@@ -1,0 +1,129 @@
+---
+title: "Deployment"
+description: "Deploy Idun Agent Platform in standalone mode with a config file or as a managed stack with the Manager, database, and web UI."
+keywords: ["deployment", "Docker Compose", "self-hosted", "production", "Cloud Run", "GCP", "standalone", "managed"]
+---
+
+Idun Agent Platform supports two deployment modes depending on your needs. You can run a single agent with a config file, or deploy the full platform with centralized management.
+
+## Deployment modes
+
+<Tabs>
+  <Tab title="Managed (full stack)">
+    Deploy the Manager API, PostgreSQL database, and web UI together. Agents fetch their config from the Manager at startup.
+
+    ```bash
+    git clone https://github.com/Idun-Group/idun-agent-platform.git
+    cd idun-agent-platform
+    cp .env.example .env
+    docker compose -f docker-compose.dev.yml up --build
+    ```
+
+    This mode suits:
+    - Multi-agent deployments
+    - Teams that need centralized configuration
+    - Workspace isolation and RBAC
+    - Non-technical team members who prefer a UI
+  </Tab>
+  <Tab title="Standalone engine">
+    Run a single agent from a YAML config file. No Manager, no database, no web UI required.
+
+    ```bash
+    pip install idun-agent-engine
+    idun agent serve --source file --path config.yaml
+    ```
+
+    This mode suits:
+    - Local development and testing
+    - Single-agent deployments
+    - CI/CD pipelines where you version config in Git
+  </Tab>
+</Tabs>
+
+## Agent lifecycle management
+
+<Tabs>
+  <Tab title="Manager UI">
+    From the agent detail page, manage the agent lifecycle:
+
+    - The status badge shows **Draft** or **Active**
+    - Click **Restart** to call `/reload` on the running engine, which re-fetches config from the platform
+    - The Overview tab includes **Connect to Platform** instructions for enrollment
+
+    ![Agent detail overview tab](/images/ui/agents-detail-overview.png)
+  </Tab>
+  <Tab title="Config file">
+    With file-based deployment, manage your agent by restarting the process or updating the config file and restarting:
+
+    ```bash
+    # Stop the running agent
+    pkill -f "idun agent serve"
+
+    # Update config.yaml, then restart
+    idun agent serve --source file --path config.yaml
+    ```
+
+    For managed deployments, restart the agent container to force a fresh config fetch from the Manager.
+  </Tab>
+</Tabs>
+
+## Full stack architecture
+
+In managed mode, the platform consists of three services and a database:
+
+| Component | Description | Default port |
+|---|---|---|
+| **Manager** | FastAPI control plane API for agent configuration, auth, and workspace management | 8000 |
+| **Web UI** | React admin dashboard | 3000 |
+| **PostgreSQL** | Stores agent configs, user accounts, workspace data | 5432 |
+| **Agent engines** | Your agent services, each running the Idun engine SDK | 8008+ |
+
+```yaml docker-compose.dev.yml
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: idun
+      POSTGRES_PASSWORD: idun
+      POSTGRES_DB: idun
+    ports:
+      - "5432:5432"
+
+  manager:
+    build:
+      context: .
+      dockerfile: services/idun_agent_manager/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE__URL: postgresql+asyncpg://idun:idun@postgres:5432/idun
+    depends_on:
+      - postgres
+
+  web:
+    build:
+      context: services/idun_agent_web
+    ports:
+      - "3000:3000"
+    depends_on:
+      - manager
+```
+
+## Prerequisites
+
+| Requirement | Standalone | Managed |
+|---|---|---|
+| Python 3.12+ | Yes | Yes |
+| Docker + Docker Compose | No | Yes |
+| PostgreSQL 16 | No | Yes (included in Docker Compose) |
+| `idun-agent-engine` package | Yes | Yes (for agent services) |
+
+## Self-hosted cloud deployments
+
+For production workloads, deploy the platform on your own cloud infrastructure.
+
+<Cards>
+  <Card title="Google Cloud Platform" icon="google" href="/deployment/gcp">
+    Cloud Run for Manager and UI, Cloud SQL for PostgreSQL. [Contact us](https://calendar.app.google/RSzm7EM5VZY8xVnN9) for Terraform modules.
+  </Card>
+</Cards>

@@ -1,0 +1,122 @@
+---
+title: "Manager overview"
+description: "The Idun Manager is your control plane for creating, configuring, and governing AI agents."
+keywords: ["manager", "control plane", "dashboard", "agent management", "workspace"]
+---
+
+The Manager is the control plane for the Idun Agent Platform. It stores agent configurations, manages resources (guardrails, observability, memory, MCP servers), and serves materialized configs to running agents. Authentication and multi-tenancy are built in.
+
+## Agent dashboard
+
+The dashboard shows all agents in your workspace as cards. Each card displays the agent name, framework badge (LangGraph or ADK), and status (Draft or Active).
+
+Resource indicators light up when attached: OBS, MEM, GUARD, MCP, SSO, INT. Metrics placeholders for Runs/24h, Avg Latency, and Error Rate appear on each card (planned).
+
+Search agents by name or framework, create new ones with "Create an agent", or use "Connect a new agent" to enroll an existing agent.
+
+![Agent dashboard showing card-based layout with agent status and resource indicators](/images/ui/agents-list.png)
+
+## Agent detail
+
+Click an agent card to open its detail view. Five tabs organize the agent's configuration, testing, and API access.
+
+<Tabs>
+  <Tab title="Overview">
+    Connection instructions for enrolling the agent, a visualization of the agent graph, the agent details table, and framework configuration.
+
+    Resource attachment buttons let you add observability, guardrails, memory, MCP servers, and integrations directly from here.
+  </Tab>
+  <Tab title="Chat">
+    A built-in AG-UI playground for testing your agent. Select an endpoint, manage conversation threads, inspect streaming events, or export requests as cURL commands.
+  </Tab>
+  <Tab title="API Integration">
+    Displays the base URL, an auth key with show/hide toggle, and all available endpoints. A "View Docs" link takes you to the full API reference.
+  </Tab>
+  <Tab title="Prompts">
+    Lists prompts assigned to the agent. Assign prompts from the Prompts page and manage them here.
+  </Tab>
+  <Tab title="Configuration">
+    Shows the full materialized engine config in JSON or YAML. Use the copy button to grab the entire config for debugging or local development.
+  </Tab>
+</Tabs>
+
+![Agent detail overview tab with graph visualization and resource buttons](/images/ui/agents-detail-overview.png)
+
+## Resource catalog pattern
+
+All resource pages follow the same catalog layout: provider cards organized by category. Click "+" on a card to create a new configuration. Existing configs show Edit and Remove actions along with a "Used by N agents" badge.
+
+This pattern applies to guardrails, observability, memory, MCP servers, and integrations. Some providers are marked "Soon" for planned support.
+
+<Columns>
+  <Card title="Guardrails" icon="shield" href="/guardrails/overview">
+    PII detection, topic restriction, toxicity filtering, ban lists
+  </Card>
+  <Card title="Observability" icon="chart-line" href="/observability/overview">
+    Langfuse, Phoenix, LangSmith, GCP tracing
+  </Card>
+  <Card title="Memory" icon="database" href="/memory/overview">
+    Checkpoint backends for conversation history
+  </Card>
+  <Card title="Tool governance" icon="wrench" href="/tool-governance/overview">
+    MCP server configuration and tool isolation
+  </Card>
+</Columns>
+
+## User management
+
+A table lists workspace members with Name, Email, Role, and Actions columns. Use the "Add user" button to invite new members. Search and pagination are available for larger teams.
+
+![User management table with role assignments](/images/ui/users-list.png)
+
+## Settings
+
+The Settings page has two tabs: General and Users. Under General, you configure the workspace name. The Users tab mirrors the user management table described above.
+
+## Lifecycle: create, enroll, configure, reload
+
+The core workflow follows these steps.
+
+<Steps>
+  <Step title="Create an agent in the UI">
+    Open the dashboard and click "Create an agent." Choose the framework, give it a name, and save.
+  </Step>
+  <Step title="Enroll from code">
+    Set the environment variables and start the agent in managed mode:
+
+    ```bash
+    export IDUN_AGENT_API_KEY=<your-agent-api-key>
+    export IDUN_MANAGER_HOST=https://manager.example.com
+    idun agent serve --source manager
+    ```
+
+    The agent connects to the Manager and fetches its materialized config on startup.
+  </Step>
+  <Step title="Agent connects and fetches config">
+    The engine calls `GET /api/v1/agents/config` with the API key in the `Authorization` header. The Manager returns a pre-computed `EngineConfig` JSON covering agent settings, guardrails, MCP servers, observability, memory, and prompts.
+  </Step>
+  <Step title="Add resources from agent detail">
+    Navigate to the agent's Overview tab. Use the resource attachment buttons to add guardrails, observability, memory, MCP servers, or integrations. Each addition recomputes the materialized config.
+  </Step>
+  <Step title="Click Restart to push new config">
+    After changing resources, click "Restart" on the agent detail page. The running agent re-fetches its updated config and applies it without redeployment.
+  </Step>
+</Steps>
+
+<Note>
+  The materialized config is stored as a JSONB column in PostgreSQL. It recomputes whenever agent resource associations change or a linked resource is updated, so the engine's read path has zero joins and returns instantly regardless of how many resources an agent references.
+</Note>
+
+## Next steps
+
+<Columns>
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Explore the Manager API endpoints and resource schemas.
+  </Card>
+  <Card title="CLI" icon="terminal" href="/cli/overview">
+    Run and configure agents from the command line.
+  </Card>
+  <Card title="Deployment" icon="cloud" href="/deployment/overview">
+    Deploy the Manager to production.
+  </Card>
+</Columns>

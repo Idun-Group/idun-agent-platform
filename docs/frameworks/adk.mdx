@@ -1,0 +1,117 @@
+---
+title: "Google ADK"
+description: "Connect a Google ADK agent to Idun Agent Platform with Gemini-powered workflows, session services, and memory backends."
+keywords: ["Google ADK", "Agent Development Kit", "Gemini", "ADK agent", "Vertex AI", "session service", "memory service"]
+---
+
+Google ADK (Agent Development Kit) is Google's framework for building Gemini-powered agents. Idun Agent Platform wraps ADK agents as production services with AG-UI streaming, guardrails, and observability.
+
+<Tip>
+  Want to start from working code? The [agent templates](/templates) include ADK examples for tool calling and structured I/O.
+</Tip>
+
+## Create an ADK agent
+
+<Tabs>
+  <Tab title="Manager UI">
+    Create the agent in the Manager, then connect your code.
+
+    <Steps>
+      <Step title="Open the agent wizard">
+        From the [Agent Dashboard](/manager/overview), click **Create an agent**. In step 1, enter a name and select **Google ADK**.
+
+        ![Agent creation wizard with ADK selected](/images/ui/agents-create-step1.png)
+      </Step>
+      <Step title="Configure the framework">
+        In step 2, fill in:
+
+        - **Agent definition**: Python module path and variable, e.g. `my_agent.agent:root_agent`
+        - **App name**: application name for ADK session/memory scoping
+        - **Agent Host**: Localhost or Remote
+        - **Server Port**: the port your agent will listen on
+
+        The agent definition uses Python module path notation (`module.path:variable`), not a file path. This differs from LangGraph.
+      </Step>
+      <Step title="Enroll your agent">
+        Step 3 gives you the enrollment instructions. In your agent's project directory:
+
+        ```bash
+        pip install idun-agent-engine google-adk
+        export IDUN_MANAGER_HOST=http://localhost:8000
+        export IDUN_AGENT_API_KEY=<your-api-key>
+        idun agent serve --source manager
+        ```
+
+        Get the API key from the **API Integration** tab on your agent's detail page.
+      </Step>
+    </Steps>
+
+    The Manager sets in-memory session and memory services by default. To switch to Database or Vertex AI, see [Memory](/memory/adk).
+  </Tab>
+  <Tab title="Config file">
+    Set `agent.type` to `ADK` and provide the agent definition path and `app_name`.
+
+    ```yaml config.yaml
+    server:
+      api:
+        port: 8008
+
+    agent:
+      type: ADK
+      config:
+        name: "my-adk-agent"
+        agent: "my_agent.agent:root_agent"
+        app_name: "myagent"
+    ```
+
+    Then run:
+
+    ```bash
+    pip install idun-agent-engine google-adk
+    idun agent serve --source file --path config.yaml
+    ```
+  </Tab>
+</Tabs>
+
+## Write your agent code
+
+Create an ADK agent at the module path matching your configuration:
+
+```python my_agent/agent.py
+from google.adk.agents import Agent
+
+root_agent = Agent(
+    model="gemini-2.5-flash",
+    name="weather_agent",
+    description="An agent that answers questions about the weather.",
+    instruction="You are a helpful weather assistant. Answer questions about weather conditions.",
+)
+```
+
+<Note>
+  If you use Vertex AI models, authenticate with `gcloud auth application-default login` before running the agent.
+</Note>
+
+### The `agent` field
+
+The value uses Python module path notation with a colon separator:
+
+- **Module path**: dotted Python module path (e.g., `my_agent.agent`)
+- **Variable name**: the agent instance in that module (e.g., `root_agent`)
+
+This differs from LangGraph's `graph_definition`, which uses a file path.
+
+## Session and memory services
+
+ADK agents have two persistence layers: session services (conversation state) and memory services (long-term recall). Both default to in-memory when using the Manager. See [Memory and sessions for ADK](/memory/adk) for backend options including Database (PostgreSQL) and Vertex AI.
+
+<Warning>
+  ADK does not support folder paths that contain spaces. Make sure your project directory path has no spaces.
+</Warning>
+
+## Next steps
+
+- [Memory and session details for ADK](/memory/adk)
+- [Guardrails](/guardrails/overview)
+- [Observability](/observability/overview)
+- [Tool governance](/tool-governance/overview)

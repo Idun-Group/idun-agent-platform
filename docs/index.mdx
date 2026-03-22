@@ -1,0 +1,54 @@
+---
+title: "Idun Agent Platform"
+description: "Open-source, self-hosted platform to deploy AI agents to production with guardrails, memory, observability, and MCP tooling."
+keywords: ["AI agent deployment", "self-hosted", "open source", "LangGraph", "ADK", "guardrails", "observability", "MCP"]
+---
+
+Idun Agent Platform is an open-source control plane that wraps LangGraph and Google ADK agents into production-ready services. You get deployment, observability, memory, guardrails, and tool governance on your own infrastructure, with no vendor lock-in.
+
+The platform has three layers: a Python SDK/engine, a FastAPI management backend, and a React admin UI. Define your agent once, then deploy it with everything it needs through configuration.
+
+## Get started
+
+<Columns cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Deploy your first agent in minutes
+  </Card>
+  <Card title="Templates" icon="copy" href="/templates">
+    Clone a runnable agent and start coding
+  </Card>
+  <Card title="Frameworks" icon="layer-group" href="/frameworks/overview">
+    LangGraph and ADK integration
+  </Card>
+  <Card title="Guardrails" icon="shield-halved" href="/guardrails/overview">
+    15 built-in safety guards
+  </Card>
+  <Card title="Observability" icon="chart-line" href="/observability/overview">
+    Trace and monitor every run
+  </Card>
+  <Card title="Memory" icon="database" href="/memory/overview">
+    Persistent conversation state
+  </Card>
+  <Card title="Tool governance" icon="screwdriver-wrench" href="/tool-governance/overview">
+    Control MCP tool access per agent
+  </Card>
+  <Card title="Deployment" icon="server" href="/deployment/overview">
+    Self-hosted on your infrastructure
+  </Card>
+</Columns>
+
+## What you get
+
+- **Framework adapters** for LangGraph and Google ADK. Bring your agent code, the engine wraps it as a FastAPI service with AG-UI streaming.
+- **Guardrails** with 15 built-in guards (PII detection, jailbreak prevention, toxic language filtering, topic restriction, and more) powered by Guardrails AI.
+- **Observability** through Langfuse, Arize Phoenix, LangSmith, or Google Cloud Trace. Enable tracing and metrics through configuration.
+- **Memory and checkpointing** with in-memory, SQLite, or PostgreSQL backends. Conversations persist across restarts.
+- **MCP tool governance** to connect MCP servers to your agents and control which tools each agent can access.
+- **SSO and RBAC** with OIDC integration, workspace-level multi-tenancy, and per-agent access control.
+- **Three deployment paths**: Docker Compose for development, CLI for standalone agents, Manager UI for team-wide management.
+
+## Community
+
+- Questions and help: [Discord](https://discord.gg/KCZ6nW2jQe)
+- Proposals and ideas: [GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions)
+- Bugs and feature requests: [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues)

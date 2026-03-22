@@ -12,7 +12,8 @@ Idun Agent Platform is a self-hosted control plane that wraps LangGraph/ADK agen
 - `libs/idun_agent_engine/` — SDK runtime that wraps agents into FastAPI services (published to PyPI)
 - `services/idun_agent_manager/` — FastAPI + PostgreSQL backend for agent config CRUD, auth, policy enforcement
 - `services/idun_agent_web/` — React 19 + Vite + TypeScript admin dashboard
-- `docs/` — MkDocs Material documentation site
+- `docs/` — Mintlify documentation site (deployed to docs.idunplatform.com)
+- `old-docs/` — Legacy MkDocs documentation (archived, do not edit)
 
 ## Per-Service Documentation
 
@@ -170,3 +171,33 @@ alembic upgrade head
 ### Keeping Documentation Current
 - When you add a major feature, change architecture, or modify conventions in a service, update the corresponding `CLAUDE.md` to reflect the change.
 - This includes new routes, new config options, new env vars, changed module structure, or deprecated behavior.
+
+<!-- IDUN-KNOWLEDGE-START -->
+## Shared Knowledge — Idun Knowledge Vault (via Obsidian MCP)
+
+This project uses the `idun-knowledge` Obsidian vault as single source of truth. It is connected via the Obsidian MCP server (auto-available in every Claude Code session).
+
+### How to access the vault
+- Use the Obsidian MCP tools to search and read vault notes
+- Do NOT use hardcoded file paths — always go through the MCP
+- You can also write/update vault notes when preserving learnings
+
+### Before starting any work, read the relevant vault notes:
+product/architecture.md — platform architecture and tech stack
+product/conventions.md — code style, git workflow, PR rules
+product/roadmap.md — current priorities
+brand/brand-identity.md — for any UI work
+brand/design-tokens.json — design tokens for components
+brand/voice-and-tone.md — for user-facing copy
+
+### Memory System
+- Start sessions with `/resume` to load context from vault + recent session logs
+- End sessions with `/compress` to save session log to vault
+- Use `/preserve` to save permanent learnings back to the vault
+
+### Vault Structure
+- `brand/` — Brand identity, colors, typography, voice, design tokens
+- `company/` — Strategy, positioning, clients, processes
+- `product/` — Architecture, conventions, specs, ADRs, roadmap
+- `team/` — Onboarding, Claude Code patterns, workflows
+<!-- IDUN-KNOWLEDGE-END -->

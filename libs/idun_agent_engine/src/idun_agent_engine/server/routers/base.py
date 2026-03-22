@@ -29,6 +29,8 @@ def health_check():
 
 @base_router.post("/reload")
 async def reload_config(request: Request, body: ReloadRequest | None = None):
+    # TODO: This endpoint is not SSO-protected. Add require_auth dependency
+    # to prevent unauthorized config reloads. See /agent/* routes for pattern.
     """Reload the agent configuration from the manager or a file."""
     try:
         if body and body.path:

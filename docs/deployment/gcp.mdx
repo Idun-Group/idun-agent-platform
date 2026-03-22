@@ -1,0 +1,79 @@
+---
+title: "Google Cloud Platform"
+description: "Deploy Idun Agent Platform on GCP using Cloud Run for the Manager and UI, Cloud SQL for PostgreSQL, and optional Terraform automation."
+keywords: ["GCP", "Google Cloud", "Cloud Run", "Cloud SQL", "Terraform", "self-hosted", "deployment"]
+---
+
+Deploy Idun Agent Platform on Google Cloud Platform using a serverless architecture with Cloud Run and Cloud SQL.
+
+## Architecture
+
+The platform maps to GCP services as follows:
+
+| Component | GCP service | Description |
+|---|---|---|
+| **Manager (control plane)** | Cloud Run | Handles API requests, authentication, and agent configuration |
+| **Web UI** | Cloud Run | Serves the React admin dashboard |
+| **Database** | Cloud SQL for PostgreSQL | Stores platform state, agent configurations, and user data |
+| **Agent engines** | Cloud Run (or your CI/CD) | Your agent services, deployed as separate Cloud Run services |
+
+## Deployment process
+
+<Steps>
+  <Step title="Provision the database">
+    Create a Cloud SQL PostgreSQL instance. The Manager requires PostgreSQL 16.
+
+    Configure the connection string as `DATABASE__URL` for the Manager service:
+
+    ```
+    postgresql+asyncpg://user:password@/dbname?host=/cloudsql/project:region:instance
+    ```
+  </Step>
+
+  <Step title="Deploy the Manager">
+    Deploy the Manager container image to Cloud Run with the database connection string and auth configuration:
+
+    ```bash
+    gcloud run deploy idun-manager \
+      --image your-registry/idun-manager:latest \
+      --set-env-vars "DATABASE__URL=postgresql+asyncpg://..." \
+      --set-env-vars "AUTH__SESSION_SECRET=your-secret" \
+      --set-env-vars "AUTH__SECRET_KEY=your-api-key-secret" \
+      --add-cloudsql-instances project:region:instance \
+      --allow-unauthenticated
+    ```
+  </Step>
+
+  <Step title="Deploy the Web UI">
+    Deploy the UI container image to Cloud Run, pointing to the Manager's URL:
+
+    ```bash
+    gcloud run deploy idun-web \
+      --image your-registry/idun-web:latest \
+      --set-env-vars "VITE_API_URL=https://idun-manager-xyz.run.app" \
+      --allow-unauthenticated
+    ```
+  </Step>
+
+  <Step title="Configure networking (optional)">
+    For production, set up a load balancer or use Cloud Run custom domains to expose the services under your own domain.
+  </Step>
+</Steps>
+
+## Agent deployment
+
+Agent engines are deployed as separate Cloud Run services or through your existing CI/CD pipelines (GitHub Actions, Cloud Build). Each agent service runs the Idun engine SDK and fetches its configuration from the Manager at startup:
+
+```bash
+export IDUN_AGENT_API_KEY=your-agent-api-key
+export IDUN_MANAGER_HOST=https://idun-manager-xyz.run.app
+idun agent serve --source manager
+```
+
+## Terraform modules
+
+Terraform modules for automating the full deployment (IAM, networking, security configuration) are available through a custom engagement with Idun.
+
+<Info>
+  Contact us for Terraform modules. [Book a call](https://calendar.app.google/RSzm7EM5VZY8xVnN9) or reach out via [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues) to discuss your deployment needs.
+</Info>

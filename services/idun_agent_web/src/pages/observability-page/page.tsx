@@ -1,14 +1,67 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Eye, EyeOff, ExternalLink } from 'lucide-react';
-import { fetchApplications, deleteApplication } from '../../services/applications';
+import { Eye, EyeOff, ExternalLink, X, BookOpen, GitPullRequest, Search } from 'lucide-react';
+import { fetchApplications, deleteApplication, createApplication, updateApplication } from '../../services/applications';
 import type { ApplicationConfig } from '../../types/application.types';
-import CreateObservabilityModal from '../../components/applications/create-observability-modal/component';
+import type { AppType } from '../../types/application.types';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+
+// ── Provider metadata ────────────────────────────────────────────────────────
+
+interface ProviderField {
+    key: string;
+    label: string;
+    type: 'text' | 'password' | 'url';
+    placeholder?: string;
+    required?: boolean;
+}
+
+interface ProviderMeta {
+    id: AppType;
+    label: string;
+    logo: string;
+    description: string;
+    group: string;
+    fields: ProviderField[];
+    comingSoon?: boolean;
+}
+
+const OBS_PROVIDERS: ProviderMeta[] = [
+    { id: 'Langfuse', label: 'Langfuse', logo: '/img/langfuse-logo.png', group: 'LLM Observability', description: 'Open-source LLM observability, analytics, and evaluation', fields: [
+        { key: 'host', label: 'Host URL', type: 'url', placeholder: 'https://cloud.langfuse.com', required: true },
+        { key: 'publicKey', label: 'Public Key', type: 'text', placeholder: 'pk-lf-...', required: true },
+        { key: 'secretKey', label: 'Secret Key', type: 'password', placeholder: 'sk-lf-...', required: true },
+    ]},
+    { id: 'Phoenix', label: 'Phoenix', logo: '/img/phoenix-logo.png', group: 'LLM Observability', description: 'AI observability and evaluation from Arize', fields: [
+        { key: 'host', label: 'Host URL', type: 'url', placeholder: 'http://localhost:6006', required: true },
+        { key: 'projectName', label: 'Project Name', type: 'text', placeholder: 'my-project' },
+    ]},
+    { id: 'LangSmith', label: 'LangSmith', logo: '/img/langsmith-logo.png', group: 'LLM Observability', description: 'LangChain tracing, evaluation, and monitoring', fields: [
+        { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'ls__...', required: true },
+        { key: 'projectName', label: 'Project Name', type: 'text', placeholder: 'my-project' },
+        { key: 'endpoint', label: 'Endpoint', type: 'text', placeholder: 'https://api.smith.langchain.com' },
+    ]},
+    { id: 'GoogleCloudLogging', label: 'GCP Logging', logo: '/img/google-cloud-logo.svg', group: 'Cloud', description: 'Google Cloud structured logging', fields: [
+        { key: 'gcpProjectId', label: 'GCP Project ID', type: 'text', placeholder: 'my-gcp-project', required: true },
+        { key: 'region', label: 'Region', type: 'text', placeholder: 'us-central1' },
+    ]},
+    { id: 'GoogleCloudTrace', label: 'GCP Trace', logo: '/img/google-cloud-logo.svg', group: 'Cloud', description: 'Google Cloud distributed tracing', fields: [
+        { key: 'gcpProjectId', label: 'GCP Project ID', type: 'text', placeholder: 'my-gcp-project', required: true },
+        { key: 'region', label: 'Region', type: 'text', placeholder: 'us-central1' },
+    ]},
+    // Coming soon
+    { id: 'Datadog' as AppType, label: 'Datadog APM', logo: '/img/datadog-logo.svg', group: 'Coming Soon', description: 'Distributed tracing', fields: [], comingSoon: true },
+    { id: 'AWSXRay' as AppType, label: 'AWS X-Ray', logo: '/img/aws-logo.png', group: 'Coming Soon', description: 'AWS distributed tracing', fields: [], comingSoon: true },
+    { id: 'AzureMonitor' as AppType, label: 'Azure Monitor', logo: '/img/azure-logo.png', group: 'Coming Soon', description: 'Application Insights', fields: [], comingSoon: true },
+    { id: 'Jaeger' as AppType, label: 'Jaeger', logo: '/img/jaeger-logo.svg', group: 'Coming Soon', description: 'Open-source distributed tracing', fields: [], comingSoon: true },
+];
+
+const PROVIDER_GROUPS = ['LLM Observability', 'Cloud', 'Coming Soon'];
 
 // ── Animations ──────────────────────────────────────────────────────────────
 
 const fadeIn = keyframes`from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); }`;
+const modalIn = keyframes`from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); }`;
 const spin = keyframes`from { transform: rotate(0deg); } to { transform: rotate(360deg); }`;
 
 // ── Layout ───────────────────────────────────────────────────────────────────
@@ -20,7 +73,7 @@ const PageWrapper = styled.div`
     padding: 32px;
     gap: 24px;
     animation: ${fadeIn} 0.3s ease;
-    overflow-y: auto;
+    overflow: hidden;
 `;
 
 const PageHeader = styled.div`
@@ -29,6 +82,7 @@ const PageHeader = styled.div`
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
+    flex-shrink: 0;
 `;
 
 const TitleBlock = styled.div``;
@@ -52,6 +106,30 @@ const HeaderActions = styled.div`
     gap: 12px;
 `;
 
+const DocsButton = styled.a`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 38px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+
+    &:hover {
+        color: hsl(var(--foreground));
+        border-color: var(--border-medium);
+        background: var(--overlay-medium);
+    }
+`;
+
 const SearchBar = styled.div`
     display: flex;
     align-items: center;
@@ -69,48 +147,212 @@ const SearchInput = styled.input`
     outline: none;
     color: hsl(var(--foreground));
     font-size: 14px;
-    width: 180px;
-
+    width: 160px;
     &::placeholder { color: hsl(var(--muted-foreground)); }
 `;
 
-const ConnectButton = styled.button`
+// ── Two-column layout ────────────────────────────────────────────────────────
+
+const MainLayout = styled.div`
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 0;
+`;
+
+// ── Left column: provider picker ─────────────────────────────────────────────
+
+const ProviderColumn = styled.div`
+    width: 260px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-subtle);
+    padding-right: 24px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+`;
+
+const GroupLabel = styled.p`
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: hsl(var(--text-tertiary));
+    margin: 20px 0 8px 10px;
+
+    &:first-child { margin-top: 0; }
+`;
+
+const ProviderBtn = styled.button<{ $disabled?: boolean }>`
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 18px;
-    height: 38px;
-    background: hsl(var(--primary));
-    border: none;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
     border-radius: 10px;
-    color: hsl(var(--foreground));
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--text-secondary))'};
+    font-size: 13px;
+    font-weight: 400;
+    cursor: ${p => p.$disabled ? 'default' : 'pointer'};
+    opacity: ${p => p.$disabled ? 0.5 : 1};
+    transition: all 0.15s ease;
+    text-align: left;
+    margin-bottom: 2px;
+
+    &:hover {
+        background: ${p => p.$disabled ? 'transparent' : 'var(--overlay-light)'};
+        color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))'};
+    }
+`;
+
+const ProviderLogo = styled.span`
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+
+    img {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+    }
+`;
+
+const AddIndicator = styled.span`
+    margin-left: auto;
+    font-size: 16px;
+    color: hsl(var(--muted-foreground));
+    flex-shrink: 0;
+    opacity: 0;
     transition: opacity 0.15s;
-    white-space: nowrap;
 
-    &:hover { opacity: 0.88; }
+    ${ProviderBtn}:hover & {
+        opacity: 1;
+    }
 `;
 
-// ── Grid ─────────────────────────────────────────────────────────────────────
+const ComingSoonBadge = styled.span`
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: var(--overlay-light);
+    color: hsl(var(--muted-foreground));
+    margin-left: auto;
+    flex-shrink: 0;
+`;
 
-const Grid = styled.div`
+const RequestBtn = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px dashed var(--border-light);
+    background: transparent;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    margin-top: 16px;
+
+    &:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        color: hsl(var(--foreground));
+        background: hsl(var(--primary) / 0.04);
+    }
+`;
+
+const RequestIcon = styled.span`
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: hsl(var(--primary));
+`;
+
+// ── Right column: configs + empty state ──────────────────────────────────────
+
+const ContentColumn = styled.div`
+    flex: 1;
+    padding-left: 28px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+`;
+
+const EmptyState = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 20px;
+    gap: 16px;
+`;
+
+const EmptyTitle = styled.h3`
+    font-size: 16px;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin: 0;
+`;
+
+const EmptyDescription = styled.p`
+    font-size: 13px;
+    line-height: 1.7;
+    color: hsl(var(--text-secondary));
+    margin: 0;
+    max-width: 420px;
+`;
+
+const EmptyChips = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+`;
+
+const Chip = styled.span<{ $color: string }>`
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    background: ${p => `${p.$color}14`};
+    color: ${p => p.$color};
+    border: 1px solid ${p => `${p.$color}20`};
+    letter-spacing: 0.02em;
+`;
+
+// ── Config cards ─────────────────────────────────────────────────────────────
+
+const CardsGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
 `;
-
-// ── Cards ─────────────────────────────────────────────────────────────────────
 
 const Card = styled.div`
     background: hsl(var(--surface-elevated));
     border: 1px solid var(--border-subtle);
-    border-radius: 16px;
-    padding: 24px;
+    border-radius: 14px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     transition: border-color 0.2s;
 
     &:hover { border-color: hsl(var(--primary) / 0.3); }
@@ -122,15 +364,15 @@ const CardHeader = styled.div`
     justify-content: space-between;
 `;
 
-const ProviderInfo = styled.div`
+const CardInfo = styled.div`
     display: flex;
     align-items: center;
     gap: 12px;
 `;
 
-const ProviderIcon = styled.div`
-    width: 40px;
-    height: 40px;
+const CardIcon = styled.div`
+    width: 38px;
+    height: 38px;
     border-radius: 10px;
     background: var(--border-subtle);
     display: flex;
@@ -139,33 +381,28 @@ const ProviderIcon = styled.div`
     overflow: hidden;
     flex-shrink: 0;
 
-    img {
-        width: 26px;
-        height: 26px;
-        object-fit: contain;
-    }
+    img { width: 24px; height: 24px; object-fit: contain; }
 `;
 
-const ProviderName = styled.div``;
+const CardMeta = styled.div``;
 
-const ProviderTitle = styled.p`
-    font-size: 15px;
+const CardName = styled.p`
+    font-size: 14px;
     font-weight: 600;
     color: hsl(var(--foreground));
-    margin: 0;
+    margin: 0 0 2px;
 `;
 
-const ProviderType = styled.p`
-    font-size: 12px;
+const CardType = styled.p`
+    font-size: 11px;
     color: hsl(var(--muted-foreground));
     margin: 0;
-    margin-top: 2px;
 `;
 
 const StatusBadge = styled.span<{ $active: boolean }>`
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 20px;
     background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'var(--border-subtle)'};
     color: ${p => p.$active ? '#34d399' : '#888'};
@@ -181,7 +418,7 @@ const Divider = styled.hr`
 const ConfigList = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
 `;
 
 const ConfigRow = styled.div`
@@ -205,14 +442,14 @@ const ConfigValue = styled.span`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 180px;
+    max-width: 160px;
 `;
 
 const SecretValue = styled.div`
     display: flex;
     align-items: center;
     gap: 6px;
-    max-width: 180px;
+    max-width: 160px;
 `;
 
 const SecretText = styled.span<{ $visible: boolean }>`
@@ -232,62 +469,28 @@ const EyeBtn = styled.button`
     padding: 0;
     font-size: 12px;
     flex-shrink: 0;
-
     &:hover { color: hsl(var(--foreground)); }
 `;
 
 const AgentCountBadge = styled.span`
     font-size: 11px;
     color: hsl(var(--muted-foreground));
-    display: flex;
-    align-items: center;
-    gap: 4px;
 `;
 
 const CardActions = styled.div`
     display: flex;
-    gap: 10px;
+    gap: 8px;
     margin-top: auto;
-`;
-
-const EditBtn = styled.button`
-    flex: 1;
-    padding: 8px;
-    background: var(--border-subtle);
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    color: hsl(var(--foreground));
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-
-    &:hover { background: var(--overlay-medium); }
-`;
-
-const DeleteBtn = styled.button`
-    flex: 1;
-    padding: 8px;
-    background: rgba(248, 113, 113, 0.08);
-    border: 1px solid rgba(248, 113, 113, 0.2);
-    border-radius: 8px;
-    color: #f87171;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-
-    &:hover { background: rgba(248, 113, 113, 0.18); }
 `;
 
 const VisitBtn = styled.a`
     flex: 1;
-    padding: 8px;
+    padding: 7px;
     background: rgba(99, 179, 237, 0.08);
     border: 1px solid rgba(99, 179, 237, 0.25);
     border-radius: 8px;
     color: #63b3ed;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
@@ -295,51 +498,39 @@ const VisitBtn = styled.a`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-
+    gap: 4px;
     &:hover { background: rgba(99, 179, 237, 0.18); }
 `;
 
-// ── Add Card ──────────────────────────────────────────────────────────────────
-
-const AddCard = styled.button`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    background: transparent;
-    border: 2px dashed var(--border-light);
-    border-radius: 16px;
-    padding: 40px 24px;
-    cursor: pointer;
-    transition: all 0.2s;
-    min-height: 200px;
-
-    &:hover {
-        border-color: hsl(var(--primary));
-        background: hsl(var(--primary) / 0.05);
-
-        span { color: hsl(var(--primary)); }
-        p { color: hsl(var(--foreground)); }
-    }
-`;
-
-const AddIcon = styled.span`
-    font-size: 32px;
-    color: var(--overlay-strong);
-    transition: color 0.2s;
-`;
-
-const AddLabel = styled.p`
-    font-size: 14px;
+const EditBtn = styled.button`
+    flex: 1;
+    padding: 7px;
+    background: var(--border-subtle);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    font-size: 12px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
-    margin: 0;
-    transition: color 0.2s;
+    cursor: pointer;
+    transition: all 0.15s;
+    &:hover { background: var(--overlay-medium); }
 `;
 
-// ── Empty / Loading states ────────────────────────────────────────────────────
+const DeleteBtn = styled.button`
+    flex: 1;
+    padding: 7px;
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-radius: 8px;
+    color: #f87171;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    &:hover { background: rgba(248, 113, 113, 0.18); }
+`;
+
+// ── Loading ──────────────────────────────────────────────────────────────────
 
 const CenterBox = styled.div`
     display: flex;
@@ -361,10 +552,202 @@ const LoadingSpinner = styled.div`
     animation: ${spin} 0.8s linear infinite;
 `;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Per-provider modal ───────────────────────────────────────────────────────
+
+const Overlay = styled.div`
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    background: var(--overlay-backdrop);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+
+const Modal = styled.div`
+    background: hsl(var(--card));
+    border-radius: 16px;
+    width: 520px;
+    max-width: 95vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-light);
+    animation: ${modalIn} 0.2s ease;
+`;
+
+const ModalHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+`;
+
+const ModalLogo = styled.div`
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--overlay-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    img { width: 24px; height: 24px; object-fit: contain; }
+`;
+
+const ModalTitleBlock = styled.div`
+    flex: 1;
+`;
+
+const ModalTitle = styled.h2`
+    font-size: 17px;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    margin: 0;
+`;
+
+const ModalSubtitle = styled.p`
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+    margin: 2px 0 0;
+`;
+
+const CloseBtn = styled.button`
+    background: var(--overlay-light);
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    &:hover { background: var(--border-medium); color: hsl(var(--foreground)); }
+`;
+
+const ModalBody = styled.div`
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+`;
+
+const FieldGroup = styled.div`
+    margin-bottom: 20px;
+`;
+
+const Label = styled.label`
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: hsl(var(--text-secondary));
+    margin-bottom: 8px;
+`;
+
+const Required = styled.span`
+    color: hsl(var(--destructive));
+`;
+
+const Input = styled.input`
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12); }
+`;
+
+const PasswordWrapper = styled.div`
+    position: relative;
+    display: flex;
+    align-items: center;
+`;
+
+const PasswordToggleBtn = styled.button`
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    &:hover { color: hsl(var(--foreground)); }
+`;
+
+const ErrorMsg = styled.p`
+    font-size: 13px;
+    color: hsl(var(--destructive));
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    background: rgba(248, 113, 113, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(248, 113, 113, 0.2);
+`;
+
+const ModalFooter = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 28px;
+    border-top: 1px solid var(--border-subtle);
+`;
+
+const CancelBtn = styled.button`
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--border-medium);
+    border-radius: 8px;
+    color: hsl(var(--text-secondary));
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    &:hover { background: var(--overlay-light); color: hsl(var(--foreground)); }
+`;
+
+const SubmitBtn = styled.button`
+    padding: 10px 24px;
+    background: hsl(var(--primary));
+    border: none;
+    border-radius: 8px;
+    color: hsl(var(--primary-foreground));
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    &:hover:not(:disabled) { opacity: 0.9; }
+`;
+
+const SmallSpinner = styled.div`
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--overlay-strong);
+    border-top-color: hsl(var(--foreground));
+    border-radius: 50%;
+    animation: ${spin} 0.7s linear infinite;
+`;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 const SECRET_KEYS = ['secret_key', 'secretKey', 'api_key', 'apiKey', 'credentials', 'private_key'];
-
 const isSecretKey = (key: string) => SECRET_KEYS.some(s => key.toLowerCase().includes(s.toLowerCase()));
 
 const flattenConfig = (config: unknown): Record<string, string> => {
@@ -387,29 +770,20 @@ const getProviderUrl = (app: ApplicationConfig): string | null => {
         case 'Phoenix':
             return config.host || null;
         case 'LangSmith': {
-            // Derive the UI URL from the API endpoint.
-            // EU API endpoint: https://eu.api.smith.langchain.com → UI: https://eu.smith.langchain.com
-            // US API endpoint: https://api.smith.langchain.com   → UI: https://smith.langchain.com
             const endpoint = config.endpoint ?? '';
-            if (endpoint.includes('eu.api.smith.langchain.com') || endpoint.includes('eu.smith.langchain.com')) {
-                return 'https://eu.smith.langchain.com';
-            }
+            if (endpoint.includes('eu.api.smith.langchain.com') || endpoint.includes('eu.smith.langchain.com')) return 'https://eu.smith.langchain.com';
             return 'https://smith.langchain.com';
         }
         case 'GoogleCloudLogging':
-            return config.gcpProjectId
-                ? `https://console.cloud.google.com/logs/query?project=${config.gcpProjectId}`
-                : null;
+            return config.gcpProjectId ? `https://console.cloud.google.com/logs/query?project=${config.gcpProjectId}` : null;
         case 'GoogleCloudTrace':
-            return config.gcpProjectId
-                ? `https://console.cloud.google.com/traces/list?project=${config.gcpProjectId}`
-                : null;
+            return config.gcpProjectId ? `https://console.cloud.google.com/traces/list?project=${config.gcpProjectId}` : null;
         default:
             return null;
     }
 };
 
-// ── SecretField component ─────────────────────────────────────────────────────
+// ── SecretField ──────────────────────────────────────────────────────────────
 
 const SecretField: React.FC<{ value: string }> = ({ value }) => {
     const [visible, setVisible] = useState(false);
@@ -421,18 +795,147 @@ const SecretField: React.FC<{ value: string }> = ({ value }) => {
     );
 };
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Per-provider modal component ─────────────────────────────────────────────
+
+interface ProviderModalProps {
+    provider: ProviderMeta;
+    appToEdit: ApplicationConfig | null;
+    onClose: () => void;
+    onSaved: () => void;
+}
+
+const ProviderModal: React.FC<ProviderModalProps> = ({ provider, appToEdit, onClose, onSaved }) => {
+    const isEditMode = !!appToEdit;
+    const [integrationName, setIntegrationName] = useState('');
+    const [formValues, setFormValues] = useState<Record<string, string>>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+
+    useEffect(() => {
+        if (appToEdit) {
+            setIntegrationName(appToEdit.name ?? '');
+            const cfg = appToEdit.config as Record<string, unknown> ?? {};
+            const strCfg: Record<string, string> = {};
+            for (const k in cfg) {
+                const v = cfg[k];
+                if (v !== null && v !== undefined) strCfg[k] = typeof v === 'string' ? v : JSON.stringify(v);
+            }
+            setFormValues(strCfg);
+        } else {
+            setIntegrationName('');
+            setFormValues({});
+        }
+        setErrorMessage(null);
+        setVisiblePasswords({});
+    }, [appToEdit, provider.id]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const missing = provider.fields.filter(f => f.required && !formValues[f.key]?.trim());
+        if (missing.length > 0) { setErrorMessage(`Required: ${missing.map(f => f.label).join(', ')}`); return; }
+        setIsSubmitting(true);
+        setErrorMessage(null);
+        try {
+            const name = integrationName.trim() || `${provider.label} Integration`;
+            if (isEditMode && appToEdit?.id) {
+                await updateApplication(appToEdit.id, { name, type: provider.id, category: 'Observability', config: formValues });
+            } else {
+                await createApplication({ name, type: provider.id, category: 'Observability', config: formValues });
+            }
+            onSaved();
+            onClose();
+        } catch (err: unknown) {
+            setErrorMessage(err instanceof Error ? err.message : 'Failed to save');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <Overlay onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <Modal>
+                <ModalHeader>
+                    <ModalLogo><img src={provider.logo} alt={provider.label} /></ModalLogo>
+                    <ModalTitleBlock>
+                        <ModalTitle>{isEditMode ? `Edit ${provider.label}` : `Connect ${provider.label}`}</ModalTitle>
+                        <ModalSubtitle>{provider.description}</ModalSubtitle>
+                    </ModalTitleBlock>
+                    <CloseBtn type="button" onClick={onClose}><X size={16} /></CloseBtn>
+                </ModalHeader>
+
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+                    <ModalBody>
+                        {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
+                        <FieldGroup>
+                            <Label htmlFor="integration-name">Integration Name</Label>
+                            <Input
+                                id="integration-name"
+                                type="text"
+                                placeholder={`${provider.label} Integration`}
+                                value={integrationName}
+                                onChange={e => setIntegrationName(e.target.value)}
+                            />
+                        </FieldGroup>
+                        {provider.fields.map(field => (
+                            <FieldGroup key={field.key}>
+                                <Label htmlFor={field.key}>
+                                    {field.label}{field.required && <Required> *</Required>}
+                                </Label>
+                                {field.type === 'password' ? (
+                                    <PasswordWrapper>
+                                        <Input
+                                            id={field.key}
+                                            type={visiblePasswords[field.key] ? 'text' : 'password'}
+                                            placeholder={field.placeholder}
+                                            value={formValues[field.key] ?? ''}
+                                            onChange={e => setFormValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                                            style={{ paddingRight: 40 }}
+                                        />
+                                        <PasswordToggleBtn type="button" onClick={() => setVisiblePasswords(prev => ({ ...prev, [field.key]: !prev[field.key] }))}>
+                                            {visiblePasswords[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </PasswordToggleBtn>
+                                    </PasswordWrapper>
+                                ) : (
+                                    <Input
+                                        id={field.key}
+                                        type={field.type}
+                                        placeholder={field.placeholder}
+                                        value={formValues[field.key] ?? ''}
+                                        onChange={e => setFormValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                                    />
+                                )}
+                            </FieldGroup>
+                        ))}
+                    </ModalBody>
+                    <ModalFooter>
+                        <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
+                        <SubmitBtn type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <SmallSpinner />}
+                            {isEditMode ? 'Save Changes' : 'Connect'}
+                        </SubmitBtn>
+                    </ModalFooter>
+                </form>
+            </Modal>
+        </Overlay>
+    );
+};
+
+// ── Main page ────────────────────────────────────────────────────────────────
 
 const ObservabilityPage: React.FC = () => {
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalProvider, setModalProvider] = useState<ProviderMeta | null>(null);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
+    const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
 
-    const openCreate = () => { setAppToEdit(null); setIsModalOpen(true); };
-    const openEdit = (app: ApplicationConfig) => { setAppToEdit(app); setIsModalOpen(true); };
-    const closeModal = () => { setIsModalOpen(false); setAppToEdit(null); };
+    const openModal = (provider: ProviderMeta, app?: ApplicationConfig) => {
+        setModalProvider(provider);
+        setAppToEdit(app ?? null);
+    };
+    const closeModal = () => { setModalProvider(null); setAppToEdit(null); };
 
     const loadApps = useCallback(async () => {
         setIsLoading(true);
@@ -448,21 +951,12 @@ const ObservabilityPage: React.FC = () => {
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
-    const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
-
-    const handleDeleteRequest = (app: ApplicationConfig) => setAppToDelete(app);
-
     const handleDeleteConfirm = async () => {
         if (!appToDelete?.id) return;
         await deleteApplication(appToDelete.id);
         setAppToDelete(null);
         loadApps();
     };
-
-    const filtered = apps.filter(a =>
-        !searchTerm || (a.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (a.type ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     return (
         <PageWrapper>
@@ -473,96 +967,136 @@ const ObservabilityPage: React.FC = () => {
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
-                        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 14 }}>🔍</span>
-                        <SearchInput
-                            placeholder="Search integrations..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
+                        <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+                        <SearchInput placeholder="Search providers..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </SearchBar>
-                    <ConnectButton onClick={openCreate}>
-                        + Connect provider
-                    </ConnectButton>
+                    <DocsButton href="https://idun-group.github.io/idun-agent-platform/observability/overview/" target="_blank" rel="noopener noreferrer">
+                        <BookOpen size={15} /> Docs
+                    </DocsButton>
                 </HeaderActions>
             </PageHeader>
 
-            {isLoading ? (
-                <CenterBox>
-                    <LoadingSpinner />
-                    <p>Loading integrations…</p>
-                </CenterBox>
-            ) : (
-                <Grid>
-                    {filtered.map(app => {
-                        const config = flattenConfig(app.config);
-                        const configEntries = Object.entries(config);
-                        const providerUrl = getProviderUrl(app);
+            <MainLayout>
+                {/* ── Left: Provider picker ──────────────────────── */}
+                <ProviderColumn>
+                    {PROVIDER_GROUPS.map(group => {
+                        const providers = OBS_PROVIDERS.filter(p => p.group === group);
+                        if (providers.length === 0) return null;
                         return (
-                            <Card key={app.id}>
-                                <CardHeader>
-                                    <ProviderInfo>
-                                        <ProviderIcon>
-                                            <img src={app.imageUrl} alt={app.type ?? ''} />
-                                        </ProviderIcon>
-                                        <ProviderName>
-                                            <ProviderTitle>{app.name}</ProviderTitle>
-                                            <ProviderType>{app.type}</ProviderType>
-                                        </ProviderName>
-                                    </ProviderInfo>
-                                    <StatusBadge $active={true}>Active</StatusBadge>
-                                </CardHeader>
-
-                                {configEntries.length > 0 && (
-                                    <>
-                                        <Divider />
-                                        <ConfigList>
-                                            {configEntries.slice(0, 4).map(([k, v]) => (
-                                                <ConfigRow key={k}>
-                                                    <ConfigKey>{k.replace(/_/g, ' ')}</ConfigKey>
-                                                    {isSecretKey(k) ? (
-                                                        <SecretField value={v} />
-                                                    ) : (
-                                                        <ConfigValue title={v}>{v}</ConfigValue>
-                                                    )}
-                                                </ConfigRow>
-                                            ))}
-                                        </ConfigList>
-                                    </>
-                                )}
-
-                                {(app.agentCount ?? 0) > 0 && (
-                                    <AgentCountBadge>
-                                        Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}
-                                    </AgentCountBadge>
-                                )}
-
-                                <CardActions>
-                                    {providerUrl && (
-                                        <VisitBtn href={providerUrl} target="_blank" rel="noopener noreferrer">
-                                            <ExternalLink size={13} />
-                                            Visit
-                                        </VisitBtn>
-                                    )}
-                                    <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
-                                    <DeleteBtn onClick={() => handleDeleteRequest(app)}>Remove</DeleteBtn>
-                                </CardActions>
-                            </Card>
+                            <React.Fragment key={group}>
+                                <GroupLabel>{group}</GroupLabel>
+                                {providers.map(p => (
+                                    <ProviderBtn
+                                        key={p.id}
+                                        type="button"
+                                        $disabled={!!p.comingSoon}
+                                        onClick={() => { if (!p.comingSoon) openModal(p); }}
+                                    >
+                                        <ProviderLogo><img src={p.logo} alt={p.label} /></ProviderLogo>
+                                        {p.label}
+                                        {p.comingSoon ? <ComingSoonBadge>Soon</ComingSoonBadge> : <AddIndicator>+</AddIndicator>}
+                                    </ProviderBtn>
+                                ))}
+                            </React.Fragment>
                         );
                     })}
 
-                    <AddCard onClick={openCreate}>
-                        <AddIcon>+</AddIcon>
-                        <AddLabel>Connect new integration</AddLabel>
-                    </AddCard>
-                </Grid>
+                    <RequestBtn
+                        type="button"
+                        onClick={() => window.open('https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=enhancement&template=feature_request.md&title=%5BObservability%5D+New+provider+request', '_blank')}
+                    >
+                        <RequestIcon><GitPullRequest size={15} /></RequestIcon>
+                        Request a provider
+                    </RequestBtn>
+                </ProviderColumn>
+
+                {/* ── Right: Configured providers ────────────────── */}
+                <ContentColumn>
+                    {isLoading ? (
+                        <CenterBox>
+                            <LoadingSpinner />
+                            <p>Loading…</p>
+                        </CenterBox>
+                    ) : apps.length === 0 ? (
+                        <EmptyState>
+                            <EmptyTitle>Connect a provider to get started</EmptyTitle>
+                            <EmptyDescription>
+                                Full AI agent monitoring and visibility into every run. Idun auto-instruments your agents with OpenTelemetry and routes traces to any backend without any configuration.
+                            </EmptyDescription>
+                            <EmptyChips>
+                                <Chip $color="#3b82f6">Logging</Chip>
+                                <Chip $color="#f59e0b">Debug</Chip>
+                                <Chip $color="#10b981">Cost tracking</Chip>
+                                <Chip $color="#8b5cf6">Token usage</Chip>
+                                <Chip $color="#ef4444">Latency</Chip>
+                                <Chip $color="#06b6d4">AI compliance</Chip>
+                            </EmptyChips>
+                        </EmptyState>
+                    ) : (
+                        <CardsGrid>
+                            {apps.filter(a => {
+                                if (!searchTerm) return true;
+                                const term = searchTerm.toLowerCase();
+                                return (a.name?.toLowerCase().includes(term) || a.type?.toLowerCase().includes(term));
+                            }).map(app => {
+                                const config = flattenConfig(app.config);
+                                const configEntries = Object.entries(config);
+                                const providerUrl = getProviderUrl(app);
+                                const providerMeta = OBS_PROVIDERS.find(p => p.id === app.type);
+                                return (
+                                    <Card key={app.id}>
+                                        <CardHeader>
+                                            <CardInfo>
+                                                <CardIcon><img src={app.imageUrl} alt={app.type ?? ''} /></CardIcon>
+                                                <CardMeta>
+                                                    <CardName>{app.name}</CardName>
+                                                    <CardType>{app.type}</CardType>
+                                                </CardMeta>
+                                            </CardInfo>
+                                            <StatusBadge $active={true}>Active</StatusBadge>
+                                        </CardHeader>
+                                        {configEntries.length > 0 && (
+                                            <>
+                                                <Divider />
+                                                <ConfigList>
+                                                    {configEntries.slice(0, 4).map(([k, v]) => (
+                                                        <ConfigRow key={k}>
+                                                            <ConfigKey>{k.replace(/_/g, ' ')}</ConfigKey>
+                                                            {isSecretKey(k) ? <SecretField value={v} /> : <ConfigValue title={v}>{v}</ConfigValue>}
+                                                        </ConfigRow>
+                                                    ))}
+                                                </ConfigList>
+                                            </>
+                                        )}
+                                        {(app.agentCount ?? 0) > 0 && (
+                                            <AgentCountBadge>Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}</AgentCountBadge>
+                                        )}
+                                        <CardActions>
+                                            {providerUrl && (
+                                                <VisitBtn href={providerUrl} target="_blank" rel="noopener noreferrer">
+                                                    <ExternalLink size={12} /> Visit
+                                                </VisitBtn>
+                                            )}
+                                            <EditBtn onClick={() => providerMeta && openModal(providerMeta, app)}>Edit</EditBtn>
+                                            <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
+                                        </CardActions>
+                                    </Card>
+                                );
+                            })}
+                        </CardsGrid>
+                    )}
+                </ContentColumn>
+            </MainLayout>
+
+            {modalProvider && (
+                <ProviderModal
+                    provider={modalProvider}
+                    appToEdit={appToEdit}
+                    onClose={closeModal}
+                    onSaved={loadApps}
+                />
             )}
 
-            <CreateObservabilityModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                onCreated={loadApps}
-                appToEdit={appToEdit}
-            />
             <DeleteConfirmModal
                 isOpen={!!appToDelete}
                 onClose={() => setAppToDelete(null)}

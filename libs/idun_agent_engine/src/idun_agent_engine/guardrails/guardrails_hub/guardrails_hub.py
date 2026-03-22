@@ -3,7 +3,7 @@
 import logging
 import os
 
-from guardrails import Guard
+from guardrails import Validator
 from idun_agent_schema.engine.guardrails import Guardrail as GuardrailSchema
 from idun_agent_schema.engine.guardrails_v2 import GuardrailConfigId
 
@@ -20,7 +20,7 @@ PII_ENTITY_MAP = {
 logger = logging.getLogger(__name__)
 
 
-def get_guard_instance(name: GuardrailConfigId) -> Guard:
+def get_guard_instance(name: GuardrailConfigId) -> type[Validator]:
     """Returns a map of guard type -> guard instance."""
     if name == GuardrailConfigId.BAN_LIST:
         from guardrails.hub import BanList
@@ -80,7 +80,7 @@ class GuardrailsHubGuard(BaseGuardrail):
         self.guard_id = self._guardrail_config.config_id
         self._guard_url = self._guardrail_config.guard_url
         self.reject_message: str = self._guardrail_config.reject_message
-        self._guard: Guard | None = self.setup_guard()
+        self._guard: Validator | None = self.setup_guard()
         self.position: str = position
 
     def _install_model(self) -> None:
@@ -126,7 +126,7 @@ class GuardrailsHubGuard(BaseGuardrail):
         except Exception as e:
             raise e
 
-    def setup_guard(self) -> Guard | None:
+    def setup_guard(self) -> Validator | None:
         """Installs and configures the guard based on its yaml config."""
         self._install_model()
         guard_name = self.guard_id
@@ -143,7 +143,7 @@ class GuardrailsHubGuard(BaseGuardrail):
             k: v for k, v in config_dict.items() if k not in exclude_fields
         }
 
-        # Extract on_fail for Guard.use() — defaults to "exception"
+        # Extract on_fail — defaults to "exception"
         on_fail = config_dict.get("on_fail", "exception")
 
         if (
@@ -168,18 +168,18 @@ class GuardrailsHubGuard(BaseGuardrail):
 
     def validate(self, input: str) -> bool:
         """Validate input against this guardrail. Returns True if content is allowed."""
-        from guardrails.errors import ValidationError as GuardrailsValidationError
+        from guardrails.classes.validation.validation_result import FailResult
 
-        main_guard = Guard().use(self._guard)
+        # Defensive: ensure input is always a plain string for hub validators
+        text = str(input) if not isinstance(input, str) else input
+
         try:
-            result = main_guard.validate(input)
-            return bool(result.validation_passed)
-        except GuardrailsValidationError:
-            return False
+            result = self._guard.validate(text, metadata={})
+            return not isinstance(result, FailResult)
         except Exception:
             logger.exception(
                 "Guardrail '%s' raised an unexpected error during validation; "
-                "allowing request to proceed.",
+                "blocking request (fail-closed).",
                 self.guard_id,
             )
-            return True
+            return False

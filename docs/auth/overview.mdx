@@ -1,0 +1,139 @@
+---
+title: "Authentication and authorization"
+description: "Configure user authentication with username/password or Google OIDC SSO, and manage access with role-based access control."
+keywords: ["authentication", "authorization", "SSO", "OIDC", "RBAC", "roles", "Google OAuth", "Google OIDC"]
+---
+
+Idun Agent Platform supports two authentication modes for the Manager and a per-agent SSO layer for engine route protection. Role-based access control (RBAC) governs what authenticated users can do within each workspace.
+
+## Authentication modes
+
+The Manager supports two mutually exclusive authentication modes, controlled by the `AUTH__DISABLE_USERNAME_PASSWORD` environment variable.
+
+<Tabs>
+  <Tab title="Username/password (default)">
+    The default mode. Users register and log in with email and password.
+
+    - `POST /api/v1/auth/basic/signup` to register
+    - `POST /api/v1/auth/basic/login` to log in
+    - Passwords are hashed with bcrypt
+
+    No additional configuration is required. This mode is active when `AUTH__DISABLE_USERNAME_PASSWORD` is `false` (the default).
+  </Tab>
+  <Tab title="Google OIDC SSO">
+    Enable SSO by setting `AUTH__DISABLE_USERNAME_PASSWORD=true` and configuring Google OAuth credentials.
+
+    - `GET /api/v1/auth/login` redirects to Google's authorization page
+    - `GET /api/v1/auth/callback` exchanges the authorization code for tokens and sets a session cookie
+    - Users are automatically created on first login
+
+    Required environment variables:
+
+    ```bash
+    AUTH__DISABLE_USERNAME_PASSWORD=true
+    AUTH__GOOGLE_CLIENT_ID=your-google-client-id
+    AUTH__GOOGLE_CLIENT_SECRET=your-google-client-secret
+    AUTH__REDIRECT_URI=https://your-domain.com/api/v1/auth/callback
+    AUTH__FRONTEND_URL=https://your-domain.com
+    ```
+  </Tab>
+</Tabs>
+
+### Session management
+
+Both modes use signed HTTP-only cookies for session management.
+
+| Setting | Environment variable | Default |
+|---|---|---|
+| Session secret | `AUTH__SESSION_SECRET` | Required, min 32 characters |
+| Session TTL | `AUTH__SESSION_TTL_SECONDS` | `86400` (24 hours) |
+| Secure cookies (HTTPS) | `AUTH__COOKIE_SECURE` | `false` |
+
+## Role-based access control
+
+Each workspace has its own set of members with assigned roles. Roles determine what actions a user can perform within that workspace.
+
+| Role | Level | Capabilities |
+|---|---|---|
+| **Owner** | 4 | Full control. Can delete the workspace, manage all members including other owners |
+| **Admin** | 3 | Can invite and remove members, update roles (except owners), manage all resources |
+| **Member** | 2 | Can create, read, update, and delete agents and resources within the workspace |
+| **Viewer** | 1 | Read-only access to agents and resources |
+
+Roles are hierarchical. A higher-level role includes all permissions of lower-level roles.
+
+### Workspace invitations
+
+Admins and owners can invite users by email. The invitation specifies a role and is consumed when the invited user signs up or logs in:
+
+1. Admin sends an invitation for `user@company.com` with role `member`
+2. When that user signs up (via either auth mode), the invitation is consumed
+3. The user is added to the workspace with the assigned role
+4. If it is the user's first workspace, it becomes their default
+
+## Per-agent SSO (engine route protection)
+
+Separate from Manager authentication, the engine can enforce OIDC JWT validation on agent API routes. When enabled, clients must provide a valid JWT in the `Authorization` header to call agent endpoints.
+
+Protected routes:
+- `/agent/invoke`
+- `/agent/stream`
+- `/agent/copilotkit/stream`
+
+### SSO config
+
+<Tabs>
+  <Tab title="Manager UI">
+    **SSO/OIDC configuration**
+
+    Navigate to the SSO page to manage SSO configurations for your workspace.
+
+    ![SSO page](/images/ui/sso-page.png)
+
+    Click **Add SSO config** and fill in the issuer URL, client ID, and allowed domains.
+
+    **User management**
+
+    The User Management page shows a table of workspace members with their assigned roles.
+
+    ![Workspace users list](/images/ui/users-list.png)
+
+    From this page you can invite new users by email and assign them a role: **Owner**, **Admin**, **Member**, or **Viewer**. You can also update an existing member's role or remove them from the workspace.
+  </Tab>
+  <Tab title="Config file">
+    Configure per-agent SSO directly in YAML:
+
+    ```yaml config.yaml
+    sso:
+      enabled: true
+      issuer: "https://accounts.google.com"
+      client_id: "your-oauth-client-id"
+      audience: "your-oauth-client-id"
+      allowed_domains:
+        - "company.com"
+      allowed_emails:
+        - "admin@partner.com"
+    ```
+
+    | Field | Description |
+    |---|---|
+    | `enabled` | Toggle SSO enforcement on protected routes |
+    | `issuer` | OIDC issuer URL. Used to discover the JWKS endpoint via `.well-known/openid-configuration` |
+    | `client_id` | OAuth 2.0 client ID. Used as the default audience for JWT validation |
+    | `audience` | Expected JWT `aud` claim. Defaults to `client_id` if not set |
+    | `allowed_domains` | Optional list of allowed email domains (e.g., `["company.com"]`) |
+    | `allowed_emails` | Optional list of specific email addresses allowed access |
+  </Tab>
+</Tabs>
+
+### Supported providers
+
+The Manager currently supports **Google OIDC** for SSO authentication, configured through environment variables. GitHub and Azure AD are planned as future providers.
+
+For per-agent SSO, the engine validates JWTs against any OIDC-compliant provider's JWKS endpoint. The tested and supported provider is:
+
+- **Google Workspace** (issuer: `https://accounts.google.com`)
+
+<Note>
+  Domain and email allowlists are applied after JWT signature verification. A valid token from an allowed provider is still rejected if the email domain or address is not in the allowlist.
+</Note>

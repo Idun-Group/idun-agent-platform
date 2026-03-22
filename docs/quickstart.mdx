@@ -1,0 +1,166 @@
+---
+title: "Quickstart"
+description: "Deploy your first AI agent with Idun Agent Platform in under 15 minutes using Docker Compose, the CLI, or a manual setup."
+keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "Docker Compose", "idun CLI"]
+---
+
+## Prerequisites
+
+Before you begin, install the following:
+
+- **Python 3.12+** ([python.org](https://www.python.org/downloads/))
+- **Docker** and **Docker Compose** ([docs.docker.com](https://docs.docker.com/get-started/))
+- **Git** ([git-scm.com](https://git-scm.com/))
+- **uv** package manager ([docs.astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/))
+
+## Choose your path
+
+<Tabs>
+  <Tab title="Manager (recommended)">
+    The Manager path starts the full platform: PostgreSQL, the FastAPI backend, and the React admin UI.
+
+    <Steps>
+      <Step title="Clone and configure">
+        ```bash
+        git clone https://github.com/Idun-Group/idun-agent-platform.git
+        cd idun-agent-platform
+        cp .env.example .env
+        ```
+      </Step>
+      <Step title="Start the platform">
+        <Note>Make sure the Docker daemon is running before you proceed.</Note>
+
+        ```bash
+        docker compose -f docker-compose.dev.yml up --build
+        ```
+
+        This starts PostgreSQL, the Manager API, and the web UI.
+
+        ![Idun login page](/images/ui/login.png)
+      </Step>
+      <Step title="Create an agent">
+        Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+        Log in (if you have not configured an auth provider yet, press **Login** to skip). You land on the agent dashboard.
+
+        ![Agent dashboard](/images/ui/agents-list.png)
+
+        Click **Create** to launch the 3-step wizard. Select your framework (LangGraph or ADK), configure framework-specific settings, then review and save.
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="CLI">
+    The CLI provides an interactive TUI to configure and run a standalone agent without the Manager.
+
+    <Steps>
+      <Step title="Install the engine">
+        ```bash
+        pip install idun-agent-engine
+        ```
+      </Step>
+      <Step title="Launch the interactive setup">
+        ```bash
+        idun init
+        ```
+
+        The TUI walks you through agent configuration: framework, memory, observability, guardrails, and MCP servers. When you finish, it saves the config and starts the agent server.
+      </Step>
+      <Step title="Verify the agent is running">
+        ```bash
+        curl http://localhost:8008/health
+        ```
+
+        Open [http://localhost:8008/docs](http://localhost:8008/docs) to see the API documentation.
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Manual">
+    Use this path if you want full control over the configuration file.
+
+    <Steps>
+      <Step title="Install the engine">
+        ```bash
+        pip install idun-agent-engine
+        ```
+      </Step>
+      <Step title="Create a config file">
+        Save the following as `config.yaml` in your project directory. Update `graph_definition` to point to your agent file and variable.
+
+        ```yaml config.yaml
+        server:
+          api:
+            port: 8008
+
+        agent:
+          type: "LANGGRAPH"
+          config:
+            name: "my-agent"
+            graph_definition: "./agent.py:graph"
+            checkpointer:
+              type: "memory"
+        ```
+
+        <Info>
+          The `graph_definition` value follows the format `path/to/file.py:variable_name`. The variable must be an uncompiled LangGraph `StateGraph`. The engine compiles it with the configured checkpointer.
+        </Info>
+      </Step>
+      <Step title="Start the agent">
+        ```bash
+        idun agent serve --source file --path config.yaml
+        ```
+      </Step>
+      <Step title="Verify the agent is running">
+        ```bash
+        curl http://localhost:8008/health
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Minimal LangGraph agent example
+
+If you do not have an agent file yet, create `agent.py` alongside your config:
+
+```python agent.py
+from langgraph.graph import StateGraph, MessagesState
+
+def chatbot(state: MessagesState):
+    from langchain_openai import ChatOpenAI
+    model = ChatOpenAI(model="gpt-4o-mini")
+    return {"messages": [model.invoke(state["messages"])]}
+
+graph = StateGraph(MessagesState)
+graph.add_node("chatbot", chatbot)
+graph.set_entry_point("chatbot")
+graph.set_finish_point("chatbot")
+```
+
+<Warning>
+  This example requires the `OPENAI_API_KEY` environment variable. Export it in your shell or add it to your `.env` file before starting the agent.
+</Warning>
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Frameworks" icon="layer-group" href="/frameworks/overview">
+    Configure LangGraph or Google ADK agents in detail
+  </Card>
+  <Card title="Guardrails" icon="shield-halved" href="/guardrails/overview">
+    Add PII detection, jailbreak prevention, and content filters
+  </Card>
+  <Card title="Observability" icon="chart-line" href="/observability/overview">
+    Connect Langfuse, Phoenix, LangSmith, or GCP Trace
+  </Card>
+  <Card title="Memory" icon="database" href="/memory/overview">
+    Set up SQLite or PostgreSQL checkpointing
+  </Card>
+  <Card title="Templates" icon="copy" href="/templates">
+    Clone a runnable agent template to start faster
+  </Card>
+  <Card title="Manager tutorial" icon="desktop" href="/manager/tutorial">
+    Full walkthrough of the Manager UI
+  </Card>
+</Columns>
