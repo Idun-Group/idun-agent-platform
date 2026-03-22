@@ -1,16 +1,12 @@
-"""Managed Agent API (MVP).
+"""Managed Agent API.
 
-This router exposes a minimal set of endpoints to create, read, list, update,
-delete, and fetch configuration for managed agents. Each managed agent stores a
-complete `EngineConfig`.
+This router exposes endpoints to create, read, list, update,
+delete, and fetch configuration for managed agents.
 
-MVP assumptions and behavior:
-- API keys are generated per agent via `/key` and stored on the agent record as
-  `agent_hash`. The API key includes a static prefix and must be sent as a
-  Bearer token to access `/config`.
-- Database access uses SQLAlchemy async sessions. Errors are surfaced as simple
-  HTTP problem responses with relevant status codes.
-- All resource endpoints are scoped to the authenticated user's active workspace.
+Agents reference managed resources (guardrails, MCP servers, observability,
+memory, SSO, integrations) via FK columns and junction tables. The full
+EngineConfig is materialized as a JSONB cache in `engine_config` and
+recomputed on every write that affects the config.
 
 Endpoints:
     POST   /          - Create a new managed agent
@@ -27,9 +23,10 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.manager import (
+    AgentResourceIds,
     AgentStatus,
     ApiKeyResponse,
     ManagedAgentCreate,
@@ -37,7 +34,6 @@ from idun_agent_schema.manager import (
     ManagedAgentRead,
     ManagedAgentStatusUpdate,
 )
-from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -49,7 +45,16 @@ from app.api.v1.deps import (
     require_workspace,
 )
 from app.api.v1.routers.auth import encrypt_payload
+from app.infrastructure.db.models.agent_prompt_assignment import (
+    AgentPromptAssignmentModel,
+)
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
+from app.infrastructure.db.models.managed_prompt import ManagedPromptModel
+from app.services.engine_config import (
+    extract_resource_ids,
+    recompute_engine_config,
+    sync_resources,
+)
 
 router = APIRouter()
 
@@ -91,16 +96,19 @@ async def _get_agent(
 
 
 def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
-    """Transform database model to response schema."""
-    engine_config = EngineConfig(**model.engine_config)
+    """Transform database model to response schema.
 
+    Returns the materialized engine_config cache as-is (no JOINs),
+    plus extracted resource IDs from loaded relationships.
+    """
     return ManagedAgentRead(
         id=model.id,  # type: ignore
         base_url=model.base_url,
         name=model.name,
         status=AgentStatus(model.status),
         version=model.version,
-        engine_config=engine_config.model_dump(),  # type: ignore
+        engine_config=model.engine_config,
+        resources=extract_resource_ids(model),
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -114,21 +122,12 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
     description="Create a new managed agent with an EngineConfig. The agent is created in DRAFT status.",
 )
 async def create_agent(
-    raw_request: Request,
+    request: ManagedAgentCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
 ) -> ManagedAgentRead:
     """Create a new managed agent."""
-    body = await raw_request.json()
-
-    if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(
-            body["engine_config"]["guardrails"]
-        )
-
-    request = ManagedAgentCreate(**body)
-
     now = datetime.now(UTC)
 
     engine_config = EngineConfig(**request.engine_config.model_dump())
@@ -147,8 +146,14 @@ async def create_agent(
 
     session.add(model)
     await session.flush()
-    await session.refresh(model)
 
+    # Sync resource associations and recompute materialized config
+    resources = request.resources or AgentResourceIds()
+    await sync_resources(session, model, resources)
+    await session.flush()
+    await recompute_engine_config(session, model.id)
+
+    await session.refresh(model)
     return _model_to_schema(model)
 
 
@@ -238,7 +243,42 @@ async def config(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invalid API Key"
         )
 
-    return _model_to_schema(agent_model)
+    # Assemble prompts from assignments into the engine config
+    prompt_stmt = (
+        select(ManagedPromptModel)
+        .join(
+            AgentPromptAssignmentModel,
+            AgentPromptAssignmentModel.prompt_id == ManagedPromptModel.id,
+        )
+        .where(AgentPromptAssignmentModel.agent_id == agent_model.id)
+    )
+    prompt_result = await session.execute(prompt_stmt)
+    prompt_models = prompt_result.scalars().all()
+
+    engine_config = EngineConfig(**agent_model.engine_config)
+    engine_config_dict = engine_config.model_dump()
+
+    if prompt_models:
+        engine_config_dict["prompts"] = [
+            {
+                "prompt_id": p.prompt_id,
+                "version": p.version,
+                "content": p.content,
+                "tags": p.tags or [],
+            }
+            for p in prompt_models
+        ]
+
+    return ManagedAgentRead(
+        id=agent_model.id,  # type: ignore
+        base_url=agent_model.base_url,
+        name=agent_model.name,
+        status=AgentStatus(agent_model.status),
+        version=agent_model.version,
+        engine_config=engine_config_dict,  # type: ignore
+        created_at=agent_model.created_at,
+        updated_at=agent_model.updated_at,
+    )
 
 
 @router.get(
@@ -321,7 +361,7 @@ async def delete_agent(
 )
 async def patch_agent(
     id: str,
-    raw_request: Request,
+    request: ManagedAgentPatch,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
     workspace_id: UUID = Depends(require_workspace),
@@ -329,24 +369,19 @@ async def patch_agent(
     """Partially update an agent's configuration."""
     model = await _get_agent(id, session, workspace_id)
 
-    body = await raw_request.json()
-
-    if "engine_config" in body and "guardrails" in body["engine_config"]:
-        body["engine_config"]["guardrails"] = convert_guardrail(
-            body["engine_config"]["guardrails"]
-        )
-
-    request = ManagedAgentPatch(**body)
-
     model.name = request.name
     model.base_url = request.base_url
     engine_config = EngineConfig(**request.engine_config.model_dump())
     model.engine_config = engine_config.model_dump()
     model.updated_at = datetime.now(UTC)
 
+    # Sync resource associations and recompute materialized config
+    resources = request.resources or AgentResourceIds()
+    await sync_resources(session, model, resources)
     await session.flush()
-    await session.refresh(model)
+    await recompute_engine_config(session, model.id)
 
+    await session.refresh(model)
     return _model_to_schema(model)
 
 

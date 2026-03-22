@@ -225,7 +225,7 @@ const MainContainer = styled.main`
     height: 100%;
     min-height: 0;
     padding: 24px 40px 40px;
-    background: var(--color-background-primary, #0f1016);
+    background: hsl(var(--background));
     overflow: hidden; /* avoid page-level scroll; inner form handles its own scroll */
 `;
 
@@ -243,19 +243,19 @@ const Header = styled.div`
     gap: 16px;
 
     svg {
-        color: var(--color-primary, #8c52ff);
+        color: hsl(var(--primary));
     }
 
     h1 {
         font-size: 32px;
         font-weight: 700;
         margin: 0;
-        color: var(--color-text-primary, #ffffff);
+        color: hsl(var(--foreground));
     }
 
     p {
         font-size: 18px;
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
         margin: 0;
         line-height: 1.5;
         max-width: 600px;
@@ -268,13 +268,13 @@ const SectionTitle = styled.h3`
     gap: 12px;
     font-size: 18px;
     font-weight: 600;
-    color: var(--color-text-primary, #ffffff);
+    color: hsl(var(--foreground));
     margin: 32px 0 24px 0;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--color-border-primary, #2a3f5f);
+    border-bottom: 1px solid hsl(var(--border));
 
     svg {
-        color: var(--color-primary, #8c52ff);
+        color: hsl(var(--primary));
     }
 
     &:first-of-type {
@@ -323,27 +323,27 @@ const PermissionGrid = styled.div`
 `;
 
 const PermissionCard = styled.div`
-    background: var(--color-background-tertiary, #2a3f5f);
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    background: hsl(var(--accent));
+    border: 1px solid hsl(var(--border));
     border-radius: 12px;
     padding: 24px;
     transition: all 0.2s ease;
 
     &:hover {
-        border-color: var(--color-primary, #8c52ff);
-        background: rgba(140, 82, 255, 0.05);
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.05);
     }
 
     h4 {
         font-size: 16px;
         font-weight: 600;
         margin: 0 0 8px 0;
-        color: var(--color-text-primary, #ffffff);
+        color: hsl(var(--foreground));
     }
 
     p {
         font-size: 14px;
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
         margin: 0 0 16px 0;
         line-height: 1.4;
     }
@@ -357,14 +357,14 @@ const CheckboxContainer = styled.div`
     input[type='checkbox'] {
         width: 16px;
         height: 16px;
-        accent-color: var(--color-primary, #8c52ff);
+        accent-color: hsl(var(--primary));
         cursor: pointer;
     }
 
     label {
         font-size: 14px;
         font-weight: 500;
-        color: var(--color-text-primary, #ffffff);
+        color: hsl(var(--foreground));
         cursor: pointer;
         margin: 0;
     }
@@ -376,23 +376,23 @@ const ButtonContainer = styled.div`
     gap: 16px;
     margin-top: 32px;
     padding-top: 32px;
-    border-top: 1px solid var(--color-border-primary, #2a3f5f);
+    border-top: 1px solid hsl(var(--border));
 `;
 
 const CancelButton = styled.button`
     padding: 16px 32px;
     background: transparent;
-    border: 2px solid var(--color-border-primary, #2a3f5f);
+    border: 2px solid hsl(var(--border));
     border-radius: 8px;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: var(--color-background-tertiary, #2a3f5f);
-        color: var(--color-text-primary, #ffffff);
-        border-color: var(--color-text-secondary, #8892b0);
+        background: hsl(var(--accent));
+        color: hsl(var(--foreground));
+        border-color: hsl(var(--muted-foreground));
     }
 `;

@@ -140,7 +140,8 @@
         "tools": "Herramientas",
         "users": "Usuarios",
         "apps": "Aplicaciones",
-        "integrations": "Integraciones"
+        "integrations": "Integraciones",
+        "settings": "Configuración"
     },
     "signin": {
         "title": "Crear una cuenta",
@@ -569,6 +570,55 @@
     "settings": {
         "title": "Configuración",
         "back_to_dashboard": "Volver al panel de control",
+        "group": {
+            "preferences": "Preferencias",
+            "workspaces": "Espacios de trabajo"
+        },
+        "preferences": {
+            "general": "General",
+            "appearance": "Apariencia",
+            "appearance.description": "Personaliza el aspecto de la aplicación.",
+            "language": "Idioma",
+            "language.description": "Elige tu idioma preferido para la interfaz."
+        },
+        "workspaces": {
+            "general": "General",
+            "users": "Usuarios",
+            "general.rename": "Nombre del espacio de trabajo",
+            "general.renameDescription": "Cambia el nombre visible de tu espacio de trabajo.",
+            "general.namePlaceholder": "Nombre del espacio de trabajo",
+            "general.renameSuccess": "Espacio de trabajo renombrado con éxito",
+            "general.noWorkspace": "Ningún espacio de trabajo seleccionado",
+            "general.spaces": "Espacios",
+            "general.spacesDescription": "Espacios dentro de este espacio de trabajo. Gestiona los espacios desde el panel principal.",
+            "general.spacesComingSoon": "La gestión de espacios estará disponible aquí pronto.",
+            "users.title": "Miembros",
+            "users.description": "Gestiona quién tiene acceso a este espacio de trabajo.",
+            "users.addMember": "Añadir miembro",
+            "users.name": "Nombre",
+            "users.email": "Correo electrónico",
+            "users.role": "Rol",
+            "users.actions": "",
+            "users.remove": "Eliminar",
+            "users.roleUpdated": "Rol actualizado",
+            "users.memberRemoved": "Miembro eliminado",
+            "users.memberAdded": "Miembro añadido",
+            "users.fetchError": "Error al cargar los miembros",
+            "users.noMembers": "Aún no hay miembros.",
+            "users.confirmRemoveTitle": "Eliminar miembro",
+            "users.confirmRemoveMessage": "¿Estás seguro de que quieres eliminar a este miembro del espacio de trabajo?",
+            "users.confirmRemove": "Eliminar",
+            "users.inviteTitle": "Añadir nuevo miembro",
+            "users.inviteDescription": "Invite a un usuario a este espacio de trabajo por correo electrónico. Si aún no tiene cuenta, será añadido cuando se registre.",
+            "users.emailLabel": "Correo electrónico",
+            "users.roleLabel": "Rol",
+            "users.emailRequired": "El correo electrónico es obligatorio",
+            "users.grantAccess": "Conceder acceso",
+            "users.pending": "Pendiente",
+            "users.invitationCancelled": "Invitación cancelada",
+            "users.cancelInvitation": "Cancelar invitación",
+            "users.alreadyInvited": "Este correo electrónico ya ha sido invitado"
+        },
         "profile": {
             "title": "Perfil",
             "description": "Gestione su información personal y preferencias.",
@@ -938,7 +988,9 @@
         "close": "Cerrar",
         "comingSoon": "Próximamente",
         "underDevelopment": "Esta funcionalidad está en desarrollo",
-        "back": "Volver"
+        "back": "Volver",
+        "saving": "Guardando...",
+        "adding": "Añadiendo..."
     },
     "integrations": {
         "title": "Integraciones",

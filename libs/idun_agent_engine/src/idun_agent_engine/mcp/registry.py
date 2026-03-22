@@ -2,23 +2,79 @@
 
 from __future__ import annotations
 
+import logging
+import sys
 from typing import TYPE_CHECKING, Any, cast
 
+from idun_agent_schema.engine.mcp_server import MCPServer
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import Connection
 
 if TYPE_CHECKING:
     from google.adk.tools import McpToolset
+    from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
     from mcp import StdioServerParameters
 
 try:
     from google.adk.tools import McpToolset
+    from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
     from mcp import StdioServerParameters
 except ImportError:
     McpToolset = None  # type: ignore
+    StdioConnectionParams = None  # type: ignore
     StdioServerParameters = None  # type: ignore
 
-from idun_agent_schema.engine.mcp_server import MCPServer
+
+class _DeepcopySafeStderr:
+    """Stderr proxy that survives ``copy.deepcopy`` / ``model_copy(deep=True)``.
+
+    Google ADK ``McpToolset`` stores an ``errlog`` attribute that defaults to
+    ``sys.stderr`` (a ``TextIOWrapper``).  ``TextIOWrapper`` cannot be pickled
+    or deep-copied, which causes ``ag_ui_adk`` to crash when it deep-copies
+    the ADK agent.
+
+    This thin wrapper delegates writes to the *current* ``sys.stderr`` at call
+    time (so it follows any runtime reassignment) and simply returns ``self``
+    on ``__deepcopy__`` — there is no mutable state to duplicate.
+    """
+
+    def write(self, s: str) -> int:
+        return sys.stderr.write(s)
+
+    def flush(self) -> None:
+        sys.stderr.flush()
+
+    def writable(self) -> bool:
+        return True
+
+    def fileno(self) -> int:
+        return sys.stderr.fileno()
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> _DeepcopySafeStderr:
+        return self
+
+
+logger = logging.getLogger(__name__)
+
+
+def _sanitize_schema(schema: Any) -> None:
+    """Recursively patch array nodes missing ``items`` in JSON Schema.
+
+    Some MCP servers omit ``items`` on array properties. Most LLM providers
+    reject these with a 400 error, so we default to ``{"type": "string"}``.
+    """
+    if isinstance(schema, dict):
+        if schema.get("type") == "array" and "items" not in schema:
+            schema["items"] = {"type": "string"}
+            logger.warning(
+                "MCP tool schema had array without 'items', defaulted to string: %s",
+                schema,
+            )
+        for value in schema.values():
+            _sanitize_schema(value)
+    elif isinstance(schema, list):
+        for item in schema:
+            _sanitize_schema(item)
 
 
 class MCPClientRegistry:
@@ -77,7 +133,11 @@ class MCPClientRegistry:
         """Load tools from all servers or a specific one."""
         if not self._client:
             raise RuntimeError("MCP client registry is not enabled.")
-        return await self._client.get_tools(server_name=name)
+        tools = await self._client.get_tools(server_name=name)
+        for tool in tools:
+            if hasattr(tool, "args_schema"):
+                _sanitize_schema(tool.args_schema)
+        return tools
 
     async def get_langchain_tools(self, name: str | None = None) -> list[Any]:
         """Alias for get_tools to make intent explicit when using LangChain/LangGraph agents."""
@@ -90,6 +150,7 @@ class MCPClientRegistry:
                 "google-adk and mcp packages are required for ADK toolsets."
             )
 
+        safe_errlog = _DeepcopySafeStderr()
         toolsets = []
         for config in self._configs:
             if config.transport == "stdio":
@@ -105,9 +166,15 @@ class MCPClientRegistry:
                     encoding_error_handler=config.encoding_error_handler or "strict",
                 )
 
+                connection_params = (
+                    StdioConnectionParams(server_params=server_params)
+                    if StdioConnectionParams is not None
+                    else server_params
+                )
+
                 toolset = McpToolset(
-                    # name=config.name,
-                    connection_params=server_params
+                    connection_params=connection_params,
+                    errlog=safe_errlog,
                 )
                 toolsets.append(toolset)
             # TODO: Add support for SSE/HTTP transports when available in ADK/MCP

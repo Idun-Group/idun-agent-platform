@@ -274,7 +274,7 @@ export const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, on
                                     <FrameworkName>{fw.name}</FrameworkName>
                                     <FrameworkDesc>{fw.description}</FrameworkDesc>
                                 </div>
-                                {isSelected && <ArrowRight size={16} style={{ marginLeft: 'auto', color: 'var(--color-primary)' }} />}
+                                {isSelected && <ArrowRight size={16} style={{ marginLeft: 'auto', color: 'hsl(var(--primary))' }} />}
                             </FrameworkButton>
                         );
                     })}
@@ -431,16 +431,16 @@ const Overlay = styled.div`
     align-items: center;
     justify-content: center;
     padding: 16px;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: var(--overlay-backdrop);
     backdrop-filter: blur(4px);
 `;
 
 const ModalContainer = styled.div`
     position: relative;
     width: 100%;
-    max-width: 56rem; /* max-w-4xl */
-    background-color: #1a1a2e; /* bg-idun-card approx */
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 56rem;
+    background-color: hsl(var(--card));
+    border: 1px solid var(--border-light);
     border-radius: 0.75rem;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     display: flex;
@@ -454,26 +454,26 @@ const Header = styled.div`
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background-color: #0B0A15;
+    border-bottom: 1px solid var(--border-subtle);
+    background-color: hsl(var(--accent));
 `;
 
 const Title = styled.h2`
     font-size: 1.25rem;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const Subtitle = styled.p`
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
 const CloseButton = styled.button`
     padding: 0.5rem;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     border-radius: 0.5rem;
     background: transparent;
     border: none;
@@ -481,8 +481,8 @@ const CloseButton = styled.button`
     transition: color 0.2s, background-color 0.2s;
 
     &:hover {
-        color: white;
-        background-color: rgba(255, 255, 255, 0.05);
+        color: hsl(var(--foreground));
+        background-color: var(--overlay-light);
     }
 `;
 
@@ -499,8 +499,8 @@ const ContentWrapper = styled.div`
 
 const Sidebar = styled.div`
     width: 100%;
-    background-color: #08070f;
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: hsl(var(--accent));
+    border-right: 1px solid var(--border-subtle);
     padding: 1rem;
     overflow-y: auto;
 
@@ -512,7 +512,7 @@ const Sidebar = styled.div`
 const SidebarTitle = styled.h3`
     font-size: 0.75rem;
     font-weight: 700;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 0.75rem;
@@ -536,16 +536,16 @@ const FrameworkButton = styled.button<{ isSelected: boolean; color: string }>`
     text-align: left;
     background: transparent;
     cursor: pointer;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
 
     &:hover {
-        background-color: rgba(255, 255, 255, 0.05);
+        background-color: var(--overlay-light);
     }
 
     ${props => props.isSelected && css`
-        background-color: rgba(139, 92, 246, 0.1); /* approx indigo-500/10 */
+        background-color: rgba(139, 92, 246, 0.1);
         border-color: rgba(139, 92, 246, 0.5);
-        color: white;
+        color: hsl(var(--foreground));
         box-shadow: 0 0 10px rgba(0,0,0,0.2);
     `}
 `;
@@ -556,12 +556,12 @@ const IconWrapper = styled.div<{ isSelected: boolean; color: string }>`
     margin-right: 0.75rem;
     flex-shrink: 0;
     transition: color 0.2s, background-color 0.2s;
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #6b7280;
+    background-color: var(--overlay-light);
+    color: hsl(var(--muted-foreground));
 
     ${props => props.isSelected && css`
-        background-color: #8c52ff; /* primary */
-        color: white;
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
     `}
 `;
 
@@ -586,7 +586,7 @@ const FrameworkDesc = styled.span`
 const FormSection = styled.div`
     flex: 1;
     padding: 2rem;
-    background-color: #040210;
+    background-color: hsl(var(--surface-elevated));
     overflow-y: auto;
     position: relative;
 `;
@@ -616,9 +616,9 @@ const FrameworkBanner = styled.div<{ color?: string }>`
     gap: 1rem;
     margin-bottom: 2rem;
     padding: 1.25rem;
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--overlay-light);
     border-radius: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
 `;
 
@@ -637,13 +637,13 @@ const BannerIcon = styled.div<{ color?: string }>`
 const BannerTitle = styled.h3`
     font-size: 1.125rem;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const BannerSubtitle = styled.p`
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0.25rem 0 0 0;
 `;
 
@@ -661,28 +661,28 @@ const Label = styled.label`
     display: block;
     font-size: 0.75rem;
     font-weight: 500;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     margin-bottom: 0.5rem;
 `;
 
 const Input = styled.input`
     width: 100%;
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 0.5rem;
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
-    color: white;
+    color: hsl(var(--foreground));
     outline: none;
     transition: all 0.2s;
 
     &::placeholder {
-        color: #4b5563;
+        color: hsl(var(--muted-foreground));
     }
 
     &:focus {
-        border-color: #8c52ff;
+        border-color: hsl(var(--primary));
         box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3);
     }
 
@@ -698,48 +698,48 @@ const SelectWrapper = styled.div`
         position: absolute;
         left: 0.75rem;
         top: 0.875rem;
-        color: #6b7280;
+        color: hsl(var(--muted-foreground));
         pointer-events: none;
     }
 `;
 
 const Select = styled.select`
     width: 100%;
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 0.5rem;
     padding: 0.75rem 1rem 0.75rem 2.5rem;
     font-size: 0.875rem;
-    color: white;
+    color: hsl(var(--foreground));
     outline: none;
     appearance: none;
     cursor: pointer;
 
     &:focus {
-        border-color: #8c52ff;
+        border-color: hsl(var(--primary));
     }
 `;
 
 const TextArea = styled.textarea`
     width: 100%;
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 0.5rem;
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
-    color: white;
+    color: hsl(var(--foreground));
     outline: none;
     resize: none;
 
     &:focus {
-        border-color: #8c52ff;
+        border-color: hsl(var(--primary));
     }
 `;
 
 const SectionDivider = styled.h4`
     font-size: 0.75rem;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     text-transform: uppercase;
     letter-spacing: 0.05em;
     display: flex;
@@ -749,7 +749,7 @@ const SectionDivider = styled.h4`
     .marker {
         width: 0.25rem;
         height: 0.75rem;
-        background-color: #8c52ff;
+        background-color: hsl(var(--primary));
         border-radius: 9999px;
         margin-right: 0.5rem;
     }
@@ -762,14 +762,14 @@ const InputWrapper = styled.div`
         position: absolute;
         left: 0.75rem;
         top: 0.875rem;
-        color: #6b7280;
+        color: hsl(var(--muted-foreground));
     }
 `;
 
 const Footer = styled.div`
     padding-top: 2rem;
     margin-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
@@ -779,7 +779,7 @@ const CancelButton = styled.button`
     padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     background: transparent;
     border: none;
     border-radius: 0.5rem;
@@ -787,8 +787,8 @@ const CancelButton = styled.button`
     transition: color 0.2s, background-color 0.2s;
 
     &:hover {
-        color: white;
-        background-color: rgba(255, 255, 255, 0.05);
+        color: hsl(var(--foreground));
+        background-color: var(--overlay-light);
     }
 `;
 
@@ -796,8 +796,8 @@ const SubmitButton = styled.button`
     padding: 0.625rem 1.5rem;
     font-size: 0.875rem;
     font-weight: 700;
-    color: white;
-    background-color: #8c52ff;
+    color: hsl(var(--primary-foreground));
+    background-color: hsl(var(--primary));
     border: none;
     border-radius: 0.5rem;
     box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.2);
@@ -807,7 +807,7 @@ const SubmitButton = styled.button`
     align-items: center;
 
     &:hover {
-        background-color: #7c3aed;
+        opacity: 0.9;
     }
 
     &:disabled {
@@ -817,7 +817,7 @@ const SubmitButton = styled.button`
 `;
 
 const ErrorMessage = styled.div`
-    color: #ef4444;
+    color: hsl(var(--destructive));
     font-size: 13px;
     margin-top: 8px;
     white-space: pre-wrap;
@@ -827,7 +827,7 @@ const ErrorMessage = styled.div`
 
 const InfoText = styled.p`
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     font-style: italic;
 `;
 
@@ -852,7 +852,7 @@ const LoadingOverlay = styled.div`
     position: absolute;
     inset: 0;
     z-index: 50;
-    background-color: rgba(4, 2, 16, 0.95);
+    background-color: var(--overlay-backdrop);
     backdrop-filter: blur(4px);
     display: flex;
     flex-direction: column;
@@ -891,13 +891,13 @@ const SpinCircle = styled.div`
     width: 4rem;
     height: 4rem;
     border: 4px solid transparent;
-    border-top-color: #8c52ff;
-    border-bottom-color: #8c52ff;
+    border-top-color: hsl(var(--primary));
+    border-bottom-color: hsl(var(--primary));
     border-radius: 9999px;
     animation: ${spin} 1s linear infinite;
     position: relative;
     z-index: 10;
-    left: -2px; /* Adjust alignment */
+    left: -2px;
 `;
 
 const DatabaseIcon = styled(Database)`
@@ -905,13 +905,13 @@ const DatabaseIcon = styled(Database)`
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: white;
+    color: hsl(var(--foreground));
 `;
 
 const LoadingTitle = styled.h3`
     font-size: 1.125rem;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     letter-spacing: 0.1em;
     font-family: monospace;
     margin: 0;
@@ -919,14 +919,14 @@ const LoadingTitle = styled.h3`
 
 const LoadingText = styled.p`
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     font-family: monospace;
     margin: 0.25rem 0 0 0;
 `;
 
 const ProgressBarContainer = styled.div`
     width: 100%;
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--overlay-light);
     border-radius: 9999px;
     height: 0.25rem;
     overflow: hidden;
@@ -934,7 +934,7 @@ const ProgressBarContainer = styled.div`
 
 const ProgressBar = styled.div<{ width: number }>`
     height: 100%;
-    background-color: #8c52ff;
+    background-color: hsl(var(--primary));
     transition: width 0.3s ease-out;
     box-shadow: 0 0 10px rgba(139, 92, 246, 0.6);
     width: ${props => props.width}%;

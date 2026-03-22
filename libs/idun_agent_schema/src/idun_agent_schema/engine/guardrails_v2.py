@@ -1,9 +1,9 @@
 """Guardrails V2 configuration schema."""
 
 from enum import Enum
-from typing import Literal, Union
+from typing import Any, Literal, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class GuardrailConfigId(str, Enum):
@@ -66,23 +66,29 @@ class GuardrailConfig(BaseModel):
 class BanListConfig(GuardrailConfig):
     """Ban List configuration."""
 
-    class BanListParams(BaseModel):
-        banned_words: list[str] = Field(
-            description="A list of strings (words or phrases) to block"
-        )
-
     config_id: Literal[GuardrailConfigId.BAN_LIST] = GuardrailConfigId.BAN_LIST
-    api_key: str
+    api_key: str = ""
     reject_message: str = "ban!!"
     guard_url: str = "hub://guardrails/ban_list"
-    guard_params: BanListParams = Field()
+    banned_words: list[str] = Field(
+        description="A list of strings (words or phrases) to block"
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _flatten_guard_params(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "guard_params" in data:
+            params = data.pop("guard_params")
+            if isinstance(params, dict):
+                data.update(params)
+        return data
 
 
 class BiasCheckConfig(BaseModel):
     """Bias Check configuration."""
 
     config_id: Literal[GuardrailConfigId.BIAS_CHECK] = GuardrailConfigId.BIAS_CHECK
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/bias_check"
     reject_message: str = "Bias detected"
     threshold: float = Field(
@@ -96,7 +102,7 @@ class CompetitionCheckConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.COMPETITION_CHECK] = (
         GuardrailConfigId.COMPETITION_CHECK
     )
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/competitor_check"
     reject_message: str = "Competitor mentioned"
     competitors: list[str] = Field(
@@ -110,7 +116,7 @@ class CorrectLanguageConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.CORRECT_LANGUAGE] = (
         GuardrailConfigId.CORRECT_LANGUAGE
     )
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://scb-10x/correct_language"
     reject_message: str = "Incorrect language detected"
     expected_languages: list[str] = Field(
@@ -119,17 +125,25 @@ class CorrectLanguageConfig(BaseModel):
 
 
 class DetectPIIConfig(GuardrailConfig):
-    class PIIParams(BaseModel):
-        pii_entities: list[str] = Field(
-            description="List of PII entity types to detect"
-        )
-        on_fail: str = Field(default="exception")
+    """Detect PII configuration."""
 
     config_id: Literal[GuardrailConfigId.DETECT_PII] = GuardrailConfigId.DETECT_PII
-    api_key: str
+    api_key: str = ""
     reject_message: str = "PII detected"
     guard_url: str = "hub://guardrails/detect_pii"
-    guard_params: PIIParams = Field()
+    pii_entities: list[str] = Field(
+        description="List of PII entity types to detect"
+    )
+    on_fail: str = Field(default="exception")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _flatten_guard_params(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "guard_params" in data:
+            params = data.pop("guard_params")
+            if isinstance(params, dict):
+                data.update(params)
+        return data
 
 
 class GibberishTextConfig(BaseModel):
@@ -138,7 +152,7 @@ class GibberishTextConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.GIBBERISH_TEXT] = (
         GuardrailConfigId.GIBBERISH_TEXT
     )
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/gibberish_text"
     reject_message: str = "Gibberish text detected"
     threshold: float = Field(
@@ -150,7 +164,7 @@ class NSFWTextConfig(BaseModel):
     """NSFW Text configuration."""
 
     config_id: Literal[GuardrailConfigId.NSFW_TEXT] = GuardrailConfigId.NSFW_TEXT
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/nsfw_text"
     reject_message: str = "NSFW content detected"
     threshold: float = Field(
@@ -164,7 +178,7 @@ class DetectJailbreakConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.DETECT_JAILBREAK] = (
         GuardrailConfigId.DETECT_JAILBREAK
     )
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/detect_pii"
     reject_message: str = "Jailbreak attempt detected"
     threshold: float = Field(
@@ -178,7 +192,7 @@ class PromptInjectionConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.PROMPT_INJECTION] = (
         GuardrailConfigId.PROMPT_INJECTION
     )
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/detect_pii"
     reject_message: str = "Prompt injection detected"
     threshold: float = Field(
@@ -192,7 +206,7 @@ class RagHallucinationConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.RAG_HALLUCINATION] = (
         GuardrailConfigId.RAG_HALLUCINATION
     )
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/rag_hallucination"
     reject_message: str = "Hallucination detected"
     threshold: float = Field(
@@ -206,7 +220,7 @@ class RestrictToTopicConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.RESTRICT_TO_TOPIC] = (
         GuardrailConfigId.RESTRICT_TO_TOPIC
     )
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/restrict_to_topic"
     reject_message: str = "Off-topic content detected"
     topics: list[str] = Field(description="List of allowed topics")
@@ -218,7 +232,7 @@ class ToxicLanguageConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.TOXIC_LANGUAGE] = (
         GuardrailConfigId.TOXIC_LANGUAGE
     )
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/toxic_language"
     reject_message: str = "Toxic language detected"
     threshold: float = Field(
@@ -230,7 +244,7 @@ class CodeScannerConfig(BaseModel):
     """Code Scanner configuration."""
 
     config_id: Literal[GuardrailConfigId.CODE_SCANNER] = GuardrailConfigId.CODE_SCANNER
-    api_key: str
+    api_key: str = ""
     guard_url: str = "hub://guardrails/code_scanner"
     reject_message: str = "Unauthorized code detected"
     allowed_languages: list[str] = Field(

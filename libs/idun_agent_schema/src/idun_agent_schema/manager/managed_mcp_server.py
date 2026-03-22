@@ -22,6 +22,7 @@ class ManagedMCPServerRead(BaseModel):
     id: UUID
     name: str
     mcp_server: MCPServer = Field(..., description="MCP server configuration")
+    agent_count: int = Field(0, description="Number of agents using this MCP server")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

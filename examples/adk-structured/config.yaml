@@ -1,0 +1,10 @@
+server:
+  api:
+    port: 8004
+
+agent:
+  type: ADK
+  config:
+    name: "ADK Structured Agent"
+    app_name: "adk_structured"
+    agent: "./agent.py:root_agent"

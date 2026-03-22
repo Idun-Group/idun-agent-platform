@@ -108,7 +108,7 @@ const AgentDashboardPage = () => {
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
-                        <Search size={15} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                        <Search size={15} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
                         <SearchInput
                             placeholder={t('dashboard.search.placeholder')}
                             value={searchTerm}
@@ -205,8 +205,8 @@ const SearchBar = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
@@ -226,7 +226,7 @@ const SearchInput = styled.input`
     width: 200px;
 
     &::placeholder {
-        color: rgba(255, 255, 255, 0.35);
+        color: hsl(var(--muted-foreground));
     }
 `;
 
@@ -239,7 +239,7 @@ const CreateButton = styled.button`
     background: hsl(var(--primary));
     border: none;
     border-radius: 10px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -268,7 +268,7 @@ const AddCard = styled.button`
     justify-content: center;
     gap: 10px;
     background: transparent;
-    border: 2px dashed rgba(255, 255, 255, 0.1);
+    border: 2px dashed var(--border-light);
     border-radius: 16px;
     padding: 40px 24px;
     cursor: pointer;
@@ -287,20 +287,20 @@ const AddCard = styled.button`
 `;
 
 const AddIconWrapper = styled.span`
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--overlay-strong);
     transition: color 0.2s;
 `;
 
 const AddTitle = styled.span`
     font-size: 15px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.35);
+    color: hsl(var(--muted-foreground));
     transition: color 0.2s;
 `;
 
 const AddSubtitle = styled.p`
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--overlay-strong);
     margin: 0;
     transition: color 0.2s;
 `;
@@ -319,7 +319,7 @@ const EmptyState = styled.div`
 `;
 
 const EmptyIcon = styled.div`
-    color: rgba(255, 255, 255, 0.15);
+    color: var(--border-medium);
     margin-bottom: 8px;
 `;
 
@@ -352,7 +352,7 @@ const CenterBox = styled.div`
 const LoadingSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
+    border: 3px solid var(--border-light);
     border-top-color: hsl(var(--primary));
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;

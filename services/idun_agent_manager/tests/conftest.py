@@ -11,6 +11,22 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.api.v1.deps import get_session
+from app.infrastructure.db.models.agent_guardrail import (
+    AgentGuardrailModel,  # noqa: F401
+)
+from app.infrastructure.db.models.agent_integration import (
+    AgentIntegrationModel,  # noqa: F401
+)
+from app.infrastructure.db.models.agent_mcp_server import (
+    AgentMCPServerModel,  # noqa: F401
+)
+from app.infrastructure.db.models.agent_observability import (
+    AgentObservabilityModel,  # noqa: F401
+)
+from app.infrastructure.db.models.agent_prompt_assignment import (
+    AgentPromptAssignmentModel,  # noqa: F401
+)
+from app.infrastructure.db.models.invitation import InvitationModel  # noqa: F401
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel  # noqa: F401
 from app.infrastructure.db.models.managed_guardrail import (
     ManagedGuardrailModel,  # noqa: F401
@@ -25,6 +41,7 @@ from app.infrastructure.db.models.managed_memory import ManagedMemoryModel  # no
 from app.infrastructure.db.models.managed_observability import (
     ManagedObservabilityModel,  # noqa: F401
 )
+from app.infrastructure.db.models.managed_prompt import ManagedPromptModel  # noqa: F401
 from app.infrastructure.db.models.managed_sso import ManagedSSOModel  # noqa: F401
 from app.infrastructure.db.models.membership import MembershipModel  # noqa: F401
 from app.infrastructure.db.models.user import UserModel  # noqa: F401

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from idun_agent_schema.engine.observability_v2 import (
     LangfuseConfig,
+    LangsmithConfig,
     ObservabilityConfig,
     ObservabilityProvider,
     PhoenixConfig,
@@ -154,6 +155,48 @@ class TestObservabilityFactory:
         assert info["enabled"] is True
         assert info["provider"] == "gcp_trace"
         mock_handler_class.assert_called_once()
+
+    @patch(
+        "idun_agent_engine.observability.langsmith.langsmith_handler.LangsmithHandler"
+    )
+    def test_create_handler_langsmith(self, mock_handler_class):
+        from idun_agent_engine.observability.base import create_observability_handler
+
+        mock_handler = MagicMock()
+        mock_handler_class.return_value = mock_handler
+
+        config = ObservabilityConfig(
+            enabled=True,
+            provider=ObservabilityProvider.LANGSMITH,
+            config=LangsmithConfig(
+                api_key="lsv2_test",
+                project_name="my-project",
+                endpoint="https://api.smith.langchain.com",
+            ),
+        )
+
+        handler, info = create_observability_handler(config)
+
+        assert handler is not None
+        assert info["enabled"] is True
+        assert info["provider"] == "langsmith"
+        mock_handler_class.assert_called_once()
+
+    def test_langsmith_config_valid_schema(self):
+        config = LangsmithConfig(
+            api_key="lsv2_test",
+            project_name="my-project",
+            endpoint="https://api.smith.langchain.com",
+        )
+        assert config.api_key == "lsv2_test"
+        assert config.project_name == "my-project"
+        assert config.endpoint == "https://api.smith.langchain.com"
+
+    def test_langsmith_config_defaults(self):
+        config = LangsmithConfig()
+        assert config.api_key == ""
+        assert config.project_name == ""
+        assert config.endpoint == ""
 
     def test_create_handler_unsupported_provider(self):
         from idun_agent_engine.observability.base import create_observability_handler

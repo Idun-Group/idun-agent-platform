@@ -9,12 +9,12 @@ export interface SessionPrincipal {
     email?: string;
     roles?: string[];
     workspace_ids?: string[];
+    default_workspace_id?: string | null;
 }
 
 export interface Session {
     provider?: string;
     principal?: SessionPrincipal;
-    expires_at?: number;
 }
 
 export async function loginBasic(params: { email: string; password: string }): Promise<void> {

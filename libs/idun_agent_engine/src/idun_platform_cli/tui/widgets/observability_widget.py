@@ -6,7 +6,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Input, RadioButton, RadioSet, Static, Switch
+from textual.widgets import Input, RadioButton, RadioSet, Static
 
 from idun_platform_cli.tui.validators.observability import validate_observability
 
@@ -251,15 +251,6 @@ class ObservabilityWidget(Widget):
                 classes="field-row",
             ),
             Horizontal(
-                Static("Project ID:", classes="field-label"),
-                Input(
-                    placeholder="Project ID",
-                    id="langsmith_project_id",
-                    classes="field-input",
-                ),
-                classes="field-row",
-            ),
-            Horizontal(
                 Static("Project:", classes="field-label"),
                 Input(
                     placeholder="prod-chatbot-v1",
@@ -275,25 +266,6 @@ class ObservabilityWidget(Widget):
                     id="langsmith_endpoint",
                     classes="field-input",
                 ),
-                classes="field-row",
-            ),
-            Horizontal(
-                Static("Trace Name:", classes="field-label"),
-                Input(
-                    placeholder="Trace session",
-                    id="langsmith_trace_name",
-                    classes="field-input",
-                ),
-                classes="field-row",
-            ),
-            Horizontal(
-                Static("Tracing:", classes="field-label"),
-                Switch(value=False, id="langsmith_tracing_enabled"),
-                classes="field-row",
-            ),
-            Horizontal(
-                Static("Capture I/O:", classes="field-label"),
-                Switch(value=False, id="langsmith_capture_io"),
                 classes="field-row",
             ),
             classes="provider-fields-section",
@@ -359,18 +331,10 @@ class ObservabilityWidget(Widget):
             case "LANGSMITH":
                 config = {
                     "api_key": self.query_one("#langsmith_api_key", Input).value,
-                    "project_id": self.query_one("#langsmith_project_id", Input).value,
                     "project_name": self.query_one(
                         "#langsmith_project_name", Input
                     ).value,
                     "endpoint": self.query_one("#langsmith_endpoint", Input).value,
-                    "trace_name": self.query_one("#langsmith_trace_name", Input).value,
-                    "tracing_enabled": self.query_one(
-                        "#langsmith_tracing_enabled", Switch
-                    ).value,
-                    "capture_inputs_outputs": self.query_one(
-                        "#langsmith_capture_io", Switch
-                    ).value,
                 }
 
         provider = ObservabilityProvider(provider)

@@ -146,7 +146,7 @@ const PopupOverlay = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -154,7 +154,7 @@ const PopupOverlay = styled.div`
 `;
 
 const PopupContainer = styled.div`
-    background: var(--color-background-secondary, #1a1a2e);
+    background: hsl(var(--card));
     border-radius: 12px;
     width: 90%;
     max-width: 600px;
@@ -164,14 +164,14 @@ const PopupContainer = styled.div`
 `;
 
 const PopupHeader = styled.div<{ sourceType: SourceType }>`
-    background: var(--color-background-primary, #16213e);
+    background: hsl(var(--background));
     padding: 24px;
     ${({ sourceType }) =>
         sourceType === 'Git' &&
         `
         padding-bottom: 0;
     `}
-    border-bottom: 1px solid var(--color-border-primary, #2a3f5f);
+    border-bottom: 1px solid hsl(var(--border));
 `;
 
 const GitNavContainer = styled.div`
@@ -181,21 +181,21 @@ const GitNavContainer = styled.div`
 const GitNavButton = styled.button<{ isOpen: boolean }>`
     background: transparent;
     border: none;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     padding: 8px 12px;
     border-radius: 4px;
     transition: all 0.2s;
 
     &:hover {
-        background: var(--color-background-tertiary, #2a3f5f);
-        color: var(--color-text-primary, #ffffff);
+        background: var(--overlay-light);
+        color: hsl(var(--foreground));
     }
 
     ${({ isOpen }) =>
         isOpen &&
         `
-        border-bottom: 2px solid #8C52fF
+        border-bottom: 2px solid hsl(var(--primary))
     `}
 `;
 
@@ -217,28 +217,28 @@ const HeaderText = styled.div`
         margin: 0 0 8px 0;
         font-size: 20px;
         font-weight: 600;
-        color: var(--color-text-primary, #ffffff);
+        color: hsl(var(--foreground));
     }
 
     p {
         margin: 0;
         font-size: 14px;
-        color: var(--color-text-secondary, #8892b0);
+        color: hsl(var(--muted-foreground));
     }
 `;
 
 const CloseButton = styled.button`
     background: transparent;
     border: none;
-    color: var(--color-text-secondary, #8892b0);
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
     transition: all 0.2s;
 
     &:hover {
-        background: var(--color-background-tertiary, #2a3f5f);
-        color: var(--color-text-primary, #ffffff);
+        background: var(--overlay-light);
+        color: hsl(var(--foreground));
     }
 `;
 

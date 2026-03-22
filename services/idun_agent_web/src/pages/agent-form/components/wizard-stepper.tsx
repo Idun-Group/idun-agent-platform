@@ -52,8 +52,8 @@ export default function WizardStepper({ steps, currentStep }: WizardStepperProps
 }
 
 const Container = styled.div`
-    background-color: #08070f;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: hsl(var(--card));
+    border-bottom: 1px solid var(--overlay-light);
     padding: 16px 32px;
 `;
 
@@ -91,18 +91,18 @@ const StepCircle = styled.div<{ $isActive: boolean; $isCompleted: boolean }>`
     flex-shrink: 0;
 
     ${props => props.$isActive ? `
-        background-color: #8c52ff;
-        border-color: #8c52ff;
-        color: white;
+        background-color: hsl(var(--primary));
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
         box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
     ` : props.$isCompleted ? `
-        background-color: rgba(16, 185, 129, 0.2);
-        border-color: #10b981;
-        color: #34d399;
+        background-color: hsl(var(--success) / 0.2);
+        border-color: hsl(var(--success));
+        color: hsl(var(--success));
     ` : `
-        background-color: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.1);
-        color: #6b7280;
+        background-color: var(--overlay-light);
+        border-color: var(--border-light);
+        color: hsl(var(--muted-foreground));
     `}
 `;
 
@@ -113,13 +113,13 @@ const StepInfo = styled.div`
 const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>`
     font-size: 14px;
     font-weight: 700;
-    color: ${props => (props.$isActive || props.$isCompleted) ? 'white' : '#6b7280'};
+    color: ${props => (props.$isActive || props.$isCompleted) ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'};
     margin: 0;
 `;
 
 const InProgress = styled.p`
     font-size: 10px;
-    color: #8c52ff;
+    color: hsl(var(--primary));
     margin: 0;
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
@@ -133,14 +133,14 @@ const SeparatorLine = styled.div`
     flex: 1;
     height: 2px;
     margin: 0 16px;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--border-light);
     position: relative;
 `;
 
 const Progress = styled.div<{ $isCompleted: boolean }>`
     position: absolute;
     inset: 0;
-    background-color: #10b981;
+    background-color: hsl(var(--success));
     width: ${props => props.$isCompleted ? '100%' : '0%'};
     transition: width 0.5s;
 `;

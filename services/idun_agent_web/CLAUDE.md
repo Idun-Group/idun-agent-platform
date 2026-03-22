@@ -33,16 +33,19 @@ services/idun_agent_web/
 │   │   ├── signin/              # User registration
 │   │   ├── home/                # Landing page
 │   │   ├── agent-dashboard/     # Agent list with search/pagination
-│   │   ├── agent-detail/        # Agent view/edit (tabbed: Overview, Gateway, Config, Logs)
+│   │   ├── agent-detail/        # Agent view/edit (tabbed: Overview, Gateway, Config, Prompts, Logs)
 │   │   ├── agent-form/          # Agent creation wizard
 │   │   ├── user-dashboard/      # User management
 │   │   ├── user-form/           # User creation
 │   │   ├── settings/            # Settings (Profile, Security, Appearance, Language, Notifications)
+│   │   ├── prompts-page/        # Prompt management (versioned, grouped by prompt_id)
 │   │   ├── application-page/    # Shared page for Observability, Memory, MCP, Guardrails config
 │   │   └── observation/         # Observation/metrics page
 │   ├── components/
 │   │   ├── general/             # Reusable: Button, Form (TextInput, TextArea, Select, TagInput), Modal, Loader, ToggleButton, DynamicForm
 │   │   ├── auth/                # RequireAuth guard component
+│   │   ├── prompts/             # CreatePromptModal (Monaco editor, markdown preview, tags, Jinja2 variable detection)
+│   │   ├── agent-detail/tabs/prompts-tab/  # Read-only tab showing prompts assigned to an agent
 │   │   └── ...                  # Feature-specific components (agent detail tabs, settings sections, etc.)
 │   ├── layouts/
 │   │   ├── header/              # Top navigation bar
@@ -60,12 +63,15 @@ services/idun_agent_web/
 │   │   └── use-toggle-theme.tsx # ToggleThemeModeProvider — dark/light/system theme
 │   ├── services/                # API service layer
 │   │   ├── agents.ts            # Agent CRUD (list, get, patch, delete)
+│   │   ├── prompts.ts           # Prompt CRUD, agent assignment/unassignment
 │   │   ├── applications.ts     # Integration config CRUD (observability, memory, MCP, guardrails)
 │   │   ├── integrations.ts     # Messaging integrations CRUD (WhatsApp, Discord)
 │   │   └── sso.ts              # SSO/OIDC config CRUD
 │   ├── utils/
 │   │   ├── api.ts               # HTTP client (apiFetch, getJson, postJson, patchJson, deleteRequest)
+│   │   ├── agent-config-utils.ts # Agent form state, resource selections, payload building
 │   │   ├── auth.ts              # Auth API calls (getSession, loginBasic, logoutBasic, signupBasic)
+│   │   ├── jinja.ts             # extractVariables() — parses {{ variable }} from prompt content
 │   │   ├── runtime-config.ts    # Runtime config resolution (window.__RUNTIME_CONFIG__ → Vite env → defaults)
 │   │   └── style-variables.ts   # Design tokens (color HSL values for light/dark themes)
 │   ├── generated/
@@ -96,17 +102,20 @@ services/idun_agent_web/
 | `/users` | UserDashboardPage | Protected | User management |
 | `/users/create` | UserFormPage | Protected | User creation |
 | `/settings` | SettingsPage | Protected | App settings (profile, theme, language, etc.) |
-| `/observability` | ApplicationPage | Protected | Observability integration configs |
-| `/memory` | ApplicationPage | Protected | Memory/checkpoint configs |
-| `/mcp` | ApplicationPage | Protected | MCP server configs |
-| `/guardrails` | ApplicationPage | Protected | Guardrail configs |
+| `/observability` | ObservabilityPage | Protected | Observability integration configs |
+| `/memory` | MemoryPage | Protected | Memory/checkpoint configs |
+| `/mcp` | MCPPage | Protected | MCP server configs |
+| `/guardrails` | GuardrailsPage | Protected | Guardrail configs |
 | `/sso` | SSOPage | Protected | SSO/OIDC configuration management |
 | `/integrations` | IntegrationsPage | Protected | Messaging integrations (WhatsApp, Discord) |
 | `/observation` | ObservationPage | Protected | Observation/metrics view |
+| `/onboarding` | OnboardingPage | Protected | First workspace creation (shown when user has no workspaces) |
 
-Protected routes are wrapped with `<RequireAuth />` which redirects to `/login` if no session exists.
+Protected routes are wrapped with `<RequireAuth />` which:
+1. Redirects to `/login` if no session exists
+2. Redirects to `/onboarding` if the user has no workspaces (except when already on `/onboarding`)
 
-The `/observability`, `/memory`, `/mcp`, and `/guardrails` routes all use the same `ApplicationPage` component with a different `category` prop.
+The `/observability`, `/memory`, `/mcp`, and `/guardrails` routes each have dedicated page components in `src/pages/{feature}-page/page.tsx`. Each page shows a card grid with CRUD, search, and "Used by N agents" badges with delete protection warnings.
 
 ## Authentication
 
@@ -116,6 +125,12 @@ Uses session cookies set by the manager backend. Two modes (controlled by `AUTH_
 - **OIDC**: Redirects to `GET /api/v1/auth/login` (manager handles Google OAuth flow)
 
 `AuthProvider` hydrates session on mount via `GET /api/v1/auth/me`. On 401, it re-validates the session once.
+
+### Onboarding Flow
+- Signup no longer auto-creates a workspace. New users start with `workspace_ids: []`.
+- `LoginPage` and `SigninPage` check `workspace_ids` and redirect to `/onboarding` when empty.
+- `OnboardingPage` lets the user create their first workspace, then calls `refresh()` (which hits `/me` and re-signs the cookie), then navigates to `/agents`.
+- `syncActiveWorkspace()` in `use-auth.tsx` prefers `default_workspace_id` when selecting the active tenant.
 
 ## API Layer
 
@@ -189,6 +204,47 @@ Context-based (React Context API, no external state library):
 | `AgentFileProvider` | `useAgentFile()` | Agent file upload state |
 | `SettingPageProvider` | `useSettingsPage()` | Settings tab navigation |
 
+## Agent Config & Resource Model
+
+Agents reference managed resources by ID (not by embedding full configs). The backend assembles the full `engine_config` JSONB from relational data.
+
+### Key Utility: `src/utils/agent-config-utils.ts`
+
+Centralizes all agent form state management:
+- `AgentFormState` — name, version, baseUrl, description, serverPort, agentType, agentConfig
+- `AgentSelections` — selected resource IDs (memory, SSO, guardrails, MCP, observability, integrations)
+- `buildAgentPatchPayload(state, selections)` — Builds the API payload with a `resources` field containing resource IDs
+- `extractSelectionsFromAgent(response, framework, resources)` — Reads resource IDs from `response.resources` to populate UI selections
+- `extractAgentConfig(engineConfig)` — Extracts framework-specific agent config fields
+- `validateAgentForm(state)` — Validates required fields
+
+### Payload Shape
+
+Agent create/patch sends:
+```typescript
+{
+  name, version, base_url, description,
+  engine_config: { server: {...}, agent: {...} },  // Only server + agent config
+  resources: {
+    memory_id: "uuid" | null,
+    sso_id: "uuid" | null,
+    guardrail_ids: [{ id: "uuid", position: "input"|"output", sort_order: 0 }],
+    mcp_server_ids: ["uuid"],
+    observability_ids: ["uuid"],
+    integration_ids: ["uuid"],
+  }
+}
+```
+
+The backend resolves resource IDs to full configs, assembles the complete `engine_config`, and stores it as a materialized JSONB cache. See `services/idun_agent_manager/CLAUDE.md` for details.
+
+### Resource Pages
+
+Each resource type has a dedicated page (`src/pages/{feature}-page/page.tsx`) showing:
+- Card grid with search and CRUD
+- "Used by N agents" badge per resource (from `agentCount` in API response)
+- Delete protection: warns when resource is in use, backend returns 409 on delete attempt
+
 ## Code Generation
 
 ```bash
@@ -231,15 +287,20 @@ npm run generate:manager-types
 
 ### Adding New Features / Config Types
 
-When adding a new feature or config type (like SSO, MCP, Guardrails, etc.), you **must** update all of these locations:
+When adding a new resource type (like SSO, MCP, Guardrails, etc.), update all of these:
 
-1. **Dedicated page** — `src/pages/{feature}-page/page.tsx` (list view with CRUD)
-2. **API service** — `src/services/{feature}.ts` (CRUD functions)
+1. **Dedicated page** — `src/pages/{feature}-page/page.tsx` (card grid with CRUD, search, agent count badges)
+2. **API service** — `src/services/{feature}.ts` (CRUD functions, map `agent_count` from response)
 3. **Route** — `src/App.tsx` (register the route)
 4. **Sidebar** — `src/layouts/side-bar/dashboard-side-bar/layout.tsx` (add nav entry)
-5. **Agent creation form** — `src/pages/agent-form/page.tsx` (Step 3: load configs, add selection UI, include in `engine_config` payload)
-6. **Agent edit modal** — `src/components/agent-form-modal/component.tsx` (same as above + extract existing config in edit mode init effect)
+5. **Agent config utils** — `src/utils/agent-config-utils.ts`:
+   - Add selection field to `AgentSelections`
+   - Add resource list to `AvailableResources`
+   - Update `buildAgentPatchPayload()` to include the ID in `resources`
+   - Update `extractSelectionsFromAgent()` to read from `response.resources`
+6. **Agent overview resources section** — `src/components/agent-detail/tabs/overview-tab/sections/resources-section.tsx` (add selection UI)
 7. **Agent dashboard card badges** — `src/components/dashboard/agents/agent-card/feature-icons.tsx` (add detection logic + badge)
-8. **i18n** — `src/i18n/locales/*.json` (add translation keys)
+8. **Backend** — Add junction table/FK, update `engine_config.py` assembly, add cascade recompute to resource router
+9. **i18n** — `src/i18n/locales/*.json` (add translation keys)
 
-Missing any of these will result in the feature being partially integrated (e.g., config exists but can't be assigned to agents, or agents don't show the feature badge).
+Missing any of these will result in the feature being partially integrated.

@@ -226,7 +226,7 @@ const CenterContainer = styled.div`
 `;
 
 const SpinningLoader = styled(Loader2)`
-    color: #8c52ff;
+    color: hsl(var(--primary));
     animation: spin 1s linear infinite;
     @keyframes spin {
         from { transform: rotate(0deg); }
@@ -237,13 +237,13 @@ const SpinningLoader = styled(Loader2)`
 const LoadingTitle = styled.h3`
     font-size: 18px;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const LoadingSubtitle = styled.p`
     font-size: 14px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
@@ -256,7 +256,7 @@ const ErrorTitle = styled.h3`
 
 const ErrorMessage = styled.p`
     font-size: 14px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0;
     max-width: 400px;
 `;
@@ -266,15 +266,15 @@ const RetryButton = styled.button`
     padding: 10px 24px;
     font-size: 14px;
     font-weight: 600;
-    color: white;
-    background-color: #8c52ff;
+    color: hsl(var(--primary-foreground));
+    background-color: hsl(var(--primary));
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s;
 
     &:hover {
-        background-color: #7c3aed;
+        background-color: hsl(var(--primary) / 0.85);
     }
 `;
 
@@ -295,7 +295,7 @@ const SuccessBanner = styled.div`
 const SectionTitle = styled.h3`
     font-size: 14px;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin: 0 0 12px;
@@ -303,7 +303,7 @@ const SectionTitle = styled.h3`
 
 const SectionSubtitle = styled.p`
     font-size: 13px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0 0 12px;
 `;
 
@@ -315,7 +315,7 @@ const CredentialLabel = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     margin-bottom: 6px;
 `;
@@ -325,8 +325,8 @@ const CredentialValue = styled.div`
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
 `;
 
@@ -346,7 +346,7 @@ const IconButton = styled.button`
     padding: 4px;
     background: transparent;
     border: none;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -356,13 +356,13 @@ const IconButton = styled.button`
     flex-shrink: 0;
 
     &:hover {
-        color: white;
-        background-color: rgba(255, 255, 255, 0.1);
+        color: hsl(var(--foreground));
+        background-color: var(--overlay-medium);
     }
 `;
 
 const Divider = styled.hr`
     border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--overlay-light);
     margin: 24px 0;
 `;

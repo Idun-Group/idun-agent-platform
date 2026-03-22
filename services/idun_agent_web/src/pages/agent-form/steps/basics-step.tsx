@@ -108,13 +108,13 @@ const AvatarWrapper = styled.div`
 const Title = styled.h2`
     font-size: 22px;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0 0 4px;
 `;
 
 const Subtitle = styled.p`
     font-size: 14px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0;
 `;
 
@@ -126,35 +126,35 @@ const InputLabel = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     margin-bottom: 8px;
 `;
 
 const Required = styled.span`
-    color: #ef4444;
+    color: hsl(var(--destructive));
     margin-left: 4px;
 `;
 
 const StyledInput = styled.input`
     width: 100%;
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 12px 16px;
     font-size: 14px;
-    color: white;
+    color: hsl(var(--foreground));
     outline: none;
     transition: all 0.2s;
     box-sizing: border-box;
 
     &:focus {
-        border-color: #8c52ff;
-        box-shadow: 0 0 0 1px #8c52ff;
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 1px hsl(var(--primary));
     }
 
     &::placeholder {
-        color: #374151;
+        color: hsl(var(--text-tertiary));
     }
 `;
 
@@ -176,16 +176,16 @@ const FrameworkCard = styled.button<{ $isSelected: boolean }>`
     gap: 8px;
 
     ${props => props.$isSelected ? `
-        background-color: rgba(140, 82, 255, 0.1);
-        border-color: #8c52ff;
-        box-shadow: 0 0 0 1px #8c52ff;
+        background-color: hsl(var(--primary) / 0.1);
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 1px hsl(var(--primary));
     ` : `
-        background-color: #0B0A15;
-        border-color: rgba(255, 255, 255, 0.1);
+        background-color: hsl(var(--accent));
+        border-color: var(--border-light);
 
         &:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-            background-color: rgba(255, 255, 255, 0.03);
+            border-color: var(--overlay-strong);
+            background-color: var(--overlay-subtle);
         }
     `}
 `;
@@ -206,13 +206,13 @@ const FrameworkLogo = styled.img`
 const CardLabel = styled.span`
     font-size: 16px;
     font-weight: 600;
-    color: white;
+    color: hsl(var(--foreground));
 `;
 
 const CheckCircle = styled.div`
     width: 20px;
     height: 20px;
-    background-color: #8c52ff;
+    background-color: hsl(var(--primary));
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -221,6 +221,6 @@ const CheckCircle = styled.div`
 
 const CardDescription = styled.span`
     font-size: 13px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     line-height: 1.4;
 `;

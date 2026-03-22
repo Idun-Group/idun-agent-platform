@@ -62,6 +62,8 @@ uv run pytest -m "not requires_langfuse and not requires_phoenix and not require
 
 Tests are in `libs/idun_agent_engine/tests/` with `unit/` and `integration/` subdirectories.
 
+Local `pytest` runs do not globally auto-load the repository `.env` file. Manager tests may read values from `.env` through Pydantic `BaseSettings` (`env_file=".env"`), while engine tests generally rely on environment variables already exported in the shell unless a specific module explicitly calls `load_dotenv()`. If a test needs secrets or service credentials, ensure the required variables are available in your environment before running `uv run pytest`.
+
 ## Linting & Formatting
 
 ```bash

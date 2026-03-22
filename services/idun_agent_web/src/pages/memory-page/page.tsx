@@ -141,7 +141,7 @@ const MemoryPage = () => {
                        <div key={framework}>
                            <GroupHeader>
                                <IconBadge>
-                                   {framework === 'LANGGRAPH' ? <Layers size={16} color="#8c52ff" /> : <Cpu size={16} color="#3b82f6" />}
+                                   {framework === 'LANGGRAPH' ? <Layers size={16} color="hsl(var(--primary))" /> : <Cpu size={16} color="#3b82f6" />}
                                </IconBadge>
                                <GroupTitle>{frameworkName} Ecosystem</GroupTitle>
                                <CountBadge>
@@ -163,7 +163,7 @@ const MemoryPage = () => {
                                                    <CardMeta>
                                                        <TypeBadge>{mem.type}</TypeBadge>
                                                        <Status>
-                                                           <StatusDot color="#34d399" /> {/* Mock active */}
+                                                           <StatusDot color="hsl(var(--success))" /> {/* Mock active */}
                                                            Active
                                                        </Status>
                                                    </CardMeta>
@@ -180,20 +180,19 @@ const MemoryPage = () => {
                                            {mem.type} storage for {frameworkName} agents.
                                        </Description>
 
-                                       {/* Stats Grid - Modified as requested: Only Connected Agents */}
+                                       {/* Stats Grid - Connected Agents */}
                                        <StatsGrid>
                                             <StatBox>
                                                 <StatLabel>
                                                     <Users size={10} style={{ marginRight: '4px' }} /> Connected Agents
                                                 </StatLabel>
-                                                {/* Mock connected agents count as we don't have it in ApplicationConfig yet */}
-                                                <StatValue>0</StatValue>
+                                                <StatValue>{mem.agentCount ?? 0}</StatValue>
                                             </StatBox>
                                        </StatsGrid>
 
                                        {/* Footer */}
                                        <CardFooter>
-                                           <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                                           <span style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))' }}>
                                                Updated {new Date(mem.updatedAt).toLocaleDateString()}
                                            </span>
                                            <CardActions>
@@ -230,6 +229,9 @@ const MemoryPage = () => {
          onClose={() => setAppToDelete(null)}
          onConfirm={handleDeleteConfirm}
          itemName={appToDelete?.name ?? ''}
+         description={(appToDelete?.agentCount ?? 0) > 0
+             ? `This memory store is used by ${appToDelete!.agentCount} agent${appToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
+             : undefined}
        />
     </PageContainer>
   );
@@ -243,9 +245,9 @@ const PageContainer = styled.div`
     flex-direction: column;
     flex: 1;
     height: 100%;
-    background-color: #040210; /* Dark background */
+    background-color: hsl(var(--background));
     overflow: hidden;
-    color: white;
+    color: hsl(var(--foreground));
 `;
 
 const Header = styled.div`
@@ -253,18 +255,18 @@ const Header = styled.div`
     justify-content: space-between;
     align-items: flex-end;
     padding: 2rem 2rem 1rem 2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--overlay-light);
 `;
 
 const Title = styled.h1`
     font-size: 1.5rem;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
 const Subtitle = styled.p`
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     font-size: 0.875rem;
     margin: 0.25rem 0 0 0;
 `;
@@ -281,23 +283,23 @@ const SearchWrapper = styled.div`
         position: absolute;
         left: 0.75rem;
         top: 0.625rem;
-        color: #6b7280;
+        color: hsl(var(--muted-foreground));
     }
 `;
 
 const SearchInput = styled.input`
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 0.5rem;
     padding: 0.5rem 1rem 0.5rem 2.25rem;
     font-size: 0.875rem;
-    color: #d1d5db;
+    color: hsl(var(--foreground));
     outline: none;
     width: 16rem;
     transition: all 0.2s;
 
     &:focus {
-        border-color: #8c52ff;
+        border-color: hsl(var(--primary));
         width: 18rem;
     }
 `;
@@ -307,18 +309,18 @@ const CreateButton = styled.button`
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background-color: #8c52ff;
-    color: white;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--foreground));
     font-size: 0.875rem;
     font-weight: 700;
     border-radius: 0.5rem;
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
-    box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 10px 15px -3px hsl(var(--primary) / 0.2);
 
     &:hover {
-        background-color: #7c3aed;
+        background-color: hsl(var(--primary) / 0.85);
     }
 `;
 
@@ -338,9 +340,9 @@ const GroupHeader = styled.div`
 
 const IconBadge = styled.div`
     padding: 0.375rem;
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--overlay-light);
     border-radius: 0.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--overlay-light);
     margin-right: 0.75rem;
     display: flex;
     align-items: center;
@@ -350,7 +352,7 @@ const IconBadge = styled.div`
 const GroupTitle = styled.h2`
     font-size: 1.125rem;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0;
 `;
 
@@ -358,10 +360,10 @@ const CountBadge = styled.span`
     margin-left: 0.75rem;
     padding: 0.125rem 0.5rem;
     border-radius: 9999px;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: var(--overlay-light);
+    border: 1px solid var(--overlay-light);
     font-size: 0.75rem;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
 `;
 
 const Grid = styled.div`
@@ -378,8 +380,8 @@ const Grid = styled.div`
 `;
 
 const Card = styled.div`
-    background-color: #0B0A15; /* card bg */
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--overlay-light);
     border-radius: 0.75rem;
     padding: 1.25rem;
     transition: all 0.2s;
@@ -388,7 +390,7 @@ const Card = styled.div`
     height: 100%;
 
     &:hover {
-        border-color: rgba(255, 255, 255, 0.1);
+        border-color: var(--border-light);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
     }
 `;
@@ -404,18 +406,18 @@ const CardIcon = styled.div`
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 0.5rem;
-    background-color: rgba(99, 102, 241, 0.1);
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    background-color: hsl(var(--primary) / 0.1);
+    border: 1px solid hsl(var(--primary) / 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #818cf8;
+    color: hsl(var(--primary));
 `;
 
 const CardTitle = styled.h3`
     font-size: 1rem;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0;
     line-height: 1.25;
 `;
@@ -429,11 +431,11 @@ const CardMeta = styled.div`
 
 const TypeBadge = styled.span`
     font-size: 0.75rem;
-    color: #6b7280;
-    background-color: rgba(255, 255, 255, 0.05);
+    color: hsl(var(--muted-foreground));
+    background-color: var(--overlay-light);
     padding: 0 0.375rem;
     border-radius: 0.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--overlay-light);
     font-family: monospace;
 `;
 
@@ -441,7 +443,7 @@ const Status = styled.div`
     display: flex;
     align-items: center;
     font-size: 0.625rem;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
 `;
 
@@ -454,20 +456,20 @@ const StatusDot = styled.div<{ color: string }>`
 `;
 
 const MoreButton = styled.button`
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     background: transparent;
     border: none;
     cursor: pointer;
     padding: 0.25rem;
 
     &:hover {
-        color: white;
+        color: hsl(var(--foreground));
     }
 `;
 
 const Description = styled.p`
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0 0 1.5rem 0;
     flex: 1;
     display: -webkit-box;
@@ -484,15 +486,15 @@ const StatsGrid = styled.div`
 `;
 
 const StatBox = styled.div`
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: var(--overlay-subtle);
     border-radius: 0.5rem;
     padding: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--overlay-light);
 `;
 
 const StatLabel = styled.div`
     font-size: 0.625rem;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 0.25rem;
@@ -503,14 +505,14 @@ const StatLabel = styled.div`
 const StatValue = styled.div`
     font-size: 1.125rem;
     font-family: monospace;
-    color: white;
+    color: hsl(var(--foreground));
     font-weight: 600;
 `;
 
 const CardFooter = styled.div`
     margin-top: auto;
     padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--overlay-light);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -525,30 +527,30 @@ const CardActions = styled.div`
 
 const ActionBtn = styled.button`
     padding: 5px 12px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--border-subtle);
+    border: 1px solid var(--border-light);
     border-radius: 6px;
-    color: white;
+    color: hsl(var(--foreground));
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: rgba(255, 255, 255, 0.12); }
+    &:hover { background: var(--overlay-medium); }
 `;
 
 const ActionBtnDanger = styled.button`
     padding: 5px 12px;
-    background: rgba(248, 113, 113, 0.08);
-    border: 1px solid rgba(248, 113, 113, 0.2);
+    background: hsl(var(--destructive) / 0.08);
+    border: 1px solid hsl(var(--destructive) / 0.2);
     border-radius: 6px;
-    color: #f87171;
+    color: hsl(var(--destructive));
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: rgba(248, 113, 113, 0.18); }
+    &:hover { background: hsl(var(--destructive) / 0.18); }
 `;
 
 const SyncButton = styled.button`
@@ -556,38 +558,38 @@ const SyncButton = styled.button`
     align-items: center;
     font-size: 0.75rem;
     font-weight: 500;
-    color: #8c52ff;
+    color: hsl(var(--primary));
     background: transparent;
     border: none;
     cursor: pointer;
     transition: color 0.2s;
 
     &:hover {
-        color: white;
+        color: hsl(var(--foreground));
     }
 `;
 
 const AddCard = styled.div`
-    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border: 1px dashed var(--border-light);
     border-radius: 0.75rem;
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--overlay-subtle);
     min-height: 280px; /* Match card height approx */
     transition: all 0.2s;
 
     &:hover {
-        border-color: rgba(255, 255, 255, 0.2);
-        color: white;
+        border-color: var(--overlay-strong);
+        color: hsl(var(--foreground));
 
         div { /* Icon wrapper */
-            background-color: rgba(139, 92, 246, 0.1);
-            color: #8c52ff;
+            background-color: hsl(var(--primary) / 0.1);
+            color: hsl(var(--primary));
             transform: scale(1.1);
         }
     }
@@ -597,7 +599,7 @@ const AddIconWrapper = styled.div`
     width: 3rem;
     height: 3rem;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--overlay-light);
     display: flex;
     align-items: center;
     justify-content: center;

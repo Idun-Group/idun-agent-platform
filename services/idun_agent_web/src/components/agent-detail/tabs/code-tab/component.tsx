@@ -308,13 +308,13 @@ const Header = styled.div`
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 16px;
-    border-bottom: 1px solid var(--color-border-primary, #2a3f5f);
+    border-bottom: 1px solid hsl(var(--border));
 `;
 const Title = styled.h2`
     font-size: 20px;
     font-weight: 600;
     margin: 0;
-    color: var(--color-text-primary, #fff);
+    color: hsl(var(--foreground));
     display: flex;
     align-items: center;
     gap: 8px;
@@ -328,16 +328,16 @@ const Btn = styled.button<{ $primary?: boolean }>`
     padding: 8px 16px;
     background: ${(p) =>
         p.$primary
-            ? 'var(--color-primary,#8c52ff)'
-            : 'var(--color-background-secondary,#1a1a2e)'};
+            ? 'hsl(var(--primary))'
+            : 'hsl(var(--surface-elevated))'};
     border: 1px solid
         ${(p) =>
             p.$primary
-                ? 'var(--color-primary,#8c52ff)'
-                : 'var(--color-border-primary,#2a3f5f)'};
+                ? 'hsl(var(--primary))'
+                : 'hsl(var(--border))'};
     border-radius: 6px;
     color: ${(p) =>
-        p.$primary ? '#fff' : 'var(--color-text-secondary,#8892b0)'};
+        p.$primary ? '#fff' : 'hsl(var(--muted-foreground))'};
     font-size: 14px;
     cursor: pointer;
     transition: 0.2s;
@@ -348,10 +348,10 @@ const Btn = styled.button<{ $primary?: boolean }>`
     &:hover:not(:disabled) {
         background: ${(p) =>
             p.$primary
-                ? 'var(--color-primary-hover,#7c4aef)'
-                : 'var(--color-background-tertiary,#2a3f5f)'};
-        color: #fff;
-        border-color: var(--color-primary, #8c52ff);
+                ? 'hsl(var(--primary) / 0.85)'
+                : 'hsl(var(--accent))'};
+        color: hsl(var(--foreground));
+        border-color: hsl(var(--primary));
     }
     &:disabled {
         opacity: 0.5;
@@ -361,8 +361,8 @@ const Btn = styled.button<{ $primary?: boolean }>`
 const AsideTitle = styled.div`
     padding: 10px 12px;
     font-weight: 600;
-    border-bottom: 1px solid var(--color-border-primary, #2a3f5f);
-    color: #fff;
+    border-bottom: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
 `;
 const List = styled.div`
     overflow: auto;
@@ -379,10 +379,10 @@ const Body = styled.div<{ $dragging?: boolean }>`
 `;
 
 const Aside = styled.aside`
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    border: 1px solid hsl(var(--border));
     border-radius: 8px;
     overflow: hidden;
-    background: #101423;
+    background: hsl(var(--surface-elevated));
     display: flex;
     flex-direction: column;
     min-width: 200px;
@@ -406,12 +406,12 @@ const Gutter = styled.div`
         width: 2px;
         height: 32px;
         border-radius: 2px;
-        background: #3a3f5a;
+        background: hsl(var(--muted-foreground) / 0.3);
     }
 
     &:hover::after,
     &:focus::after {
-        background: #6b6f8a;
+        background: hsl(var(--muted-foreground) / 0.5);
     }
 `;
 
@@ -419,7 +419,7 @@ const EditorBox = styled.div`
     flex: 1;
     min-width: 0;
     background: #1e1e1e;
-    border: 1px solid var(--color-border-primary, #2a3f5f);
+    border: 1px solid hsl(var(--border));
     border-radius: 8px;
     overflow: hidden;
 

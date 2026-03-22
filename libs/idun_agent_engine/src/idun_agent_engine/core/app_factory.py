@@ -5,10 +5,13 @@ application with their agent integrated. It handles all the complexity of
 setting up routes, dependencies, and lifecycle management behind the scenes.
 """
 
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 from .._version import __version__
 from ..server.lifespan import lifespan
@@ -61,6 +64,9 @@ def create_app(
         redoc_url="/redoc",
     )
 
+    # TODO: Add a proper CORS configuration feature. We currently keep wildcard
+    # CORS behavior and layer Private Network Access support on top so the
+    # hosted UI can reach localhost agents from the browser.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -69,6 +75,20 @@ def create_app(
         allow_headers=["*"],
     )
 
+    @app.middleware("http")
+    async def allow_private_network_access(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        response = await call_next(request)
+
+        if request.headers.get("access-control-request-private-network") != "true":
+            return response
+
+        if "access-control-allow-origin" in response.headers:
+            response.headers["Access-Control-Allow-Private-Network"] = "true"
+
+        return response
+
     # Store configuration in app state for lifespan to use
     app.state.engine_config = validated_config
 
@@ -76,6 +96,8 @@ def create_app(
     app.include_router(agent_router, prefix="/agent", tags=["Agent"])
     app.include_router(base_router, tags=["Base"])
 
+    # TODO: DEPRECATED — register_invoke_route uses ChatRequest only now.
+    # Remove when /agent/invoke shim is fully removed.
     register_invoke_route(app, input_model)
 
     # Register integration routers based on config

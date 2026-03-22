@@ -172,13 +172,13 @@ const StepContainer = styled.div`
 const Title = styled.h2`
     font-size: 22px;
     font-weight: 700;
-    color: white;
+    color: hsl(var(--foreground));
     margin: 0 0 4px;
 `;
 
 const Subtitle = styled.p`
     font-size: 14px;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     margin: 0 0 32px;
 `;
 
@@ -194,48 +194,48 @@ const InputLabel = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     text-transform: uppercase;
     margin-bottom: 8px;
 `;
 
 const Required = styled.span`
-    color: #ef4444;
+    color: hsl(var(--destructive));
     margin-left: 4px;
 `;
 
 const StyledInput = styled.input`
     width: 100%;
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 12px 16px;
     font-size: 14px;
-    color: white;
+    color: hsl(var(--foreground));
     outline: none;
     transition: all 0.2s;
     box-sizing: border-box;
 
     &:focus {
-        border-color: #8c52ff;
-        box-shadow: 0 0 0 1px #8c52ff;
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 1px hsl(var(--primary));
     }
 
     &::placeholder {
-        color: #374151;
+        color: hsl(var(--text-tertiary));
     }
 `;
 
 const Hint = styled.p`
     font-size: 12px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     margin: 6px 0 0;
 `;
 
 const ToggleRow = styled.div`
     display: flex;
     gap: 0;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     overflow: hidden;
     width: fit-content;
@@ -253,16 +253,16 @@ const ToggleOption = styled.button<{ $isSelected: boolean }>`
     transition: all 0.2s;
 
     ${props => props.$isSelected ? `
-        background-color: rgba(140, 82, 255, 0.15);
-        color: white;
-        box-shadow: inset 0 0 0 1px #8c52ff;
+        background-color: hsl(var(--primary) / 0.15);
+        color: hsl(var(--foreground));
+        box-shadow: inset 0 0 0 1px hsl(var(--primary));
     ` : `
-        background-color: #0B0A15;
-        color: #6b7280;
+        background-color: hsl(var(--accent));
+        color: hsl(var(--muted-foreground));
 
         &:hover {
-            color: #9ca3af;
-            background-color: rgba(255, 255, 255, 0.03);
+            color: hsl(var(--text-secondary));
+            background-color: var(--overlay-subtle);
         }
     `}
 `;
@@ -270,22 +270,22 @@ const ToggleOption = styled.button<{ $isSelected: boolean }>`
 const PortInputRow = styled.div`
     display: flex;
     align-items: center;
-    background-color: #0B0A15;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: hsl(var(--accent));
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     overflow: hidden;
     transition: all 0.2s;
 
     &:focus-within {
-        border-color: #8c52ff;
-        box-shadow: 0 0 0 1px #8c52ff;
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 1px hsl(var(--primary));
     }
 `;
 
 const PortPrefix = styled.span`
     padding: 12px 0 12px 16px;
     font-size: 14px;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     white-space: nowrap;
     user-select: none;
 `;
@@ -296,7 +296,7 @@ const PortInput = styled.input`
     border: none;
     padding: 12px 16px 12px 0;
     font-size: 14px;
-    color: white;
+    color: hsl(var(--foreground));
     outline: none;
     width: 80px;
 
@@ -309,14 +309,14 @@ const PortInput = styled.input`
     }
 
     &::placeholder {
-        color: #374151;
+        color: hsl(var(--text-tertiary));
     }
 `;
 
 const PortSteppers = styled.div`
     display: flex;
     flex-direction: column;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid var(--border-light);
 `;
 
 const PortStepBtn = styled.button`
@@ -327,13 +327,13 @@ const PortStepBtn = styled.button`
     height: 20px;
     background: transparent;
     border: none;
-    color: #6b7280;
+    color: hsl(var(--muted-foreground));
     cursor: pointer;
     padding: 0;
     transition: all 0.15s;
 
     &:first-child {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--border-light);
     }
 
     &:hover {
