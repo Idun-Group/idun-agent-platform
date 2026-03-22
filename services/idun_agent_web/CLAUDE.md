@@ -97,7 +97,7 @@ services/idun_agent_web/
 | `/login` | LoginPage | Public | Login (email/password or OIDC redirect) |
 | `/signin` | SigninPage | Public | Registration |
 | `/agents` | AgentDashboardPage | Protected | Agent list with search/pagination |
-| `/agents/:id` | AgentDetailPage | Protected | Agent detail (tabbed view) |
+| `/agents/:id` | AgentDetailPage | Protected | Agent detail (tabbed view, per-section inline editing) |
 | `/agents/create` | AgentFormPage | Protected | Agent creation wizard |
 | `/users` | UserDashboardPage | Protected | User management |
 | `/users/create` | UserFormPage | Protected | User creation |
@@ -244,6 +244,24 @@ Each resource type has a dedicated page (`src/pages/{feature}-page/page.tsx`) sh
 - Card grid with search and CRUD
 - "Used by N agents" badge per resource (from `agentCount` in API response)
 - Delete protection: warns when resource is in use, backend returns 409 on delete attempt
+
+## Agent Detail Page — Inline Editing Architecture
+
+The agent detail page (`src/pages/agent-detail/page.tsx`) uses per-section inline editing. There is no global "Edit Agent" mode — tabs are always freely navigable.
+
+### Inline Name Editing
+
+`page.tsx` manages `isEditingName` state. The agent name in the header renders as a `NameInput` styled component when active. Clicking the name enters edit mode; Escape or blur cancels it.
+
+### Per-Section Editing (Overview Tab)
+
+`OverviewTab` (`src/components/agent-detail/tabs/overview-tab/`) manages only `resources`, `selections` (for display), and `graphRefreshKey`. Individual sections own their own edit state:
+
+- **`AgentDetailsSection`** — Manages `isEditing`, `isSaving`, `localForm` for name, version, base URL, and server port. Calls `patchAgent` directly on save, then calls `onAgentRefresh` to reload the page-level agent. Escape key cancels via a `window` keydown listener.
+- **`FrameworkSection`** — Same self-contained pattern for framework-specific config fields.
+- **`ResourcesSection`** — Always interactive. Uses picker modals (via `handleQuickAdd`) for assigning/unassigning resources. No edit mode toggle needed.
+
+Each section is self-contained: it does not share edit state with siblings or with `OverviewTab`.
 
 ## Code Generation
 
