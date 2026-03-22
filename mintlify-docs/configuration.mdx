@@ -115,11 +115,11 @@ For LangGraph, provide an uncompiled `StateGraph` via `graph_definition` (`path/
     The API key is generated in the manager UI or via `GET /api/v1/agents/key?agent_id=<id>`.
   </Tab>
   <Tab title="Manager UI">
-    In the Manager UI, open an agent and go to the **Config** tab. The full `EngineConfig` YAML is displayed in a Monaco editor where you can edit it directly and save.
+    Open an agent and go to the **Configuration** tab. This shows the full materialized engine config that the agent receives from the platform when it connects.
 
-    ![Engine config editor in the agent detail Config tab](/images/ui/agents-detail-config.png)
+    Toggle between JSON and YAML views. Use the Copy button to grab the config for local testing or debugging. Note that `${ENV_VAR}` references aren't resolved here; the engine resolves them at load time.
 
-    Changes take effect the next time the agent engine fetches its config from the Manager (at startup or on reconnect). All `${ENV_VAR}` references are resolved by the engine at load time, not stored as plain values.
+    ![Agent detail Configuration tab](/images/ui/agents-detail-config.png)
   </Tab>
 </Tabs>
 

@@ -94,21 +94,19 @@ Connect your Idun agent to Slack so users can interact with it through direct me
 
   <Tab title="Manager UI">
     <Steps>
-      <Step title="Open the integrations list">
-        In the Manager UI sidebar, click **Integrations**.
+      <Step title="Open the integrations catalog">
+        Navigate to **Integrations**. The channel catalog shows WhatsApp, Discord, and Slack as active channels.
 
-        ![Integrations list](/images/ui/integrations-list.png)
+        ![Integrations catalog](/images/ui/integrations-catalog.png)
       </Step>
 
       <Step title="Create the Slack integration">
-        Click **Create**, select **Slack**, and fill in the form:
+        Click **+** on Slack and fill in the bot token and signing secret.
 
         | Field | Value |
         |---|---|
         | `bot_token` | Bot User OAuth Token from your Slack app (`xoxb-...`) |
         | `signing_secret` | Signing secret from your Slack app |
-
-        ![Slack integration form](/images/ui/integrations-slack-form.png)
       </Step>
 
       <Step title="Assign to an agent">

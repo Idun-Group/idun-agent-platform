@@ -41,18 +41,22 @@ You can configure multiple guardrails at each position. All guardrails at a give
   </Tab>
   <Tab title="Manager UI">
     <Steps>
-      <Step title="Open guardrails">
-        Navigate to **Guardrails** in the sidebar to see all configured guardrails.
-        ![Guardrails list](/images/ui/guardrails-list.png)
+      <Step title="Browse the guardrail catalog">
+        Navigate to **Guardrails** in the sidebar. The page groups guards by category: Content Safety, Identity & Security, Enterprise, and Context & Quality. Each guard type shows as a card with a "+" button.
+        ![Guardrails catalog](/images/ui/guardrails-catalog.png)
       </Step>
       <Step title="Create a guardrail">
-        Click **Create** and fill in the configuration form. Select a guardrail type from the dropdown (for example, "Ban List" or "PII Detector") and set the guard-specific parameters.
-        ![Guardrail create form](/images/ui/guardrails-create-form.png)
+        Click **+** on the guard type you want (e.g., Ban List, Detect PII, Toxic Language). Fill in the configuration form. A Guardrails AI API key is required. Get one from [hub.guardrailsai.com](https://hub.guardrailsai.com).
+        ![Create ban list guardrail](/images/ui/guardrails-create-banlist.png)
       </Step>
-      <Step title="Assign to an agent">
-        Open your agent, edit it, and select the guardrail from the guardrails section. Choose whether it applies at the input position, output position, or both.
+      <Step title="Attach to an agent">
+        The guardrail appears as a card showing "Used by N agents." Attach it to agents from the agent detail **Overview** tab.
       </Step>
     </Steps>
+
+    <Note>
+      Some guards are marked "Soon" and not yet available: Code Scanner, Jailbreak, Prompt Injection, Model Armor, Custom LLM, and RAG Hallucination.
+    </Note>
   </Tab>
 </Tabs>
 

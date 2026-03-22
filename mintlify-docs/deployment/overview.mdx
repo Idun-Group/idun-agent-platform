@@ -57,17 +57,13 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
     For managed deployments, restart the agent container to force a fresh config fetch from the Manager.
   </Tab>
   <Tab title="Manager UI">
-    Open an agent in the Manager UI and go to the **Overview** tab to manage its lifecycle.
+    From the agent detail page, manage the agent lifecycle:
+
+    - The status badge shows **Draft** or **Active**
+    - Click **Restart** to call `/reload` on the running engine, which re-fetches config from the platform
+    - The Overview tab includes **Connect to Platform** instructions for enrollment
 
     ![Agent detail overview tab](/images/ui/agents-detail-overview.png)
-
-    From this tab you can:
-
-    - **Toggle the status** to enable or disable the agent without deleting it
-    - **Run a health check** to verify the agent engine is reachable and responding
-    - **Restart the agent** to apply config changes or recover from an error state
-
-    Status changes are reflected immediately in the agents list and propagated to any connected engine instances on their next config fetch.
   </Tab>
 </Tabs>
 

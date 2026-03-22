@@ -61,15 +61,16 @@ Define MCP servers in your `config.yaml` or through the Manager API:
   </Tab>
   <Tab title="Manager UI">
     <Steps>
-      <Step title="Open MCP servers">
-        Navigate to **MCP Servers** in the sidebar to see all registered servers.
-        ![MCP server list](/images/ui/mcp-list.png)
+      <Step title="Browse the transport catalog">
+        Navigate to **MCP Servers** in the sidebar. The catalog shows transport type cards: Streamable HTTP, SSE, WebSocket, and STDIO.
+        ![MCP server catalog](/images/ui/mcp-catalog.png)
       </Step>
-      <Step title="Create an MCP server">
-        Click **Create** and fill in the configuration form. Select a transport type (stdio, SSE, or HTTP) and provide the corresponding connection details: command and args for stdio, or a URL for remote transports.
+      <Step title="Add an MCP server">
+        Click **+** on your transport type and configure the command/URL and connection details. The page includes a Quick Start Guide and a "Discover tools" button on existing server configs.
+        ![Create STDIO MCP server](/images/ui/mcp-create-stdio.png)
       </Step>
-      <Step title="Assign to an agent">
-        Open your agent, edit it, and select the MCP server from the MCP servers section.
+      <Step title="Attach to an agent">
+        Attach the server to agents from the agent detail page.
       </Step>
     </Steps>
   </Tab>

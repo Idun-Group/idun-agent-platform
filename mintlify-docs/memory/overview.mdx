@@ -76,15 +76,16 @@ Checkpointing saves your agent's state during execution. Each interaction is ass
   </Tab>
   <Tab title="Manager UI">
     <Steps>
-      <Step title="Open memory">
-        Navigate to **Memory** in the sidebar to see all configured memory backends.
-        ![Memory list](/images/ui/memory-list.png)
+      <Step title="Browse the backend catalog">
+        Navigate to **Memory Stores** in the sidebar. The catalog shows backend cards: SQLite, PostgreSQL, In Memory, Vertex AI, and Database.
+        ![Memory catalog](/images/ui/memory-catalog.png)
       </Step>
-      <Step title="Create a memory configuration">
-        Click **Create** and fill in the configuration form. Select a backend from the dropdown: in-memory, SQLite, or PostgreSQL. For SQLite and PostgreSQL, provide the connection details.
+      <Step title="Add a backend">
+        Click **+** on your backend and configure the connection details.
+        ![Create PostgreSQL memory config](/images/ui/memory-create-postgres.png)
       </Step>
-      <Step title="Assign to an agent">
-        Open your agent, edit it, and select the memory configuration from the memory section.
+      <Step title="Attach to an agent">
+        Attach the configuration to agents from the agent detail page.
       </Step>
     </Steps>
   </Tab>

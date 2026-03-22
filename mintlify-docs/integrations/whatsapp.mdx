@@ -79,22 +79,20 @@ Connect your Idun agent to WhatsApp so users can interact with it through messag
 
   <Tab title="Manager UI">
     <Steps>
-      <Step title="Open the integrations list">
-        In the Manager UI sidebar, click **Integrations**.
+      <Step title="Open the integrations catalog">
+        Navigate to **Integrations**. The channel catalog shows WhatsApp, Discord, and Slack as active channels.
 
-        ![Integrations list](/images/ui/integrations-list.png)
+        ![Integrations catalog](/images/ui/integrations-catalog.png)
       </Step>
 
       <Step title="Create the WhatsApp integration">
-        Click **Create**, select **WhatsApp**, and fill in the form:
+        Click **+** on WhatsApp and fill in the access token, phone number ID, and verify token.
 
         | Field | Value |
         |---|---|
         | `access_token` | Meta Graph API permanent access token |
         | `phone_number_id` | WhatsApp Business phone number ID |
         | `verify_token` | Webhook verification token (must match what you set in the Meta App Dashboard) |
-
-        ![WhatsApp integration form](/images/ui/integrations-whatsapp-form.png)
       </Step>
 
       <Step title="Assign to an agent">
