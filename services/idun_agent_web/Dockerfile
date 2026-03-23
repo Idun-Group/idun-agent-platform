@@ -3,7 +3,7 @@ FROM node:lts-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 COPY . .
 RUN npx vite build
