@@ -5,6 +5,7 @@ managed MCP server configurations. All endpoints are scoped to the
 authenticated user's active workspace.
 """
 
+import asyncio
 import logging
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -43,6 +44,7 @@ logger = logging.getLogger(__name__)
 # Constants
 PAGINATION_MAX_LIMIT = 1000
 PAGINATION_DEFAULT_LIMIT = 100
+DISCOVER_TOOLS_TIMEOUT_SECONDS = 15
 
 
 async def _get_mcp_server(
@@ -351,7 +353,15 @@ async def discover_tools(
     config = MCPServer(**model.mcp_server_config)
 
     try:
-        tools = await _discover_tools(config)
+        tools = await asyncio.wait_for(
+            _discover_tools(config),
+            timeout=DISCOVER_TOOLS_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=f"MCP server '{config.name}' did not respond within {DISCOVER_TOOLS_TIMEOUT_SECONDS}s",
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
