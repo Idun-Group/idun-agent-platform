@@ -43,6 +43,10 @@ def _create_integration(config: IntegrationConfig) -> BaseIntegration:
             from .slack.integration import SlackIntegration
 
             return SlackIntegration(config)
+        case IntegrationProvider.GOOGLE_CHAT:
+            from .google_chat.integration import GoogleChatIntegration
+
+            return GoogleChatIntegration(config)
         case _:
             raise ValueError(f"Unsupported integration provider: {config.provider}")
 

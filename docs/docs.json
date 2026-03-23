@@ -122,6 +122,7 @@
             "group": "Integrations",
             "pages": [
               "integrations/discord",
+              "integrations/google-chat",
               "integrations/slack",
               "integrations/whatsapp"
             ]
