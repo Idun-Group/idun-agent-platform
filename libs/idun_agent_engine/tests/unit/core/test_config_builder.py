@@ -1011,8 +1011,10 @@ class TestConfigBuilderInitializeAgent:
         assert agent.name == "test_adk_app"
 
     @pytest.mark.asyncio
-    async def test_initialize_agent_rejects_compiled_graph(self) -> None:
-        """Initialize agent raises TypeError when graph is already compiled."""
+    async def test_initialize_agent_accepts_compiled_graph(self) -> None:
+        """Initialize agent accepts a CompiledStateGraph by extracting .builder."""
+        from langgraph.graph.state import CompiledStateGraph
+
         config_dict = {
             "server": {"api": {"port": 8000}},
             "agent": {
@@ -1020,12 +1022,13 @@ class TestConfigBuilderInitializeAgent:
                 "config": {
                     "name": "Compiled Graph Agent",
                     "graph_definition": "tests.fixtures.agents.mock_graph:compiled_graph",
+                    "checkpointer": {"type": "memory"},
                 },
             },
         }
         engine_config = ConfigBuilder.from_dict(config_dict).build()
+        agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
 
-        with pytest.raises(
-            TypeError, match="Expected StateGraph, Got CompiledStateGraph"
-        ):
-            await ConfigBuilder.initialize_agent_from_config(engine_config)
+        assert agent is not None
+        assert isinstance(agent.agent_instance, CompiledStateGraph)
+        assert agent.agent_instance.checkpointer is not None
