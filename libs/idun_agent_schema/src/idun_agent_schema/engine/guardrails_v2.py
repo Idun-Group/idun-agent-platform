@@ -179,7 +179,7 @@ class DetectJailbreakConfig(BaseModel):
         GuardrailConfigId.DETECT_JAILBREAK
     )
     api_key: str = ""
-    guard_url: str = "hub://guardrails/detect_pii"
+    guard_url: str = "hub://guardrails/detect_jailbreak"
     reject_message: str = "Jailbreak attempt detected"
     threshold: float = Field(
         ge=0.0, le=1.0, description="Sensitivity level for jailbreak detection"
@@ -193,7 +193,7 @@ class PromptInjectionConfig(BaseModel):
         GuardrailConfigId.PROMPT_INJECTION
     )
     api_key: str = ""
-    guard_url: str = "hub://guardrails/detect_pii"
+    guard_url: str = "hub://guardrails/unusual_prompt"
     reject_message: str = "Prompt injection detected"
     threshold: float = Field(
         ge=0.0, le=1.0, description="Sensitivity level for prompt injection"
@@ -221,7 +221,7 @@ class RestrictToTopicConfig(BaseModel):
         GuardrailConfigId.RESTRICT_TO_TOPIC
     )
     api_key: str = ""
-    guard_url: str = "hub://guardrails/restrict_to_topic"
+    guard_url: str = "hub://tryolabs/restricttotopic"
     reject_message: str = "Off-topic content detected"
     topics: list[str] = Field(description="List of allowed topics")
 
