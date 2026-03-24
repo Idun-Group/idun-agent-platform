@@ -32,7 +32,7 @@ async def check_observability(config: ObservabilityConfig) -> ConnectionCheckRes
             _dispatch_observability(config.provider, opts),
             timeout=CHECK_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         result = (False, f"Connection timed out after {CHECK_TIMEOUT_SECONDS}s")
     except Exception as e:
         logger.debug("Observability check failed", exc_info=True)
@@ -54,7 +54,7 @@ async def check_memory(config: dict) -> ConnectionCheckResponse:
             _dispatch_memory(config),
             timeout=CHECK_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         result = (False, f"Connection timed out after {CHECK_TIMEOUT_SECONDS}s")
     except Exception as e:
         logger.debug("Memory check failed", exc_info=True)
