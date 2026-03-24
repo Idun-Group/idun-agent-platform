@@ -197,6 +197,39 @@ class TestObservabilityFactory:
         assert config.api_key == ""
         assert config.project_name == ""
         assert config.endpoint == ""
+        assert config.run_name == ""
+
+    def test_langsmith_config_with_run_name(self):
+        config = LangsmithConfig(
+            api_key="lsv2_test",
+            project_name="my-project",
+            run_name="my-agent",
+        )
+        assert config.run_name == "my-agent"
+
+    @patch(
+        "idun_agent_engine.observability.langsmith.langsmith_handler.LangsmithHandler"
+    )
+    def test_langsmith_run_name_flows_through_handler(self, mock_handler_class):
+        from idun_agent_engine.observability.base import create_observability_handler
+
+        mock_handler = MagicMock()
+        mock_handler.get_run_name.return_value = "my-agent"
+        mock_handler_class.return_value = mock_handler
+
+        config = ObservabilityConfig(
+            enabled=True,
+            provider=ObservabilityProvider.LANGSMITH,
+            config=LangsmithConfig(
+                api_key="lsv2_test",
+                run_name="my-agent",
+            ),
+        )
+
+        handler, info = create_observability_handler(config)
+
+        assert handler is not None
+        assert handler.get_run_name() == "my-agent"
 
     def test_create_handler_unsupported_provider(self):
         from idun_agent_engine.observability.base import create_observability_handler

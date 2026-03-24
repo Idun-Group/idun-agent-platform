@@ -178,6 +178,10 @@ class LanggraphAgent(agent_base.BaseAgent):
                 if not self._obs_run_name:
                     self._obs_run_name = handler.get_run_name()
 
+            # Fallback: use agent name as run_name if not explicitly configured
+            if not self._obs_run_name:
+                self._obs_run_name = self._name
+
             if infos:
                 self._infos["observability"] = infos
 
@@ -233,7 +237,9 @@ class LanggraphAgent(agent_base.BaseAgent):
 
         if isinstance(graph_builder, StateGraph):
             self._agent_instance = graph_builder.compile(
-                checkpointer=self._checkpointer, store=self._store
+                checkpointer=self._checkpointer,
+                store=self._store,
+                name=self._obs_run_name or self._name,
             )
         elif isinstance(graph_builder, CompiledStateGraph):
             # TODO: this was made for supporting langgraph's DeepAgent, modernize.
