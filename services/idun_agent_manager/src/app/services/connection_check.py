@@ -145,11 +145,12 @@ async def _check_postgres(db_url: str) -> tuple[bool, str]:
     except ImportError:
         return (False, "psycopg is not installed; cannot check PostgreSQL connectivity")
     try:
-        async with await psycopg.AsyncConnection.connect(db_url, autocommit=True) as conn:
+        async with await psycopg.AsyncConnection.connect(db_url, autocommit=True, connect_timeout=5) as conn:
             await (await conn.execute("SELECT 1")).fetchone()
             return (True, "Connected to PostgreSQL successfully")
     except Exception as e:
-        return (False, f"PostgreSQL error: {e}")
+        msg = str(e).split("\n")[0]
+        return (False, f"PostgreSQL error: {msg}")
 
 
 async def _check_sqlite(db_url: str) -> tuple[bool, str]:

@@ -10,9 +10,12 @@ import {
     GitPullRequest,
     X,
     Search,
+    Wifi,
+    WifiOff,
+    Loader2,
 } from 'lucide-react';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
-import { fetchApplications, deleteApplication, createApplication, updateApplication } from '../../services/applications';
+import { fetchApplications, deleteApplication, createApplication, updateApplication, checkMemoryConnection, mapConfigToApi } from '../../services/applications';
 import type { AppType } from '../../types/application.types';
 import type { ApplicationConfig } from '../../types/application.types';
 import { notify } from '../../components/toast/notify';
@@ -454,6 +457,43 @@ const DeleteBtn = styled.button`
     &:hover { background: rgba(248, 113, 113, 0.18); }
 `;
 
+const VerifyBtn = styled.button`
+    flex: 1;
+    padding: 7px;
+    background: rgba(140, 82, 255, 0.08);
+    border: 1px solid rgba(140, 82, 255, 0.25);
+    border-radius: 8px;
+    color: #8c52ff;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    &:hover:not(:disabled) { background: rgba(140, 82, 255, 0.18); }
+    &:disabled { opacity: 0.7; cursor: wait; }
+`;
+
+const VerifySpinner = styled(Loader2)`
+    animation: spin 1s linear infinite;
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+
+const VerifyStatus = styled.div<{ $success: boolean }>`
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 4px;
+    ${p => p.$success ? `color: #34d399;` : `color: #f87171;`}
+`;
+
 // ── Per-provider modal ───────────────────────────────────────────────────────
 
 const modalIn = keyframes`from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); }`;
@@ -845,6 +885,27 @@ const MemoryPage: React.FC = () => {
     // Delete
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
 
+    // Verify
+    const [verifying, setVerifying] = useState<Record<string, boolean>>({});
+    const [verifyResult, setVerifyResult] = useState<Record<string, { success: boolean; message: string }>>({});
+
+    const handleVerify = async (mem: ApplicationConfig) => {
+        if (!mem.id) return;
+        setVerifying(prev => ({ ...prev, [mem.id!]: true }));
+        setVerifyResult(prev => { const next = { ...prev }; delete next[mem.id!]; return next; });
+        try {
+            const config = mapConfigToApi(mem.type, mem.config);
+            const result = await checkMemoryConnection(config);
+            setVerifyResult(prev => ({ ...prev, [mem.id!]: { success: result.success, message: result.message } }));
+            setTimeout(() => setVerifyResult(prev => { const next = { ...prev }; delete next[mem.id!]; return next; }), 10000);
+        } catch {
+            setVerifyResult(prev => ({ ...prev, [mem.id!]: { success: false, message: 'Request failed' } }));
+            setTimeout(() => setVerifyResult(prev => { const next = { ...prev }; delete next[mem.id!]; return next; }), 10000);
+        } finally {
+            setVerifying(prev => ({ ...prev, [mem.id!]: false }));
+        }
+    };
+
     const loadMemories = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -1011,9 +1072,20 @@ const MemoryPage: React.FC = () => {
                                         </UpdatedLabel>
 
                                         <CardActions>
+                                            {mem.type !== 'AdkInMemory' && (
+                                                <VerifyBtn onClick={() => handleVerify(mem)} disabled={verifying[mem.id!]}>
+                                                    {verifying[mem.id!] ? <><VerifySpinner size={12} /> Checking...</> : <><Wifi size={12} /> Verify</>}
+                                                </VerifyBtn>
+                                            )}
                                             <EditBtn onClick={() => openEdit(mem)}>Edit</EditBtn>
                                             <DeleteBtn onClick={() => setAppToDelete(mem)}>Remove</DeleteBtn>
                                         </CardActions>
+                                        {verifyResult[mem.id!] && (
+                                            <VerifyStatus $success={verifyResult[mem.id!].success}>
+                                                {verifyResult[mem.id!].success ? <Wifi size={12} /> : <WifiOff size={12} />}
+                                                {verifyResult[mem.id!].message}
+                                            </VerifyStatus>
+                                        )}
                                     </Card>
                                 );
                             })}
