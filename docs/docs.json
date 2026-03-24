@@ -57,89 +57,68 @@
         "groups": [
           {
             "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "templates",
-              "architecture"
-            ]
+            "icon": "rocket",
+            "pages": ["index", "quickstart", "templates", "architecture"]
           },
           {
             "group": "Manager",
-            "pages": [
-              "manager/overview",
-              "manager/tutorial"
-            ]
+            "icon": "grid-2",
+            "pages": ["manager/overview", "manager/tutorial"]
           },
           {
             "group": "Agent frameworks",
-            "pages": [
-              "frameworks/overview",
-              "frameworks/langgraph",
-              "frameworks/adk"
-            ]
+            "icon": "layer-group",
+            "pages": ["frameworks/overview", "frameworks/langgraph", "frameworks/adk"]
           },
           {
             "group": "Guardrails",
-            "pages": [
-              "guardrails/overview",
-              "guardrails/reference"
-            ]
+            "icon": "shield-halved",
+            "pages": ["guardrails/overview", "guardrails/reference"]
           },
           {
             "group": "Memory",
-            "pages": [
-              "memory/overview",
-              "memory/langgraph",
-              "memory/adk"
-            ]
+            "icon": "database",
+            "pages": ["memory/overview", "memory/langgraph", "memory/adk"]
           },
           {
             "group": "Observability",
-            "pages": [
-              "observability/overview",
-              "observability/langfuse",
-              "observability/arize-phoenix",
-              "observability/langsmith",
-              "observability/gcp-trace",
-              "observability/gcp-logging"
-            ]
+            "icon": "chart-line",
+            "pages": ["observability/overview", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging"]
           },
           {
             "group": "Tool governance",
-            "pages": [
-              "tool-governance/overview",
-              "tool-governance/docker-toolkit"
-            ]
+            "icon": "screwdriver-wrench",
+            "pages": ["tool-governance/overview", "tool-governance/docker-toolkit"]
           },
           {
             "group": "Authentication",
-            "pages": [
-              "auth/overview"
-            ]
+            "icon": "lock",
+            "pages": ["auth/overview"]
           },
           {
             "group": "Integrations",
-            "pages": [
-              "integrations/discord",
-              "integrations/slack",
-              "integrations/whatsapp"
-            ]
+            "icon": "plug",
+            "pages": ["integrations/discord", "integrations/slack", "integrations/whatsapp"]
           },
           {
             "group": "Deployment",
-            "pages": [
-              "deployment/overview",
-              "deployment/gcp"
-            ]
+            "icon": "server",
+            "pages": ["deployment/overview", "deployment/gcp"]
           },
           {
             "group": "Advanced",
+            "icon": "gear",
+            "pages": ["configuration", "prompts", "cli/overview", "faq"]
+          }
+        ]
+      },
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Guides",
             "pages": [
-              "configuration",
-              "prompts",
-              "cli/overview",
-              "faq"
+              "guides/overview"
             ]
           }
         ]
@@ -158,10 +137,31 @@
             "openapi": "/api-reference/openapi.json"
           }
         ]
+      },
+      {
+        "tab": "Changelog",
+        "groups": [
+          {
+            "group": "Changelog",
+            "pages": [
+              "changelog/overview"
+            ]
+          }
+        ]
       }
     ],
     "global": {
       "anchors": [
+        {
+          "anchor": "Talk to us",
+          "href": "https://calendar.app.google/RSzm7EM5VZY8xVnN9",
+          "icon": "comments"
+        },
+        {
+          "anchor": "Discord",
+          "href": "https://discord.gg/KCZ6nW2jQe",
+          "icon": "discord"
+        },
         {
           "anchor": "GitHub",
           "href": "https://github.com/Idun-Group/idun-agent-platform",
@@ -171,17 +171,7 @@
     }
   },
   "navbar": {
-    "links": [
-      {
-        "type": "github",
-        "href": "https://github.com/Idun-Group/idun-agent-platform"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Get started",
-      "href": "/quickstart"
-    }
+    "links": []
   },
   "contextual": {
     "options": [
