@@ -27,7 +27,7 @@ import {
     PickerBody, PickerEmpty, PickerItem, PickerName, PickerMeta,
 } from './styled';
 
-const GITHUB_URL = 'https://github.com/Idun-Group/idun-agent-platform';
+const DOCS_URL = 'https://docs.idunplatform.com/prompts';
 
 function generateUsageSnippet(promptId: string, variables: string[]): string {
     const lines = [
@@ -267,7 +267,7 @@ const PromptsPage = () => {
                     <PageTitle>Prompts</PageTitle>
                     <PageSubtitle>
                         Versioned prompt templates with Jinja2 variables{' · '}
-                        <DocsLink href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+                        <DocsLink href={DOCS_URL} target="_blank" rel="noopener noreferrer">
                             Docs <ExternalLink size={10} style={{ verticalAlign: 'middle' }} />
                         </DocsLink>
                     </PageSubtitle>
