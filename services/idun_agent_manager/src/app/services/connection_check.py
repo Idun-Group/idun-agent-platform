@@ -84,7 +84,7 @@ async def _dispatch_observability(
 
 async def _dispatch_memory(config: dict) -> tuple[bool, str]:
     match config.get("type", ""):
-        case "postgres":
+        case "postgres" | "database":
             return await _check_postgres(config.get("db_url", ""))
         case "sqlite":
             return await _check_sqlite(config.get("db_url", ""))

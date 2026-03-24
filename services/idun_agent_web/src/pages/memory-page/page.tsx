@@ -599,10 +599,19 @@ const Required = styled.span`
     color: hsl(var(--destructive));
 `;
 
+
 const FieldHint = styled.p`
     font-size: 11px;
     color: hsl(var(--muted-foreground));
-    margin: 4px 0 0;
+    margin: 8px 0 0;
+    line-height: 1.5;
+    code {
+        background: rgba(140, 82, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        color: #8c52ff;
+    }
 `;
 
 const Input = styled.input`
@@ -810,6 +819,7 @@ const MemoryModal: React.FC<MemoryModalProps> = ({ provider, framework, appToEdi
                                     value={connectionUrl}
                                     onChange={e => setConnectionUrl(e.target.value)}
                                 />
+                                <FieldHint>If your database is on the host and the manager runs in Docker, use <code>host.docker.internal</code> instead of <code>localhost</code>.</FieldHint>
                             </FieldGroup>
                         )}
 
