@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Eye, EyeOff } from 'lucide-react';
-import { createApplication, updateApplication } from '../../../services/applications';
+import { createApplication, updateApplication, checkObservabilityConnection, mapConfigToApi, mapTypeToProvider } from '../../../services/applications';
 import type { AppType, ApplicationConfig } from '../../../types/application.types';
+import CheckConnectionButton from '../check-connection-button/component';
 
 interface Props {
     isOpen: boolean;
@@ -287,7 +288,13 @@ const Footer = styled.div`
     padding: 20px 28px;
     border-top: 1px solid var(--border-subtle);
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+`;
+
+const FooterRight = styled.div`
+    display: flex;
     gap: 12px;
 `;
 
@@ -532,11 +539,23 @@ const CreateObservabilityModal: React.FC<Props> = ({ isOpen, onClose, onCreated,
                         </FormBody>
 
                         <Footer>
-                            <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
-                            <SubmitBtn type="submit" disabled={!provider || isLoading}>
-                                {isLoading && <Spinner />}
-                                {isEditMode ? 'Save Changes' : 'Connect'}
-                            </SubmitBtn>
+                            {provider && (
+                                <CheckConnectionButton
+                                    disabled={!provider || isLoading}
+                                    onCheck={() => checkObservabilityConnection({
+                                        provider: mapTypeToProvider(provider.id),
+                                        enabled: true,
+                                        config: mapConfigToApi(provider.id, formValues),
+                                    })}
+                                />
+                            )}
+                            <FooterRight>
+                                <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
+                                <SubmitBtn type="submit" disabled={!provider || isLoading}>
+                                    {isLoading && <Spinner />}
+                                    {isEditMode ? 'Save Changes' : 'Connect'}
+                                </SubmitBtn>
+                            </FooterRight>
                         </Footer>
                     </form>
                 </RightPanel>

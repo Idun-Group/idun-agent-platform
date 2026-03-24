@@ -966,6 +966,19 @@ export const discoverTools = async (id: string): Promise<MCPTool[]> => {
     return res.tools;
 };
 
+export interface ConnectionCheckResponse {
+    success: boolean;
+    message: string;
+    provider: string;
+    duration_ms: number;
+}
+
+export const checkObservabilityConnection = (config: unknown): Promise<ConnectionCheckResponse> =>
+    postJson<ConnectionCheckResponse>('/api/v1/observability/check-connection', config);
+
+export const checkMemoryConnection = (config: unknown): Promise<ConnectionCheckResponse> =>
+    postJson<ConnectionCheckResponse>('/api/v1/memory/check-connection', config);
+
 const isConflictError = (e: unknown): boolean => {
     if (!(e instanceof Error)) return false;
     // The API returns JSON with a "detail" field for 409 errors
