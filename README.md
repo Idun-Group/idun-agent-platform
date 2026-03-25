@@ -319,7 +319,13 @@ idun agent serve --source manager
 
 ## Community
 
-[Discord](https://discord.gg/KCZ6nW2jQe) · [GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions) · [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues) · [Contributing](./CONTRIBUTING.md) · [Roadmap](./ROADMAP.md)
+| | |
+|---|---|
+| **Questions and help** | [Discord](https://discord.gg/KCZ6nW2jQe) |
+| **Feature requests** | [GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions) |
+| **Bug reports** | [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues) |
+| **Contributing** | [CONTRIBUTING.md](./CONTRIBUTING.md) |
+| **Roadmap** | [ROADMAP.md](./ROADMAP.md) |
 
 ## Commercial support
 
