@@ -30,7 +30,7 @@
 Enroll any **LangGraph** or **ADK** agent and get a production-grade service with observability, guardrails, memory persistence, MCP tool governance, and SSO. Open source, self-hosted, no vendor lock-in.
 
 <p align="center">
-  <img src="docs/images/readme/dashboard.png" alt="Idun Agent Platform" width="100%"/>
+  <img src="docs/images/readme/demo.gif" alt="Idun Agent Platform demo" width="100%"/>
 </p>
 
 ---
