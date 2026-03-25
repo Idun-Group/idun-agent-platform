@@ -23,11 +23,13 @@
 
 [Cloud](https://cloud.idunplatform.com) · [Quickstart](https://docs.idunplatform.com/quickstart) · [Docs](https://docs.idunplatform.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
+<sub>⭐ If you find this useful, please star the repo. It helps others discover the project.</sub>
+
 </div>
 
 <br/>
 
-Idun Agent Platform is an open-source, self-hosted control plane for **LangGraph** and **Google ADK** agents. Enroll your agent and get a production-grade service with built-in observability, guardrails, memory persistence, MCP tool governance, prompt management, and SSO with workspace isolation.
+<p align="center">Idun Agent Platform is an open-source, self-hosted control plane for <b>LangGraph</b> and <b>Google ADK</b> agents. Enroll your agent and get a production-grade service with built-in observability, guardrails, memory persistence, MCP tool governance, prompt management, and SSO with workspace isolation.</p>
 
 > **Why Idun?** Teams building agents face a bad tradeoff: build the platform yourself (slow, expensive) or adopt a SaaS (lock-in, no sovereignty). Idun is the third path: you keep your agent code, your data, and your infrastructure. The platform handles the production layer.
 
