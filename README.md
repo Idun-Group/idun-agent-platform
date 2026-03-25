@@ -27,7 +27,9 @@
 
 <br/>
 
-Enroll any **LangGraph** or **ADK** agent and get a production-grade service with observability, guardrails, memory persistence, MCP tool governance, and SSO. Open source, self-hosted, no vendor lock-in.
+Idun Agent Platform is an open-source, self-hosted control plane for **LangGraph** and **Google ADK** agents. Enroll your agent and get a production-grade service with built-in observability, guardrails, memory persistence, MCP tool governance, prompt management, and SSO with workspace isolation.
+
+> **Why Idun?** Teams building agents face a bad tradeoff: build the platform yourself (slow, expensive) or adopt a SaaS (lock-in, no sovereignty). Idun is the third path: you keep your agent code, your data, and your infrastructure. The platform handles the production layer.
 
 <p align="center">
   <img src="docs/images/readme/demo.gif" alt="Idun Agent Platform demo" width="100%"/>
@@ -37,6 +39,8 @@ Enroll any **LangGraph** or **ADK** agent and get a production-grade service wit
 
 ## Quick start
 
+> **Prerequisites**: Docker and Git.
+
 ```bash
 git clone https://github.com/Idun-Group/idun-agent-platform.git && cd idun-agent-platform
 cp .env.example .env
@@ -45,10 +49,12 @@ docker compose -f docker-compose.dev.yml up --build
 
 Open [localhost:3000](http://localhost:3000). Create an account. Deploy your first agent in 3 clicks.
 
-> **Standalone mode** (no Manager, no database):
+> [!TIP]
+> **Don't need the full platform?** Run a standalone agent with no Manager and no database:
 > ```bash
 > pip install idun-agent-engine && idun init
 > ```
+> The interactive TUI configures framework, memory, observability, guardrails, and MCP in one pass. See the [CLI docs](https://docs.idunplatform.com/cli/overview).
 
 ---
 
@@ -125,9 +131,11 @@ Bidirectional: receive messages, invoke agents, send replies. Webhook verificati
 </tr>
 </table>
 
-**SSO and multi-tenancy** · OIDC with Google and Okta, or username/password. Role-based workspaces (owner, admin, member, viewer).
+> [!NOTE]
+> **SSO and multi-tenancy** — OIDC with Google and Okta, or username/password. Role-based workspaces (owner, admin, member, viewer). Every resource is scoped to a workspace.
 
-**AG-UI streaming** · Every agent gets a standards-based streaming API, compatible with CopilotKit clients. Built-in chat playground for testing.
+> [!NOTE]
+> **AG-UI streaming** — Every agent gets a standards-based streaming API, compatible with CopilotKit clients. Built-in chat playground for testing.
 
 <p align="center">
   <img src="docs/images/readme/agent-detail.png" alt="Agent detail" width="100%"/>
@@ -259,6 +267,9 @@ integrations:
       verify_token: "${WHATSAPP_VERIFY_TOKEN}"
 ```
 
+> [!TIP]
+> Environment variables like `${LANGFUSE_SECRET_KEY}` are resolved at startup. You can use `.env` files or inject them through Docker/Kubernetes.
+
 Serve from a file:
 
 ```bash
@@ -274,7 +285,10 @@ export IDUN_MANAGER_HOST=https://manager.example.com
 idun agent serve --source manager
 ```
 
-Full config reference: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration). Agent templates: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template).
+> [!IMPORTANT]
+> Full config reference: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration)
+>
+> 9 runnable agent examples: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
 ---
 
