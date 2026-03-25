@@ -23,7 +23,7 @@
 
 [Cloud](https://cloud.idunplatform.com) · [Quickstart](https://docs.idunplatform.com/quickstart) · [Docs](https://docs.idunplatform.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
-<sub>⭐ If you find this useful, please star the repo. It helps others discover the project.</sub>
+⭐ If you find this useful, please star the repo. It helps others discover the project.
 
 </div>
 
