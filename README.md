@@ -205,6 +205,31 @@ flowchart LR
 
 ---
 
+## Idun vs alternatives
+
+| | **Idun Platform** | **LangGraph Cloud** | **LangSmith** | **DIY (FastAPI + glue)** |
+|---|:---:|:---:|:---:|:---:|
+| Self-hosted / on-prem | ✅ | ❌ | ❌ | ✅ |
+| Multi-framework (LangGraph + ADK) | ✅ | LangGraph only | ❌ (observability only) | Manual |
+| Guardrails (PII, toxicity, topic) | ✅ 15+ built-in | ❌ | ❌ | Build yourself |
+| MCP tool governance | ✅ per-agent | ❌ | ❌ | Build yourself |
+| Multi-tenant workspaces + RBAC | ✅ | ❌ | ✅ | Build yourself |
+| SSO (OIDC, Okta, Google) | ✅ | ❌ | ✅ | Build yourself |
+| Observability (Langfuse, Phoenix, LangSmith, GCP) | ✅ multi-provider | ❌ LangSmith only | ✅ LangSmith only | Manual |
+| Memory / checkpointing | ✅ Postgres, SQLite, in-memory | ✅ | ❌ | Build yourself |
+| Prompt management (versioned, Jinja2) | ✅ | ❌ | ✅ Hub | Build yourself |
+| Messaging (WhatsApp, Discord, Slack) | ✅ | ❌ | ❌ | Build yourself |
+| AG-UI / CopilotKit streaming | ✅ | ✅ | ❌ | Manual |
+| Admin UI | ✅ | ✅ | ✅ | ❌ |
+| Vendor lock-in | **None** | High | High | None |
+| Open source | ✅ GPLv3 | ❌ | ❌ | — |
+| Maintenance burden | Low | Low | Low | **High** |
+
+> [!NOTE]
+> Idun is not a replacement for LangSmith (observability) or LangGraph Cloud (hosting). It is the layer between your agent code and production that handles governance, security, and operations, regardless of which observability or hosting you choose.
+
+---
+
 ## Configuration
 
 Every agent is configured through a single YAML file. Here is a complete example with all features enabled:
