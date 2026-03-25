@@ -3,7 +3,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/logo/light.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/logo/dark.svg">
-  <img alt="Idun Agent Platform" src="docs/logo/dark.svg" width="280">
+  <img alt="Idun Agent Platform" src="docs/logo/dark.svg" width="200">
 </picture>
 
 <br/>
