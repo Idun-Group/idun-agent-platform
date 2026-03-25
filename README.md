@@ -29,7 +29,9 @@
 
 Enroll any **LangGraph** or **ADK** agent and get a production-grade service with observability, guardrails, memory persistence, MCP tool governance, and SSO. Open source, self-hosted, no vendor lock-in.
 
-<https://github.com/Idun-Group/idun-agent-platform/raw/docs/update-readme/docs/images/readme/demo.mp4>
+<p align="center">
+  <img src="docs/images/readme/dashboard.png" alt="Idun Agent Platform" width="100%"/>
+</p>
 
 ---
 
@@ -195,66 +197,84 @@ flowchart LR
 
 ---
 
-## Trusted by
+## Configuration
 
-> *"Idun Platform brings together all the tools needed to orchestrate our AI agents. It lets us significantly accelerate the deployment of our generative AI ambitions."*
->
-> **Cyriac Azefack**, Generative AI Lead, **Richemont**
-
-> *"Idun Platform brings together what's essential for industrialising AI agents, from governance to observability. It gives you the confidence to move from POC to production."*
->
-> **Atilla Topo**, Head of Cloud, **AXA Partners**
-
----
-
-<details>
-<summary><strong>Manual setup</strong> (standalone agent, no Manager)</summary>
-
-<br/>
-
-```bash
-pip install idun-agent-engine
-```
-
-```python
-# agent.py
-import operator
-from typing import Annotated, TypedDict
-from langgraph.graph import END, StateGraph
-
-class AgentState(TypedDict):
-    messages: Annotated[list, operator.add]
-
-def greet(state: AgentState):
-    user_msg = state["messages"][-1] if state.get("messages") else ""
-    return {"messages": [("ai", f"Hello! You said: '{user_msg}'")]}
-
-graph = StateGraph(AgentState)
-graph.add_node("greet", greet)
-graph.set_entry_point("greet")
-graph.add_edge("greet", END)
-app = graph
-```
+Every agent is configured through a single YAML file. Here is a complete example with all features enabled:
 
 ```yaml
-# config.yaml
 server:
   api:
-    port: 8000
+    port: 8001
+
 agent:
   type: "LANGGRAPH"
   config:
-    name: "Hello World Agent"
-    graph_definition: "./agent.py:app"
+    name: "Support Agent"
+    graph_definition: "./agent.py:graph"
+    checkpointer:
+      type: "sqlite"
+      db_url: "sqlite:///checkpoints.db"
+
+observability:
+  - provider: "LANGFUSE"
+    enabled: true
+    config:
+      host: "https://cloud.langfuse.com"
+      public_key: "${LANGFUSE_PUBLIC_KEY}"
+      secret_key: "${LANGFUSE_SECRET_KEY}"
+
+guardrails:
+  input:
+    - config_id: "DETECT_PII"
+      on_fail: "reject"
+      reject_message: "Request contains personal information."
+  output:
+    - config_id: "TOXIC_LANGUAGE"
+      on_fail: "reject"
+
+mcp_servers:
+  - name: "time"
+    transport: "stdio"
+    command: "docker"
+    args: ["run", "-i", "--rm", "mcp/time"]
+
+prompts:
+  - prompt_id: "system-prompt"
+    version: 1
+    content: "You are a support agent for {{ company_name }}."
+    tags: ["latest"]
+
+sso:
+  enabled: true
+  issuer: "https://accounts.google.com"
+  client_id: "123456789.apps.googleusercontent.com"
+  allowed_domains: ["yourcompany.com"]
+
+integrations:
+  - provider: "WHATSAPP"
+    enabled: true
+    config:
+      access_token: "${WHATSAPP_ACCESS_TOKEN}"
+      phone_number_id: "${WHATSAPP_PHONE_ID}"
+      verify_token: "${WHATSAPP_VERIFY_TOKEN}"
 ```
 
+Serve from a file:
+
 ```bash
+pip install idun-agent-engine
 idun agent serve --source file --path config.yaml
 ```
 
-More examples: [agent templates](https://github.com/Idun-Group/idun-agent-template)
+Or fetch config from the Manager:
 
-</details>
+```bash
+export IDUN_AGENT_API_KEY=your-agent-api-key
+export IDUN_MANAGER_HOST=https://manager.example.com
+idun agent serve --source manager
+```
+
+Full config reference: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration). Agent templates: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template).
 
 ---
 
