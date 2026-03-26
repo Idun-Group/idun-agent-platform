@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { TextInput } from '../../components/general/form/component';
 import { useAuth } from '../../hooks/use-auth';
 import { runtimeConfig } from '../../utils/runtime-config';
+import { getJson } from '../../utils/api';
 import { ExternalLink, Github, Globe, Calendar } from 'lucide-react';
 
 const isBasicAuthEnabled = runtimeConfig.AUTH_DISABLE_USERNAME_PASSWORD !== 'true';
@@ -36,6 +37,11 @@ const testimonials: TestimonialData[] = [
     },
 ];
 
+const PROVIDER_CONFIG: Record<string, { logo: string; labelKey: string; defaultLabel: string }> = {
+    google: { logo: '/img/google-logo.svg', labelKey: 'login.sso.google', defaultLabel: 'Continue with Google' },
+    microsoft: { logo: '/img/microsoft-logo.svg', labelKey: 'login.sso.microsoft', defaultLabel: 'Continue with Microsoft' },
+};
+
 const LoginPage = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -43,6 +49,7 @@ const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [providers, setProviders] = useState<string[]>([]);
 
     useEffect(() => {
         if (session) {
@@ -56,6 +63,14 @@ const LoginPage = () => {
             }
         }
     }, [session, navigate]);
+
+    useEffect(() => {
+        if (!isBasicAuthEnabled) {
+            getJson<{ providers: string[] }>('/api/v1/auth/providers')
+                .then((res) => setProviders(res.providers))
+                .catch(() => setProviders(Object.keys(PROVIDER_CONFIG)));
+        }
+    }, []);
 
     const handleBasicLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -112,10 +127,16 @@ const LoginPage = () => {
                         </AuthForm>
                     ) : (
                         <AuthForm onSubmit={(e) => e.preventDefault()} noValidate>
-                            <GoogleButton type="button" onClick={loginOIDC}>
-                                <GoogleLogo src="/img/google-logo.svg" alt="Google" />
-                                <span>{t('login.sso', { defaultValue: 'Continue with Google' })}</span>
-                            </GoogleButton>
+                            {providers.map((provider) => {
+                                const cfg = PROVIDER_CONFIG[provider];
+                                if (!cfg) return null;
+                                return (
+                                    <SSOButton key={provider} type="button" onClick={() => loginOIDC(provider)}>
+                                        <ProviderLogo src={cfg.logo} alt={provider} />
+                                        <span>{t(cfg.labelKey, { defaultValue: cfg.defaultLabel })}</span>
+                                    </SSOButton>
+                                );
+                            })}
                         </AuthForm>
                     )}
 
@@ -244,7 +265,7 @@ const HeroDescription = styled.p`
 const AuthForm = styled.form`
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 12px;
 `;
 
 const SubmitButton = styled(Button)`
@@ -263,7 +284,7 @@ const ErrorText = styled.p`
     margin: 0;
 `;
 
-const GoogleButton = styled.button`
+const SSOButton = styled.button`
     display: flex;
     align-items: center;
     justify-content: center;
@@ -285,7 +306,7 @@ const GoogleButton = styled.button`
     }
 `;
 
-const GoogleLogo = styled.img`
+const ProviderLogo = styled.img`
     width: 20px;
     height: 20px;
 `;
