@@ -83,7 +83,7 @@ RUN groupadd -r appuser --gid 1000 && \
 USER appuser
 
 # Expose default port
-EXPOSE 8000
+EXPOSE 8080
 
 # Health check endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
