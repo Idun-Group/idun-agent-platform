@@ -149,6 +149,40 @@ class TestRunRoute:
 
 
 @pytest.mark.unit
+class TestHealthRoute:
+    """Test /health endpoint."""
+
+    def test_health_returns_agent_name(self):
+        """GET /health returns agent_name from loaded agent config."""
+        config = ConfigBuilder.from_dict(_make_config("graph")).build()
+        app = create_app(engine_config=config)
+
+        with TestClient(app) as client:
+            response = client.get("/health")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "ok"
+            assert data["agent_name"] == "test_agent"
+            assert "version" in data
+
+    def test_health_returns_null_agent_name_before_init(self):
+        """GET /health returns null agent_name when no agent is loaded."""
+        from fastapi import FastAPI
+
+        from idun_agent_engine.server.routers.base import base_router
+
+        app = FastAPI()
+        app.include_router(base_router)
+
+        with TestClient(app) as client:
+            response = client.get("/health")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "ok"
+            assert data["agent_name"] is None
+
+
+@pytest.mark.unit
 class TestDeprecatedInvokeRoute:
     """Test that deprecated /agent/invoke still works."""
 

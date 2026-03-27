@@ -211,7 +211,11 @@ export function performHealthCheck(
         })
         .then(data => {
             const isHealthy = data?.status === 'ok';
-            return updateAgentStatus(agent.id, isHealthy ? 'active' : 'draft');
+            const config = agent.engine_config?.agent?.config as Record<string, unknown> | undefined;
+            const expectedName = config?.name;
+            const returnedName = data?.agent_name;
+            const identityMatch = !expectedName || !returnedName || returnedName === expectedName;
+            return updateAgentStatus(agent.id, (isHealthy && identityMatch) ? 'active' : 'draft');
         })
         .then(updated => onStatusChange?.(updated))
         .catch(() => {
