@@ -12,7 +12,7 @@ FAKE_CREDENTIALS = json.dumps(
         "type": "service_account",
         "project_id": "test-project",
         "private_key_id": "key-id",
-        "private_key": "-----BEGIN RSA PRIVATE KEY-----\nMIIBogIBAAJBALRiMLAHudeSA/x3hB2f+2NRkJMc5Z/+JCMbj7JMIpYOGprFAP0Y\nc8LtMCwsyu78bburHFxjfjbCFP3YhPVKlgECAwEAAQJBAKh9vaTBSGMYIDynMrMN\nhDHuqWSKhPY/VZRuiqMjfkPJqCfJgRbE3A2EN8BPi8E1woXBxkNrcxaFUJqjKfYx\nhYkCIQDqx86MxkN1L3SoJYHA5oXGJFBMiT4DOYfm+AAu/2y+DwIhAMTs0fovSVqW\nFYGlS1h+kKxLzgOs1YVoRPhGrdeFjUAvAiEAsBfrI7knnmCxiHejUMlLTPCiEROS\nW1ZWPJPoAVXPzFsCIBXuJH10bTbSly6WSeq7GVZR6BuqVDeExXMOh0T4UrYpAiEA\n2H/RIA1s7QfCDxPBn9emUueDPkXf7VaHvVtEn+j2Z7Q=\n-----END RSA PRIVATE KEY-----",
+        "private_key": "dummy-private-key",
         "client_email": "test@test-project.iam.gserviceaccount.com",
         "client_id": "123",
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
