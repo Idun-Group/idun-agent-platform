@@ -134,6 +134,12 @@
             ]
           },
           {
+            "group": "Guides",
+            "pages": [
+              "guides/langgraph-production-deployment"
+            ]
+          },
+          {
             "group": "Advanced",
             "pages": [
               "configuration",
