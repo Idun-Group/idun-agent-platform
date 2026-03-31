@@ -140,12 +140,19 @@ async def _check_phoenix(opts: dict) -> tuple[bool, str]:
 async def _check_postgres(db_url: str) -> tuple[bool, str]:
     if not db_url:
         return (False, "Database URL is required")
+    # psycopg.AsyncConnection.connect() expects a libpq conninfo string,
+    # not a SQLAlchemy URL. Strip driver suffixes like +asyncpg or +psycopg.
+    clean_url = (
+        db_url
+        .replace("postgresql+asyncpg://", "postgresql://")
+        .replace("postgresql+psycopg://", "postgresql://")
+    )
     try:
         import psycopg
     except ImportError:
         return (False, "psycopg is not installed; cannot check PostgreSQL connectivity")
     try:
-        async with await psycopg.AsyncConnection.connect(db_url, autocommit=True, connect_timeout=5) as conn:
+        async with await psycopg.AsyncConnection.connect(clean_url, autocommit=True, connect_timeout=5) as conn:
             await (await conn.execute("SELECT 1")).fetchone()
             return (True, "Connected to PostgreSQL successfully")
     except Exception as e:
