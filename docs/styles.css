@@ -82,3 +82,25 @@ html.dark ::-webkit-scrollbar-thumb {
 html.dark ::-webkit-scrollbar-thumb:hover {
   background: var(--idun-purple);
 }
+
+/* ── Reduce sidebar left spacing ───────────────────────────────── */
+
+/* ── Reduce left padding, keep max-width ───────────────────────── */
+
+[class*="peer-"][class*="max-w-8xl"] {
+  padding-left: 8px !important;
+}
+
+/* ── Center the tab bar ────────────────────────────────────────── */
+
+.nav-tabs {
+  justify-content: center !important;
+  flex: 1 !important;
+}
+
+/* ── Bigger logo ───────────────────────────────────────────────── */
+
+img[alt="dark logo"], img[alt="light logo"] {
+  height: 28px !important;
+  width: auto !important;
+}

@@ -30,11 +30,19 @@ Before you begin, install the following:
       <Step title="Start the platform">
         <Note>Make sure the Docker daemon is running before you proceed.</Note>
 
+        **Production** (prebuilt images, fastest):
+
+        ```bash
+        docker compose up
+        ```
+
+        **Development** (builds from source, hot reload):
+
         ```bash
         docker compose -f docker-compose.dev.yml up --build
         ```
 
-        This starts PostgreSQL, the Manager API, and the web UI.
+        Both start PostgreSQL, the Manager API, and the web UI.
 
         ![Idun login page](/images/ui/login.png)
       </Step>

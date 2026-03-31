@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .base_agent import BaseAgentConfig
 
@@ -28,7 +28,16 @@ class AdkDatabaseSessionConfig(BaseModel):
     """Configuration for Database Session Service."""
 
     type: Literal["database"] = "database"
-    db_url: str = Field(..., description="Database URL (e.g. postgresql://...)")
+    db_url: str = Field(..., description="Database URL (e.g. postgresql+psycopg://...)")
+
+    @field_validator("db_url")
+    @classmethod
+    def ensure_async_driver(cls, v: str) -> str:
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+psycopg://", 1)
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+psycopg://", 1)
+        return v
 
 
 SessionServiceConfig = Annotated[

@@ -201,3 +201,7 @@ poetry.lock
 # Editor / tool artifacts
 .specstory/
 .cursor/rules/claude-mem-context.mdc
+
+# Remotion video project
+video/
+.guardrails/

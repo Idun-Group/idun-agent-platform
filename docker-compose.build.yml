@@ -1,3 +1,8 @@
+# Build-from-source Docker Compose for Idun Agent Platform
+# Builds images locally instead of pulling from Docker Hub.
+# Quick start: cp .env.example .env && docker compose -f docker-compose.build.yml up --build
+# With demo agent: docker compose -f docker-compose.build.yml --profile demo up --build
+
 services:
   db:
     image: postgres:16
@@ -9,33 +14,27 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_prod_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - idun_network
+    restart: unless-stopped
 
   manager:
     build:
       context: ./services/idun_agent_manager
       dockerfile: Dockerfile
     container_name: idun-manager
+    env_file: .env
     ports:
       - "8080:8080"
     environment:
-      # Database connection
       DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
-      DATABASEAUTO_MIGRATE: true
-      AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
       ENVIRONMENT: production
-      # Server configuration
       PORT: 8080
       WORKERS: 2
-
-      # Database tuning
       DATABASE__ECHO: "false"
       DATABASE__POOL_SIZE: 10
       DATABASE__MAX_OVERFLOW: 20
@@ -48,8 +47,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-    networks:
-      - idun_network
     restart: unless-stopped
 
   web:
@@ -58,36 +55,28 @@ services:
       dockerfile: Dockerfile
     container_name: idun-web
     ports:
-      - "3000:3000"
+      - "3000:8080"
     environment:
-      - VITE_API_URL=http://localhost:8080 # http://host.docker.internal:8000
-    networks:
-      - idun_network
+      - API_URL=http://localhost:8080
+      - AUTH_DISABLE_USERNAME_PASSWORD=${AUTH__DISABLE_USERNAME_PASSWORD:-false}
     depends_on:
       - manager
 
   agent:
+    profiles: ["demo"]
     build:
       context: ./libs/idun_agent_engine/examples/01_basic_config_file
       dockerfile: Dockerfile
     container_name: idun-agent
     ports:
-      - "8000:8000"
-      - "6006:6006" # For Phoenix local
+      - "8002:8002"
     environment:
-      IDUN_AGENT_API_KEY: 5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733
-      IDUN_MANAGER_HOST: http://manager:8080/api/v1/agents/config
+      IDUN_AGENT_API_KEY: ${IDUN_AGENT_API_KEY:-}
+      IDUN_MANAGER_HOST: http://manager:8080
     depends_on:
       manager:
         condition: service_healthy
-    networks:
-      - idun_network
     restart: unless-stopped
 
 volumes:
-  postgres_prod_data:
-  phoenix_prod_data:
-
-networks:
-  idun_network:
-    driver: bridge
+  postgres_data:

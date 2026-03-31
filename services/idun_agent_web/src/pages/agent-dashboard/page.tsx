@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { notify } from '../../components/toast/notify';
 import { Search, Plus, Bot } from 'lucide-react';
 import type { BackendAgent } from '../../services/agents';
-import { listAgents, deleteAgent } from '../../services/agents';
+import { listAgents, deleteAgent, performHealthCheck } from '../../services/agents';
 import AgentCard from '../../components/dashboard/agents/agent-card/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 
@@ -33,14 +33,25 @@ const AgentDashboardPage = () => {
     const [agentToDelete, setAgentToDelete] = useState<BackendAgent | null>(null);
 
     useEffect(() => {
+        let cancelled = false;
         setIsLoading(true);
         listAgents()
-            .then((rows) => setAgents(rows))
+            .then((rows) => {
+                setAgents(rows);
+                for (const agent of rows) {
+                    performHealthCheck(agent, (updated) => {
+                        if (!cancelled) {
+                            setAgents((prev) => prev.map((a) => a.id === updated.id ? updated : a));
+                        }
+                    });
+                }
+            })
             .catch((error) => {
                 const message = error instanceof Error ? error.message : String(error);
                 notify.error(message);
             })
             .finally(() => setIsLoading(false));
+        return () => { cancelled = true; };
     }, []);
 
     const filteredAgents = useMemo(() => {

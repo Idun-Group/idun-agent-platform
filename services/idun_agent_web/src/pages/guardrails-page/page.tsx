@@ -1251,7 +1251,7 @@ const GuardrailsPage: React.FC = () => {
                             </DropdownPanel>
                         )}
                     </DropdownWrapper>
-                    <HeaderBtn href="https://idun-group.github.io/idun-agent-platform/guardrails/overview/" target="_blank" rel="noopener noreferrer">
+                    <HeaderBtn href="https://docs.idunplatform.com/guardrails/overview" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </HeaderBtn>
                 </HeaderActions>

@@ -57,66 +57,43 @@
         "groups": [
           {
             "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "templates",
-              "architecture"
-            ]
+            "icon": "rocket",
+            "pages": ["index", "quickstart", "templates", "architecture"]
           },
           {
             "group": "Manager",
-            "pages": [
-              "manager/overview",
-              "manager/tutorial"
-            ]
+            "icon": "grid-2",
+            "pages": ["manager/overview", "manager/tutorial"]
           },
           {
             "group": "Agent frameworks",
-            "pages": [
-              "frameworks/overview",
-              "frameworks/langgraph",
-              "frameworks/adk"
-            ]
+            "icon": "layer-group",
+            "pages": ["frameworks/overview", "frameworks/langgraph", "frameworks/adk"]
           },
           {
             "group": "Guardrails",
-            "pages": [
-              "guardrails/overview",
-              "guardrails/reference"
-            ]
+            "icon": "shield-halved",
+            "pages": ["guardrails/overview", "guardrails/reference"]
           },
           {
             "group": "Memory",
-            "pages": [
-              "memory/overview",
-              "memory/langgraph",
-              "memory/adk"
-            ]
+            "icon": "database",
+            "pages": ["memory/overview", "memory/langgraph", "memory/adk"]
           },
           {
             "group": "Observability",
-            "pages": [
-              "observability/overview",
-              "observability/langfuse",
-              "observability/arize-phoenix",
-              "observability/langsmith",
-              "observability/gcp-trace",
-              "observability/gcp-logging"
-            ]
+            "icon": "chart-line",
+            "pages": ["observability/overview", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging"]
           },
           {
             "group": "Tool governance",
-            "pages": [
-              "tool-governance/overview",
-              "tool-governance/docker-toolkit"
-            ]
+            "icon": "screwdriver-wrench",
+            "pages": ["tool-governance/overview", "tool-governance/docker-toolkit"]
           },
           {
             "group": "Authentication",
-            "pages": [
-              "auth/overview"
-            ]
+            "icon": "lock",
+            "pages": ["auth/overview"]
           },
           {
             "group": "Integrations",
@@ -129,18 +106,23 @@
           },
           {
             "group": "Deployment",
-            "pages": [
-              "deployment/overview",
-              "deployment/gcp"
-            ]
+            "icon": "server",
+            "pages": ["deployment/overview", "deployment/gcp"]
           },
           {
             "group": "Advanced",
+            "icon": "gear",
+            "pages": ["configuration", "prompts", "cli/overview", "faq"]
+          }
+        ]
+      },
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Guides",
             "pages": [
-              "configuration",
-              "prompts",
-              "cli/overview",
-              "faq"
+              "guides/overview"
             ]
           }
         ]
@@ -159,10 +141,31 @@
             "openapi": "/api-reference/openapi.json"
           }
         ]
+      },
+      {
+        "tab": "Changelog",
+        "groups": [
+          {
+            "group": "Changelog",
+            "pages": [
+              "changelog/overview"
+            ]
+          }
+        ]
       }
     ],
     "global": {
       "anchors": [
+        {
+          "anchor": "Talk to us",
+          "href": "https://calendar.app.google/RSzm7EM5VZY8xVnN9",
+          "icon": "comments"
+        },
+        {
+          "anchor": "Discord",
+          "href": "https://discord.gg/KCZ6nW2jQe",
+          "icon": "discord"
+        },
         {
           "anchor": "GitHub",
           "href": "https://github.com/Idun-Group/idun-agent-platform",
@@ -172,17 +175,7 @@
     }
   },
   "navbar": {
-    "links": [
-      {
-        "type": "github",
-        "href": "https://github.com/Idun-Group/idun-agent-platform"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Get started",
-      "href": "/quickstart"
-    }
+    "links": []
   },
   "contextual": {
     "options": [
@@ -224,26 +217,14 @@
     { "source": "/agent-frameworks/overview", "destination": "/frameworks/overview" },
     { "source": "/agent-frameworks/langgraph", "destination": "/frameworks/langgraph" },
     { "source": "/agent-frameworks/adk", "destination": "/frameworks/adk" },
-    { "source": "/observability/overview", "destination": "/observability/overview" },
-    { "source": "/observability/langfuse", "destination": "/observability/langfuse" },
-    { "source": "/observability/arize-phoenix", "destination": "/observability/arize-phoenix" },
-    { "source": "/observability/langsmith", "destination": "/observability/langsmith" },
-    { "source": "/observability/gcp-trace", "destination": "/observability/gcp-trace" },
-    { "source": "/observability/gcp-logging", "destination": "/observability/gcp-logging" },
     { "source": "/memory/index", "destination": "/memory/overview" },
     { "source": "/memory/memory-langgraph", "destination": "/memory/langgraph" },
     { "source": "/memory/memory-adk", "destination": "/memory/adk" },
     { "source": "/mcp/overview", "destination": "/tool-governance/overview" },
     { "source": "/mcp/docker-mcp", "destination": "/tool-governance/docker-toolkit" },
     { "source": "/sso-rbac/overview", "destination": "/auth/overview" },
-    { "source": "/integrations/discord", "destination": "/integrations/discord" },
-    { "source": "/integrations/slack", "destination": "/integrations/slack" },
-    { "source": "/integrations/whatsapp", "destination": "/integrations/whatsapp" },
-    { "source": "/deployment/overview", "destination": "/deployment/overview" },
     { "source": "/deployment/gcp-self-hosted", "destination": "/deployment/gcp" },
-    { "source": "/cli/overview", "destination": "/cli/overview" },
     { "source": "/prompts/overview", "destination": "/prompts" },
-    { "source": "/guardrails/overview", "destination": "/guardrails/overview" },
     { "source": "/more/faq", "destination": "/faq" },
     { "source": "/concepts/overview", "destination": "/architecture" },
     { "source": "/agent-manager/overview", "destination": "/manager/overview" }
