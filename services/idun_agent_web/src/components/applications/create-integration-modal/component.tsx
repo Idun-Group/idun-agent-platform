@@ -257,6 +257,7 @@ const PROVIDER_META: Record<IntegrationProvider, { label: string; color: string 
     WHATSAPP: { label: 'WhatsApp Business Cloud API', color: '#25D366' },
     DISCORD: { label: 'Discord Interactions Endpoint', color: '#5865F2' },
     SLACK: { label: 'Slack Events API', color: '#E01E5A' },
+    GOOGLE_CHAT: { label: 'Google Chat App', color: '#1A73E8' },
 };
 
 const ProviderPickerGrid = styled.div`
@@ -334,6 +335,11 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
     const [slackBotToken, setSlackBotToken] = useState('');
     const [signingSecret, setSigningSecret] = useState('');
 
+    // Google Chat fields
+    const [serviceAccountCredentials, setServiceAccountCredentials] = useState('');
+    const [projectNumber, setProjectNumber] = useState('');
+    const [localMode, setLocalMode] = useState(false);
+
     useEffect(() => {
         if (isOpen && appToEdit) {
             setName(appToEdit.name);
@@ -354,6 +360,10 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
             } else if (appToEdit.integration.provider === 'SLACK' && 'signing_secret' in cfg) {
                 setSlackBotToken(cfg.bot_token);
                 setSigningSecret(cfg.signing_secret);
+            } else if (appToEdit.integration.provider === 'GOOGLE_CHAT' && 'service_account_credentials_json' in cfg) {
+                setServiceAccountCredentials(cfg.service_account_credentials_json);
+                setProjectNumber(cfg.project_number);
+                setLocalMode(cfg.local_mode ?? false);
             }
         } else if (isOpen) {
             setName('');
@@ -362,6 +372,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
             setAccessToken(''); setPhoneNumberId(''); setVerifyToken(''); setApiVersion('v21.0');
             setBotToken(''); setApplicationId(''); setPublicKey(''); setGuildId('');
             setSlackBotToken(''); setSigningSecret('');
+            setServiceAccountCredentials(''); setProjectNumber(''); setLocalMode(false);
             setShowProviderPicker(!providerProp);
             if (providerProp) setSelectedProvider(providerProp);
         }
@@ -395,12 +406,20 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                 public_key: publicKey.trim(),
                 ...(guildId.trim() ? { guild_id: guildId.trim() } : {}),
             };
-        } else {
+        } else if (provider === 'SLACK') {
             if (!slackBotToken.trim()) { setErrorMessage('Bot Token is required'); return; }
             if (!signingSecret.trim()) { setErrorMessage('Signing Secret is required'); return; }
             config = {
                 bot_token: slackBotToken.trim(),
                 signing_secret: signingSecret.trim(),
+            };
+        } else {
+            if (!serviceAccountCredentials.trim()) { setErrorMessage('Service Account Credentials JSON is required'); return; }
+            if (!projectNumber.trim()) { setErrorMessage('Project Number is required'); return; }
+            config = {
+                service_account_credentials_json: serviceAccountCredentials.trim(),
+                project_number: projectNumber.trim(),
+                local_mode: localMode,
             };
         }
 
@@ -460,10 +479,10 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                                 onClick={() => { setSelectedProvider(key); setShowProviderPicker(false); }}
                             >
                                 <ProviderPickerIcon $color={meta.color}>
-                                    {key === 'WHATSAPP' ? '💬' : key === 'DISCORD' ? '🎮' : '⚡'}
+                                    {key === 'WHATSAPP' ? '💬' : key === 'DISCORD' ? '🎮' : key === 'GOOGLE_CHAT' ? '💬' : '⚡'}
                                 </ProviderPickerIcon>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <ProviderPickerName>{key === 'WHATSAPP' ? 'WhatsApp' : key === 'DISCORD' ? 'Discord' : 'Slack'}</ProviderPickerName>
+                                    <ProviderPickerName>{key === 'WHATSAPP' ? 'WhatsApp' : key === 'DISCORD' ? 'Discord' : key === 'GOOGLE_CHAT' ? 'Google Chat' : 'Slack'}</ProviderPickerName>
                                     <ProviderPickerDesc>{meta.label}</ProviderPickerDesc>
                                 </div>
                             </ProviderPickerCard>
@@ -632,6 +651,50 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                                     />
                                     <HelpText>HMAC-SHA256 signing secret for verifying webhook requests</HelpText>
                                 </FieldGroup>
+                            </>
+                        )}
+
+                        {provider === 'GOOGLE_CHAT' && (
+                            <>
+                                <FieldGroup>
+                                    <Label htmlFor="int-sa-credentials">
+                                        Service Account Credentials JSON <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
+                                    </Label>
+                                    <Input
+                                        id="int-sa-credentials"
+                                        type="password"
+                                        placeholder='{"type": "service_account", ...}'
+                                        value={serviceAccountCredentials}
+                                        onChange={e => setServiceAccountCredentials(e.target.value)}
+                                    />
+                                    <HelpText>Full JSON key file content from GCP service account</HelpText>
+                                </FieldGroup>
+
+                                <FieldGroup>
+                                    <Label htmlFor="int-project-number">
+                                        Project Number <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
+                                    </Label>
+                                    <Input
+                                        id="int-project-number"
+                                        type="text"
+                                        placeholder="123456789012"
+                                        value={projectNumber}
+                                        onChange={e => setProjectNumber(e.target.value)}
+                                    />
+                                    <HelpText>GCP project number for JWT bearer token verification</HelpText>
+                                </FieldGroup>
+
+                                <ToggleRow>
+                                    <div>
+                                        <ToggleLabel>Local Mode</ToggleLabel>
+                                        <HelpText style={{ margin: 0 }}>Rewrite http to https for JWT verification behind proxies like ngrok</HelpText>
+                                    </div>
+                                    <Toggle
+                                        type="button"
+                                        $active={localMode}
+                                        onClick={() => setLocalMode(v => !v)}
+                                    />
+                                </ToggleRow>
                             </>
                         )}
 

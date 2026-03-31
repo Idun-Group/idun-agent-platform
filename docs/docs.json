@@ -97,8 +97,12 @@
           },
           {
             "group": "Integrations",
-            "icon": "plug",
-            "pages": ["integrations/discord", "integrations/slack", "integrations/whatsapp"]
+            "pages": [
+              "integrations/discord",
+              "integrations/google-chat",
+              "integrations/slack",
+              "integrations/whatsapp"
+            ]
           },
           {
             "group": "Deployment",

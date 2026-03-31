@@ -1,6 +1,6 @@
 import { getJson, postJson, patchJson, deleteRequest } from '../utils/api';
 
-export type IntegrationProvider = 'WHATSAPP' | 'DISCORD' | 'SLACK';
+export type IntegrationProvider = 'WHATSAPP' | 'DISCORD' | 'SLACK' | 'GOOGLE_CHAT';
 
 export interface WhatsAppIntegrationConfig {
     access_token: string;
@@ -21,10 +21,16 @@ export interface SlackIntegrationConfig {
     signing_secret: string;
 }
 
+export interface GoogleChatIntegrationConfig {
+    service_account_credentials_json: string;
+    project_number: string;
+    local_mode?: boolean;
+}
+
 export interface IntegrationConfig {
     provider: IntegrationProvider;
     enabled: boolean;
-    config: WhatsAppIntegrationConfig | DiscordIntegrationConfig | SlackIntegrationConfig;
+    config: WhatsAppIntegrationConfig | DiscordIntegrationConfig | SlackIntegrationConfig | GoogleChatIntegrationConfig;
 }
 
 export interface ManagedIntegration {
