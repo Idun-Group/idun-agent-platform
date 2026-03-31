@@ -293,11 +293,11 @@ async def callback(
     )
     try:
         provider = OIDCProvider(raw_provider)
-    except ValueError:
+    except ValueError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unknown provider '{raw_provider}'",
-        )
+        ) from err
     provider_name = provider.value
 
     oauth = _get_oauth()

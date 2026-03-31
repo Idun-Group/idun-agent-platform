@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.routers import auth as auth_module
-from app.api.v1.routers.auth import OIDCProvider, _OAUTH_PROVIDER_SESSION_KEY
+from app.api.v1.routers.auth import _OAUTH_PROVIDER_SESSION_KEY, OIDCProvider
 from app.core.settings import get_settings
 from app.infrastructure.db.models.user import UserModel
 
