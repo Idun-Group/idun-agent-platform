@@ -970,7 +970,7 @@ const ObservabilityPage: React.FC = () => {
                         <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
                         <SearchInput placeholder="Search providers..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </SearchBar>
-                    <DocsButton href="https://idun-group.github.io/idun-agent-platform/observability/overview/" target="_blank" rel="noopener noreferrer">
+                    <DocsButton href="https://docs.idunplatform.com/observability/overview" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </DocsButton>
                 </HeaderActions>

@@ -902,7 +902,7 @@ const MemoryPage: React.FC = () => {
                         <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
                         <SearchInput placeholder="Search stores..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </SearchBar>
-                    <HeaderBtn href="https://idun-group.github.io/idun-agent-platform/memory/overview/" target="_blank" rel="noopener noreferrer">
+                    <HeaderBtn href="https://docs.idunplatform.com/memory/overview" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </HeaderBtn>
                 </HeaderActions>

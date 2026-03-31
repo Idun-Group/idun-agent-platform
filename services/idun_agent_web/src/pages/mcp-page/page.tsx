@@ -1399,7 +1399,7 @@ const MCPPage: React.FC = () => {
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </SearchBar>
-                    <HeaderBtn href="https://idun-group.github.io/idun-agent-platform/mcp/overview/" target="_blank" rel="noopener noreferrer">
+                    <HeaderBtn href="https://docs.idunplatform.com/tool-governance/overview" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </HeaderBtn>
                 </HeaderActions>
