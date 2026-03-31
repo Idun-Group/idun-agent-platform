@@ -106,6 +106,12 @@
             "pages": ["deployment/overview", "deployment/gcp"]
           },
           {
+            "group": "Guides",
+            "pages": [
+              "guides/langgraph-production-deployment"
+            ]
+          },
+          {
             "group": "Advanced",
             "icon": "gear",
             "pages": ["configuration", "prompts", "cli/overview", "faq"]
