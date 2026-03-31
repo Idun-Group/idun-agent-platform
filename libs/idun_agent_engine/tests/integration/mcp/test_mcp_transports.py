@@ -41,7 +41,7 @@ async def _stop_server(server, task, timeout: float = 5.0):
     server.should_exit = True
     try:
         await asyncio.wait_for(task, timeout=timeout)
-    except (asyncio.TimeoutError, Exception):
+    except (TimeoutError, Exception):
         task.cancel()
 
 

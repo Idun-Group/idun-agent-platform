@@ -626,4 +626,3 @@ async def test_mcp_registry_invokes_tool_from_live_server(aws_docs_mcp_config):
         assert "search_results" in response
         assert len(response["search_results"]) > 0
         assert any("s3" in r["url"].lower() for r in response["search_results"])
-
