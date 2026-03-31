@@ -11,6 +11,14 @@ from .discord_webhook import (  # noqa: F401
     InteractionResponseType,
     InteractionType,
 )
+from .google_chat import GoogleChatIntegrationConfig  # noqa: F401
+from .google_chat_webhook import (  # noqa: F401
+    GoogleChatEventPayload,
+    GoogleChatMessage,
+    GoogleChatSpace,
+    GoogleChatThread,
+    GoogleChatUser,
+)
 from .slack import SlackIntegrationConfig  # noqa: F401
 from .slack_webhook import (  # noqa: F401
     SlackEventPayload,

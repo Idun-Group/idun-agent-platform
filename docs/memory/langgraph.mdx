@@ -125,7 +125,7 @@ You can retrieve the latest state or a specific checkpoint using `graph.get_stat
 
 ## Troubleshooting
 
-1. **Verify database connection**: Test the connection string independently before configuring
+1. **Verify database connection**: Use the **Verify** button on the memory configuration card to check connectivity. If the manager runs in Docker and the database is on the host, use `host.docker.internal` instead of `localhost`
 2. **Check permissions**: Confirm the agent has read/write access to the database or file system
 3. **Thread ID required**: Always provide a `thread_id` in the config when using checkpointers
 4. **Database schema**: PostgreSQL checkpointers automatically create required tables on first use

@@ -8,7 +8,7 @@ interface AuthContextValue {
     session: Session | null;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<boolean>;
-    loginOIDC: () => void;
+    loginOIDC: (provider: string) => void;
     logout: () => Promise<void>;
     signup: (params: { email: string; password: string; name?: string | null }) => Promise<void>;
     refresh: () => Promise<void>;
@@ -98,9 +98,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => removeUnauthorizedHandler(onUnauthorized);
     }, [refresh]);
 
-    const loginOIDC = useCallback(() => {
+    const loginOIDC = useCallback((provider: string) => {
         if (typeof window !== 'undefined') {
-            window.location.href = `${API_BASE_URL}/api/v1/auth/login`;
+            window.location.href = `${API_BASE_URL}/api/v1/auth/login/${provider}`;
         }
     }, []);
 

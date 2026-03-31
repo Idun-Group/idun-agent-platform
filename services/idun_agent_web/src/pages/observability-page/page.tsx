@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Eye, EyeOff, ExternalLink, X, BookOpen, GitPullRequest, Search } from 'lucide-react';
-import { fetchApplications, deleteApplication, createApplication, updateApplication } from '../../services/applications';
+import { Eye, EyeOff, X, BookOpen, GitPullRequest, Search, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { fetchApplications, deleteApplication, createApplication, updateApplication, checkObservabilityConnection, mapConfigToApi, mapTypeToProvider } from '../../services/applications';
 import type { ApplicationConfig } from '../../types/application.types';
 import type { AppType } from '../../types/application.types';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
@@ -483,23 +483,41 @@ const CardActions = styled.div`
     margin-top: auto;
 `;
 
-const VisitBtn = styled.a`
+const VerifyBtn = styled.button`
     flex: 1;
     padding: 7px;
-    background: rgba(99, 179, 237, 0.08);
-    border: 1px solid rgba(99, 179, 237, 0.25);
+    background: rgba(140, 82, 255, 0.08);
+    border: 1px solid rgba(140, 82, 255, 0.25);
     border-radius: 8px;
-    color: #63b3ed;
+    color: #8c52ff;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-    text-decoration: none;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    &:hover { background: rgba(99, 179, 237, 0.18); }
+    &:hover:not(:disabled) { background: rgba(140, 82, 255, 0.18); }
+    &:disabled { opacity: 0.7; cursor: wait; }
+`;
+
+const VerifySpinner = styled(Loader2)`
+    animation: spin 1s linear infinite;
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+
+const VerifyStatus = styled.div<{ $success: boolean }>`
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 4px;
+    ${p => p.$success ? `color: #34d399;` : `color: #f87171;`}
 `;
 
 const EditBtn = styled.button`
@@ -930,6 +948,8 @@ const ObservabilityPage: React.FC = () => {
     const [modalProvider, setModalProvider] = useState<ProviderMeta | null>(null);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
+    const [verifying, setVerifying] = useState<Record<string, boolean>>({});
+    const [verifyResult, setVerifyResult] = useState<Record<string, { success: boolean; message: string }>>({});
 
     const openModal = (provider: ProviderMeta, app?: ApplicationConfig) => {
         setModalProvider(provider);
@@ -951,6 +971,26 @@ const ObservabilityPage: React.FC = () => {
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
+    const handleVerify = async (app: ApplicationConfig) => {
+        if (!app.id) return;
+        setVerifying(prev => ({ ...prev, [app.id!]: true }));
+        setVerifyResult(prev => { const next = { ...prev }; delete next[app.id!]; return next; });
+        try {
+            const result = await checkObservabilityConnection({
+                provider: mapTypeToProvider(app.type),
+                enabled: true,
+                config: mapConfigToApi(app.type, app.config),
+            });
+            setVerifyResult(prev => ({ ...prev, [app.id!]: { success: result.success, message: result.message } }));
+            setTimeout(() => setVerifyResult(prev => { const next = { ...prev }; delete next[app.id!]; return next; }), 10000);
+        } catch {
+            setVerifyResult(prev => ({ ...prev, [app.id!]: { success: false, message: 'Request failed' } }));
+            setTimeout(() => setVerifyResult(prev => { const next = { ...prev }; delete next[app.id!]; return next; }), 10000);
+        } finally {
+            setVerifying(prev => ({ ...prev, [app.id!]: false }));
+        }
+    };
+
     const handleDeleteConfirm = async () => {
         if (!appToDelete?.id) return;
         await deleteApplication(appToDelete.id);
@@ -970,7 +1010,7 @@ const ObservabilityPage: React.FC = () => {
                         <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
                         <SearchInput placeholder="Search providers..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </SearchBar>
-                    <DocsButton href="https://idun-group.github.io/idun-agent-platform/observability/overview/" target="_blank" rel="noopener noreferrer">
+                    <DocsButton href="https://docs.idunplatform.com/observability/overview" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </DocsButton>
                 </HeaderActions>
@@ -1041,7 +1081,6 @@ const ObservabilityPage: React.FC = () => {
                             }).map(app => {
                                 const config = flattenConfig(app.config);
                                 const configEntries = Object.entries(config);
-                                const providerUrl = getProviderUrl(app);
                                 const providerMeta = OBS_PROVIDERS.find(p => p.id === app.type);
                                 return (
                                     <Card key={app.id}>
@@ -1072,14 +1111,18 @@ const ObservabilityPage: React.FC = () => {
                                             <AgentCountBadge>Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}</AgentCountBadge>
                                         )}
                                         <CardActions>
-                                            {providerUrl && (
-                                                <VisitBtn href={providerUrl} target="_blank" rel="noopener noreferrer">
-                                                    <ExternalLink size={12} /> Visit
-                                                </VisitBtn>
-                                            )}
+                                            <VerifyBtn onClick={() => handleVerify(app)} disabled={verifying[app.id!]}>
+                                                {verifying[app.id!] ? <><VerifySpinner size={12} /> Checking...</> : <><Wifi size={12} /> Verify</>}
+                                            </VerifyBtn>
                                             <EditBtn onClick={() => providerMeta && openModal(providerMeta, app)}>Edit</EditBtn>
                                             <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
                                         </CardActions>
+                                        {verifyResult[app.id!] && (
+                                            <VerifyStatus $success={verifyResult[app.id!].success}>
+                                                {verifyResult[app.id!].success ? <Wifi size={12} /> : <WifiOff size={12} />}
+                                                {verifyResult[app.id!].message}
+                                            </VerifyStatus>
+                                        )}
                                     </Card>
                                 );
                             })}

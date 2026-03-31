@@ -953,6 +953,14 @@ function StructuredInputForm({
 // --- Chat Tab ---
 const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
   const agentUrl = (agent?.base_url || '').replace(/\/+$/, '');
+
+  const isAgentRunning = agent?.status === 'active' && !!agentUrl;
+  const hasSso = !!(agent?.engine_config?.sso?.enabled !== false && agent?.engine_config?.sso);
+  const chatBlocked = !isAgentRunning || hasSso;
+  const chatBlockedMessage = !isAgentRunning
+    ? 'This agent is offline. Start the engine with `idun agent serve` and connect it to the platform to enable the chat.'
+    : 'This agent is protected by SSO (OIDC). The built-in chat cannot send authenticated requests. Use an external client like curl or your frontend with a valid Bearer token from your OIDC provider.';
+
   const [endpoint, setEndpoint] = useState<'/agent/copilotkit/stream' | '/agent/stream'>('/agent/copilotkit/stream');
   const [threadId, setThreadId] = useState(() => uuidv4());
   const [input, setInput] = useState('');
@@ -1151,8 +1159,8 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
               <div className="chat-messages">
                 {messages.length === 0 && !structuredOutput && (
                   <div className="empty-state">
-                    <p>Send a message to start chatting with your agent.</p>
-                    <p className="hint">Use the toolbar to switch endpoints, manage threads, or open the config panel for advanced options.</p>
+                    <p>{chatBlocked ? chatBlockedMessage : 'Send a message to start chatting with your agent.'}</p>
+                    {!chatBlocked && <p className="hint">Use the toolbar to switch endpoints, manage threads, or open the config panel for advanced options.</p>}
                   </div>
                 )}
                 {messages.map(msg => (
@@ -1185,14 +1193,14 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                 )}
                 <div ref={chatEndRef} />
               </div>
-              <form className="chat-input" onSubmit={handleSubmit}>
+              <form className="chat-input" onSubmit={handleSubmit} style={chatBlocked ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
                 <textarea
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
                   rows={2}
-                  disabled={isStreaming}
+                  disabled={isStreaming || chatBlocked}
                 />
                 <div className="input-actions">
                   <button
@@ -1207,7 +1215,7 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                   {isStreaming ? (
                     <button type="button" onClick={stopStreaming} className="btn-stop">Stop</button>
                   ) : (
-                    <button type="submit" disabled={isStreaming} className="btn-send">Send</button>
+                    <button type="submit" disabled={isStreaming || chatBlocked} className="btn-send">Send</button>
                   )}
                 </div>
               </form>

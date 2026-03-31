@@ -6,6 +6,19 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _parse_scopes_value(v: Any) -> list[str]:
+    """Parse scopes from a string (comma-separated or JSON array) or pass through."""
+    if isinstance(v, str):
+        try:
+            parsed = json.loads(v)
+            if isinstance(parsed, list):
+                return parsed
+        except (json.JSONDecodeError, TypeError):
+            pass
+        return [s.strip() for s in v.split(",") if s.strip()]
+    return v
+
+
 class GoogleProviderSettings(BaseSettings):
     client_id: str = Field(default="")
     client_secret: str = Field(default="")
@@ -15,18 +28,28 @@ class GoogleProviderSettings(BaseSettings):
     @field_validator("scopes", mode="before")
     @classmethod
     def _parse_scopes(cls, v: Any) -> list[str]:
-        if isinstance(v, str):
-            try:
-                parsed = json.loads(v)
-                if isinstance(parsed, list):
-                    return parsed
-            except (json.JSONDecodeError, TypeError):
-                pass
-            return [s.strip() for s in v.split(",") if s.strip()]
-        return v
+        return _parse_scopes_value(v)
 
     model_config = SettingsConfigDict(
         env_prefix="AUTH__GOOGLE_", env_file=".env", extra="ignore"
+    )
+
+
+class MicrosoftProviderSettings(BaseSettings):
+    """Microsoft Entra ID (Azure AD) OIDC provider settings."""
+
+    client_id: str = Field(default="")
+    client_secret: str = Field(default="")
+    tenant_id: str = Field(default="common")
+    scopes: list[str] = Field(default=["openid", "profile", "email"])
+
+    @field_validator("scopes", mode="before")
+    @classmethod
+    def _parse_scopes(cls, v: Any) -> list[str]:
+        return _parse_scopes_value(v)
+
+    model_config = SettingsConfigDict(
+        env_prefix="AUTH__MICROSOFT_", env_file=".env", extra="ignore"
     )
 
 
@@ -64,6 +87,9 @@ class AuthSettings(BaseSettings):
     cookie_secure: bool = Field(default=False)
 
     google: GoogleProviderSettings = Field(default_factory=GoogleProviderSettings)
+    microsoft: MicrosoftProviderSettings = Field(
+        default_factory=MicrosoftProviderSettings
+    )
 
     @property
     def cookie_samesite(self) -> Literal["lax", "none"]:

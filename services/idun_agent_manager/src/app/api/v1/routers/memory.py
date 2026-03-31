@@ -29,6 +29,7 @@ from app.api.v1.deps import (
 )
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
+from app.services.connection_check import ConnectionCheckResponse, check_memory
 from app.services.engine_config import recompute_engine_config
 
 router = APIRouter()
@@ -38,6 +39,20 @@ logger = logging.getLogger(__name__)
 # Constants
 PAGINATION_MAX_LIMIT = 1000
 PAGINATION_DEFAULT_LIMIT = 100
+
+
+@router.post(
+    "/check-connection",
+    response_model=ConnectionCheckResponse,
+    summary="Check memory store connectivity",
+)
+async def check_memory_connection(
+    request: dict,
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> ConnectionCheckResponse:
+    """Check connectivity to a memory store before saving."""
+    return await check_memory(request)
 
 
 async def _get_memory(
