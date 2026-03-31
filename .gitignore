@@ -204,3 +204,4 @@ poetry.lock
 
 # Remotion video project
 video/
+.guardrails/
