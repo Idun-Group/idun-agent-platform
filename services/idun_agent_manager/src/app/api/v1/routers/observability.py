@@ -27,6 +27,7 @@ from app.api.v1.deps import (
 )
 from app.infrastructure.db.models.agent_observability import AgentObservabilityModel
 from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
+from app.services.connection_check import ConnectionCheckResponse, check_observability
 from app.services.engine_config import recompute_engine_config
 
 router = APIRouter()
@@ -36,6 +37,20 @@ logger = logging.getLogger(__name__)
 # Constants
 PAGINATION_MAX_LIMIT = 1000
 PAGINATION_DEFAULT_LIMIT = 100
+
+
+@router.post(
+    "/check-connection",
+    response_model=ConnectionCheckResponse,
+    summary="Check observability provider connectivity",
+)
+async def check_observability_connection(
+    request: ObservabilityConfig,
+    user: CurrentUser = Depends(get_current_user),
+    workspace_id: UUID = Depends(require_workspace),
+) -> ConnectionCheckResponse:
+    """Check connectivity to an observability provider before saving."""
+    return await check_observability(request)
 
 
 async def _get_observability(
