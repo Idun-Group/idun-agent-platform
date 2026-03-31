@@ -12,7 +12,6 @@ from idun_agent_schema.engine.observability_v2 import (
 )
 
 from app.services.connection_check import (
-    ConnectionCheckResponse,
     check_memory,
     check_observability,
 )
