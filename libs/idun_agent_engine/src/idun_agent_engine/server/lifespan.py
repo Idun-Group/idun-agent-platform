@@ -73,7 +73,10 @@ async def configure_app(app: FastAPI, engine_config):
     if mcp_servers:
         try:
             app.state.mcp_servers = mcp_servers
-            logger.info(f"Available MCP Servers: {mcp_servers}")
+            for s in mcp_servers:
+                logger.info(
+                    f"🔧 MCP Server {s.name}: [{s.transport.upper()}] {s.url or s.command}"
+                )
         except Exception as e:
             logger.exception(f"Failed to assign mcp servers to agent: {e}, continuing without them")
             mcp_servers = []
