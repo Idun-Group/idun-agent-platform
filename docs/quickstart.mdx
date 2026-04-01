@@ -112,7 +112,7 @@ Before you begin, install the following:
         ```
 
         <Info>
-          The `graph_definition` value follows the format `path/to/file.py:variable_name`. The variable must be an uncompiled LangGraph `StateGraph`. The engine compiles it with the configured checkpointer.
+          The `graph_definition` value follows the format `path/to/file.py:variable_name`. The variable should be a `StateGraph` (recommended) or `CompiledStateGraph`. The engine compiles it with the configured checkpointer.
         </Info>
       </Step>
       <Step title="Start the agent">
