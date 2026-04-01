@@ -118,8 +118,9 @@ def get_adk_tools(config_path: str | Path | None = None) -> list[Any]:
 
     The function resolves configuration in the following order:
     1. Uses the provided config_path if specified
-    2. Uses IDUN_CONFIG_PATH environment variable if set
-    3. Falls back to fetching from Idun Manager API
+    2. Uses the active in-memory registry if set (engine is running)
+    3. Uses IDUN_CONFIG_PATH environment variable if set
+    4. Falls back to fetching from Idun Manager API
 
     Args:
         config_path: Optional path to configuration YAML file. If provided, takes precedence.
@@ -134,7 +135,12 @@ def get_adk_tools(config_path: str | Path | None = None) -> list[Any]:
     if config_path:
         return get_adk_tools_from_file(config_path)
 
-    # Check for IDUN_CONFIG_PATH environment variable
+    from .registry import get_active_registry
+
+    registry = get_active_registry()
+    if registry and registry.enabled:
+        return registry.get_adk_toolsets()
+
     env_config_path = os.environ.get("IDUN_CONFIG_PATH")
     if env_config_path:
         return get_adk_tools_from_file(env_config_path)
@@ -159,8 +165,9 @@ async def get_langchain_tools(config_path: str | Path | None = None) -> list[Any
 
     The function resolves configuration in the following order:
     1. Uses the provided config_path if specified
-    2. Uses IDUN_CONFIG_PATH environment variable if set
-    3. Falls back to fetching from Idun Manager API
+    2. Uses the active in-memory registry if set (engine is running)
+    3. Uses IDUN_CONFIG_PATH environment variable if set
+    4. Falls back to fetching from Idun Manager API
 
     Args:
         config_path: Optional path to configuration YAML file. If provided, takes precedence.
@@ -175,7 +182,12 @@ async def get_langchain_tools(config_path: str | Path | None = None) -> list[Any
     if config_path:
         return await get_langchain_tools_from_file(config_path)
 
-    # Check for IDUN_CONFIG_PATH environment variable
+    from .registry import get_active_registry
+
+    registry = get_active_registry()
+    if registry and registry.enabled:
+        return await registry.get_tools()
+
     env_config_path = os.environ.get("IDUN_CONFIG_PATH")
     if env_config_path:
         return await get_langchain_tools_from_file(env_config_path)
