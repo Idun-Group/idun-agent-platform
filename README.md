@@ -1,3 +1,7 @@
+<p align="center">
+  <strong>English</strong> | <a href="docs/readme/README.fr.md">Français</a> | <a href="docs/readme/README.es.md">Español</a> | <a href="docs/readme/README.zh.md">中文</a> | <a href="docs/readme/README.ar.md">العربية</a>
+</p>
+
 <div align="center">
 
 <picture>
