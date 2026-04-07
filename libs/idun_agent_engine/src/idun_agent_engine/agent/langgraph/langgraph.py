@@ -82,6 +82,9 @@ class LanggraphAgent(agent_base.BaseAgent):
         # Observability (provider-agnostic)
         self._obs_callbacks: list[Any] | None = None
         self._obs_run_name: str | None = None
+        # Compile options extracted from CompiledStateGraph
+        self._interrupt_before: list[str] | None = None
+        self._interrupt_after: list[str] | None = None
         # Cached capabilities descriptor
         self._cached_capabilities: AgentCapabilities | None = None
 
@@ -236,16 +239,18 @@ class LanggraphAgent(agent_base.BaseAgent):
         self._infos["graph_definition"] = self._configuration.graph_definition
 
         if isinstance(graph_builder, StateGraph):
-            self._agent_instance = graph_builder.compile(
-                checkpointer=self._checkpointer,
-                store=self._store,
-                name=self._obs_run_name or self._name,
-            )
-        elif isinstance(graph_builder, CompiledStateGraph):
-            # TODO: this was made for supporting langgraph's DeepAgent, modernize.
-            raise TypeError(
-                "Expected StateGraph, Got CompiledStateGraph. Make sure not to run `compile` on your agent's graph."
-            )
+            compile_kwargs: dict[str, Any] = {
+                "checkpointer": self._checkpointer,
+                "store": self._store,
+                "name": self._obs_run_name or self._name,
+            }
+            # Preserve interrupt_before/after extracted from CompiledStateGraph
+            if self._interrupt_before:
+                compile_kwargs["interrupt_before"] = self._interrupt_before
+            if self._interrupt_after:
+                compile_kwargs["interrupt_after"] = self._interrupt_after
+
+            self._agent_instance = graph_builder.compile(**compile_kwargs)
 
         self._copilotkit_agent_instance = LangGraphAGUIAgent(
             name=self._name,
@@ -381,13 +386,47 @@ class LanggraphAgent(agent_base.BaseAgent):
     def _validate_graph_builder(
         self, graph_builder: Any, module_path: str, graph_variable_name: str
     ) -> StateGraph:
-        if not isinstance(graph_builder, StateGraph) and not isinstance(
-            graph_builder, CompiledStateGraph
-        ):
+        if isinstance(graph_builder, CompiledStateGraph):
+            if not hasattr(graph_builder, "builder"):
+                raise TypeError(
+                    f"CompiledStateGraph from {module_path}:{graph_variable_name} "
+                    "does not expose .builder. Export the uncompiled StateGraph directly."
+                )
+
+            # NOTE: .builder is an internal LangGraph attribute (not in public API docs).
+            # Verified on langgraph 1.x. If LangGraph removes or renames it, the
+            # hasattr check above will catch it and raise a clear error.
+            logger.warning(
+                "Received a CompiledStateGraph for '%s' from %s — extracting the "
+                "original StateGraph via .builder and recompiling with the "
+                "engine-managed checkpointer/store. Consider exporting the "
+                "uncompiled StateGraph directly.",
+                graph_variable_name,
+                module_path,
+            )
+
+            # Preserve interrupt_before/after from the user's compile() call
+            self._interrupt_before = getattr(
+                graph_builder, "interrupt_before_nodes", None
+            ) or None
+            self._interrupt_after = getattr(
+                graph_builder, "interrupt_after_nodes", None
+            ) or None
+
+            if self._interrupt_before or self._interrupt_after:
+                logger.info(
+                    "Preserving compile options from CompiledStateGraph: "
+                    "interrupt_before=%s, interrupt_after=%s",
+                    self._interrupt_before,
+                    self._interrupt_after,
+                )
+
+            return graph_builder.builder
+        if not isinstance(graph_builder, StateGraph):
             raise TypeError(
                 f"The variable '{graph_variable_name}' from {module_path} is not a StateGraph instance."
             )
-        return graph_builder  # type: ignore[return-value]
+        return graph_builder
 
     # TODO: DEPRECATED — remove when shim routes are removed
     async def invoke(self, message: Any) -> Any:

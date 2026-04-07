@@ -1,0 +1,69 @@
+name: Smoke test — production Docker Compose
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "docker-compose.yml"
+      - "services/idun_agent_manager/Dockerfile"
+      - "services/idun_agent_web/Dockerfile"
+      - "services/idun_agent_web/nginx.conf"
+      - "services/idun_agent_web/docker-entrypoint.sh"
+      - ".github/workflows/smoke-test-compose.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "docker-compose.yml"
+      - "services/idun_agent_manager/Dockerfile"
+      - "services/idun_agent_web/Dockerfile"
+      - "services/idun_agent_web/nginx.conf"
+      - "services/idun_agent_web/docker-entrypoint.sh"
+      - ".github/workflows/smoke-test-compose.yml"
+
+jobs:
+  smoke-test:
+    name: Smoke test prod compose (pre-built images)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start stack (manager + db + web)
+        # Only bring up the three infrastructure services; skip the agent
+        # service which requires a local build from the examples directory.
+        run: |
+          docker compose up -d db manager web
+
+      - name: Wait for manager to be healthy
+        run: |
+          echo "Waiting for manager healthcheck..."
+          for i in $(seq 1 20); do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' idun-manager 2>/dev/null || echo "starting")
+            echo "  attempt $i/20: $STATUS"
+            if [ "$STATUS" = "healthy" ]; then
+              echo "Manager is healthy."
+              break
+            fi
+            if [ "$i" = "20" ]; then
+              echo "Manager did not become healthy in time."
+              docker compose logs manager
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: Verify manager health endpoint
+        run: |
+          curl -fsS http://localhost:8000/api/v1/healthz \
+            -H "Accept: application/json" \
+            | grep -q '"status"'
+
+      - name: Verify web UI is reachable
+        run: |
+          curl -fsS --max-time 10 http://localhost:3000/ \
+            | grep -q '<html'
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs
