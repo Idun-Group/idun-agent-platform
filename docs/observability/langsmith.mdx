@@ -34,6 +34,8 @@ Before starting, complete the [quickstart guide](/quickstart) to have an agent r
         - **Capture Inputs/Outputs**: Toggle to log full text of inputs and outputs
     6. Click **Create configuration**
 
+    After creating, you can click the **Verify** button on the configuration card to check that the connection works.
+
     <Warning>
       Keep your API key secure. Do not commit it to version control or share it publicly.
     </Warning>
@@ -59,7 +61,7 @@ Once your agent is running with observability enabled:
 2. Open your LangSmith dashboard at [smith.langchain.com](https://smith.langchain.com/)
 3. Navigate to your project to view traces
 
-You will see traces showing the execution run tree, LLM inputs/outputs, and latency.
+You will see traces showing the execution run tree, LLM inputs/outputs, and latency. Each trace run is named after your agent by default.
 
 ## Best practices
 

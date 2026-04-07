@@ -22,9 +22,19 @@ class ReloadRequest(BaseModel):
 
 
 @base_router.get("/health")
-def health_check():
+def health_check(request: Request):
     """Health check endpoint for monitoring and load balancers."""
-    return {"status": "ok", "service": "idun-agent-engine", "version": __version__}
+    agent = getattr(request.app.state, "agent", None)
+    configuration = getattr(agent, "configuration", None)
+    agent_name = getattr(configuration, "name", None)
+    # TODO: return managed agent UUID (from manager API response) for stronger
+    # identity validation. Currently agent_name is the only shared identifier.
+    return {
+        "status": "ok",
+        "service": "idun-agent-engine",
+        "version": __version__,
+        "agent_name": agent_name,
+    }
 
 
 @base_router.post("/reload")

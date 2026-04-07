@@ -1,7 +1,7 @@
 {
   "name": "idun-agent-web",
   "private": true,
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -66,5 +66,8 @@
     "typescript-eslint": "^8.56.1",
     "vite": "^7.3.1",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "rollup": "4.53.3"
   }
 }

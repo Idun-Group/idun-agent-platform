@@ -8,10 +8,12 @@ from .helpers import (
     get_langchain_tools_from_api,
     get_langchain_tools_from_file,
 )
-from .registry import MCPClientRegistry
+from .registry import MCPClientRegistry, get_active_registry, set_active_registry
 
 __all__ = [
     "MCPClientRegistry",
+    "get_active_registry",
+    "set_active_registry",
     "get_adk_tools_from_api",
     "get_adk_tools_from_file",
     "get_adk_tools",

@@ -156,7 +156,7 @@ The `VertexAiMemoryService` provides cloud-backed memory with long-term storage 
 
 ### Session service issues
 
-1. **Database connection errors**: Verify the connection string format, credentials, and that the database server is accessible from the agent
+1. **Database connection errors**: Use the **Verify** button on the memory configuration card to check connectivity. If the manager runs in Docker and the database is on the host, use `host.docker.internal` instead of `localhost`
 2. **Vertex AI authentication**: Verify Google Cloud credentials are configured and the service account has the required permissions
 3. **Session not persisting**: Confirm the session service is initialized and session IDs are used consistently
 

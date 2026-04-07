@@ -181,6 +181,10 @@ class LanggraphAgent(agent_base.BaseAgent):
                 if not self._obs_run_name:
                     self._obs_run_name = handler.get_run_name()
 
+            # Fallback: use agent name as run_name if not explicitly configured
+            if not self._obs_run_name:
+                self._obs_run_name = self._name
+
             if infos:
                 self._infos["observability"] = infos
 
