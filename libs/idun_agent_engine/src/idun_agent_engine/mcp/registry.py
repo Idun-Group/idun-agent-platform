@@ -87,6 +87,25 @@ def _sanitize_schema(schema: Any) -> None:
             _sanitize_schema(item)
 
 
+_active_registry: MCPClientRegistry | None = None
+
+
+def set_active_registry(registry: MCPClientRegistry | None) -> None:
+    """Set the process-wide active MCP registry.
+
+    Called by the engine lifespan on startup so that helper functions
+    (get_langchain_tools, get_adk_tools) can resolve tools from memory
+    instead of re-fetching from the manager API.
+    """
+    global _active_registry
+    _active_registry = registry
+
+
+def get_active_registry() -> MCPClientRegistry | None:
+    """Return the active MCP registry, or None if not set."""
+    return _active_registry
+
+
 class MCPClientRegistry:
     """Wraps `MultiServerMCPClient` with convenience helpers."""
 
