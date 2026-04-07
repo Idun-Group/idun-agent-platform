@@ -43,12 +43,15 @@ The Manager supports two mutually exclusive authentication modes, controlled by 
         AUTH__DISABLE_USERNAME_PASSWORD=true
         AUTH__MICROSOFT_CLIENT_ID=your-azure-app-client-id
         AUTH__MICROSOFT_CLIENT_SECRET=your-azure-app-client-secret
-        AUTH__MICROSOFT_TENANT_ID=your-tenant-id
+        # Optional: defaults to "common" (any Entra tenant + personal Microsoft accounts)
+        # AUTH__MICROSOFT_TENANT_ID=common
         AUTH__REDIRECT_URI=https://your-domain.com/api/v1/auth/callback
         AUTH__FRONTEND_URL=https://your-domain.com
         ```
 
-        Set `AUTH__MICROSOFT_TENANT_ID` to `common` to allow any Microsoft account, or use a specific tenant ID to restrict access to your organization.
+        `AUTH__MICROSOFT_TENANT_ID` defaults to `common`, which uses the multi-tenant Microsoft authority (`https://login.microsoftonline.com/common`) and accepts users from any Entra tenant as well as personal Microsoft accounts (Outlook, Hotmail, Live). Your Entra app registration must also be configured for **multi-tenant + personal Microsoft accounts** (the "Accounts in any organizational directory and personal Microsoft accounts" option).
+
+        To restrict sign-in to a single Entra tenant, set `AUTH__MICROSOFT_TENANT_ID` to that tenant's UUID. The Manager validates that ID tokens are issued by a Microsoft tenant (`https://login.microsoftonline.com/<tenant-uuid>/v2.0`) regardless of which authority is used; the JWKS signature check guarantees the token came from Microsoft.
       </Tab>
     </Tabs>
 
@@ -148,7 +151,7 @@ Protected routes:
 The Manager supports the following OIDC providers for SSO authentication:
 
 - **Google Workspace** (issuer: `https://accounts.google.com`)
-- **Microsoft Entra ID / Azure AD** (issuer: `https://login.microsoftonline.com/{tenant}/v2.0`)
+- **Microsoft Entra ID / Azure AD** (multi-tenant via `https://login.microsoftonline.com/common`, or single-tenant via `https://login.microsoftonline.com/<tenant-uuid>`)
 
 Both can be enabled simultaneously. The login page shows a button for each configured provider.
 
