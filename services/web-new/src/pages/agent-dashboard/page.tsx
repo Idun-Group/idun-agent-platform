@@ -1447,4 +1447,3 @@ const AdoptionCount = styled.span<{ $color: string }>`
 
     span { color: #4a5568; font-weight: 400; }
 `;
-
