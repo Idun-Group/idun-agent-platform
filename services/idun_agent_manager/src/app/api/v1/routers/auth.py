@@ -20,6 +20,7 @@ Endpoints:
 import hashlib
 import logging
 import os
+import re
 import time
 from enum import StrEnum
 from typing import Any
@@ -62,6 +63,46 @@ _serializer: URLSafeTimedSerializer | None = None
 SESSION_COOKIE = "sid"
 _OAUTH_PROVIDER_SESSION_KEY = "_oauth_provider"
 
+# Microsoft v2.0 ID tokens carry an issuer of the form
+# ``https://login.microsoftonline.com/<tenant-uuid>/v2.0``. The /common discovery
+# document returns the literal template ``{tenantid}`` in its ``issuer`` field,
+# which Authlib cannot match against real per-tenant issuers — so we disable the
+# default strict iss check (see ``_microsoft_claims_options``) and re-validate the
+# issuer manually with this regex. JWKS signature verification (handled by Authlib
+# against Microsoft's signing keys) is what actually proves the token came from
+# Microsoft; this regex is defense-in-depth.
+_MICROSOFT_ISSUER_RE = re.compile(
+    r"^https://login\.microsoftonline\.com/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/v2\.0$"
+)
+
+
+def _microsoft_claims_options() -> dict[str, dict[str, Any]]:
+    """Return claims_options that disable Authlib's strict ``iss`` value match.
+
+    Multi-tenant Microsoft apps must use the /common (or /organizations) discovery
+    endpoint, whose ``issuer`` field is the literal template
+    ``https://login.microsoftonline.com/{tenantid}/v2.0``. Authlib's default behaviour
+    compares this template against the token's actual ``iss`` claim, which always
+    fails. Passing an empty dict for ``iss`` skips that values check; we then
+    re-validate the issuer pattern in :func:`_validate_microsoft_issuer`.
+    """
+    return {"iss": {}}
+
+
+def _validate_microsoft_issuer(userinfo: dict[str, Any]) -> None:
+    """Verify the parsed ID token's ``iss`` is a real Microsoft tenant URL.
+
+    Raises 401 otherwise. This complements JWKS signature verification, which
+    already proves the token was signed by Microsoft's keys.
+    """
+    iss = userinfo.get("iss", "")
+    if not isinstance(iss, str) or not _MICROSOFT_ISSUER_RE.match(iss):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ID token issuer is not a Microsoft tenant",
+        )
+
 
 def _get_serializer() -> URLSafeTimedSerializer:
     global _serializer
@@ -88,7 +129,11 @@ def _get_oauth() -> OAuth:
             )
 
         if settings.auth.microsoft.client_id:
-            tenant = settings.auth.microsoft.tenant_id
+            # Default to /common so any Microsoft tenant + personal accounts can
+            # sign in. Operators can opt into single-tenant restriction by setting
+            # AUTH__MICROSOFT_TENANT_ID to their tenant UUID, but this should match
+            # the audience configured in their Entra app registration.
+            tenant = settings.auth.microsoft.tenant_id or "common"
             _oauth.register(
                 name=OIDCProvider.MICROSOFT,
                 client_id=settings.auth.microsoft.client_id,
@@ -237,7 +282,9 @@ async def list_providers() -> dict[str, list[str]]:
     return {"providers": [p.value for p in _get_enabled_providers()]}
 
 
-async def _login_with_provider(request: Request, provider: OIDCProvider) -> RedirectResponse:
+async def _login_with_provider(
+    request: Request, provider: OIDCProvider
+) -> RedirectResponse:
     """Shared logic: validate provider and redirect to its authorization page."""
     settings = get_settings()
     if not settings.auth.disable_username_password:
@@ -264,10 +311,11 @@ async def _login_with_provider(request: Request, provider: OIDCProvider) -> Redi
     summary="Redirect to OIDC provider login",
     description="Initiates the OIDC authorization code flow for the specified provider.",
 )
-async def login_with_provider(request: Request, provider: OIDCProvider) -> RedirectResponse:
+async def login_with_provider(
+    request: Request, provider: OIDCProvider
+) -> RedirectResponse:
     """Redirect the user-agent to the specified provider's authorization page."""
     return await _login_with_provider(request, provider)
-
 
 
 @router.get(
@@ -308,8 +356,16 @@ async def callback(
             detail=f"Provider '{provider_name}' is not registered",
         )
 
+    # Microsoft's /common discovery doc returns a literal '{tenantid}' template as
+    # its issuer field, which Authlib cannot match against the real per-tenant iss
+    # claim of incoming ID tokens. Override claims_options to skip the strict iss
+    # values check and re-validate the issuer manually below.
+    authorize_kwargs: dict[str, Any] = {}
+    if provider == OIDCProvider.MICROSOFT:
+        authorize_kwargs["claims_options"] = _microsoft_claims_options()
+
     try:
-        token = await oauth_client.authorize_access_token(request)
+        token = await oauth_client.authorize_access_token(request, **authorize_kwargs)
     except Exception as exc:
         logger.exception("OIDC token exchange failed for provider %s", provider_name)
         raise HTTPException(
@@ -333,6 +389,11 @@ async def callback(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not retrieve user info from provider",
         )
+
+    # Defense in depth: ensure the parsed Microsoft ID token actually came from a
+    # Microsoft tenant (any tenant — multi-tenant is the whole point of /common).
+    if provider == OIDCProvider.MICROSOFT:
+        _validate_microsoft_issuer(userinfo)
 
     # Normalize userinfo across providers (Microsoft uses preferred_username)
     email: str = userinfo.get("email") or userinfo.get("preferred_username", "")
