@@ -88,12 +88,6 @@ export default function DashboardOverview({ agent, resources, onAgentRefresh }: 
 
     return (
         <Wrap>
-            <StatsStrip agent={agent} />
-
-            {agent.description && (
-                <CollapsibleDescription description={agent.description} />
-            )}
-
             {/* Graph */}
             <GraphCard agent={agent} />
 
@@ -117,30 +111,6 @@ export default function DashboardOverview({ agent, resources, onAgentRefresh }: 
                 />
             )}
         </Wrap>
-    );
-}
-
-// ── Collapsible description ─────────────────────────────────────────────────
-
-function CollapsibleDescription({ description }: { description: string }) {
-    const [collapsed, setCollapsed] = useState(false);
-    return (
-        <CollapsibleSection>
-            <SectionHeaderBar onClick={() => setCollapsed(c => !c)} type="button">
-                <SectionHeaderLeft>
-                    <SectionHeaderIcon><Layers size={13} /></SectionHeaderIcon>
-                    <ColumnHeader style={{ margin: 0 }}>Description</ColumnHeader>
-                </SectionHeaderLeft>
-                <CollapseChevron $collapsed={collapsed}>
-                    <ChevronDown size={14} />
-                </CollapseChevron>
-            </SectionHeaderBar>
-            {!collapsed && (
-                <CollapsibleBody>
-                    <DescriptionText>{description}</DescriptionText>
-                </CollapsibleBody>
-            )}
-        </CollapsibleSection>
     );
 }
 
@@ -183,23 +153,25 @@ function ServerInfoCard({ agent }: { agent: BackendAgent }) {
                     <ChevronDown size={14} />
                 </CollapseChevron>
             </SectionHeaderBar>
-            {!collapsed && (
-                <ServerInfoGrid>
-                    {entries.map((e, i) => (
-                        <ServerInfoItem key={i}>
-                            <ServerInfoLabel>{e.key}</ServerInfoLabel>
-                            <ServerInfoValueBtn
-                                type="button"
-                                onClick={() => handleCopy(e.value)}
-                                title="Click to copy"
-                                $mono={e.mono}
-                            >
-                                {e.value}
-                            </ServerInfoValueBtn>
-                        </ServerInfoItem>
-                    ))}
-                </ServerInfoGrid>
-            )}
+            <CollapseFrame $collapsed={collapsed}>
+                <CollapseInner>
+                    <ServerInfoGrid>
+                        {entries.map((e, i) => (
+                            <ServerInfoItem key={i}>
+                                <ServerInfoLabel>{e.key}</ServerInfoLabel>
+                                <ServerInfoValueBtn
+                                    type="button"
+                                    onClick={() => handleCopy(e.value)}
+                                    title="Click to copy"
+                                    $mono={e.mono}
+                                >
+                                    {e.value}
+                                </ServerInfoValueBtn>
+                            </ServerInfoItem>
+                        ))}
+                    </ServerInfoGrid>
+                </CollapseInner>
+            </CollapseFrame>
         </ServerInfoSection>
     );
 }
@@ -211,7 +183,8 @@ function GraphCard({ agent }: { agent: BackendAgent }) {
     const panZoomRef = useRef<SvgPanZoomInstance | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const [collapsed, setCollapsed] = useState(false);
+    // Collapse by default for non-LangGraph agents (no graph to show)
+    const [collapsed, setCollapsed] = useState(agent.framework !== 'LANGGRAPH');
 
     useEffect(() => {
         if (agent.framework !== 'LANGGRAPH') {
@@ -335,22 +308,44 @@ function GraphCard({ agent }: { agent: BackendAgent }) {
                 </GraphHeaderRight>
             </GraphHeader>
 
-            <GraphCanvas $hidden={collapsed}>
-                {loading && <GraphPlaceholder>Loading graph…</GraphPlaceholder>}
-                {error && <GraphPlaceholder>{error}</GraphPlaceholder>}
-                <MermaidWrap ref={containerRef} />
-                {!loading && !error && (
-                    <ZoomControls>
-                        <ZoomBtn onClick={zoomIn} type="button" title="Zoom in">+</ZoomBtn>
-                        <ZoomBtn onClick={zoomOut} type="button" title="Zoom out">−</ZoomBtn>
-                        <ZoomBtn onClick={resetView} type="button" title="Reset view">⊙</ZoomBtn>
-                    </ZoomControls>
-                )}
-                {!loading && !error && (
-                    <ZoomHint>Drag to pan · Scroll to zoom</ZoomHint>
-                )}
-            </GraphCanvas>
+            <CollapseFrame $collapsed={collapsed}>
+                <CollapseInner>
+                    <GraphCanvas>
+                        {loading && <GraphSkeleton />}
+                        {error && <GraphPlaceholder>{error}</GraphPlaceholder>}
+                        <MermaidWrap ref={containerRef} />
+                        {!loading && !error && (
+                            <ZoomControls>
+                                <ZoomBtn onClick={zoomIn} type="button" title="Zoom in">+</ZoomBtn>
+                                <ZoomBtn onClick={zoomOut} type="button" title="Zoom out">−</ZoomBtn>
+                                <ZoomBtn onClick={resetView} type="button" title="Reset view">⊙</ZoomBtn>
+                            </ZoomControls>
+                        )}
+                        {!loading && !error && (
+                            <ZoomHint>Drag to pan · Scroll to zoom</ZoomHint>
+                        )}
+                    </GraphCanvas>
+                </CollapseInner>
+            </CollapseFrame>
         </GraphSection>
+    );
+}
+
+// ── Graph skeleton (loading state) ──────────────────────────────────────────
+
+function GraphSkeleton() {
+    return (
+        <SkeletonRoot>
+            <SkeletonNode style={{ left: '8%', top: '40%', width: 64, height: 32 }} />
+            <SkeletonLine style={{ left: '20%', top: '52%', width: 70 }} />
+            <SkeletonNode style={{ left: '32%', top: '36%', width: 80, height: 40 }} />
+            <SkeletonLine style={{ left: '46%', top: '52%', width: 70 }} />
+            <SkeletonNode style={{ left: '58%', top: '24%', width: 70, height: 32 }} />
+            <SkeletonNode style={{ left: '58%', top: '60%', width: 70, height: 32 }} />
+            <SkeletonLine style={{ left: '72%', top: '38%', width: 70, transform: 'rotate(20deg)' }} />
+            <SkeletonLine style={{ left: '72%', top: '70%', width: 70, transform: 'rotate(-20deg)' }} />
+            <SkeletonNode style={{ left: '85%', top: '40%', width: 64, height: 32 }} />
+        </SkeletonRoot>
     );
 }
 
@@ -366,77 +361,6 @@ function relativeTime(iso: string | undefined): string {
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
     return `${days}d ago`;
-}
-
-function StatsStrip({ agent }: { agent: BackendAgent }) {
-    const ec = agent.engine_config as Record<string, any> | undefined;
-    const status = (agent.status || 'draft').toLowerCase();
-    const isOnline = status === 'active';
-
-    // Capability counts
-    const mcp = Array.isArray(ec?.mcp_servers) ? ec!.mcp_servers.length
-              : Array.isArray(ec?.mcpServers)  ? ec!.mcpServers.length : 0;
-    const integrations = Array.isArray(ec?.integrations) ? ec!.integrations.length : 0;
-    const guardrails = (Array.isArray(ec?.guardrails?.input) ? ec!.guardrails.input.length : 0)
-                     + (Array.isArray(ec?.guardrails?.output) ? ec!.guardrails.output.length : 0);
-    const obs = Array.isArray(ec?.observability)
-        ? (ec!.observability as any[]).filter(o => o?.enabled !== false).length
-        : 0;
-
-    const memInfo = getMemoryInfo(agent);
-    const port = ec?.server?.api?.port;
-
-    // Suppress unused-var warnings for the values we no longer surface
-    void mcp; void integrations; void guardrails; void obs; void memInfo;
-
-    const stats = [
-        {
-            label: 'Status',
-            value: isOnline ? 'Online' : status.charAt(0).toUpperCase() + status.slice(1),
-            accent: isOnline ? '#5fe3a8' : status === 'error' ? '#ff6b8a' : '#8b9bb4',
-            icon: Activity,
-            isPulse: isOnline,
-        },
-        {
-            label: 'Framework',
-            value: agent.framework || 'LANGGRAPH',
-            accent: '#7c92ff',
-            icon: Cpu,
-        },
-        {
-            label: 'Updated',
-            value: relativeTime(agent.updated_at),
-            accent: '#bda4f7',
-            icon: Clock,
-            sub: port ? `Port :${port}` : undefined,
-        },
-    ];
-
-    return (
-        <StatsRoot>
-            {stats.map((s, i) => {
-                const Icon = s.icon;
-                return (
-                    <Fragment key={i}>
-                        {i > 0 && <StatDivider />}
-                        <StatItem>
-                            <StatIconInline $accent={s.accent}>
-                                <Icon size={12} />
-                                {s.isPulse && <PulseRing $accent={s.accent} />}
-                            </StatIconInline>
-                            <StatTextWrap>
-                                <StatLabel>{s.label}</StatLabel>
-                                <StatValueRow>
-                                    <StatValue $accent={s.accent} title={s.value}>{s.value}</StatValue>
-                                    {s.sub && <StatSubInline>{s.sub}</StatSubInline>}
-                                </StatValueRow>
-                            </StatTextWrap>
-                        </StatItem>
-                    </Fragment>
-                );
-            })}
-        </StatsRoot>
-    );
 }
 
 // ── Resource picker modal ────────────────────────────────────────────────────
@@ -581,15 +505,17 @@ function CapabilitiesBlocks({ agent, resources, onPickerOpen }: {
 
     // Use buildItems for accurate attached/total counts using canonical selections
     const allKinds: BlockKind[] = ['memory', 'observability', 'mcp', 'guardrail', 'sso', 'integration'];
-    const categories: Array<{ kind: BlockKind; attached: number; total: number }> = allKinds.map(k => {
+    const categoriesWithItems = allKinds.map(k => {
         const items = buildItems(k, agent, resources);
+        const attachedItems = items.filter(i => i.attached);
         return {
             kind: k,
             total: items.length,
-            attached: items.filter(i => i.attached).length,
+            attached: attachedItems.length,
+            attachedItems,
         };
     });
-    const totalAttached = categories.reduce((s, c) => s + c.attached, 0);
+    const totalAttached = categoriesWithItems.reduce((s, c) => s + c.attached, 0);
 
     return (
         <BlocksWrap>
@@ -604,38 +530,61 @@ function CapabilitiesBlocks({ agent, resources, onPickerOpen }: {
                 </CollapseChevron>
             </SectionHeaderBar>
 
-            {!collapsed && (
-            <BlocksGrid>
-                {categories.map(cat => {
-                    const meta = KIND_META[cat.kind];
-                    const Icon = meta.icon;
-                    const hasAny = cat.attached > 0;
-                    return (
-                        <Block
-                            key={cat.kind}
-                            type="button"
-                            onClick={() => onPickerOpen(cat.kind)}
-                            $color={meta.color}
-                            $attached={hasAny}
-                            title={`Click to manage ${meta.tabLabel}`}
-                        >
-                            <BlockIcon $color={meta.color} $attached={hasAny}>
-                                <Icon size={22} />
-                            </BlockIcon>
-                            <BlockText>
-                                <BlockName>{meta.tabLabel}</BlockName>
-                                <BlockKind>{cat.attached} / {cat.total} attached</BlockKind>
-                            </BlockText>
-                            {hasAny && (
-                                <AttachedBadge $color={meta.color}>
-                                    <Check size={9} />
-                                </AttachedBadge>
-                            )}
-                        </Block>
-                    );
-                })}
-            </BlocksGrid>
-            )}
+            <CollapseFrame $collapsed={collapsed}>
+                <CollapseInner>
+                    <BlocksGrid>
+                        {categoriesWithItems.map(cat => {
+                            const meta = KIND_META[cat.kind];
+                            const Icon = meta.icon;
+                            const hasAny = cat.attached > 0;
+                            return (
+                                <Block
+                                    key={cat.kind}
+                                    type="button"
+                                    onClick={() => onPickerOpen(cat.kind)}
+                                    $color={meta.color}
+                                    $attached={hasAny}
+                                    title={`Click to manage ${meta.tabLabel}`}
+                                >
+                                    <BlockIcon $color={meta.color} $attached={hasAny}>
+                                        <Icon size={22} />
+                                    </BlockIcon>
+                                    <BlockText>
+                                        <BlockName>{meta.tabLabel}</BlockName>
+                                        <BlockKind>{cat.attached} / {cat.total} attached</BlockKind>
+                                    </BlockText>
+                                    {hasAny && (
+                                        <AttachedBadge $color={meta.color}>
+                                            <Check size={9} />
+                                        </AttachedBadge>
+                                    )}
+                                    {hasAny && (
+                                        <HoverPopover $color={meta.color}>
+                                            <HoverPopoverHeader>
+                                                <Icon size={11} />
+                                                Attached {meta.tabLabel}
+                                            </HoverPopoverHeader>
+                                            <HoverPopoverList>
+                                                {cat.attachedItems.slice(0, 6).map(item => (
+                                                    <HoverPopoverItem key={item.id}>
+                                                        <HoverDot $color={meta.color} />
+                                                        {item.name}
+                                                    </HoverPopoverItem>
+                                                ))}
+                                                {cat.attachedItems.length > 6 && (
+                                                    <HoverPopoverMore>
+                                                        +{cat.attachedItems.length - 6} more
+                                                    </HoverPopoverMore>
+                                                )}
+                                            </HoverPopoverList>
+                                        </HoverPopover>
+                                    )}
+                                </Block>
+                            );
+                        })}
+                    </BlocksGrid>
+                </CollapseInner>
+            </CollapseFrame>
         </BlocksWrap>
     );
 }
@@ -770,7 +719,6 @@ async function toggleResourceFor(
         name: agent.name,
         version: agent.version || '1.0.0',
         baseUrl: agent.base_url || '',
-        description: agent.description || '',
         serverPort: String(ec?.server?.api?.port ?? 8000),
         agentType: framework,
         agentConfig: extractAgentConfig(agent.engine_config),
@@ -1476,10 +1424,13 @@ const CenterColumn = styled.div`
 // ── Capabilities blocks grid ────────────────────────────────────────────────
 
 const BlocksWrap = styled.div`
-    background: rgba(255, 255, 255, 0.025);
+    background: #0f1722;
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 14px 16px 16px;
+    border-radius: 14px;
+    padding: 18px 20px 20px;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 8px 24px -12px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -1562,7 +1513,6 @@ const Block = styled.button<{ $color: string; $attached: boolean; $busy?: boolea
     cursor: pointer;
     font-family: inherit;
     transition: all 0.18s ease;
-    overflow: hidden;
     text-align: left;
     opacity: ${p => p.$busy ? 0.5 : (p.$attached ? 1 : 0.7)};
 
@@ -1634,6 +1584,133 @@ const BlockHoverPlus = styled.span<{ $color: string }>`
         color: #0a0e17;
         border-color: ${p => p.$color};
     }
+`;
+
+// ── Hover popover for capability tiles ─────────────────────────────────────
+
+const HoverPopover = styled.div<{ $color: string }>`
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-4px);
+    z-index: 20;
+    min-width: 200px;
+    max-width: 280px;
+    padding: 10px 12px 12px;
+    background: linear-gradient(180deg, #141b28 0%, #0e1420 100%);
+    border: 1px solid ${p => `${p.$color}55`};
+    border-radius: 9px;
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.45),
+        0 0 0 1px ${p => `${p.$color}1a`},
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+    text-align: left;
+
+    /* Triangle pointer at the top, centered */
+    &::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-bottom-color: ${p => `${p.$color}55`};
+    }
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(1px);
+        border: 4px solid transparent;
+        border-bottom-color: #141b28;
+    }
+
+    ${Block}:hover & {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0);
+    }
+`;
+
+const HoverPopoverHeader = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #6b7a8d;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-bottom: 7px;
+    margin-bottom: 7px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+`;
+
+const HoverPopoverList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+`;
+
+const HoverPopoverItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #c9d1d9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+const HoverDot = styled.span<{ $color: string }>`
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: ${p => p.$color};
+    flex-shrink: 0;
+`;
+
+const HoverPopoverMore = styled.span`
+    font-size: 11px;
+    color: #6b7a8d;
+    font-style: italic;
+    margin-top: 2px;
+`;
+
+// ── Graph skeleton (loading state) ──────────────────────────────────────────
+
+const skeletonShimmer = keyframes`
+    0%, 100% { opacity: 0.4; }
+    50%       { opacity: 0.85; }
+`;
+
+const SkeletonRoot = styled.div`
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+`;
+
+const SkeletonNode = styled.div`
+    position: absolute;
+    background: linear-gradient(180deg, rgba(74, 158, 222, 0.18), rgba(74, 158, 222, 0.06));
+    border: 1px solid rgba(74, 158, 222, 0.25);
+    border-radius: 8px;
+    animation: ${skeletonShimmer} 1.6s ease-in-out infinite;
+`;
+
+const SkeletonLine = styled.div`
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(74, 158, 222, 0.05), rgba(74, 158, 222, 0.4), rgba(74, 158, 222, 0.05));
+    transform-origin: left center;
+    animation: ${skeletonShimmer} 1.6s ease-in-out infinite;
 `;
 
 const TabCount = styled.span`
@@ -2138,42 +2215,6 @@ const ConnectorDot = styled.span<{ $active: boolean }>`
     background: ${p => p.$active ? '#34d399' : '#3a4555'};
 `;
 
-// ── Description block ───────────────────────────────────────────────────────
-
-const DescriptionBlock = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 14px 18px;
-    background: rgba(255, 255, 255, 0.018);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-`;
-
-const DescriptionLabel = styled.span`
-    font-size: 9px;
-    font-weight: 700;
-    color: #6b7a8d;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-`;
-
-const DescriptionText = styled.p`
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.5;
-    color: #c9d1d9;
-`;
-
-const SectionLabel = styled.h3`
-    margin: 4px 0 -2px 4px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #6b7a8d;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-`;
-
 // ── Inline resource list (in card) ──────────────────────────────────────────
 
 const InlineList = styled.div`
@@ -2485,14 +2526,16 @@ const PickerCreateBtn = styled.button`
 // ── Graph card ──────────────────────────────────────────────────────────────
 
 const GraphSection = styled.div`
-    background: rgba(255, 255, 255, 0.025);
+    background: #0f1722;
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 10px 14px 12px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    border-radius: 14px;
+    padding: 16px 20px 18px;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 8px 24px -12px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 `;
 
 const GraphHeader = styled.div`
@@ -2554,27 +2597,46 @@ const GraphHeaderSub = styled.span`
 // ── Server info card (separate section) ────────────────────────────────────
 
 const ServerInfoSection = styled.div`
-    background: rgba(255, 255, 255, 0.025);
+    background: #0f1722;
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 14px 18px 16px;
+    border-radius: 14px;
+    padding: 18px 20px 20px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 8px 24px -12px rgba(0, 0, 0, 0.5);
 `;
 
 // ── Shared collapsible section primitives ──────────────────────────────────
 
 const CollapsibleSection = styled.div`
-    background: rgba(255, 255, 255, 0.025);
+    background: #0f1722;
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 14px 16px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 8px 24px -12px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     gap: 12px;
+`;
+
+/**
+ * Smoothly animates between collapsed and expanded states using the
+ * grid-template-rows 0fr → 1fr trick (no max-height hack).
+ */
+const CollapseFrame = styled.div<{ $collapsed: boolean }>`
+    display: grid;
+    grid-template-rows: ${p => p.$collapsed ? '0fr' : '1fr'};
+    transition: grid-template-rows 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+const CollapseInner = styled.div`
+    overflow: hidden;
+    min-height: 0;
 `;
 
 const SectionHeaderBar = styled.button`
@@ -2635,7 +2697,6 @@ const CollapseChevron = styled.div<{ $collapsed: boolean }>`
 
 const CollapsibleBody = styled.div`
     padding-top: 4px;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const ServerInfoGrid = styled.div`
@@ -2668,6 +2729,7 @@ const ServerInfoLabel = styled.span`
 const ServerInfoValueBtn = styled.button<{ $mono?: boolean }>`
     background: none;
     border: none;
+    outline: none;
     padding: 0;
     color: #c9d1d9;
     font-family: ${p => p.$mono ? "'IBM Plex Mono', monospace" : 'inherit'};
@@ -2682,6 +2744,8 @@ const ServerInfoValueBtn = styled.button<{ $mono?: boolean }>`
     transition: color 0.12s;
 
     &:hover { color: #4a9ede; }
+    &:focus { outline: none; }
+    &:focus-visible { color: #4a9ede; }
 `;
 
 const GraphFrameworkPill = styled.span`
@@ -2767,11 +2831,17 @@ const ZoomHint = styled.div`
 `;
 
 const GraphPlaceholder = styled.div`
-    font-size: 12px;
-    color: #4a5568;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     padding: 32px 16px;
+    font-size: 12px;
+    color: #4a5568;
     font-style: italic;
+    pointer-events: none;
 `;
 
 const MermaidWrap = styled.div`

@@ -311,12 +311,12 @@ const AgentDashboardPage = () => {
             const q = searchTerm.toLowerCase();
             result = result.filter(a =>
                 a.name.toLowerCase().includes(q) ||
-                (a.description ?? '').toLowerCase().includes(q) ||
                 a.framework.toLowerCase().includes(q) ||
                 (a.version ?? '').toLowerCase().includes(q)
             );
         }
         if (sortField) {
+            // Explicit sort selected by user
             result = [...result].sort((a, b) => {
                 const va = (sortField === 'name' ? a.name
                     : sortField === 'status' ? a.status
@@ -327,6 +327,14 @@ const AgentDashboardPage = () => {
                     : sortField === 'version' ? (b.version ?? '')
                     : b.updated_at) ?? '';
                 return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+            });
+        } else {
+            // Default sort: online (active) agents first, then by name
+            const statusRank = (s: string) => (s === 'active' ? 0 : s === 'draft' ? 1 : 2);
+            result = [...result].sort((a, b) => {
+                const sd = statusRank(a.status) - statusRank(b.status);
+                if (sd !== 0) return sd;
+                return a.name.localeCompare(b.name);
             });
         }
         return result;
@@ -429,32 +437,6 @@ const AgentDashboardPage = () => {
         });
     }, [agents]);
 
-    // ── Empty state ───────────────────────────────────────────────────────────
-
-    if (!isLoading && agents.length === 0) {
-        return (
-            <PageWrapper>
-                <PageHeader>
-                    <TitleBlock>
-                        <Breadcrumb>Dashboard</Breadcrumb>
-                        <PageTitle>{t('dashboard.agent.title')}</PageTitle>
-                    </TitleBlock>
-                    <CreateButton onClick={() => navigate('/agents/create')}>
-                        <Plus size={16} /> {t('dashboard.agent.create')}
-                    </CreateButton>
-                </PageHeader>
-                <EmptyState>
-                    <EmptyIcon><Bot size={48} strokeWidth={1.2} /></EmptyIcon>
-                    <EmptyTitle>No agents yet</EmptyTitle>
-                    <EmptyDescription>Create your first agent to start monitoring and managing your AI workflows.</EmptyDescription>
-                    <CreateButton onClick={() => navigate('/agents/create')}>
-                        <Plus size={18} /> {t('dashboard.agent.create')}
-                    </CreateButton>
-                </EmptyState>
-            </PageWrapper>
-        );
-    }
-
     return (
         <PageWrapper>
             {/* ── Header ── */}
@@ -479,8 +461,7 @@ const AgentDashboardPage = () => {
                 <>
 
                     {/* ── Charts ── */}
-                    {agents.length > 0 && (
-                        <ChartsRow>
+                    <ChartsRow>
                             {/* Status donut */}
                             <ChartCard>
                                 <ChartTitle>Agent Status</ChartTitle>
@@ -488,25 +469,28 @@ const AgentDashboardPage = () => {
                                     <ResponsiveContainer width="100%" height={160}>
                                         <PieChart>
                                             <Pie
-                                                data={statusChartData}
+                                                data={statusChartData.length > 0 ? statusChartData : [{ name: 'Empty', value: 1, color: 'rgba(255,255,255,0.06)' }]}
                                                 cx="50%"
                                                 cy="50%"
                                                 innerRadius={45}
                                                 outerRadius={65}
-                                                paddingAngle={3}
+                                                paddingAngle={statusChartData.length > 0 ? 3 : 0}
                                                 dataKey="value"
                                                 strokeWidth={0}
                                                 animationBegin={0}
                                                 animationDuration={800}
+                                                isAnimationActive={statusChartData.length > 0}
                                             >
-                                                {statusChartData.map((d, i) => (
+                                                {(statusChartData.length > 0 ? statusChartData : [{ color: 'rgba(255,255,255,0.06)' }]).map((d, i) => (
                                                     <Cell key={i} fill={d.color} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip
-                                                contentStyle={{ background: '#141a26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
-                                                itemStyle={{ color: '#e1e4e8' }}
-                                            />
+                                            {statusChartData.length > 0 && (
+                                                <Tooltip
+                                                    contentStyle={{ background: '#141a26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
+                                                    itemStyle={{ color: '#e1e4e8' }}
+                                                />
+                                            )}
                                         </PieChart>
                                     </ResponsiveContainer>
                                     <DonutCenter>
@@ -515,48 +499,64 @@ const AgentDashboardPage = () => {
                                     </DonutCenter>
                                 </DonutWrap>
                                 <ChartLegend>
-                                    {statusChartData.map(d => (
-                                        <LegendItem key={d.name}>
-                                            <LegendDot $color={d.color} />
-                                            <LegendLabel>{d.name}</LegendLabel>
-                                            <LegendValue>{d.value}</LegendValue>
-                                        </LegendItem>
-                                    ))}
+                                    {statusChartData.length > 0 ? (
+                                        statusChartData.map(d => (
+                                            <LegendItem key={d.name}>
+                                                <LegendDot $color={d.color} />
+                                                <LegendLabel>{d.name}</LegendLabel>
+                                                <LegendValue>{d.value}</LegendValue>
+                                            </LegendItem>
+                                        ))
+                                    ) : (
+                                        <EmptyLegendNote>No status data yet</EmptyLegendNote>
+                                    )}
                                 </ChartLegend>
                             </ChartCard>
 
                             {/* Framework breakdown */}
                             <ChartCard>
                                 <ChartTitle>By Framework</ChartTitle>
-                                <ResponsiveContainer width="100%" height={160}>
-                                    <BarChart
-                                        data={fwChartData}
-                                        layout="vertical"
-                                        margin={{ top: 4, right: 20, left: 0, bottom: 4 }}
-                                        barCategoryGap="28%"
-                                    >
-                                        <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.04)" />
-                                        <XAxis type="number" hide allowDecimals={false} />
-                                        <YAxis
-                                            type="category"
-                                            dataKey="name"
-                                            width={85}
-                                            tick={{ fill: '#6b7a8d', fontSize: 12 }}
-                                            axisLine={false}
-                                            tickLine={false}
-                                        />
-                                        <Tooltip
-                                            contentStyle={{ background: '#141a26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
-                                            itemStyle={{ color: '#e1e4e8' }}
-                                            cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                                        />
-                                        <Bar dataKey="value" radius={[0, 4, 4, 0]} animationDuration={600}>
-                                            {fwChartData.map((_, i) => (
-                                                <Cell key={i} fill={['#4a9ede', '#22d3ee', '#fbbf24', '#f472b6', '#34d399'][i % 5]} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                {fwChartData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={160}>
+                                        <BarChart
+                                            data={fwChartData}
+                                            layout="vertical"
+                                            margin={{ top: 4, right: 20, left: 0, bottom: 4 }}
+                                            barCategoryGap="28%"
+                                        >
+                                            <CartesianGrid horizontal={false} stroke="rgba(255,255,255,0.04)" />
+                                            <XAxis type="number" hide allowDecimals={false} />
+                                            <YAxis
+                                                type="category"
+                                                dataKey="name"
+                                                width={85}
+                                                tick={{ fill: '#6b7a8d', fontSize: 12 }}
+                                                axisLine={false}
+                                                tickLine={false}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{ background: '#141a26', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
+                                                itemStyle={{ color: '#e1e4e8' }}
+                                                cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                                            />
+                                            <Bar dataKey="value" radius={[0, 4, 4, 0]} animationDuration={600}>
+                                                {fwChartData.map((_, i) => (
+                                                    <Cell key={i} fill={['#4a9ede', '#22d3ee', '#fbbf24', '#f472b6', '#34d399'][i % 5]} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <EmptyChartState>
+                                        <EmptyBars>
+                                            <EmptyBar style={{ width: '70%' }} />
+                                            <EmptyBar style={{ width: '50%' }} />
+                                            <EmptyBar style={{ width: '35%' }} />
+                                            <EmptyBar style={{ width: '20%' }} />
+                                        </EmptyBars>
+                                        <EmptyChartLabel>No frameworks yet</EmptyChartLabel>
+                                    </EmptyChartState>
+                                )}
                             </ChartCard>
 
                             {/* Integration adoption */}
@@ -580,9 +580,18 @@ const AgentDashboardPage = () => {
                                 </AdoptionList>
                             </ChartCard>
                         </ChartsRow>
-                    )}
 
-                    {/* ── Table card ── */}
+                    {/* ── Empty state OR table card ── */}
+                    {agents.length === 0 ? (
+                        <EmptyState>
+                            <EmptyIcon><Bot size={48} strokeWidth={1.2} /></EmptyIcon>
+                            <EmptyTitle>No agents yet</EmptyTitle>
+                            <EmptyDescription>Create your first agent to start monitoring and managing your AI workflows.</EmptyDescription>
+                            <CreateButton onClick={() => navigate('/agents/create')}>
+                                <Plus size={18} /> {t('dashboard.agent.create')}
+                            </CreateButton>
+                        </EmptyState>
+                    ) : (
                     <TableCard>
                         {/* Header */}
                         <TableCardHeader>
@@ -693,6 +702,7 @@ const AgentDashboardPage = () => {
                             </NoResults>
                         )}
                     </TableCard>
+                    )}
                 </>
             )}
 
@@ -1342,6 +1352,41 @@ const LegendDot = styled.span<{ $color: string }>`
 const LegendLabel = styled.span`
     font-size: 12px;
     color: #6b7a8d;
+`;
+
+const EmptyLegendNote = styled.span`
+    font-size: 11px;
+    color: #4a5568;
+    font-style: italic;
+`;
+
+const EmptyChartState = styled.div`
+    height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+`;
+
+const EmptyBars = styled.div`
+    width: 100%;
+    max-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+`;
+
+const EmptyBar = styled.div`
+    height: 10px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.025) 100%);
+`;
+
+const EmptyChartLabel = styled.span`
+    font-size: 11px;
+    color: #4a5568;
+    font-style: italic;
 `;
 
 const LegendValue = styled.span`

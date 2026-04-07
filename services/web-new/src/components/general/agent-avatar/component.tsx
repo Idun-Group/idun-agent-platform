@@ -1,5 +1,17 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
+import {
+    Bot,
+    BrainCircuit,
+    Cpu,
+    Sparkles,
+    MessageSquare,
+    Workflow,
+    Network,
+    Terminal,
+    Zap,
+    Atom,
+} from 'lucide-react';
 
 interface AgentAvatarProps {
     name: string;
@@ -8,8 +20,7 @@ interface AgentAvatarProps {
 }
 
 /**
- * Refined dark-mode color schemes. Each defines a gradient background +
- * accent text + border. Hashed by agent name so the pairing is deterministic.
+ * Refined dark-mode color schemes. Hashed by agent name so the pairing is deterministic.
  */
 const SCHEMES = [
     { tint: '#7ab8eb', g1: '#0c5cab', g2: '#072a55', border: 'rgba(122, 184, 235, 0.35)' }, // cobalt
@@ -22,38 +33,40 @@ const SCHEMES = [
     { tint: '#6cc196', g1: '#2e5240', g2: '#172a21', border: 'rgba(108, 193, 150, 0.35)' },  // mint
 ];
 
+/**
+ * Curated set of agent-relevant icons. All AI/automation/compute themed.
+ */
+const ICONS = [
+    Bot,
+    BrainCircuit,
+    Cpu,
+    Sparkles,
+    MessageSquare,
+    Workflow,
+    Network,
+    Terminal,
+    Zap,
+    Atom,
+];
+
 function hashName(name: string): number {
     let h = 0;
     for (let i = 0; i < name.length; i++) h = (Math.imul(31, h) + name.charCodeAt(i)) | 0;
     return Math.abs(h);
 }
 
-/**
- * Extract up to 2 initials from the agent name.
- * - Multi-word: first letter of first two words ("Production Chatbot" → "PC")
- * - Single word with separators: "test-adk" → "TA"
- * - Single word: first 2 letters ("test" → "TE")
- */
-function getInitials(name: string): string {
-    if (!name) return '?';
-    const cleaned = name.trim();
-    const parts = cleaned.split(/[\s\-_]+/).filter(Boolean);
-    if (parts.length >= 2) {
-        return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return cleaned.slice(0, 2).toUpperCase();
-}
-
 export const AgentAvatar: React.FC<AgentAvatarProps> = ({ name, size = 40, className = '' }) => {
-    const { initials, scheme } = useMemo(() => {
+    const { Icon, scheme } = useMemo(() => {
         const h = hashName(name);
+        // Use a different multiplier so icon and color don't lock-step.
+        const iconIdx = Math.abs(Math.imul(h, 2654435761)) % ICONS.length;
         return {
-            initials: getInitials(name),
+            Icon: ICONS[iconIdx],
             scheme: SCHEMES[h % SCHEMES.length],
         };
     }, [name]);
 
-    const fontSize = Math.max(11, Math.floor(size * 0.42));
+    const iconSize = Math.max(14, Math.floor(size * 0.5));
 
     return (
         <AvatarBox
@@ -62,10 +75,9 @@ export const AgentAvatar: React.FC<AgentAvatarProps> = ({ name, size = 40, class
             $g2={scheme.g2}
             $border={scheme.border}
             $tint={scheme.tint}
-            $fontSize={fontSize}
             className={className}
         >
-            {initials}
+            <Icon size={iconSize} strokeWidth={1.8} />
         </AvatarBox>
     );
 };
@@ -76,7 +88,6 @@ const AvatarBox = styled.div<{
     $g2: string;
     $border: string;
     $tint: string;
-    $fontSize: number;
 }>`
     width: ${p => p.size}px;
     height: ${p => p.size}px;
@@ -91,11 +102,6 @@ const AvatarBox = styled.div<{
         inset 0 1px 0 rgba(255, 255, 255, 0.08),
         0 1px 2px rgba(0, 0, 0, 0.2);
     color: ${p => p.$tint};
-    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
-    font-size: ${p => p.$fontSize}px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    text-transform: uppercase;
     user-select: none;
     transition: all 0.2s ease;
 `;

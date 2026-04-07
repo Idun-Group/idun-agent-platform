@@ -38,7 +38,6 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
         name: '',
         version: '1.0.0',
         baseUrl: '',
-        description: '',
         serverPort: '8000',
         agentType: 'LANGGRAPH',
         agentConfig: {},
@@ -118,7 +117,6 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
             name: agent.name || '',
             version: agent.version || '1.0.0',
             baseUrl: agent.base_url || '',
-            description: agent.description || '',
             serverPort: port ? String(port) : '8000',
             agentType: agent.engine_config?.agent?.type || agent.framework || 'LANGGRAPH',
             agentConfig: extractAgentConfig(agent.engine_config),
@@ -221,6 +219,5 @@ const Container = styled.div`
     gap: 16px;
     width: 100%;
     padding: 16px 0;
-    overflow-y: auto;
     font-family: 'IBM Plex Sans', sans-serif;
 `;
