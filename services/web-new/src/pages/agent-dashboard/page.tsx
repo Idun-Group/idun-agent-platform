@@ -235,17 +235,29 @@ const AgentDashboardPage = () => {
     const [bulkDeleting, setBulkDeleting] = useState(false);
 
     // ── Load agents + health checks ──────────────────────────────────────────
-
+    // TODO: Add server-side pagination here. The backend already supports
+    // limit/offset on /api/v1/agents/. We currently fetch up to the backend
+    // max (1000) at once and rely on client-side scrolling. Once the agent
+    // count grows past a few hundred, switch to paginated fetches with a
+    // page-based UI (see git history for the prior implementation).
     useEffect(() => {
         let cancelled = false;
         setIsLoading(true);
-        listAgents()
+        listAgents({ limit: 1000, offset: 0 })
             .then((rows) => {
                 if (cancelled) return;
-                setAgents(rows);
-                const ids = new Set(rows.map(a => a.id));
+                // Dedupe by id (defensive)
+                const seen = new Set<string>();
+                const unique = rows.filter(r => {
+                    if (seen.has(r.id)) return false;
+                    seen.add(r.id);
+                    return true;
+                });
+
+                setAgents(unique);
+                const ids = new Set(unique.map(a => a.id));
                 setCheckingIds(ids);
-                for (const agent of rows) {
+                for (const agent of unique) {
                     const started = Date.now();
                     performHealthCheck(agent, (updated) => {
                         if (cancelled) return;
@@ -259,7 +271,6 @@ const AgentDashboardPage = () => {
                                 return next;
                             });
                         };
-                        // Show pulse for at least 1.2s so it's visible
                         const remaining = 1200 - elapsed;
                         if (remaining > 0) setTimeout(settle, remaining);
                         else settle();
@@ -384,15 +395,13 @@ const AgentDashboardPage = () => {
 
     const activeCount = agents.filter(a => a.status === 'active').length;
     const draftCount  = agents.filter(a => a.status === 'draft').length;
-    const errorCount  = agents.filter(a => a.status === 'error').length;
 
     // ── Chart data ────────────────────────────────────────────────────────────
 
     const statusChartData = useMemo(() => [
         { name: 'Active', value: activeCount, color: '#34d399' },
         { name: 'Draft', value: draftCount, color: '#f59e0b' },
-        { name: 'Error', value: errorCount, color: '#f87171' },
-    ].filter(d => d.value > 0), [activeCount, draftCount, errorCount]);
+    ].filter(d => d.value > 0), [activeCount, draftCount]);
 
     const fwChartData = useMemo(() => {
         const counts: Record<string, number> = {};
@@ -455,16 +464,6 @@ const AgentDashboardPage = () => {
                     <PageTitle>{t('dashboard.agent.title')}</PageTitle>
                 </TitleBlock>
                 <HeaderActions>
-                    <SearchBar $focused={false}>
-                        <Search size={14} style={{ color: '#6b7a8d', flexShrink: 0 }} />
-                        <SearchInput
-                            ref={searchRef}
-                            placeholder="Search agents…"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <KbdHint>⌘K</KbdHint>
-                    </SearchBar>
                     <CreateButton onClick={() => navigate('/agents/create')}>
                         <Plus size={15} /> {t('dashboard.agent.create')}
                     </CreateButton>
@@ -478,25 +477,6 @@ const AgentDashboardPage = () => {
                 </CenterBox>
             ) : (
                 <>
-                    {/* ── Metrics ── */}
-                    <MetricsRow>
-                        <MetricCard>
-                            <MetricValue>{agents.length}</MetricValue>
-                            <MetricLabel>Total Agents</MetricLabel>
-                        </MetricCard>
-                        <MetricCard>
-                            <MetricValue $color="#34d399">{activeCount}</MetricValue>
-                            <MetricLabel>Online</MetricLabel>
-                        </MetricCard>
-                        <MetricCard>
-                            <MetricValue $color="#f59e0b">{draftCount}</MetricValue>
-                            <MetricLabel>Draft</MetricLabel>
-                        </MetricCard>
-                        <MetricCard>
-                            <MetricValue $color="#f87171">{errorCount}</MetricValue>
-                            <MetricLabel>Errors</MetricLabel>
-                        </MetricCard>
-                    </MetricsRow>
 
                     {/* ── Charts ── */}
                     {agents.length > 0 && (
@@ -609,6 +589,15 @@ const AgentDashboardPage = () => {
                             <TableHeaderLeft>
                                 <TableTitle>All Agents</TableTitle>
                                 <CountBadge>{filteredAgents.length}</CountBadge>
+                                <InlineSearch>
+                                    <Search size={12} style={{ color: '#6b7a8d', flexShrink: 0 }} />
+                                    <InlineSearchInput
+                                        ref={searchRef}
+                                        placeholder="Search by name…"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </InlineSearch>
                             </TableHeaderLeft>
                             <TableHeaderFilters>
                                 {/* Status filters */}
@@ -725,12 +714,13 @@ const PageWrapper = styled.div`
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 0;
     padding: 28px 32px;
     gap: 20px;
     animation: ${fadeIn} 0.25s ease;
-    overflow-y: auto;
     background: #0a0e17;
     font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    overflow: hidden;
 `;
 
 const PageHeader = styled.div`
@@ -767,46 +757,6 @@ const HeaderActions = styled.div`
     gap: 10px;
 `;
 
-const SearchBar = styled.div<{ $focused: boolean }>`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    padding: 0 12px;
-    height: 36px;
-    transition: border-color 0.15s;
-
-    &:focus-within {
-        border-color: rgba(12, 92, 171, 0.5);
-        background: rgba(12, 92, 171, 0.04);
-    }
-`;
-
-const SearchInput = styled.input`
-    background: transparent;
-    border: none;
-    outline: none;
-    color: #e8edf5;
-    font-size: 13px;
-    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
-    width: 200px;
-
-    &::placeholder { color: #4a5568; }
-`;
-
-const KbdHint = styled.span`
-    font-size: 10px;
-    color: #4a5568;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 4px;
-    padding: 1px 5px;
-    font-family: 'IBM Plex Mono', monospace;
-    flex-shrink: 0;
-`;
-
 const CreateButton = styled.button`
     display: flex;
     align-items: center;
@@ -830,41 +780,6 @@ const CreateButton = styled.button`
     }
 `;
 
-// ── Metrics ───────────────────────────────────────────────────────────────────
-
-const MetricsRow = styled.div`
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-
-    @media (max-width: 700px) { grid-template-columns: repeat(2, 1fr); }
-`;
-
-const MetricCard = styled.div`
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    padding: 18px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-`;
-
-const MetricValue = styled.span<{ $color?: string }>`
-    font-size: 32px;
-    font-weight: 700;
-    color: ${p => p.$color ?? '#e8edf5'};
-    font-family: 'IBM Plex Mono', monospace;
-    line-height: 1;
-`;
-
-const MetricLabel = styled.span`
-    font-size: 12px;
-    color: #6b7a8d;
-    font-weight: 500;
-    margin-top: 4px;
-`;
-
 // ── Table card ────────────────────────────────────────────────────────────────
 
 const TableCard = styled.div`
@@ -872,6 +787,10 @@ const TableCard = styled.div`
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 `;
 
 const TableCardHeader = styled.div`
@@ -889,6 +808,41 @@ const TableHeaderLeft = styled.div`
     display: flex;
     align-items: center;
     gap: 10px;
+    flex: 1;
+    min-width: 0;
+`;
+
+const InlineSearch = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 6px;
+    padding: 0 9px;
+    height: 28px;
+    margin-left: 10px;
+    max-width: 240px;
+    flex: 1;
+    transition: border-color 0.15s;
+
+    &:focus-within {
+        border-color: rgba(74, 158, 222, 0.45);
+        background: rgba(74, 158, 222, 0.05);
+    }
+`;
+
+const InlineSearchInput = styled.input`
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #e8edf5;
+    font-size: 12px;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    flex: 1;
+    min-width: 0;
+
+    &::placeholder { color: #4a5568; }
 `;
 
 const TableTitle = styled.span`
@@ -1023,7 +977,18 @@ const BulkClearBtn = styled.button`
 // ── Table ─────────────────────────────────────────────────────────────────────
 
 const TableScroll = styled.div`
+    flex: 1;
+    min-height: 0;
     overflow-x: auto;
+    overflow-y: auto;
+
+    /* Hide scrollbar — keep scroll functionality */
+    scrollbar-width: none;          /* Firefox */
+    -ms-overflow-style: none;       /* IE / old Edge */
+    &::-webkit-scrollbar { display: none; }  /* Chrome, Safari, new Edge */
+
+    /* Sticky table header inside the scrollable area */
+    thead tr { position: sticky; top: 0; z-index: 2; background: #0d1421; }
 `;
 
 const Table = styled.table`
@@ -1074,7 +1039,7 @@ const TableRow = styled.tr<{ $checked?: boolean }>`
 `;
 
 const Td = styled.td<{ $checkbox?: boolean }>`
-    padding: ${p => p.$checkbox ? '20px 12px 20px 20px' : '20px 20px'};
+    padding: ${p => p.$checkbox ? '12px 12px 12px 20px' : '12px 20px'};
     vertical-align: middle;
     width: ${p => p.$checkbox ? '40px' : 'auto'};
     cursor: ${p => p.$checkbox ? 'pointer' : 'inherit'};

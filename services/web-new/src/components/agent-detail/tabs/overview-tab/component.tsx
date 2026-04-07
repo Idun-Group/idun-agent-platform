@@ -21,6 +21,7 @@ import AgentDetailsSection from './sections/agent-details-section';
 import FrameworkSection from './sections/framework-section';
 import GraphSection from './sections/graph-section';
 import ResourcesSection from './sections/resources-section';
+import DashboardOverview from './sections/dashboard-overview';
 import { ActionBar, ActionButton } from './sections/styled';
 
 interface OverviewTabProps {
@@ -161,36 +162,44 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
 
     return (
         <Container>
-            {/* ── Connection status + meta info ── */}
-            <AgentDetailsSection
-                agent={agent}
-                isEditing={isEditing}
-                formState={formState}
-                onFieldChange={handleFieldChange}
-            />
+            {/* ── View mode: 3-column dashboard ── */}
+            {!isEditing && (
+                <DashboardOverview
+                    agent={agent}
+                    resources={resources}
+                    refreshKey={graphRefreshKey}
+                    onAgentRefresh={onAgentRefresh}
+                />
+            )}
 
-            {/* ── Resources (full width) ── */}
-            <ResourcesSection
-                agent={agent}
-                isEditing={isEditing}
-                resources={resources}
-                selections={selections}
-                onSelectionChange={handleSelectionChange}
-                onResourcesRefresh={setResources}
-                onAgentRefresh={onAgentRefresh}
-            />
-
-            {/* ── Agent graph (full width) ── */}
-            <GraphSection agent={agent} refreshKey={graphRefreshKey} />
-
-            {/* ── Framework config (full width) ── */}
-            <FrameworkSection
-                agent={agent}
-                isEditing={isEditing}
-                agentConfig={formState.agentConfig}
-                rootSchema={rootSchema}
-                onConfigChange={handleConfigChange}
-            />
+            {/* ── Edit mode: stacked sections ── */}
+            {isEditing && (
+                <>
+                    <AgentDetailsSection
+                        agent={agent}
+                        isEditing={isEditing}
+                        formState={formState}
+                        onFieldChange={handleFieldChange}
+                    />
+                    <ResourcesSection
+                        agent={agent}
+                        isEditing={isEditing}
+                        resources={resources}
+                        selections={selections}
+                        onSelectionChange={handleSelectionChange}
+                        onResourcesRefresh={setResources}
+                        onAgentRefresh={onAgentRefresh}
+                    />
+                    <GraphSection agent={agent} refreshKey={graphRefreshKey} />
+                    <FrameworkSection
+                        agent={agent}
+                        isEditing={isEditing}
+                        agentConfig={formState.agentConfig}
+                        rootSchema={rootSchema}
+                        onConfigChange={handleConfigChange}
+                    />
+                </>
+            )}
 
             {isEditing && (
                 <ActionBar>

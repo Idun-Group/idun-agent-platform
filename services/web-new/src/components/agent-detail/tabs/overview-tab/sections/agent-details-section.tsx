@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import styled, { css, keyframes } from 'styled-components';
-import { Copy, Check, Wifi, WifiOff, ExternalLink, Hash, Tag, Server, Loader } from 'lucide-react';
+import { Copy, Check, Wifi, WifiOff, ExternalLink, Hash, Tag, Server, Loader, ChevronDown, Info } from 'lucide-react';
 import type { BackendAgent } from '../../../../../services/agents';
 import type { AgentFormState } from '../../../../../utils/agent-config-utils';
+import { SectionCard, SectionIcon, SectionTitle, CollapsibleHeader, CollapseChevron } from './styled';
 
 interface Props {
     agent: BackendAgent;
@@ -37,34 +38,44 @@ export default function AgentDetailsSection({ agent, isEditing, formState, onFie
     const health = useLiveCheck(agent.base_url);
     const { copied: copiedId, copy: copyId } = useCopy(agent.id);
     const { copied: copiedUrl, copy: copyUrl } = useCopy(agent.base_url ?? '');
+    const [collapsed, setCollapsed] = useState(false);
 
     // ── Edit mode ───────────────────────────────────────────────────────────
     if (isEditing) {
         return (
-            <EditRoot>
-                <EditGrid>
-                    <Field>
-                        <Label>Name</Label>
-                        <Input value={formState.name} onChange={e => onFieldChange('name', e.target.value)} placeholder="my-agent" />
-                    </Field>
-                    <Field>
-                        <Label>Version</Label>
-                        <Input value={formState.version} onChange={e => onFieldChange('version', e.target.value)} placeholder="1.0.0" />
-                    </Field>
-                    <Field $span>
-                        <Label>Description</Label>
-                        <Textarea value={formState.description} onChange={e => onFieldChange('description', e.target.value)} placeholder="What does this agent do?" rows={2} />
-                    </Field>
-                    <Field>
-                        <Label>Base URL</Label>
-                        <Input value={formState.baseUrl} onChange={e => onFieldChange('baseUrl', e.target.value)} placeholder="http://localhost:8800" />
-                    </Field>
-                    <Field>
-                        <Label>Server Port</Label>
-                        <Input value={formState.serverPort} onChange={e => onFieldChange('serverPort', e.target.value)} placeholder="8000" type="number" />
-                    </Field>
-                </EditGrid>
-            </EditRoot>
+            <SectionCard>
+                <CollapsibleHeader $collapsed={collapsed} onClick={() => setCollapsed(c => !c)} type="button">
+                    <SectionIcon $color="blue"><Info size={16} /></SectionIcon>
+                    <SectionTitle>Agent Details</SectionTitle>
+                    <CollapseChevron $collapsed={collapsed}>
+                        <ChevronDown size={16} />
+                    </CollapseChevron>
+                </CollapsibleHeader>
+                {!collapsed && (
+                    <EditGrid>
+                        <Field>
+                            <Label>Name</Label>
+                            <Input value={formState.name} onChange={e => onFieldChange('name', e.target.value)} placeholder="my-agent" />
+                        </Field>
+                        <Field>
+                            <Label>Version</Label>
+                            <Input value={formState.version} onChange={e => onFieldChange('version', e.target.value)} placeholder="1.0.0" />
+                        </Field>
+                        <Field $span>
+                            <Label>Description</Label>
+                            <Textarea value={formState.description} onChange={e => onFieldChange('description', e.target.value)} placeholder="What does this agent do?" rows={2} />
+                        </Field>
+                        <Field>
+                            <Label>Base URL</Label>
+                            <Input value={formState.baseUrl} onChange={e => onFieldChange('baseUrl', e.target.value)} placeholder="http://localhost:8800" />
+                        </Field>
+                        <Field>
+                            <Label>Server Port</Label>
+                            <Input value={formState.serverPort} onChange={e => onFieldChange('serverPort', e.target.value)} placeholder="8000" type="number" />
+                        </Field>
+                    </EditGrid>
+                )}
+            </SectionCard>
         );
     }
 
@@ -72,7 +83,16 @@ export default function AgentDetailsSection({ agent, isEditing, formState, onFie
     const baseUrl = agent.base_url;
 
     return (
-        <Root>
+        <SectionCard>
+            <CollapsibleHeader $collapsed={collapsed} onClick={() => setCollapsed(c => !c)} type="button">
+                <SectionIcon $color="blue"><Info size={16} /></SectionIcon>
+                <SectionTitle>Agent Details</SectionTitle>
+                <CollapseChevron $collapsed={collapsed}>
+                    <ChevronDown size={16} />
+                </CollapseChevron>
+            </CollapsibleHeader>
+            {collapsed ? null : (
+            <Root>
             {/* Status banner */}
             <StatusBanner $status={health}>
                 <BannerLeft>
@@ -132,21 +152,15 @@ export default function AgentDetailsSection({ agent, isEditing, formState, onFie
                     <span>{agent.id.slice(0, 8)}…</span>
                     {copiedId ? <Check size={10} color="#34d399" /> : <Copy size={10} />}
                 </MetaChipCopyable>
-                {baseUrl && (
-                    <MetaChipCopyable onClick={() => {
-                        navigator.clipboard.writeText(`idun connect ${baseUrl}`);
-                    }} title="Copy CLI connect command">
-                        <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10 }}>idun connect</span>
-                        <Copy size={10} />
-                    </MetaChipCopyable>
-                )}
             </MetaRow>
 
             {/* Description */}
             {agent.description && (
                 <DescBox>{agent.description}</DescBox>
             )}
-        </Root>
+            </Root>
+            )}
+        </SectionCard>
     );
 }
 
