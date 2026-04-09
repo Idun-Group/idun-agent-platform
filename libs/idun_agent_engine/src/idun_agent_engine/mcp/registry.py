@@ -114,11 +114,26 @@ class MCPClientRegistry:
         self._client: MultiServerMCPClient | None = None
 
         if self._configs:
-            connections: dict[str, Connection] = {
-                config.name: cast(Connection, config.as_connection_dict())
-                for config in self._configs
-            }
-            self._client = MultiServerMCPClient(connections)
+            connections: dict[str, Connection] = {}
+            for config in self._configs:
+                try:
+                    connections[config.name] = cast(
+                        Connection, config.as_connection_dict()
+                    )
+                except Exception:
+                    logger.exception(
+                        "⚠️ Failed to build connection for MCP server '%s', skipping.",
+                        config.name,
+                    )
+
+            if connections:
+                try:
+                    self._client = MultiServerMCPClient(connections)
+                except Exception:
+                    logger.exception(
+                        "⚠️ Failed to create MultiServerMCPClient, "
+                        "continuing without MCP servers."
+                    )
 
     @property
     def enabled(self) -> bool:
