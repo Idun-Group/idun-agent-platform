@@ -152,6 +152,7 @@ class ConfigBuilder:
                 raise YAMLError(
                     f"Failed to parse yaml file for Observability: {e}"
                 ) from e
+
             try:
                 sso_data = yaml_config.get("engine_config", {}).get("sso")
                 if sso_data:
@@ -161,16 +162,20 @@ class ConfigBuilder:
             except Exception as e:
                 raise YAMLError(f"Failed to parse yaml file for SSO: {e}") from e
 
-            # try:
-            #     mcp_servers_list = yaml_config.get("engine_config", {}).get("mcp_servers") or yaml_config.get("engine_config", {}).get("mcpServers") # TODO to fix camelcase issues
-            #     if mcp_servers_list:
-            #         self._mcp_servers = [
-            #             MCPServer.model_validate(server) for server in mcp_servers_list
-            #         ]
-            #     else:
-            #         self._mcp_servers = None
-            # except Exception as e:
-            #     raise YAMLError(f"Failed to parse yaml file for MCP Servers: {e}") from e
+            try:
+                mcp_servers_list = yaml_config.get("engine_config", {}).get(
+                    "mcp_servers"
+                ) or yaml_config.get("engine_config", {}).get("mcpServers")
+                if mcp_servers_list:
+                    self._mcp_servers = [
+                        MCPServer.model_validate(server) for server in mcp_servers_list
+                    ]
+                else:
+                    self._mcp_servers = None
+            except Exception as e:
+                raise YAMLError(
+                    f"Failed to parse yaml file for MCP Servers: {e}"
+                ) from e
 
             try:
                 from idun_agent_schema.engine.integrations import IntegrationConfig
@@ -202,9 +207,7 @@ class ConfigBuilder:
                     self._prompts = None
                     logger.debug("No prompts found in API config")
             except Exception as e:
-                raise YAMLError(
-                    f"Failed to parse yaml file for Prompts: {e}"
-                ) from e
+                raise YAMLError(f"Failed to parse yaml file for Prompts: {e}") from e
 
             return self
 
@@ -374,7 +377,7 @@ class ConfigBuilder:
         agent_config_obj = engine_config.agent.config
         agent_type = engine_config.agent.type
         observability_config = engine_config.observability
-        # mcp_servers = engine_config.mcp_servers
+        mcp_servers = engine_config.mcp_servers
         # Initialize the appropriate agent
         agent_instance = None
         if agent_type == AgentFramework.LANGGRAPH:

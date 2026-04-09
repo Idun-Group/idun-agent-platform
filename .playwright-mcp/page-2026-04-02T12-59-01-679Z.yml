@@ -1,0 +1,240 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6] [cursor=pointer]:
+        - img "Idun Logo" [ref=e7]
+        - heading "Idun Platform" [level=1] [ref=e8]
+      - generic [ref=e9]:
+        - generic [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+          - generic [ref=e14]: Search...
+          - generic [ref=e15]:
+            - generic [ref=e16]: ⌘
+            - generic [ref=e17]: K
+        - button [ref=e18] [cursor=pointer]:
+          - img [ref=e19]
+    - generic [ref=e22]:
+      - complementary [ref=e23]:
+        - navigation [ref=e24]:
+          - button [ref=e25] [cursor=pointer]
+          - button [ref=e28] [cursor=pointer]:
+            - img [ref=e30]
+          - button [ref=e32] [cursor=pointer]:
+            - img [ref=e34]
+          - button [ref=e38] [cursor=pointer]:
+            - img [ref=e40]
+          - button [ref=e42] [cursor=pointer]:
+            - img [ref=e44]
+          - button [ref=e47] [cursor=pointer]:
+            - img [ref=e49]
+          - button [ref=e52] [cursor=pointer]:
+            - img [ref=e54]
+          - button [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+        - generic [ref=e61]:
+          - link [ref=e62] [cursor=pointer]:
+            - /url: https://idunplatform.com/#pricing
+            - img [ref=e63]
+          - link [ref=e66] [cursor=pointer]:
+            - /url: mailto:contact@idun-group.com
+            - img [ref=e67]
+          - button [ref=e74] [cursor=pointer]:
+            - img [ref=e76]
+          - img [ref=e81] [cursor=pointer]
+      - generic [ref=e85]:
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - generic [ref=e88]: Dashboard
+            - heading "Agent Dashboard" [level=1] [ref=e89]
+            - paragraph [ref=e90]: Manage and monitor your AI agents
+          - generic [ref=e91]:
+            - generic [ref=e92]:
+              - img [ref=e93]
+              - textbox "Type agent name or framework..." [ref=e96]
+            - button "Create an agent" [ref=e97] [cursor=pointer]:
+              - img [ref=e98]
+              - text: Create an agent
+        - generic [ref=e99]:
+          - generic [ref=e102]:
+            - generic [ref=e103]: "5"
+            - generic [ref=e104]: Total Agents
+          - generic [ref=e107]:
+            - generic [ref=e108]: "0"
+            - generic [ref=e109]: Active
+          - generic [ref=e112]:
+            - generic [ref=e113]: "5"
+            - generic [ref=e114]: Draft
+          - generic [ref=e117]:
+            - generic [ref=e118]: "0"
+            - generic [ref=e119]: Errors
+        - generic [ref=e120]:
+          - generic [ref=e121] [cursor=pointer]:
+            - generic [ref=e122]:
+              - img [ref=e125]
+              - generic [ref=e129]:
+                - generic [ref=e130]: test
+                - generic [ref=e131]:
+                  - generic [ref=e132]: LangGraph
+                  - generic [ref=e133]: draft
+              - button [ref=e135]:
+                - img [ref=e136]
+            - paragraph [ref=e140]: No description provided
+            - generic [ref=e142]:
+              - generic "Obs" [ref=e143]:
+                - img [ref=e145]
+                - generic [ref=e147]: Obs
+              - generic "Mem" [ref=e148]:
+                - img [ref=e150]
+                - generic [ref=e154]: Mem
+              - generic "Guard" [ref=e155]:
+                - img [ref=e157]
+                - generic [ref=e160]: Guard
+              - generic "MCP" [ref=e161]:
+                - img [ref=e163]
+                - generic [ref=e165]: MCP
+              - generic "SSO" [ref=e166]:
+                - img [ref=e168]
+                - generic [ref=e171]: SSO
+              - generic "Int" [ref=e172]:
+                - img [ref=e174]
+                - generic [ref=e176]: Int
+            - generic "http://localhost:8800" [ref=e178]:
+              - img [ref=e179]
+              - text: localhost:8800
+          - generic [ref=e183] [cursor=pointer]:
+            - generic [ref=e184]:
+              - img [ref=e187]
+              - generic [ref=e192]:
+                - generic [ref=e193]: Production Chatbot
+                - generic [ref=e194]:
+                  - generic [ref=e195]: LangGraph
+                  - generic [ref=e196]: draft
+              - button [ref=e198]:
+                - img [ref=e199]
+            - paragraph [ref=e203]: No description provided
+            - generic [ref=e205]:
+              - generic "Obs" [ref=e206]:
+                - img [ref=e208]
+                - generic [ref=e210]: Obs
+              - generic "Mem" [ref=e211]:
+                - img [ref=e213]
+                - generic [ref=e217]: Mem
+              - generic "Guard" [ref=e218]:
+                - img [ref=e220]
+                - generic [ref=e223]: Guard
+              - generic "MCP" [ref=e224]:
+                - img [ref=e226]
+                - generic [ref=e228]: MCP
+              - generic "SSO" [ref=e229]:
+                - img [ref=e231]
+                - generic [ref=e234]: SSO
+              - generic "Int" [ref=e235]:
+                - img [ref=e237]
+                - generic [ref=e239]: Int
+            - generic "http://localhost:8800" [ref=e241]:
+              - img [ref=e242]
+              - text: localhost:8800
+          - generic [ref=e246] [cursor=pointer]:
+            - generic [ref=e247]:
+              - img [ref=e250]
+              - generic [ref=e259]:
+                - generic [ref=e260]: test-adk
+                - generic [ref=e261]:
+                  - generic [ref=e262]: ADK
+                  - generic [ref=e263]: draft
+              - button [ref=e265]:
+                - img [ref=e266]
+            - paragraph [ref=e270]: No description provided
+            - generic [ref=e272]:
+              - generic "Obs" [ref=e273]:
+                - img [ref=e275]
+                - generic [ref=e277]: Obs
+              - generic "Mem" [ref=e278]:
+                - img [ref=e280]
+                - generic [ref=e284]: Mem
+              - generic "Guard" [ref=e285]:
+                - img [ref=e287]
+                - generic [ref=e290]: Guard
+              - generic "MCP" [ref=e291]:
+                - img [ref=e293]
+                - generic [ref=e295]: MCP
+              - generic "SSO" [ref=e296]:
+                - img [ref=e298]
+                - generic [ref=e301]: SSO
+              - generic "Int" [ref=e302]:
+                - img [ref=e304]
+                - generic [ref=e306]: Int
+            - generic "http://localhost:8805" [ref=e308]:
+              - img [ref=e309]
+              - text: localhost:8805
+          - generic [ref=e313] [cursor=pointer]:
+            - generic [ref=e314]:
+              - img [ref=e317]
+              - generic [ref=e322]:
+                - generic [ref=e323]: tool
+                - generic [ref=e324]:
+                  - generic [ref=e325]: LangGraph
+                  - generic [ref=e326]: draft
+              - button [ref=e328]:
+                - img [ref=e329]
+            - paragraph [ref=e333]: No description provided
+            - generic [ref=e335]:
+              - generic "Obs" [ref=e336]:
+                - img [ref=e338]
+                - generic [ref=e340]: Obs
+              - generic "Mem" [ref=e341]:
+                - img [ref=e343]
+                - generic [ref=e347]: Mem
+              - generic "Guard" [ref=e348]:
+                - img [ref=e350]
+                - generic [ref=e353]: Guard
+              - generic "MCP" [ref=e354]:
+                - img [ref=e356]
+                - generic [ref=e358]: MCP
+              - generic "SSO" [ref=e359]:
+                - img [ref=e361]
+                - generic [ref=e364]: SSO
+              - generic "Int" [ref=e365]:
+                - img [ref=e367]
+                - generic [ref=e369]: Int
+            - generic "http://localhost:8800" [ref=e371]:
+              - img [ref=e372]
+              - text: localhost:8800
+          - generic [ref=e376] [cursor=pointer]:
+            - generic [ref=e377]:
+              - img [ref=e380]
+              - generic [ref=e387]:
+                - generic [ref=e388]: adk-new
+                - generic [ref=e389]:
+                  - generic [ref=e390]: ADK
+                  - generic [ref=e391]: draft
+              - button [ref=e393]:
+                - img [ref=e394]
+            - paragraph [ref=e398]: No description provided
+            - generic [ref=e400]:
+              - generic "Obs" [ref=e401]:
+                - img [ref=e403]
+                - generic [ref=e405]: Obs
+              - generic "Mem" [ref=e406]:
+                - img [ref=e408]
+                - generic [ref=e412]: Mem
+              - generic "Guard" [ref=e413]:
+                - img [ref=e415]
+                - generic [ref=e418]: Guard
+              - generic "MCP" [ref=e419]:
+                - img [ref=e421]
+                - generic [ref=e423]: MCP
+              - generic "SSO" [ref=e424]:
+                - img [ref=e426]
+                - generic [ref=e429]: SSO
+              - generic "Int" [ref=e430]:
+                - img [ref=e432]
+                - generic [ref=e434]: Int
+            - generic "http://localhost:8802" [ref=e436]:
+              - img [ref=e437]
+              - text: localhost:8802
+          - button "Connect a new agent Configure from a template or connect" [ref=e441] [cursor=pointer]:
+            - img [ref=e443]
+            - generic [ref=e444]: Connect a new agent
+            - paragraph [ref=e445]: Configure from a template or connect
+  - region "Notifications Alt+T"

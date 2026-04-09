@@ -1,0 +1,314 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e10]: CloudPlatform
+        - generic [ref=e11]:
+          - generic [ref=e12] [cursor=pointer]: robert-marian
+          - generic [ref=e13]: /
+          - generic [ref=e14]:
+            - generic [ref=e15]: T
+            - text: typeui-examples
+            - img [ref=e16]
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - img [ref=e20]
+          - textbox "Search resources..." [ref=e23]
+          - generic [ref=e25]: ⌘K
+        - button [ref=e26]:
+          - img [ref=e27]
+        - generic [ref=e31] [cursor=pointer]: RM
+    - generic [ref=e32]:
+      - complementary [ref=e33]:
+        - generic [ref=e34]:
+          - link "Dashboard" [ref=e35] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e37]
+            - generic [ref=e42]: Dashboard
+          - link "Applications" [ref=e43] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e45]
+            - generic [ref=e48]: Applications
+          - link "Deployments" [ref=e49] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e51]
+            - generic [ref=e56]: Deployments
+          - link "Logs" [ref=e57] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e59]
+            - generic [ref=e62]: Logs
+          - link "Analytics" [ref=e63] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e65]
+            - generic [ref=e67]: Analytics
+          - link "Settings" [ref=e68] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e70]
+            - generic [ref=e73]: Settings
+        - button [ref=e75]:
+          - img [ref=e76]
+      - main [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - heading "Project Overview" [level=1] [ref=e81]
+              - paragraph [ref=e82]: Manage your applications, deployments, and metrics.
+            - generic [ref=e83]:
+              - button "Repository" [ref=e84]:
+                - img [ref=e85]
+                - text: Repository
+              - button "New Project" [ref=e89]:
+                - img [ref=e90]
+                - text: New Project
+          - generic [ref=e91]:
+            - heading "Applications" [level=2] [ref=e92]
+            - generic [ref=e93]:
+              - generic [ref=e94] [cursor=pointer]:
+                - generic [ref=e95]:
+                  - generic [ref=e96]:
+                    - img [ref=e98]
+                    - generic [ref=e101]:
+                      - heading "frontend-web" [level=3] [ref=e102]
+                      - paragraph [ref=e103]: Next.js
+                  - button [ref=e104]:
+                    - img [ref=e105]
+                - generic [ref=e109]:
+                  - img [ref=e110]
+                  - generic [ref=e113]: web.production.app
+                - generic [ref=e114]:
+                  - generic [ref=e119]: running
+                  - generic [ref=e120]: 2m ago
+              - generic [ref=e121] [cursor=pointer]:
+                - generic [ref=e122]:
+                  - generic [ref=e123]:
+                    - img [ref=e125]
+                    - generic [ref=e128]:
+                      - heading "api-gateway" [level=3] [ref=e129]
+                      - paragraph [ref=e130]: Node.js
+                  - button [ref=e131]:
+                    - img [ref=e132]
+                - generic [ref=e136]:
+                  - img [ref=e137]
+                  - generic [ref=e140]: api.production.app
+                - generic [ref=e141]:
+                  - generic [ref=e146]: running
+                  - generic [ref=e147]: 1h ago
+              - generic [ref=e148] [cursor=pointer]:
+                - generic [ref=e149]:
+                  - generic [ref=e150]:
+                    - img [ref=e152]
+                    - generic [ref=e155]:
+                      - heading "auth-service" [level=3] [ref=e156]
+                      - paragraph [ref=e157]: Go
+                  - button [ref=e158]:
+                    - img [ref=e159]
+                - generic [ref=e163]:
+                  - img [ref=e164]
+                  - generic [ref=e167]: auth.production.app
+                - generic [ref=e168]:
+                  - generic [ref=e173]: deploying
+                  - generic [ref=e174]: Just now
+              - generic [ref=e175] [cursor=pointer]:
+                - generic [ref=e176]:
+                  - generic [ref=e177]:
+                    - img [ref=e179]
+                    - generic [ref=e182]:
+                      - heading "worker-queue" [level=3] [ref=e183]
+                      - paragraph [ref=e184]: Python
+                  - button [ref=e185]:
+                    - img [ref=e186]
+                - generic [ref=e190]:
+                  - img [ref=e191]
+                  - generic [ref=e194]: workers.internal
+                - generic [ref=e195]:
+                  - generic [ref=e199]: failed
+                  - generic [ref=e200]: 5h ago
+          - generic [ref=e201]:
+            - generic [ref=e203]:
+              - generic [ref=e204]:
+                - heading "Recent Deployments" [level=2] [ref=e205]:
+                  - img [ref=e206]
+                  - text: Recent Deployments
+                - button "View All" [ref=e211]
+              - table [ref=e213]:
+                - rowgroup [ref=e214]:
+                  - row "Commit Status Branch Time" [ref=e215]:
+                    - columnheader "Commit" [ref=e216]
+                    - columnheader "Status" [ref=e217]
+                    - columnheader "Branch" [ref=e218]
+                    - columnheader "Time" [ref=e219]
+                - rowgroup [ref=e220]:
+                  - row "R Update landing page hero dep_8f72a • frontend-web Ready main 2m ago" [ref=e221]:
+                    - cell "R Update landing page hero dep_8f72a • frontend-web" [ref=e222]:
+                      - generic [ref=e223]:
+                        - generic [ref=e224]: R
+                        - generic [ref=e225]:
+                          - generic [ref=e226]: Update landing page hero
+                          - generic [ref=e227]: dep_8f72a • frontend-web
+                    - cell "Ready" [ref=e228]:
+                      - generic [ref=e229]:
+                        - img [ref=e230]
+                        - text: Ready
+                    - cell "main" [ref=e233]:
+                      - generic [ref=e234]:
+                        - img [ref=e235]
+                        - text: main
+                    - cell "2m ago" [ref=e239]
+                  - row "S Fix JWT token expiration dep_3a19b • auth-service Building fix/jwt-expiry Just now" [ref=e240]:
+                    - cell "S Fix JWT token expiration dep_3a19b • auth-service" [ref=e241]:
+                      - generic [ref=e242]:
+                        - generic [ref=e243]: S
+                        - generic [ref=e244]:
+                          - generic [ref=e245]: Fix JWT token expiration
+                          - generic [ref=e246]: dep_3a19b • auth-service
+                    - cell "Building" [ref=e247]:
+                      - generic [ref=e248]:
+                        - img [ref=e249]
+                        - text: Building
+                    - cell "fix/jwt-expiry" [ref=e254]:
+                      - generic [ref=e255]:
+                        - img [ref=e256]
+                        - text: fix/jwt-expiry
+                    - cell "Just now" [ref=e260]
+                  - row "R Add rate limiting middleware dep_9c44d • api-gateway Ready main 1h ago" [ref=e261]:
+                    - cell "R Add rate limiting middleware dep_9c44d • api-gateway" [ref=e262]:
+                      - generic [ref=e263]:
+                        - generic [ref=e264]: R
+                        - generic [ref=e265]:
+                          - generic [ref=e266]: Add rate limiting middleware
+                          - generic [ref=e267]: dep_9c44d • api-gateway
+                    - cell "Ready" [ref=e268]:
+                      - generic [ref=e269]:
+                        - img [ref=e270]
+                        - text: Ready
+                    - cell "main" [ref=e273]:
+                      - generic [ref=e274]:
+                        - img [ref=e275]
+                        - text: main
+                    - cell "1h ago" [ref=e279]
+                  - row "A Update redis connection pool dep_1e22f • worker-queue Failed main 5h ago" [ref=e280]:
+                    - cell "A Update redis connection pool dep_1e22f • worker-queue" [ref=e281]:
+                      - generic [ref=e282]:
+                        - generic [ref=e283]: A
+                        - generic [ref=e284]:
+                          - generic [ref=e285]: Update redis connection pool
+                          - generic [ref=e286]: dep_1e22f • worker-queue
+                    - cell "Failed" [ref=e287]:
+                      - generic [ref=e288]:
+                        - img [ref=e289]
+                        - text: Failed
+                    - cell "main" [ref=e291]:
+                      - generic [ref=e292]:
+                        - img [ref=e293]
+                        - text: main
+                    - cell "5h ago" [ref=e297]
+            - generic [ref=e299]:
+              - generic [ref=e300]:
+                - heading "System Metrics" [level=2] [ref=e301]:
+                  - img [ref=e302]
+                  - text: System Metrics
+                - combobox [ref=e304]:
+                  - option "Last 24h" [selected]
+                  - option "Last 7d"
+                  - option "Last 30d"
+              - generic [ref=e305]:
+                - generic [ref=e306]:
+                  - generic [ref=e307]:
+                    - generic [ref=e308]:
+                      - img [ref=e309]
+                      - text: CPU Usage
+                    - generic [ref=e312]: 65%
+                  - application [ref=e316]
+                - generic [ref=e325]:
+                  - generic [ref=e326]:
+                    - img [ref=e327]
+                    - text: Memory
+                  - generic [ref=e329]: 82%
+                - generic [ref=e332]:
+                  - generic [ref=e333]:
+                    - generic [ref=e334]:
+                      - img [ref=e335]
+                      - text: Network
+                    - generic [ref=e338]: 1.4k req/s
+                  - application [ref=e342]
+          - generic [ref=e347]:
+            - generic [ref=e349]:
+              - generic [ref=e350]:
+                - heading "Live Logs" [level=2] [ref=e351]:
+                  - img [ref=e352]
+                  - text: Live Logs
+                - generic [ref=e355]:
+                  - generic [ref=e356]: Live
+                  - button [ref=e360]:
+                    - img [ref=e361]
+              - generic [ref=e366]:
+                - generic [ref=e367]: "[2026-03-25T14:32:01.102Z] INFO [frontend-web] Starting production server on port 3000"
+                - generic [ref=e368]: "[2026-03-25T14:32:01.453Z] INFO [frontend-web] Ready in 351ms"
+                - generic [ref=e369]: "[2026-03-25T14:32:05.882Z] GET /api/health 200 12ms"
+                - generic [ref=e370]: "[2026-03-25T14:32:12.011Z] GET / 200 45ms"
+                - generic [ref=e371]: "[2026-03-25T14:32:15.332Z] GET /_next/static/css/app/layout.css 200 5ms"
+                - generic [ref=e372]: _
+            - generic [ref=e374]:
+              - generic [ref=e375]:
+                - heading "Environment Variables" [level=2] [ref=e376]:
+                  - img [ref=e377]
+                  - text: Environment Variables
+                - generic [ref=e380]:
+                  - button "Show values" [ref=e381]:
+                    - img [ref=e382]
+                  - button "Add Variable" [ref=e385]
+              - table [ref=e387]:
+                - rowgroup [ref=e388]:
+                  - row "Key Value Actions" [ref=e389]:
+                    - columnheader "Key" [ref=e390]
+                    - columnheader "Value" [ref=e391]
+                    - columnheader "Actions" [ref=e392]
+                - rowgroup [ref=e393]:
+                  - row "DATABASE_URL ••••••••••••••••••••••••" [ref=e394]:
+                    - cell "DATABASE_URL" [ref=e395]
+                    - cell "••••••••••••••••••••••••" [ref=e396]
+                    - cell [ref=e397]:
+                      - generic [ref=e398]:
+                        - button "Copy" [ref=e399]:
+                          - img [ref=e400]
+                        - button "Edit" [ref=e403]:
+                          - img [ref=e404]
+                  - row "NEXT_PUBLIC_API_URL ••••••••••••••••••••••••" [ref=e406]:
+                    - cell "NEXT_PUBLIC_API_URL" [ref=e407]
+                    - cell "••••••••••••••••••••••••" [ref=e408]
+                    - cell [ref=e409]:
+                      - generic [ref=e410]:
+                        - button "Copy" [ref=e411]:
+                          - img [ref=e412]
+                        - button "Edit" [ref=e415]:
+                          - img [ref=e416]
+                  - row "REDIS_CONNECTION_STRING ••••••••••••••••••••••••" [ref=e418]:
+                    - cell "REDIS_CONNECTION_STRING" [ref=e419]
+                    - cell "••••••••••••••••••••••••" [ref=e420]
+                    - cell [ref=e421]:
+                      - generic [ref=e422]:
+                        - button "Copy" [ref=e423]:
+                          - img [ref=e424]
+                        - button "Edit" [ref=e427]:
+                          - img [ref=e428]
+                  - row "STRIPE_SECRET_KEY ••••••••••••••••••••••••" [ref=e430]:
+                    - cell "STRIPE_SECRET_KEY" [ref=e431]
+                    - cell "••••••••••••••••••••••••" [ref=e432]
+                    - cell [ref=e433]:
+                      - generic [ref=e434]:
+                        - button "Copy" [ref=e435]:
+                          - img [ref=e436]
+                        - button "Edit" [ref=e439]:
+                          - img [ref=e440]
+                  - row "JWT_SECRET ••••••••••••••••••••••••" [ref=e442]:
+                    - cell "JWT_SECRET" [ref=e443]
+                    - cell "••••••••••••••••••••••••" [ref=e444]
+                    - cell [ref=e445]:
+                      - generic [ref=e446]:
+                        - button "Copy" [ref=e447]:
+                          - img [ref=e448]
+                        - button "Edit" [ref=e451]:
+                          - img [ref=e452]
+  - alert [ref=e454]

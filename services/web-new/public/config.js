@@ -1,0 +1,6 @@
+window.__RUNTIME_CONFIG__ = {
+  API_URL: "",
+  COPILOT_RUNTIME_URL: "",
+  AUTH_DISABLE_USERNAME_PASSWORD: "false",
+  USE_MOCKS: "false"
+};

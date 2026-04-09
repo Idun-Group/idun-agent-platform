@@ -1,0 +1,63 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6] [cursor=pointer]:
+        - img "Idun Logo" [ref=e7]
+        - heading "Idun Platform" [level=1] [ref=e8]
+      - generic [ref=e9]:
+        - generic [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+          - generic [ref=e14]: Search...
+          - generic [ref=e15]:
+            - generic [ref=e16]: ⌘
+            - generic [ref=e17]: K
+        - button [ref=e18] [cursor=pointer]:
+          - img [ref=e19]
+    - generic [ref=e22]:
+      - complementary [ref=e23]:
+        - navigation [ref=e24]:
+          - button [ref=e25] [cursor=pointer]
+          - button [ref=e28] [cursor=pointer]:
+            - img [ref=e30]
+          - button [ref=e32] [cursor=pointer]:
+            - img [ref=e34]
+          - button [ref=e38] [cursor=pointer]:
+            - img [ref=e40]
+          - button [ref=e42] [cursor=pointer]:
+            - img [ref=e44]
+          - button [ref=e47] [cursor=pointer]:
+            - img [ref=e49]
+          - button [ref=e52] [cursor=pointer]:
+            - img [ref=e54]
+          - button [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+        - generic [ref=e61]:
+          - link [ref=e62] [cursor=pointer]:
+            - /url: https://idunplatform.com/#pricing
+            - img [ref=e63]
+          - link [ref=e66] [cursor=pointer]:
+            - /url: mailto:contact@idun-group.com
+            - img [ref=e67]
+          - button [ref=e74] [cursor=pointer]:
+            - img [ref=e76]
+          - img [ref=e81] [cursor=pointer]
+      - generic [ref=e85]:
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - heading "Prompts" [level=1] [ref=e88]
+            - paragraph [ref=e89]:
+              - text: Versioned prompt templates with Jinja2 variables ·
+              - link "Docs" [ref=e90] [cursor=pointer]:
+                - /url: https://docs.idunplatform.com/prompts
+                - text: Docs
+                - img [ref=e91]
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - img [ref=e97]
+              - textbox "Search prompts" [ref=e100]:
+                - /placeholder: Search prompts...
+            - button "Create new prompt" [ref=e101] [cursor=pointer]:
+              - img [ref=e102]
+              - text: New Prompt
+        - paragraph [ref=e105]: Loading prompts…
+  - region "Notifications Alt+T"

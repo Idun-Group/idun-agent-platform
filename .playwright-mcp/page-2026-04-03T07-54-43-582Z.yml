@@ -1,0 +1,308 @@
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - banner [ref=e7]:
+      - generic [ref=e9] [cursor=pointer]:
+        - img "Idun Logo" [ref=e10]
+        - heading "Idun Platform" [level=1] [ref=e11]
+      - generic [ref=e12]:
+        - generic [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e17]: Search...
+          - generic [ref=e18]:
+            - generic [ref=e19]: ⌘
+            - generic [ref=e20]: K
+        - button [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+    - generic [ref=e25]:
+      - complementary [ref=e26]:
+        - navigation [ref=e27]:
+          - button "Agents" [ref=e28] [cursor=pointer]:
+            - generic: Agents
+          - button "Observability" [ref=e31] [cursor=pointer]:
+            - img [ref=e33]
+            - generic: Observability
+          - button "Memory" [ref=e35] [cursor=pointer]:
+            - img [ref=e37]
+            - generic: Memory
+          - button "MCP" [ref=e41] [cursor=pointer]:
+            - img [ref=e43]
+            - generic: MCP
+          - button "Prompts" [ref=e45] [cursor=pointer]:
+            - img [ref=e47]
+            - generic: Prompts
+          - button "Guard" [ref=e50] [cursor=pointer]:
+            - img [ref=e52]
+            - generic: Guard
+          - button "Integrations" [ref=e55] [cursor=pointer]:
+            - img [ref=e57]
+            - generic: Integrations
+          - button "SSO" [ref=e59] [cursor=pointer]:
+            - img [ref=e61]
+            - generic: SSO
+        - generic [ref=e64]:
+          - link "Upgrade" [ref=e65] [cursor=pointer]:
+            - /url: https://idunplatform.com/#pricing
+            - img [ref=e66]
+            - generic: Upgrade
+          - link "Support" [ref=e69] [cursor=pointer]:
+            - /url: mailto:contact@idun-group.com
+            - img [ref=e70]
+            - generic: Support
+          - button "Settings" [ref=e77] [cursor=pointer]:
+            - img [ref=e79]
+            - generic: Settings
+          - img [ref=e84] [cursor=pointer]
+      - generic [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]: Dashboard
+            - generic [ref=e92]:
+              - heading "Agent Dashboard" [level=1] [ref=e93]
+              - generic [ref=e94]:
+                - generic [ref=e95]: 5 total
+                - generic [ref=e97]: 0 online
+          - generic [ref=e98]:
+            - generic [ref=e99]:
+              - img [ref=e100]
+              - textbox "Type agent name or framework..." [ref=e103]
+            - button "Create an agent" [ref=e104] [cursor=pointer]:
+              - img [ref=e105]
+              - text: Create an agent
+        - generic [ref=e106]: Agents
+        - generic [ref=e107]:
+          - generic [ref=e108] [cursor=pointer]:
+            - generic [ref=e109]:
+              - img [ref=e112]
+              - generic [ref=e116]:
+                - generic [ref=e117]: test
+                - generic [ref=e118]: LangGraph
+              - img [ref=e119]
+            - generic: localhost:8800
+          - generic [ref=e122] [cursor=pointer]:
+            - generic [ref=e123]:
+              - img [ref=e126]
+              - generic [ref=e135]:
+                - generic [ref=e136]: test-adk
+                - generic [ref=e137]: ADK
+              - img [ref=e138]
+            - generic: localhost:8805
+          - generic [ref=e141] [cursor=pointer]:
+            - generic [ref=e142]:
+              - img [ref=e145]
+              - generic [ref=e150]:
+                - generic [ref=e151]: tool
+                - generic [ref=e152]: LangGraph
+              - img [ref=e153]
+            - generic "MCP" [ref=e157]:
+              - img [ref=e158]
+              - generic [ref=e160]: MCP
+            - generic: localhost:8800
+          - generic [ref=e161] [cursor=pointer]:
+            - generic [ref=e162]:
+              - img [ref=e165]
+              - generic [ref=e170]:
+                - generic [ref=e171]: Production Chatbot
+                - generic [ref=e172]: LangGraph
+              - img [ref=e173]
+            - generic [ref=e176]:
+              - generic "Obs" [ref=e177]:
+                - img [ref=e178]
+                - generic [ref=e180]: Obs
+              - generic "Guard" [ref=e181]:
+                - img [ref=e182]
+                - generic [ref=e185]: Guard
+            - generic: localhost:8800
+          - generic [ref=e186] [cursor=pointer]:
+            - generic [ref=e187]:
+              - img [ref=e190]
+              - generic [ref=e197]:
+                - generic [ref=e198]: adk-new
+                - generic [ref=e199]: ADK
+              - img [ref=e200]
+            - generic [ref=e203]:
+              - generic "Obs" [ref=e204]:
+                - img [ref=e205]
+                - generic [ref=e207]: Obs
+              - generic "Mem" [ref=e208]:
+                - img [ref=e209]
+                - generic [ref=e213]: Mem
+              - generic "Guard" [ref=e214]:
+                - img [ref=e215]
+                - generic [ref=e218]: Guard
+              - generic "MCP" [ref=e219]:
+                - img [ref=e220]
+                - generic [ref=e222]: MCP
+              - generic "SSO" [ref=e223]:
+                - img [ref=e224]
+                - generic [ref=e227]: SSO
+              - generic "Int" [ref=e228]:
+                - img [ref=e229]
+                - generic [ref=e231]: Int
+            - generic: localhost:8802
+          - button "New agent" [ref=e232] [cursor=pointer]:
+            - img [ref=e233]
+            - generic [ref=e234]: New agent
+        - generic [ref=e235]:
+          - generic [ref=e236]:
+            - generic [ref=e237]:
+              - generic [ref=e238]: All Agents
+              - generic [ref=e239]: 5 results
+            - table [ref=e240]:
+              - rowgroup [ref=e241]:
+                - row "Name Status Framework Integrations Endpoint" [ref=e242]:
+                  - columnheader "Name" [ref=e243]
+                  - columnheader "Status" [ref=e244]
+                  - columnheader "Framework" [ref=e245]
+                  - columnheader "Integrations" [ref=e246]
+                  - columnheader "Endpoint" [ref=e247]
+                  - columnheader [ref=e248]
+              - rowgroup [ref=e249]:
+                - row "test draft LangGraph localhost:8800 View Delete" [ref=e250] [cursor=pointer]:
+                  - cell "test" [ref=e251]:
+                    - generic [ref=e252]:
+                      - img [ref=e254]
+                      - generic [ref=e257]: test
+                  - cell "draft" [ref=e258]:
+                    - generic [ref=e259]: draft
+                  - cell "LangGraph" [ref=e261]
+                  - cell [ref=e262]
+                  - cell "localhost:8800" [ref=e263]:
+                    - generic [ref=e264]:
+                      - link [ref=e265]:
+                        - /url: http://localhost:8800
+                        - img [ref=e266]
+                      - generic [ref=e270]: localhost:8800
+                  - cell "View Delete" [ref=e271]:
+                    - generic [ref=e272]:
+                      - button "View" [ref=e273]
+                      - button "Delete" [ref=e274]
+                - row "test-adk draft ADK localhost:8805 View Delete" [ref=e275] [cursor=pointer]:
+                  - cell "test-adk" [ref=e276]:
+                    - generic [ref=e277]:
+                      - img [ref=e279]
+                      - generic [ref=e287]: test-adk
+                  - cell "draft" [ref=e288]:
+                    - generic [ref=e289]: draft
+                  - cell "ADK" [ref=e291]
+                  - cell [ref=e292]
+                  - cell "localhost:8805" [ref=e293]:
+                    - generic [ref=e294]:
+                      - link [ref=e295]:
+                        - /url: http://localhost:8805
+                        - img [ref=e296]
+                      - generic [ref=e300]: localhost:8805
+                  - cell "View Delete" [ref=e301]:
+                    - generic [ref=e302]:
+                      - button "View" [ref=e303]
+                      - button "Delete" [ref=e304]
+                - row "tool draft LangGraph MCP localhost:8800 View Delete" [ref=e305] [cursor=pointer]:
+                  - cell "tool" [ref=e306]:
+                    - generic [ref=e307]:
+                      - img [ref=e309]
+                      - generic [ref=e313]: tool
+                  - cell "draft" [ref=e314]:
+                    - generic [ref=e315]: draft
+                  - cell "LangGraph" [ref=e317]
+                  - cell "MCP" [ref=e318]:
+                    - generic "MCP" [ref=e320]:
+                      - img [ref=e321]
+                      - generic [ref=e323]: MCP
+                  - cell "localhost:8800" [ref=e324]:
+                    - generic [ref=e325]:
+                      - link [ref=e326]:
+                        - /url: http://localhost:8800
+                        - img [ref=e327]
+                      - generic [ref=e331]: localhost:8800
+                  - cell "View Delete" [ref=e332]:
+                    - generic [ref=e333]:
+                      - button "View" [ref=e334]
+                      - button "Delete" [ref=e335]
+                - row "Production Chatbot draft LangGraph Obs Guard localhost:8800 View Delete" [ref=e336] [cursor=pointer]:
+                  - cell "Production Chatbot" [ref=e337]:
+                    - generic [ref=e338]:
+                      - img [ref=e340]
+                      - generic [ref=e344]: Production Chatbot
+                  - cell "draft" [ref=e345]:
+                    - generic [ref=e346]: draft
+                  - cell "LangGraph" [ref=e348]
+                  - cell "Obs Guard" [ref=e349]:
+                    - generic [ref=e350]:
+                      - generic "Obs" [ref=e351]:
+                        - img [ref=e352]
+                        - generic [ref=e354]: Obs
+                      - generic "Guard" [ref=e355]:
+                        - img [ref=e356]
+                        - generic [ref=e359]: Guard
+                  - cell "localhost:8800" [ref=e360]:
+                    - generic [ref=e361]:
+                      - link [ref=e362]:
+                        - /url: http://localhost:8800
+                        - img [ref=e363]
+                      - generic [ref=e367]: localhost:8800
+                  - cell "View Delete" [ref=e368]:
+                    - generic [ref=e369]:
+                      - button "View" [ref=e370]
+                      - button "Delete" [ref=e371]
+                - row "adk-new draft ADK Obs Mem Guard MCP SSO Int localhost:8802 View Delete" [ref=e372] [cursor=pointer]:
+                  - cell "adk-new" [ref=e373]:
+                    - generic [ref=e374]:
+                      - img [ref=e376]
+                      - generic [ref=e382]: adk-new
+                  - cell "draft" [ref=e383]:
+                    - generic [ref=e384]: draft
+                  - cell "ADK" [ref=e386]
+                  - cell "Obs Mem Guard MCP SSO Int" [ref=e387]:
+                    - generic [ref=e388]:
+                      - generic "Obs" [ref=e389]:
+                        - img [ref=e390]
+                        - generic [ref=e392]: Obs
+                      - generic "Mem" [ref=e393]:
+                        - img [ref=e394]
+                        - generic [ref=e398]: Mem
+                      - generic "Guard" [ref=e399]:
+                        - img [ref=e400]
+                        - generic [ref=e403]: Guard
+                      - generic "MCP" [ref=e404]:
+                        - img [ref=e405]
+                        - generic [ref=e407]: MCP
+                      - generic "SSO" [ref=e408]:
+                        - img [ref=e409]
+                        - generic [ref=e412]: SSO
+                      - generic "Int" [ref=e413]:
+                        - img [ref=e414]
+                        - generic [ref=e416]: Int
+                  - cell "localhost:8802" [ref=e417]:
+                    - generic [ref=e418]:
+                      - link [ref=e419]:
+                        - /url: http://localhost:8802
+                        - img [ref=e420]
+                      - generic [ref=e424]: localhost:8802
+                  - cell "View Delete" [ref=e425]:
+                    - generic [ref=e426]:
+                      - button "View" [ref=e427]
+                      - button "Delete" [ref=e428]
+          - generic [ref=e429]:
+            - generic [ref=e430]: Platform Health
+            - generic [ref=e431]:
+              - generic [ref=e432]:
+                - generic [ref=e433]: Total Agents
+                - generic [ref=e434]: "5"
+              - generic [ref=e435]:
+                - generic [ref=e436]: Online
+                - generic [ref=e437]: "0"
+              - generic [ref=e438]:
+                - generic [ref=e439]: Draft
+                - generic [ref=e440]: "5"
+              - generic [ref=e441]:
+                - generic [ref=e442]: Errors
+                - generic [ref=e443]: "0"
+            - generic "5 draft" [ref=e445]
+            - generic [ref=e446]: By Framework
+            - generic [ref=e447]:
+              - generic [ref=e448]:
+                - generic [ref=e449]: LangGraph
+                - generic [ref=e450]: "3"
+              - generic [ref=e451]:
+                - generic [ref=e452]: ADK
+                - generic [ref=e453]: "2"
+  - region "Notifications Alt+T"

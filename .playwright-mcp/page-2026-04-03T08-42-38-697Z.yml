@@ -1,0 +1,14 @@
+- generic [ref=e3]:
+  - generic [ref=e4]: "[plugin:vite:import-analysis] Failed to resolve import \"recharts\" from \"src/pages/agent-dashboard/page.tsx\". Does the file exist?"
+  - generic [ref=e5]: /app/src/pages/agent-dashboard/page.tsx:13:7
+  - generic [ref=e6]: "45 | YAxis, 46 | CartesianGrid 47 | } from \"recharts\"; | ^ 48 | import { listAgents, deleteAgent, performHealthCheck } from \"../../services/agents\"; 49 | import { AgentAvatar } from \"../../components/general/agent-avatar/component\";"
+  - generic [ref=e7]: at TransformPluginContext._formatLog (file:///app/node_modules/vite/dist/node/chunks/config.js:28999:43) at TransformPluginContext.error (file:///app/node_modules/vite/dist/node/chunks/config.js:28996:14) at normalizeUrl (file:///app/node_modules/vite/dist/node/chunks/config.js:27119:18) at process.processTicksAndRejections (node:internal/process/task_queues:104:5) at async file:///app/node_modules/vite/dist/node/chunks/config.js:27177:32 at async Promise.all (index 9) at async TransformPluginContext.transform (file:///app/node_modules/vite/dist/node/chunks/config.js:27145:4) at async EnvironmentPluginContainer.transform (file:///app/node_modules/vite/dist/node/chunks/config.js:28797:14) at async loadAndTransform (file:///app/node_modules/vite/dist/node/chunks/config.js:22670:26) at async viteTransformMiddleware (file:///app/node_modules/vite/dist/node/chunks/config.js:24542:20)
+  - generic [ref=e8]:
+    - text: Click outside, press Esc key, or fix the code to dismiss.
+    - text: You can also disable this overlay by setting
+    - code [ref=e9]: server.hmr.overlay
+    - text: to
+    - code [ref=e10]: "false"
+    - text: in
+    - code [ref=e11]: vite.config.ts
+    - text: .

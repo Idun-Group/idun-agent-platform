@@ -1,0 +1,194 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6] [cursor=pointer]:
+        - img "Idun Logo" [ref=e7]
+        - heading "Idun Platform" [level=1] [ref=e8]
+      - generic [ref=e9]:
+        - generic [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+          - generic [ref=e14]: Search...
+          - generic [ref=e15]:
+            - generic [ref=e16]: ⌘
+            - generic [ref=e17]: K
+        - button [ref=e18] [cursor=pointer]:
+          - img [ref=e19]
+    - generic [ref=e22]:
+      - complementary [ref=e23]:
+        - navigation [ref=e24]:
+          - button "Agents" [ref=e25] [cursor=pointer]:
+            - generic: Agents
+          - button "Observability" [ref=e28] [cursor=pointer]:
+            - img [ref=e30]
+            - generic: Observability
+          - button "Memory" [ref=e32] [cursor=pointer]:
+            - img [ref=e34]
+            - generic: Memory
+          - button "MCP" [ref=e38] [cursor=pointer]:
+            - img [ref=e40]
+            - generic: MCP
+          - button "Prompts" [ref=e42] [cursor=pointer]:
+            - img [ref=e44]
+            - generic: Prompts
+          - button "Guard" [ref=e47] [cursor=pointer]:
+            - img [ref=e49]
+            - generic: Guard
+          - button "Integrations" [ref=e52] [cursor=pointer]:
+            - img [ref=e54]
+            - generic: Integrations
+          - button "SSO" [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+            - generic: SSO
+        - generic [ref=e61]:
+          - link "Upgrade" [ref=e62] [cursor=pointer]:
+            - /url: https://idunplatform.com/#pricing
+            - img [ref=e63]
+            - generic: Upgrade
+          - link "Support" [ref=e66] [cursor=pointer]:
+            - /url: mailto:contact@idun-group.com
+            - img [ref=e67]
+            - generic: Support
+          - button "Settings" [ref=e74] [cursor=pointer]:
+            - img [ref=e76]
+            - generic: Settings
+          - img [ref=e81] [cursor=pointer]
+      - generic [ref=e451]:
+        - generic [ref=e452]:
+          - generic [ref=e453]:
+            - img [ref=e456]
+            - generic [ref=e460]:
+              - heading "test" [level=1] [ref=e461]:
+                - button "Back to Agents" [ref=e462] [cursor=pointer]:
+                  - img [ref=e463]
+                - text: test
+              - generic [ref=e465]:
+                - generic [ref=e466]: draft
+                - generic [ref=e467]: •
+                - generic [ref=e468]: "ID: ccff3de3-1faa-4cf0-b635-ea838d989f2c"
+                - generic [ref=e469]: •
+                - generic [ref=e470]:
+                  - img [ref=e471]
+                  - text: LANGGRAPH
+          - generic [ref=e475]:
+            - button "Restart" [ref=e476] [cursor=pointer]:
+              - img [ref=e477]
+              - text: Restart
+            - button "Edit Agent" [ref=e480] [cursor=pointer]:
+              - img [ref=e481]
+              - text: Edit Agent
+        - generic [ref=e483]:
+          - button "Overview" [ref=e484] [cursor=pointer]:
+            - img [ref=e485]
+            - text: Overview
+          - button "Chat" [ref=e490] [cursor=pointer]:
+            - img [ref=e491]
+            - text: Chat
+          - button "API Integration" [ref=e493] [cursor=pointer]:
+            - img [ref=e494]
+            - text: API Integration
+          - button "Prompts" [ref=e498] [cursor=pointer]:
+            - img [ref=e499]
+            - text: Prompts
+          - button "Configuration" [ref=e502] [cursor=pointer]:
+            - img [ref=e503]
+            - text: Configuration
+        - generic [ref=e506]:
+          - button "Connect to Platform How to run and connect this agent" [ref=e509] [cursor=pointer]:
+            - generic [ref=e510]:
+              - paragraph [ref=e511]: Connect to Platform
+              - paragraph [ref=e512]: How to run and connect this agent
+            - img [ref=e513]
+          - generic [ref=e515]:
+            - generic [ref=e516]:
+              - generic [ref=e517]:
+                - generic [ref=e518]:
+                  - img [ref=e520]
+                  - generic [ref=e527]:
+                    - generic [ref=e528]: Agent Offline
+                    - generic [ref=e529]: http://localhost:8800
+                - generic [ref=e530]:
+                  - button "Copy URL" [ref=e531] [cursor=pointer]:
+                    - img [ref=e532]
+                  - link "Open in new tab" [ref=e535] [cursor=pointer]:
+                    - /url: http://localhost:8800
+                    - img [ref=e536]
+              - generic [ref=e540]:
+                - generic [ref=e541]: LANGGRAPH
+                - generic [ref=e542]:
+                  - img [ref=e543]
+                  - text: :8800
+                - button "ccff3de3…" [ref=e546] [cursor=pointer]:
+                  - img [ref=e547]
+                  - generic [ref=e550]: ccff3de3…
+                  - img [ref=e551]
+                - button "idun connect" [ref=e554] [cursor=pointer]:
+                  - generic [ref=e555]: idun connect
+                  - img [ref=e556]
+            - generic [ref=e559]:
+              - generic [ref=e560]:
+                - img [ref=e562]
+                - heading "Resources & Integrations" [level=3] [ref=e565]
+              - generic [ref=e566]:
+                - generic [ref=e567]:
+                  - generic [ref=e568]:
+                    - generic [ref=e569]:
+                      - img [ref=e570]
+                      - text: Memory
+                    - generic [ref=e575]: In-Memory
+                  - generic [ref=e576]:
+                    - generic [ref=e579]: In-Memory
+                    - button "Manage →" [ref=e580] [cursor=pointer]
+                - generic [ref=e581]:
+                  - generic [ref=e583]:
+                    - img [ref=e584]
+                    - text: Observability
+                  - button "Add observability" [ref=e587] [cursor=pointer]:
+                    - img [ref=e588]
+                    - text: Add observability
+                - generic [ref=e589]:
+                  - generic [ref=e591]:
+                    - img [ref=e592]
+                    - text: MCP Servers
+                  - button "Add mcp servers" [ref=e595] [cursor=pointer]:
+                    - img [ref=e596]
+                    - text: Add mcp servers
+                - generic [ref=e597]:
+                  - generic [ref=e599]:
+                    - img [ref=e600]
+                    - text: Guardrails
+                  - button "Add guardrails" [ref=e602] [cursor=pointer]:
+                    - img [ref=e603]
+                    - text: Add guardrails
+                - generic [ref=e604]:
+                  - generic [ref=e606]:
+                    - img [ref=e607]
+                    - text: SSO
+                  - button "Add sso" [ref=e610] [cursor=pointer]:
+                    - img [ref=e611]
+                    - text: Add sso
+                - generic [ref=e612]:
+                  - generic [ref=e614]:
+                    - img [ref=e615]
+                    - text: Integrations
+                  - button "Add integrations" [ref=e617] [cursor=pointer]:
+                    - img [ref=e618]
+                    - text: Add integrations
+            - generic [ref=e619]:
+              - generic [ref=e620]:
+                - img [ref=e622]
+                - heading "Agent Graph" [level=3] [ref=e626]
+              - generic [ref=e628]: Could not load graph
+            - generic [ref=e629]:
+              - generic [ref=e630]:
+                - img [ref=e632]
+                - heading "Framework Configuration" [level=3] [ref=e636]
+              - generic [ref=e637]:
+                - generic [ref=e638]: Framework
+                - generic [ref=e639]: LANGGRAPH
+              - generic [ref=e640]:
+                - generic [ref=e641]: Graph Definition
+                - generic [ref=e642]: test.py:app
+              - generic [ref=e643]:
+                - generic [ref=e644]: Checkpointer
+                - generic [ref=e645]: memory
+  - region "Notifications Alt+T"

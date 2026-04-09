@@ -443,7 +443,7 @@ export default function ResourcesSection({
             const port = agent.engine_config?.server?.api?.port;
             const formState = {
                 name: agent.name || '', version: agent.version || '1.0.0',
-                baseUrl: agent.base_url || '', description: agent.description || '',
+                baseUrl: agent.base_url || '',
                 serverPort: port ? String(port) : '8000',
                 agentType: agent.engine_config?.agent?.type || framework,
                 agentConfig: extractAgentConfig(agent.engine_config),
@@ -489,7 +489,7 @@ export default function ResourcesSection({
             const port = agent.engine_config?.server?.api?.port;
             const formState = {
                 name: agent.name || '', version: agent.version || '1.0.0',
-                baseUrl: agent.base_url || '', description: agent.description || '',
+                baseUrl: agent.base_url || '',
                 serverPort: port ? String(port) : '8000',
                 agentType: agent.engine_config?.agent?.type || framework,
                 agentConfig: extractAgentConfig(agent.engine_config),

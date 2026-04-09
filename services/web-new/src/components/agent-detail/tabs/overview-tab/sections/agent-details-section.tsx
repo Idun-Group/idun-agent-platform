@@ -61,10 +61,6 @@ export default function AgentDetailsSection({ agent, isEditing, formState, onFie
                             <Label>Version</Label>
                             <Input value={formState.version} onChange={e => onFieldChange('version', e.target.value)} placeholder="1.0.0" />
                         </Field>
-                        <Field $span>
-                            <Label>Description</Label>
-                            <Textarea value={formState.description} onChange={e => onFieldChange('description', e.target.value)} placeholder="What does this agent do?" rows={2} />
-                        </Field>
                         <Field>
                             <Label>Base URL</Label>
                             <Input value={formState.baseUrl} onChange={e => onFieldChange('baseUrl', e.target.value)} placeholder="http://localhost:8800" />
@@ -154,10 +150,6 @@ export default function AgentDetailsSection({ agent, isEditing, formState, onFie
                 </MetaChipCopyable>
             </MetaRow>
 
-            {/* Description */}
-            {agent.description && (
-                <DescBox>{agent.description}</DescBox>
-            )}
             </Root>
             )}
         </SectionCard>
@@ -315,17 +307,6 @@ const MetaChipCopyable = styled.button`
         color: #8899a6;
         border-color: rgba(255, 255, 255, 0.1);
     }
-`;
-
-const DescBox = styled.p`
-    margin: 0;
-    padding: 12px 14px;
-    font-size: 13px;
-    line-height: 1.6;
-    color: #8899a6;
-    background: rgba(255, 255, 255, 0.015);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    border-radius: 8px;
 `;
 
 // ── Edit styles ───────────────────────────────────────────────────────────────

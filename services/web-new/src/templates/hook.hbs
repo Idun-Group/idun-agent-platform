@@ -1,0 +1,35 @@
+import { createContext, useContext, useState, ReactNode } from 'react';
+
+type {{pascalCase name}}ContextType = {
+    value: {{type}};
+    set{{pascalCase name}}: (value: {{type}}) => void;
+};
+
+const {{pascalCase name}}Context = createContext<{{pascalCase name}}ContextType | undefined>(undefined);
+
+export const {{pascalCase name}}Provider = ({ children }: { children: ReactNode }) => {
+    const [value, setValue] = useState<{{type}}>({{#if ( eq type string)}} '{{defaultValue}}' {{/if}});
+
+    const set{{pascalCase name}} = (newValue: {{type}}) => {
+        setValue(newValue);
+    };
+
+    const contextValue: {{pascalCase name}}ContextType = {
+        value,
+        set{{name}},
+    };
+
+    return (
+        <{{pascalCase name}}Context.Provider value={contextValue}>
+            {children}
+        </{{pascalCase name}}Context.Provider>
+    );
+};
+
+export const use{{pascalCase name}} = () => {
+    const context = useContext({{pascalCase name}}Context);
+    if (!context) {
+        throw new Error('use{{pascalCase name}} must be used within a {{pascalCase name}}Provider');
+    }
+    return context;
+};

@@ -51,7 +51,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./services/idun_agent_web:/app
+      - ./services/web-new:/app
       - /app/node_modules
     environment:
       # Empty VITE_API_URL so the frontend uses relative paths (/api/...) proxied by Vite

@@ -1,0 +1,111 @@
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - banner [ref=e7]:
+      - heading "Idun Logo Idun Platform" [level=1] [ref=e9] [cursor=pointer]:
+        - img "Idun Logo" [ref=e10]
+        - text: Idun Platform
+    - generic [ref=e11]:
+      - complementary [ref=e12]:
+        - navigation [ref=e13]:
+          - button [ref=e14] [cursor=pointer]
+          - button [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+          - button [ref=e19] [cursor=pointer]:
+            - img [ref=e20]
+          - button [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+          - button [ref=e27] [cursor=pointer]:
+            - img [ref=e28]
+          - button [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+          - button [ref=e35] [cursor=pointer]:
+            - img [ref=e36]
+          - button [ref=e38] [cursor=pointer]:
+            - img [ref=e39]
+        - generic [ref=e42]:
+          - link [ref=e43] [cursor=pointer]:
+            - /url: https://idunplatform.com/#pricing
+            - img [ref=e44]
+          - link [ref=e47] [cursor=pointer]:
+            - /url: mailto:contact@idun-group.com
+            - img [ref=e48]
+          - button [ref=e55] [cursor=pointer]:
+            - img [ref=e56]
+          - img [ref=e61] [cursor=pointer]
+      - generic [ref=e353]:
+        - button "Back to Agents" [ref=e355] [cursor=pointer]:
+          - img [ref=e356]
+          - text: Back to Agents
+        - generic [ref=e358]:
+          - generic [ref=e359]:
+            - img [ref=e362]
+            - generic [ref=e369]:
+              - heading "adk-new" [level=1] [ref=e370]
+              - generic [ref=e371]:
+                - generic [ref=e372]: active
+                - generic [ref=e373]: •
+                - generic [ref=e374]: "ID: b7f56e87-7c3f-4f2e-88b6-46908bab25cc"
+                - generic [ref=e375]: •
+                - generic [ref=e376]:
+                  - img [ref=e377]
+                  - text: ADK
+                - generic [ref=e381]: •
+                - generic [ref=e382]:
+                  - text: Engine v0.5.0 —
+                  - img [ref=e383]
+                  - text: Update to v0.5.1
+          - generic [ref=e385]:
+            - button "Restart" [ref=e386] [cursor=pointer]:
+              - img [ref=e387]
+              - text: Restart
+            - button "Edit Agent" [ref=e390] [cursor=pointer]:
+              - img [ref=e391]
+              - text: Edit Agent
+        - generic [ref=e393]:
+          - button "Overview" [ref=e394] [cursor=pointer]:
+            - img [ref=e395]
+            - text: Overview
+          - button "Chat" [active] [ref=e400] [cursor=pointer]:
+            - img [ref=e401]
+            - text: Chat
+          - button "API Integration" [ref=e403] [cursor=pointer]:
+            - img [ref=e404]
+            - text: API Integration
+          - button "Prompts" [ref=e408] [cursor=pointer]:
+            - img [ref=e409]
+            - text: Prompts
+          - button "Configuration" [ref=e412] [cursor=pointer]:
+            - img [ref=e413]
+            - text: Configuration
+        - generic [ref=e611]:
+          - generic [ref=e612]:
+            - generic [ref=e613]:
+              - generic [ref=e614]: AG-UI
+              - combobox [ref=e615] [cursor=pointer]:
+                - option "AG-UI Stream" [selected]
+                - option "Custom Stream"
+            - generic [ref=e617]:
+              - generic [ref=e618]: Thread
+              - textbox [ref=e619]: 8c6ab6a9-95fd-4068-8562-8abc432ab605
+              - button "↻" [ref=e620] [cursor=pointer]
+            - button "Clear" [ref=e622] [cursor=pointer]
+            - button "⚙ Config" [ref=e623] [cursor=pointer]
+            - button "Events" [ref=e624] [cursor=pointer]
+          - generic [ref=e626]: Capabilities unavailable — using chat mode
+          - generic [ref=e627]:
+            - generic [ref=e628]:
+              - generic [ref=e630]:
+                - heading "Agent is protected by SSO" [level=3] [ref=e631]
+                - paragraph [ref=e632]: This agent requires OIDC authentication. Use an external client with a valid Bearer token.
+              - generic [ref=e634]:
+                - paragraph [ref=e635]: Send a message to start chatting with your agent.
+                - paragraph [ref=e636]: Use the toolbar to switch endpoints, manage threads, or open the config panel for advanced options.
+              - generic [ref=e637]:
+                - textbox "Type a message... (Enter to send, Shift+Enter for newline)" [disabled] [ref=e638]
+                - generic [ref=e639]:
+                  - 'button "{ } cURL" [ref=e640] [cursor=pointer]':
+                    - text: "{ }"
+                    - generic [ref=e641]: cURL
+                  - button "Send" [ref=e642] [cursor=pointer]
+            - button "◂ Events (0)" [ref=e644] [cursor=pointer]
+  - region "Notifications Alt+T"

@@ -1,0 +1,68 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6] [cursor=pointer]:
+        - img "Idun Logo" [ref=e7]
+        - heading "Idun Platform" [level=1] [ref=e8]
+      - generic [ref=e9]:
+        - generic [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+          - generic [ref=e14]: Search...
+          - generic [ref=e15]:
+            - generic [ref=e16]: ⌘
+            - generic [ref=e17]: K
+        - button [ref=e18] [cursor=pointer]:
+          - img [ref=e19]
+    - generic [ref=e22]:
+      - complementary [ref=e23]:
+        - navigation [ref=e24]:
+          - button "Agents" [ref=e25] [cursor=pointer]:
+            - generic: Agents
+          - button "Observability" [ref=e28] [cursor=pointer]:
+            - img [ref=e30]
+            - generic: Observability
+          - button "Memory" [ref=e32] [cursor=pointer]:
+            - img [ref=e34]
+            - generic: Memory
+          - button "MCP" [ref=e38] [cursor=pointer]:
+            - img [ref=e40]
+            - generic: MCP
+          - button "Prompts" [ref=e42] [cursor=pointer]:
+            - img [ref=e44]
+            - generic: Prompts
+          - button "Guard" [ref=e47] [cursor=pointer]:
+            - img [ref=e49]
+            - generic: Guard
+          - button "Integrations" [ref=e52] [cursor=pointer]:
+            - img [ref=e54]
+            - generic: Integrations
+          - button "SSO" [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+            - generic: SSO
+        - generic [ref=e61]:
+          - link "Upgrade" [ref=e62] [cursor=pointer]:
+            - /url: https://idunplatform.com/#pricing
+            - img [ref=e63]
+            - generic: Upgrade
+          - link "Support" [ref=e66] [cursor=pointer]:
+            - /url: mailto:contact@idun-group.com
+            - img [ref=e67]
+            - generic: Support
+          - button "Settings" [ref=e74] [cursor=pointer]:
+            - img [ref=e76]
+            - generic: Settings
+          - img [ref=e81] [cursor=pointer]
+      - generic [ref=e85]:
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - generic [ref=e88]: Dashboard
+            - heading "Agent Dashboard" [level=1] [ref=e89]
+          - generic [ref=e90]:
+            - generic [ref=e91]:
+              - img [ref=e92]
+              - textbox "Type agent name or framework..." [ref=e95]
+            - button "Create an agent" [ref=e96] [cursor=pointer]:
+              - img [ref=e97]
+              - text: Create an agent
+        - paragraph [ref=e100]: Loading agents...
+  - region "Notifications Alt+T"

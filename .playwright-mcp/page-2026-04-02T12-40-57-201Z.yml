@@ -1,0 +1,275 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6] [cursor=pointer]:
+        - img "Idun Logo" [ref=e7]
+        - heading "Idun Platform" [level=1] [ref=e8]
+      - generic [ref=e9]:
+        - generic [ref=e10] [cursor=pointer]:
+          - img [ref=e11]
+          - generic [ref=e14]: Search...
+          - generic [ref=e15]:
+            - generic [ref=e16]: ⌘
+            - generic [ref=e17]: K
+        - button [ref=e18] [cursor=pointer]:
+          - img [ref=e19]
+    - generic [ref=e22]:
+      - complementary [ref=e23]:
+        - navigation [ref=e24]:
+          - button [ref=e25] [cursor=pointer]
+          - button [ref=e28] [cursor=pointer]:
+            - img [ref=e30]
+          - button [ref=e32] [cursor=pointer]:
+            - img [ref=e34]
+          - button [ref=e38] [cursor=pointer]:
+            - img [ref=e40]
+          - button [ref=e42] [cursor=pointer]:
+            - img [ref=e44]
+          - button [ref=e47] [cursor=pointer]:
+            - img [ref=e49]
+          - button [ref=e52] [cursor=pointer]:
+            - img [ref=e54]
+          - button [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+        - generic [ref=e61]:
+          - link [ref=e62] [cursor=pointer]:
+            - /url: https://idunplatform.com/#pricing
+            - img [ref=e63]
+          - link [ref=e66] [cursor=pointer]:
+            - /url: mailto:contact@idun-group.com
+            - img [ref=e67]
+          - button [ref=e74] [cursor=pointer]:
+            - img [ref=e76]
+          - img [ref=e81] [cursor=pointer]
+      - generic [ref=e85]:
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - generic [ref=e88]: Dashboard
+            - heading "Agent Dashboard" [level=1] [ref=e89]
+            - paragraph [ref=e90]: Manage and monitor your AI agents
+          - generic [ref=e91]:
+            - generic [ref=e92]:
+              - img [ref=e93]
+              - textbox "Type agent name or framework..." [ref=e96]
+            - button "Create an agent" [ref=e97] [cursor=pointer]:
+              - img [ref=e98]
+              - text: Create an agent
+        - generic [ref=e99]:
+          - generic [ref=e102]:
+            - generic [ref=e103]: "5"
+            - generic [ref=e104]: Total Agents
+          - generic [ref=e107]:
+            - generic [ref=e108]: "0"
+            - generic [ref=e109]: Active
+          - generic [ref=e112]:
+            - generic [ref=e113]: "5"
+            - generic [ref=e114]: Draft
+          - generic [ref=e117]:
+            - generic [ref=e118]: "0"
+            - generic [ref=e119]: Errors
+        - generic [ref=e120]:
+          - generic [ref=e121] [cursor=pointer]:
+            - generic [ref=e122]:
+              - generic [ref=e123]:
+                - img [ref=e125]
+                - generic [ref=e128]:
+                  - generic [ref=e129]: test
+                  - generic [ref=e130]: LangGraph
+              - generic [ref=e131]:
+                - generic [ref=e132]: Draft
+                - button [ref=e134]:
+                  - img [ref=e135]
+            - generic [ref=e140]:
+              - generic "Obs" [ref=e141]:
+                - img [ref=e143]
+                - generic [ref=e145]: Obs
+              - generic "Mem" [ref=e146]:
+                - img [ref=e148]
+                - generic [ref=e152]: Mem
+              - generic "Guard" [ref=e153]:
+                - img [ref=e155]
+                - generic [ref=e158]: Guard
+              - generic "MCP" [ref=e159]:
+                - img [ref=e161]
+                - generic [ref=e163]: MCP
+              - generic "SSO" [ref=e164]:
+                - img [ref=e166]
+                - generic [ref=e169]: SSO
+              - generic "Int" [ref=e170]:
+                - img [ref=e172]
+                - generic [ref=e174]: Int
+            - generic [ref=e175]:
+              - generic [ref=e176]:
+                - generic [ref=e177]: Runs (24h)
+                - generic [ref=e178]: —
+              - generic [ref=e180]:
+                - generic [ref=e181]: Avg Latency
+                - generic [ref=e182]: —
+              - generic [ref=e184]:
+                - generic [ref=e185]: Error Rate
+                - generic [ref=e186]: —
+          - generic [ref=e187] [cursor=pointer]:
+            - generic [ref=e188]:
+              - generic [ref=e189]:
+                - img [ref=e191]
+                - generic [ref=e195]:
+                  - generic [ref=e196]: Production Chatbot
+                  - generic [ref=e197]: LangGraph
+              - generic [ref=e198]:
+                - generic [ref=e199]: Draft
+                - button [ref=e201]:
+                  - img [ref=e202]
+            - generic [ref=e207]:
+              - generic "Obs" [ref=e208]:
+                - img [ref=e210]
+                - generic [ref=e212]: Obs
+              - generic "Mem" [ref=e213]:
+                - img [ref=e215]
+                - generic [ref=e219]: Mem
+              - generic "Guard" [ref=e220]:
+                - img [ref=e222]
+                - generic [ref=e225]: Guard
+              - generic "MCP" [ref=e226]:
+                - img [ref=e228]
+                - generic [ref=e230]: MCP
+              - generic "SSO" [ref=e231]:
+                - img [ref=e233]
+                - generic [ref=e236]: SSO
+              - generic "Int" [ref=e237]:
+                - img [ref=e239]
+                - generic [ref=e241]: Int
+            - generic [ref=e242]:
+              - generic [ref=e243]:
+                - generic [ref=e244]: Runs (24h)
+                - generic [ref=e245]: —
+              - generic [ref=e247]:
+                - generic [ref=e248]: Avg Latency
+                - generic [ref=e249]: —
+              - generic [ref=e251]:
+                - generic [ref=e252]: Error Rate
+                - generic [ref=e253]: —
+          - generic [ref=e254] [cursor=pointer]:
+            - generic [ref=e255]:
+              - generic [ref=e256]:
+                - img [ref=e258]
+                - generic [ref=e266]:
+                  - generic [ref=e267]: test-adk
+                  - generic [ref=e268]: ADK
+              - generic [ref=e269]:
+                - generic [ref=e270]: Draft
+                - button [ref=e272]:
+                  - img [ref=e273]
+            - generic [ref=e278]:
+              - generic "Obs" [ref=e279]:
+                - img [ref=e281]
+                - generic [ref=e283]: Obs
+              - generic "Mem" [ref=e284]:
+                - img [ref=e286]
+                - generic [ref=e290]: Mem
+              - generic "Guard" [ref=e291]:
+                - img [ref=e293]
+                - generic [ref=e296]: Guard
+              - generic "MCP" [ref=e297]:
+                - img [ref=e299]
+                - generic [ref=e301]: MCP
+              - generic "SSO" [ref=e302]:
+                - img [ref=e304]
+                - generic [ref=e307]: SSO
+              - generic "Int" [ref=e308]:
+                - img [ref=e310]
+                - generic [ref=e312]: Int
+            - generic [ref=e313]:
+              - generic [ref=e314]:
+                - generic [ref=e315]: Runs (24h)
+                - generic [ref=e316]: —
+              - generic [ref=e318]:
+                - generic [ref=e319]: Avg Latency
+                - generic [ref=e320]: —
+              - generic [ref=e322]:
+                - generic [ref=e323]: Error Rate
+                - generic [ref=e324]: —
+          - generic [ref=e325] [cursor=pointer]:
+            - generic [ref=e326]:
+              - generic [ref=e327]:
+                - img [ref=e329]
+                - generic [ref=e333]:
+                  - generic [ref=e334]: tool
+                  - generic [ref=e335]: LangGraph
+              - generic [ref=e336]:
+                - generic [ref=e337]: Draft
+                - button [ref=e339]:
+                  - img [ref=e340]
+            - generic [ref=e345]:
+              - generic "Obs" [ref=e346]:
+                - img [ref=e348]
+                - generic [ref=e350]: Obs
+              - generic "Mem" [ref=e351]:
+                - img [ref=e353]
+                - generic [ref=e357]: Mem
+              - generic "Guard" [ref=e358]:
+                - img [ref=e360]
+                - generic [ref=e363]: Guard
+              - generic "MCP" [ref=e364]:
+                - img [ref=e366]
+                - generic [ref=e368]: MCP
+              - generic "SSO" [ref=e369]:
+                - img [ref=e371]
+                - generic [ref=e374]: SSO
+              - generic "Int" [ref=e375]:
+                - img [ref=e377]
+                - generic [ref=e379]: Int
+            - generic [ref=e380]:
+              - generic [ref=e381]:
+                - generic [ref=e382]: Runs (24h)
+                - generic [ref=e383]: —
+              - generic [ref=e385]:
+                - generic [ref=e386]: Avg Latency
+                - generic [ref=e387]: —
+              - generic [ref=e389]:
+                - generic [ref=e390]: Error Rate
+                - generic [ref=e391]: —
+          - generic [ref=e392] [cursor=pointer]:
+            - generic [ref=e393]:
+              - generic [ref=e394]:
+                - img [ref=e396]
+                - generic [ref=e402]:
+                  - generic [ref=e403]: adk-new
+                  - generic [ref=e404]: ADK
+              - generic [ref=e405]:
+                - generic [ref=e406]: Draft
+                - button [ref=e408]:
+                  - img [ref=e409]
+            - generic [ref=e414]:
+              - generic "Obs" [ref=e415]:
+                - img [ref=e417]
+                - generic [ref=e419]: Obs
+              - generic "Mem" [ref=e420]:
+                - img [ref=e422]
+                - generic [ref=e426]: Mem
+              - generic "Guard" [ref=e427]:
+                - img [ref=e429]
+                - generic [ref=e432]: Guard
+              - generic "MCP" [ref=e433]:
+                - img [ref=e435]
+                - generic [ref=e437]: MCP
+              - generic "SSO" [ref=e438]:
+                - img [ref=e440]
+                - generic [ref=e443]: SSO
+              - generic "Int" [ref=e444]:
+                - img [ref=e446]
+                - generic [ref=e448]: Int
+            - generic [ref=e449]:
+              - generic [ref=e450]:
+                - generic [ref=e451]: Runs (24h)
+                - generic [ref=e452]: —
+              - generic [ref=e454]:
+                - generic [ref=e455]: Avg Latency
+                - generic [ref=e456]: —
+              - generic [ref=e458]:
+                - generic [ref=e459]: Error Rate
+                - generic [ref=e460]: —
+          - button "Connect a new agent Configure from a template or connect" [ref=e461] [cursor=pointer]:
+            - img [ref=e463]
+            - generic [ref=e464]: Connect a new agent
+            - paragraph [ref=e465]: Configure from a template or connect
+  - region "Notifications Alt+T"

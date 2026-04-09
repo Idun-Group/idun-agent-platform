@@ -1,0 +1,48 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - heading "Idun Logo Idun Platform" [level=1] [ref=e6] [cursor=pointer]:
+        - img "Idun Logo" [ref=e7]
+        - text: Idun Platform
+    - generic [ref=e8]:
+      - complementary [ref=e9]:
+        - navigation [ref=e10]:
+          - button [ref=e11] [cursor=pointer]
+          - button [ref=e13] [cursor=pointer]:
+            - img [ref=e14]
+          - button [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+          - button [ref=e21] [cursor=pointer]:
+            - img [ref=e22]
+          - button [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+          - button [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+          - button [ref=e32] [cursor=pointer]:
+            - img [ref=e33]
+          - button [ref=e35] [cursor=pointer]:
+            - img [ref=e36]
+        - generic [ref=e39]:
+          - link [ref=e40] [cursor=pointer]:
+            - /url: https://idunplatform.com/#pricing
+            - img [ref=e41]
+          - link [ref=e44] [cursor=pointer]:
+            - /url: mailto:contact@idun-group.com
+            - img [ref=e45]
+          - button [ref=e52] [cursor=pointer]:
+            - img [ref=e53]
+          - img [ref=e58] [cursor=pointer]
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - heading "Agent Dashboard" [level=1] [ref=e65]
+            - paragraph [ref=e66]: Manage and monitor your AI agents
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - img [ref=e69]
+              - textbox "Type agent name or framework..." [ref=e72]
+            - button "Create an agent" [ref=e73] [cursor=pointer]:
+              - img [ref=e74]
+              - text: Create an agent
+        - paragraph [ref=e77]: Loading agents...
+  - region "Notifications Alt+T"
