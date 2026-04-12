@@ -1,31 +1,9 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 import type { WorkspaceSummary } from '../../../utils/auth';
-
-type WorkspacePopoverProps = {
-    workspaces: WorkspaceSummary[];
-    selectedWorkspaceId: string | null;
-    onSelect: (workspaceId: string) => void;
-    onClose: () => void;
-};
-
-const WORKSPACE_GRADIENTS = [
-    'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-    'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-    'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
-    'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-    'linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)',
-];
-
-function getGradientForName(name: string): string {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-        hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-    }
-    return WORKSPACE_GRADIENTS[hash % WORKSPACE_GRADIENTS.length];
-}
+import { getGradientForName } from '../../../utils/workspace-colors';
 
 const WorkspacePopover = ({
     workspaces,
@@ -34,6 +12,7 @@ const WorkspacePopover = ({
     onClose,
 }: WorkspacePopoverProps) => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const ref = useRef<HTMLDivElement>(null);
     const [search, setSearch] = useState('');
 
@@ -63,7 +42,7 @@ const WorkspacePopover = ({
                     </SearchIcon>
                     <SearchInput
                         type="text"
-                        placeholder="Search workspaces..."
+                        placeholder={t('header.workspace.search', 'Search workspaces...')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         autoFocus
@@ -73,7 +52,7 @@ const WorkspacePopover = ({
 
             <WorkspaceList>
                 {filtered.length === 0 && (
-                    <EmptyState>No workspaces found</EmptyState>
+                    <EmptyState>{t('header.workspace.empty', 'No workspaces found')}</EmptyState>
                 )}
                 {filtered.map((ws) => {
                     const isActive = ws.id === selectedWorkspaceId;
@@ -127,7 +106,7 @@ const WorkspacePopover = ({
                             <path d="M8 2V14M2 8H14" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
                         </svg>
                     </PlusIcon>
-                    Create workspace
+                    {t('header.workspace.create', 'Create workspace')}
                 </CreateWorkspaceLink>
             </PopoverFooter>
         </PopoverContainer>
@@ -261,7 +240,7 @@ const WorkspaceIcon = styled.div`
     justify-content: center;
     font-size: 10px;
     font-weight: 700;
-    color: #ffffff;
+    color: hsl(var(--primary-foreground));
     flex-shrink: 0;
     letter-spacing: 0;
 `;

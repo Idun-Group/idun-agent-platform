@@ -10,23 +10,7 @@ import type { WorkspaceSummary } from '../../utils/auth';
 import WorkspacePopover from '../../components/header/workspace-popover/component';
 import ProjectPopover from '../../components/header/project-popover/component';
 import UserAvatarPopover from '../../components/header/user-avatar-popover/component';
-
-const WORKSPACE_GRADIENTS = [
-    'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-    'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-    'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
-    'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-    'linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)',
-];
-
-function getGradientForName(name: string): string {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-        hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-    }
-    return WORKSPACE_GRADIENTS[hash % WORKSPACE_GRADIENTS.length];
-}
+import { getGradientForName } from '../../utils/workspace-colors';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -264,7 +248,7 @@ const WorkspaceIcon = styled.div`
     justify-content: center;
     font-size: 10px;
     font-weight: 700;
-    color: #fff;
+    color: hsl(var(--primary-foreground));
     flex-shrink: 0;
 `;
 
@@ -327,5 +311,5 @@ const AvatarCircle = styled.div`
     justify-content: center;
     font-size: 11px;
     font-weight: 600;
-    color: #fff;
+    color: hsl(var(--primary-foreground));
 `;

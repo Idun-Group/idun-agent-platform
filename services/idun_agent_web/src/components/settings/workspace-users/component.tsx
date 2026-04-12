@@ -411,7 +411,7 @@ const PrimaryButton = styled.button`
     border-radius: 7px;
     border: none;
     background: hsl(var(--primary));
-    color: white;
+    color: hsl(var(--primary-foreground));
     font-weight: 600;
     font-size: 12px;
     cursor: pointer;

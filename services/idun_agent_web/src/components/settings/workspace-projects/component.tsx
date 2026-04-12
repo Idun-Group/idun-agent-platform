@@ -86,7 +86,7 @@ const WorkspaceProjectsTab = () => {
         }
     };
 
-    const handleRequestDelete = async (project: Project) => {
+    const handleRequestDelete = (project: Project) => {
         if (project.is_default) return;
         setProjectToDelete(project);
         setDeleteDescription(
@@ -269,7 +269,7 @@ const PrimaryButton = styled.button`
     border-radius: 7px;
     border: none;
     background: hsl(var(--primary));
-    color: white;
+    color: hsl(var(--primary-foreground));
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;

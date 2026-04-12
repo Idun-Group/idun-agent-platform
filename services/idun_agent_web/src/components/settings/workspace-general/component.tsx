@@ -211,7 +211,7 @@ const PrimaryButton = styled.button`
     border-radius: 7px;
     font-size: 12px;
     font-weight: 600;
-    color: white;
+    color: hsl(var(--primary-foreground));
     cursor: pointer;
     font-family: inherit;
     white-space: nowrap;

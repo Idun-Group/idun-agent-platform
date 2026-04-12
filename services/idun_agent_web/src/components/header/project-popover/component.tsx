@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 import type { ProjectSummary } from '../../../hooks/use-project';
 
@@ -18,6 +19,7 @@ const ProjectPopover = ({
     onClose,
     isWorkspaceOwner,
 }: ProjectPopoverProps) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const ref = useRef<HTMLDivElement>(null);
 
@@ -35,7 +37,7 @@ const ProjectPopover = ({
         <PopoverContainer ref={ref}>
             <ProjectList>
                 {projects.length === 0 && (
-                    <EmptyState>No projects found</EmptyState>
+                    <EmptyState>{t('header.project.empty', 'No projects found')}</EmptyState>
                 )}
                 {projects.map((project) => {
                     const isActive = project.id === selectedProjectId;
@@ -91,7 +93,7 @@ const ProjectPopover = ({
                                 <path d="M8 2V14M2 8H14" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
                             </svg>
                         </PlusIcon>
-                        Create project
+                        {t('header.project.create', 'Create project')}
                     </CreateProjectLink>
                 </PopoverFooter>
             )}

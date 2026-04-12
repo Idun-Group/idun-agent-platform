@@ -55,7 +55,14 @@
         "create": "Create",
         "settings": "Settings",
         "workspace": {
-            "select": "Select a workspace"
+            "select": "Select a workspace",
+            "search": "Search workspaces...",
+            "empty": "No workspaces found",
+            "create": "Create workspace"
+        },
+        "project": {
+            "empty": "No projects found",
+            "create": "Create project"
         },
         "environment": {
             "select": "Select an environment",
