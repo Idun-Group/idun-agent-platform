@@ -1,17 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import AccountInfo from '../../../components/side-bar/account-info/component';
-import UserPopover from '../../../components/side-bar/user-popover/component';
-import { useState, useEffect, useCallback, type ComponentType } from 'react';
-import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug, ChevronUp, FileText } from 'lucide-react';
-import { useAuth } from '../../../hooks/use-auth';
+import { useState, type ComponentType } from 'react';
+import { Settings, Activity, Database, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const GITHUB_DISMISSED_KEY = 'idun-github-card-dismissed';
-
-type SideBarProps = {
-    // config your component props here
-};
 
 type MenuItemConfig = {
     iconSrc?: string;
@@ -22,24 +15,16 @@ type MenuItemConfig = {
     onClick: () => void | Promise<void>;
 };
 
-const SideBar = ({}: SideBarProps) => {
+const SideBar = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { session } = useAuth();
-    const [avatarError, setAvatarError] = useState(false);
-    useEffect(() => {
-        setAvatarError(false);
-    }, [session]);
     // by default the sidebar should be collapsed; hovering will expand it
     const [isCollapsed] = useState(true);
     const [isHovered, setIsHovered] = useState(false);
     const [githubDismissed, setGithubDismissed] = useState(() =>
         localStorage.getItem(GITHUB_DISMISSED_KEY) === 'true'
     );
-    const [showUserPopover, setShowUserPopover] = useState(false);
     const { t } = useTranslation();
-
-    const closeUserPopover = useCallback(() => setShowUserPopover(false), []);
 
     const dismissGithub = () => {
         setGithubDismissed(true);
@@ -48,8 +33,7 @@ const SideBar = ({}: SideBarProps) => {
 
     // Effective collapsed state: collapsed when user set collapsed AND not hovered
     // Hovering temporarily expands the sidebar
-    // Keep expanded when user popover is open
-    const collapsed = isCollapsed && !isHovered && !showUserPopover;
+    const collapsed = isCollapsed && !isHovered;
 
     const menuItems: MenuItemConfig[] = [
         {
@@ -109,13 +93,6 @@ const SideBar = ({}: SideBarProps) => {
             onClick: () => navigate('/sso'),
         },
     ];
-
-    const avatarUrl =
-        (session as any)?.principal?.avatarUrl ||
-        (session as any)?.principal?.picture ||
-        (session as any)?.user?.avatarUrl ||
-        (session as any)?.user?.picture ||
-        '';
 
     return (
         <SideBarContainer
@@ -207,39 +184,6 @@ const SideBar = ({}: SideBarProps) => {
                     />
                     {!collapsed && <MenuLabel>{t('sidebar.settings', 'Settings')}</MenuLabel>}
                 </MenuItem>
-                <UserRowWrapper>
-                    {showUserPopover && <UserPopover onClose={closeUserPopover} />}
-                    <UserRow
-                        $collapsed={collapsed}
-                        $isActive={showUserPopover || !!location.pathname.startsWith('/preferences')}
-                        onClick={() => setShowUserPopover((prev) => !prev)}
-                    >
-                        {collapsed ? (
-                            avatarUrl && !avatarError ? (
-                                <AvatarImg
-                                    src={avatarUrl}
-                                    alt=""
-                                    onError={() => setAvatarError(true)}
-                                />
-                            ) : (
-                                <UserIcon size={17} color="hsl(var(--sidebar-icon-inactive))" />
-                            )
-                        ) : (
-                            <>
-                                <AccountInfo />
-                                <ChevronUp
-                                    size={15}
-                                    color="hsl(var(--muted-foreground))"
-                                    style={{
-                                        flexShrink: 0,
-                                        transition: 'transform 200ms ease',
-                                        transform: showUserPopover ? 'rotate(0deg)' : 'rotate(180deg)',
-                                    }}
-                                />
-                            </>
-                        )}
-                    </UserRow>
-                </UserRowWrapper>
                 {!collapsed && <VersionLabel>v{__APP_VERSION__}</VersionLabel>}
             </BottomSection>
         </SideBarContainer>
@@ -351,42 +295,6 @@ const BottomLink = styled.a<{ $collapsed?: boolean }>`
         background: hsl(var(--sidebar-item-hover));
         color: hsl(var(--foreground));
     }
-`;
-
-const UserRow = styled.div<{ $collapsed?: boolean; $isActive?: boolean }>`
-    display: flex;
-    align-items: center;
-    justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
-    min-height: 47px;
-    padding: 0 16px 0 30px;
-    background: ${({ $isActive }) =>
-        $isActive ? 'hsl(var(--sidebar-item-active))' : 'hsl(var(--sidebar-background))'};
-    border-top: 1px solid var(--border-subtle);
-    overflow: hidden;
-    cursor: pointer;
-    transition: background-color 200ms ease;
-
-    &:hover {
-        background: hsl(var(--sidebar-item-hover));
-    }
-
-    ${({ $isActive }) =>
-        $isActive &&
-        `
-        border-right: 3px solid hsl(var(--primary));
-    `}
-`;
-
-const UserRowWrapper = styled.div`
-    position: relative;
-`;
-
-const AvatarImg = styled.img`
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    object-fit: cover;
-    display: block;
 `;
 
 const GithubCard = styled.div`
