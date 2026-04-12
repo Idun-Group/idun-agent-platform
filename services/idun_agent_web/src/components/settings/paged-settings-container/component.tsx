@@ -6,6 +6,7 @@ export type SettingsPage = {
     slug: string;
     group: string;
     content: ReactNode;
+    icon?: ReactNode;
 };
 
 type Props = {
@@ -65,6 +66,7 @@ const PagedSettingsContainer = ({ pages, activeSlug, onPageChange }: Props) => {
                                     $isActive={page.slug === currentPage?.slug}
                                     onClick={() => onPageChange(page.slug)}
                                 >
+                                    {page.icon && <TabIcon>{page.icon}</TabIcon>}
                                     {page.title}
                                 </TabItem>
                             ))}
@@ -158,59 +160,57 @@ const SidebarGroup = styled.div`
     gap: 2px;
 
     & + & {
-        margin-top: 16px;
-        padding-top: 16px;
+        margin-top: 12px;
+        padding-top: 12px;
         border-top: 1px solid var(--border-subtle);
     }
 `;
 
 const GroupLabel = styled.span`
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: hsl(var(--muted-foreground));
-    padding: 0 12px;
+    letter-spacing: 0.5px;
+    color: hsla(var(--muted-foreground) / 0.6);
+    padding: 6px 10px;
     margin-bottom: 4px;
+`;
+
+const TabIcon = styled.span`
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
 `;
 
 const TabItem = styled.button<{ $isActive?: boolean }>`
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    gap: 8px;
+    padding: 8px 10px;
     border: none;
-    border-radius: 6px;
+    border-left: 2.5px solid
+        ${({ $isActive }) => ($isActive ? 'hsl(var(--primary))' : 'transparent')};
+    border-radius: 7px;
     background: ${({ $isActive }) =>
-        $isActive ? 'hsla(var(--primary) / 0.12)' : 'transparent'};
-    color: ${({ $isActive }) => ($isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))')};
-    font-size: 14px;
-    font-weight: ${({ $isActive }) => ($isActive ? '600' : '400')};
+        $isActive ? 'hsla(var(--primary) / 0.08)' : 'transparent'};
+    color: ${({ $isActive }) =>
+        $isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'};
+    font-size: 13px;
+    font-weight: ${({ $isActive }) => ($isActive ? '500' : '400')};
     font-family: inherit;
     cursor: pointer;
     transition: all 150ms ease;
     text-align: left;
     width: 100%;
-    position: relative;
-
-    ${({ $isActive }) =>
-        $isActive &&
-        `
-        &::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 3px;
-            height: 16px;
-            border-radius: 0 2px 2px 0;
-            background: hsl(var(--primary));
-        }
-    `}
 
     &:hover {
         background: ${({ $isActive }) =>
-            $isActive ? 'hsla(var(--primary) / 0.12)' : 'var(--overlay-subtle)'};
+            $isActive ? 'hsla(var(--primary) / 0.08)' : 'var(--overlay-subtle)'};
         color: hsl(var(--foreground));
     }
 `;
