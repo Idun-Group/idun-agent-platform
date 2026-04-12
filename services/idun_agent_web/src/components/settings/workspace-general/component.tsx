@@ -9,11 +9,13 @@ type Workspace = {
     id: string;
     name: string;
     slug: string;
+    is_owner?: boolean;
+    default_project_id?: string | null;
 };
 
 const WorkspaceGeneralTab = () => {
     const { t } = useTranslation();
-    const { selectedWorkspaceId } = useWorkspace();
+    const { selectedWorkspaceId, currentWorkspace, isCurrentWorkspaceOwner } = useWorkspace();
     const [workspace, setWorkspace] = useState<Workspace | null>(null);
     const [name, setName] = useState('');
     const [saving, setSaving] = useState(false);
@@ -80,26 +82,23 @@ const WorkspaceGeneralTab = () => {
         );
     }
 
-    const hasChanges = name.trim() !== workspace.name && name.trim().length > 0;
+    const hasChanges =
+        isCurrentWorkspaceOwner &&
+        name.trim() !== workspace.name &&
+        name.trim().length > 0;
 
     return (
         <Container>
             {/* Rename workspace */}
-            <Card>
-                <CardTitle>
+            <SectionCard>
+                <SectionTitle>
                     {t(
                         'settings.workspaces.general.rename',
                         'Workspace Name',
                     )}
-                </CardTitle>
-                <CardDescription>
-                    {t(
-                        'settings.workspaces.general.renameDescription',
-                        'Change the display name of your workspace.',
-                    )}
-                </CardDescription>
+                </SectionTitle>
                 <FormRow>
-                    <Input
+                    <StyledInput
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -109,43 +108,42 @@ const WorkspaceGeneralTab = () => {
                         )}
                         maxLength={255}
                     />
-                    <SaveButton
-                        onClick={handleSave}
-                        disabled={!hasChanges || saving}
-                    >
+                    <PrimaryButton onClick={handleSave} disabled={!hasChanges || saving}>
                         {saving
                             ? t('common.saving', 'Saving...')
                             : t('common.save', 'Save')}
-                    </SaveButton>
+                    </PrimaryButton>
                 </FormRow>
-                <MetaRow>
-                    <MetaLabel>ID</MetaLabel>
-                    <MetaValue>{workspace.id}</MetaValue>
-                </MetaRow>
-                <MetaRow>
-                    <MetaLabel>Slug</MetaLabel>
-                    <MetaValue>{workspace.slug}</MetaValue>
-                </MetaRow>
-            </Card>
+            </SectionCard>
 
-            {/* Spaces placeholder */}
-            <Card>
-                <CardTitle>
-                    {t('settings.workspaces.general.spaces', 'Spaces')}
-                </CardTitle>
-                <CardDescription>
-                    {t(
-                        'settings.workspaces.general.spacesDescription',
-                        'Spaces within this workspace. Manage spaces from the main dashboard.',
-                    )}
-                </CardDescription>
-                <PlaceholderText>
-                    {t(
-                        'settings.workspaces.general.spacesComingSoon',
-                        'Space management will be available here soon.',
-                    )}
-                </PlaceholderText>
-            </Card>
+            {/* Details */}
+            <SectionCard>
+                <SectionTitle>
+                    {t('settings.workspaces.general.details', 'Details')}
+                </SectionTitle>
+                <MetaGrid>
+                    <MetaItem>
+                        <MetaLabel>ID</MetaLabel>
+                        <MetaValue>{workspace.id}</MetaValue>
+                    </MetaItem>
+                    <MetaItem>
+                        <MetaLabel>Slug</MetaLabel>
+                        <MetaValue>{workspace.slug}</MetaValue>
+                    </MetaItem>
+                    <MetaItem>
+                        <MetaLabel>Role</MetaLabel>
+                        <MetaValue style={{ color: 'hsl(var(--primary))', fontFamily: 'inherit' }}>
+                            {isCurrentWorkspaceOwner ? 'Owner' : 'Member'}
+                        </MetaValue>
+                    </MetaItem>
+                    <MetaItem>
+                        <MetaLabel>Default Project</MetaLabel>
+                        <MetaValue style={{ fontFamily: 'inherit' }}>
+                            {workspace.default_project_id ?? '—'}
+                        </MetaValue>
+                    </MetaItem>
+                </MetaGrid>
+            </SectionCard>
         </Container>
     );
 };
@@ -159,49 +157,46 @@ export default WorkspaceGeneralTab;
 const Container = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 14px;
 `;
 
-const Card = styled.div`
+const SectionCard = styled.div`
     background: var(--overlay-subtle);
     border: 1px solid var(--border-subtle);
     border-radius: 10px;
-    padding: 24px;
+    padding: 18px;
 `;
 
-const CardTitle = styled.h3`
-    font-size: 16px;
+const SectionTitle = styled.h4`
+    font-size: 11px;
     font-weight: 600;
-    color: hsl(var(--foreground));
-    margin: 0 0 4px 0;
-`;
-
-const CardDescription = styled.p`
-    font-size: 14px;
     color: hsl(var(--muted-foreground));
-    margin: 0 0 20px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin: 0 0 12px;
 `;
 
 const FormRow = styled.div`
     display: flex;
-    gap: 12px;
-    align-items: center;
+    gap: 8px;
+    align-items: flex-start;
 `;
 
-const Input = styled.input`
+const StyledInput = styled.input`
     flex: 1;
-    padding: 10px 14px;
+    padding: 9px 12px;
     background: var(--overlay-subtle);
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 7px;
+    font-size: 13px;
     color: hsl(var(--foreground));
-    font-size: 14px;
     font-family: inherit;
     transition: border-color 150ms ease;
 
     &:focus {
         outline: none;
         border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 2px hsla(var(--primary) / 0.2);
     }
 
     &::placeholder {
@@ -209,51 +204,42 @@ const Input = styled.input`
     }
 `;
 
-const SaveButton = styled.button`
-    padding: 10px 20px;
+const PrimaryButton = styled.button`
+    padding: 9px 16px;
     background: hsl(var(--primary));
     border: none;
-    border-radius: 8px;
-    color: hsl(var(--primary-foreground));
-    font-size: 14px;
-    font-weight: 500;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 150ms ease;
-    white-space: nowrap;
-
-    &:hover:not(:disabled) {
-        filter: brightness(0.9);
-    }
-
-    &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
-`;
-
-const MetaRow = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-subtle);
-`;
-
-const MetaLabel = styled.span`
+    border-radius: 7px;
     font-size: 12px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: hsl(var(--muted-foreground));
-    min-width: 40px;
+    color: white;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: opacity 150ms ease;
+
+    &:hover { opacity: 0.9; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
-const MetaValue = styled.span`
-    font-size: 13px;
+const MetaGrid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+`;
+
+const MetaItem = styled.div``;
+
+const MetaLabel = styled.div`
+    font-size: 10px;
     color: hsl(var(--muted-foreground));
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    margin-bottom: 3px;
+`;
+
+const MetaValue = styled.div`
+    font-size: 12px;
+    color: hsl(var(--foreground));
+    opacity: 0.7;
+    font-family: var(--font-mono, monospace);
 `;
 
 const LoadingText = styled.p`
@@ -266,14 +252,4 @@ const EmptyText = styled.p`
     font-size: 14px;
     color: hsl(var(--muted-foreground));
     padding: 24px 0;
-`;
-
-const PlaceholderText = styled.p`
-    font-size: 14px;
-    color: hsl(var(--muted-foreground));
-    padding: 16px;
-    background: var(--overlay-subtle);
-    border-radius: 6px;
-    border: 1px dashed var(--border-light);
-    margin: 0;
 `;
