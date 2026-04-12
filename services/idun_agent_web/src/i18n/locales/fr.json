@@ -240,7 +240,6 @@
                 "placeholder": "Entrez votre biographie"
             }
         },
-
         "permissions": {
             "legend": "Permissions",
             "agent-management": {
@@ -620,7 +619,18 @@
         "back_to_dashboard": "Retour au tableau de bord",
         "group": {
             "preferences": "Préférences",
-            "workspaces": "Espaces de travail"
+            "workspaces": "Espaces de travail",
+            "projects": "Projects"
+        },
+        "tabs": {
+            "workspaceGeneral": "Général",
+            "workspaceUsers": "Membres",
+            "workspaceProjects": "Tous les projets",
+            "projectMembers": "Membres du projet"
+        },
+        "groups": {
+            "workspace": "Espace de travail",
+            "projects": "Projets"
         },
         "preferences": {
             "general": "Général",
@@ -631,7 +641,13 @@
         },
         "workspaces": {
             "general": "Général",
-            "users": "Utilisateurs",
+            "users": {
+                "ownerToggle": "Invite as workspace owner",
+                "projectAssignments": "Initial project assignments",
+                "owner": "Owner",
+                "projects": "Projects",
+                "noInvitations": "No pending invitations."
+            },
             "general.rename": "Nom de l'espace de travail",
             "general.renameDescription": "Modifiez le nom d'affichage de votre espace de travail.",
             "general.namePlaceholder": "Nom de l'espace de travail",
@@ -775,7 +791,6 @@
         "edit": "Modifier",
         "twoFactor": "Authentification à deux facteurs",
         "theme": "Thème",
-
         "agentAlerts": "Alertes de statut d'agent",
         "systemUpdates": "Mises à jour du système",
         "weeklyReports": "Rapports hebdomadaires",
@@ -801,7 +816,21 @@
         "systemUpdatesDesc": "Être notifié des mises à jour de la plateforme et de la maintenance",
         "browserNotifications": "Notifications du navigateur",
         "browserNotificationsDesc": "Afficher les notifications dans votre navigateur",
-        "switch-account": "Changer de compte"
+        "switch-account": "Changer de compte",
+        "projects": {
+            "overview": "Projects",
+            "members": "Project members",
+            "title": "Projects",
+            "description": "Projects separate agents, prompts, and integrations within a workspace.",
+            "name": "Project name",
+            "descriptionField": "Description",
+            "create": "Create",
+            "list": "Workspace projects",
+            "noCurrentProject": "Select a project first.",
+            "noMembers": "No project members yet.",
+            "memberEmail": "Email",
+            "addMember": "Add member"
+        }
     },
     "guard": {
         "title": "Système de garde",
@@ -1056,5 +1085,10 @@
         "toggleToLight": "Passer en mode clair",
         "toggleToDark": "Passer en mode sombre",
         "theme": "Thème"
+    },
+    "projects": {
+        "created": "Project created",
+        "deleted": "Project deleted",
+        "empty": "No projects available."
     }
 }

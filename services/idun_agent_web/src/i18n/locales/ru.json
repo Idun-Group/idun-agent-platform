@@ -171,7 +171,6 @@
         },
         "submit": "Создать аккаунт"
     },
-
     "user-form": {
         "title": "Форма пользователя",
         "description": "Пожалуйста, заполните следующую информацию.",
@@ -250,7 +249,6 @@
         "cancel": "Отмена",
         "create-user": "Создать пользователя"
     },
-
     "login": {
         "title": "Вход",
         "description": "Войдите в свой аккаунт Idun Engine.",
@@ -368,12 +366,10 @@
             "label": "Путь агента",
             "placeholder": "Введите путь агента"
         },
-
         "graph-definition-path": {
             "label": "Chemin de la définition du graphe",
             "placeholder": "Sélectionnez le chemin du fichier de définition du graphe"
         },
-
         "checkpointConfig": "Конфигурация контрольных точек",
         "availableAgents": "Доступные агенты",
         "database-type": "Тип базы данных",
@@ -389,9 +385,7 @@
         "testQuestion": "Какая погода в Париже?",
         "testResponse": "Текущая погода в Париже 22°C, переменная облачность. Дует легкий юго-западный ветерок со скоростью 10 км/ч. Влажность составляет 65%, видимость хорошая, 10 км. Осадков в ближайшие часы не ожидается.",
         "viewTraces": "Посмотреть трассировки",
-
         "create-agent": "Создать агента",
-
         "creating": "Создание...",
         "button": {
             "create": "Создать агента",
@@ -577,7 +571,18 @@
         "back_to_dashboard": "Назад к панели управления",
         "group": {
             "preferences": "Настройки",
-            "workspaces": "Рабочие пространства"
+            "workspaces": "Рабочие пространства",
+            "projects": "Projects"
+        },
+        "tabs": {
+            "workspaceGeneral": "Общие",
+            "workspaceUsers": "Участники",
+            "workspaceProjects": "Все проекты",
+            "projectMembers": "Участники проекта"
+        },
+        "groups": {
+            "workspace": "Рабочее пространство",
+            "projects": "Проекты"
         },
         "preferences": {
             "general": "Общие",
@@ -588,7 +593,13 @@
         },
         "workspaces": {
             "general": "Общие",
-            "users": "Пользователи",
+            "users": {
+                "ownerToggle": "Invite as workspace owner",
+                "projectAssignments": "Initial project assignments",
+                "owner": "Owner",
+                "projects": "Projects",
+                "noInvitations": "No pending invitations."
+            },
             "general.rename": "Название рабочего пространства",
             "general.renameDescription": "Измените отображаемое название рабочего пространства.",
             "general.namePlaceholder": "Название рабочего пространства",
@@ -757,7 +768,21 @@
         "systemUpdatesDesc": "Получать уведомления о платформенных обновлениях и обслуживании",
         "browserNotifications": "Уведомления браузера",
         "browserNotificationsDesc": "Показывать уведомления в вашем браузере",
-        "switch-account": "Сменить аккаунт"
+        "switch-account": "Сменить аккаунт",
+        "projects": {
+            "overview": "Projects",
+            "members": "Project members",
+            "title": "Projects",
+            "description": "Projects separate agents, prompts, and integrations within a workspace.",
+            "name": "Project name",
+            "descriptionField": "Description",
+            "create": "Create",
+            "list": "Workspace projects",
+            "noCurrentProject": "Select a project first.",
+            "noMembers": "No project members yet.",
+            "memberEmail": "Email",
+            "addMember": "Add member"
+        }
     },
     "guard": {
         "title": "Система защитника",
@@ -1001,5 +1026,10 @@
         "toggleToLight": "Переключиться на светлый режим",
         "toggleToDark": "Переключиться на темный режим",
         "theme": "Тема"
+    },
+    "projects": {
+        "created": "Project created",
+        "deleted": "Project deleted",
+        "empty": "No projects available."
     }
 }

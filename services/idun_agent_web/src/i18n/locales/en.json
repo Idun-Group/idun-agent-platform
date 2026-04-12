@@ -614,7 +614,18 @@
         "back_to_dashboard": "Back to dashboard",
         "group": {
             "preferences": "Preferences",
-            "workspaces": "Workspaces"
+            "workspaces": "Workspaces",
+            "projects": "Projects"
+        },
+        "tabs": {
+            "workspaceGeneral": "General",
+            "workspaceUsers": "Members",
+            "workspaceProjects": "All Projects",
+            "projectMembers": "Project Members"
+        },
+        "groups": {
+            "workspace": "Workspace",
+            "projects": "Projects"
         },
         "preferences": {
             "general": "General",
@@ -625,7 +636,13 @@
         },
         "workspaces": {
             "general": "General",
-            "users": "Users",
+            "users": {
+                "ownerToggle": "Invite as workspace owner",
+                "projectAssignments": "Initial project assignments",
+                "owner": "Owner",
+                "projects": "Projects",
+                "noInvitations": "No pending invitations."
+            },
             "general.rename": "Workspace Name",
             "general.renameDescription": "Change the display name of your workspace.",
             "general.namePlaceholder": "Workspace name",
@@ -794,7 +811,21 @@
         "systemUpdatesDesc": "Be notified of platform updates and maintenance",
         "browserNotifications": "Browser notifications",
         "browserNotificationsDesc": "Display notifications in your browser",
-        "switch-account": "Switch account"
+        "switch-account": "Switch account",
+        "projects": {
+            "overview": "Projects",
+            "members": "Project members",
+            "title": "Projects",
+            "description": "Projects separate agents, prompts, and integrations within a workspace.",
+            "name": "Project name",
+            "descriptionField": "Description",
+            "create": "Create",
+            "list": "Workspace projects",
+            "noCurrentProject": "Select a project first.",
+            "noMembers": "No project members yet.",
+            "memberEmail": "Email",
+            "addMember": "Add member"
+        }
     },
     "guard": {
         "title": "Guard System",
@@ -1061,5 +1092,10 @@
         "submit": "Create workspace",
         "creating": "Creating...",
         "error": "Failed to create workspace. Please try again."
+    },
+    "projects": {
+        "created": "Project created",
+        "deleted": "Project deleted",
+        "empty": "No projects available."
     }
 }

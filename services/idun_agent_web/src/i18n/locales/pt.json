@@ -171,7 +171,6 @@
         },
         "submit": "Criar conta"
     },
-
     "user-form": {
         "title": "Formulário de usuário",
         "description": "Por favor, preencha as seguintes informações.",
@@ -250,7 +249,6 @@
         "cancel": "Cancelar",
         "create-user": "Criar usuário"
     },
-
     "login": {
         "title": "Login",
         "description": "Faça login em sua conta Idun Engine.",
@@ -364,12 +362,10 @@
             "select-remote": "Selecionar um repositório remoto",
             "select-project-template": "Selecionar um projeto"
         },
-
         "graph-definition-path": {
             "label": "Caminho da definição do gráfico",
             "placeholder": "SSelecione o caminho do arquivo de definição do gráfico"
         },
-
         "agent-path": {
             "label": "Caminho do agente",
             "placeholder": "Digite o caminho do agente"
@@ -389,9 +385,7 @@
         "testQuestion": "Como está o tempo em Paris?",
         "testResponse": "O tempo atual em Paris é de 22°C com céu parcialmente nublado. Há uma leve brisa do sudoeste a 10 km/h. A umidade é de 65% e a visibilidade é boa a 10 km. Nenhuma precipitação é esperada para as próximas horas.",
         "viewTraces": "Ver rastros",
-
         "create-agent": "Criar um agente",
-
         "creating": "Criando...",
         "button": {
             "create": "Criar um agente",
@@ -577,7 +571,18 @@
         "back_to_dashboard": "Voltar ao painel de controle",
         "group": {
             "preferences": "Preferências",
-            "workspaces": "Espaços de trabalho"
+            "workspaces": "Espaços de trabalho",
+            "projects": "Projects"
+        },
+        "tabs": {
+            "workspaceGeneral": "Geral",
+            "workspaceUsers": "Membros",
+            "workspaceProjects": "Todos os projetos",
+            "projectMembers": "Membros do projeto"
+        },
+        "groups": {
+            "workspace": "Espaço de trabalho",
+            "projects": "Projetos"
         },
         "preferences": {
             "general": "Geral",
@@ -588,7 +593,13 @@
         },
         "workspaces": {
             "general": "Geral",
-            "users": "Utilizadores",
+            "users": {
+                "ownerToggle": "Invite as workspace owner",
+                "projectAssignments": "Initial project assignments",
+                "owner": "Owner",
+                "projects": "Projects",
+                "noInvitations": "No pending invitations."
+            },
             "general.rename": "Nome do espaço de trabalho",
             "general.renameDescription": "Altere o nome de exibição do seu espaço de trabalho.",
             "general.namePlaceholder": "Nome do espaço de trabalho",
@@ -757,7 +768,21 @@
         "systemUpdatesDesc": "Ser notificado sobre atualizações da plataforma e manutenção",
         "browserNotifications": "Notificações do navegador",
         "browserNotificationsDesc": "Exibir notificações no seu navegador",
-        "switch-account": "Mudar de conta"
+        "switch-account": "Mudar de conta",
+        "projects": {
+            "overview": "Projects",
+            "members": "Project members",
+            "title": "Projects",
+            "description": "Projects separate agents, prompts, and integrations within a workspace.",
+            "name": "Project name",
+            "descriptionField": "Description",
+            "create": "Create",
+            "list": "Workspace projects",
+            "noCurrentProject": "Select a project first.",
+            "noMembers": "No project members yet.",
+            "memberEmail": "Email",
+            "addMember": "Add member"
+        }
     },
     "guard": {
         "title": "Sistema de guarda",
@@ -912,9 +937,7 @@
         "firstName": "Primeiro nome",
         "lastName": "Sobrenome",
         "profilePicture": "Foto de perfil",
-
         "uploadPhoto": "Subir uma foto",
-
         "password": "Senha",
         "confirmPassword": "Confirmar senha",
         "usernamePlaceholder": "Digite seu nome de usuário",
@@ -1003,5 +1026,10 @@
         "toggleToLight": "Mudar para o modo claro",
         "toggleToDark": "Mudar para o modo escuro",
         "theme": "Tema"
+    },
+    "projects": {
+        "created": "Project created",
+        "deleted": "Project deleted",
+        "empty": "No projects available."
     }
 }

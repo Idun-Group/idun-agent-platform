@@ -334,12 +334,10 @@
             "agent": "Agent",
             "testing": "Test"
         },
-
         "graph-definition-path": {
             "label": "Pfad zur Graph-Definition",
             "placeholder": "Wählen Sie den Pfad zur Graph-Definitionsdatei aus"
         },
-
         "header": {
             "title": "Neuen Agenten erstellen",
             "subtitle": "Konfigurieren Sie die Einstellungen und das Verhalten Ihres Agenten"
@@ -578,7 +576,18 @@
         "back_to_dashboard": "Zurück zum Dashboard",
         "group": {
             "preferences": "Einstellungen",
-            "workspaces": "Arbeitsbereiche"
+            "workspaces": "Arbeitsbereiche",
+            "projects": "Projects"
+        },
+        "tabs": {
+            "workspaceGeneral": "Allgemein",
+            "workspaceUsers": "Mitglieder",
+            "workspaceProjects": "Alle Projekte",
+            "projectMembers": "Projektmitglieder"
+        },
+        "groups": {
+            "workspace": "Arbeitsbereich",
+            "projects": "Projekte"
         },
         "preferences": {
             "general": "Allgemein",
@@ -589,7 +598,13 @@
         },
         "workspaces": {
             "general": "Allgemein",
-            "users": "Benutzer",
+            "users": {
+                "ownerToggle": "Invite as workspace owner",
+                "projectAssignments": "Initial project assignments",
+                "owner": "Owner",
+                "projects": "Projects",
+                "noInvitations": "No pending invitations."
+            },
             "general.rename": "Name des Arbeitsbereichs",
             "general.renameDescription": "Ändern Sie den Anzeigenamen Ihres Arbeitsbereichs.",
             "general.namePlaceholder": "Name des Arbeitsbereichs",
@@ -758,7 +773,21 @@
         "systemUpdatesDesc": "Benachrichtigt werden über Plattform-Updates und Wartung",
         "browserNotifications": "Browser-Benachrichtigungen",
         "browserNotificationsDesc": "Benachrichtigungen in Ihrem Browser anzeigen",
-        "switch-account": "Konto wechseln"
+        "switch-account": "Konto wechseln",
+        "projects": {
+            "overview": "Projects",
+            "members": "Project members",
+            "title": "Projects",
+            "description": "Projects separate agents, prompts, and integrations within a workspace.",
+            "name": "Project name",
+            "descriptionField": "Description",
+            "create": "Create",
+            "list": "Workspace projects",
+            "noCurrentProject": "Select a project first.",
+            "noMembers": "No project members yet.",
+            "memberEmail": "Email",
+            "addMember": "Add member"
+        }
     },
     "guard": {
         "title": "Wächter-System",
@@ -851,7 +880,6 @@
                 },
                 "email": {
                     "label": "E-Mail",
-
                     "placeholder": "Geben Sie die E-Mail ein",
                     "required": "E-Mail ist erforderlich",
                     "invalid": "Ungültiges E-Mail-Format"
@@ -1014,5 +1042,10 @@
         "toggleToLight": "In den hellen Modus wechseln",
         "toggleToDark": "In den dunklen Modus wechseln",
         "theme": "Thema"
+    },
+    "projects": {
+        "created": "Project created",
+        "deleted": "Project deleted",
+        "empty": "No projects available."
     }
 }

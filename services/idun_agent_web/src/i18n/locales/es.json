@@ -572,7 +572,18 @@
         "back_to_dashboard": "Volver al panel de control",
         "group": {
             "preferences": "Preferencias",
-            "workspaces": "Espacios de trabajo"
+            "workspaces": "Espacios de trabajo",
+            "projects": "Projects"
+        },
+        "tabs": {
+            "workspaceGeneral": "General",
+            "workspaceUsers": "Miembros",
+            "workspaceProjects": "Todos los proyectos",
+            "projectMembers": "Miembros del proyecto"
+        },
+        "groups": {
+            "workspace": "Espacio de trabajo",
+            "projects": "Proyectos"
         },
         "preferences": {
             "general": "General",
@@ -583,7 +594,13 @@
         },
         "workspaces": {
             "general": "General",
-            "users": "Usuarios",
+            "users": {
+                "ownerToggle": "Invite as workspace owner",
+                "projectAssignments": "Initial project assignments",
+                "owner": "Owner",
+                "projects": "Projects",
+                "noInvitations": "No pending invitations."
+            },
             "general.rename": "Nombre del espacio de trabajo",
             "general.renameDescription": "Cambia el nombre visible de tu espacio de trabajo.",
             "general.namePlaceholder": "Nombre del espacio de trabajo",
@@ -752,7 +769,21 @@
         "systemUpdatesDesc": "Recibir notificaciones de actualizaciones y mantenimiento de la plataforma",
         "browserNotifications": "Notificaciones del navegador",
         "browserNotificationsDesc": "Mostrar notificaciones en su navegador",
-        "switch-account": "Cambiar de cuenta"
+        "switch-account": "Cambiar de cuenta",
+        "projects": {
+            "overview": "Projects",
+            "members": "Project members",
+            "title": "Projects",
+            "description": "Projects separate agents, prompts, and integrations within a workspace.",
+            "name": "Project name",
+            "descriptionField": "Description",
+            "create": "Create",
+            "list": "Workspace projects",
+            "noCurrentProject": "Select a project first.",
+            "noMembers": "No project members yet.",
+            "memberEmail": "Email",
+            "addMember": "Add member"
+        }
     },
     "guard": {
         "title": "Sistema de guarda",
@@ -1007,5 +1038,10 @@
         "toggleToLight": "Cambiar a modo claro",
         "toggleToDark": "Cambiar a modo oscuro",
         "theme": "Tema"
+    },
+    "projects": {
+        "created": "Project created",
+        "deleted": "Project deleted",
+        "empty": "No projects available."
     }
 }
