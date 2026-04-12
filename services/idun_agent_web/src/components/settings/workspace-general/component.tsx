@@ -15,7 +15,7 @@ type Workspace = {
 
 const WorkspaceGeneralTab = () => {
     const { t } = useTranslation();
-    const { selectedWorkspaceId, currentWorkspace, isCurrentWorkspaceOwner } = useWorkspace();
+    const { selectedWorkspaceId, isCurrentWorkspaceOwner } = useWorkspace();
     const [workspace, setWorkspace] = useState<Workspace | null>(null);
     const [name, setName] = useState('');
     const [saving, setSaving] = useState(false);
