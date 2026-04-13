@@ -30,6 +30,7 @@ class TestServerRunner:
             host="127.0.0.1",
             port=9000,
             log_level="info",
+            timeout_graceful_shutdown=5,
         )
 
     @patch("uvicorn.run")

@@ -2,6 +2,7 @@
 
 Initializes the agent at startup and cleans up resources on shutdown.
 """
+
 import inspect
 import logging
 from collections.abc import Sequence
@@ -58,7 +59,9 @@ async def configure_app(app: FastAPI, engine_config):
     set_active_registry(mcp_registry)
     app.state.mcp_registry = mcp_registry
     try:
-        agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config, mcp_registry)
+        agent_instance = await ConfigBuilder.initialize_agent_from_config(
+            engine_config, mcp_registry
+        )
     except Exception as e:
         raise ValueError(
             f"Error retrieving agent instance from ConfigBuilder: {e}"
@@ -78,7 +81,9 @@ async def configure_app(app: FastAPI, engine_config):
                     f"🔧 MCP Server {s.name}: [{s.transport.upper()}] {s.url or s.command}"
                 )
         except Exception as e:
-            logger.exception(f"Failed to assign mcp servers to agent: {e}, continuing without them")
+            logger.exception(
+                f"Failed to assign mcp servers to agent: {e}, continuing without them"
+            )
             mcp_servers = []
 
     # SSO / OIDC setup
@@ -122,6 +127,28 @@ async def configure_app(app: FastAPI, engine_config):
             logger.warning(f"⚠️ Failed to discover agent capabilities: {e}")
             app.state.capabilities = None
 
+    # Mount MCP server if enabled
+    if engine_config.server.as_mcp:
+        capabilities = getattr(app.state, "capabilities", None)
+        if capabilities:
+            try:
+                from ..server.mcp_endpoint import create_mcp_server
+
+                mcp_description = engine_config.server.mcp_description
+                mcp_server = create_mcp_server(
+                    agent_instance, capabilities, description=mcp_description
+                )
+                mcp_app = mcp_server.streamable_http_app()
+                app.mount("/mcp", mcp_app)
+                app.state.mcp_app = mcp_app
+                logger.info("🔌 Agent exposed as MCP server at /mcp")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to mount MCP server: {e}")
+        else:
+            logger.warning(
+                "⚠️ as_mcp enabled but agent capabilities not available, skipping"
+            )
+
     # Setup integrations (WhatsApp, etc.)
     if engine_config.integrations:
         from ..integrations import setup_integrations
@@ -164,7 +191,24 @@ async def lifespan(app: FastAPI):
         logger.warning(f"⚠️ Failed to start telemetry: {e}")
         app.state.telemetry = None
 
-    yield
+    # Start MCP session manager if mounted.
+    # Starlette does not run sub-app lifespans, so we enter it manually.
+    mcp_app = getattr(app.state, "mcp_app", None)
+    if mcp_app is not None:
+        try:
+            mcp_cm = mcp_app.router.lifespan_context(mcp_app)
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to create MCP session manager: {e}")
+            mcp_cm = None
+
+        if mcp_cm is not None:
+            async with mcp_cm:
+                logger.info("🔌 MCP session manager started")
+                yield
+        else:
+            yield
+    else:
+        yield
 
     # Clean up on shutdown
     logger.info("🔄 Idun Agent Engine shutting down...")
