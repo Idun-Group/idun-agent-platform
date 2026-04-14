@@ -33,9 +33,9 @@ dependencies = [
 
   # HTTP & Utilities
   "httpx>=0.28.1,<0.29.0",
-  "python-multipart>=0.0.12,<0.1.0",
+  "python-multipart>=0.0.26,<0.1.0",
   "python-dotenv>=1.0.1,<2.0.0",
-  "orjson>=3.10.12,<4.0.0",  # Fast JSON serialization
+  "orjson>=3.11.8,<4.0.0",  # Fast JSON serialization
   "tenacity>=9.0.0,<10.0.0",  # Retry logic
 
   # Observability
