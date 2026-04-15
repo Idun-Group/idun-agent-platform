@@ -1,3 +1,8 @@
+# Production Docker Compose for Idun Agent Platform
+# Uses prebuilt images from Docker Hub.
+# Quick start: cp .env.example .env && docker compose up
+# With demo agent: docker compose --profile demo up
+
 services:
   db:
     image: postgres:16
@@ -15,28 +20,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # networks:
-    #   - idun_network
+    restart: unless-stopped
 
   manager:
-    image: freezaa9/idun-ai:0.5.1
+    image: freezaa9/idun-ai:${IDUN_VERSION:-latest}
     container_name: idun-manager
+    env_file: .env
     ports:
-      - "8000:8000"
-    volumes:
-      - ./services/idun_agent_manager/alembic:/app/alembic
-      - ./services/idun_agent_manager/src:/app/src
+      - "8080:8080"
     environment:
-      # Database connection
       DATABASE__URL: postgresql+asyncpg://postgres:postgres@db:5432/idun_agents
-      DATABASEAUTO_MIGRATE: true
-      AUTH__SECRET_KEY: your-super-secret-key-at-least-32-characters-long-dev
       ENVIRONMENT: production
-      # Server configuration
-      PORT: 8000
+      PORT: 8080
       WORKERS: 2
-
-      # Database tuning
       DATABASE__ECHO: "false"
       DATABASE__POOL_SIZE: 10
       DATABASE__MAX_OVERFLOW: 20
@@ -44,49 +40,39 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
-    # networks:
-    #   - idun_network
     restart: unless-stopped
 
   web:
-    image: freezaa9/idun-ai-web:0.5.1
+    image: freezaa9/idun-ai-web:${IDUN_VERSION:-latest}
     container_name: idun-web
     ports:
-      - "3000:3000"
+      - "3000:8080"
     environment:
-      - VITE_API_URL=http://localhost:8000 # http://host.docker.internal:8000
-      - CHOKIDAR_USEPOLLING=true
-    # networks:
-    #   - idun_network
+      - API_URL=http://localhost:8080
+      - AUTH_DISABLE_USERNAME_PASSWORD=${AUTH__DISABLE_USERNAME_PASSWORD:-false}
     depends_on:
       - manager
 
   agent:
+    profiles: ["demo"]
     build:
       context: ./libs/idun_agent_engine/examples/01_basic_config_file
       dockerfile: Dockerfile
     container_name: idun-agent
     ports:
       - "8002:8002"
-      - "6006:6006" # For Phoenix local
     environment:
-      IDUN_AGENT_API_KEY: 5301ca0c03f221b0aadda428bc335dd1811871e0bd32a30af5f73a5ab20ab733
-      IDUN_MANAGER_HOST: http://manager:8000
+      IDUN_AGENT_API_KEY: ${IDUN_AGENT_API_KEY:-}
+      IDUN_MANAGER_HOST: http://manager:8080
     depends_on:
       manager:
         condition: service_healthy
-    # networks:
-    #   - idun_network
     restart: unless-stopped
 
 volumes:
   postgres_data:
-
-# networks:
-#   idun_network:
-#     driver: bridge

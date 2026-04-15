@@ -1,22 +1,28 @@
-"""Auth router – Google OIDC SSO + username/password authentication.
+"""Auth router – Multi-provider OIDC SSO + username/password authentication.
 
 Auth mode controlled by AUTH__DISABLE_USERNAME_PASSWORD:
 - False (default): username/password enabled, SSO disabled
 - True: SSO enabled, username/password disabled
 
+Supported OIDC providers: Google, Microsoft (Azure AD / Entra ID).
+Each provider is registered only when its ``client_id`` env var is set.
+
 Endpoints:
-    POST /basic/signup  – Register with email/password
-    POST /basic/login   – Login with email/password
-    GET  /login         – Redirect to Google authorization endpoint
-    GET  /callback      – Exchange code for tokens, set session cookie
-    GET  /me            – Return current session from cookie
-    POST /logout        – Clear session cookie
+    POST /basic/signup       – Register with email/password
+    POST /basic/login        – Login with email/password
+    GET  /providers          – List enabled OIDC providers
+    GET  /login/{provider}   – Redirect to provider's OIDC login
+    GET  /callback           – Exchange code for tokens, set session cookie
+    GET  /me                 – Return current session from cookie
+    POST /logout             – Clear session cookie
 """
 
 import hashlib
 import logging
 import os
+import re
 import time
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -39,6 +45,14 @@ from app.core.settings import get_settings
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
+class OIDCProvider(StrEnum):
+    """Supported OIDC authentication providers."""
+
+    GOOGLE = "google"
+    MICROSOFT = "microsoft"
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -47,6 +61,47 @@ _oauth: OAuth | None = None
 _serializer: URLSafeTimedSerializer | None = None
 
 SESSION_COOKIE = "sid"
+_OAUTH_PROVIDER_SESSION_KEY = "_oauth_provider"
+
+# Microsoft v2.0 ID tokens carry an issuer of the form
+# ``https://login.microsoftonline.com/<tenant-uuid>/v2.0``. The /common discovery
+# document returns the literal template ``{tenantid}`` in its ``issuer`` field,
+# which Authlib cannot match against real per-tenant issuers — so we disable the
+# default strict iss check (see ``_microsoft_claims_options``) and re-validate the
+# issuer manually with this regex. JWKS signature verification (handled by Authlib
+# against Microsoft's signing keys) is what actually proves the token came from
+# Microsoft; this regex is defense-in-depth.
+_MICROSOFT_ISSUER_RE = re.compile(
+    r"^https://login\.microsoftonline\.com/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/v2\.0$"
+)
+
+
+def _microsoft_claims_options() -> dict[str, dict[str, Any]]:
+    """Return claims_options that disable Authlib's strict ``iss`` value match.
+
+    Multi-tenant Microsoft apps must use the /common (or /organizations) discovery
+    endpoint, whose ``issuer`` field is the literal template
+    ``https://login.microsoftonline.com/{tenantid}/v2.0``. Authlib's default behaviour
+    compares this template against the token's actual ``iss`` claim, which always
+    fails. Passing an empty dict for ``iss`` skips that values check; we then
+    re-validate the issuer pattern in :func:`_validate_microsoft_issuer`.
+    """
+    return {"iss": {}}
+
+
+def _validate_microsoft_issuer(userinfo: dict[str, Any]) -> None:
+    """Verify the parsed ID token's ``iss`` is a real Microsoft tenant URL.
+
+    Raises 401 otherwise. This complements JWKS signature verification, which
+    already proves the token was signed by Microsoft's keys.
+    """
+    iss = userinfo.get("iss", "")
+    if not isinstance(iss, str) or not _MICROSOFT_ISSUER_RE.match(iss):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ID token issuer is not a Microsoft tenant",
+        )
 
 
 def _get_serializer() -> URLSafeTimedSerializer:
@@ -58,20 +113,51 @@ def _get_serializer() -> URLSafeTimedSerializer:
 
 
 def _get_oauth() -> OAuth:
-    """Lazily initialise the OAuth registry with Google provider."""
+    """Lazily initialise the OAuth registry with all configured providers."""
     global _oauth
     if _oauth is None:
         settings = get_settings()
         _oauth = OAuth()
-        _oauth.register(
-            name="google",
-            # TODO: make provider agnostic and support more providers
-            client_id=settings.auth.google.client_id,
-            client_secret=settings.auth.google.client_secret,
-            server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-            client_kwargs={"scope": " ".join(settings.auth.google.scopes)},
-        )
+
+        if settings.auth.google.client_id:
+            _oauth.register(
+                name=OIDCProvider.GOOGLE,
+                client_id=settings.auth.google.client_id,
+                client_secret=settings.auth.google.client_secret,
+                server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+                client_kwargs={"scope": " ".join(settings.auth.google.scopes)},
+            )
+
+        if settings.auth.microsoft.client_id:
+            # Default to /common so any Microsoft tenant + personal accounts can
+            # sign in. Operators can opt into single-tenant restriction by setting
+            # AUTH__MICROSOFT_TENANT_ID to their tenant UUID, but this should match
+            # the audience configured in their Entra app registration.
+            tenant = settings.auth.microsoft.tenant_id or "common"
+            _oauth.register(
+                name=OIDCProvider.MICROSOFT,
+                client_id=settings.auth.microsoft.client_id,
+                client_secret=settings.auth.microsoft.client_secret,
+                server_metadata_url=(
+                    f"https://login.microsoftonline.com/{tenant}"
+                    "/v2.0/.well-known/openid-configuration"
+                ),
+                client_kwargs={
+                    "scope": " ".join(settings.auth.microsoft.scopes),
+                },
+            )
     return _oauth
+
+
+def _get_enabled_providers() -> list[OIDCProvider]:
+    """Return the list of OIDC providers whose credentials are configured."""
+    settings = get_settings()
+    providers: list[OIDCProvider] = []
+    if settings.auth.google.client_id:
+        providers.append(OIDCProvider.GOOGLE)
+    if settings.auth.microsoft.client_id:
+        providers.append(OIDCProvider.MICROSOFT)
+    return providers
 
 
 def _cookie_attrs() -> dict[str, Any]:
@@ -184,12 +270,22 @@ async def _consume_pending_invitations(
 
 
 @router.get(
-    "/login",
-    summary="Redirect to Google OIDC login",
-    description="Initiates the Google OIDC authorization code flow.",
+    "/providers",
+    summary="List enabled OIDC providers",
+    description="Returns the list of configured OIDC provider names. Empty when SSO is disabled.",
 )
-async def login(request: Request) -> RedirectResponse:
-    """Redirect the user-agent to Google's authorization page."""
+async def list_providers() -> dict[str, list[str]]:
+    """Return enabled OIDC providers based on configured credentials."""
+    settings = get_settings()
+    if not settings.auth.disable_username_password:
+        return {"providers": []}
+    return {"providers": [p.value for p in _get_enabled_providers()]}
+
+
+async def _login_with_provider(
+    request: Request, provider: OIDCProvider
+) -> RedirectResponse:
+    """Shared logic: validate provider and redirect to its authorization page."""
     settings = get_settings()
     if not settings.auth.disable_username_password:
         raise HTTPException(
@@ -197,9 +293,29 @@ async def login(request: Request) -> RedirectResponse:
             detail="SSO auth is disabled",
         )
 
+    enabled = _get_enabled_providers()
+    if provider not in enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Provider '{provider}' is not configured",
+        )
+
     oauth = _get_oauth()
-    redirect_uri = settings.auth.redirect_uri
-    return await oauth.google.authorize_redirect(request, redirect_uri)  # type: ignore[union-attr]
+    oauth_client = getattr(oauth, provider.value)
+    request.session[_OAUTH_PROVIDER_SESSION_KEY] = provider.value
+    return await oauth_client.authorize_redirect(request, settings.auth.redirect_uri)
+
+
+@router.get(
+    "/login/{provider}",
+    summary="Redirect to OIDC provider login",
+    description="Initiates the OIDC authorization code flow for the specified provider.",
+)
+async def login_with_provider(
+    request: Request, provider: OIDCProvider
+) -> RedirectResponse:
+    """Redirect the user-agent to the specified provider's authorization page."""
+    return await _login_with_provider(request, provider)
 
 
 @router.get(
@@ -211,19 +327,47 @@ async def callback(
     request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> RedirectResponse:
-    """Handle the OIDC callback from Google."""
+    """Handle the OIDC callback from any configured provider."""
     settings = get_settings()
     if not settings.auth.disable_username_password:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="SSO auth is disabled",
         )
+
+    # Recover which provider initiated this flow
+    raw_provider = request.session.pop(
+        _OAUTH_PROVIDER_SESSION_KEY, OIDCProvider.GOOGLE.value
+    )
+    try:
+        provider = OIDCProvider(raw_provider)
+    except ValueError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown provider '{raw_provider}'",
+        ) from err
+    provider_name = provider.value
+
     oauth = _get_oauth()
+    oauth_client = getattr(oauth, provider_name, None)
+    if oauth_client is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Provider '{provider_name}' is not registered",
+        )
+
+    # Microsoft's /common discovery doc returns a literal '{tenantid}' template as
+    # its issuer field, which Authlib cannot match against the real per-tenant iss
+    # claim of incoming ID tokens. Override claims_options to skip the strict iss
+    # values check and re-validate the issuer manually below.
+    authorize_kwargs: dict[str, Any] = {}
+    if provider == OIDCProvider.MICROSOFT:
+        authorize_kwargs["claims_options"] = _microsoft_claims_options()
 
     try:
-        token = await oauth.google.authorize_access_token(request)  # type: ignore[union-attr]
+        token = await oauth_client.authorize_access_token(request, **authorize_kwargs)
     except Exception as exc:
-        logger.exception("OIDC token exchange failed")
+        logger.exception("OIDC token exchange failed for provider %s", provider_name)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Authentication failed: {exc}",
@@ -231,22 +375,33 @@ async def callback(
 
     userinfo: dict[str, Any] = token.get("userinfo", {})
     if not userinfo:
-        # Fall back to fetching from the userinfo endpoint
+        # Fall back to the provider's userinfo endpoint via OIDC discovery
         try:
-            resp = await oauth.google.get(
-                "https://openidconnect.googleapis.com/v1/userinfo", token=token
-            )  # type: ignore[union-attr]
-            userinfo = resp.json()
+            resp = await oauth_client.userinfo(token=token)
+            userinfo = dict(resp)
         except Exception:
-            pass
+            logger.warning(
+                "userinfo endpoint failed for provider %s", provider_name, exc_info=True
+            )
 
-    if not userinfo or not userinfo.get("email"):
+    if not userinfo:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not retrieve user info from provider",
         )
 
-    email: str = userinfo["email"]
+    # Defense in depth: ensure the parsed Microsoft ID token actually came from a
+    # Microsoft tenant (any tenant — multi-tenant is the whole point of /common).
+    if provider == OIDCProvider.MICROSOFT:
+        _validate_microsoft_issuer(userinfo)
+
+    # Normalize userinfo across providers (Microsoft uses preferred_username)
+    email: str = userinfo.get("email") or userinfo.get("preferred_username", "")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not retrieve email from provider",
+        )
     name: str = userinfo.get("name", "")
     picture: str = userinfo.get("picture", "")
     provider_sub: str = userinfo.get("sub", "")
@@ -265,7 +420,7 @@ async def callback(
             email=email,
             name=name,
             picture_url=picture,
-            provider="google",
+            provider=provider_name,
             provider_sub=provider_sub,
         )
         session.add(user)
@@ -280,13 +435,13 @@ async def callback(
             user.default_workspace_id = UUID(workspace_ids[0])
             await session.flush()
     else:
-        # Update profile fields if changed
+        # Update profile fields and track last-used provider
         if user.name != name and name:
             user.name = name
         if user.picture_url != picture and picture:
             user.picture_url = picture
-        if user.provider_sub != provider_sub and provider_sub:
-            user.provider_sub = provider_sub
+        user.provider = provider_name
+        user.provider_sub = provider_sub
         await session.flush()
 
         # Fetch workspace memberships
@@ -305,7 +460,7 @@ async def callback(
 
     # Build session payload matching the frontend Session interface
     session_payload = {
-        "provider": "google",
+        "provider": provider_name,
         "principal": {
             "user_id": str(user.id),
             "email": email,

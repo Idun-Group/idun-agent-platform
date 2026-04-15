@@ -163,3 +163,7 @@ class LangsmithConfig(BaseModel):
         default="",
         description="The URL endpoint, used primarily if you are self-hosting LangSmith or using a specific enterprise instance. (e.g., https://api.smith.langchain.com)",
     )
+    run_name: str = Field(
+        default="",
+        description="The display name for each trace run in LangSmith (e.g., my-agent).",
+    )

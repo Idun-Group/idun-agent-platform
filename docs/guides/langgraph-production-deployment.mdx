@@ -1,0 +1,527 @@
+---
+title: "How to deploy a LangGraph agent to production in 5 minutes"
+sidebarTitle: "LangGraph production deployment"
+description: "Step-by-step tutorial to take a LangGraph agent from a local script to a production API with streaming, guardrails, memory, and observability using Idun Agent Platform."
+keywords: ["LangGraph deployment", "LangGraph production", "LangGraph production API", "deploy LangGraph agent", "LangGraph FastAPI", "LangGraph streaming", "AG-UI protocol", "AI agent deployment"]
+---
+
+You built a LangGraph agent that works in a notebook. Now you need it behind an API with authentication, conversation memory, guardrails, and tracing. This guide takes you from a working `StateGraph` to a production endpoint in under 5 minutes.
+
+## The production gap
+
+LangGraph gives you a graph-based runtime for building agents. It does not give you the infrastructure to serve them. When you move from `graph.invoke()` in a script to handling real traffic, you run into five missing pieces:
+
+<CardGroup cols={2}>
+  <Card title="No API layer" icon="server">
+    No built-in HTTP server. You write FastAPI routes, CORS, request parsing, and streaming yourself. LangServe is deprecated. LangGraph Platform requires a LangSmith account.
+  </Card>
+  <Card title="No conversation memory" icon="database">
+    LangGraph supports checkpointers, but you wire up database connections, async lifecycle, and thread ID routing from HTTP requests yourself.
+  </Card>
+  <Card title="No guardrails" icon="shield">
+    Your agent will process PII, jailbreak attempts, and toxic content unless you build input/output validation from scratch.
+  </Card>
+  <Card title="No observability" icon="chart-line">
+    When a production agent returns garbage at 3am, you need traces. LangGraph has no built-in tracing. You instrument it yourself.
+  </Card>
+</CardGroup>
+
+And one more: **no streaming protocol.** Modern chat UIs expect Server-Sent Events with structured events (text deltas, tool calls, thinking indicators). LangGraph emits raw `astream_events` that you need to map to a protocol your frontend understands.
+
+Idun Agent Platform fills all five gaps. Your `StateGraph` stays unchanged. Idun wraps it into a FastAPI service with AG-UI streaming, configurable memory, guardrails, and multi-provider observability. Configure everything through a YAML file or through the Manager UI.
+
+## What you will build
+
+<Steps>
+  <Step title="Streaming API">
+    A LangGraph agent served as a REST + AG-UI streaming endpoint.
+  </Step>
+  <Step title="Conversation memory">
+    In-memory persistence, upgradeable to PostgreSQL or SQLite.
+  </Step>
+  <Step title="Input guardrails">
+    PII detection that blocks requests before they reach the agent.
+  </Step>
+  <Step title="Observability">
+    Langfuse tracing on every invocation with full LLM call details.
+  </Step>
+</Steps>
+
+## Prerequisites
+
+- Python 3.12+
+- A Gemini API key (or any LangChain-compatible LLM)
+- 5 minutes
+
+<Note>
+  For the Manager UI path, you also need Docker and Docker Compose.
+</Note>
+
+## Choose your path
+
+<Tabs>
+  <Tab title="Config file">
+    Install the engine SDK, write a YAML config, and run the agent from the CLI. Best for developers who want full control and minimal dependencies.
+  </Tab>
+  <Tab title="Manager UI">
+    Clone the repo, start the full platform with Docker Compose, and configure everything through the admin dashboard. Best if you want a visual interface and multi-agent management.
+  </Tab>
+</Tabs>
+
+Both paths produce the same result: a production-ready LangGraph API.
+
+## Step 1: Write your LangGraph agent
+
+This step is the same regardless of which path you choose. Create a project directory with an agent that has tool calling built in:
+
+```bash
+mkdir langgraph-prod && cd langgraph-prod
+mkdir agent && touch agent/__init__.py
+```
+
+```python agent/agent.py
+import os
+
+from langchain_core.tools import tool
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.graph import MessagesState, START, StateGraph
+from langgraph.prebuilt import tools_condition
+
+
+@tool
+def add(a: float, b: float) -> float:
+    """Add two numbers together."""
+    return a + b
+
+
+@tool
+def multiply(a: float, b: float) -> float:
+    """Multiply two numbers together."""
+    return a * b
+
+
+model = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    google_api_key=os.getenv("GEMINI_API_KEY"),
+)
+
+tools = [add, multiply]
+
+
+async def call_model(state: MessagesState):
+    model_with_tools = model.bind_tools(tools)
+    response = await model_with_tools.ainvoke(state["messages"])
+    return {"messages": [response]}
+
+
+async def call_tools(state: MessagesState):
+    from langchain_core.messages import ToolMessage
+
+    tools_by_name = {t.name: t for t in tools}
+    last_message = state["messages"][-1]
+    results = []
+    for tool_call in last_message.tool_calls:
+        t = tools_by_name[tool_call["name"]]
+        result = await t.ainvoke(tool_call["args"])
+        results.append(
+            ToolMessage(
+                content=str(result),
+                tool_call_id=tool_call["id"],
+                name=tool_call["name"],
+            )
+        )
+    return {"messages": results}
+
+
+workflow = StateGraph(MessagesState)
+workflow.add_node("call_model", call_model)
+workflow.add_node("tools", call_tools)
+workflow.add_edge(START, "call_model")
+workflow.add_conditional_edges("call_model", tools_condition)
+workflow.add_edge("tools", "call_model")
+```
+
+Two things matter here:
+
+1. The variable `workflow` is an **uncompiled** `StateGraph`. Do not call `.compile()`. Idun compiles it for you with the configured checkpointer and store.
+2. The state uses `MessagesState` (a `TypedDict` with a single `messages` field). Idun auto-detects this as a chat-mode agent. If your state has additional fields, Idun treats it as a structured-input agent and exposes the full JSON Schema through the capabilities endpoint.
+
+## Step 2: Set up Idun and run the agent
+
+<Tabs>
+  <Tab title="Config file">
+    Install the engine SDK:
+
+    ```bash
+    pip install idun-agent-engine langchain-google-genai
+    ```
+
+    Create `config.yaml` next to your agent directory:
+
+    ```yaml config.yaml
+    server:
+      api:
+        port: 8800
+
+    agent:
+      type: LANGGRAPH
+      config:
+        name: "Production Chatbot"
+        graph_definition: "./agent/agent.py:workflow"
+        checkpointer:
+          type: memory
+    ```
+
+    That is a complete, valid config. Three fields define your entire setup:
+
+    - `type: LANGGRAPH` tells Idun which adapter to use.
+    - `graph_definition: "./agent/agent.py:workflow"` points to your file and variable. Format: `path/to/file.py:variable_name`. Idun dynamically imports it.
+    - `checkpointer.type: memory` enables in-memory conversation persistence. Every request with the same `thread_id` continues the conversation.
+
+    Start the server:
+
+    ```bash
+    export GEMINI_API_KEY="your-gemini-api-key"
+    idun agent serve --source file --path config.yaml
+    ```
+
+    You should see:
+
+    ```
+    Agent 'Production Chatbot' initialized and ready to serve!
+    Starting Idun Agent Engine server on http://localhost:8800...
+    ```
+  </Tab>
+  <Tab title="Manager UI">
+    Clone the platform and start the full stack:
+
+    ```bash
+    git clone https://github.com/Idun-Group/idun-agent-platform.git
+    cd idun-agent-platform
+    cp .env.example .env
+    docker compose -f docker-compose.dev.yml up --build
+    ```
+
+    This starts PostgreSQL, the Manager API (port 8000), and the web UI (port 3000). Open `http://localhost:3000` and create an account.
+
+    From the agent dashboard, click **Create an agent** to launch the wizard.
+
+    ![Agent dashboard](/images/guides/02-agent-dashboard.png)
+
+    **Step 1: Basics.** Name the agent "Production Chatbot" and select LangGraph.
+
+    ![Wizard step 1 — basics](/images/guides/03-create-basics.png)
+
+    **Step 2: Framework config.** Set `graph_definition` to `./agent/agent.py:workflow`.
+
+    ![Wizard step 2 — framework config](/images/guides/04-create-framework.png)
+
+    **Step 3: Enrollment.** The agent is created. The page shows your Manager Host, API Key, and the exact commands to run.
+
+    ![Wizard step 3 — enrollment](/images/guides/05-create-enrollment.png)
+
+    Now open the agent detail page and expand **Connect to Platform** to copy the commands:
+
+    ![Connect to Platform panel](/images/guides/09-connect-to-platform.png)
+
+    Run them in your agent project directory:
+
+    ```bash
+    pip install idun-agent-engine langchain-google-genai
+    export GEMINI_API_KEY="your-gemini-api-key"
+    export IDUN_MANAGER_HOST="http://localhost:8000"
+    export IDUN_AGENT_API_KEY="<your-api-key>"
+    idun agent serve --source manager
+    ```
+
+    Once the engine starts, refresh the agent page. The status changes to **Active**, the engine version appears, and the agent graph renders:
+
+    ![Agent connected — active with graph](/images/guides/10-agent-connected.png)
+  </Tab>
+</Tabs>
+
+Your agent is now live. Open `http://localhost:8800/docs` to see the full OpenAPI spec.
+
+## Step 3: Test the agent
+
+<Tabs>
+  <Tab title="Config file">
+    The canonical endpoint is `POST /agent/run`, which implements the AG-UI streaming protocol used by CopilotKit, Vercel AI SDK, and other modern chat frontends.
+
+    ```bash
+    curl -X POST http://localhost:8800/agent/run \
+      -H "Content-Type: application/json" \
+      -H "Accept: text/event-stream" \
+      -d '{
+        "thread_id": "session-1",
+        "messages": [
+          {"id": "msg-1", "role": "user", "content": "What is 25 multiplied by 17?"}
+        ]
+      }'
+    ```
+
+    You get back a stream of AG-UI events: `RunStarted`, `TextMessageStart`, `ToolCallStart`, `ToolCallEnd`, `TextMessageContent` (with deltas), `TextMessageEnd`, `RunFinished`. Your frontend renders these as they arrive.
+
+    You can also check capabilities and health:
+
+    ```bash
+    curl http://localhost:8800/agent/capabilities
+    curl http://localhost:8800/health
+    ```
+  </Tab>
+  <Tab title="Manager UI">
+    Open your agent's detail page and click the **Chat** tab. Type a message and hit Enter. The agent streams its response in real time, including tool calls.
+
+    ![Chat tab with tool calling conversation](/images/guides/11-chat-conversation.png)
+
+    The chat interface auto-detects agent capabilities (streaming, history, thread ID) and shows the full AG-UI event stream. You can switch threads, view raw events, and copy cURL commands for any request directly from the UI.
+  </Tab>
+</Tabs>
+
+## Step 4: Add your first guardrail
+
+Guardrails validate input and output at the API boundary. They run before and after your agent, blocking requests that violate your policies. Idun uses [Guardrails AI](https://guardrailsai.com) validators, downloaded and run locally.
+
+<Tabs>
+  <Tab title="Config file">
+    Add a `guardrails` section to your `config.yaml`:
+
+    ```yaml config.yaml
+    server:
+      api:
+        port: 8800
+
+    agent:
+      type: LANGGRAPH
+      config:
+        name: "Production Chatbot"
+        graph_definition: "./agent/agent.py:workflow"
+        checkpointer:
+          type: memory
+
+    guardrails:
+      input:
+        - config_id: detect_pii
+          pii_entities: ["EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD"]
+        - config_id: ban_list
+          banned_words: ["ignore previous instructions", "system prompt"]
+    ```
+
+    Set your Guardrails AI API key and restart:
+
+    ```bash
+    export GUARDRAILS_API_KEY="your-guardrails-api-key"
+    idun agent serve --source file --path config.yaml
+    ```
+  </Tab>
+  <Tab title="Manager UI">
+    Navigate to **Guard** in the sidebar to see the full guardrail catalog.
+
+    ![Guardrails catalog](/images/guides/07-guardrails-catalog.png)
+
+    Click **+** on "Detect PII". Check the entities you want to detect (Email, Phone Number, Credit Card) and click **Add Detect PII**.
+
+    ![Create PII guardrail](/images/guides/12-create-pii-guardrail.png)
+
+    Now go to your agent's detail page, scroll down to **Resources & Integrations**, and click **Add guardrails**. Select the Detect PII guardrail you created and click **Save**.
+
+    ![Attach guardrail to agent](/images/guides/16-attach-guardrail.png)
+
+    The Manager recomputes the agent's engine config automatically. Click **Restart** on the agent detail page to reload the engine with the new guardrails.
+  </Tab>
+</Tabs>
+
+On startup, Idun downloads the guardrail validators from the Guardrails AI Hub and initializes them locally. The first start takes 30-60 seconds while models download. Subsequent starts are instant.
+
+Test it by sending a message that contains PII:
+
+<Tabs>
+  <Tab title="Config file">
+    ```bash
+    curl -X POST http://localhost:8800/agent/run \
+      -H "Content-Type: application/json" \
+      -d '{
+        "thread_id": "session-2",
+        "messages": [
+          {"id": "msg-1", "role": "user", "content": "My email is john@company.com and my phone is 555-0123"}
+        ]
+      }'
+    ```
+  </Tab>
+  <Tab title="Manager UI">
+    Go to the **Chat** tab on your agent's detail page and type: "My email is john@company.com and my phone is 555-0123".
+
+    ![Guardrail blocking PII in chat](/images/guides/18-guardrail-blocked.png)
+  </Tab>
+</Tabs>
+
+The request is blocked with HTTP 429 before it ever reaches your agent. The PII guardrail detected an email address and phone number in the input.
+
+Idun supports 15 guardrail types: PII detection, ban lists, toxic language, jailbreak detection, prompt injection, NSFW filtering, bias detection, topic restriction, gibberish detection, competition checks, language validation, code scanning, RAG hallucination detection, Google Model Armor, and custom LLM-based validation.
+
+## Step 5: Add observability with Langfuse
+
+<Tabs>
+  <Tab title="Config file">
+    Add an `observability` section to your `config.yaml`:
+
+    ```yaml
+    observability:
+      - provider: LANGFUSE
+        enabled: true
+        config:
+          host: "https://cloud.langfuse.com"
+          public_key: "pk-lf-your-public-key"
+          secret_key: "sk-lf-your-secret-key"
+          run_name: "production-chatbot"
+    ```
+
+    Restart the server. Every invocation now shows up in your Langfuse dashboard with full traces.
+  </Tab>
+  <Tab title="Manager UI">
+    Navigate to **Observability** in the sidebar to see available providers.
+
+    ![Observability providers](/images/guides/08-observability-catalog.png)
+
+    Click **+** on Langfuse. Fill in your host URL, public key, and secret key, then click **Connect**.
+
+    ![Create Langfuse integration](/images/guides/14-create-langfuse.png)
+
+    Now go to your agent's detail page, scroll down to **Resources & Integrations**, and click **Add observability**. Select the Langfuse integration you created and click **Save**.
+
+    ![Attach observability to agent](/images/guides/15-attach-observability.png)
+
+    The Manager recomputes the agent's engine config automatically. Click **Restart** on the agent detail page to reload the engine with observability enabled.
+  </Tab>
+</Tabs>
+
+Every invocation now shows up in your Langfuse dashboard with full traces: LLM calls, token counts, latencies, tool executions.
+
+![Langfuse trace showing LangGraph agent with tool calls](/images/guides/19-langfuse-trace.png)
+
+Idun supports five observability providers that can run simultaneously:
+
+| Provider | Mechanism |
+|---|---|
+| Langfuse | LangChain callback handler |
+| Arize Phoenix | OpenTelemetry + OpenInference |
+| LangSmith | LangChain callback handler |
+| GCP Cloud Trace | OpenTelemetry span exporter |
+| GCP Cloud Logging | Python logging integration |
+
+Add multiple providers by adding more entries to the `observability` list (or attaching multiple configs in the UI). They do not conflict.
+
+## Step 6: Upgrade to PostgreSQL memory
+
+In-memory checkpointing loses conversations when the server restarts. For production, switch to PostgreSQL.
+
+<Tabs>
+  <Tab title="Config file">
+    ```yaml
+    agent:
+      type: LANGGRAPH
+      config:
+        name: "Production Chatbot"
+        graph_definition: "./agent/agent.py:workflow"
+        checkpointer:
+          type: postgres
+          db_url: "postgresql://postgres:postgres@localhost:5432/agent_memory"
+    ```
+
+    Idun handles the async connection pool, table creation, and lifecycle management. Your agent code does not change.
+
+    For a simpler persistence option, use SQLite:
+
+    ```yaml
+        checkpointer:
+          type: sqlite
+          db_url: "sqlite:///conversations.db"
+    ```
+  </Tab>
+  <Tab title="Manager UI">
+    Navigate to **Memory** in the sidebar. Click **Create**, select PostgreSQL, and enter your connection string. Save.
+
+    Go to your agent's detail page, open the **Overview** tab, and attach the memory config. The Manager recomputes the engine config and injects the checkpointer automatically.
+
+    If you are running the full Docker Compose stack, the PostgreSQL instance is already available at `postgresql://postgres:postgres@db:5432/idun_agents`.
+  </Tab>
+</Tabs>
+
+Your agent code does not change. Only the config does.
+
+## Step 7: Connect a frontend
+
+The `/agent/run` endpoint implements the AG-UI protocol, which is natively supported by CopilotKit and compatible with any SSE-consuming frontend.
+
+<Tabs>
+  <Tab title="Config file">
+    For standalone deployments, any frontend that speaks AG-UI or SSE can connect directly to `http://your-host:8800/agent/run`.
+  </Tab>
+  <Tab title="Manager UI">
+    The Manager dashboard includes a built-in chat interface, health monitoring, configuration management, API key generation, and a graph visualizer. After attaching guardrails and observability, your agent overview looks like this:
+
+    ![Fully configured agent with graph, observability, and guardrails](/images/guides/17-agent-fully-configured.png)
+  </Tab>
+</Tabs>
+
+## Full config.yaml
+
+Here is the complete config file with everything from this guide: agent, guardrails, observability, and PostgreSQL memory. Copy it and adjust the values for your setup.
+
+```yaml config.yaml
+server:
+  api:
+    port: 8800
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: "Production Chatbot"
+    graph_definition: "./agent/agent.py:workflow"
+    checkpointer:
+      type: postgres
+      db_url: "postgresql://postgres:postgres@localhost:5432/agent_memory"
+
+guardrails:
+  input:
+    - config_id: detect_pii
+      pii_entities: ["EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD"]
+    - config_id: ban_list
+      banned_words: ["ignore previous instructions", "system prompt"]
+
+observability:
+  - provider: LANGFUSE
+    enabled: true
+    config:
+      host: "https://cloud.langfuse.com"
+      public_key: "pk-lf-your-public-key"
+      secret_key: "sk-lf-your-secret-key"
+      run_name: "production-chatbot"
+```
+
+## How Idun compares to alternatives
+
+| Capability | Manual FastAPI | LangServe (deprecated) | LangGraph Platform | Idun Agent Platform |
+|---|---|---|---|---|
+| API serving | You build it | Provided | Provided (cloud) | Provided (self-hosted) |
+| AG-UI streaming | You build it | Not supported | Not supported | Built in |
+| Guardrails | You build it | Not supported | Not supported | 15 types, YAML config |
+| Observability | You build it | Limited | LangSmith only | 5 providers, simultaneous |
+| Memory/checkpointing | You wire it | Limited | Built in | YAML config, 3 backends |
+| MCP tool servers | You build it | Not supported | Not supported | YAML config |
+| SSO/OIDC | You build it | Not supported | Cloud-managed | YAML config |
+| Vendor lock-in | None | LangChain ecosystem | LangSmith account required | None (open source, GPL-3.0) |
+| Self-hosted | Yes | Yes | No (cloud only) | Yes |
+
+Idun Agent Platform is open source and self-hosted. Your agent code stays yours. The config file is the only coupling, and it is a plain YAML file you can generate from any tool.
+
+## Next steps
+
+You now have a production LangGraph agent with streaming, memory, guardrails, and observability. From here:
+
+- **Add MCP tool servers** to give your agent access to external tools via the Model Context Protocol. Add an `mcp_servers` section to your config or create one in the MCP page of the dashboard.
+- **Add SSO/OIDC protection** to require JWT authentication on all agent endpoints. Add an `sso` section with your OIDC issuer and client ID, or configure it through the SSO page.
+- **Connect messaging integrations** (WhatsApp, Discord, Slack) to expose your agent on external channels. Each is a config section with provider credentials, or a card in the Integrations page.
+- **Manage prompts** with versioning, Jinja2 variables, and per-agent assignment through the Prompts page.
+
+The full configuration reference is at [/configuration](/configuration). The complete list of guardrail types is at [/guardrails/reference](/guardrails/reference).

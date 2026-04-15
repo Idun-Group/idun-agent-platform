@@ -24,7 +24,7 @@ const PROVIDERS: Record<string, ProviderMeta> = {
     TELEGRAM: { label: 'Telegram', color: '#26A5E4', comingSoon: true },
     LINE: { label: 'LINE', color: '#06C755', comingSoon: true },
     NOTION: { label: 'Notion', color: '#FFFFFF', comingSoon: true },
-    GOOGLE_CHAT: { label: 'Google Chat', color: '#34A853', comingSoon: true },
+    GOOGLE_CHAT: { label: 'Google Chat', color: '#1A73E8' },
 };
 
 const WhatsAppIcon = () => (
@@ -591,7 +591,7 @@ const IntegrationsPage: React.FC = () => {
                         <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
                         <SearchInput placeholder="Search integrations..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </SearchBar>
-                    <DocsButton href="https://idun-group.github.io/idun-agent-platform/integrations/overview/" target="_blank" rel="noopener noreferrer">
+                    <DocsButton href="https://docs.idunplatform.com/integrations/discord" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </DocsButton>
                 </HeaderActions>
@@ -735,6 +735,20 @@ const IntegrationsPage: React.FC = () => {
                                                         <ConfigKey>Signing Secret</ConfigKey>
                                                         <ConfigValue title={config.integration.config.signing_secret}>
                                                             {maskToken(config.integration.config.signing_secret)}
+                                                        </ConfigValue>
+                                                    </ConfigRow>
+                                                </>
+                                            )}
+                                            {provider === 'GOOGLE_CHAT' && 'project_number' in config.integration.config && (
+                                                <>
+                                                    <ConfigRow>
+                                                        <ConfigKey>Project Number</ConfigKey>
+                                                        <ConfigValue>{config.integration.config.project_number}</ConfigValue>
+                                                    </ConfigRow>
+                                                    <ConfigRow>
+                                                        <ConfigKey>Credentials</ConfigKey>
+                                                        <ConfigValue>
+                                                            {maskToken(config.integration.config.service_account_credentials_json)}
                                                         </ConfigValue>
                                                     </ConfigRow>
                                                 </>

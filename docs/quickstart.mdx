@@ -30,11 +30,20 @@ Before you begin, install the following:
       <Step title="Start the platform">
         <Note>Make sure the Docker daemon is running before you proceed.</Note>
 
-        ```bash
-        docker compose -f docker-compose.dev.yml up --build
-        ```
+        <Tabs>
+          <Tab title="Production (pre-built images)">
+            ```bash
+            docker compose up -d
+            ```
+          </Tab>
+          <Tab title="Development (build from source)">
+            ```bash
+            docker compose -f docker-compose.dev.yml up --build
+            ```
+          </Tab>
+        </Tabs>
 
-        This starts PostgreSQL, the Manager API, and the web UI.
+        Both start PostgreSQL, the Manager API, and the web UI.
 
         ![Idun login page](/images/ui/login.png)
       </Step>
@@ -103,7 +112,7 @@ Before you begin, install the following:
         ```
 
         <Info>
-          The `graph_definition` value follows the format `path/to/file.py:variable_name`. The variable must be an uncompiled LangGraph `StateGraph`. The engine compiles it with the configured checkpointer.
+          The `graph_definition` value follows the format `path/to/file.py:variable_name`. The variable should be a `StateGraph` (recommended) or `CompiledStateGraph`. The engine compiles it with the configured checkpointer.
         </Info>
       </Step>
       <Step title="Start the agent">

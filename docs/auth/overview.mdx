@@ -1,7 +1,7 @@
 ---
 title: "Authentication and authorization"
-description: "Configure user authentication with username/password or Google OIDC SSO, and manage access with role-based access control."
-keywords: ["authentication", "authorization", "SSO", "OIDC", "RBAC", "roles", "Google OAuth", "Google OIDC"]
+description: "Configure user authentication with username/password or OIDC SSO (Google, Microsoft), and manage access with role-based access control."
+keywords: ["authentication", "authorization", "SSO", "OIDC", "RBAC", "roles", "Google OAuth", "Google OIDC", "Microsoft", "Azure AD", "Entra ID"]
 ---
 
 Idun Agent Platform supports two authentication modes for the Manager and a per-agent SSO layer for engine route protection. Role-based access control (RBAC) governs what authenticated users can do within each workspace.
@@ -20,22 +20,42 @@ The Manager supports two mutually exclusive authentication modes, controlled by 
 
     No additional configuration is required. This mode is active when `AUTH__DISABLE_USERNAME_PASSWORD` is `false` (the default).
   </Tab>
-  <Tab title="Google OIDC SSO">
-    Enable SSO by setting `AUTH__DISABLE_USERNAME_PASSWORD=true` and configuring Google OAuth credentials.
+  <Tab title="OIDC SSO">
+    Enable SSO by setting `AUTH__DISABLE_USERNAME_PASSWORD=true` and configuring one or more OIDC providers. Each provider is registered automatically when its `client_id` env var is set.
 
-    - `GET /api/v1/auth/login` redirects to Google's authorization page
+    - `GET /api/v1/auth/providers` lists enabled providers
+    - `GET /api/v1/auth/login/{provider}` redirects to the provider's authorization page
     - `GET /api/v1/auth/callback` exchanges the authorization code for tokens and sets a session cookie
     - Users are automatically created on first login
 
-    Required environment variables:
+    <Tabs>
+      <Tab title="Google">
+        ```bash
+        AUTH__DISABLE_USERNAME_PASSWORD=true
+        AUTH__GOOGLE_CLIENT_ID=your-google-client-id
+        AUTH__GOOGLE_CLIENT_SECRET=your-google-client-secret
+        AUTH__REDIRECT_URI=https://your-domain.com/api/v1/auth/callback
+        AUTH__FRONTEND_URL=https://your-domain.com
+        ```
+      </Tab>
+      <Tab title="Microsoft (Entra ID)">
+        ```bash
+        AUTH__DISABLE_USERNAME_PASSWORD=true
+        AUTH__MICROSOFT_CLIENT_ID=your-azure-app-client-id
+        AUTH__MICROSOFT_CLIENT_SECRET=your-azure-app-client-secret
+        # Optional: defaults to "common" (any Entra tenant + personal Microsoft accounts)
+        # AUTH__MICROSOFT_TENANT_ID=common
+        AUTH__REDIRECT_URI=https://your-domain.com/api/v1/auth/callback
+        AUTH__FRONTEND_URL=https://your-domain.com
+        ```
 
-    ```bash
-    AUTH__DISABLE_USERNAME_PASSWORD=true
-    AUTH__GOOGLE_CLIENT_ID=your-google-client-id
-    AUTH__GOOGLE_CLIENT_SECRET=your-google-client-secret
-    AUTH__REDIRECT_URI=https://your-domain.com/api/v1/auth/callback
-    AUTH__FRONTEND_URL=https://your-domain.com
-    ```
+        `AUTH__MICROSOFT_TENANT_ID` defaults to `common`, which uses the multi-tenant Microsoft authority (`https://login.microsoftonline.com/common`) and accepts users from any Entra tenant as well as personal Microsoft accounts (Outlook, Hotmail, Live). Your Entra app registration must also be configured for **multi-tenant + personal Microsoft accounts** (the "Accounts in any organizational directory and personal Microsoft accounts" option).
+
+        To restrict sign-in to a single Entra tenant, set `AUTH__MICROSOFT_TENANT_ID` to that tenant's UUID. The Manager validates that ID tokens are issued by a Microsoft tenant (`https://login.microsoftonline.com/<tenant-uuid>/v2.0`) regardless of which authority is used; the JWKS signature check guarantees the token came from Microsoft.
+      </Tab>
+    </Tabs>
+
+    You can configure both providers simultaneously. The login page will show buttons for each enabled provider.
   </Tab>
 </Tabs>
 
@@ -128,11 +148,14 @@ Protected routes:
 
 ### Supported providers
 
-The Manager currently supports **Google OIDC** for SSO authentication, configured through environment variables. GitHub and Azure AD are planned as future providers.
-
-For per-agent SSO, the engine validates JWTs against any OIDC-compliant provider's JWKS endpoint. The tested and supported provider is:
+The Manager supports the following OIDC providers for SSO authentication:
 
 - **Google Workspace** (issuer: `https://accounts.google.com`)
+- **Microsoft Entra ID / Azure AD** (multi-tenant via `https://login.microsoftonline.com/common`, or single-tenant via `https://login.microsoftonline.com/<tenant-uuid>`)
+
+Both can be enabled simultaneously. The login page shows a button for each configured provider.
+
+For per-agent SSO, the engine validates JWTs against any OIDC-compliant provider's JWKS endpoint.
 
 <Note>
   Domain and email allowlists are applied after JWT signature verification. A valid token from an allowed provider is still rejected if the email domain or address is not in the allowlist.

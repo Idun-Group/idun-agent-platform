@@ -239,6 +239,32 @@ compiled_graph = create_compiled_echo_graph()
 graph = create_echo_graph()
 structured_input_graph = create_structured_input_graph()
 
+
+def _create_compiled_with_user_checkpointer() -> CompiledStateGraph:
+    """Compiled graph with a user-provided checkpointer (should be replaced by engine)."""
+    from langgraph.checkpoint.memory import InMemorySaver
+
+    builder = StateGraph(SimpleState)
+    builder.add_node("echo", echo_node)
+    builder.set_entry_point("echo")
+    builder.add_edge("echo", END)
+    return builder.compile(checkpointer=InMemorySaver())
+
+
+compiled_graph_with_checkpointer = _create_compiled_with_user_checkpointer()
+
+
+def _create_compiled_with_interrupts() -> CompiledStateGraph:
+    """Compiled graph with interrupt_before set (preserved during engine recompilation)."""
+    builder = StateGraph(SimpleState)
+    builder.add_node("echo", echo_node)
+    builder.set_entry_point("echo")
+    builder.add_edge("echo", END)
+    return builder.compile(interrupt_before=["echo"])
+
+
+compiled_graph_with_interrupts = _create_compiled_with_interrupts()
+
 # -----------------------------------------------------------------------------
 # Structured Input/Output Graph (for auto-discovery testing)
 # -----------------------------------------------------------------------------

@@ -1,0 +1,121 @@
+---
+title: "Google Chat"
+description: "Connect your Idun agent to Google Chat so users can interact with it by @mentioning the bot in spaces and direct messages."
+keywords: ["Google Chat", "integration", "bot", "messaging", "webhook", "Google Workspace"]
+---
+
+Connect your Idun agent to Google Chat so users can interact with it by @mentioning the bot in spaces and direct messages.
+
+## Prerequisites
+
+- A running Idun agent (engine)
+- A [Google Workspace](https://workspace.google.com) account with access to Google Chat
+- A [Google Cloud](https://console.cloud.google.com) project (free to create, no billing required for Chat API config)
+- Your engine must be publicly reachable (use [ngrok](https://ngrok.com) for local development)
+
+## Setup
+
+<Tabs>
+  <Tab title="Manager UI">
+    <Steps>
+      <Step title="Open the integrations catalog">
+        Navigate to **Integrations**. The channel catalog shows available channels including Google Chat.
+      </Step>
+
+      <Step title="Create the Google Chat integration">
+        Click **+** on Google Chat and fill in the credentials.
+
+        | Field | Value |
+        |---|---|
+        | `service_account_credentials_json` | Full JSON key file content from your GCP service account |
+        | `project_number` | GCP project number (found on the Cloud Console dashboard) |
+      </Step>
+
+      <Step title="Assign to an agent">
+        After saving, open the agent you want to connect and select the Google Chat integration from the **Integrations** field.
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Config file">
+    <Steps>
+      <Step title="Create a GCP project and enable the Chat API">
+        1. Go to the [Google Cloud Console](https://console.cloud.google.com)
+        2. Create a new project (or use an existing one)
+        3. Navigate to **APIs & Services** > **Library**
+        4. Search for **Google Chat API** and click **Enable**
+      </Step>
+
+      <Step title="Create a service account">
+        1. Go to **IAM & Admin** > **Service Accounts**
+        2. Click **Create Service Account**
+        3. Give it a name (e.g. "idun-chat-bot")
+        4. Click **Done** (no additional roles needed)
+        5. Click on the service account > **Keys** tab > **Add Key** > **Create new key** > **JSON**
+        6. Save the downloaded JSON key file
+      </Step>
+
+      <Step title="Configure the Chat app">
+        1. Go to the [Google Chat API configuration](https://console.cloud.google.com/apis/api/chat.googleapis.com/hangouts-chat)
+        2. Fill in the app details:
+           - **App name**: Your agent's name (this is what users will @mention)
+           - **Avatar URL**: Optional icon URL
+           - **Description**: Brief description of what the bot does
+        3. Under **Connection settings**, select **HTTP endpoint URL**
+        4. Set the URL to:
+
+        ```
+        https://<your-domain>/integrations/google-chat/webhook
+        ```
+
+        5. Under **Authentication Audience**, select **Project Number**
+        6. Under **Visibility**, choose who can discover and use the app
+        7. Click **Save**
+      </Step>
+
+      <Step title="Configure the integration">
+        Add the Google Chat integration to your engine config:
+
+        ```yaml config.yaml
+        integrations:
+          - provider: "GOOGLE_CHAT"
+            enabled: true
+            config:
+              service_account_credentials_json: '{"type": "service_account", "project_id": "my-project", ...}'
+              project_number: "123456789012"
+        ```
+
+        | Field | Description |
+        |---|---|
+        | `service_account_credentials_json` | Full JSON content of the service account key file from step 2 |
+        | `project_number` | GCP project number (found on the Cloud Console project dashboard, not the project ID) |
+
+        <Note>
+          You can also store the credentials JSON in an environment variable and reference it in the config to avoid putting secrets in YAML files.
+        </Note>
+      </Step>
+
+      <Step title="Test it">
+        1. Open Google Chat
+        2. Start a direct message with your bot, or add it to a space
+        3. @mention the bot followed by your message: `@YourBotName do stuff for me`
+        4. Your agent processes the message and replies in the same space
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## How it works
+
+1. User @mentions the bot in a space or sends a direct message
+2. Google Chat POSTs the interaction event to your engine's webhook
+3. Engine verifies the JWT bearer token (signed by `chat@system.gserviceaccount.com`) using the project number as audience
+4. Engine extracts the message text (stripping the @mention prefix via `argumentText`)
+5. Engine invokes the agent with the cleaned text
+6. Engine sends the agent's reply back via the Google Chat API (`spaces.messages.create`)
+
+**Session tracking**: The Google Chat user resource name (`users/123456`) is used as the session ID, so conversation context is maintained per user.
+
+**Bot messages ignored**: The handler skips messages from senders with type `BOT` to avoid infinite loops.
+
+**@mention stripping**: Google Chat provides an `argumentText` field that contains the message text without the @mention. The engine uses this so your agent receives clean input (e.g. "do stuff for me" instead of "@BotName do stuff for me").

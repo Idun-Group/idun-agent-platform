@@ -213,8 +213,10 @@ class AdkAgent(agent_base.BaseAgent):
                             configure_google_adk,
                         )
 
-                        configure_google_adk()
-                        logger.info("LangSmith Google ADK integration configured")
+                        if configure_google_adk(name=self._name):
+                            logger.info("LangSmith Google ADK integration configured")
+                        else:
+                            logger.warning("LangSmith Google ADK integration failed to configure")
                     except ImportError:
                         logger.warning(
                             "langsmith[google-adk] not installed, "

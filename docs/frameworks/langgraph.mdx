@@ -31,7 +31,7 @@ LangGraph is the primary framework integration in Idun Agent Platform. It suppor
 
         ![LangGraph framework configuration step](/images/ui/agents-create-step2.png)
 
-        The graph definition format is `file_path:variable_name`. The file path is relative to where you run the agent. The variable must be an **uncompiled** `StateGraph` (the engine compiles it with the checkpointer).
+        The graph definition format is `file_path:variable_name`. The file path is relative to where you run the agent. The variable should be a `StateGraph` (the engine compiles it with the checkpointer). A `CompiledStateGraph` is also accepted but will be recompiled.
       </Step>
       <Step title="Enroll your agent">
         Step 3 gives you the enrollment instructions. In your agent's project directory:
@@ -103,13 +103,13 @@ graph.add_node("chatbot", chatbot)
 graph.add_edge(START, "chatbot")
 graph.add_edge("chatbot", END)
 
-# Do NOT call graph.compile() here.
-# Export the uncompiled StateGraph.
+# Exporting the uncompiled StateGraph is recommended.
+# The engine compiles it with the configured checkpointer.
 ```
 
-<Warning>
-  You must export an **uncompiled** `StateGraph`. The engine compiles the graph internally to attach the checkpointer and platform features. Exporting a `CompiledStateGraph` (the result of `.compile()`) will raise an error at startup.
-</Warning>
+<Note>
+  Exporting an uncompiled `StateGraph` is recommended. If you export a `CompiledStateGraph` (the result of `.compile()`), the engine will extract the original `StateGraph` via `.builder` and recompile it with the engine-managed checkpointer and store. Compile options like `interrupt_before` and `interrupt_after` are preserved. A warning is logged when this happens.
+</Note>
 
 ## The `graph_definition` field
 

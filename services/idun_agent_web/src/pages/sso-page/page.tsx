@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { BookOpen } from 'lucide-react';
 import { fetchSSOs, deleteSSO } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
 import CreateSsoModal from '../../components/applications/create-sso-modal/component';
@@ -71,6 +72,29 @@ const SearchInput = styled.input`
     width: 180px;
 
     &::placeholder { color: hsl(var(--muted-foreground)); }
+`;
+
+const DocsButton = styled.a`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 38px;
+    background: var(--overlay-light);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+    &:hover {
+        color: hsl(var(--foreground));
+        border-color: var(--border-medium);
+        background: var(--overlay-medium);
+    }
 `;
 
 const AddButton = styled.button`
@@ -388,6 +412,9 @@ const SSOPage: React.FC = () => {
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </SearchBar>
+                    <DocsButton href="https://docs.idunplatform.com/auth/overview" target="_blank" rel="noopener noreferrer">
+                        <BookOpen size={15} /> Docs
+                    </DocsButton>
                     <AddButton onClick={openCreate}>
                         + Add SSO config
                     </AddButton>

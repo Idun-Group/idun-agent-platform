@@ -32,8 +32,18 @@ export default function AgentFormPage() {
     const [currentStep, setCurrentStep] = useState(0);
     const [state, setState] = useState<WizardState>(INITIAL_WIZARD_STATE);
 
+    const toSnakeCase = (s: string) =>
+        s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
     const updateField = useCallback((field: string, value: string) => {
-        setState(prev => ({ ...prev, [field]: value }));
+        setState(prev => {
+            const next = { ...prev, [field]: value };
+            // Auto-derive adkAppName from agent name
+            if (field === 'name') {
+                next.adkAppName = toSnakeCase(value);
+            }
+            return next;
+        });
     }, []);
 
     const canGoNext = (): boolean => {

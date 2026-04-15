@@ -9,21 +9,51 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
 ## Deployment modes
 
 <Tabs>
-  <Tab title="Managed (full stack)">
-    Deploy the Manager API, PostgreSQL database, and web UI together. Agents fetch their config from the Manager at startup.
+  <Tab title="Production (pre-built images)">
+    Pull published Docker images from Docker Hub and start the full stack. No build step required — this is the recommended approach for production and self-hosted deployments.
+
+    ```bash
+    git clone https://github.com/Idun-Group/idun-agent-platform.git
+    cd idun-agent-platform
+    # Edit docker-compose.yml: set AUTH__SECRET_KEY to a strong random value
+    docker compose up -d
+    ```
+
+    The Manager API is available at `http://localhost:8000` and the web UI at `http://localhost:3000`.
+
+    This mode suits:
+    - Production deployments
+    - Self-hosted environments
+    - Multi-agent deployments
+    - Teams that need centralized configuration and RBAC
+  </Tab>
+  <Tab title="Development (hot reload)">
+    Build images locally from source with hot reload enabled for the Manager and web UI. Requires the full repository checkout.
+
+    **Production** (prebuilt images from Docker Hub):
 
     ```bash
     git clone https://github.com/Idun-Group/idun-agent-platform.git
     cd idun-agent-platform
     cp .env.example .env
+    docker compose up
+    ```
+
+    **Development** (builds from source, hot reload):
+
+    ```bash
     docker compose -f docker-compose.dev.yml up --build
     ```
 
+    **Build from source** (production images built locally):
+
+    ```bash
+    docker compose -f docker-compose.build.yml up --build
+    ```
+
     This mode suits:
-    - Multi-agent deployments
-    - Teams that need centralized configuration
-    - Workspace isolation and RBAC
-    - Non-technical team members who prefer a UI
+    - Local development and testing
+    - Contributing to the platform
   </Tab>
   <Tab title="Standalone engine">
     Run a single agent from a YAML config file. No Manager, no database, no web UI required.
@@ -34,11 +64,27 @@ Idun Agent Platform supports two deployment modes depending on your needs. You c
     ```
 
     This mode suits:
-    - Local development and testing
     - Single-agent deployments
     - CI/CD pipelines where you version config in Git
   </Tab>
 </Tabs>
+
+## Docker Compose variants
+
+| File | Purpose | Images |
+|---|---|---|
+| `docker-compose.yml` | Production | Pulls prebuilt images from Docker Hub |
+| `docker-compose.build.yml` | Build from source | Builds images locally from Dockerfiles |
+| `docker-compose.dev.yml` | Development | Builds from source with hot reload, Vite dev server |
+| `docker-compose.debug.yml` | Debug overlay | Adds debugpy to the manager (use with `-f` alongside dev) |
+
+All production and build compose files use `env_file: .env` for secrets and configuration. Copy `.env.example` to `.env` before starting.
+
+To include the demo agent service, add the `demo` profile:
+
+```bash
+docker compose --profile demo up
+```
 
 ## Agent lifecycle management
 
@@ -73,47 +119,16 @@ In managed mode, the platform consists of three services and a database:
 
 | Component | Description | Default port |
 |---|---|---|
-| **Manager** | FastAPI control plane API for agent configuration, auth, and workspace management | 8000 |
-| **Web UI** | React admin dashboard | 3000 |
+| **Manager** | FastAPI control plane API for agent configuration, auth, and workspace management | 8080 |
+| **Web UI** | React admin dashboard (nginx in production, Vite in dev) | 3000 |
 | **PostgreSQL** | Stores agent configs, user accounts, workspace data | 5432 |
-| **Agent engines** | Your agent services, each running the Idun engine SDK | 8008+ |
-
-```yaml docker-compose.dev.yml
-services:
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: idun
-      POSTGRES_PASSWORD: idun
-      POSTGRES_DB: idun
-    ports:
-      - "5432:5432"
-
-  manager:
-    build:
-      context: .
-      dockerfile: services/idun_agent_manager/Dockerfile
-    ports:
-      - "8000:8000"
-    environment:
-      DATABASE__URL: postgresql+asyncpg://idun:idun@postgres:5432/idun
-    depends_on:
-      - postgres
-
-  web:
-    build:
-      context: services/idun_agent_web
-    ports:
-      - "3000:3000"
-    depends_on:
-      - manager
-```
+| **Agent engines** | Your agent services, each running the Idun engine SDK | 8000+ |
 
 ## Prerequisites
 
 | Requirement | Standalone | Managed |
 |---|---|---|
-| Python 3.12+ | Yes | Yes |
+| Python 3.12+ | Yes | Yes (for agent services) |
 | Docker + Docker Compose | No | Yes |
 | PostgreSQL 16 | No | Yes (included in Docker Compose) |
 | `idun-agent-engine` package | Yes | Yes (for agent services) |
