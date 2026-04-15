@@ -54,7 +54,11 @@ async def configure_app(app: FastAPI, engine_config):
         guardrails = []
 
     # Use ConfigBuilder's centralized agent initialization, passing the registry
-    mcp_registry = MCPClientRegistry(engine_config.mcp_servers or [])
+    try:
+        mcp_registry = MCPClientRegistry(engine_config.mcp_servers or [])
+    except Exception as e:
+        logger.exception(f"⚠️ Failed to initialize MCP registry: {e}, continuing without MCP servers")
+        mcp_registry = MCPClientRegistry()
     set_active_registry(mcp_registry)
     app.state.mcp_registry = mcp_registry
     try:

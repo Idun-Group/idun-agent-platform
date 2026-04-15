@@ -374,7 +374,7 @@ class TestConfigBuilderWithConfigFromAPI:
         mock_response.json.return_value = {"error": "Unauthorized"}
         mock_get.return_value = mock_response
 
-        with pytest.raises(ValueError, match="Error sending retrieving config"):
+        with pytest.raises(ValueError, match="Error retrieving config from url"):
             ConfigBuilder().with_config_from_api(
                 agent_api_key="invalid-key", url="http://localhost:8000"
             )
@@ -859,6 +859,195 @@ class TestConfigBuilderPrompts:
 
         engine_config = builder.build()
         assert engine_config.prompts is None
+
+
+@pytest.mark.unit
+class TestConfigBuilderMCPServers:
+    """Test MCP server configuration in ConfigBuilder."""
+
+    _BASE_AGENT = {
+        "type": "LANGGRAPH",
+        "config": {"name": "MCP Agent", "graph_definition": "./agent.py:graph"},
+    }
+
+    _STDIO_MCP = {
+        "name": "time",
+        "transport": "stdio",
+        "command": "docker",
+        "args": ["run", "-i", "--rm", "mcp/time"],
+    }
+
+    _HTTP_MCP = {
+        "name": "docs",
+        "transport": "streamable_http",
+        "url": "https://docs.example.com/mcp",
+    }
+
+    def test_build_includes_mcp_servers_when_set(self, tmp_path: Path) -> None:
+        """build() includes MCP servers in the EngineConfig."""
+        from idun_agent_schema.engine.mcp_server import MCPServer
+
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="MCP Agent", graph_definition=str(tmp_path / "agent.py:graph")
+        )
+        builder._mcp_servers = [MCPServer.model_validate(self._STDIO_MCP)]
+        engine_config = builder.build()
+        assert engine_config.mcp_servers is not None
+        assert len(engine_config.mcp_servers) == 1
+        assert engine_config.mcp_servers[0].name == "time"
+        assert engine_config.mcp_servers[0].transport == "stdio"
+
+    def test_build_mcp_servers_none_by_default(self) -> None:
+        """build() sets mcp_servers to None when not configured."""
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="No MCP Agent", graph_definition="./agent.py:graph"
+        )
+        engine_config = builder.build()
+        assert engine_config.mcp_servers is None
+
+    def test_from_dict_preserves_mcp_servers(self) -> None:
+        """from_dict copies MCP servers into the builder."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": self._BASE_AGENT,
+            "mcp_servers": [self._STDIO_MCP],
+        }
+        builder = ConfigBuilder.from_dict(config_dict)
+        assert builder._mcp_servers is not None
+        assert len(builder._mcp_servers) == 1
+
+        engine_config = builder.build()
+        assert engine_config.mcp_servers is not None
+        assert engine_config.mcp_servers[0].name == "time"
+        assert engine_config.mcp_servers[0].transport == "stdio"
+        assert engine_config.mcp_servers[0].command == "docker"
+
+    def test_from_engine_config_preserves_mcp_servers(self, tmp_path: Path) -> None:
+        """from_engine_config copies MCP servers into the builder."""
+        from idun_agent_schema.engine.mcp_server import MCPServer
+
+        builder = ConfigBuilder().with_langgraph_agent(
+            name="MCP Agent", graph_definition=str(tmp_path / "agent.py:graph")
+        )
+        builder._mcp_servers = [MCPServer.model_validate(self._HTTP_MCP)]
+        engine_config = builder.build()
+
+        new_builder = ConfigBuilder.from_engine_config(engine_config)
+        assert new_builder._mcp_servers is not None
+        assert len(new_builder._mcp_servers) == 1
+        assert new_builder._mcp_servers[0].name == "docs"
+        assert new_builder._mcp_servers[0].transport == "streamable_http"
+        assert new_builder._mcp_servers[0].url == "https://docs.example.com/mcp"
+
+    def test_from_dict_empty_mcp_servers_list(self) -> None:
+        """from_dict treats empty mcp_servers list as None."""
+        config_dict = {
+            "server": {"api": {"port": 8000}},
+            "agent": self._BASE_AGENT,
+            "mcp_servers": [],
+        }
+        builder = ConfigBuilder.from_dict(config_dict)
+        engine_config = builder.build()
+        # Empty list is preserved (not coerced to None) — Pydantic keeps it
+        assert engine_config.mcp_servers is not None
+        assert len(engine_config.mcp_servers) == 0
+
+    @patch("requests.get")
+    def test_with_config_from_api_parses_mcp_servers(self, mock_get: Mock) -> None:
+        """with_config_from_api parses MCP servers from API response."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 8000}},
+                    "agent": self._BASE_AGENT,
+                    "mcp_servers": [self._STDIO_MCP, self._HTTP_MCP],
+                }
+            }
+        )
+        mock_get.return_value = mock_response
+
+        builder = ConfigBuilder().with_config_from_api(
+            agent_api_key="test-key", url="http://localhost:8000"
+        )
+
+        engine_config = builder.build()
+        assert engine_config.mcp_servers is not None
+        assert len(engine_config.mcp_servers) == 2
+        assert engine_config.mcp_servers[0].name == "time"
+        assert engine_config.mcp_servers[0].transport == "stdio"
+        assert engine_config.mcp_servers[0].command == "docker"
+        assert engine_config.mcp_servers[1].name == "docs"
+        assert engine_config.mcp_servers[1].transport == "streamable_http"
+        assert engine_config.mcp_servers[1].url == "https://docs.example.com/mcp"
+
+    @patch("requests.get")
+    def test_with_config_from_api_without_mcp_servers(self, mock_get: Mock) -> None:
+        """with_config_from_api sets mcp_servers to None when not in response."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 8000}},
+                    "agent": self._BASE_AGENT,
+                }
+            }
+        )
+        mock_get.return_value = mock_response
+
+        builder = ConfigBuilder().with_config_from_api(
+            agent_api_key="test-key", url="http://localhost:8000"
+        )
+
+        engine_config = builder.build()
+        assert engine_config.mcp_servers is None
+
+    @patch("requests.get")
+    def test_with_config_from_api_full_config(self, mock_get: Mock) -> None:
+        """with_config_from_api parses all sections together."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 9000}},
+                    "agent": self._BASE_AGENT,
+                    "mcp_servers": [self._STDIO_MCP],
+                    "observability": [
+                        {
+                            "provider": "LANGFUSE",
+                            "enabled": True,
+                            "config": {
+                                "host": "https://cloud.langfuse.com",
+                                "public_key": "pk",
+                                "secret_key": "sk",
+                            },
+                        }
+                    ],
+                    "sso": {
+                        "issuer": "https://accounts.google.com",
+                        "client_id": "cid",
+                    },
+                }
+            }
+        )
+        mock_get.return_value = mock_response
+
+        builder = ConfigBuilder().with_config_from_api(
+            agent_api_key="test-key", url="http://localhost:8000"
+        )
+
+        engine_config = builder.build()
+        assert engine_config.server.api.port == 9000
+        assert engine_config.agent.config.name == "MCP Agent"
+        assert engine_config.mcp_servers is not None
+        assert len(engine_config.mcp_servers) == 1
+        assert engine_config.observability is not None
+        assert len(engine_config.observability) == 1
+        assert engine_config.sso is not None
+        assert engine_config.sso.issuer == "https://accounts.google.com"
 
 
 @pytest.mark.unit
