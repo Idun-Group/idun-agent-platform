@@ -1,6 +1,6 @@
 [project]
 name = "idun-agent-engine"
-version = "0.5.2"
+version = "0.5.3"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
 requires-python = ">=3.12,<3.13"
@@ -42,6 +42,7 @@ dependencies = [
     # Agent frameworks and orchestration
     "deepagents>=0.2.8,<1.0.0",
     "langgraph>=1.0.0,<2.0.0",
+    "langgraph-prebuilt==1.0.8",
     "langgraph-checkpoint-sqlite>=3.0.0,<4.0.0",
     "langgraph-checkpoint-postgres>=3.0.0,<4.0.0",
     "google-adk>=1.19.0,<2.0.0",

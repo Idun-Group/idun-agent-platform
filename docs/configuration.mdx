@@ -74,7 +74,7 @@ Values support `${ENV_VAR}` syntax for referencing environment variables at load
 
 **`agent`** -- Framework type and framework-specific settings. The `config` fields change based on the `type` value. Supported types: `LANGGRAPH`, `ADK`. See the [frameworks overview](/frameworks/overview) for per-framework config details.
 
-For LangGraph, provide an uncompiled `StateGraph` via `graph_definition` (`path/to/file.py:variable_name`). The engine compiles it with the configured checkpointer.
+For LangGraph, provide a `StateGraph` via `graph_definition` (`path/to/file.py:variable_name`). The engine compiles it with the configured checkpointer. A `CompiledStateGraph` is also accepted (the engine extracts `.builder` and recompiles).
 
 **`observability`** -- A list of providers, each with `provider`, `enabled`, and `config`. Multiple providers can be active simultaneously. Supported: `LANGFUSE`, `PHOENIX`, `GCP_TRACE`, `GCP_LOGGING`, `LANGSMITH`. See [observability guides](/observability/overview).
 

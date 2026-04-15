@@ -54,7 +54,7 @@ idun_agent_engine/
 │   ├── registry        # MCPClientRegistry wrapping langchain-mcp-adapters MultiServerMCPClient
 │   └── helpers         # get_langchain_tools(), get_adk_tools() — convenience functions
 ├── templates/          # Pre-built LangGraph agents (translation, correction, deep_research). Ignore.
-└── telemetry/          # Anonymous usage telemetry (PostHog). Opt-out: IDUN_TELEMETRY_ENABLED=false
+└── telemetry/          # Anonymous usage telemetry (PostHog). Opt-out: IDUN_TELEMETRY_ENABLED=false. Tag deployment: IDUN_DEPLOYMENT_TYPE=cloud|self-hosted
 
 idun_platform_cli/
 ├── main.py             # CLI entry: `idun agent serve`, `idun init`
@@ -198,7 +198,7 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 
 | Adapter | Config Model | Graph Loading | Streaming | CopilotKit |
 |---|---|---|---|---|
-| **LanggraphAgent** | `LangGraphAgentConfig` | `graph_definition` → dynamic import → expects **uncompiled `StateGraph`** (engine compiles it with checkpointer/store) | Full AG-UI event stream via `astream_events` | `LangGraphAGUIAgent` |
+| **LanggraphAgent** | `LangGraphAgentConfig` | `graph_definition` → dynamic import → accepts `StateGraph` (preferred) or `CompiledStateGraph` (extracts `.builder`, recompiles with engine checkpointer/store, logs warning) | Full AG-UI event stream via `astream_events` | `LangGraphAGUIAgent` |
 | **AdkAgent** | `AdkAgentConfig` | `agent` field → dynamic import | Not implemented | `ADKAGUIAgent` |
 | **HaystackAgent** | `HaystackAgentConfig` | `component_definition` → dynamic import → `Pipeline` or `Agent` | Not implemented | Not supported |
 
@@ -324,4 +324,4 @@ make mypy
 - Schema changes go in `idun_agent_schema` first, then consumed here.
 - Observability config is top-level in the YAML, not nested inside `agent.config` (agent-level is deprecated).
 - Dynamic imports for agent loading: file path first, Python module fallback.
-- `CompiledStateGraph` is **rejected** — always provide an uncompiled `StateGraph`. The engine compiles it.
+- `CompiledStateGraph` is **accepted** — the engine extracts `.builder` and recompiles with its own checkpointer/store. Compile options (`interrupt_before`/`interrupt_after`) are preserved. A warning is logged. Providing an uncompiled `StateGraph` is preferred. Note: `.builder` is an internal LangGraph attribute (verified on langgraph 1.x), not part of the public API.

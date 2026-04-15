@@ -1,8 +1,9 @@
 """Configuration models for ADK agents."""
 
+import re
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .base_agent import BaseAgentConfig
 
@@ -75,10 +76,17 @@ class AdkAgentConfig(BaseAgentConfig):
     agent: str = Field(
         ..., description="Agent definition (e.g. module.path:agent_instance)"
     )
-    app_name: str = Field(..., description="Application name for the agent")
+    app_name: str = Field(default="", description="Application name for the agent")
     session_service: SessionServiceConfig | None = Field(
         default=None, description="Session service configuration"
     )
     memory_service: MemoryServiceConfig | None = Field(
         default=None, description="Memory service configuration"
     )
+
+    @model_validator(mode="after")
+    def _default_app_name_from_name(self) -> "AdkAgentConfig":
+        """Derive app_name from name if not explicitly provided."""
+        if not self.app_name and self.name:
+            self.app_name = re.sub(r"[^a-z0-9]+", "_", self.name.lower()).strip("_")
+        return self

@@ -22,7 +22,6 @@ from idun_agent_schema.engine.mcp_server import MCPServer
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 from idun_agent_schema.engine.prompt import PromptConfig
 from idun_agent_schema.engine.sso import SSOConfig
-from yaml import YAMLError
 
 from idun_agent_engine.server.server_config import ServerAPIConfig
 
@@ -98,118 +97,39 @@ class ConfigBuilder:
         return self
 
     def with_config_from_api(self, agent_api_key: str, url: str) -> "ConfigBuilder":
-        """Fetches the yaml config file, from idun agent manager api.
+        """Fetch config from the idun agent manager API and populate the builder.
 
         Requires the agent api key to pass in the headers.
         """
-        import requests
+        import requests  # TODO: replace with httpx
         import yaml
 
         headers = {"auth": f"Bearer {agent_api_key}"}
         try:
             logger.info(f"Fetching config from {url}/api/v1/agents/config")
-            response = requests.get(url=url + "/api/v1/agents/config", headers=headers)
+            response = requests.get(
+                url=url + "/api/v1/agents/config", headers=headers
+            )
             if response.status_code != 200:
                 raise ValueError(
-                    f"Error sending retrieving config from url. response : {response.json()}"
+                    f"Error retrieving config from url. response: {response.text}"
                 )
-            yaml_config = yaml.safe_load(response.text)
-            try:
-                self._server_config = yaml_config.get("engine_config", {}).get("server")
-            except Exception as e:
-                raise YAMLError(
-                    f"Failed to parse yaml file for  ServerConfig: {e}"
-                ) from e
-            try:
-                self._agent_config = yaml_config.get("engine_config", {}).get("agent")
-            except Exception as e:
-                raise YAMLError(
-                    f"Failed to parse yaml file for Engine config: {e}"
-                ) from e
-            try:
-                guardrails_data = yaml_config.get("engine_config", {}).get("guardrails")
+            raw = yaml.safe_load(response.text)
+            engine_data = raw.get("engine_config", {})
+            engine_config = EngineConfig.model_validate(engine_data)
 
-                if not guardrails_data:
-                    self._guardrails = None
-                else:
-                    self._guardrails = Guardrails.model_validate(guardrails_data)
-
-            except Exception as e:
-                raise YAMLError(f"Failed to parse yaml file for Guardrails: {e}") from e
-
-            try:
-                observability_list = yaml_config.get("engine_config", {}).get(
-                    "observability"
-                )
-                if observability_list:
-                    self._observability = [
-                        ObservabilityConfig.model_validate(obs)
-                        for obs in observability_list
-                    ]
-                else:
-                    self._observability = None
-            except Exception as e:
-                raise YAMLError(
-                    f"Failed to parse yaml file for Observability: {e}"
-                ) from e
-            try:
-                sso_data = yaml_config.get("engine_config", {}).get("sso")
-                if sso_data:
-                    self._sso = SSOConfig.model_validate(sso_data)
-                else:
-                    self._sso = None
-            except Exception as e:
-                raise YAMLError(f"Failed to parse yaml file for SSO: {e}") from e
-
-            # try:
-            #     mcp_servers_list = yaml_config.get("engine_config", {}).get("mcp_servers") or yaml_config.get("engine_config", {}).get("mcpServers") # TODO to fix camelcase issues
-            #     if mcp_servers_list:
-            #         self._mcp_servers = [
-            #             MCPServer.model_validate(server) for server in mcp_servers_list
-            #         ]
-            #     else:
-            #         self._mcp_servers = None
-            # except Exception as e:
-            #     raise YAMLError(f"Failed to parse yaml file for MCP Servers: {e}") from e
-
-            try:
-                from idun_agent_schema.engine.integrations import IntegrationConfig
-
-                integrations_list = yaml_config.get("engine_config", {}).get(
-                    "integrations"
-                )
-                if integrations_list:
-                    self._integrations = [
-                        IntegrationConfig.model_validate(i) for i in integrations_list
-                    ]
-                else:
-                    self._integrations = None
-            except Exception as e:
-                raise YAMLError(
-                    f"Failed to parse yaml file for Integrations: {e}"
-                ) from e
-
-            try:
-                prompts_list = yaml_config.get("engine_config", {}).get("prompts")
-                if prompts_list:
-                    self._prompts = [
-                        PromptConfig.model_validate(p) for p in prompts_list
-                    ]
-                    logger.info(
-                        f"Loaded {len(self._prompts)} prompt(s) from API config"
-                    )
-                else:
-                    self._prompts = None
-                    logger.debug("No prompts found in API config")
-            except Exception as e:
-                raise YAMLError(
-                    f"Failed to parse yaml file for Prompts: {e}"
-                ) from e
+            self._server_config = engine_config.server
+            self._agent_config = engine_config.agent
+            self._guardrails = engine_config.guardrails
+            self._observability = engine_config.observability
+            self._mcp_servers = engine_config.mcp_servers
+            self._sso = engine_config.sso
+            self._integrations = engine_config.integrations
+            self._prompts = engine_config.prompts
 
             return self
-
         except Exception as e:
-            raise ValueError(f"Error occured while getting config from api: {e}") from e
+            raise ValueError(f"Error occurred while getting config from api: {e}") from e
 
     def with_langgraph_agent(
         self,

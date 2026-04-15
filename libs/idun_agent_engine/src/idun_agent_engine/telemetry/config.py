@@ -3,8 +3,28 @@
 from __future__ import annotations
 
 import os
+from typing import Literal
 
 IDUN_TELEMETRY_ENABLED_ENV = "IDUN_TELEMETRY_ENABLED"
+IDUN_DEPLOYMENT_TYPE_ENV = "IDUN_DEPLOYMENT_TYPE"
+
+DeploymentType = Literal["cloud", "self-hosted"]
+
+
+def get_deployment_type(environ: dict[str, str] | None = None) -> DeploymentType:
+    """Return the deployment type for telemetry tagging.
+
+    Reads ``IDUN_DEPLOYMENT_TYPE``. Accepted values: ``cloud``, ``self-hosted``.
+    Defaults to ``self-hosted`` for any unrecognised or missing value.
+
+    The cloud deployment sets ``IDUN_DEPLOYMENT_TYPE=cloud`` in its environment.
+    Self-hosted users never need to set this — the default is correct.
+    """
+    env = os.environ if environ is None else environ
+    raw = env.get(IDUN_DEPLOYMENT_TYPE_ENV, "").strip().lower()
+    if raw == "cloud":
+        return "cloud"
+    return "self-hosted"
 
 
 def telemetry_enabled(environ: dict[str, str] | None = None) -> bool:

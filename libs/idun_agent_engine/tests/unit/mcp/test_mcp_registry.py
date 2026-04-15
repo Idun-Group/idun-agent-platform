@@ -193,7 +193,7 @@ class TestMCPRegistryGetTools:
 
         tools = await registry.get_tools()
         assert tools == mock_tools
-        registry._client.get_tools.assert_called_once_with(server_name=None)
+        registry._client.get_tools.assert_called_once_with(server_name="test-server")
 
     @pytest.mark.asyncio
     async def test_get_tools_with_server_name(self):

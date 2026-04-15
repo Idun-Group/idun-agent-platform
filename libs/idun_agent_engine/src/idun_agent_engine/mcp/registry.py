@@ -87,6 +87,25 @@ def _sanitize_schema(schema: Any) -> None:
             _sanitize_schema(item)
 
 
+_active_registry: MCPClientRegistry | None = None
+
+
+def set_active_registry(registry: MCPClientRegistry | None) -> None:
+    """Set the process-wide active MCP registry.
+
+    Called by the engine lifespan on startup so that helper functions
+    (get_langchain_tools, get_adk_tools) can resolve tools from memory
+    instead of re-fetching from the manager API.
+    """
+    global _active_registry
+    _active_registry = registry
+
+
+def get_active_registry() -> MCPClientRegistry | None:
+    """Return the active MCP registry, or None if not set."""
+    return _active_registry
+
+
 class MCPClientRegistry:
     """Wraps `MultiServerMCPClient` with convenience helpers."""
 
@@ -95,11 +114,26 @@ class MCPClientRegistry:
         self._client: MultiServerMCPClient | None = None
 
         if self._configs:
-            connections: dict[str, Connection] = {
-                config.name: cast(Connection, config.as_connection_dict())
-                for config in self._configs
-            }
-            self._client = MultiServerMCPClient(connections)
+            connections: dict[str, Connection] = {}
+            for config in self._configs:
+                try:
+                    connections[config.name] = cast(
+                        Connection, config.as_connection_dict()
+                    )
+                except Exception:
+                    logger.exception(
+                        "⚠️ Failed to build connection for MCP server '%s', skipping.",
+                        config.name,
+                    )
+
+            if connections:
+                try:
+                    self._client = MultiServerMCPClient(connections)
+                except Exception:
+                    logger.exception(
+                        "⚠️ Failed to create MultiServerMCPClient, "
+                        "continuing without MCP servers."
+                    )
 
     @property
     def enabled(self) -> bool:
@@ -140,10 +174,30 @@ class MCPClientRegistry:
         return self.client.session(name)
 
     async def get_tools(self, name: str | None = None) -> list[Any]:
-        """Load tools from all servers or a specific one."""
+        """Load tools from all servers or a specific one.
+
+        When loading from all servers, each server is tried individually
+        so a single broken server does not prevent the others from loading.
+        """
         if not self._client:
             raise RuntimeError("MCP client registry is not enabled.")
-        tools = await self._client.get_tools(server_name=name)
+
+        if name:
+            tools = await self._client.get_tools(server_name=name)
+        else:
+            tools = []
+            for server_name in self._client.connections:
+                try:
+                    server_tools = await self._client.get_tools(
+                        server_name=server_name
+                    )
+                    tools.extend(server_tools)
+                except Exception:
+                    logger.exception(
+                        "⚠️ Failed to load tools from MCP server '%s', skipping.",
+                        server_name,
+                    )
+
         for tool in tools:
             if hasattr(tool, "args_schema"):
                 _sanitize_schema(tool.args_schema)

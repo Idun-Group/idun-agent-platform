@@ -2,7 +2,6 @@
 
 Initializes the agent at startup and cleans up resources on shutdown.
 """
-
 import inspect
 import logging
 from collections.abc import Sequence
@@ -10,6 +9,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from idun_agent_schema.engine.guardrails import Guardrails
+
+from idun_agent_engine.mcp.registry import MCPClientRegistry, set_active_registry
 
 from ..core.config_builder import ConfigBuilder
 from ..guardrails.base import BaseGuardrail
@@ -32,6 +33,7 @@ def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
 
 async def cleanup_agent(app: FastAPI):
     """Clean up agent resources."""
+    set_active_registry(None)
     agent = getattr(app.state, "agent", None)
     if agent is not None:
         close_fn = getattr(agent, "close", None)
@@ -44,13 +46,23 @@ async def cleanup_agent(app: FastAPI):
 async def configure_app(app: FastAPI, engine_config):
     """Initialize the agent, MCP registry, guardrails, and app state with the given engine config."""
     guardrails_obj = engine_config.guardrails
-    guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
-
-    logger.debug(f"Guardrails: {guardrails}")
+    try:
+        guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
+        logger.debug(f"Guardrails: {guardrails}")
+    except Exception as e:
+        logger.exception(f"Failed to parse guardrails: {e}, continuing without them")
+        guardrails = []
 
     # Use ConfigBuilder's centralized agent initialization, passing the registry
     try:
-        agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config)
+        mcp_registry = MCPClientRegistry(engine_config.mcp_servers or [])
+    except Exception as e:
+        logger.exception(f"⚠️ Failed to initialize MCP registry: {e}, continuing without MCP servers")
+        mcp_registry = MCPClientRegistry()
+    set_active_registry(mcp_registry)
+    app.state.mcp_registry = mcp_registry
+    try:
+        agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config, mcp_registry)
     except Exception as e:
         raise ValueError(
             f"Error retrieving agent instance from ConfigBuilder: {e}"
@@ -61,14 +73,29 @@ async def configure_app(app: FastAPI, engine_config):
     app.state.engine_config = engine_config
 
     app.state.guardrails = guardrails
+    mcp_servers = engine_config.mcp_servers
+    if mcp_servers:
+        try:
+            app.state.mcp_servers = mcp_servers
+            for s in mcp_servers:
+                logger.info(
+                    f"🔧 MCP Server {s.name}: [{s.transport.upper()}] {s.url or s.command}"
+                )
+        except Exception as e:
+            logger.exception(f"Failed to assign mcp servers to agent: {e}, continuing without them")
+            mcp_servers = []
 
     # SSO / OIDC setup
     sso_config = engine_config.sso
     if sso_config and sso_config.enabled:
         from ..server.auth import OIDCValidator
 
-        app.state.sso_validator = OIDCValidator(sso_config)
-        logger.info(f"🔒 SSO enabled — issuer: {sso_config.issuer}")
+        try:
+            app.state.sso_validator = OIDCValidator(sso_config)
+            logger.info(f"🔒 SSO enabled — issuer: {sso_config.issuer}")
+        except Exception as e:
+            logger.exception(f"Failed to add SSO: {e}, continuing without them")
+            app.state.sso_validator = None
     else:
         app.state.sso_validator = None
 

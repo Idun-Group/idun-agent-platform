@@ -47,7 +47,9 @@ class TestLifespan:
                 # During lifespan, agent should be initialized
                 assert app.state.agent == mock_agent
                 assert app.state.config == engine_config
-                mock_init.assert_called_once_with(engine_config)
+                mock_init.assert_called_once()
+                call_args = mock_init.call_args
+                assert call_args[0][0] is engine_config
 
             # After lifespan exits, agent should be closed
             mock_agent.close.assert_called_once()
