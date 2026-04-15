@@ -180,6 +180,18 @@ Config resolution order (per key):
 | `API_URL` | `VITE_API_URL` | `''` (uses proxy) | Manager backend URL |
 | `AUTH_DISABLE_USERNAME_PASSWORD` | `VITE_AUTH_DISABLE_USERNAME_PASSWORD` | `false` | Hide email/password login |
 | `USE_MOCKS` | `VITE_USE_MOCKS` | `false` | Use mock data instead of API |
+| `POSTHOG_KEY` | `VITE_PUBLIC_POSTHOG_KEY` | (built-in key) | PostHog project API key |
+| `POSTHOG_HOST` | `VITE_PUBLIC_POSTHOG_HOST` | `https://g.idunplatform.com` | PostHog ingestion host |
+| `POSTHOG_ENABLED` | `VITE_POSTHOG_ENABLED` | `true` | Disable PostHog analytics |
+
+### Analytics — deployment_type super property
+
+Every PostHog event automatically includes a `deployment_type` property set by `src/utils/deployment.ts`:
+
+- `"cloud"` — hostname is exactly `cloud.idunplatform.com`
+- `"self-hosted"` — all other hostnames (localhost, custom domains, private IPs)
+
+This is registered as a PostHog [super property](https://posthog.com/docs/product-analytics/super-properties) via `posthog.register()` in `main.tsx`, so it requires no per-event instrumentation.
 
 ## Vite Dev Proxy
 

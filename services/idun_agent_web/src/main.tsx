@@ -1,4 +1,5 @@
-import { StrictMode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { StrictMode, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
@@ -12,8 +13,9 @@ import { WorkspaceProvider } from './hooks/use-workspace.tsx';
 import { ToggleThemeModeProvider } from './hooks/use-toggle-theme-mode.tsx';
 import { LoaderProvider } from './hooks/use-loader.tsx';
 import { AuthProvider } from './hooks/use-auth.tsx';
-import { PostHogProvider } from '@posthog/react';
+import { PostHogProvider, usePostHog } from '@posthog/react';
 import { runtimeConfig } from './utils/runtime-config.ts';
+import { getDeploymentType } from './utils/deployment.ts';
 
 const posthogOptions = {
     api_host: runtimeConfig.POSTHOG_HOST,
@@ -23,12 +25,28 @@ const posthogOptions = {
     capture_pageleave: true,
 };
 
+/**
+ * Registers global PostHog super properties attached to every event.
+ * Must be rendered inside PostHogProvider.
+ */
+function DeploymentSuperProperties() {
+    const posthog = usePostHog();
+
+    useEffect(() => {
+        if (!posthog) return;
+        posthog.register({ deployment_type: getDeploymentType() });
+    }, [posthog]);
+
+    return null;
+}
+
 function Analytics({ children }: { children: ReactNode }) {
     if (runtimeConfig.POSTHOG_ENABLED === 'false') {
         return <>{children}</>;
     }
     return (
         <PostHogProvider apiKey={runtimeConfig.POSTHOG_KEY} options={posthogOptions}>
+            <DeploymentSuperProperties />
             {children}
         </PostHogProvider>
     );
