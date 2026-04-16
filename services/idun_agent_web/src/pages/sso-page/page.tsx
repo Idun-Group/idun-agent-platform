@@ -426,9 +426,11 @@ const SSOPage: React.FC = () => {
                     <DocsButton href="https://docs.idunplatform.com/auth/overview" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </DocsButton>
-                    <AddButton onClick={openCreate} disabled={!canWrite || !currentProject}>
-                        + Add SSO config
-                    </AddButton>
+                    {canWrite && currentProject && (
+                        <AddButton onClick={openCreate}>
+                            + Add SSO config
+                        </AddButton>
+                    )}
                 </HeaderActions>
             </PageHeader>
 
@@ -505,10 +507,12 @@ const SSOPage: React.FC = () => {
                         );
                     })}
 
-                    <AddCard onClick={() => canWrite && openCreate()}>
-                        <AddIcon>+</AddIcon>
-                        <AddLabel>Add SSO configuration</AddLabel>
-                    </AddCard>
+                    {canWrite && (
+                        <AddCard onClick={openCreate}>
+                            <AddIcon>+</AddIcon>
+                            <AddLabel>Add SSO configuration</AddLabel>
+                        </AddCard>
+                    )}
                 </Grid>
             )}
 
