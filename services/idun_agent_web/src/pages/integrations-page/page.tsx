@@ -798,17 +798,16 @@ const IntegrationsPage: React.FC = () => {
                 provider={modalProvider}
                 providerIcon={PROVIDER_ICONS[modalProvider] ? React.createElement(PROVIDER_ICONS[modalProvider]) : undefined}
             />
-            {canAdmin && (
-                <DeleteConfirmModal
-                    isOpen={!!configToDelete}
-                    onClose={() => setConfigToDelete(null)}
-                    onConfirm={handleDeleteConfirm}
-                    itemName={configToDelete?.name ?? ''}
-                    description={(configToDelete?.agentCount ?? 0) > 0
-                        ? `This integration is used by ${configToDelete!.agentCount} agent${configToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
-                        : undefined}
-                />
-            )}
+            <DeleteConfirmModal
+                isOpen={!!configToDelete}
+                onClose={() => setConfigToDelete(null)}
+                onConfirm={handleDeleteConfirm}
+                itemName={configToDelete?.name ?? ''}
+                description={(configToDelete?.agentCount ?? 0) > 0
+                    ? `This integration is used by ${configToDelete!.agentCount} agent${configToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
+                    : undefined}
+            />
+
         </PageWrapper>
     );
 };

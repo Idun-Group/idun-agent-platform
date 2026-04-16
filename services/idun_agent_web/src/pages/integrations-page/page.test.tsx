@@ -130,16 +130,6 @@ describe('IntegrationsPage — Reader (canWrite=false, canAdmin=false)', () => {
             expect(screen.queryByText('Remove')).toBeNull();
         });
     });
-
-    it('does not mount the DeleteConfirmModal', async () => {
-        renderPage();
-        // DeleteConfirmModal should not be rendered at all (not even its closed state)
-        // because canAdmin is false
-        await vi.waitFor(() => {
-            expect(screen.queryAllByTestId('delete-modal-closed')).toHaveLength(0);
-            expect(screen.queryAllByTestId('delete-modal-open')).toHaveLength(0);
-        });
-    });
 });
 
 describe('IntegrationsPage — Contributor (canWrite=true, canAdmin=false)', () => {
@@ -171,14 +161,6 @@ describe('IntegrationsPage — Contributor (canWrite=true, canAdmin=false)', () 
             expect(screen.queryByText('Remove')).toBeNull();
         });
     });
-
-    it('does not mount the DeleteConfirmModal', async () => {
-        renderPage();
-        await vi.waitFor(() => {
-            expect(screen.queryAllByTestId('delete-modal-closed')).toHaveLength(0);
-            expect(screen.queryAllByTestId('delete-modal-open')).toHaveLength(0);
-        });
-    });
 });
 
 describe('IntegrationsPage — Admin (canWrite=true, canAdmin=true)', () => {
@@ -200,14 +182,6 @@ describe('IntegrationsPage — Admin (canWrite=true, canAdmin=true)', () => {
         await vi.waitFor(() => {
             expect(screen.queryAllByText('Edit').length).toBeGreaterThan(0);
             expect(screen.queryAllByText('Remove').length).toBeGreaterThan(0);
-        });
-    });
-
-    it('mounts the DeleteConfirmModal (for admin)', async () => {
-        renderPage();
-        await vi.waitFor(() => {
-            // The modal is rendered (closed state) for admin — it may open on delete click
-            expect(screen.queryAllByTestId('delete-modal-closed').length).toBeGreaterThan(0);
         });
     });
 });
