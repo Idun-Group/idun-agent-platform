@@ -620,6 +620,7 @@ const IntegrationsPage: React.FC = () => {
                                 {providers.map(([key, meta]) => {
                                     const Icon = PROVIDER_ICONS[key];
                                     const isDisabled = !!meta.comingSoon;
+                                    if (!isDisabled && !canWrite) return null;
                                     return (
                                         <ProviderBtn
                                             key={key}
@@ -797,15 +798,17 @@ const IntegrationsPage: React.FC = () => {
                 provider={modalProvider}
                 providerIcon={PROVIDER_ICONS[modalProvider] ? React.createElement(PROVIDER_ICONS[modalProvider]) : undefined}
             />
-            <DeleteConfirmModal
-                isOpen={!!configToDelete}
-                onClose={() => setConfigToDelete(null)}
-                onConfirm={handleDeleteConfirm}
-                itemName={configToDelete?.name ?? ''}
-                description={(configToDelete?.agentCount ?? 0) > 0
-                    ? `This integration is used by ${configToDelete!.agentCount} agent${configToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
-                    : undefined}
-            />
+            {canAdmin && (
+                <DeleteConfirmModal
+                    isOpen={!!configToDelete}
+                    onClose={() => setConfigToDelete(null)}
+                    onConfirm={handleDeleteConfirm}
+                    itemName={configToDelete?.name ?? ''}
+                    description={(configToDelete?.agentCount ?? 0) > 0
+                        ? `This integration is used by ${configToDelete!.agentCount} agent${configToDelete!.agentCount !== 1 ? 's' : ''}. Remove it from those agents first.`
+                        : undefined}
+                />
+            )}
         </PageWrapper>
     );
 };
