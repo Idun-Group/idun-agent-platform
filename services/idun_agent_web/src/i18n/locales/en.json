@@ -1,1179 +1,1185 @@
 {
+  "navigation": {
+    "agent": "Agent",
+    "guard": "Guard",
+    "api": "API",
+    "observation": "Observation",
+    "tools": "Tools",
+    "users": "Users",
+    "settings": "Settings",
+    "disconnect": "Disconnect"
+  },
+  "account": {
+    "info": {
+      "sub-title": "Your personal account"
+    }
+  },
+  "connected-app": {
+    "title": "Connected App",
+    "description": "Manage your connected apps.",
+    "button-marketplace": "Go to the app marketplace",
     "navigation": {
-        "agent": "Agent",
-        "guard": "Guard",
-        "api": "API",
-        "observation": "Observation",
-        "tools": "Tools",
-        "users": "Users",
-        "settings": "Settings",
-        "disconnect": "Disconnect"
+      "overview": "Overview",
+      "applications": "Configurations",
+      "add": "Add Configuration"
     },
-    "account": {
-        "info": {
-            "sub-title": "Your personal account"
-        }
+    "apps": {
+      "title": "Connect your first application.",
+      "description": "Visit the app marketplace to connect the Idun Platform and the tools that grow your business.",
+      "first-install": "Install the first application"
     },
-    "connected-app": {
-        "title": "Connected App",
-        "description": "Manage your connected apps.",
-        "button-marketplace": "Go to the app marketplace",
-        "navigation": {
-            "overview": "Overview",
-            "applications": "Configurations",
-            "add": "Add Configuration"
-        },
-        "apps": {
-            "title": "Connect your first application.",
-            "description": "Visit the app marketplace to connect the Idun Platform and the tools that grow your business.",
-            "first-install": "Install the first application"
-        },
-        "marketplace": {
-            "title": "Add New Configuration",
-            "subtitle": "Create persisted configurations to reuse across your agents",
-            "all-apps": "All applications",
-            "by": "by",
-            "install": "Add application",
-            "description": "Description",
-            "search": {
-                "placeholder": "Search for applications..."
-            },
-            "no-template": "No template available for this category."
-        },
-        "categories": {
-            "observability": "Observability",
-            "memory": "Memory",
-            "mcp": "MCP",
-            "guard": "Guardrails"
-        },
-        "actions": {
-            "createConfiguration": "Create Configuration",
-            "newConfiguration": "New Configuration"
-        }
-    },
-    "header": {
-        "create": "Create",
-        "settings": "Settings",
-        "workspace": {
-            "select": "Select a workspace",
-            "search": "Search workspaces...",
-            "empty": "No workspaces found",
-            "create": "Create workspace"
-        },
-        "project": {
-            "empty": "No projects found",
-            "create": "Create project"
-        },
-        "environment": {
-            "select": "Select an environment",
-            "development": "Development",
-            "staging": "Staging",
-            "production": "Production"
-        }
-    },
-    "workspace": {
-        "none_selected": "No workspace selected",
-        "loading": "Loading workspace...",
-        "error": "Error while loading workspace"
-    },
-    "dashboard": {
-        "searchPlaceholder": "Type agent name or framework...",
-        "agent": {
-            "title": "Agent Dashboard",
-            "description": "Manage and monitor your AI agents",
-            "create": "Create an agent",
-            "edit": "Edit agent",
-            "delete": "Delete agent"
-        },
-        "search": {
-            "placeholder": "Type agent name or framework..."
-        },
-        "recommendations": {
-            "leadEnrichment": "Lead Enrichment",
-            "coldMailing": "Cold Email Generator",
-            "autoAnswer": "Auto Answer LN",
-            "customerSearch": "Customer Search",
-            "salesKpi": "Sales KPI",
-            "contentRewriter": "Content Rewriter",
-            "leadQualification": "Lead Qualification",
-            "customerJourney": "Customer Journey"
-        },
-        "table": {
-            "name": "Name",
-            "status": "Status",
-            "controls": "Controls",
-            "avgTime": "Average Time",
-            "environment": "Environment",
-            "errorRate": "Error Rate",
-            "source": "Source",
-            "framework": "Framework",
-            "a2a": "A2A",
-            "runs": "Runs",
-            "logs": "Logs",
-            "actions": "Actions"
-        },
-        "logs": {
-            "title": "Agent Logs",
-            "agentInfo": "Agent information",
-            "performance": "Performance metrics",
-            "recentLogs": "Recent logs",
-            "loaded": "loaded",
-            "loadingMore": "Loading more logs...",
-            "noMoreLogs": "No more logs to load"
-        },
-        "status": {
-            "active": "Active",
-            "pause": "Pause",
-            "disabled": "Disabled"
-        },
-        "environment": {
-            "all": "All",
-            "development": "Development",
-            "staging": "Staging",
-            "production": "Production"
-        },
-        "pagination": {
-            "showing": "Showing",
-            "to": "to",
-            "of": "of",
-            "agents": "agents",
-            "previous": "Previous",
-            "next": "Next"
-        },
-        "loading": "Loading agents...",
-        "error": "Error while loading",
-        "errorMessage": "Unable to load agents"
+    "marketplace": {
+      "title": "Add New Configuration",
+      "subtitle": "Create persisted configurations to reuse across your agents",
+      "all-apps": "All applications",
+      "by": "by",
+      "install": "Add application",
+      "description": "Description",
+      "search": {
+        "placeholder": "Search for applications..."
+      },
+      "no-template": "No template available for this category."
     },
     "categories": {
-        "selector": {
-            "placeholder": "All categories",
-            "all": "All categories",
-            "empty": "No categories available"
-        }
+      "observability": "Observability",
+      "memory": "Memory",
+      "mcp": "MCP",
+      "guard": "Guardrails"
     },
-    "sidebar": {
-        "agents": "Agents",
-        "guard": "Guard",
-        "api": "API",
-        "observation": "Observation",
-        "tools": "Tools",
-        "users": "Users",
-        "apps": "Apps",
-        "observability": "Observability",
-        "memory": "Memory",
-        "mcp": "MCP",
-        "sso": "SSO",
-        "integrations": "Integrations",
-        "settings": "Settings"
+    "actions": {
+      "createConfiguration": "Create Configuration",
+      "newConfiguration": "New Configuration"
+    }
+  },
+  "header": {
+    "create": "Create",
+    "settings": "Settings",
+    "workspace": {
+      "select": "Select a workspace",
+      "search": "Search workspaces...",
+      "empty": "No workspaces found",
+      "create": "Create workspace"
     },
-    "signin": {
-        "title": "Create an account",
-        "description": "Fill out the form to create your Idun Platform account.",
-        "firstName": {
-            "label": "First Name",
-            "placeholder": "Enter your first name"
-        },
-        "lastName": {
-            "label": "Last Name",
-            "placeholder": "Enter your last name"
-        },
-        "name": {
-            "label": "Username",
-            "placeholder": "Enter your username"
-        },
-        "email": {
-            "label": "Email address",
-            "placeholder": "Enter your email address"
-        },
-        "phone": {
-            "label": "Phone",
-            "placeholder": "Enter your phone number"
-        },
-        "password": {
-            "label": "Password",
-            "placeholder": "Enter your password"
-        },
-        "submit": "Create account"
+    "project": {
+      "empty": "No projects found",
+      "create": "Create project"
     },
-    "user-form": {
-        "title": "User Form",
-        "description": "Please fill out the following information.",
-        "personal-information": {
-            "legend": "Personal Information",
-            "first-name": {
-                "label": "First Name",
-                "placeholder": "Enter your first name"
-            },
-            "last-name": {
-                "label": "Last Name",
-                "placeholder": "Enter your last name"
-            },
-            "email": {
-                "label": "Email Address",
-                "placeholder": "Enter your email address"
-            },
-            "phone": {
-                "label": "Phone",
-                "placeholder": "Enter your phone number"
-            }
-        },
-        "workspace": {
-            "legend": "Workspace Information",
-            "selection": "Select a workspace"
-        },
-        "professional-information": {
-            "legend": "Professional Information",
-            "role": {
-                "label": "Role",
-                "placeholder": "Enter your role",
-                "admin": "Administrator",
-                "user": "User",
-                "developer": "Developer",
-                "analyst": "Analyst",
-                "manager": "Manager"
-            },
-            "department": {
-                "label": "Department",
-                "placeholder": "Enter your department",
-                "it": "IT",
-                "hr": "Human Resources",
-                "finance": "Finance",
-                "marketing": "Marketing",
-                "sales": "Sales",
-                "operations": "Operations"
-            },
-            "bio": {
-                "label": "Biography",
-                "placeholder": "Enter your biography"
-            }
-        },
-        "permissions": {
-            "legend": "Permissions",
-            "agent-management": {
-                "title": "Agent Management",
-                "description": "Control agent access and permissions.",
-                "active": "Active"
-            },
-            "user-management": {
-                "title": "User Management",
-                "description": "Control user access and permissions.",
-                "active": "Active"
-            },
-            "analytics": {
-                "title": "Analytics",
-                "description": "Access reports and analytics.",
-                "active": "Active"
-            },
-            "system-configuration": {
-                "title": "System Configuration",
-                "description": "Manage system settings and configurations.",
-                "active": "Active"
-            }
-        },
-        "cancel": "Cancel",
-        "create-user": "Create user",
-        "back-to-users": "Back to users"
+    "environment": {
+      "select": "Select an environment",
+      "development": "Development",
+      "staging": "Staging",
+      "production": "Production"
+    }
+  },
+  "workspace": {
+    "none_selected": "No workspace selected",
+    "loading": "Loading workspace...",
+    "error": "Error while loading workspace"
+  },
+  "dashboard": {
+    "searchPlaceholder": "Type agent name or framework...",
+    "agent": {
+      "title": "Agent Dashboard",
+      "description": "Manage and monitor your AI agents",
+      "create": "Create an agent",
+      "edit": "Edit agent",
+      "delete": "Delete agent"
     },
-    "login": {
-        "title": "Login",
-        "description": "Login to your Idun Platform account.",
-        "email": "Email address",
-        "email.placeholder": "Enter your email address",
-        "password": "Password",
-        "rememberMe": "Remember me",
-        "password.placeholder": "Enter your password",
-        "submit": "Login"
+    "search": {
+      "placeholder": "Type agent name or framework..."
     },
-    "firstLogin": {
-        "title": "Set your password",
-        "subtitle": "For security reasons, please set a new password for your account",
-        "userEmail": "Account: {{email}}",
-        "form": {
-            "title": "Password setup",
-            "newPassword": {
-                "label": "New password",
-                "placeholder": "Enter your new password"
-            },
-            "confirmPassword": {
-                "label": "Confirm password",
-                "placeholder": "Confirm your new password"
-            },
-            "submit": "Set password",
-            "updating": "Updating..."
-        },
-        "validation": {
-            "newPassword": {
-                "required": "New password is required",
-                "minLength": "Password must be at least 8 characters long",
-                "weak": "Password is too weak"
-            },
-            "confirmPassword": {
-                "required": "Password confirmation is required",
-                "match": "Passwords do not match"
-            }
-        },
-        "password": {
-            "strength": {
-                "label": "Password strength",
-                "weak": "Weak",
-                "medium": "Medium",
-                "strong": "Strong"
-            },
-            "criteria": {
-                "length": "At least 8 characters",
-                "lowercase": "Contains lowercase letters",
-                "uppercase": "Contains uppercase letters",
-                "number": "Contains numbers",
-                "special": "Contains special characters"
-            }
-        },
-        "help": {
-            "title": "Password requirements",
-            "requirement1": "At least 8 characters",
-            "requirement2": "Mix of uppercase and lowercase letters",
-            "requirement3": "At least one number",
-            "requirement4": "At least one special character (!@#$%^&*)"
-        },
-        "success": {
-            "message": "Password updated successfully. You can now log in with your new password."
-        },
-        "error": {
-            "general": "Password update failed. Please try again."
-        }
+    "recommendations": {
+      "leadEnrichment": "Lead Enrichment",
+      "coldMailing": "Cold Email Generator",
+      "autoAnswer": "Auto Answer LN",
+      "customerSearch": "Customer Search",
+      "salesKpi": "Sales KPI",
+      "contentRewriter": "Content Rewriter",
+      "leadQualification": "Lead Qualification",
+      "customerJourney": "Customer Journey"
     },
-    "changePassword": {
-        "title": "Change password",
-        "subtitle": "Update your account's password"
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "controls": "Controls",
+      "avgTime": "Average Time",
+      "environment": "Environment",
+      "errorRate": "Error Rate",
+      "source": "Source",
+      "framework": "Framework",
+      "a2a": "A2A",
+      "runs": "Runs",
+      "logs": "Logs",
+      "actions": "Actions"
     },
-    "agent-form": {
-        "title": "Create a new agent",
-        "back": "Back",
-        "agentFormTitle": "Agent Form",
-        "general-info": "Select the source for your agent",
-        "tabs": {
-            "agent": "Agent",
-            "testing": "Testing"
-        },
-        "graph-definition-path": {
-            "label": "Graph Definition Path",
-            "placeholder": "Select the graph definition file path"
-        },
-        "header": {
-            "title": "Create a new agent",
-            "subtitle": "Configure your agent's settings and behavior"
-        },
-        "generalInfo": "General Information",
-        "name": {
-            "label": "Agent Name",
-            "placeholder": "My first agent"
-        },
-        "description": {
-            "label": "Description",
-            "placeholder": "Describe what this agent does"
-        },
-        "framework": {
-            "label": "Framework",
-            "placeholder": "Select a framework",
-            "langgraph": "Langraph",
-            "smolagent": "SmolAgent",
-            "n8n": "N8N",
-            "adk": "ADK"
-        },
-        "source": {
-            "label": "Source",
-            "upload": "Upload",
-            "git": "Git",
-            "select-folder": "Select a folder",
-            "select-git-repo": "Select a Git repository",
-            "project": "Project",
-            "local": "Local",
-            "remote": "Remote",
-            "select-remote": "Select a remote repository",
-            "select-project-template": "Select a project"
-        },
-        "agent-path": {
-            "label": "Agent Path",
-            "placeholder": "Enter the agent path"
-        },
-        "checkpointConfig": "Checkpoint Configuration",
-        "availableAgents": "Available Agents",
-        "database-type": "Database Type",
-        "database-url": {
-            "label": "Database URL",
-            "placeholder": "Enter the database URL"
-        },
-        "status": "Status",
-        "run": "Run",
-        "testAgent": "My first agent",
-        "testInput": "Input",
-        "testOutput": "Output",
-        "testQuestion": "What's the weather like in Paris?",
-        "testResponse": "The current weather in Paris is 22°C with a partly cloudy sky. There is a light breeze from the southwest at 10 km/h. The humidity is 65% and visibility is good at 10km. No precipitation is expected for the next few hours.",
-        "viewTraces": "View traces",
-        "create-agent": "Create an agent",
-        "creating": "Creating...",
-        "button": {
-            "create": "Create an agent",
-            "creating": "Creating..."
-        },
-        "observability": {
-            "title": "Observability & Database",
-            "label": "Enable observability and database",
-            "tools": {
-                "none": "None"
-            },
-            "langfuse": {
-                "host": {
-                    "label": "Langfuse Host",
-                    "placeholder": "https://cloud.langfuse.com"
-                },
-                "public-key": {
-                    "label": "Langfuse Public Key",
-                    "placeholder": "pk-lf-..."
-                },
-                "secret-key": {
-                    "label": "Langfuse Secret Key",
-                    "placeholder": "sk-lf-..."
-                },
-                "run-name": {
-                    "label": "Run Name",
-                    "placeholder": "my-agent-run"
-                }
-            }
-        },
-        "success": {
-            "title": "Success",
-            "description": "Agent created successfully"
-        },
-        "error": {
-            "title": "Error",
-            "description": "Failed to create agent"
-        },
-        "placeholders": {
-            "repositoryUrl": "https://github.com/username/repository",
-            "branch": "main",
-            "path": "/src/agent",
-            "remoteUrl": "https://api.example.com/agent",
-            "authToken": "Bearer token or API key"
-        },
-        "sources": {
-            "selectType": "Select the source type for your agent code",
-            "configure": "Configure your {{sourceType}} source",
-            "import": {
-                "title": "Import an agent package",
-                "description": "Upload your agent as a ZIP file containing all the necessary code and configuration",
-                "label": "Import files",
-                "uploadDescription": "Upload a ZIP package",
-                "supportedFormat": "Supported format: ZIP files only",
-                "dropZone": "Drop your ZIP file here",
-                "orClickBrowse": "or click to browse",
-                "processing": "Processing ZIP file...",
-                "extracting": "Extracting agent files...",
-                "invalidFormat": "Only ZIP files are accepted",
-                "uploadSuccess": "ZIP package imported successfully",
-                "uploadError": "Error processing ZIP file",
-                "ready": "Package ready to use",
-                "zipStructureHelp": "Recommended structure: agent.py, requirements.txt, config.yaml inside your ZIP"
-            },
-            "github": {
-                "title": "Connect a GitHub repository",
-                "description": "Import agent code from your GitHub repository",
-                "label": "GitHub",
-                "uploadDescription": "Connect a repository",
-                "repositoryUrl": "Repository URL",
-                "branch": "Branch (optional)",
-                "path": "Path (optional)",
-                "connect": "Connect with GitHub"
-            },
-            "remote": {
-                "title": "Remote source",
-                "description": "Connect to a remote agent source",
-                "label": "Remote",
-                "uploadDescription": "Remote API source",
-                "remoteUrl": "Remote URL",
-                "authToken": "Authentication token (optional)",
-                "connect": "Connect remote source"
-            },
-            "project": {
-                "title": "Project template",
-                "description": "Use a pre-configured project template",
-                "label": "Project",
-                "uploadDescription": "Project template",
-                "templates": {
-                    "basicChat": {
-                        "name": "Basic chat agent",
-                        "description": "Simple conversational agent"
-                    },
-                    "documentProcessor": {
-                        "name": "Document processor",
-                        "description": "Agent for document analysis"
-                    },
-                    "dataAnalyst": {
-                        "name": "Data analyst",
-                        "description": "Agent for data processing"
-                    },
-                    "custom": {
-                        "name": "Custom template",
-                        "description": "Create from scratch"
-                    }
-                }
-            },
-            "selected": "selected source",
-            "configCompleted": "Source configuration completed"
-        },
-        "runTest": "Run test",
-        "saveTestCase": "Save test case"
+    "logs": {
+      "title": "Agent Logs",
+      "agentInfo": "Agent information",
+      "performance": "Performance metrics",
+      "recentLogs": "Recent logs",
+      "loaded": "loaded",
+      "loadingMore": "Loading more logs...",
+      "noMoreLogs": "No more logs to load"
     },
-    "agentDetails": {
-        "backToAgents": "Back to agents",
-        "configure": "Configure",
-        "testAgent": "Test agent",
-        "pause": "Pause",
-        "tabs": {
-            "overview": "Overview",
-            "activity": "Activity",
-            "configuration": "Configuration",
-            "logs": "Logs",
-            "code": "Code"
-        },
-        "metrics": {
-            "totalRuns": "Total runs",
-            "successRate": "Success rate",
-            "avgResponseTime": "Average response time",
-            "uptime": "Uptime",
-            "todayRuns": "today",
-            "monthlyRuns": "this month",
-            "lastWeek": "compared to last week",
-            "lastDays": "last 7 days"
-        },
-        "charts": {
-            "dailyUsage": "Daily usage (last 7 days)",
-            "success": "Success",
-            "errors": "Errors"
-        },
-        "info": {
-            "title": "Agent information",
-            "framework": "Framework",
-            "source": "Source",
-            "tools": "Tools",
-            "lastRun": "Last run",
-            "observability": "Observability"
-        },
-        "activity": {
-            "title": "Recent activity",
-            "execution": "execution",
-            "deployment": "deployment"
-        },
-        "configuration": {
-            "general": "General configuration",
-            "langgraph": "LangGraph configuration",
-            "observability": "Observability",
-            "agentToAgent": "Agent to agent",
-            "streaming": "Streaming",
-            "enabled": "Enabled",
-            "disabled": "Disabled",
-            "inputSchema": "Input schema",
-            "outputSchema": "Output schema",
-            "parameters": "Parameters",
-            "checkpointType": "Checkpoint type",
-            "databasePath": "Database path",
-            "provider": "Provider",
-            "configuration": "Configuration"
-        },
-        "logs": {
-            "title": "Agent logs",
-            "export": "Export",
-            "viewInLangfuse": "View in Langfuse"
-        },
-        "status": {
-            "success": "success",
-            "error": "error",
-            "pending": "pending"
-        },
-        "timeAgo": {
-            "justNow": "Just now",
-            "minutesAgo": "{{count}}m ago",
-            "hoursAgo": "{{count}}h ago",
-            "daysAgo": "{{count}}d ago"
-        },
-        "code": {
-            "title": "Agent source code",
-            "saveChanges": "Save changes",
-            "reset": "Reset",
-            "modified": "Modified",
-            "file": "File",
-            "language": "Language",
-            "lines": "Lines"
-        },
-        "buttons": {
-            "testAgent": "Test agent",
-            "export": "Export",
-            "clear": "Clear",
-            "viewDetails": "View details",
-            "retry": "Retry"
-        },
-        "titles": {
-            "agentLogs": "Agent logs"
-        }
+    "status": {
+      "active": "Active",
+      "pause": "Pause",
+      "disabled": "Disabled"
     },
-    "settings": {
-        "title": "Settings",
-        "back_to_dashboard": "Back to dashboard",
-        "group": {
-            "preferences": "Preferences",
-            "workspaces": "Workspaces",
-            "projects": "Projects"
-        },
-        "tabs": {
-            "workspaceGeneral": "General",
-            "workspaceUsers": "Members",
-            "workspaceProjects": "All Projects",
-            "projectMembers": "Project Members"
-        },
-        "groups": {
-            "workspace": "Workspace",
-            "projects": "Projects"
-        },
-        "preferences": {
-            "general": "General",
-            "appearance": "Appearance",
-            "appearance.description": "Customize how the application looks and feels.",
-            "language": "Language",
-            "language.description": "Choose your preferred language for the interface."
-        },
-        "workspaces": {
-            "general": "General",
-            "users": {
-                "ownerToggle": "Invite as workspace owner",
-                "projectAssignments": "Initial project assignments",
-                "owner": "Owner",
-                "projects": "Projects",
-                "noInvitations": "No pending invitations."
-            },
-            "general.rename": "Workspace Name",
-            "general.renameDescription": "Change the display name of your workspace.",
-            "general.namePlaceholder": "Workspace name",
-            "general.renameSuccess": "Workspace renamed successfully",
-            "general.noWorkspace": "No workspace selected",
-            "general.spaces": "Spaces",
-            "general.spacesDescription": "Spaces within this workspace. Manage spaces from the main dashboard.",
-            "general.spacesComingSoon": "Space management will be available here soon.",
-            "users.title": "Members",
-            "users.description": "Manage who has access to this workspace.",
-            "users.addMember": "Add member",
-            "users.name": "Name",
-            "users.email": "Email",
-            "users.role": "Role",
-            "users.actions": "",
-            "users.remove": "Remove",
-            "users.roleUpdated": "Role updated",
-            "users.memberRemoved": "Member removed",
-            "users.memberAdded": "Member added",
-            "users.fetchError": "Failed to load members",
-            "users.noMembers": "No members yet.",
-            "users.confirmRemoveTitle": "Remove member",
-            "users.confirmRemoveMessage": "Are you sure you want to remove this member from the workspace?",
-            "users.confirmRemove": "Remove",
-            "users.inviteTitle": "Add new member",
-            "users.inviteDescription": "Invite a user to this workspace by their email address. If they haven't signed up yet, they'll be added automatically when they do.",
-            "users.emailLabel": "Email",
-            "users.roleLabel": "Role",
-            "users.emailRequired": "Email is required",
-            "users.grantAccess": "Grant access",
-            "users.pending": "Pending",
-            "users.invitationCancelled": "Invitation cancelled",
-            "users.cancelInvitation": "Cancel invitation",
-            "users.alreadyInvited": "This email has already been invited",
-            "users.member": "Member",
-            "users.ownerDesc": "Full access to workspace and all projects",
-            "users.memberDesc": "Access based on project-level role assignments",
-            "users.allProjects": "All projects",
-            "users.confirmRoleTitle": "Change role",
-            "users.confirmPromoteMessage": "Promote {{name}} to Owner? They will have full access to the workspace.",
-            "users.confirmDemoteMessage": "Change {{name}} to Member? They will lose workspace management permissions.",
-            "users.confirmChange": "Confirm",
-            "users.members": "Members",
-            "users.invitations": "Pending Invitations",
-            "users.cancel": "Cancel",
-            "users.modal.title": "Invite member",
-            "users.modal.emailLabel": "Email address",
-            "users.modal.emailPlaceholder": "name@company.com",
-            "users.modal.roleLabel": "Select a role",
-            "users.modal.projectsLabel": "Assign to projects",
-            "users.modal.submit": "Send invitation",
-            "users.modal.role.owner": "Owner",
-            "users.modal.role.contributor": "Contributor",
-            "users.modal.role.reader": "Reader",
-            "users.modal.perm.ownerWorkspace": "Manage workspace settings and billing",
-            "users.modal.perm.ownerMembers": "Invite and remove workspace members",
-            "users.modal.perm.ownerProjects": "Full access to all projects and resources",
-            "users.modal.perm.ownerRoles": "Assign roles and manage permissions",
-            "users.modal.perm.contribAgents": "Create, edit, and deploy agents",
-            "users.modal.perm.contribResources": "Manage resources (MCP, memory, guardrails)",
-            "users.modal.perm.contribPrompts": "Create and edit prompts",
-            "users.modal.perm.contribView": "View observability data and logs",
-            "users.modal.perm.readerAgents": "View agents and their configurations",
-            "users.modal.perm.readerResources": "View resources and integrations",
-            "users.modal.perm.readerLogs": "View observability data and logs",
-            "users.modal.perm.readerNoEdit": "Cannot create or modify resources"
-        },
-        "profile": {
-            "title": "Profile",
-            "description": "Manage your personal information and preferences.",
-            "name": {
-                "label": "Name",
-                "placeholder": "Your name"
-            },
-            "firstName": {
-                "label": "First Name",
-                "placeholder": "Your first name"
-            },
-            "lastName": {
-                "label": "Last Name",
-                "placeholder": "Your last name"
-            },
-            "email": {
-                "label": "Email",
-                "placeholder": "Your email address"
-            },
-            "phone": {
-                "label": "Phone",
-                "placeholder": "Your phone number"
-            },
-            "save": "Save"
-        },
-        "language": {
-            "title": "Language",
-            "description": "Choose your preferred language for the interface.",
-            "subtitle": "Select your language"
-        },
-        "notifications": {
-            "title": "Notifications",
-            "description": "Manage your notification preferences.",
-            "agents-status-changes": {
-                "label": "Agent status changes",
-                "sub-label": "Be notified when agents connect or disconnect"
-            },
-            "performance-alerts": {
-                "label": "Performance alerts",
-                "sub-label": "Receive alerts for performance threshold breaches"
-            },
-            "system-updates": {
-                "label": "System updates",
-                "sub-label": "Be notified of platform updates and maintenance"
-            },
-            "browser-notifications": {
-                "label": "Browser notifications",
-                "sub-label": "Receive notifications in the browser."
-            }
-        },
-        "security": {
-            "title": "Security",
-            "description": "Manage your security and privacy settings.",
-            "submit": "Update password",
-            "2FA": {
-                "label": "Two-factor authentication",
-                "description": "Add an extra layer of security to your account."
-            },
-            "alert": {
-                "label": "Security alerts",
-                "description": "Receive alerts for suspicious login attempts."
-            },
-            "current-assword": {
-                "label": "Current password",
-                "placeholder": "Enter your current password"
-            },
-            "new-password": {
-                "label": "New password",
-                "placeholder": "Enter your new password"
-            },
-            "confirm-password": {
-                "label": "Confirm new password",
-                "placeholder": "Confirm your new password"
-            }
-        },
-        "appearance": {
-            "title": "Appearance",
-            "description": "Customize the look and feel of your interface.",
-            "subtitle": "Theme selection",
-            "theme": {
-                "system": "System default",
-                "light": "Light theme",
-                "dark": "Dark theme"
-            },
-            "compact-mode": {
-                "label": "Compact mode",
-                "subLabel": "Display more content in less space."
-            },
-            "high-contrast-mode": {
-                "label": "High-contrast mode",
-                "subLabel": "Increase contrast for better visibility."
-            }
-        },
-        "firstName": "First Name",
-        "lastName": "Last Name",
-        "email": "Email",
-        "phoneNumber": "Phone Number",
-        "country": "Country",
-        "changePassword": "Change password",
-        "currentPassword": "Current password",
-        "newPassword": "New password",
-        "confirmPassword": "Confirm password",
-        "saveChanges": "Save changes",
-        "deleteProfile": "Delete profile",
-        "changePicture": "Change",
-        "edit": "Edit",
-        "twoFactor": "Two-factor authentication",
-        "theme": "Theme",
-        "agentAlerts": "Agent status alerts",
-        "systemUpdates": "System updates",
-        "weeklyReports": "Weekly reports",
-        "languageDescription": "Choose your preferred language for the interface.",
-        "interfaceLanguage": "Interface language",
-        "languageNote": "This will change the language of all text in the application interface.",
-        "general": "General",
-        "displayName": "Display Name",
-        "profileDescription": "Manage your account information and preferences.",
-        "securityDescription": "Manage your password and security settings.",
-        "appearanceDescription": "Customize your interface theme and appearance preferences.",
-        "notificationsDescription": "Choose how you would like to be notified of activity.",
-        "themePreference": "Theme preference",
-        "systemDefault": "System default",
-        "light": "Light",
-        "dark": "Dark",
-        "compactModeDescription": "Display more content in less space.",
-        "highContrastDescription": "Increase contrast for better visibility.",
-        "agentStatusChanges": "Agent status changes",
-        "agentStatusChangesDesc": "Be notified when agents connect or disconnect",
-        "performanceAlerts": "Performance alerts",
-        "performanceAlertsDesc": "Receive alerts for performance threshold breaches",
-        "systemUpdatesDesc": "Be notified of platform updates and maintenance",
-        "browserNotifications": "Browser notifications",
-        "browserNotificationsDesc": "Display notifications in your browser",
-        "switch-account": "Switch account",
-        "projects": {
-            "overview": "Projects",
-            "members": "Project members",
-            "title": "Projects",
-            "description": "Projects separate agents, prompts, and integrations within a workspace.",
-            "name": "Project name",
-            "descriptionField": "Description",
-            "create": "Create",
-            "list": "Workspace projects",
-            "noCurrentProject": "Select a project first.",
-            "noMembers": "No project members yet.",
-            "memberEmail": "Email",
-            "addMember": "Add member",
-            "memberAdded": "Member added",
-            "memberRemoved": "Member removed",
-            "roleUpdated": "Role updated",
-            "membersList": "Members",
-            "project": "Project",
-            "confirmRoleTitle": "Change role",
-            "confirmRoleMessage": "Change {{name}} to {{role}}?",
-            "confirmChange": "Confirm",
-            "roleDesc.admin": "Full project control including member management",
-            "roleDesc.contributor": "Create and edit agents, resources, and prompts",
-            "roleDesc.reader": "View-only access to project resources",
-            "modal.title": "Add project member",
-            "modal.selectMember": "Select a workspace member",
-            "modal.searchPlaceholder": "Search by name or email...",
-            "modal.noResults": "No matching members",
-            "modal.allAssigned": "All workspace members are already in this project",
-            "modal.roleLabel": "Select a role",
-            "modal.submit": "Add member",
-            "modal.ownerOnly": "Owner only",
-            "modal.role.admin": "Admin",
-            "modal.role.contributor": "Contributor",
-            "modal.role.reader": "Reader",
-            "modal.perm.adminMembers": "Add and remove project members",
-            "modal.perm.adminAgents": "Full control over agents and deployments",
-            "modal.perm.adminResources": "Manage all project resources and settings",
-            "modal.perm.adminRoles": "Change member roles within the project",
-            "modal.perm.contribAgents": "Create, edit, and deploy agents",
-            "modal.perm.contribResources": "Manage resources (MCP, memory, guardrails)",
-            "modal.perm.contribPrompts": "Create and edit prompts",
-            "modal.perm.contribNoAdmin": "Cannot manage members or project settings",
-            "modal.perm.readerAgents": "View agents and their configurations",
-            "modal.perm.readerResources": "View resources and integrations",
-            "modal.perm.readerLogs": "View observability data and logs",
-            "modal.perm.readerNoEdit": "Cannot create or modify resources",
-            "defaultSet": "{{name}} is now the default project",
-            "isDefault": "Default project",
-            "setDefault": "Set as default",
-            "panel.members": "Members",
-            "panel.add": "Add"
-        }
-    },
-    "guard": {
-        "title": "Guard System",
-        "description": "Monitor and control agent access and permissions",
-        "activeGuards": "Active guards",
-        "securityPolicies": "Security policies",
-        "accessLogs": "Access logs",
-        "threatDetection": "Threat detection"
-    },
-    "api": {
-        "title": "API Management",
-        "description": "Manage API endpoints and integrations",
-        "endpoints": "Endpoints",
-        "apiKeys": "API keys",
-        "documentation": "Documentation",
-        "rateLimits": "Rate limits",
-        "usage": "Usage statistics"
-    },
-    "observation": {
-        "title": "Observation Center",
-        "description": "Monitor agent performance and behavior",
-        "metrics": "Metrics",
-        "logs": "Logs",
-        "performance": "Performance",
-        "alerts": "Alerts",
-        "analytics": "Analytics"
-    },
-    "tools": {
-        "title": "Tools and Utilities",
-        "description": "Available tools and utilities for agent development",
-        "developmentTools": "Development tools",
-        "debugger": "Debugger",
-        "testingSuite": "Testing suite",
-        "codeGenerator": "Code generator",
-        "utilities": "Utilities"
-    },
-    "users": {
-        "title": "User Management",
-        "description": "Manage system users and permissions",
-        "allUsers": "All users",
-        "roles": "Roles",
-        "role": {
-            "admin": "Administrator",
-            "user": "User",
-            "guest": "Guest",
-            "editor": "Editor",
-            "viewer": "Viewer"
-        },
-        "permissions": "Permissions",
-        "invitations": "Invitations",
-        "activity": "User activity",
-        "totalResults": "Total: {{count}} users",
-        "noUsers": "No users available.",
-        "noResultsFound": "No users found matching your search.",
-        "cta": "Add user",
-        "searchPlaceholder": "Search users by name, email or role...",
-        "search": {
-            "placeholder": "Search users by name, email or role..."
-        },
-        "column": {
-            "lastName": "Last Name",
-            "firstName": "First Name",
-            "userName": "Username",
-            "email": "Email",
-            "phone": "Phone",
-            "role": "Role",
-            "actions": "Actions"
-        },
-        "create": {
-            "title": "Create user",
-            "subtitle": "Fill in the details to create a new user account",
-            "subtitleWithCategory": "Fill in the details to create a new user account in category {{category}}",
-            "form": {
-                "title": "User information",
-                "firstName": {
-                    "label": "First Name",
-                    "placeholder": "Enter first name",
-                    "required": "First name is required"
-                },
-                "lastName": {
-                    "label": "Last Name",
-                    "placeholder": "Enter last name",
-                    "required": "Last name is required"
-                },
-                "username": {
-                    "label": "Username",
-                    "placeholder": "Enter username",
-                    "required": "Username is required",
-                    "minLength": "Username must be at least 3 characters"
-                },
-                "email": {
-                    "label": "Email",
-                    "placeholder": "Enter email",
-                    "required": "Email is required",
-                    "invalid": "Invalid email format"
-                },
-                "phone": {
-                    "label": "Phone",
-                    "placeholder": "Enter phone number",
-                    "required": "Phone number is required",
-                    "invalid": "Invalid phone number format"
-                },
-                "role": {
-                    "label": "Role",
-                    "placeholder": "Select role",
-                    "required": "Role is required"
-                },
-                "workspaces": {
-                    "label": "Workspaces",
-                    "placeholder": "Select workspaces",
-                    "required": "Please select at least one workspace",
-                    "noWorkspaces": "No workspaces available",
-                    "help": "Select one or more workspaces the user will have access to"
-                },
-                "submit": "Create user",
-                "creating": "Creating user..."
-            }
-        }
-    },
-    "agents": {
-        "title": "Agent Management",
-        "description": "Manage and monitor your AI agents",
-        "noAgentsAvailable": "No agents available.",
-        "noResultsFound": "No agents found matching your search or filters.",
-        "noAgentsOnThisPage": "No agents to display on this page.",
-        "totalResults": "Total: {{count}} agents",
-        "searchPlaceholder": "Search by name, framework, or environment..."
+    "environment": {
+      "all": "All",
+      "development": "Development",
+      "staging": "Staging",
+      "production": "Production"
     },
     "pagination": {
-        "showing": "Showing {{start}} to {{end}} of {{total}} items",
-        "total-per-page": "Total per page: {{count}}",
-        "previous": "Previous",
-        "next": "Next",
-        "items-per-page": "Items per page:",
-        "no-data": "No data available.",
-        "page": "Page"
+      "showing": "Showing",
+      "to": "to",
+      "of": "of",
+      "agents": "agents",
+      "previous": "Previous",
+      "next": "Next"
     },
-    "auth": {
-        "signin": {
-            "title": "Sign in",
-            "description": "Enter your credentials to access your account",
-            "button": "Sign in",
-            "link": "Sign in"
-        },
-        "signup": {
-            "title": "Create an account",
-            "description": "Create your account to get started",
-            "button": "Create account",
-            "link": "Sign up"
-        },
-        "username": "Username",
-        "firstName": "First Name",
-        "lastName": "Last Name",
-        "profilePicture": "Profile Picture",
-        "uploadPhoto": "Upload photo",
-        "password": "Password",
-        "confirmPassword": "Confirm password",
-        "usernamePlaceholder": "Enter your username",
-        "firstNamePlaceholder": "Enter your first name",
-        "lastNamePlaceholder": "Enter your last name",
-        "passwordPlaceholder": "Enter your password",
-        "confirmPasswordPlaceholder": "Confirm your password",
-        "forgotPassword": "Forgot password?",
-        "noAccount": "Don't have an account?",
-        "hasAccount": "Already have an account?",
-        "signingIn": "Signing in...",
-        "signingUp": "Creating account...",
-        "passwordsMatch": "Passwords match",
-        "passwordsDontMatch": "Passwords don't match",
-        "requirements": {
-            "minLength": "At least 8 characters",
-            "uppercase": "One uppercase letter",
-            "lowercase": "One lowercase letter",
-            "number": "One number"
-        },
-        "errors": {
-            "invalidCredentials": "Incorrect username or password. Please try again.",
-            "signupFailed": "Signup failed. Please try again.",
-            "unauthorized": "You are logged out. Reconnecting..."
-        },
-        "passwordRequirements": {
-            "title": "Password requirements",
-            "length": "At least 8 characters",
-            "uppercase": "One uppercase letter",
-            "lowercase": "One lowercase letter",
-            "number": "One number"
-        }
-    },
-    "resetPassword": {
-        "title": "Reset password",
-        "description": "Enter your email address to verify your account",
-        "newPasswordTitle": "Set a new password",
-        "newPasswordDescription": "Enter your current password and create a new one",
-        "verifyEmail": "Verify email",
-        "verifying": "Verifying...",
-        "emailVerified": "Email verified",
-        "proceedToReset": "You can now reset your password",
-        "emailError": "Email verification failed",
-        "emailNotFound": "Email not found in our system",
-        "resetPassword": "Reset password",
-        "resetting": "Resetting password...",
-        "success": "Password reset successful",
-        "successMessage": "Your password has been successfully updated",
-        "error": "Password reset failed",
-        "errorMessage": "Unable to reset password",
-        "currentPasswordPlaceholder": "Enter current password",
-        "newPasswordPlaceholder": "Enter new password",
-        "confirmPasswordPlaceholder": "Confirm new password",
-        "backToSignIn": "Back to sign in"
-    },
-    "dataBoard": {
-        "pagination": {
-            "total": "Total: {{count}} items",
-            "itemsPerPage": "Items per page:",
-            "showing": "Showing {{start}} to {{end}} of {{total}} items",
-            "previous": "← Previous",
-            "next": "Next →"
-        },
-        "emptyState": "No data available.",
-        "table": {
-            "noResults": "No results found"
-        }
-    },
-    "common": {
-        "loading": "Loading...",
-        "pleaseWait": "Please wait...",
-        "search": "Search",
-        "submit": "Submit",
-        "cancel": "Cancel",
-        "save": "Save",
-        "delete": "Delete",
-        "edit": "Edit",
-        "close": "Close",
-        "comingSoon": "Coming soon",
-        "underDevelopment": "This feature is under development",
-        "back": "Back",
-        "saving": "Saving...",
-        "adding": "Adding..."
-    },
-    "integrations": {
-        "title": "Integrations",
-        "subtitle": "Connect external messaging platforms to your agents",
-        "search": "Search integrations...",
-        "add": "Add integration",
-        "addCard": "Add integration",
-        "loading": "Loading integrations…",
-        "active": "Active Integrations",
-        "comingSoon": "Coming Soon",
-        "whatsapp": "WhatsApp",
-        "discord": "Discord"
-    },
-    "theme": {
-        "toggleToLight": "Switch to light mode",
-        "toggleToDark": "Switch to dark mode",
-        "theme": "Theme"
-    },
-    "onboarding": {
-        "title": "Create your workspace",
-        "description": "Get started by creating your first workspace to manage your AI agents.",
-        "name": {
-            "label": "Workspace name",
-            "placeholder": "My Workspace"
-        },
-        "submit": "Create workspace",
-        "creating": "Creating...",
-        "error": "Failed to create workspace. Please try again."
-    },
-    "projects": {
-        "created": "Project created",
-        "deleted": "Project deleted",
-        "empty": "No projects available."
+    "loading": "Loading agents...",
+    "error": "Error while loading",
+    "errorMessage": "Unable to load agents"
+  },
+  "categories": {
+    "selector": {
+      "placeholder": "All categories",
+      "all": "All categories",
+      "empty": "No categories available"
     }
+  },
+  "sidebar": {
+    "agents": "Agents",
+    "guard": "Guard",
+    "api": "API",
+    "observation": "Observation",
+    "tools": "Tools",
+    "users": "Users",
+    "apps": "Apps",
+    "observability": "Observability",
+    "memory": "Memory",
+    "mcp": "MCP",
+    "sso": "SSO",
+    "integrations": "Integrations",
+    "settings": "Settings"
+  },
+  "signin": {
+    "title": "Create an account",
+    "description": "Fill out the form to create your Idun Platform account.",
+    "firstName": {
+      "label": "First Name",
+      "placeholder": "Enter your first name"
+    },
+    "lastName": {
+      "label": "Last Name",
+      "placeholder": "Enter your last name"
+    },
+    "name": {
+      "label": "Username",
+      "placeholder": "Enter your username"
+    },
+    "email": {
+      "label": "Email address",
+      "placeholder": "Enter your email address"
+    },
+    "phone": {
+      "label": "Phone",
+      "placeholder": "Enter your phone number"
+    },
+    "password": {
+      "label": "Password",
+      "placeholder": "Enter your password"
+    },
+    "submit": "Create account"
+  },
+  "user-form": {
+    "title": "User Form",
+    "description": "Please fill out the following information.",
+    "personal-information": {
+      "legend": "Personal Information",
+      "first-name": {
+        "label": "First Name",
+        "placeholder": "Enter your first name"
+      },
+      "last-name": {
+        "label": "Last Name",
+        "placeholder": "Enter your last name"
+      },
+      "email": {
+        "label": "Email Address",
+        "placeholder": "Enter your email address"
+      },
+      "phone": {
+        "label": "Phone",
+        "placeholder": "Enter your phone number"
+      }
+    },
+    "workspace": {
+      "legend": "Workspace Information",
+      "selection": "Select a workspace"
+    },
+    "professional-information": {
+      "legend": "Professional Information",
+      "role": {
+        "label": "Role",
+        "placeholder": "Enter your role",
+        "admin": "Administrator",
+        "user": "User",
+        "developer": "Developer",
+        "analyst": "Analyst",
+        "manager": "Manager"
+      },
+      "department": {
+        "label": "Department",
+        "placeholder": "Enter your department",
+        "it": "IT",
+        "hr": "Human Resources",
+        "finance": "Finance",
+        "marketing": "Marketing",
+        "sales": "Sales",
+        "operations": "Operations"
+      },
+      "bio": {
+        "label": "Biography",
+        "placeholder": "Enter your biography"
+      }
+    },
+    "permissions": {
+      "legend": "Permissions",
+      "agent-management": {
+        "title": "Agent Management",
+        "description": "Control agent access and permissions.",
+        "active": "Active"
+      },
+      "user-management": {
+        "title": "User Management",
+        "description": "Control user access and permissions.",
+        "active": "Active"
+      },
+      "analytics": {
+        "title": "Analytics",
+        "description": "Access reports and analytics.",
+        "active": "Active"
+      },
+      "system-configuration": {
+        "title": "System Configuration",
+        "description": "Manage system settings and configurations.",
+        "active": "Active"
+      }
+    },
+    "cancel": "Cancel",
+    "create-user": "Create user",
+    "back-to-users": "Back to users"
+  },
+  "login": {
+    "title": "Login",
+    "description": "Login to your Idun Platform account.",
+    "email": "Email address",
+    "email.placeholder": "Enter your email address",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "password.placeholder": "Enter your password",
+    "submit": "Login"
+  },
+  "firstLogin": {
+    "title": "Set your password",
+    "subtitle": "For security reasons, please set a new password for your account",
+    "userEmail": "Account: {{email}}",
+    "form": {
+      "title": "Password setup",
+      "newPassword": {
+        "label": "New password",
+        "placeholder": "Enter your new password"
+      },
+      "confirmPassword": {
+        "label": "Confirm password",
+        "placeholder": "Confirm your new password"
+      },
+      "submit": "Set password",
+      "updating": "Updating..."
+    },
+    "validation": {
+      "newPassword": {
+        "required": "New password is required",
+        "minLength": "Password must be at least 8 characters long",
+        "weak": "Password is too weak"
+      },
+      "confirmPassword": {
+        "required": "Password confirmation is required",
+        "match": "Passwords do not match"
+      }
+    },
+    "password": {
+      "strength": {
+        "label": "Password strength",
+        "weak": "Weak",
+        "medium": "Medium",
+        "strong": "Strong"
+      },
+      "criteria": {
+        "length": "At least 8 characters",
+        "lowercase": "Contains lowercase letters",
+        "uppercase": "Contains uppercase letters",
+        "number": "Contains numbers",
+        "special": "Contains special characters"
+      }
+    },
+    "help": {
+      "title": "Password requirements",
+      "requirement1": "At least 8 characters",
+      "requirement2": "Mix of uppercase and lowercase letters",
+      "requirement3": "At least one number",
+      "requirement4": "At least one special character (!@#$%^&*)"
+    },
+    "success": {
+      "message": "Password updated successfully. You can now log in with your new password."
+    },
+    "error": {
+      "general": "Password update failed. Please try again."
+    }
+  },
+  "changePassword": {
+    "title": "Change password",
+    "subtitle": "Update your account's password"
+  },
+  "agent-form": {
+    "title": "Create a new agent",
+    "back": "Back",
+    "agentFormTitle": "Agent Form",
+    "general-info": "Select the source for your agent",
+    "tabs": {
+      "agent": "Agent",
+      "testing": "Testing"
+    },
+    "graph-definition-path": {
+      "label": "Graph Definition Path",
+      "placeholder": "Select the graph definition file path"
+    },
+    "header": {
+      "title": "Create a new agent",
+      "subtitle": "Configure your agent's settings and behavior"
+    },
+    "generalInfo": "General Information",
+    "name": {
+      "label": "Agent Name",
+      "placeholder": "My first agent"
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "Describe what this agent does"
+    },
+    "framework": {
+      "label": "Framework",
+      "placeholder": "Select a framework",
+      "langgraph": "Langraph",
+      "smolagent": "SmolAgent",
+      "n8n": "N8N",
+      "adk": "ADK"
+    },
+    "source": {
+      "label": "Source",
+      "upload": "Upload",
+      "git": "Git",
+      "select-folder": "Select a folder",
+      "select-git-repo": "Select a Git repository",
+      "project": "Project",
+      "local": "Local",
+      "remote": "Remote",
+      "select-remote": "Select a remote repository",
+      "select-project-template": "Select a project"
+    },
+    "agent-path": {
+      "label": "Agent Path",
+      "placeholder": "Enter the agent path"
+    },
+    "checkpointConfig": "Checkpoint Configuration",
+    "availableAgents": "Available Agents",
+    "database-type": "Database Type",
+    "database-url": {
+      "label": "Database URL",
+      "placeholder": "Enter the database URL"
+    },
+    "status": "Status",
+    "run": "Run",
+    "testAgent": "My first agent",
+    "testInput": "Input",
+    "testOutput": "Output",
+    "testQuestion": "What's the weather like in Paris?",
+    "testResponse": "The current weather in Paris is 22°C with a partly cloudy sky. There is a light breeze from the southwest at 10 km/h. The humidity is 65% and visibility is good at 10km. No precipitation is expected for the next few hours.",
+    "viewTraces": "View traces",
+    "create-agent": "Create an agent",
+    "creating": "Creating...",
+    "button": {
+      "create": "Create an agent",
+      "creating": "Creating..."
+    },
+    "observability": {
+      "title": "Observability & Database",
+      "label": "Enable observability and database",
+      "tools": {
+        "none": "None"
+      },
+      "langfuse": {
+        "host": {
+          "label": "Langfuse Host",
+          "placeholder": "https://cloud.langfuse.com"
+        },
+        "public-key": {
+          "label": "Langfuse Public Key",
+          "placeholder": "pk-lf-..."
+        },
+        "secret-key": {
+          "label": "Langfuse Secret Key",
+          "placeholder": "sk-lf-..."
+        },
+        "run-name": {
+          "label": "Run Name",
+          "placeholder": "my-agent-run"
+        }
+      }
+    },
+    "success": {
+      "title": "Success",
+      "description": "Agent created successfully"
+    },
+    "error": {
+      "title": "Error",
+      "description": "Failed to create agent"
+    },
+    "placeholders": {
+      "repositoryUrl": "https://github.com/username/repository",
+      "branch": "main",
+      "path": "/src/agent",
+      "remoteUrl": "https://api.example.com/agent",
+      "authToken": "Bearer token or API key"
+    },
+    "sources": {
+      "selectType": "Select the source type for your agent code",
+      "configure": "Configure your {{sourceType}} source",
+      "import": {
+        "title": "Import an agent package",
+        "description": "Upload your agent as a ZIP file containing all the necessary code and configuration",
+        "label": "Import files",
+        "uploadDescription": "Upload a ZIP package",
+        "supportedFormat": "Supported format: ZIP files only",
+        "dropZone": "Drop your ZIP file here",
+        "orClickBrowse": "or click to browse",
+        "processing": "Processing ZIP file...",
+        "extracting": "Extracting agent files...",
+        "invalidFormat": "Only ZIP files are accepted",
+        "uploadSuccess": "ZIP package imported successfully",
+        "uploadError": "Error processing ZIP file",
+        "ready": "Package ready to use",
+        "zipStructureHelp": "Recommended structure: agent.py, requirements.txt, config.yaml inside your ZIP"
+      },
+      "github": {
+        "title": "Connect a GitHub repository",
+        "description": "Import agent code from your GitHub repository",
+        "label": "GitHub",
+        "uploadDescription": "Connect a repository",
+        "repositoryUrl": "Repository URL",
+        "branch": "Branch (optional)",
+        "path": "Path (optional)",
+        "connect": "Connect with GitHub"
+      },
+      "remote": {
+        "title": "Remote source",
+        "description": "Connect to a remote agent source",
+        "label": "Remote",
+        "uploadDescription": "Remote API source",
+        "remoteUrl": "Remote URL",
+        "authToken": "Authentication token (optional)",
+        "connect": "Connect remote source"
+      },
+      "project": {
+        "title": "Project template",
+        "description": "Use a pre-configured project template",
+        "label": "Project",
+        "uploadDescription": "Project template",
+        "templates": {
+          "basicChat": {
+            "name": "Basic chat agent",
+            "description": "Simple conversational agent"
+          },
+          "documentProcessor": {
+            "name": "Document processor",
+            "description": "Agent for document analysis"
+          },
+          "dataAnalyst": {
+            "name": "Data analyst",
+            "description": "Agent for data processing"
+          },
+          "custom": {
+            "name": "Custom template",
+            "description": "Create from scratch"
+          }
+        }
+      },
+      "selected": "selected source",
+      "configCompleted": "Source configuration completed"
+    },
+    "runTest": "Run test",
+    "saveTestCase": "Save test case"
+  },
+  "agentDetails": {
+    "backToAgents": "Back to agents",
+    "configure": "Configure",
+    "testAgent": "Test agent",
+    "pause": "Pause",
+    "tabs": {
+      "overview": "Overview",
+      "activity": "Activity",
+      "configuration": "Configuration",
+      "logs": "Logs",
+      "code": "Code"
+    },
+    "metrics": {
+      "totalRuns": "Total runs",
+      "successRate": "Success rate",
+      "avgResponseTime": "Average response time",
+      "uptime": "Uptime",
+      "todayRuns": "today",
+      "monthlyRuns": "this month",
+      "lastWeek": "compared to last week",
+      "lastDays": "last 7 days"
+    },
+    "charts": {
+      "dailyUsage": "Daily usage (last 7 days)",
+      "success": "Success",
+      "errors": "Errors"
+    },
+    "info": {
+      "title": "Agent information",
+      "framework": "Framework",
+      "source": "Source",
+      "tools": "Tools",
+      "lastRun": "Last run",
+      "observability": "Observability"
+    },
+    "activity": {
+      "title": "Recent activity",
+      "execution": "execution",
+      "deployment": "deployment"
+    },
+    "configuration": {
+      "general": "General configuration",
+      "langgraph": "LangGraph configuration",
+      "observability": "Observability",
+      "agentToAgent": "Agent to agent",
+      "streaming": "Streaming",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "inputSchema": "Input schema",
+      "outputSchema": "Output schema",
+      "parameters": "Parameters",
+      "checkpointType": "Checkpoint type",
+      "databasePath": "Database path",
+      "provider": "Provider",
+      "configuration": "Configuration"
+    },
+    "logs": {
+      "title": "Agent logs",
+      "export": "Export",
+      "viewInLangfuse": "View in Langfuse"
+    },
+    "status": {
+      "success": "success",
+      "error": "error",
+      "pending": "pending"
+    },
+    "timeAgo": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    },
+    "code": {
+      "title": "Agent source code",
+      "saveChanges": "Save changes",
+      "reset": "Reset",
+      "modified": "Modified",
+      "file": "File",
+      "language": "Language",
+      "lines": "Lines"
+    },
+    "buttons": {
+      "testAgent": "Test agent",
+      "export": "Export",
+      "clear": "Clear",
+      "viewDetails": "View details",
+      "retry": "Retry"
+    },
+    "titles": {
+      "agentLogs": "Agent logs"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "back_to_dashboard": "Back to dashboard",
+    "group": {
+      "preferences": "Preferences",
+      "workspaces": "Workspaces",
+      "projects": "Projects"
+    },
+    "tabs": {
+      "workspaceGeneral": "General",
+      "workspaceUsers": "Members",
+      "workspaceProjects": "All Projects",
+      "projectMembers": "Project Members"
+    },
+    "groups": {
+      "workspace": "Workspace",
+      "projects": "Projects"
+    },
+    "preferences": {
+      "general": "General",
+      "appearance": "Appearance",
+      "appearance.description": "Customize how the application looks and feels.",
+      "language": "Language",
+      "language.description": "Choose your preferred language for the interface."
+    },
+    "workspaces": {
+      "general": "General",
+      "general.rename": "Workspace Name",
+      "general.renameDescription": "Change the display name of your workspace.",
+      "general.namePlaceholder": "Workspace name",
+      "general.renameSuccess": "Workspace renamed successfully",
+      "general.noWorkspace": "No workspace selected",
+      "general.spaces": "Spaces",
+      "general.spacesDescription": "Spaces within this workspace. Manage spaces from the main dashboard.",
+      "general.spacesComingSoon": "Space management will be available here soon.",
+      "users": {
+        "ownerToggle": "Invite as workspace owner",
+        "projectAssignments": "Initial project assignments",
+        "owner": "Owner",
+        "projects": "Projects",
+        "noInvitations": "No pending invitations.",
+        "title": "Members",
+        "description": "Manage who has access to this workspace.",
+        "addMember": "Add member",
+        "name": "Name",
+        "email": "Email",
+        "role": "Role",
+        "actions": "",
+        "remove": "Remove",
+        "roleUpdated": "Role updated",
+        "memberRemoved": "Member removed",
+        "memberAdded": "Member added",
+        "fetchError": "Failed to load members",
+        "noMembers": "No members yet.",
+        "confirmRemoveTitle": "Remove member",
+        "confirmRemoveMessage": "Are you sure you want to remove this member from the workspace?",
+        "confirmRemove": "Remove",
+        "inviteTitle": "Add new member",
+        "inviteDescription": "Invite a user to this workspace by their email address. If they haven't signed up yet, they'll be added automatically when they do.",
+        "emailLabel": "Email",
+        "roleLabel": "Role",
+        "emailRequired": "Email is required",
+        "grantAccess": "Grant access",
+        "pending": "Pending",
+        "invitationCancelled": "Invitation cancelled",
+        "cancelInvitation": "Cancel invitation",
+        "alreadyInvited": "This email has already been invited",
+        "member": "Member",
+        "ownerDesc": "Full access to workspace and all projects",
+        "memberDesc": "Access based on project-level role assignments",
+        "allProjects": "All projects",
+        "confirmRoleTitle": "Change role",
+        "confirmPromoteMessage": "Promote {{name}} to Owner? They will have full access to the workspace.",
+        "confirmDemoteMessage": "Change {{name}} to Member? They will lose workspace management permissions.",
+        "confirmChange": "Confirm",
+        "members": "Members",
+        "invitations": "Pending Invitations",
+        "cancel": "Cancel",
+        "modal": {
+          "title": "Invite member",
+          "emailLabel": "Email address",
+          "emailPlaceholder": "name@company.com",
+          "roleLabel": "Select a role",
+          "projectsLabel": "Assign to projects",
+          "submit": "Send invitation",
+          "role": {
+            "owner": "Owner",
+            "contributor": "Contributor",
+            "reader": "Reader"
+          },
+          "perm": {
+            "ownerWorkspace": "Manage workspace settings and billing",
+            "ownerMembers": "Invite and remove workspace members",
+            "ownerProjects": "Full access to all projects and resources",
+            "ownerRoles": "Assign roles and manage permissions",
+            "contribAgents": "Create, edit, and deploy agents",
+            "contribResources": "Manage resources (MCP, memory, guardrails)",
+            "contribPrompts": "Create and edit prompts",
+            "contribView": "View observability data and logs",
+            "readerAgents": "View agents and their configurations",
+            "readerResources": "View resources and integrations",
+            "readerLogs": "View observability data and logs",
+            "readerNoEdit": "Cannot create or modify resources"
+          }
+        }
+      }
+    },
+    "profile": {
+      "title": "Profile",
+      "description": "Manage your personal information and preferences.",
+      "name": {
+        "label": "Name",
+        "placeholder": "Your name"
+      },
+      "firstName": {
+        "label": "First Name",
+        "placeholder": "Your first name"
+      },
+      "lastName": {
+        "label": "Last Name",
+        "placeholder": "Your last name"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "Your email address"
+      },
+      "phone": {
+        "label": "Phone",
+        "placeholder": "Your phone number"
+      },
+      "save": "Save"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Choose your preferred language for the interface.",
+      "subtitle": "Select your language"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Manage your notification preferences.",
+      "agents-status-changes": {
+        "label": "Agent status changes",
+        "sub-label": "Be notified when agents connect or disconnect"
+      },
+      "performance-alerts": {
+        "label": "Performance alerts",
+        "sub-label": "Receive alerts for performance threshold breaches"
+      },
+      "system-updates": {
+        "label": "System updates",
+        "sub-label": "Be notified of platform updates and maintenance"
+      },
+      "browser-notifications": {
+        "label": "Browser notifications",
+        "sub-label": "Receive notifications in the browser."
+      }
+    },
+    "security": {
+      "title": "Security",
+      "description": "Manage your security and privacy settings.",
+      "submit": "Update password",
+      "2FA": {
+        "label": "Two-factor authentication",
+        "description": "Add an extra layer of security to your account."
+      },
+      "alert": {
+        "label": "Security alerts",
+        "description": "Receive alerts for suspicious login attempts."
+      },
+      "current-assword": {
+        "label": "Current password",
+        "placeholder": "Enter your current password"
+      },
+      "new-password": {
+        "label": "New password",
+        "placeholder": "Enter your new password"
+      },
+      "confirm-password": {
+        "label": "Confirm new password",
+        "placeholder": "Confirm your new password"
+      }
+    },
+    "appearance": {
+      "title": "Appearance",
+      "description": "Customize the look and feel of your interface.",
+      "subtitle": "Theme selection",
+      "theme": {
+        "system": "System default",
+        "light": "Light theme",
+        "dark": "Dark theme"
+      },
+      "compact-mode": {
+        "label": "Compact mode",
+        "subLabel": "Display more content in less space."
+      },
+      "high-contrast-mode": {
+        "label": "High-contrast mode",
+        "subLabel": "Increase contrast for better visibility."
+      }
+    },
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phoneNumber": "Phone Number",
+    "country": "Country",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "saveChanges": "Save changes",
+    "deleteProfile": "Delete profile",
+    "changePicture": "Change",
+    "edit": "Edit",
+    "twoFactor": "Two-factor authentication",
+    "theme": "Theme",
+    "agentAlerts": "Agent status alerts",
+    "systemUpdates": "System updates",
+    "weeklyReports": "Weekly reports",
+    "languageDescription": "Choose your preferred language for the interface.",
+    "interfaceLanguage": "Interface language",
+    "languageNote": "This will change the language of all text in the application interface.",
+    "general": "General",
+    "displayName": "Display Name",
+    "profileDescription": "Manage your account information and preferences.",
+    "securityDescription": "Manage your password and security settings.",
+    "appearanceDescription": "Customize your interface theme and appearance preferences.",
+    "notificationsDescription": "Choose how you would like to be notified of activity.",
+    "themePreference": "Theme preference",
+    "systemDefault": "System default",
+    "light": "Light",
+    "dark": "Dark",
+    "compactModeDescription": "Display more content in less space.",
+    "highContrastDescription": "Increase contrast for better visibility.",
+    "agentStatusChanges": "Agent status changes",
+    "agentStatusChangesDesc": "Be notified when agents connect or disconnect",
+    "performanceAlerts": "Performance alerts",
+    "performanceAlertsDesc": "Receive alerts for performance threshold breaches",
+    "systemUpdatesDesc": "Be notified of platform updates and maintenance",
+    "browserNotifications": "Browser notifications",
+    "browserNotificationsDesc": "Display notifications in your browser",
+    "switch-account": "Switch account",
+    "projects": {
+      "overview": "Projects",
+      "members": "Project members",
+      "title": "Projects",
+      "description": "Projects separate agents, prompts, and integrations within a workspace.",
+      "name": "Project name",
+      "descriptionField": "Description",
+      "create": "Create",
+      "list": "Workspace projects",
+      "noCurrentProject": "Select a project first.",
+      "noMembers": "No project members yet.",
+      "memberEmail": "Email",
+      "addMember": "Add member",
+      "memberAdded": "Member added",
+      "memberRemoved": "Member removed",
+      "roleUpdated": "Role updated",
+      "membersList": "Members",
+      "project": "Project",
+      "confirmRoleTitle": "Change role",
+      "confirmRoleMessage": "Change {{name}} to {{role}}?",
+      "confirmChange": "Confirm",
+      "roleDesc.admin": "Full project control including member management",
+      "roleDesc.contributor": "Create and edit agents, resources, and prompts",
+      "roleDesc.reader": "View-only access to project resources",
+      "modal.title": "Add project member",
+      "modal.selectMember": "Select a workspace member",
+      "modal.searchPlaceholder": "Search by name or email...",
+      "modal.noResults": "No matching members",
+      "modal.allAssigned": "All workspace members are already in this project",
+      "modal.roleLabel": "Select a role",
+      "modal.submit": "Add member",
+      "modal.ownerOnly": "Owner only",
+      "modal.role.admin": "Admin",
+      "modal.role.contributor": "Contributor",
+      "modal.role.reader": "Reader",
+      "modal.perm.adminMembers": "Add and remove project members",
+      "modal.perm.adminAgents": "Full control over agents and deployments",
+      "modal.perm.adminResources": "Manage all project resources and settings",
+      "modal.perm.adminRoles": "Change member roles within the project",
+      "modal.perm.contribAgents": "Create, edit, and deploy agents",
+      "modal.perm.contribResources": "Manage resources (MCP, memory, guardrails)",
+      "modal.perm.contribPrompts": "Create and edit prompts",
+      "modal.perm.contribNoAdmin": "Cannot manage members or project settings",
+      "modal.perm.readerAgents": "View agents and their configurations",
+      "modal.perm.readerResources": "View resources and integrations",
+      "modal.perm.readerLogs": "View observability data and logs",
+      "modal.perm.readerNoEdit": "Cannot create or modify resources",
+      "defaultSet": "{{name}} is now the default project",
+      "isDefault": "Default project",
+      "setDefault": "Set as default",
+      "panel.members": "Members",
+      "panel.add": "Add"
+    }
+  },
+  "guard": {
+    "title": "Guard System",
+    "description": "Monitor and control agent access and permissions",
+    "activeGuards": "Active guards",
+    "securityPolicies": "Security policies",
+    "accessLogs": "Access logs",
+    "threatDetection": "Threat detection"
+  },
+  "api": {
+    "title": "API Management",
+    "description": "Manage API endpoints and integrations",
+    "endpoints": "Endpoints",
+    "apiKeys": "API keys",
+    "documentation": "Documentation",
+    "rateLimits": "Rate limits",
+    "usage": "Usage statistics"
+  },
+  "observation": {
+    "title": "Observation Center",
+    "description": "Monitor agent performance and behavior",
+    "metrics": "Metrics",
+    "logs": "Logs",
+    "performance": "Performance",
+    "alerts": "Alerts",
+    "analytics": "Analytics"
+  },
+  "tools": {
+    "title": "Tools and Utilities",
+    "description": "Available tools and utilities for agent development",
+    "developmentTools": "Development tools",
+    "debugger": "Debugger",
+    "testingSuite": "Testing suite",
+    "codeGenerator": "Code generator",
+    "utilities": "Utilities"
+  },
+  "users": {
+    "title": "User Management",
+    "description": "Manage system users and permissions",
+    "allUsers": "All users",
+    "roles": "Roles",
+    "role": {
+      "admin": "Administrator",
+      "user": "User",
+      "guest": "Guest",
+      "editor": "Editor",
+      "viewer": "Viewer"
+    },
+    "permissions": "Permissions",
+    "invitations": "Invitations",
+    "activity": "User activity",
+    "totalResults": "Total: {{count}} users",
+    "noUsers": "No users available.",
+    "noResultsFound": "No users found matching your search.",
+    "cta": "Add user",
+    "searchPlaceholder": "Search users by name, email or role...",
+    "search": {
+      "placeholder": "Search users by name, email or role..."
+    },
+    "column": {
+      "lastName": "Last Name",
+      "firstName": "First Name",
+      "userName": "Username",
+      "email": "Email",
+      "phone": "Phone",
+      "role": "Role",
+      "actions": "Actions"
+    },
+    "create": {
+      "title": "Create user",
+      "subtitle": "Fill in the details to create a new user account",
+      "subtitleWithCategory": "Fill in the details to create a new user account in category {{category}}",
+      "form": {
+        "title": "User information",
+        "firstName": {
+          "label": "First Name",
+          "placeholder": "Enter first name",
+          "required": "First name is required"
+        },
+        "lastName": {
+          "label": "Last Name",
+          "placeholder": "Enter last name",
+          "required": "Last name is required"
+        },
+        "username": {
+          "label": "Username",
+          "placeholder": "Enter username",
+          "required": "Username is required",
+          "minLength": "Username must be at least 3 characters"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "Enter email",
+          "required": "Email is required",
+          "invalid": "Invalid email format"
+        },
+        "phone": {
+          "label": "Phone",
+          "placeholder": "Enter phone number",
+          "required": "Phone number is required",
+          "invalid": "Invalid phone number format"
+        },
+        "role": {
+          "label": "Role",
+          "placeholder": "Select role",
+          "required": "Role is required"
+        },
+        "workspaces": {
+          "label": "Workspaces",
+          "placeholder": "Select workspaces",
+          "required": "Please select at least one workspace",
+          "noWorkspaces": "No workspaces available",
+          "help": "Select one or more workspaces the user will have access to"
+        },
+        "submit": "Create user",
+        "creating": "Creating user..."
+      }
+    }
+  },
+  "agents": {
+    "title": "Agent Management",
+    "description": "Manage and monitor your AI agents",
+    "noAgentsAvailable": "No agents available.",
+    "noResultsFound": "No agents found matching your search or filters.",
+    "noAgentsOnThisPage": "No agents to display on this page.",
+    "totalResults": "Total: {{count}} agents",
+    "searchPlaceholder": "Search by name, framework, or environment..."
+  },
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} items",
+    "total-per-page": "Total per page: {{count}}",
+    "previous": "Previous",
+    "next": "Next",
+    "items-per-page": "Items per page:",
+    "no-data": "No data available.",
+    "page": "Page"
+  },
+  "auth": {
+    "signin": {
+      "title": "Sign in",
+      "description": "Enter your credentials to access your account",
+      "button": "Sign in",
+      "link": "Sign in"
+    },
+    "signup": {
+      "title": "Create an account",
+      "description": "Create your account to get started",
+      "button": "Create account",
+      "link": "Sign up"
+    },
+    "username": "Username",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "profilePicture": "Profile Picture",
+    "uploadPhoto": "Upload photo",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "usernamePlaceholder": "Enter your username",
+    "firstNamePlaceholder": "Enter your first name",
+    "lastNamePlaceholder": "Enter your last name",
+    "passwordPlaceholder": "Enter your password",
+    "confirmPasswordPlaceholder": "Confirm your password",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signingIn": "Signing in...",
+    "signingUp": "Creating account...",
+    "passwordsMatch": "Passwords match",
+    "passwordsDontMatch": "Passwords don't match",
+    "requirements": {
+      "minLength": "At least 8 characters",
+      "uppercase": "One uppercase letter",
+      "lowercase": "One lowercase letter",
+      "number": "One number"
+    },
+    "errors": {
+      "invalidCredentials": "Incorrect username or password. Please try again.",
+      "signupFailed": "Signup failed. Please try again.",
+      "unauthorized": "You are logged out. Reconnecting..."
+    },
+    "passwordRequirements": {
+      "title": "Password requirements",
+      "length": "At least 8 characters",
+      "uppercase": "One uppercase letter",
+      "lowercase": "One lowercase letter",
+      "number": "One number"
+    }
+  },
+  "resetPassword": {
+    "title": "Reset password",
+    "description": "Enter your email address to verify your account",
+    "newPasswordTitle": "Set a new password",
+    "newPasswordDescription": "Enter your current password and create a new one",
+    "verifyEmail": "Verify email",
+    "verifying": "Verifying...",
+    "emailVerified": "Email verified",
+    "proceedToReset": "You can now reset your password",
+    "emailError": "Email verification failed",
+    "emailNotFound": "Email not found in our system",
+    "resetPassword": "Reset password",
+    "resetting": "Resetting password...",
+    "success": "Password reset successful",
+    "successMessage": "Your password has been successfully updated",
+    "error": "Password reset failed",
+    "errorMessage": "Unable to reset password",
+    "currentPasswordPlaceholder": "Enter current password",
+    "newPasswordPlaceholder": "Enter new password",
+    "confirmPasswordPlaceholder": "Confirm new password",
+    "backToSignIn": "Back to sign in"
+  },
+  "dataBoard": {
+    "pagination": {
+      "total": "Total: {{count}} items",
+      "itemsPerPage": "Items per page:",
+      "showing": "Showing {{start}} to {{end}} of {{total}} items",
+      "previous": "← Previous",
+      "next": "Next →"
+    },
+    "emptyState": "No data available.",
+    "table": {
+      "noResults": "No results found"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "pleaseWait": "Please wait...",
+    "search": "Search",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "comingSoon": "Coming soon",
+    "underDevelopment": "This feature is under development",
+    "back": "Back",
+    "saving": "Saving...",
+    "adding": "Adding..."
+  },
+  "integrations": {
+    "title": "Integrations",
+    "subtitle": "Connect external messaging platforms to your agents",
+    "search": "Search integrations...",
+    "add": "Add integration",
+    "addCard": "Add integration",
+    "loading": "Loading integrations…",
+    "active": "Active Integrations",
+    "comingSoon": "Coming Soon",
+    "whatsapp": "WhatsApp",
+    "discord": "Discord"
+  },
+  "theme": {
+    "toggleToLight": "Switch to light mode",
+    "toggleToDark": "Switch to dark mode",
+    "theme": "Theme"
+  },
+  "onboarding": {
+    "title": "Create your workspace",
+    "description": "Get started by creating your first workspace to manage your AI agents.",
+    "name": {
+      "label": "Workspace name",
+      "placeholder": "My Workspace"
+    },
+    "submit": "Create workspace",
+    "creating": "Creating...",
+    "error": "Failed to create workspace. Please try again."
+  },
+  "projects": {
+    "created": "Project created",
+    "deleted": "Project deleted",
+    "empty": "No projects available."
+  }
 }
