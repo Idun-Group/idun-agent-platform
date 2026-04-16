@@ -134,10 +134,12 @@ const AgentDashboardPage = () => {
                     <EmptyDescription>
                         {`Create your first agent in ${currentProject.name} to start monitoring and managing your AI workflows.`}
                     </EmptyDescription>
-                    <CreateButton onClick={() => navigate('/agents/create')} disabled={!canWrite}>
-                        <Plus size={18} />
-                        {t('dashboard.agent.create')}
-                    </CreateButton>
+                    {canWrite && (
+                        <CreateButton onClick={() => navigate('/agents/create')}>
+                            <Plus size={18} />
+                            {t('dashboard.agent.create')}
+                        </CreateButton>
+                    )}
                 </EmptyState>
             </PageWrapper>
         );
@@ -161,10 +163,12 @@ const AgentDashboardPage = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </SearchBar>
-                    <CreateButton onClick={() => navigate('/agents/create')} disabled={!canWrite}>
-                        <Plus size={16} />
-                        {t('dashboard.agent.create')}
-                    </CreateButton>
+                    {canWrite && (
+                        <CreateButton onClick={() => navigate('/agents/create')}>
+                            <Plus size={16} />
+                            {t('dashboard.agent.create')}
+                        </CreateButton>
+                    )}
                 </HeaderActions>
             </PageHeader>
 
@@ -185,13 +189,15 @@ const AgentDashboardPage = () => {
                         />
                     ))}
 
-                    <AddCard onClick={() => canWrite && navigate('/agents/create')}>
-                        <AddIconWrapper>
-                            <Plus size={28} />
-                        </AddIconWrapper>
-                        <AddTitle>Connect a new agent</AddTitle>
-                        <AddSubtitle>Configure from a template or connect</AddSubtitle>
-                    </AddCard>
+                    {canWrite && (
+                        <AddCard onClick={() => navigate('/agents/create')}>
+                            <AddIconWrapper>
+                                <Plus size={28} />
+                            </AddIconWrapper>
+                            <AddTitle>Connect a new agent</AddTitle>
+                            <AddSubtitle>Configure from a template or connect</AddSubtitle>
+                        </AddCard>
+                    )}
                 </Grid>
             )}
 
