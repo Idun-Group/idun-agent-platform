@@ -84,6 +84,7 @@ const ThemeContainer = styled.div`
     display: flex;
     gap: 12px;
     margin-bottom: 20px;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const ThemePreview = styled.div<{ $mode: 'system' | 'light' | 'dark' }>`
@@ -105,23 +106,25 @@ const ThemeCard = styled.div<{ $isSelected: boolean }>`
     cursor: pointer;
     border: 1px solid
         ${({ $isSelected }) =>
-            $isSelected ? 'hsl(var(--primary))' : 'var(--border-light)'};
+            $isSelected ? '#0C5CAB' : 'rgba(255, 255, 255, 0.06)'};
     background: ${({ $isSelected }) =>
-        $isSelected ? 'hsla(var(--primary) / 0.06)' : 'var(--overlay-subtle)'};
+        $isSelected ? 'rgba(12, 92, 171, 0.06)' : 'rgba(255, 255, 255, 0.03)'};
     transition: all 150ms ease;
+    backdrop-filter: blur(12px);
 
     &:hover {
         border-color: ${({ $isSelected }) =>
-            $isSelected ? 'hsl(var(--primary))' : 'var(--overlay-strong)'};
+            $isSelected ? '#0C5CAB' : 'rgba(255, 255, 255, 0.1)'};
     }
 `;
 
 const ThemeLabel = styled.p`
     font-size: 13px;
     font-weight: 500;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     text-align: center;
     margin: 8px 0 0 0;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const ToggleRow = styled.div`
@@ -129,7 +132,7 @@ const ToggleRow = styled.div`
     align-items: center;
     justify-content: space-between;
     padding: 14px 0;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const ToggleInfo = styled.div`
@@ -141,19 +144,21 @@ const ToggleInfo = styled.div`
 const ToggleLabel = styled.span`
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const ToggleDescription = styled.span`
     font-size: 13px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const ToggleTrack = styled.div<{ $isOn: boolean }>`
     width: 40px;
     height: 22px;
     border-radius: 11px;
-    background: ${({ $isOn }) => ($isOn ? 'hsl(var(--primary))' : 'var(--overlay-medium)')};
+    background: ${({ $isOn }) => ($isOn ? '#0C5CAB' : 'rgba(255, 255, 255, 0.08)')};
     cursor: pointer;
     position: relative;
     transition: background 150ms ease;
@@ -164,7 +169,7 @@ const ToggleKnob = styled.div<{ $isOn: boolean }>`
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: hsl(var(--foreground));
+    background: #e1e4e8;
     position: absolute;
     top: 3px;
     left: ${({ $isOn }) => ($isOn ? '21px' : '3px')};

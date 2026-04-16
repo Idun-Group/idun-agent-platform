@@ -194,7 +194,8 @@ const LoginPage = () => {
 const PageWrapper = styled.main`
     display: flex;
     min-height: 100vh;
-    background: hsl(var(--background));
+    background: #0a0e17;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     @media (max-width: 1024px) {
         flex-direction: column;
@@ -220,7 +221,7 @@ const LeftContent = styled.div`
     max-width: 420px;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 32px;
 `;
 
 const LogoSection = styled.div`
@@ -237,8 +238,8 @@ const LogoImg = styled.img`
 
 const LogoText = styled.span`
     font-size: 18px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #e2e8f0;
     letter-spacing: -0.3px;
 `;
 
@@ -250,22 +251,23 @@ const HeroSection = styled.div`
 
 const HeroTitle = styled.h1`
     font-size: 28px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #f1f5f9;
     letter-spacing: -0.5px;
+    margin: 0;
 `;
 
 const HeroDescription = styled.p`
     font-size: 15px;
-    color: hsl(var(--muted-foreground));
-    line-height: 1.5;
+    color: #7a8ba5;
+    line-height: 1.6;
     margin: 0;
 `;
 
 const AuthForm = styled.form`
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 `;
 
 const SubmitButton = styled(Button)`
@@ -276,10 +278,20 @@ const SubmitButton = styled(Button)`
     font-weight: 600;
     border-radius: 8px;
     margin-top: 4px;
+    background: #0C5CAB;
+    border: 1px solid rgba(12, 92, 171, 0.4);
+    color: #ffffff;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: #0a4f96;
+        border-color: rgba(12, 92, 171, 0.6);
+        box-shadow: 0 0 16px rgba(12, 92, 171, 0.25);
+    }
 `;
 
 const ErrorText = styled.p`
-    color: hsl(var(--destructive));
+    color: #f87171;
     font-size: 13px;
     margin: 0;
 `;
@@ -291,18 +303,20 @@ const SSOButton = styled.button`
     gap: 10px;
     width: 100%;
     padding: 12px 20px;
-    background: transparent;
-    border: 1px solid hsl(var(--border));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e2e8f0;
     font-size: 15px;
     font-weight: 500;
+    font-family: 'IBM Plex Sans', sans-serif;
     cursor: pointer;
     transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
 
     &:hover {
-        background: hsl(var(--accent));
-        border-color: hsl(var(--muted-foreground));
+        background: rgba(12, 92, 171, 0.08);
+        border-color: rgba(12, 92, 171, 0.3);
     }
 `;
 
@@ -313,13 +327,14 @@ const ProviderLogo = styled.img`
 
 const SignupLink = styled.span`
     cursor: pointer;
-    color: hsl(var(--muted-foreground));
+    color: #7a8ba5;
     text-align: center;
     font-size: 14px;
     margin-top: 4px;
+    transition: color 0.2s ease;
 
     &:hover {
-        color: hsl(var(--primary));
+        color: #4a9eed;
         text-decoration: underline;
     }
 `;
@@ -328,13 +343,13 @@ const MeetingSection = styled.div`
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-top: 8px;
-    border-top: 1px solid hsl(var(--border));
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const MeetingText = styled.span`
     font-size: 13px;
-    color: hsl(var(--muted-foreground));
+    color: #7a8ba5;
 `;
 
 const MeetingButton = styled.a`
@@ -343,7 +358,7 @@ const MeetingButton = styled.a`
     gap: 8px;
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--primary));
+    color: #4a9eed;
     text-decoration: none;
     transition: opacity 0.2s ease;
 
@@ -364,12 +379,12 @@ const FooterLink = styled.a`
     align-items: center;
     gap: 5px;
     font-size: 13px;
-    color: hsl(var(--muted-foreground));
+    color: #5a6a80;
     text-decoration: none;
     transition: color 0.2s ease;
 
     &:hover {
-        color: hsl(var(--foreground));
+        color: #94a3b8;
     }
 `;
 
@@ -377,7 +392,7 @@ const FooterDot = styled.span`
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: hsl(var(--muted-foreground));
+    background: #5a6a80;
 `;
 
 const RightPanel = styled.div`
@@ -386,12 +401,12 @@ const RightPanel = styled.div`
     align-items: center;
     justify-content: center;
     padding: 48px 32px;
-    background: hsl(var(--muted));
-    border-left: 1px solid hsl(var(--border));
+    background: #0d1220;
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
 
     @media (max-width: 1024px) {
         border-left: none;
-        border-top: 1px solid hsl(var(--border));
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
         padding: 32px 24px;
     }
 `;
@@ -407,29 +422,36 @@ const RightContent = styled.div`
 const PlatformImage = styled.img`
     width: 100%;
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const TestimonialsSection = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
 `;
 
 const TestimonialCard = styled.div`
     padding: 20px;
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    backdrop-filter: blur(12px);
+    transition: border-color 0.2s ease;
+
+    &:hover {
+        border-color: rgba(12, 92, 171, 0.2);
+    }
 `;
 
 const QuoteText = styled.p`
     font-size: 14px;
     line-height: 1.6;
-    color: hsl(var(--foreground));
+    color: #b0bec5;
     margin: 0;
     font-style: italic;
 `;
@@ -445,6 +467,7 @@ const AuthorAvatar = styled.img`
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
+    border: 2px solid rgba(12, 92, 171, 0.3);
 `;
 
 const AuthorInfo = styled.div`
@@ -456,12 +479,12 @@ const AuthorInfo = styled.div`
 const AuthorName = styled.span`
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e2e8f0;
 `;
 
 const AuthorTitle = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #7a8ba5;
 `;
 
 export default LoginPage;

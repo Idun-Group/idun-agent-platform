@@ -269,6 +269,8 @@ const AppLayout = styled.div`
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    background: #0a0e17;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
 `;
 
 const ContentLayout = styled.div`
@@ -282,7 +284,7 @@ const MainContent = styled.div`
     display: flex;
     flex-direction: column;
     min-height: 0;
-    background: hsl(var(--background));
+    background: #0a0e17;
     overflow: auto;
 `;
 

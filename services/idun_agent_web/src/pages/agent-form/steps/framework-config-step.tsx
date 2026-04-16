@@ -172,13 +172,13 @@ const StepContainer = styled.div`
 const Title = styled.h2`
     font-size: 22px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0 0 4px;
 `;
 
 const Subtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0 0 32px;
 `;
 
@@ -194,48 +194,48 @@ const InputLabel = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-transform: uppercase;
     margin-bottom: 8px;
 `;
 
 const Required = styled.span`
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin-left: 4px;
 `;
 
 const StyledInput = styled.input`
     width: 100%;
-    background-color: hsl(var(--accent));
-    border: 1px solid var(--border-light);
+    background-color: rgba(12, 92, 171, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     padding: 12px 16px;
     font-size: 14px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     outline: none;
     transition: all 0.2s;
     box-sizing: border-box;
 
     &:focus {
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 1px hsl(var(--primary));
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 1px #0C5CAB;
     }
 
     &::placeholder {
-        color: hsl(var(--text-tertiary));
+        color: #4a5568;
     }
 `;
 
 const Hint = styled.p`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 6px 0 0;
 `;
 
 const ToggleRow = styled.div`
     display: flex;
     gap: 0;
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     overflow: hidden;
     width: fit-content;
@@ -253,16 +253,16 @@ const ToggleOption = styled.button<{ $isSelected: boolean }>`
     transition: all 0.2s;
 
     ${props => props.$isSelected ? `
-        background-color: hsl(var(--primary) / 0.15);
-        color: hsl(var(--foreground));
-        box-shadow: inset 0 0 0 1px hsl(var(--primary));
+        background-color: rgba(12, 92, 171, 0.15);
+        color: #e1e4e8;
+        box-shadow: inset 0 0 0 1px #0C5CAB;
     ` : `
-        background-color: hsl(var(--accent));
-        color: hsl(var(--muted-foreground));
+        background-color: rgba(12, 92, 171, 0.1);
+        color: #8899a6;
 
         &:hover {
-            color: hsl(var(--text-secondary));
-            background-color: var(--overlay-subtle);
+            color: #6b7a8d;
+            background-color: rgba(255, 255, 255, 0.02);
         }
     `}
 `;
@@ -270,22 +270,22 @@ const ToggleOption = styled.button<{ $isSelected: boolean }>`
 const PortInputRow = styled.div`
     display: flex;
     align-items: center;
-    background-color: hsl(var(--accent));
-    border: 1px solid var(--border-light);
+    background-color: rgba(12, 92, 171, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     overflow: hidden;
     transition: all 0.2s;
 
     &:focus-within {
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 1px hsl(var(--primary));
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 1px #0C5CAB;
     }
 `;
 
 const PortPrefix = styled.span`
     padding: 12px 0 12px 16px;
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     white-space: nowrap;
     user-select: none;
 `;
@@ -296,7 +296,7 @@ const PortInput = styled.input`
     border: none;
     padding: 12px 16px 12px 0;
     font-size: 14px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     outline: none;
     width: 80px;
 
@@ -309,14 +309,14 @@ const PortInput = styled.input`
     }
 
     &::placeholder {
-        color: hsl(var(--text-tertiary));
+        color: #4a5568;
     }
 `;
 
 const PortSteppers = styled.div`
     display: flex;
     flex-direction: column;
-    border-left: 1px solid var(--border-light);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const PortStepBtn = styled.button`
@@ -327,21 +327,21 @@ const PortStepBtn = styled.button`
     height: 20px;
     background: transparent;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     padding: 0;
     transition: all 0.15s;
 
     &:first-child {
-        border-bottom: 1px solid var(--border-light);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     &:hover {
-        background: rgba(140, 82, 255, 0.15);
+        background: rgba(12, 92, 171, 0.15);
         color: #a78bfa;
     }
 
     &:active {
-        background: rgba(140, 82, 255, 0.25);
+        background: rgba(12, 92, 171, 0.25);
     }
 `;

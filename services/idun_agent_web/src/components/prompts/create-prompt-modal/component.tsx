@@ -211,14 +211,14 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: hsl(var(--card));
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 16px;
     width: 640px;
     max-width: 95vw;
@@ -227,14 +227,14 @@ const Modal = styled.div`
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     position: relative;
     animation: ${fadeIn} 0.15s ease;
 `;
 
 const Header = styled.div`
     padding: 22px 24px 18px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -243,24 +243,24 @@ const Header = styled.div`
 const Title = styled.h2`
     font-size: 16px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const CloseBtn = styled.button`
-    background: var(--overlay-light);
+    background: rgba(255, 255, 255, 0.04);
     border: none;
     border-radius: 8px;
     width: 30px;
     height: 30px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.15s;
-    &:hover { background: var(--overlay-medium); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.08); color: #e1e4e8; }
 `;
 
 const FormBody = styled.div`
@@ -277,37 +277,37 @@ const Label = styled.label`
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin-bottom: 8px;
 `;
 
 const Req = styled.span`
-    color: hsl(var(--destructive));
+    color: #f87171;
 `;
 
 const Input = styled.input`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.15s;
-    &::placeholder { color: hsl(var(--text-tertiary)); }
-    &:focus { border-color: hsl(var(--primary) / 0.5); }
+    &::placeholder { color: #4a5568; }
+    &:focus { border-color: rgba(12, 92, 171, 0.5); }
 `;
 
 const HelpText = styled.p`
     font-size: 12px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 6px 0 0;
 `;
 
 const EditorWrap = styled.div`
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     overflow: hidden;
 `;
@@ -322,7 +322,7 @@ const VarRow = styled.div`
 
 const VarLabel = styled.span`
     font-size: 11px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
 `;
 
 const VarPill = styled.span`
@@ -330,9 +330,9 @@ const VarPill = styled.span`
     font-family: 'SF Mono', 'Fira Code', monospace;
     padding: 2px 8px;
     border-radius: 5px;
-    background: rgba(140, 82, 255, 0.1);
-    color: #a78bfa;
-    border: 1px solid rgba(140, 82, 255, 0.18);
+    background: rgba(12, 92, 171, 0.1);
+    color: #5B9BD5;
+    border: 1px solid rgba(12, 92, 171, 0.18);
 `;
 
 const TagList = styled.div`
@@ -349,9 +349,9 @@ const Tag = styled.span`
     font-size: 12px;
     padding: 4px 10px;
     border-radius: 6px;
-    background: rgba(140, 82, 255, 0.08);
-    color: #a78bfa;
-    border: 1px solid rgba(140, 82, 255, 0.15);
+    background: rgba(12, 92, 171, 0.08);
+    color: #5B9BD5;
+    border: 1px solid rgba(12, 92, 171, 0.15);
 `;
 
 const TagX = styled.button`
@@ -369,7 +369,7 @@ const TagX = styled.button`
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin: 0 0 16px;
     padding: 10px 14px;
     background: rgba(248, 113, 113, 0.08);
@@ -379,7 +379,7 @@ const ErrorMsg = styled.p`
 
 const Footer = styled.div`
     padding: 16px 24px 20px;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -388,22 +388,22 @@ const Footer = styled.div`
 const CancelBtn = styled.button`
     padding: 9px 18px;
     background: transparent;
-    border: 1px solid var(--border-medium);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-    &:hover { background: var(--overlay-subtle); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.02); color: #e1e4e8; }
 `;
 
 const SubmitBtn = styled.button`
     padding: 9px 22px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 8px;
-    color: hsl(var(--primary-foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -418,8 +418,8 @@ const SubmitBtn = styled.button`
 const BtnSpinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid hsl(var(--primary-foreground) / 0.3);
-    border-top-color: hsl(var(--primary-foreground));
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
@@ -427,7 +427,7 @@ const BtnSpinner = styled.div`
 const Blocker = styled.div`
     position: absolute;
     inset: 0;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -438,8 +438,8 @@ const Blocker = styled.div`
 const BigSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid var(--border-light);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.06);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -454,7 +454,7 @@ const ContentHeader = styled.div`
 const ViewToggle = styled.div`
     display: flex;
     gap: 2px;
-    background: var(--overlay-subtle);
+    background: rgba(255, 255, 255, 0.02);
     border-radius: 6px;
     padding: 2px;
 `;
@@ -467,23 +467,23 @@ const ToggleBtn = styled.button.attrs({ type: 'button' })<{ $active: boolean }>`
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.15s;
-    background: ${p => p.$active ? 'rgba(140, 82, 255, 0.15)' : 'transparent'};
-    color: ${p => p.$active ? '#a78bfa' : 'hsl(var(--text-tertiary))'};
-    &:hover { color: ${p => p.$active ? '#a78bfa' : 'hsl(var(--text-secondary))'}; }
+    background: ${p => p.$active ? 'rgba(12, 92, 171, 0.15)' : 'transparent'};
+    color: ${p => p.$active ? '#5B9BD5' : '#4a5568'};
+    &:hover { color: ${p => p.$active ? '#5B9BD5' : '#6b7a8d'}; }
 `;
 
 const PreviewWrap = styled.div`
     height: 220px;
     overflow-y: auto;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     padding: 14px 16px;
     font-size: 14px;
-    color: hsl(var(--foreground) / 0.85);
+    color: rgba(225, 228, 232, 0.85);
     line-height: 1.7;
 
-    h1, h2, h3, h4 { color: hsl(var(--foreground)); margin: 0.5em 0 0.3em; }
+    h1, h2, h3, h4 { color: #e1e4e8; margin: 0.5em 0 0.3em; }
     h1 { font-size: 1.3em; }
     h2 { font-size: 1.15em; }
     h3 { font-size: 1.05em; }
@@ -493,10 +493,10 @@ const PreviewWrap = styled.div`
         font-size: 0.9em;
         padding: 2px 6px;
         border-radius: 4px;
-        background: var(--overlay-light);
+        background: rgba(255, 255, 255, 0.04);
     }
     pre {
-        background: var(--overlay-light);
+        background: rgba(255, 255, 255, 0.04);
         padding: 12px;
         border-radius: 8px;
         overflow-x: auto;
@@ -505,31 +505,31 @@ const PreviewWrap = styled.div`
     ul, ol { padding-left: 1.4em; margin: 0.4em 0; }
     li { margin: 0.2em 0; }
     blockquote {
-        border-left: 3px solid rgba(140, 82, 255, 0.3);
+        border-left: 3px solid rgba(12, 92, 171, 0.3);
         padding-left: 12px;
         margin: 0.5em 0;
-        color: hsl(var(--text-secondary));
+        color: #6b7a8d;
     }
-    a { color: #a78bfa; }
-    hr { border: none; border-top: 1px solid var(--border-light); margin: 0.8em 0; }
+    a { color: #5B9BD5; }
+    hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.06); margin: 0.8em 0; }
 `;
 
 const ContentHint = styled.p`
     font-size: 12px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 2px 0 8px;
     code {
         font-family: 'SF Mono', 'Fira Code', monospace;
         font-size: 11px;
         padding: 1px 5px;
         border-radius: 3px;
-        background: var(--overlay-light);
-        color: hsl(var(--text-tertiary));
+        background: rgba(255, 255, 255, 0.04);
+        color: #4a5568;
     }
 `;
 
 const PreviewPlaceholder = styled.p`
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     font-style: italic;
     margin: 0;
 `;

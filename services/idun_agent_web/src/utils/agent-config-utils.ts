@@ -154,7 +154,6 @@ export interface AgentFormState {
     name: string;
     version: string;
     baseUrl: string;
-    description: string;
     serverPort: string;
     agentType: string;
     agentConfig: Record<string, any>;

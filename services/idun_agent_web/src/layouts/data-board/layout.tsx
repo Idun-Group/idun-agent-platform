@@ -246,15 +246,16 @@ const DataBoard = <T = any,>({
 };
 
 const TableContainer = styled.div`
-    border: 1px solid hsl(var(--border));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0.5rem;
     overflow: hidden;
-    background: hsl(var(--background));
+    background: #0a0e17;
     width: 100%;
     flex: 1;
     display: flex;
     flex-direction: column;
     min-height: 0;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const TableWrapper = styled.div`
@@ -262,48 +263,47 @@ const TableWrapper = styled.div`
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Important pour le flex shrinking */
-    overflow-x: auto; /* horizontal scroll when needed */
+    min-height: 0;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 `;
 
 const TableScrollContainer = styled.div`
     flex: 1;
     overflow-y: auto;
-    min-height: 0; /* Important pour le flex shrinking */
+    min-height: 0;
 
-    /* Scroll vertical */
     &::-webkit-scrollbar {
         width: 8px;
     }
 
     &::-webkit-scrollbar-track {
-        background: var(--scrollbar-track);
+        background: rgba(255, 255, 255, 0.03);
     }
 
     &::-webkit-scrollbar-thumb {
-        background: var(--scrollbar-thumb-active);
+        background: rgba(255, 255, 255, 0.1);
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: hsl(var(--primary));
+        background: #0C5CAB;
     }
 `;
 
 const Table = styled.table`
     width: 100%;
-    table-layout: fixed; /* helps enforce column widths */
+    table-layout: fixed;
     border-collapse: collapse;
-    background: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background: #0a0e17;
+    color: #e1e4e8;
 
     tbody tr {
-        border-bottom: 1px solid hsl(var(--border));
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         transition: background-color 0.2s ease;
 
         &:hover {
-            background: hsl(var(--accent));
+            background: rgba(12, 92, 171, 0.1);
         }
 
         &:last-child {
@@ -312,7 +312,7 @@ const Table = styled.table`
 
         td {
             padding: 15px 25px;
-            color: hsl(var(--foreground));
+            color: #e1e4e8;
             font-size: 0.875rem;
             vertical-align: middle;
             white-space: nowrap;
@@ -326,13 +326,12 @@ const Table = styled.table`
 `;
 
 const TableHeader = styled.thead`
-    background: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background: #0a0e17;
+    color: #e1e4e8;
     position: sticky;
     top: 0;
     z-index: 10;
 
-    /* Responsive column visibility based on data-column */
     @media (max-width: 1024px) {
         th[data-column='errorRate'],
         th[data-column='avgTime'] {
@@ -349,10 +348,10 @@ const TableHeader = styled.thead`
 `;
 
 const TableRow = styled.tr`
-    border-bottom: 1px solid hsl(var(--border));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
     &:hover {
-        background: hsl(var(--accent));
+        background: rgba(12, 92, 171, 0.1);
     }
 
     th {
@@ -362,11 +361,11 @@ const TableRow = styled.tr`
         font-size: 12px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
         height: 44px;
-        border-bottom: 1px solid hsl(var(--border));
-        white-space: nowrap; /* Empêche le texte de se couper */
-        overflow: visible; /* Permet au contenu de déborder */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        white-space: nowrap;
+        overflow: visible;
 
         @media (max-width: 1024px) {
             padding: 15px;
@@ -377,7 +376,7 @@ const TableRow = styled.tr`
 const EmptyState = styled.div`
     text-align: center;
     padding: 2rem;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 0.875rem;
 `;
 
@@ -386,11 +385,11 @@ const TableControls = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    background: hsl(var(--background));
-    border-bottom: 1px solid hsl(var(--border));
-    color: hsl(var(--muted-foreground));
+    background: #0a0e17;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #8899a6;
     font-size: 0.875rem;
-    flex-shrink: 0; /* Empêche les contrôles de se rétrécir */
+    flex-shrink: 0;
 
     .total-info {
         font-weight: 500;
@@ -401,7 +400,7 @@ const ItemsPerPageSelector = styled.div`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 0.875rem;
 
     label {
@@ -409,22 +408,23 @@ const ItemsPerPageSelector = styled.div`
     }
 
     select {
-        background: hsl(var(--accent));
-        color: hsl(var(--foreground));
-        border: 1px solid hsl(var(--border));
+        background: rgba(12, 92, 171, 0.1);
+        color: #e1e4e8;
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 0.25rem;
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
         cursor: pointer;
+        font-family: 'IBM Plex Sans', sans-serif;
 
         &:focus {
             outline: none;
-            border-color: hsl(var(--primary));
+            border-color: #0C5CAB;
         }
 
         option {
-            background: hsl(var(--accent));
-            color: hsl(var(--foreground));
+            background: #141a26;
+            color: #e1e4e8;
         }
     }
 `;
@@ -434,13 +434,13 @@ const PaginationControls = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    background: hsl(var(--background));
-    border-top: 1px solid hsl(var(--border));
-    flex-shrink: 0; /* Empêche la pagination de se rétrécir */
+    background: #0a0e17;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
 `;
 
 const PaginationInfo = styled.div`
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 0.875rem;
     font-weight: 500;
 `;
@@ -453,59 +453,58 @@ const PaginationButtons = styled.div`
 
 const PaginationButton = styled.button<{ disabled?: boolean }>`
     background: ${(props) =>
-        props.disabled ? 'hsl(var(--muted))' : 'hsl(var(--accent))'};
+        props.disabled ? 'rgba(255, 255, 255, 0.04)' : 'rgba(12, 92, 171, 0.1)'};
     color: ${(props) =>
         props.disabled
-            ? 'hsl(var(--muted-foreground))'
-            : 'hsl(var(--foreground))'};
-    border: 1px solid
-        ${(props) =>
-            props.disabled ? 'hsl(var(--border))' : 'hsl(var(--border))'};
+            ? '#8899a6'
+            : '#e1e4e8'};
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0.25rem;
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
     cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
     transition: all 0.2s ease;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     &:hover:not(:disabled) {
-        background: hsl(var(--app-purple));
-        border-color: hsl(var(--app-purple));
-        color: hsl(var(--primary-foreground));
+        background: #0C5CAB;
+        border-color: #0C5CAB;
+        color: #ffffff;
     }
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--app-purple));
+        border-color: #0C5CAB;
     }
 `;
 
 const PageNumber = styled.button<{ $isActive?: boolean }>`
-    background: ${(props) => (props.$isActive ? 'hsl(var(--primary))' : 'hsl(var(--accent))')};
-    color: hsl(var(--foreground));
-    border: 1px solid ${(props) => (props.$isActive ? 'hsl(var(--primary))' : 'hsl(var(--border))')};
+    background: ${(props) => (props.$isActive ? '#0C5CAB' : 'rgba(12, 92, 171, 0.1)')};
+    color: #e1e4e8;
+    border: 1px solid ${(props) => (props.$isActive ? '#0C5CAB' : 'rgba(255, 255, 255, 0.08)')};
     border-radius: 0.25rem;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
     cursor: pointer;
     transition: all 0.2s ease;
     min-width: 2.5rem;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     &:hover {
-        background: hsl(var(--primary));
-        border-color: hsl(var(--primary));
+        background: #0C5CAB;
+        border-color: #0C5CAB;
     }
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--primary));
+        border-color: #0C5CAB;
     }
 `;
 
-// Composants de recherche
 const SearchContainer = styled.div`
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid hsl(var(--border));
-    background: hsl(var(--background));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0a0e17;
     position: relative;
     display: flex;
     align-items: center;
@@ -515,32 +514,33 @@ const SearchContainer = styled.div`
 const SearchInput = styled.input`
     width: 100%;
     padding: 0.75rem 1rem 0.75rem 2.5rem;
-    border: 1px solid hsl(var(--border));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0.5rem;
-    background: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background: #0a0e17;
+    color: #e1e4e8;
     font-size: 0.875rem;
     transition: all 0.2s ease;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     &::placeholder {
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
     }
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--app-purple));
-        box-shadow: 0 0 0 2px hsl(var(--app-purple) / 0.2);
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 2px rgba(12, 92, 171, 0.2);
     }
 
     &:hover {
-        border-color: hsl(var(--accent));
+        border-color: rgba(12, 92, 171, 0.1);
     }
 `;
 
 const SearchIconWrapper = styled.div`
     position: absolute;
     left: 2.5rem;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 1rem;
     pointer-events: none;
     z-index: 1;

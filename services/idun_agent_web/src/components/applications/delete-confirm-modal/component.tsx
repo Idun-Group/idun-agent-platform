@@ -16,25 +16,27 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: hsl(var(--card));
-    border-radius: 16px;
+    background: #141a26;
+    border-radius: 12px;
     width: 440px;
     max-width: 94vw;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     overflow: hidden;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
 `;
 
 const Header = styled.div`
     padding: 22px 24px 18px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     align-items: center;
     gap: 14px;
@@ -58,13 +60,13 @@ const HeaderText = styled.div``;
 const Title = styled.h2`
     font-size: 16px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e8edf5;
     margin: 0 0 2px;
 `;
 
 const Subtitle = styled.p`
     font-size: 12px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 0;
 `;
 
@@ -74,29 +76,29 @@ const Body = styled.div`
 
 const Message = styled.p`
     font-size: 14px;
-    color: hsl(var(--text-secondary));
+    color: #8a9bb5;
     margin: 0 0 8px;
     line-height: 1.55;
 `;
 
 const ItemName = styled.span`
-    color: hsl(var(--foreground));
+    color: #e8edf5;
     font-weight: 600;
 `;
 
 const CustomDescription = styled.p`
     font-size: 13px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 8px 0 0;
     line-height: 1.5;
 `;
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin: 12px 0 0;
     padding: 10px 14px;
-    background: rgba(248, 113, 113, 0.1);
+    background: rgba(248, 113, 113, 0.08);
     border-radius: 8px;
     border: 1px solid rgba(248, 113, 113, 0.2);
 `;
@@ -111,41 +113,43 @@ const Footer = styled.div`
 const CancelBtn = styled.button`
     padding: 9px 18px;
     background: transparent;
-    border: 1px solid var(--border-medium);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: hsl(var(--text-secondary));
+    color: #8a9bb5;
     font-size: 14px;
     font-weight: 500;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-light); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.04); color: #e8edf5; }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
 const DeleteBtn = styled.button`
     padding: 9px 20px;
-    background: hsl(var(--destructive));
+    background: #dc2626;
     border: none;
     border-radius: 8px;
-    color: hsl(var(--destructive-foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 600;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
     cursor: pointer;
-    transition: opacity 0.15s;
+    transition: background 0.15s, box-shadow 0.15s;
     display: flex;
     align-items: center;
     gap: 8px;
 
-    &:hover:not(:disabled) { opacity: 0.88; }
+    &:hover:not(:disabled) { background: #b91c1c; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
 const Spinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid var(--overlay-strong);
-    border-top-color: hsl(var(--foreground));
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
@@ -179,7 +183,7 @@ const DeleteConfirmModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, itemN
         <Overlay onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
             <Modal>
                 <Header>
-                    <IconWrap><AlertTriangle size={20} color="hsl(var(--destructive))" /></IconWrap>
+                    <IconWrap><AlertTriangle size={20} color="#f87171" /></IconWrap>
                     <HeaderText>
                         <Title>Confirm Removal</Title>
                         <Subtitle>This action cannot be undone</Subtitle>

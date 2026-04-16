@@ -227,8 +227,8 @@ export default function CodeSnippet({ code, language }: CodeSnippetProps) {
 
 const Container = styled.div`
     position: relative;
-    background-color: hsl(var(--accent));
-    border: 1px solid var(--border-light);
+    background-color: rgba(12, 92, 171, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     overflow: hidden;
 `;
@@ -240,7 +240,7 @@ const LangTag = styled.span`
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     letter-spacing: 0.05em;
 `;
 
@@ -249,10 +249,10 @@ const CopyButton = styled.button`
     top: 8px;
     right: 8px;
     padding: 6px 8px;
-    background-color: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 6px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -260,8 +260,8 @@ const CopyButton = styled.button`
     transition: all 0.2s;
 
     &:hover {
-        color: hsl(var(--foreground));
-        background-color: var(--overlay-medium);
+        color: #e1e4e8;
+        background-color: rgba(255, 255, 255, 0.08);
     }
 `;
 
@@ -288,7 +288,7 @@ const Pre = styled.pre`
         background: transparent;
     }
     &::-webkit-scrollbar-thumb {
-        background: var(--border-light);
+        background: rgba(255, 255, 255, 0.06);
         border-radius: 3px;
     }
 `;

@@ -266,14 +266,15 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: hsl(var(--card));
+    background: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(16px);
     border-radius: 16px;
     width: 860px;
     max-width: 96vw;
@@ -281,15 +282,16 @@ const Modal = styled.div`
     display: flex;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     position: relative;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const Sidebar = styled.div`
     width: 240px;
     flex-shrink: 0;
-    background: hsl(var(--accent));
-    border-right: 1px solid var(--border-subtle);
+    background: rgba(12, 92, 171, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
     padding: 20px 10px;
     overflow-y: auto;
 `;
@@ -299,7 +301,7 @@ const GroupLabel = styled.p`
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 16px 0 6px 10px;
 
     &:first-child { margin-top: 0; }
@@ -312,9 +314,9 @@ const TypeBtn = styled.button<{ $selected: boolean; $disabled?: boolean }>`
     width: 100%;
     padding: 8px 10px;
     border-radius: 8px;
-    border: 1px solid ${p => p.$selected ? 'hsl(var(--primary))' : 'transparent'};
-    background: ${p => p.$selected ? 'rgba(108, 99, 255, 0.15)' : 'transparent'};
-    color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : p.$selected ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))'};
+    border: 1px solid ${p => p.$selected ? '#0C5CAB' : 'transparent'};
+    background: ${p => p.$selected ? 'rgba(12, 92, 171, 0.15)' : 'transparent'};
+    color: ${p => p.$disabled ? '#8899a6' : p.$selected ? '#0C5CAB' : '#6b7a8d'};
     font-size: 13px;
     font-weight: ${p => p.$selected ? 600 : 400};
     cursor: ${p => p.$disabled ? 'default' : 'pointer'};
@@ -324,8 +326,8 @@ const TypeBtn = styled.button<{ $selected: boolean; $disabled?: boolean }>`
     margin-bottom: 2px;
 
     &:hover {
-        background: ${p => p.$disabled ? 'transparent' : 'var(--overlay-light)'};
-        color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))'};
+        background: ${p => p.$disabled ? 'transparent' : 'rgba(255, 255, 255, 0.04)'};
+        color: ${p => p.$disabled ? '#8899a6' : '#e1e4e8'};
     }
 `;
 
@@ -342,8 +344,8 @@ const ComingSoonBadge = styled.span`
     letter-spacing: 0.05em;
     padding: 2px 5px;
     border-radius: 4px;
-    background: var(--overlay-light);
-    color: hsl(var(--muted-foreground));
+    background: rgba(255, 255, 255, 0.04);
+    color: #8899a6;
     margin-left: auto;
     flex-shrink: 0;
 `;
@@ -358,7 +360,7 @@ const RightPanel = styled.div`
 
 const PanelHeader = styled.div`
     padding: 22px 26px 18px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -367,17 +369,17 @@ const PanelHeader = styled.div`
 const PanelTitle = styled.h2`
     font-size: 17px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const CloseBtn = styled.button`
-    background: var(--overlay-light);
+    background: rgba(255, 255, 255, 0.04);
     border: none;
     border-radius: 8px;
     width: 32px;
     height: 32px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 18px;
     cursor: pointer;
     display: flex;
@@ -385,7 +387,7 @@ const CloseBtn = styled.button`
     justify-content: center;
     transition: background 0.15s;
 
-    &:hover { background: var(--border-medium); }
+    &:hover { background: rgba(255, 255, 255, 0.1); }
 `;
 
 const FormBody = styled.div`
@@ -401,7 +403,7 @@ const EmptyState = styled.div`
     justify-content: center;
     height: 100%;
     gap: 12px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     text-align: center;
 
     span { font-size: 48px; }
@@ -410,7 +412,7 @@ const EmptyState = styled.div`
 
 const TypeDescription = styled.p`
     font-size: 13px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 0 0 24px;
     line-height: 1.5;
 `;
@@ -418,7 +420,7 @@ const TypeDescription = styled.p`
 const NameFieldGroup = styled.div`
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const FieldGroup = styled.div`
@@ -429,13 +431,13 @@ const Label = styled.label`
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin-bottom: 6px;
 `;
 
 const Hint = styled.span`
     font-size: 11px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     font-weight: 400;
     margin-left: 6px;
 `;
@@ -443,26 +445,26 @@ const Hint = styled.span`
 const Input = styled.input`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.15s;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
-    &:focus { border-color: hsl(var(--primary)); }
+    &::placeholder { color: #8899a6; }
+    &:focus { border-color: #0C5CAB; }
 `;
 
 const Textarea = styled.textarea`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 13px;
     font-family: monospace;
     outline: none;
@@ -471,17 +473,17 @@ const Textarea = styled.textarea`
     min-height: 80px;
     transition: border-color 0.15s;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
-    &:focus { border-color: hsl(var(--primary)); }
+    &::placeholder { color: #8899a6; }
+    &:focus { border-color: #0C5CAB; }
 `;
 
 const Select = styled.select`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
@@ -489,11 +491,11 @@ const Select = styled.select`
     cursor: pointer;
     appearance: none;
 
-    &:focus { border-color: hsl(var(--primary)); }
+    &:focus { border-color: #0C5CAB; }
 
     option {
-        background: hsl(var(--card));
-        color: hsl(var(--foreground));
+        background: rgba(255, 255, 255, 0.03);
+        color: #e1e4e8;
     }
 `;
 
@@ -508,21 +510,21 @@ const CheckboxLabel = styled.label`
     align-items: center;
     gap: 10px;
     padding: 8px 12px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     transition: all 0.15s;
 
     &:hover {
-        background: var(--overlay-light);
-        border-color: var(--border-medium);
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.1);
     }
 
     input[type="checkbox"] {
-        accent-color: hsl(var(--primary));
+        accent-color: #0C5CAB;
         width: 16px;
         height: 16px;
         cursor: pointer;
@@ -531,7 +533,7 @@ const CheckboxLabel = styled.label`
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin: 0 0 16px;
     padding: 10px 14px;
     background: rgba(248, 113, 113, 0.1);
@@ -541,7 +543,7 @@ const ErrorMsg = styled.p`
 
 const Footer = styled.div`
     padding: 18px 26px;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -550,23 +552,23 @@ const Footer = styled.div`
 const CancelBtn = styled.button`
     padding: 10px 20px;
     background: transparent;
-    border: 1px solid var(--border-medium);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-light); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.04); color: #e1e4e8; }
 `;
 
 const SubmitBtn = styled.button`
     padding: 10px 24px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 8px;
-    color: hsl(var(--primary-foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -582,8 +584,8 @@ const SubmitBtn = styled.button`
 const Spinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid var(--overlay-strong);
-    border-top-color: hsl(var(--foreground));
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #e1e4e8;
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
@@ -591,7 +593,7 @@ const Spinner = styled.div`
 const LoadingOverlay = styled.div`
     position: absolute;
     inset: 0;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -602,8 +604,8 @@ const LoadingOverlay = styled.div`
 const BigSpinner = styled.div`
     width: 40px;
     height: 40px;
-    border: 3px solid var(--overlay-strong);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -767,7 +769,7 @@ const CreateGuardrailModal: React.FC<Props> = ({ isOpen, onClose, onCreated, app
                                         <FieldGroup key={field.key}>
                                             <Label htmlFor={field.key}>
                                                 {field.label}
-                                                {field.required && <span style={{ color: 'hsl(var(--destructive))' }}> *</span>}
+                                                {field.required && <span style={{ color: '#f87171' }}> *</span>}
                                                 {field.hint && <Hint>({field.hint})</Hint>}
                                             </Label>
                                             {field.type === 'textarea' ? (

@@ -32,7 +32,9 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.13.1",
     "react-toastify": "^11.0.5",
+    "recharts": "^3.8.1",
     "styled-components": "^6.3.11",
+    "svg-pan-zoom": "^3.6.2",
     "uuid": "^13.0.0",
     "vite-plugin-node-polyfills": "^0.25.0"
   },

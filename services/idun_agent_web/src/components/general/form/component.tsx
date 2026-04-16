@@ -77,7 +77,7 @@ export const Label = styled.label`
     gap: 8px;
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin-bottom: 8px;
 `;
 
@@ -88,7 +88,7 @@ const LabelContent = styled.div`
 `;
 
 const Required = styled.span`
-    color: hsl(var(--destructive));
+    color: #f87171;
     font-weight: 500;
     margin-left: 4px;
 `;
@@ -96,37 +96,47 @@ const Required = styled.span`
 const Input = styled.input`
     width: 100%;
     padding: 16px 20px;
-    background: hsl(var(--card));
-    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 16px;
     transition: all 0.2s ease;
     box-sizing: border-box;
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 3px rgba(12, 92, 171, 0.1);
     }
 
     &::placeholder {
-        color: hsl(var(--text-tertiary));
+        color: #4a5568;
     }
 
     &:disabled {
         cursor: not-allowed;
         opacity: 0.6;
     }
+
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus,
+    &:-webkit-autofill:active {
+        -webkit-text-fill-color: #e1e4e8;
+        -webkit-box-shadow: 0 0 0 1000px #11151f inset;
+        caret-color: #e1e4e8;
+        transition: background-color 9999s ease-in-out 0s;
+    }
 `;
 
 const TextArea = styled.textarea`
     width: 100%;
     padding: 16px 20px;
-    background: hsl(var(--card));
-    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 16px;
     min-height: 120px;
     resize: vertical;
@@ -136,22 +146,22 @@ const TextArea = styled.textarea`
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 3px rgba(12, 92, 171, 0.1);
     }
 
     &::placeholder {
-        color: hsl(var(--text-tertiary));
+        color: #4a5568;
     }
 `;
 
 const Select = styled.select`
     width: 100%;
     padding: 16px 20px;
-    background: hsl(var(--card));
-    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -159,18 +169,18 @@ const Select = styled.select`
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 3px rgba(12, 92, 171, 0.1);
     }
 
     option {
-        background: hsl(var(--card));
-        color: hsl(var(--foreground));
+        background: rgba(255, 255, 255, 0.03);
+        color: #e1e4e8;
     }
 `;
 
 const ErrorText = styled.p`
-    color: hsl(var(--destructive));
+    color: #f87171;
     font-size: 12px;
     margin-top: 4px;
 `;
@@ -187,8 +197,8 @@ const TooltipContent = styled.div`
     visibility: hidden;
     width: max-content;
     max-width: 300px;
-    background-color: hsl(var(--popover));
-    color: hsl(var(--popover-foreground));
+    background-color: #141a26;
+    color: #e1e4e8;
     text-align: left;
     border-radius: 6px;
     padding: 8px 12px;
@@ -201,7 +211,7 @@ const TooltipContent = styled.div`
     font-size: 12px;
     font-weight: 400;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     pointer-events: none;
     white-space: normal;
 
@@ -213,7 +223,7 @@ const TooltipContent = styled.div`
         left: 17px;
         border-width: 5px;
         border-style: solid;
-        border-color: hsl(var(--popover)) transparent transparent transparent;
+        border-color: #141a26 transparent transparent transparent;
     }
 
     ${TooltipContainer}:hover & {
@@ -224,7 +234,7 @@ const TooltipContent = styled.div`
 
 const TooltipIcon = ({ text }: { text: string }) => (
     <TooltipContainer>
-        <Info size={14} color="hsl(var(--muted-foreground))" />
+        <Info size={14} color="#8899a6" />
         <TooltipContent>{text}</TooltipContent>
     </TooltipContainer>
 );
@@ -358,28 +368,28 @@ const TagContainer = styled.div`
     gap: 8px;
     padding: 12px;
     min-height: 48px;
-    background: hsl(var(--card));
-    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     width: 100%;
     box-sizing: border-box;
     transition: all 0.2s ease;
 
     &:focus-within {
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 3px rgba(12, 92, 171, 0.1);
     }
 `;
 
 const Tag = styled.div`
     display: inline-flex;
     align-items: center;
-    background: rgba(140, 82, 255, 0.15);
-    color: hsl(var(--foreground));
+    background: rgba(12, 92, 171, 0.15);
+    color: #e1e4e8;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 14px;
-    border: 1px solid rgba(140, 82, 255, 0.3);
+    border: 1px solid rgba(12, 92, 171, 0.3);
 
     .remove-icon {
         margin-left: 6px;
@@ -391,7 +401,7 @@ const Tag = styled.div`
 
         &:hover {
             opacity: 1;
-            color: hsl(var(--destructive));
+            color: #f87171;
         }
     }
 `;
@@ -399,7 +409,7 @@ const Tag = styled.div`
 const TagInputRaw = styled.input`
     background: transparent;
     border: none;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     flex: 1;
     min-width: 120px;
@@ -410,7 +420,7 @@ const TagInputRaw = styled.input`
     }
 
     &::placeholder {
-        color: hsl(var(--text-tertiary));
+        color: #4a5568;
     }
 `;
 
@@ -574,11 +584,11 @@ const CheckboxContainer = styled.label`
     display: flex;
     align-items: center;
     cursor: pointer;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
 
     input {
-        accent-color: hsl(var(--primary));
+        accent-color: #0C5CAB;
         width: 16px;
         height: 16px;
         cursor: pointer;
@@ -595,16 +605,16 @@ export const Form = styled.form`
     max-width: 800px;
     margin: 0 auto;
     padding: 32px;
-    background: hsl(var(--card));
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 12px;
-    border: 1px solid hsl(var(--border));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     max-height: 65vh;
     overflow-y: auto;
 
     h1,
     h2,
     h3 {
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
         margin-bottom: 8px;
     }
 
@@ -621,7 +631,7 @@ export const Form = styled.form`
     }
 
     p {
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
         margin-bottom: 32px;
         line-height: 1.5;
     }
@@ -632,17 +642,17 @@ export const Form = styled.form`
     }
 
     &::-webkit-scrollbar-track {
-        background: hsl(var(--background));
+        background: #0a0e17;
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: hsl(var(--border));
+        background: rgba(255, 255, 255, 0.08);
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: hsl(var(--primary));
+        background: #0C5CAB;
     }
 `;
 

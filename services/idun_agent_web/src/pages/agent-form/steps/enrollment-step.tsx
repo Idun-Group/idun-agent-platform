@@ -208,6 +208,7 @@ const StepContainer = styled.div`
     max-width: 560px;
     margin: 0 auto;
     overflow: hidden;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
@@ -223,10 +224,11 @@ const CenterContainer = styled.div`
     min-height: 300px;
     gap: 12px;
     text-align: center;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const SpinningLoader = styled(Loader2)`
-    color: hsl(var(--primary));
+    color: #0C5CAB;
     animation: spin 1s linear infinite;
     @keyframes spin {
         from { transform: rotate(0deg); }
@@ -236,27 +238,27 @@ const SpinningLoader = styled(Loader2)`
 
 const LoadingTitle = styled.h3`
     font-size: 18px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const LoadingSubtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
 `;
 
 const ErrorTitle = styled.h3`
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 600;
     color: #f87171;
     margin: 0;
 `;
 
 const ErrorMessage = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
     max-width: 400px;
 `;
@@ -266,15 +268,16 @@ const RetryButton = styled.button`
     padding: 10px 24px;
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--primary-foreground));
-    background-color: hsl(var(--primary));
+    color: #ffffff;
+    background-color: #0C5CAB;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     &:hover {
-        background-color: hsl(var(--primary) / 0.85);
+        background-color: #0a4e94;
     }
 `;
 
@@ -294,16 +297,17 @@ const SuccessBanner = styled.div`
 
 const SectionTitle = styled.h3`
     font-size: 14px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #e1e4e8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin: 0 0 12px;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const SectionSubtitle = styled.p`
     font-size: 13px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0 0 12px;
 `;
 
@@ -315,7 +319,7 @@ const CredentialLabel = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-transform: uppercase;
     margin-bottom: 6px;
 `;
@@ -325,17 +329,17 @@ const CredentialValue = styled.div`
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    background-color: hsl(var(--accent));
-    border: 1px solid var(--border-light);
+    background-color: rgba(12, 92, 171, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
 `;
 
 const CredentialText = styled.span<{ $mono?: boolean }>`
     flex: 1;
     font-size: 13px;
-    color: #e2e8f0;
+    color: #e1e4e8;
     font-family: ${props => props.$mono
-        ? "'SF Mono', 'Fira Code', Menlo, Consolas, monospace"
+        ? "'IBM Plex Mono', monospace"
         : 'inherit'};
     overflow: hidden;
     text-overflow: ellipsis;
@@ -346,7 +350,7 @@ const IconButton = styled.button`
     padding: 4px;
     background: transparent;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -356,13 +360,13 @@ const IconButton = styled.button`
     flex-shrink: 0;
 
     &:hover {
-        color: hsl(var(--foreground));
-        background-color: var(--overlay-medium);
+        color: #e1e4e8;
+        background-color: rgba(255, 255, 255, 0.08);
     }
 `;
 
 const Divider = styled.hr`
     border: none;
-    border-top: 1px solid var(--overlay-light);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     margin: 24px 0;
 `;

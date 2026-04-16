@@ -87,6 +87,7 @@ const StepContainer = styled.div`
     animation: fadeIn 0.3s ease-in-out;
     max-width: 560px;
     margin: 0 auto;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
@@ -107,14 +108,15 @@ const AvatarWrapper = styled.div`
 
 const Title = styled.h2`
     font-size: 22px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #e1e4e8;
     margin: 0 0 4px;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const Subtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
 `;
 
@@ -126,35 +128,36 @@ const InputLabel = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-transform: uppercase;
     margin-bottom: 8px;
 `;
 
 const Required = styled.span`
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin-left: 4px;
 `;
 
 const StyledInput = styled.input`
     width: 100%;
-    background-color: hsl(var(--accent));
-    border: 1px solid var(--border-light);
+    background-color: rgba(12, 92, 171, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     padding: 12px 16px;
     font-size: 14px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     outline: none;
     transition: all 0.2s;
     box-sizing: border-box;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     &:focus {
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 1px hsl(var(--primary));
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 1px #0C5CAB;
     }
 
     &::placeholder {
-        color: hsl(var(--text-tertiary));
+        color: #6b7a8d;
     }
 `;
 
@@ -174,18 +177,19 @@ const FrameworkCard = styled.button<{ $isSelected: boolean }>`
     display: flex;
     flex-direction: column;
     gap: 8px;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     ${props => props.$isSelected ? `
-        background-color: hsl(var(--primary) / 0.1);
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 1px hsl(var(--primary));
+        background-color: rgba(12, 92, 171, 0.1);
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 1px #0C5CAB;
     ` : `
-        background-color: hsl(var(--accent));
-        border-color: var(--border-light);
+        background-color: rgba(12, 92, 171, 0.1);
+        border-color: rgba(255, 255, 255, 0.06);
 
         &:hover {
-            border-color: var(--overlay-strong);
-            background-color: var(--overlay-subtle);
+            border-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.04);
         }
     `}
 `;
@@ -206,13 +210,13 @@ const FrameworkLogo = styled.img`
 const CardLabel = styled.span`
     font-size: 16px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 `;
 
 const CheckCircle = styled.div`
     width: 20px;
     height: 20px;
-    background-color: hsl(var(--primary));
+    background-color: #0C5CAB;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -221,6 +225,6 @@ const CheckCircle = styled.div`
 
 const CardDescription = styled.span`
     font-size: 13px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     line-height: 1.4;
 `;

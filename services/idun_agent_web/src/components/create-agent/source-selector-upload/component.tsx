@@ -41,7 +41,7 @@ const SourceSelectorUpload = ({
                     style={{
                         textAlign: 'center',
                         marginBottom: 24,
-                        color: '#8c52ff',
+                        color: '#0C5CAB',
                         fontWeight: 500,
                     }}
                 >
@@ -96,7 +96,7 @@ const SourceSelectorUpload = ({
                         <div
                             style={{
                                 marginTop: 8,
-                                color: '#8c52ff',
+                                color: '#0C5CAB',
                             }}
                         >
                             Fichier sélectionné : {selectedAgentFile.file.name}

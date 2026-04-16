@@ -15,14 +15,7 @@ import {
 import yaml from 'js-yaml';
 import type { BackendAgent } from '../../../../services/agents';
 
-/*
- * Design direction: utilitarian dev-tool UI inspired by Linear / Raycast.
- * Monochrome base, tight spacing, clear hierarchy through weight & opacity.
- * Summary = compact horizontal pills. Config = full-width code block that
- * sizes to its content (no artificial max-height).
- */
-
-// ── Types ───────────────────────────────────────────────────────────────────
+// -- Types --
 
 interface ConfigurationTabProps {
     agent: BackendAgent | null;
@@ -35,7 +28,7 @@ interface Feature {
     color: string;
 }
 
-// ── Feature extraction ──────────────────────────────────────────────────────
+// -- Feature extraction --
 
 function extractFeatures(ec: Record<string, unknown>): Feature[] {
     const out: Feature[] = [];
@@ -43,7 +36,7 @@ function extractFeatures(ec: Record<string, unknown>): Feature[] {
     const cfg = agent?.config as Record<string, unknown> | undefined;
 
     if (agent?.type)
-        out.push({ label: 'Framework', value: String(agent.type), icon: Cpu, color: '#8c52ff' });
+        out.push({ label: 'Framework', value: String(agent.type), icon: Cpu, color: '#0C5CAB' });
 
     const api = (ec.server as Record<string, unknown>)?.api as Record<string, unknown> | undefined;
     if (api?.port)
@@ -70,7 +63,7 @@ function extractFeatures(ec: Record<string, unknown>): Feature[] {
 
     if (cfg?.checkpointer) {
         const cp = cfg.checkpointer as Record<string, unknown>;
-        out.push({ label: 'Memory', value: String(cp.type ?? 'on'), icon: Database, color: '#a78bfa' });
+        out.push({ label: 'Memory', value: String(cp.type ?? 'on'), icon: Database, color: '#4a9ede' });
     }
 
     const sso = ec.sso as Record<string, unknown> | undefined;
@@ -83,7 +76,7 @@ function extractFeatures(ec: Record<string, unknown>): Feature[] {
     return out;
 }
 
-// ── Syntax highlighting ─────────────────────────────────────────────────────
+// -- Syntax highlighting --
 
 function hlJSON(s: string): string {
     return s
@@ -117,7 +110,7 @@ function esc(s: string) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// ── Collapsible ─────────────────────────────────────────────────────────────
+// -- Collapsible --
 
 function Collapse({
     label,
@@ -145,7 +138,7 @@ function Collapse({
     );
 }
 
-// ── Main ────────────────────────────────────────────────────────────────────
+// -- Main --
 
 type Fmt = 'json' | 'yaml';
 
@@ -225,14 +218,14 @@ const ConfigurationTab = ({ agent }: ConfigurationTabProps) => {
 
 export default ConfigurationTab;
 
-// ── Keyframes ───────────────────────────────────────────────────────────────
+// -- Keyframes --
 
 const enter = keyframes`
     from { opacity: 0; transform: translateY(4px); }
     to   { opacity: 1; transform: translateY(0); }
 `;
 
-// ── Page ────────────────────────────────────────────────────────────────────
+// -- Page --
 
 const Page = styled.div`
     flex: 1;
@@ -246,17 +239,18 @@ const Page = styled.div`
 const Empty = styled.div`
     text-align: center;
     padding: 80px 20px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 14px;
 `;
 
-// ── Collapse ────────────────────────────────────────────────────────────────
+// -- Collapse --
 
 const CollapseWrap = styled.div`
-    border: 1px solid var(--overlay-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     overflow: hidden;
-    background: hsl(var(--card));
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(12px);
 `;
 
 const CollapseBar = styled.div`
@@ -276,11 +270,12 @@ const CollapseToggle = styled.button`
     padding: 0;
     cursor: pointer;
     color: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const Arrow = styled.span<{ $open: boolean }>`
     display: flex;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     transition: transform 0.15s ease;
     transform: rotate(${(p) => (p.$open ? '90deg' : '0deg')});
 `;
@@ -288,7 +283,7 @@ const Arrow = styled.span<{ $open: boolean }>`
 const CollapseLabel = styled.span`
     font-size: 11.5px;
     font-weight: 600;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-transform: uppercase;
     letter-spacing: 0.06em;
 `;
@@ -298,7 +293,7 @@ const CollapseRight = styled.div`
     align-items: center;
 `;
 
-// ── Summary Pills ───────────────────────────────────────────────────────────
+// -- Summary Pills --
 
 const Pills = styled.div`
     display: grid;
@@ -313,8 +308,8 @@ const Pill = styled.div`
     gap: 10px;
     padding: 10px 14px;
     border-radius: 8px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--overlay-subtle);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const PillIcon = styled.span<{ $c: string }>`
@@ -331,7 +326,7 @@ const PillIcon = styled.span<{ $c: string }>`
 const PillLabel = styled.span`
     font-size: 11px;
     font-weight: 600;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-transform: uppercase;
     letter-spacing: 0.03em;
 `;
@@ -339,10 +334,10 @@ const PillLabel = styled.span`
 const PillValue = styled.span`
     font-size: 12px;
     font-weight: 500;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 `;
 
-// ── Format / Copy Controls ──────────────────────────────────────────────────
+// -- Format / Copy Controls --
 
 const Controls = styled.div`
     display: flex;
@@ -354,7 +349,7 @@ const FmtToggle = styled.div`
     display: flex;
     border-radius: 6px;
     overflow: hidden;
-    border: 1px solid var(--overlay-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const FmtBtn = styled.button<{ $on: boolean }>`
@@ -364,11 +359,11 @@ const FmtBtn = styled.button<{ $on: boolean }>`
     font-weight: 600;
     cursor: pointer;
     transition: all 0.1s;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
     letter-spacing: 0.02em;
-    background: ${(p) => (p.$on ? 'rgba(140, 82, 255, 0.15)' : 'transparent')};
-    color: ${(p) => (p.$on ? '#b197fc' : 'hsl(var(--muted-foreground))')};
-    &:hover { color: ${(p) => (p.$on ? '#b197fc' : 'hsl(var(--foreground))')}; }
+    background: ${(p) => (p.$on ? 'rgba(12, 92, 171, 0.15)' : 'transparent')};
+    color: ${(p) => (p.$on ? '#4a9ede' : '#8899a6')};
+    &:hover { color: ${(p) => (p.$on ? '#4a9ede' : '#e1e4e8')}; }
 `;
 
 const CopyBtn = styled.button`
@@ -376,31 +371,31 @@ const CopyBtn = styled.button`
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
-    border: 1px solid var(--overlay-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.1s;
     background: transparent;
-    color: hsl(var(--muted-foreground));
-    font-family: inherit;
-    &:hover { background: var(--overlay-subtle); color: hsl(var(--foreground)); }
+    color: #8899a6;
+    font-family: 'IBM Plex Sans', sans-serif;
+    &:hover { background: rgba(255, 255, 255, 0.03); color: #e1e4e8; }
 `;
 
-// ── Code Block ──────────────────────────────────────────────────────────────
+// -- Code Block --
 
 const CodeWrap = styled.div`
     display: flex;
     overflow: auto;
-    border-top: 1px solid var(--overlay-subtle);
-    font-family: Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    font-family: 'IBM Plex Mono', Menlo, Monaco, Consolas, monospace;
     font-size: 12.5px;
     line-height: 1.65;
     letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
 
-    .k { color: #c4a7ff; }
+    .k { color: #4a9ede; }
     .s { color: #7dd3a8; }
     .b { color: #f9a66c; }
     .n { color: #79c7ff; }
@@ -416,7 +411,7 @@ const Gutter = styled.div`
     min-width: 44px;
     text-align: right;
     user-select: none;
-    border-right: 1px solid var(--overlay-subtle);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
     background: rgba(0, 0, 0, 0.15);
     flex-shrink: 0;
 `;
@@ -424,14 +419,14 @@ const Gutter = styled.div`
 const G = styled.span`
     padding: 0 10px;
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #6b7280;
     line-height: 1.65;
 `;
 
 const Code = styled.pre`
     margin: 0;
     padding: 14px 20px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     white-space: pre;
     overflow-x: auto;
     flex: 1;

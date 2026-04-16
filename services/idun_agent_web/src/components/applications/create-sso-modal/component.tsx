@@ -16,14 +16,15 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: hsl(var(--card));
+    background: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(16px);
     border-radius: 16px;
     width: 560px;
     max-width: 95vw;
@@ -32,13 +33,14 @@ const Modal = styled.div`
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     position: relative;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const PanelHeader = styled.div`
     padding: 24px 28px 20px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -47,17 +49,17 @@ const PanelHeader = styled.div`
 const PanelTitle = styled.h2`
     font-size: 18px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const CloseBtn = styled.button`
-    background: var(--overlay-light);
+    background: rgba(255, 255, 255, 0.04);
     border: none;
     border-radius: 8px;
     width: 32px;
     height: 32px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 18px;
     cursor: pointer;
     display: flex;
@@ -65,7 +67,7 @@ const CloseBtn = styled.button`
     justify-content: center;
     transition: background 0.15s;
 
-    &:hover { background: var(--border-medium); }
+    &:hover { background: rgba(255, 255, 255, 0.1); }
 `;
 
 const FormBody = styled.div`
@@ -82,33 +84,33 @@ const Label = styled.label`
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin-bottom: 8px;
 `;
 
 const Input = styled.input`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.15s;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
-    &:focus { border-color: hsl(var(--primary)); }
+    &::placeholder { color: #8899a6; }
+    &:focus { border-color: #0C5CAB; }
 `;
 
 const TextArea = styled.textarea`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
@@ -117,13 +119,13 @@ const TextArea = styled.textarea`
     min-height: 60px;
     font-family: monospace;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
-    &:focus { border-color: hsl(var(--primary)); }
+    &::placeholder { color: #8899a6; }
+    &:focus { border-color: #0C5CAB; }
 `;
 
 const HelpText = styled.p`
     font-size: 12px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 6px 0 0;
 `;
 
@@ -137,7 +139,7 @@ const ToggleRow = styled.div`
 const ToggleLabel = styled.span`
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 `;
 
 const Toggle = styled.button<{ $active: boolean }>`
@@ -148,7 +150,7 @@ const Toggle = styled.button<{ $active: boolean }>`
     cursor: pointer;
     position: relative;
     transition: background 0.2s;
-    background: ${p => p.$active ? 'hsl(var(--primary))' : 'var(--border-medium)'};
+    background: ${p => p.$active ? '#0C5CAB' : 'rgba(255, 255, 255, 0.1)'};
 
     &::after {
         content: '';
@@ -158,14 +160,14 @@ const Toggle = styled.button<{ $active: boolean }>`
         width: 18px;
         height: 18px;
         border-radius: 50%;
-        background: hsl(var(--foreground));
+        background: #e1e4e8;
         transition: left 0.2s;
     }
 `;
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin: 0 0 16px;
     padding: 10px 14px;
     background: rgba(248, 113, 113, 0.1);
@@ -175,7 +177,7 @@ const ErrorMsg = styled.p`
 
 const Footer = styled.div`
     padding: 20px 28px;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -184,23 +186,23 @@ const Footer = styled.div`
 const CancelBtn = styled.button`
     padding: 10px 20px;
     background: transparent;
-    border: 1px solid var(--border-medium);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-light); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.04); color: #e1e4e8; }
 `;
 
 const SubmitBtn = styled.button`
     padding: 10px 24px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 8px;
-    color: hsl(var(--primary-foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -216,8 +218,8 @@ const SubmitBtn = styled.button`
 const Spinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid var(--overlay-strong);
-    border-top-color: hsl(var(--foreground));
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #e1e4e8;
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
@@ -225,7 +227,7 @@ const Spinner = styled.div`
 const LoadingOverlay = styled.div`
     position: absolute;
     inset: 0;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -236,8 +238,8 @@ const LoadingOverlay = styled.div`
 const BigSpinner = styled.div`
     width: 40px;
     height: 40px;
-    border: 3px solid var(--overlay-strong);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -336,7 +338,7 @@ const CreateSsoModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit
 
                         <FieldGroup>
                             <Label htmlFor="sso-name">
-                                Name <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
+                                Name <span style={{ color: '#f87171' }}>*</span>
                             </Label>
                             <Input
                                 id="sso-name"
@@ -349,7 +351,7 @@ const CreateSsoModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit
 
                         <FieldGroup>
                             <Label htmlFor="sso-issuer">
-                                Issuer URL <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
+                                Issuer URL <span style={{ color: '#f87171' }}>*</span>
                             </Label>
                             <Input
                                 id="sso-issuer"
@@ -363,7 +365,7 @@ const CreateSsoModal: React.FC<Props> = ({ isOpen, onClose, onCreated, appToEdit
 
                         <FieldGroup>
                             <Label htmlFor="sso-client-id">
-                                Client ID <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
+                                Client ID <span style={{ color: '#f87171' }}>*</span>
                             </Label>
                             <Input
                                 id="sso-client-id"

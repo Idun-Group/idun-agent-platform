@@ -42,6 +42,7 @@ const Grid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 10px;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const LanguageCard = styled.button<{ $isSelected: boolean }>`
@@ -50,28 +51,29 @@ const LanguageCard = styled.button<{ $isSelected: boolean }>`
     gap: 12px;
     padding: 12px 14px;
     background: ${({ $isSelected }) =>
-        $isSelected ? 'hsla(var(--primary) / 0.06)' : 'var(--overlay-subtle)'};
+        $isSelected ? 'rgba(12, 92, 171, 0.06)' : 'rgba(255, 255, 255, 0.03)'};
     border: 1px solid
         ${({ $isSelected }) =>
-            $isSelected ? 'hsl(var(--primary))' : 'var(--border-light)'};
+            $isSelected ? '#0C5CAB' : 'rgba(255, 255, 255, 0.06)'};
     border-radius: 8px;
     cursor: pointer;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     text-align: left;
     transition: all 150ms ease;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
+    backdrop-filter: blur(12px);
 
     &:hover {
         border-color: ${({ $isSelected }) =>
-            $isSelected ? 'hsl(var(--primary))' : 'var(--overlay-strong)'};
+            $isSelected ? '#0C5CAB' : 'rgba(255, 255, 255, 0.1)'};
     }
 `;
 
 const FlagBadge = styled.span<{ $isSelected: boolean }>`
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     letter-spacing: 0.04em;
-    color: ${({ $isSelected }) => ($isSelected ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))')};
+    color: ${({ $isSelected }) => ($isSelected ? '#0C5CAB' : '#8899a6')};
     min-width: 24px;
 `;
 
@@ -84,10 +86,10 @@ const LangInfo = styled.div`
 const LangName = styled.span`
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 `;
 
 const LangRegion = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;

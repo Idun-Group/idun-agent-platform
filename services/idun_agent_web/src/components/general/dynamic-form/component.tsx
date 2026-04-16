@@ -36,22 +36,23 @@ const InputLabel = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-transform: uppercase;
     margin-bottom: 8px;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const RequiredAsterisk = styled.span`
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin-left: 4px;
 `;
 
 const EditorWrapper = styled.div`
     position: relative;
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     overflow: hidden;
-    background-color: hsl(var(--accent));
+    background-color: rgba(12, 92, 171, 0.1);
     min-height: 200px;
     height: 300px;
 `;
@@ -62,14 +63,14 @@ const ErrorMessage = styled.p`
     font-size: 14px;
     font-family: inherit;
     font-weight: 400;
-    color: hsl(var(--destructive));
+    color: #f87171;
     line-height: 1.5;
 `;
 
 const SectionTitle = styled.h3`
     font-size: 14px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #e1e4e8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     display: flex;
@@ -81,7 +82,7 @@ const SectionTitle = styled.h3`
 const SectionIndicator = styled.span<{ $color?: string }>`
     width: 4px;
     height: 16px;
-    background-color: ${props => props.$color || 'hsl(var(--primary))'};
+    background-color: ${props => props.$color || '#0C5CAB'};
     border-radius: 9999px;
     margin-right: 8px;
 `;
@@ -136,7 +137,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
                      const selectedOption = options.find((o: any) => o.value === currentType);
 
                      return (
-                        <div key={key} style={{ marginBottom: '16px', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '12px', backgroundColor: 'hsl(var(--accent))' }}>
+                        <div key={key} style={{ marginBottom: '16px', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '8px', padding: '12px', backgroundColor: 'rgba(12, 92, 171, 0.1)' }}>
                             <InputLabel>{label}{isRequired && <RequiredAsterisk>*</RequiredAsterisk>}</InputLabel>
                             <FormSelect
                                 value={currentType}
@@ -282,7 +283,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
                             }}
                         />
                     </EditorWrapper>
-                    <p style={{fontSize: '10px', color: 'hsl(var(--text-secondary))', marginTop: '4px'}}>{description}</p>
+                    <p style={{fontSize: '10px', color: '#8899a6', marginTop: '4px'}}>{description}</p>
                     {errors?.[key] && <ErrorMessage>{errors[key]}</ErrorMessage>}
                 </FieldWrapper>
              );
@@ -344,7 +345,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({ schema, rootSchema, da
                 <SectionTitle>
                     <SectionIndicator $color="emerald" /> {title}
                 </SectionTitle>
-                <div style={{ paddingLeft: '12px', borderLeft: '1px solid var(--border-light)' }}>
+                <div style={{ paddingLeft: '12px', borderLeft: '1px solid rgba(255, 255, 255, 0.06)' }}>
                     <DynamicForm
                         schema={schemaDef}
                         rootSchema={rootSchema}

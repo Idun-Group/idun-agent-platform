@@ -31,7 +31,7 @@ const DOCS_URL = 'https://docs.idunplatform.com/prompts';
 
 function generateUsageSnippet(promptId: string, variables: string[]): string {
     const lines = [
-        'from idun_agent_engine import get_prompt',
+        'from idun_agent_engine.prompts import get_prompt',
         '',
         `prompt = get_prompt("${promptId}")`,
     ];
@@ -357,7 +357,7 @@ const PromptsPage = () => {
                                             <UsageHeader>
                                                 <SectionLabel style={{ marginBottom: 0 }}>Usage</SectionLabel>
                                                 <TooltipContainer>
-                                                    <Info size={13} color="hsl(var(--muted-foreground))" />
+                                                    <Info size={13} color="#8899a6" />
                                                     <TooltipContent>
                                                         Prompts are not auto-injected. Your agent code must call get_prompt() to load the template, then .format() to render variables before passing it to the LLM.
                                                     </TooltipContent>

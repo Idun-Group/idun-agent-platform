@@ -21,7 +21,8 @@ import AgentDetailsSection from './sections/agent-details-section';
 import FrameworkSection from './sections/framework-section';
 import GraphSection from './sections/graph-section';
 import ResourcesSection from './sections/resources-section';
-import { ActionBar, ActionButton, TwoColumnGrid, ColumnStack } from './sections/styled';
+import DashboardOverview from './sections/dashboard-overview';
+import { ActionBar, ActionButton } from './sections/styled';
 
 interface OverviewTabProps {
     agent: BackendAgent | null;
@@ -33,12 +34,10 @@ interface OverviewTabProps {
 }
 
 const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentRefresh }: OverviewTabProps) => {
-    // Form state (initialized when entering edit mode)
     const [formState, setFormState] = useState<AgentFormState>({
         name: '',
         version: '1.0.0',
         baseUrl: '',
-        description: '',
         serverPort: '8000',
         agentType: 'LANGGRAPH',
         agentConfig: {},
@@ -57,12 +56,10 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
     const [isSaving, setIsSaving] = useState(false);
     const [graphRefreshKey, setGraphRefreshKey] = useState(0);
 
-    // Refresh graph on every mount (tab switch or page load)
     useEffect(() => {
         setGraphRefreshKey(k => k + 1);
     }, []);
 
-    // Fetch available resources on mount (needed for quick-add in view mode)
     useEffect(() => {
         if (!agent) return;
         loadResources();
@@ -75,7 +72,6 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
                 fetchSSOs().catch(() => []),
                 fetchIntegrations().catch(() => []),
             ]);
-
             const newResources: AvailableResources = {
                 observabilityApps: apps.filter(a => a.category === 'Observability'),
                 memoryApps: apps.filter(a => a.category === 'Memory'),
@@ -92,11 +88,9 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
         }
     };
 
-    // Fetch schema and initialize form when entering edit mode
     useEffect(() => {
         if (!isEditing || !agent) return;
 
-        // Fetch OpenAPI schema
         fetch(`${API_BASE_URL}/api/openapi.json`)
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch schema');
@@ -105,7 +99,6 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
             .then(setRootSchema)
             .catch(err => console.error('Error fetching OpenAPI schema:', err));
 
-        // Extract current selections from agent config using current resources
         const initSelections = async () => {
             const freshResources = await loadResources();
             if (freshResources && agent) {
@@ -119,13 +112,11 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
         };
         initSelections();
 
-        // Initialize form state from agent
         const port = agent.engine_config?.server?.api?.port;
         setFormState({
             name: agent.name || '',
             version: agent.version || '1.0.0',
             baseUrl: agent.base_url || '',
-            description: agent.description || '',
             serverPort: port ? String(port) : '8000',
             agentType: agent.engine_config?.agent?.type || agent.framework || 'LANGGRAPH',
             agentConfig: extractAgentConfig(agent.engine_config),
@@ -150,7 +141,6 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
             notify.error(error);
             return;
         }
-
         setIsSaving(true);
         try {
             const payload = buildAgentPatchPayload(formState, selections);
@@ -170,17 +160,35 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
 
     return (
         <Container>
-            <TwoColumnGrid>
-                <ColumnStack>
-                    <GraphSection agent={agent} refreshKey={graphRefreshKey} />
+            {/* ── View mode: 3-column dashboard ── */}
+            {!isEditing && (
+                <DashboardOverview
+                    agent={agent}
+                    resources={resources}
+                    refreshKey={graphRefreshKey}
+                    onAgentRefresh={onAgentRefresh}
+                />
+            )}
 
+            {/* ── Edit mode: stacked sections ── */}
+            {isEditing && (
+                <>
                     <AgentDetailsSection
                         agent={agent}
                         isEditing={isEditing}
                         formState={formState}
                         onFieldChange={handleFieldChange}
                     />
-
+                    <ResourcesSection
+                        agent={agent}
+                        isEditing={isEditing}
+                        resources={resources}
+                        selections={selections}
+                        onSelectionChange={handleSelectionChange}
+                        onResourcesRefresh={setResources}
+                        onAgentRefresh={onAgentRefresh}
+                    />
+                    <GraphSection agent={agent} refreshKey={graphRefreshKey} />
                     <FrameworkSection
                         agent={agent}
                         isEditing={isEditing}
@@ -188,18 +196,8 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
                         rootSchema={rootSchema}
                         onConfigChange={handleConfigChange}
                     />
-                </ColumnStack>
-
-                <ResourcesSection
-                    agent={agent}
-                    isEditing={isEditing}
-                    resources={resources}
-                    selections={selections}
-                    onSelectionChange={handleSelectionChange}
-                    onResourcesRefresh={setResources}
-                    onAgentRefresh={onAgentRefresh}
-                />
-            </TwoColumnGrid>
+                </>
+            )}
 
             {isEditing && (
                 <ActionBar>
@@ -218,8 +216,8 @@ export default OverviewTab;
 const Container = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
     width: 100%;
-    padding: 24px 0;
-    overflow-y: auto;
+    padding: 16px 0;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;

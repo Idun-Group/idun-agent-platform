@@ -59,48 +59,48 @@ interface FeatureDef {
     glowColor: string;
 }
 
-const FEATURES: FeatureDef[] = [
+export const FEATURES: FeatureDef[] = [
     {
         key: 'observability',
         label: 'Obs',
         icon: Activity,
         color: '#22d3ee',
-        glowColor: 'rgba(34, 211, 238, 0.15)',
+        glowColor: 'rgba(34, 211, 238, 0.12)',
     },
     {
         key: 'memory',
         label: 'Mem',
         icon: Database,
-        color: '#a78bfa',
-        glowColor: 'rgba(167, 139, 250, 0.15)',
+        color: '#60a5fa',
+        glowColor: 'rgba(96, 165, 250, 0.12)',
     },
     {
         key: 'guardrails',
         label: 'Guard',
         icon: ShieldCheck,
         color: '#34d399',
-        glowColor: 'rgba(52, 211, 153, 0.15)',
+        glowColor: 'rgba(52, 211, 153, 0.12)',
     },
     {
         key: 'mcp',
         label: 'MCP',
         icon: Wrench,
         color: '#fbbf24',
-        glowColor: 'rgba(251, 191, 36, 0.15)',
+        glowColor: 'rgba(251, 191, 36, 0.12)',
     },
     {
         key: 'sso',
         label: 'SSO',
         icon: KeyRound,
         color: '#f472b6',
-        glowColor: 'rgba(244, 114, 182, 0.15)',
+        glowColor: 'rgba(244, 114, 182, 0.12)',
     },
     {
         key: 'integrations',
         label: 'Int',
         icon: Plug,
         color: '#25d366',
-        glowColor: 'rgba(37, 211, 102, 0.15)',
+        glowColor: 'rgba(37, 211, 102, 0.12)',
     },
 ];
 
@@ -108,9 +108,10 @@ const FEATURES: FeatureDef[] = [
 
 interface FeatureIconsProps {
     agent: BackendAgent;
+    compact?: boolean;
 }
 
-export const FeatureIcons: React.FC<FeatureIconsProps> = ({ agent }) => {
+export const FeatureIcons: React.FC<FeatureIconsProps> = ({ agent, compact = false }) => {
     const features = detectAgentFeatures(agent);
 
     const activeMap: Record<string, boolean> = {
@@ -121,6 +122,24 @@ export const FeatureIcons: React.FC<FeatureIconsProps> = ({ agent }) => {
         sso: features.hasSso,
         integrations: features.hasIntegrations,
     };
+
+    if (compact) {
+        const activeFeatures = FEATURES.filter((f) => activeMap[f.key]);
+        if (activeFeatures.length === 0) return null;
+        return (
+            <CompactRow>
+                {activeFeatures.map((f) => {
+                    const Icon = f.icon;
+                    return (
+                        <CompactPill key={f.key} $color={f.color} $glow={f.glowColor} title={f.label}>
+                            <Icon size={11} strokeWidth={2} />
+                            <CompactLabel>{f.label}</CompactLabel>
+                        </CompactPill>
+                    );
+                })}
+            </CompactRow>
+        );
+    }
 
     return (
         <Row>
@@ -166,9 +185,9 @@ const IconPill = styled.div<{ $active: boolean; $color: string; $glow: string }>
     justify-content: center;
     transition: all 0.2s ease;
 
-    background: ${(p) => (p.$active ? p.$glow : 'var(--overlay-subtle)')};
-    color: ${(p) => (p.$active ? p.$color : 'hsl(var(--muted-foreground))')};
-    border: 1px solid ${(p) => (p.$active ? `${p.$color}33` : 'var(--overlay-light)')};
+    background: ${(p) => (p.$active ? p.$glow : 'rgba(255, 255, 255, 0.03)')};
+    color: ${(p) => (p.$active ? p.$color : '#4a5568')};
+    border: 1px solid ${(p) => (p.$active ? `${p.$color}33` : 'rgba(255, 255, 255, 0.06)')};
 `;
 
 const Label = styled.span<{ $active: boolean; $color: string }>`
@@ -176,6 +195,36 @@ const Label = styled.span<{ $active: boolean; $color: string }>`
     font-weight: 600;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: ${(p) => (p.$active ? p.$color : 'hsl(var(--muted-foreground))')};
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    color: ${(p) => (p.$active ? p.$color : '#4a5568')};
     transition: color 0.2s ease;
+`;
+
+// ── Compact mode styles ─────────────────────────────────────────────────────
+
+const CompactRow = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+`;
+
+const CompactPill = styled.div<{ $color: string; $glow: string }>`
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: ${(p) => p.$glow};
+    color: ${(p) => p.$color};
+    border: 1px solid ${(p) => `${p.$color}22`};
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+`;
+
+const CompactLabel = styled.span`
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 `;

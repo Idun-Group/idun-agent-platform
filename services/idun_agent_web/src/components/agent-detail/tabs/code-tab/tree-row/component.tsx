@@ -75,12 +75,14 @@ const Item = styled.div<{ $active?: boolean; $dir?: boolean }>`
     gap: 8px;
     padding: 6px 8px;
     border-radius: 6px;
-    color: ${(p) => (p.$dir ? '#a3b1d1' : '#d1d5e1')};
-    background: ${(p) => (p.$active ? '#2b2f45' : 'transparent')};
+    color: ${(p) => (p.$dir ? '#8899a6' : '#e1e4e8')};
+    background: ${(p) => (p.$active ? 'rgba(12, 92, 171, 0.1)' : 'transparent')};
     cursor: ${(p) => (p.$dir ? 'default' : 'pointer')};
     white-space: nowrap;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
     &:hover {
-        background: ${(p) => (p.$dir ? 'transparent' : '#232741')};
+        background: ${(p) => (p.$dir ? 'transparent' : 'rgba(255, 255, 255, 0.04)')};
     }
     span {
         overflow: hidden;

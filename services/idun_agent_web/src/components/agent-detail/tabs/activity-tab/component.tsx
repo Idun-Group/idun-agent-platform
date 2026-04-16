@@ -52,6 +52,7 @@ export default ActivityTab;
 const ActivitySection = styled.div`
     flex: 1;
     padding: 0 40px;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const ActivityHeader = styled.div`
@@ -59,7 +60,7 @@ const ActivityHeader = styled.div`
     align-items: center;
     gap: 12px;
     margin-bottom: 32px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 
     h2 {
         font-size: 24px;
@@ -79,7 +80,7 @@ const ActivityItem = styled.div`
     align-items: center;
     gap: 16px;
     padding: 16px 0;
-    border-bottom: 1px solid hsl(var(--border));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
     &:last-child {
         border-bottom: none;
@@ -127,7 +128,7 @@ const ActivityTitle = styled.h3`
     font-size: 16px;
     font-weight: 500;
     margin: 0;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 `;
 
 const ActivityMeta = styled.div`
@@ -138,15 +139,15 @@ const ActivityMeta = styled.div`
 
 const ActivityType = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     padding: 2px 8px;
-    background: hsl(var(--accent));
+    background: rgba(12, 92, 171, 0.1);
     border-radius: 4px;
 `;
 
 const ActivityDuration = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const ActivityStatus = styled.span<{ $status: string }>`
@@ -169,6 +170,6 @@ const ActivityStatus = styled.span<{ $status: string }>`
 
 const ActivityTimestamp = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     white-space: nowrap;
 `;

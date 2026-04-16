@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import useWorkspace from '../../hooks/use-workspace';
 import { useAuth } from '../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
+import { UserIcon } from 'lucide-react';
 
 const Header = () => {
     const [workspaces, setWorkspaces] = useState<
@@ -23,12 +24,25 @@ const Header = () => {
 
     const [workspaceId, setWorkspaceId] = useState<string>('');
 
+    const avatarUrl =
+        (session as any)?.principal?.avatarUrl ||
+        (session as any)?.principal?.picture ||
+        (session as any)?.user?.avatarUrl ||
+        (session as any)?.user?.picture ||
+        '';
+
+    const [avatarError, setAvatarError] = useState(false);
+    useEffect(() => {
+        setAvatarError(false);
+    }, [session]);
+
     return (
         <HeaderContainer>
-            <SideContainer>
-                <Title onClick={() => navigate('/agents')} style={{ cursor: 'pointer' }}>
-                    <Logo src="/img/logo/favicon.svg" alt="Idun Logo" /> Idun Platform
-                </Title>
+            <LeftSection>
+                <LogoGroup onClick={() => navigate('/agents')} style={{ cursor: 'pointer' }}>
+                    <Logo src="/img/logo/favicon.svg" alt="Idun Logo" />
+                    <Title>Idun Platform</Title>
+                </LogoGroup>
 
                 {/** Workspace selector temporarily disabled */}
                 {false && (
@@ -55,7 +69,21 @@ const Header = () => {
                         ))}
                     </Select>
                 )}
-            </SideContainer>
+            </LeftSection>
+
+            <RightSection>
+                <AvatarButton>
+                    {avatarUrl && !avatarError ? (
+                        <HeaderAvatar
+                            src={avatarUrl}
+                            alt=""
+                            onError={() => setAvatarError(true)}
+                        />
+                    ) : (
+                        <UserIcon size={16} color="#8899a6" />
+                    )}
+                </AvatarButton>
+            </RightSection>
         </HeaderContainer>
     );
 };
@@ -63,10 +91,9 @@ const Header = () => {
 export default Header;
 
 const HeaderContainer = styled.header`
-    background-color: hsl(var(--header-bg));
-    padding: 0.75rem 1.25rem;
-    border-bottom: 1px solid hsl(var(--header-border));
-    transition: background-color 0.3s ease, border-color 0.3s ease;
+    height: 56px;
+    padding: 0 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -75,57 +102,93 @@ const HeaderContainer = styled.header`
     position: sticky;
     top: 0;
     z-index: 50;
-    backdrop-filter: saturate(180%) blur(8px);
-    background-color: hsl(var(--header-bg) / 0.9);
+    backdrop-filter: saturate(180%) blur(12px);
+    background: rgba(10, 14, 23, 0.85);
+`;
+
+const LeftSection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 16px;
+`;
+
+const LogoGroup = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
 `;
 
 const Logo = styled.img`
-    height: 28px;
-    margin-right: 0.5rem;
+    height: 26px;
+    width: 26px;
+    object-fit: contain;
 `;
 
 const Title = styled.h1`
-    font-size: 1.25rem;
-    color: hsl(var(--header-text));
+    font-size: 15px;
+    color: #e1e4e8;
     display: flex;
     align-items: center;
     margin: 0;
     font-weight: 600;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.01em;
+`;
+
+const RightSection = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+`;
+
+const AvatarButton = styled.button`
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 200ms ease;
+
+    &:hover {
+        border-color: rgba(12, 92, 171, 0.4);
+    }
+`;
+
+const HeaderAvatar = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 `;
 
 const Select = styled.select`
-    margin-left: 1rem;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    border: 1px solid hsl(var(--border));
-    background-color: hsl(var(--background));
-    font-size: 0.875rem;
-    color: hsl(var(--foreground));
+    margin-left: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 13px;
+    color: #e1e4e8;
     min-width: 200px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 200ms ease;
 
     &:hover {
-        background-color: hsl(var(--accent));
-        border-color: hsl(var(--app-purple));
+        border-color: rgba(12, 92, 171, 0.4);
     }
 
     &:focus {
-        border-color: hsl(var(--app-purple));
+        border-color: #0C5CAB;
         outline: none;
-        box-shadow: 0 0 0 2px hsl(var(--app-purple) / 0.2);
+        box-shadow: 0 0 0 2px rgba(12, 92, 171, 0.15);
     }
 
     option {
-        background-color: hsl(var(--background));
-        color: hsl(var(--foreground));
-        padding: 0.5rem;
+        background: #0a0e17;
+        color: #e1e4e8;
+        padding: 8px;
     }
-`;
-
-const SideContainer = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
 `;

@@ -4,14 +4,15 @@ export const SectionTitle = styled.h3`
     margin: 0 0 8px 0;
     font-size: 18px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     text-align: center;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 export const SectionSubtitle = styled.p`
     margin: 0 0 32px 0;
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-align: center;
     line-height: 1.5;
 `;
@@ -19,7 +20,7 @@ export const SectionSubtitle = styled.p`
 export const UploadArea = styled.label`
     position: relative;
     display: block;
-    border: 2px dashed hsl(var(--border));
+    border: 2px dashed rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     padding: 48px 32px;
     text-align: center;
@@ -28,12 +29,12 @@ export const UploadArea = styled.label`
     transition: all 0.2s;
 
     &:hover {
-        border-color: hsl(var(--primary));
-        background: rgba(140, 82, 255, 0.05);
+        border-color: #0C5CAB;
+        background: rgba(12, 92, 171, 0.05);
     }
 
     svg {
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
         margin-bottom: 16px;
     }
 `;
@@ -45,12 +46,12 @@ export const UploadText = styled.div`
 
     strong {
         font-size: 16px;
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
     }
 
     span {
         font-size: 14px;
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
     }
 `;
 
@@ -60,13 +61,13 @@ export const FileInfo = styled.div`
 
     span {
         font-size: 12px;
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
     }
 `;
 
 export const RecommendedStructure = styled.div`
-    background: rgba(140, 82, 255, 0.1);
-    border: 1px solid hsl(var(--primary));
+    background: rgba(12, 92, 171, 0.1);
+    border: 1px solid #0C5CAB;
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 32px;
@@ -76,7 +77,7 @@ export const RecommendedStructure = styled.div`
 
     span {
         font-size: 14px;
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
     }
 `;
 
@@ -92,28 +93,28 @@ export const Label = styled.label`
     display: block;
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin-bottom: 8px;
 `;
 
 export const Input = styled.input`
     width: 100%;
     padding: 12px 16px;
-    background: hsl(var(--accent));
-    border: 1px solid hsl(var(--border));
+    background: rgba(12, 92, 171, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     box-sizing: border-box;
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--primary));
-        box-shadow: 0 0 0 3px rgba(140, 82, 255, 0.1);
+        border-color: #0C5CAB;
+        box-shadow: 0 0 0 3px rgba(12, 92, 171, 0.3);
     }
 
     &::placeholder {
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
     }
 `;
 
@@ -132,33 +133,35 @@ export const ButtonGroup = styled.div`
 export const SecondaryButton = styled.button`
     padding: 12px 24px;
     background: transparent;
-    border: 1px solid hsl(var(--border));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     &:hover {
-        background: hsl(var(--accent));
-        color: hsl(var(--foreground));
+        background: rgba(12, 92, 171, 0.1);
+        color: #e1e4e8;
     }
 `;
 
 export const PrimaryButton = styled.button`
     padding: 12px 24px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 6px;
-    color: hsl(var(--foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     &:hover {
-        background: hsl(var(--primary) / 0.85);
+        background: #0a4e94;
     }
 `;
 
@@ -166,7 +169,7 @@ export const PrimaryButton = styled.button`
 export const RemoveFileButton = styled.button`
     margin-top: 16px;
     background: #ff4d4f;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     border: none;
     border-radius: 4px;
     padding: 8px 16px;

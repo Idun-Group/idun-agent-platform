@@ -85,14 +85,15 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: hsl(var(--card));
+    background: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(16px);
     border-radius: 16px;
     width: 820px;
     max-width: 95vw;
@@ -100,15 +101,16 @@ const Modal = styled.div`
     display: flex;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     position: relative;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const Sidebar = styled.div`
     width: 220px;
     flex-shrink: 0;
-    background: hsl(var(--accent));
-    border-right: 1px solid var(--border-subtle);
+    background: rgba(12, 92, 171, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
     padding: 24px 12px;
     overflow-y: auto;
 `;
@@ -118,7 +120,7 @@ const SidebarTitle = styled.p`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 0 0 12px 8px;
 `;
 
@@ -129,9 +131,9 @@ const ProviderBtn = styled.button<{ $selected: boolean }>`
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px solid ${p => p.$selected ? 'hsl(var(--primary))' : 'transparent'};
-    background: ${p => p.$selected ? 'rgba(108, 99, 255, 0.15)' : 'transparent'};
-    color: ${p => p.$selected ? 'hsl(var(--primary))' : 'hsl(var(--text-secondary))'};
+    border: 1px solid ${p => p.$selected ? '#0C5CAB' : 'transparent'};
+    background: ${p => p.$selected ? 'rgba(12, 92, 171, 0.15)' : 'transparent'};
+    color: ${p => p.$selected ? '#0C5CAB' : '#6b7a8d'};
     font-size: 14px;
     font-weight: ${p => p.$selected ? 600 : 400};
     cursor: pointer;
@@ -140,8 +142,8 @@ const ProviderBtn = styled.button<{ $selected: boolean }>`
     margin-bottom: 4px;
 
     &:hover {
-        background: var(--overlay-light);
-        color: hsl(var(--foreground));
+        background: rgba(255, 255, 255, 0.04);
+        color: #e1e4e8;
     }
 `;
 
@@ -169,7 +171,7 @@ const RightPanel = styled.div`
 
 const PanelHeader = styled.div`
     padding: 24px 28px 20px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -178,17 +180,17 @@ const PanelHeader = styled.div`
 const PanelTitle = styled.h2`
     font-size: 18px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const CloseBtn = styled.button`
-    background: var(--overlay-light);
+    background: rgba(255, 255, 255, 0.04);
     border: none;
     border-radius: 8px;
     width: 32px;
     height: 32px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 18px;
     cursor: pointer;
     display: flex;
@@ -196,7 +198,7 @@ const CloseBtn = styled.button`
     justify-content: center;
     transition: background 0.15s;
 
-    &:hover { background: var(--border-medium); }
+    &:hover { background: rgba(255, 255, 255, 0.1); }
 `;
 
 const FormBody = styled.div`
@@ -212,7 +214,7 @@ const EmptyState = styled.div`
     justify-content: center;
     height: 100%;
     gap: 12px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     text-align: center;
 
     span { font-size: 48px; }
@@ -222,7 +224,7 @@ const EmptyState = styled.div`
 const NameFieldGroup = styled.div`
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const FieldGroup = styled.div`
@@ -233,24 +235,24 @@ const Label = styled.label`
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin-bottom: 8px;
 `;
 
 const Input = styled.input`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.15s;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
-    &:focus { border-color: hsl(var(--primary)); }
+    &::placeholder { color: #8899a6; }
+    &:focus { border-color: #0C5CAB; }
 `;
 
 const PasswordWrapper = styled.div`
@@ -264,19 +266,19 @@ const PasswordToggleBtn = styled.button`
     right: 12px;
     background: none;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     padding: 0;
     display: flex;
     align-items: center;
     flex-shrink: 0;
 
-    &:hover { color: hsl(var(--foreground)); }
+    &:hover { color: #e1e4e8; }
 `;
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin: 0 0 16px;
     padding: 10px 14px;
     background: rgba(248, 113, 113, 0.1);
@@ -286,7 +288,7 @@ const ErrorMsg = styled.p`
 
 const Footer = styled.div`
     padding: 20px 28px;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -301,23 +303,23 @@ const FooterRight = styled.div`
 const CancelBtn = styled.button`
     padding: 10px 20px;
     background: transparent;
-    border: 1px solid var(--border-medium);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-light); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.04); color: #e1e4e8; }
 `;
 
 const SubmitBtn = styled.button`
     padding: 10px 24px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 8px;
-    color: hsl(var(--primary-foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -333,8 +335,8 @@ const SubmitBtn = styled.button`
 const Spinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid var(--overlay-strong);
-    border-top-color: hsl(var(--foreground));
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #e1e4e8;
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
@@ -342,7 +344,7 @@ const Spinner = styled.div`
 const LoadingOverlay = styled.div`
     position: absolute;
     inset: 0;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -353,8 +355,8 @@ const LoadingOverlay = styled.div`
 const BigSpinner = styled.div`
     width: 40px;
     height: 40px;
-    border: 3px solid var(--overlay-strong);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -504,7 +506,7 @@ const CreateObservabilityModal: React.FC<Props> = ({ isOpen, onClose, onCreated,
                                     {provider.fields.map(field => (
                                         <FieldGroup key={field.key}>
                                             <Label htmlFor={field.key}>
-                                                {field.label}{field.required && <span style={{ color: 'hsl(var(--destructive))' }}> *</span>}
+                                                {field.label}{field.required && <span style={{ color: '#f87171' }}> *</span>}
                                             </Label>
                                             {field.type === 'password' ? (
                                                 <PasswordWrapper>

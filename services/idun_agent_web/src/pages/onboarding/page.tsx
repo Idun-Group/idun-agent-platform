@@ -68,6 +68,12 @@ const OnboardingPage = () => {
                         {isCreating ? t('onboarding.creating') : t('onboarding.submit')}
                     </SubmitButton>
                 </StyledForm>
+
+                <StepIndicator>
+                    <StepDot $active />
+                    <StepDot />
+                    <StepDot />
+                </StepIndicator>
             </Card>
         </PageWrapper>
     );
@@ -78,7 +84,8 @@ const PageWrapper = styled.main`
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: hsl(var(--background));
+    background: #0a0e17;
+    font-family: 'IBM Plex Sans', sans-serif;
     padding: 24px;
 `;
 
@@ -87,7 +94,12 @@ const Card = styled.div`
     max-width: 440px;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 32px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
 `;
 
 const LogoSection = styled.div`
@@ -104,8 +116,8 @@ const LogoImg = styled.img`
 
 const LogoText = styled.span`
     font-size: 18px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #e2e8f0;
     letter-spacing: -0.3px;
 `;
 
@@ -117,23 +129,23 @@ const Header = styled.div`
 
 const Title = styled.h1`
     font-size: 28px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #f1f5f9;
     letter-spacing: -0.5px;
     margin: 0;
 `;
 
 const Description = styled.p`
     font-size: 15px;
-    color: hsl(var(--muted-foreground));
-    line-height: 1.5;
+    color: #7a8ba5;
+    line-height: 1.6;
     margin: 0;
 `;
 
 const StyledForm = styled.form`
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 16px;
 `;
 
 const SubmitButton = styled(Button)`
@@ -144,12 +156,45 @@ const SubmitButton = styled(Button)`
     font-weight: 600;
     border-radius: 8px;
     margin-top: 4px;
+    background: #0C5CAB;
+    border: 1px solid rgba(12, 92, 171, 0.4);
+    color: #ffffff;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: #0a4f96;
+        border-color: rgba(12, 92, 171, 0.6);
+        box-shadow: 0 0 16px rgba(12, 92, 171, 0.25);
+    }
+
+    &:disabled {
+        background: rgba(12, 92, 171, 0.3);
+        border-color: rgba(12, 92, 171, 0.15);
+        color: rgba(255, 255, 255, 0.4);
+        cursor: not-allowed;
+    }
 `;
 
 const ErrorText = styled.p`
-    color: hsl(var(--destructive));
+    color: #f87171;
     font-size: 13px;
     margin: 0;
+`;
+
+const StepIndicator = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 8px;
+`;
+
+const StepDot = styled.div<{ $active?: boolean }>`
+    width: ${({ $active }) => ($active ? '24px' : '8px')};
+    height: 8px;
+    border-radius: 4px;
+    background: ${({ $active }) => ($active ? '#0C5CAB' : 'rgba(255, 255, 255, 0.1)')};
+    transition: all 0.3s ease;
 `;
 
 export default OnboardingPage;

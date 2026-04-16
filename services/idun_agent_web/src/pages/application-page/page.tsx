@@ -117,7 +117,7 @@ const ApplicationPage = ({ category }: ApplicationPageProps) => {
                     <MCPAddContainer>
                         <MCPCard onClick={() => mcpTemplate && handleMarketplaceAppClick(mcpTemplate)}>
                             <IconWrapper>
-                                <Wrench size={40} color="#8c52ff" />
+                                <Wrench size={40} color="#0C5CAB" />
                             </IconWrapper>
                             <CardTitle>Configure New MCP Server</CardTitle>
                             <CardDescription>
@@ -197,15 +197,15 @@ const Page = styled.main`
     height: 100%;
     flex-direction: column;
     flex: 1;
-    background: hsl(var(--background));
+    background: #0a0e17;
     overflow: hidden;
 `;
 
 const SubHeader = styled.header`
     padding: 2rem 2rem 0 2rem;
     width: 100%;
-    background: hsl(var(--background));
-    border-bottom: 1px solid hsl(var(--border));
+    background: #0a0e17;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     flex-shrink: 0;
 `;
 
@@ -231,7 +231,7 @@ const TopContainer = styled.div`
     h1 {
         font-size: 24px;
         font-weight: 600;
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
         margin: 0;
     }
 `;
@@ -240,22 +240,22 @@ const NavButton = styled(Button)<{ isSelected: boolean }>`
     padding: 12px 24px;
     position: relative;
     border-radius: 0;
-    color: ${props => props.isSelected ? 'hsl(var(--foreground))' : '#a0a0a0'};
+    color: ${props => props.isSelected ? '#e1e4e8' : '#a0a0a0'};
     background: transparent !important;
 
     &:hover {
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
     }
 
     ${({ isSelected }) =>
         isSelected &&
         `
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
         &::after {
             content: '';
             display: block;
             height: 2px;
-            background: #8c52ff;
+            background: #0C5CAB;
             position: absolute;
             left: 0;
             right: 0;
@@ -311,8 +311,8 @@ const MCPAddContainer = styled.div`
 `;
 
 const MCPCard = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid hsl(var(--border));
+    background: #141a26;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 16px;
     padding: 32px;
     width: 100%;
@@ -326,7 +326,7 @@ const MCPCard = styled.div`
 
     &:hover {
         transform: translateY(-4px);
-        border-color: hsl(var(--primary));
+        border-color: #0C5CAB;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
     }
 `;
@@ -335,7 +335,7 @@ const IconWrapper = styled.div`
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: rgba(140, 82, 255, 0.1);
+    background: rgba(12, 92, 171, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -345,13 +345,13 @@ const IconWrapper = styled.div`
 const CardTitle = styled.h3`
     font-size: 20px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin-bottom: 12px;
 `;
 
 const CardDescription = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin-bottom: 32px;
     line-height: 1.5;
 `;

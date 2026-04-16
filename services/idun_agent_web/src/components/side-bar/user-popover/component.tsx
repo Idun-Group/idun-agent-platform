@@ -128,8 +128,9 @@ const PopoverContainer = styled.div`
     left: 8px;
     right: 8px;
     z-index: 50;
-    background: hsl(var(--popover));
-    border: 1px solid var(--border-light);
+    background: #141a26;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
     border-radius: 12px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
     animation: ${popoverIn} 150ms ease;
@@ -155,8 +156,8 @@ const AvatarFallback = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: hsla(var(--primary) / 0.15);
-    color: hsl(var(--primary));
+    background: rgba(12, 92, 171, 0.15);
+    color: #0C5CAB;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -176,7 +177,7 @@ const UserDetails = styled.div`
 const UserName = styled.span`
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -184,7 +185,7 @@ const UserName = styled.span`
 
 const UserEmail = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -192,7 +193,7 @@ const UserEmail = styled.span`
 
 const Divider = styled.div`
     height: 1px;
-    background: var(--border-subtle);
+    background: rgba(255, 255, 255, 0.06);
     margin: 0;
 `;
 
@@ -210,26 +211,26 @@ const PopoverMenuItem = styled.button<{ $destructive?: boolean }>`
     border-radius: 8px;
     background: transparent;
     color: ${({ $destructive }) =>
-        $destructive ? 'hsl(var(--destructive-foreground))' : 'hsl(var(--foreground))'};
+        $destructive ? '#f87171' : '#e1e4e8'};
     font-size: 14px;
     font-weight: 400;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
     cursor: pointer;
     transition: background 150ms ease;
 
     &:hover {
         background: ${({ $destructive }) =>
-            $destructive ? 'hsla(var(--destructive) / 0.15)' : 'var(--overlay-light)'};
+            $destructive ? 'rgba(248, 113, 113, 0.15)' : 'rgba(255, 255, 255, 0.04)'};
     }
 
     svg {
         flex-shrink: 0;
         color: ${({ $destructive }) =>
-            $destructive ? 'hsl(var(--destructive-foreground))' : 'hsl(var(--muted-foreground))'};
+            $destructive ? '#f87171' : '#8899a6'};
     }
 
     &:hover svg {
         color: ${({ $destructive }) =>
-            $destructive ? 'hsl(var(--destructive-foreground))' : 'hsl(var(--foreground))'};
+            $destructive ? '#f87171' : '#e1e4e8'};
     }
 `;

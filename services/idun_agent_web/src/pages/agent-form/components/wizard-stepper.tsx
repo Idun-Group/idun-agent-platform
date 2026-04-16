@@ -52,8 +52,8 @@ export default function WizardStepper({ steps, currentStep }: WizardStepperProps
 }
 
 const Container = styled.div`
-    background-color: hsl(var(--card));
-    border-bottom: 1px solid var(--overlay-light);
+    background-color: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     padding: 16px 32px;
 `;
 
@@ -91,18 +91,18 @@ const StepCircle = styled.div<{ $isActive: boolean; $isCompleted: boolean }>`
     flex-shrink: 0;
 
     ${props => props.$isActive ? `
-        background-color: hsl(var(--primary));
-        border-color: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
-        box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+        background-color: #0C5CAB;
+        border-color: #0C5CAB;
+        color: #ffffff;
+        box-shadow: 0 0 15px rgba(12, 92, 171, 0.5);
     ` : props.$isCompleted ? `
-        background-color: hsl(var(--success) / 0.2);
-        border-color: hsl(var(--success));
-        color: hsl(var(--success));
+        background-color: rgba(52, 211, 153, 0.2);
+        border-color: #34d399;
+        color: #34d399;
     ` : `
-        background-color: var(--overlay-light);
-        border-color: var(--border-light);
-        color: hsl(var(--muted-foreground));
+        background-color: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.06);
+        color: #8899a6;
     `}
 `;
 
@@ -113,13 +113,13 @@ const StepInfo = styled.div`
 const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>`
     font-size: 14px;
     font-weight: 700;
-    color: ${props => (props.$isActive || props.$isCompleted) ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'};
+    color: ${props => (props.$isActive || props.$isCompleted) ? '#e1e4e8' : '#8899a6'};
     margin: 0;
 `;
 
 const InProgress = styled.p`
     font-size: 10px;
-    color: hsl(var(--primary));
+    color: #0C5CAB;
     margin: 0;
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
@@ -133,14 +133,14 @@ const SeparatorLine = styled.div`
     flex: 1;
     height: 2px;
     margin: 0 16px;
-    background-color: var(--border-light);
+    background-color: rgba(255, 255, 255, 0.06);
     position: relative;
 `;
 
 const Progress = styled.div<{ $isCompleted: boolean }>`
     position: absolute;
     inset: 0;
-    background-color: hsl(var(--success));
+    background-color: #34d399;
     width: ${props => props.$isCompleted ? '100%' : '0%'};
     transition: width 0.5s;
 `;

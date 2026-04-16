@@ -301,6 +301,7 @@ const Wrap = styled.div`
     height: 100%;
     min-height: 0;
     overflow: hidden;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 const Header = styled.div`
     display: flex;
@@ -308,13 +309,13 @@ const Header = styled.div`
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 16px;
-    border-bottom: 1px solid hsl(var(--border));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 `;
 const Title = styled.h2`
     font-size: 20px;
     font-weight: 600;
     margin: 0;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -328,16 +329,16 @@ const Btn = styled.button<{ $primary?: boolean }>`
     padding: 8px 16px;
     background: ${(p) =>
         p.$primary
-            ? 'hsl(var(--primary))'
-            : 'hsl(var(--surface-elevated))'};
+            ? '#0C5CAB'
+            : '#141a26'};
     border: 1px solid
         ${(p) =>
             p.$primary
-                ? 'hsl(var(--primary))'
-                : 'hsl(var(--border))'};
+                ? '#0C5CAB'
+                : 'rgba(255, 255, 255, 0.08)'};
     border-radius: 6px;
     color: ${(p) =>
-        p.$primary ? '#fff' : 'hsl(var(--muted-foreground))'};
+        p.$primary ? '#ffffff' : '#8899a6'};
     font-size: 14px;
     cursor: pointer;
     transition: 0.2s;
@@ -345,13 +346,14 @@ const Btn = styled.button<{ $primary?: boolean }>`
     align-items: center;
     gap: 6px;
     font-weight: 500;
+    font-family: 'IBM Plex Sans', sans-serif;
     &:hover:not(:disabled) {
         background: ${(p) =>
             p.$primary
-                ? 'hsl(var(--primary) / 0.85)'
-                : 'hsl(var(--accent))'};
-        color: hsl(var(--foreground));
-        border-color: hsl(var(--primary));
+                ? '#0a4e94'
+                : 'rgba(12, 92, 171, 0.1)'};
+        color: #e1e4e8;
+        border-color: #0C5CAB;
     }
     &:disabled {
         opacity: 0.5;
@@ -361,8 +363,8 @@ const Btn = styled.button<{ $primary?: boolean }>`
 const AsideTitle = styled.div`
     padding: 10px 12px;
     font-weight: 600;
-    border-bottom: 1px solid hsl(var(--border));
-    color: hsl(var(--foreground));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e1e4e8;
 `;
 const List = styled.div`
     overflow: auto;
@@ -379,10 +381,10 @@ const Body = styled.div<{ $dragging?: boolean }>`
 `;
 
 const Aside = styled.aside`
-    border: 1px solid hsl(var(--border));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     overflow: hidden;
-    background: hsl(var(--surface-elevated));
+    background: #141a26;
     display: flex;
     flex-direction: column;
     min-width: 200px;
@@ -406,12 +408,12 @@ const Gutter = styled.div`
         width: 2px;
         height: 32px;
         border-radius: 2px;
-        background: hsl(var(--muted-foreground) / 0.3);
+        background: rgba(136, 153, 166, 0.3);
     }
 
     &:hover::after,
     &:focus::after {
-        background: hsl(var(--muted-foreground) / 0.5);
+        background: rgba(136, 153, 166, 0.5);
     }
 `;
 
@@ -419,7 +421,7 @@ const EditorBox = styled.div`
     flex: 1;
     min-width: 0;
     background: #1e1e1e;
-    border: 1px solid hsl(var(--border));
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     overflow: hidden;
 

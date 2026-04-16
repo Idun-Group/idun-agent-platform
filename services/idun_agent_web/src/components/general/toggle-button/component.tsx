@@ -20,7 +20,7 @@ const Container = styled.div<{ $isOn: boolean }>`
     border: none;
     border-radius: 15px;
     background-color: ${({ $isOn: isOn }) => (isOn ? '#4caf50' : '#616161')};
-    color: hsl(var(--primary-foreground));
+    color: #ffffff;
     cursor: pointer;
     display: flex;
 `;
@@ -29,7 +29,7 @@ const Toggle = styled.div<{ $isOn: boolean }>`
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    background-color: hsl(var(--background));
+    background-color: #0a0e17;
     transition: transform 0.2s;
     transform: ${({ $isOn: isOn }) => (isOn ? 'translateX(30px)' : 'translateX(0)')};
 `;

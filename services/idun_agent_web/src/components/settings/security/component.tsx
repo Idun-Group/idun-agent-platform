@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '../../general/button/component';
 import { notify } from '../../toast/notify';
 import { t } from 'i18next';
+import styled from 'styled-components';
 import {
     Form,
     LabeledToggleButton,
@@ -21,9 +22,9 @@ const SecuritySettings = () => {
     };
 
     return (
-        <div>
-            <h1>Security Settings</h1>
-            <p>Manage your security settings and preferences.</p>
+        <Container>
+            <Title>Security Settings</Title>
+            <Description>Manage your security settings and preferences.</Description>
 
             <Form onSubmit={handleSubmitPasswordChange}>
                 <TextInput
@@ -61,7 +62,6 @@ const SecuritySettings = () => {
                 </Button>
             </Form>
 
-            {/* Your component implementation here */}
             <LabeledToggleButton
                 label={t('settings.security.2FA.label')}
                 subLabel={t('settings.security.2FA.description')}
@@ -74,7 +74,24 @@ const SecuritySettings = () => {
                 isOn={true}
                 onToggle={() => {}}
             />
-        </div>
+        </Container>
     );
 };
 export default SecuritySettings;
+
+const Container = styled.div`
+    font-family: 'IBM Plex Sans', sans-serif;
+`;
+
+const Title = styled.h1`
+    font-size: 20px;
+    font-weight: 600;
+    color: #e1e4e8;
+    margin: 0 0 4px 0;
+`;
+
+const Description = styled.p`
+    font-size: 14px;
+    color: #8899a6;
+    margin: 0 0 20px 0;
+`;

@@ -11,7 +11,7 @@ export const Button = styled.button<{
     background-color: ${({ $variants: variants, $color: color }) => {
         switch (variants) {
             case 'base':
-                return '#8c52ff';
+                return '#0C5CAB';
             case 'transparent':
                 return 'transparent';
             case 'colored':
@@ -21,18 +21,19 @@ export const Button = styled.button<{
         }
     }};
     border: none;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     padding: 0.5rem 1rem;
-    border-radius: 0.25rem;
+    border-radius: 8px;
     cursor: pointer;
+    font-family: inherit;
 
     &:hover:enabled {
         background-color: ${({ $variants: type, $color: color }) => {
             switch (type) {
                 case 'base':
-                    return '#7a47e6';
+                    return '#0a4a8a';
                 case 'transparent':
-                    return '#8c52ff';
+                    return '#0C5CAB';
                 case 'colored':
                     return lighten(color!, 2);
                 default:

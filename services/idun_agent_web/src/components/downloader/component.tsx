@@ -49,12 +49,13 @@ export default function Downloader() {
 
             {status && <p>{status}</p>}
 
-            <div style={{ width: '300px', height: '10px', background: '#ccc' }}>
+            <div style={{ width: '300px', height: '10px', background: 'rgba(12, 92, 171, 0.15)', borderRadius: '4px' }}>
                 <div
                     style={{
                         width: `${progress}%`,
                         height: '100%',
-                        background: 'green',
+                        background: '#0C5CAB',
+                        borderRadius: '4px',
                         transition: 'width 0.2s',
                     }}
                 />

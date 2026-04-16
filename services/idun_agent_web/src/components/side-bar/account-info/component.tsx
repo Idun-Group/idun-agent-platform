@@ -23,7 +23,7 @@ const AccountInfo = () => {
                 />
             ) : (
                 <UserAvatarFallback>
-                    <UserIcon size={17} color="#826F95" />
+                    <UserIcon size={17} color="#6B8EB5" />
                 </UserAvatarFallback>
             )}
 
@@ -58,7 +58,7 @@ const UserAvatarFallback = styled.div`
     width: 17px;
     height: 17px;
     border-radius: 50%;
-    background: hsl(var(--accent));
+    background: rgba(12, 92, 171, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -75,7 +75,7 @@ const TextCol = styled.div`
         margin: 0;
         font-size: 13px;
         font-weight: 500;
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

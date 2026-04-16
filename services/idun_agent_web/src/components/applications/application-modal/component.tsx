@@ -645,7 +645,7 @@ const ApplicationModal = ({ isOpen, onClose, appToCreate, appToEdit, onSuccess }
                 const piiList = ['Email', 'Phone Number', 'Credit Card', 'SSN', 'Location'];
                 return (
                     <div style={{ marginBottom: '24px' }}>
-                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600, color: 'hsl(var(--foreground))' }}>
+                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600, color: '#e1e4e8', fontFamily: "'IBM Plex Sans', sans-serif" }}>
                             PII Entities <span style={{ color: '#ff4757', marginLeft: '4px' }}>*</span>
                         </label>
                         {piiList.map(entity => (

@@ -582,7 +582,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                         <FieldWrapper>
                                             <InputLabel>Target Environment</InputLabel>
                                             <div style={{ position: 'relative' }}>
-                                                <Server size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: 'hsl(var(--muted-foreground))' }} />
+                                                <Server size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: '#8899a6' }} />
                                                 <StyledSelect value={environment || ''} onChange={e => setEnvironment(e.target.value as any)} style={{ paddingLeft: '36px' }}>
                                                     <option value="development">Development</option>
                                                     <option value="staging">Staging</option>
@@ -717,7 +717,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                                         <SafetyCardContainer key={app.id} $enabled={selectedMCPIds.includes(app.id)} onClick={() => toggleMCP(app.id)}>
                                                             <SafetyCardHeader>
                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                    <Server size={16} color="hsl(var(--primary))" />
+                                                                    <Server size={16} color="#0C5CAB" />
                                                                     <SafetyTitle $enabled={selectedMCPIds.includes(app.id)}>{app.name}</SafetyTitle>
                                                                 </div>
                                                                 <SafetyCheckbox $checked={selectedMCPIds.includes(app.id)}>
@@ -746,7 +746,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                                         <SafetyCardContainer key={app.id} $enabled={selectedGuardIds.includes(app.id)} $risk={risk.label.split(' ')[0]} onClick={() => toggleGuard(app.id)}>
                                                             <SafetyCardHeader>
                                                                 <div>
-                                                                    <Shield size={16} color={risk.color === 'red' ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'} style={{ marginBottom: '4px' }} />
+                                                                    <Shield size={16} color={risk.color === 'red' ? '#f87171' : '#0C5CAB'} style={{ marginBottom: '4px' }} />
                                                                     <SafetyTitle $enabled={selectedGuardIds.includes(app.id)}>{app.name}</SafetyTitle>
                                                                 </div>
                                                                 <SafetyCheckbox $checked={selectedGuardIds.includes(app.id)} $risk={risk.label.split(' ')[0]}>
@@ -768,9 +768,9 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                                 Show available guardrails
                                             </AddButton>
                                         ) : (
-                                            <div style={{ marginTop: '16px', animation: 'fadeIn 0.3s', backgroundColor: 'hsl(var(--accent))', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                                            <div style={{ marginTop: '16px', animation: 'fadeIn 0.3s', backgroundColor: 'rgba(12, 92, 171, 0.1)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                                    <span style={{ fontSize: '12px', color: 'hsl(var(--muted-foreground))', fontWeight: 600, textTransform: 'uppercase' }}>Available Guardrails</span>
+                                                    <span style={{ fontSize: '12px', color: '#8899a6', fontWeight: 600, textTransform: 'uppercase' }}>Available Guardrails</span>
                                                     <CloseButton onClick={() => setIsGuardrailMarketplaceVisible(false)} style={{ padding: '4px' }}><X size={14} /></CloseButton>
                                                  </div>
                                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
@@ -802,7 +802,7 @@ export default function AgentFormModal({ isOpen, onClose, onSuccess }: AgentForm
                                                     <SafetyCardContainer key={config.id} $enabled={selectedSSOId === config.id} onClick={() => setSelectedSSOId(prev => prev === config.id ? '' : config.id)}>
                                                         <SafetyCardHeader>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                <KeyRound size={16} color="hsl(var(--warning))" />
+                                                                <KeyRound size={16} color="#f59e0b" />
                                                                 <SafetyTitle $enabled={selectedSSOId === config.id}>{config.name}</SafetyTitle>
                                                             </div>
                                                             <SafetyCheckbox $checked={selectedSSOId === config.id}>
@@ -896,58 +896,58 @@ const PageContainer = styled.div`
     position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px;
 `;
 const Backdrop = styled.div`
-    position: absolute; inset: 0; background-color: var(--overlay-backdrop); backdrop-filter: blur(4px);
+    position: absolute; inset: 0; background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
 `;
 const ModalWindow = styled.div`
-    position: relative; width: 100%; max-width: 1152px; background-color: hsl(var(--card)); border: 1px solid var(--border-light); border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden;
+    position: relative; width: 100%; max-width: 1152px; background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden;
 `;
 const ModalHeader = styled.div`
-    display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid var(--border-subtle); background-color: hsl(var(--accent));
+    display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); background-color: rgba(12, 92, 171, 0.1);
 `;
-const ModalTitle = styled.h2` font-size: 24px; font-weight: 700; color: hsl(var(--foreground)); margin: 0; `;
-const ModalSubtitle = styled.p` font-size: 14px; color: hsl(var(--muted-foreground)); margin-top: 4px; `;
-const CloseButton = styled.button` padding: 8px; color: hsl(var(--muted-foreground)); background: transparent; border: none; cursor: pointer; border-radius: 8px; transition: all 0.2s; &:hover { color: hsl(var(--foreground)); background-color: var(--overlay-light); } `;
-const StepperContainer = styled.div` background-color: hsl(var(--accent)); border-bottom: 1px solid var(--border-subtle); padding: 16px 32px; `;
+const ModalTitle = styled.h2` font-size: 24px; font-weight: 700; color: #e1e4e8; margin: 0; `;
+const ModalSubtitle = styled.p` font-size: 14px; color: #8899a6; margin-top: 4px; `;
+const CloseButton = styled.button` padding: 8px; color: #8899a6; background: transparent; border: none; cursor: pointer; border-radius: 8px; transition: all 0.2s; &:hover { color: #e1e4e8; background-color: rgba(255, 255, 255, 0.04); } `;
+const StepperContainer = styled.div` background-color: rgba(12, 92, 171, 0.1); border-bottom: 1px solid rgba(255, 255, 255, 0.04); padding: 16px 32px; `;
 const StepperInner = styled.div` display: flex; align-items: center; justify-content: space-between; max-width: 768px; margin: 0 auto; `;
 const StepItem = styled.div` display: flex; align-items: center; flex: 1; &:last-child { flex: none; } `;
 const StepContent = styled.div` display: flex; align-items: center; position: relative; `;
-const StepCircle = styled.div<{ $isActive: boolean; $isCompleted: boolean }>` width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid; transition: all 0.2s; z-index: 10; ${props => props.$isActive ? `background-color: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);` : props.$isCompleted ? `background-color: rgba(16, 185, 129, 0.2); border-color: hsl(var(--success)); color: hsl(var(--success));` : `background-color: var(--overlay-light); border-color: var(--border-light); color: hsl(var(--muted-foreground));`} `;
+const StepCircle = styled.div<{ $isActive: boolean; $isCompleted: boolean }>` width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid; transition: all 0.2s; z-index: 10; ${props => props.$isActive ? `background-color: #0C5CAB; border-color: #0C5CAB; color: #ffffff; box-shadow: 0 0 15px rgba(12, 92, 171, 0.5);` : props.$isCompleted ? `background-color: rgba(16, 185, 129, 0.2); border-color: #34d399; color: #34d399;` : `background-color: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.06); color: #8899a6;`} `;
 const StepInfo = styled.div` margin-left: 12px; `;
-const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>` font-size: 14px; font-weight: 700; color: ${props => (props.$isActive || props.$isCompleted) ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}; margin: 0; `;
-const StepInProgress = styled.p` font-size: 10px; color: hsl(var(--primary)); margin: 0; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } `;
-const StepSeparatorLine = styled.div` flex: 1; height: 2px; margin: 0 16px; background-color: var(--border-light); position: relative; `;
-const StepProgress = styled.div<{ $isCompleted: boolean }>` position: absolute; inset: 0; background-color: hsl(var(--success)); width: ${props => props.$isCompleted ? '100%' : '0%'}; transition: width 0.5s; `;
-const ModalBody = styled.div` flex: 1; overflow-y: auto; padding: 32px; background-color: hsl(var(--surface-elevated)); `;
-const ModalFooter = styled.div` padding: 24px; border-top: 1px solid var(--border-subtle); background-color: hsl(var(--accent)); display: flex; justify-content: space-between; align-items: center; `;
-const CancelButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: hsl(var(--muted-foreground)); background: transparent; border: none; border-radius: 8px; cursor: pointer; transition: color 0.2s; &:hover { color: hsl(var(--foreground)); background-color: var(--overlay-light); } `;
-const BackButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: hsl(var(--text-secondary)); background-color: var(--overlay-light); border: 1px solid var(--border-light); border-radius: 8px; cursor: pointer; display: flex; align-items: center; transition: all 0.2s; &:hover { color: hsl(var(--foreground)); background-color: var(--overlay-medium); } `;
-const NextButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: hsl(var(--primary-foreground)); background-color: hsl(var(--primary)); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.2); transition: all 0.2s; &:hover { opacity: 0.9; } `;
-const DeployButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: hsl(var(--primary-foreground)); background-color: hsl(var(--success)); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2); transition: all 0.2s; &:hover { opacity: 0.9; } &:disabled { opacity: 0.6; cursor: not-allowed; } `;
+const StepTitle = styled.p<{ $isActive: boolean; $isCompleted: boolean }>` font-size: 14px; font-weight: 700; color: ${props => (props.$isActive || props.$isCompleted) ? '#e1e4e8' : '#8899a6'}; margin: 0; `;
+const StepInProgress = styled.p` font-size: 10px; color: #0C5CAB; margin: 0; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } `;
+const StepSeparatorLine = styled.div` flex: 1; height: 2px; margin: 0 16px; background-color: rgba(255, 255, 255, 0.06); position: relative; `;
+const StepProgress = styled.div<{ $isCompleted: boolean }>` position: absolute; inset: 0; background-color: #34d399; width: ${props => props.$isCompleted ? '100%' : '0%'}; transition: width 0.5s; `;
+const ModalBody = styled.div` flex: 1; overflow-y: auto; padding: 32px; background-color: #141a26; `;
+const ModalFooter = styled.div` padding: 24px; border-top: 1px solid rgba(255, 255, 255, 0.04); background-color: rgba(12, 92, 171, 0.1); display: flex; justify-content: space-between; align-items: center; `;
+const CancelButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: #8899a6; background: transparent; border: none; border-radius: 8px; cursor: pointer; transition: color 0.2s; &:hover { color: #e1e4e8; background-color: rgba(255, 255, 255, 0.04); } `;
+const BackButton = styled.button` padding: 10px 20px; font-size: 14px; font-weight: 500; color: #6b7a8d; background-color: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; cursor: pointer; display: flex; align-items: center; transition: all 0.2s; &:hover { color: #e1e4e8; background-color: rgba(255, 255, 255, 0.08); } `;
+const NextButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #0C5CAB; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(12, 92, 171, 0.2); transition: all 0.2s; &:hover { opacity: 0.9; } `;
+const DeployButton = styled.button` padding: 10px 24px; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #34d399; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2); transition: all 0.2s; &:hover { opacity: 0.9; } &:disabled { opacity: 0.6; cursor: not-allowed; } `;
 const StepContainer = styled.div` animation: fadeIn 0.3s ease-in-out; height: 100%; @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } `;
 const StepGrid = styled.div` display: grid; grid-template-columns: 1fr; gap: 32px; height: 100%; @media (min-width: 768px) { grid-template-columns: repeat(3, 1fr); } `;
 const IdentityColumn = styled.div` grid-column: span 2; display: flex; flex-direction: column; gap: 24px; `;
 const RuntimeColumn = styled.div` display: flex; flex-direction: column; gap: 24px; `;
 const LogicColumn = styled.div` grid-column: span 2; display: flex; flex-direction: column; gap: 24px; height: 100%; min-height: 400px; `;
 const DataColumn = styled.div` display: flex; flex-direction: column; gap: 24px; `;
-const SectionTitle = styled.h3` font-size: 14px; font-weight: 700; color: hsl(var(--foreground)); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; margin-bottom: 16px; `;
-const SectionIndicator = styled.span<{ $color?: string }>` width: 4px; height: 16px; background-color: ${props => { switch(props.$color) { case 'blue': return '#3b82f6'; case 'emerald': return 'hsl(var(--success))'; case 'yellow': return 'hsl(var(--warning))'; case 'purple': return '#a855f7'; default: return 'hsl(var(--primary))'; } }}; border-radius: 9999px; margin-right: 8px; `;
+const SectionTitle = styled.h3` font-size: 14px; font-weight: 700; color: #e1e4e8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; margin-bottom: 16px; `;
+const SectionIndicator = styled.span<{ $color?: string }>` width: 4px; height: 16px; background-color: ${props => { switch(props.$color) { case 'blue': return '#3b82f6'; case 'emerald': return '#34d399'; case 'yellow': return '#f59e0b'; case 'purple': return '#0C5CAB'; default: return '#0C5CAB'; } }}; border-radius: 9999px; margin-right: 8px; `;
 const IdentityRow = styled.div` display: flex; gap: 24px; align-items: flex-start; `;
 const AvatarSection = styled.div` flex-shrink: 0; `;
-const AvatarLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: hsl(var(--muted-foreground)); text-transform: uppercase; margin-bottom: 8px; text-align: center; `;
+const AvatarLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: #8899a6; text-transform: uppercase; margin-bottom: 8px; text-align: center; `;
 const AvatarWrapper = styled.div` position: relative; cursor: pointer; &:hover > div { opacity: 1; } `;
-const AvatarOverlay = styled.div` position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background-color: var(--overlay-backdrop); opacity: 0; transition: opacity 0.2s; border-radius: 12px; `;
+const AvatarOverlay = styled.div` position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.6); opacity: 0; transition: opacity 0.2s; border-radius: 12px; `;
 const IdentityFields = styled.div` flex: 1; display: flex; flex-direction: column; gap: 20px; `;
 const Row = styled.div` display: flex; gap: 16px; `;
 const FieldWrapper = styled.div` width: 100%; `;
-const InputLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: hsl(var(--muted-foreground)); text-transform: uppercase; margin-bottom: 8px; `;
-const RequiredAsterisk = styled.span` color: hsl(var(--destructive)); margin-left: 4px; `;
-const StyledInput = styled.input` width: 100%; background-color: hsl(var(--accent)); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: hsl(var(--foreground)); outline: none; transition: all 0.2s; &:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 1px hsl(var(--primary)); } &::placeholder { color: hsl(var(--muted-foreground)); } `;
-const StyledTextarea = styled.textarea` width: 100%; background-color: hsl(var(--accent)); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: hsl(var(--foreground)); outline: none; transition: all 0.2s; resize: none; &:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 1px hsl(var(--primary)); } &::placeholder { color: hsl(var(--muted-foreground)); } `;
-const StyledSelect = styled.select` width: 100%; background-color: hsl(var(--accent)); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: hsl(var(--text-secondary)); outline: none; appearance: none; transition: all 0.2s; cursor: pointer; &:focus { border-color: hsl(var(--primary)); } &:hover { border-color: var(--border-medium); } `;
+const InputLabel = styled.label` display: block; font-size: 12px; font-weight: 500; color: #8899a6; text-transform: uppercase; margin-bottom: 8px; `;
+const RequiredAsterisk = styled.span` color: #f87171; margin-left: 4px; `;
+const StyledInput = styled.input` width: 100%; background-color: rgba(12, 92, 171, 0.1); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: #e1e4e8; outline: none; transition: all 0.2s; &:focus { border-color: #0C5CAB; box-shadow: 0 0 0 1px #0C5CAB; } &::placeholder { color: #8899a6; } `;
+const StyledTextarea = styled.textarea` width: 100%; background-color: rgba(12, 92, 171, 0.1); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: #e1e4e8; outline: none; transition: all 0.2s; resize: none; &:focus { border-color: #0C5CAB; box-shadow: 0 0 0 1px #0C5CAB; } &::placeholder { color: #8899a6; } `;
+const StyledSelect = styled.select` width: 100%; background-color: rgba(12, 92, 171, 0.1); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: #6b7a8d; outline: none; appearance: none; transition: all 0.2s; cursor: pointer; &:focus { border-color: #0C5CAB; } &:hover { border-color: rgba(255, 255, 255, 0.1); } `;
 const FrameworkList = styled.div` display: flex; flex-direction: column; gap: 8px; `;
-const FrameworkOption = styled.button<{ $isSelected: boolean }>` width: 100%; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; cursor: pointer; ${props => props.$isSelected ? `background-color: rgba(140, 82, 255, 0.1); border-color: hsl(var(--primary)); color: hsl(var(--foreground));` : `background-color: hsl(var(--accent)); border-color: var(--border-light); color: hsl(var(--muted-foreground)); &:hover { border-color: var(--border-medium); background-color: var(--overlay-light); }`} `;
-const CheckCircle = styled.div` width: 16px; height: 16px; background-color: hsl(var(--primary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; `;
-const ErrorMessage = styled.p` margin-top: 8px; margin-bottom: 0; font-size: 14px; font-family: inherit; font-weight: 400; color: hsl(var(--destructive)); line-height: 1.5; `;
+const FrameworkOption = styled.button<{ $isSelected: boolean }>` width: 100%; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; cursor: pointer; ${props => props.$isSelected ? `background-color: rgba(12, 92, 171, 0.1); border-color: #0C5CAB; color: #e1e4e8;` : `background-color: rgba(12, 92, 171, 0.1); border-color: rgba(255, 255, 255, 0.06); color: #8899a6; &:hover { border-color: rgba(255, 255, 255, 0.1); background-color: rgba(255, 255, 255, 0.04); }`} `;
+const CheckCircle = styled.div` width: 16px; height: 16px; background-color: #0C5CAB; border-radius: 50%; display: flex; align-items: center; justify-content: center; `;
+const ErrorMessage = styled.p` margin-top: 8px; margin-bottom: 0; font-size: 14px; font-family: inherit; font-weight: 400; color: #f87171; line-height: 1.5; `;
 
 // Card Components
 const CardGrid = styled.div`
@@ -958,8 +958,8 @@ const CardGrid = styled.div`
 `;
 
 const AddConfigCard = styled.button`
-    background-color: rgba(140, 82, 255, 0.05);
-    border: 1px dashed rgba(140, 82, 255, 0.3);
+    background-color: rgba(12, 92, 171, 0.05);
+    border: 1px dashed rgba(12, 92, 171, 0.3);
     border-radius: 8px;
     padding: 12px;
     cursor: pointer;
@@ -970,19 +970,19 @@ const AddConfigCard = styled.button`
     justify-content: center;
     gap: 8px;
     min-height: 80px;
-    color: hsl(var(--primary));
+    color: #0C5CAB;
     font-size: 12px;
     font-weight: 600;
 
     &:hover {
-        background-color: rgba(140, 82, 255, 0.1);
-        border-color: hsl(var(--primary));
+        background-color: rgba(12, 92, 171, 0.1);
+        border-color: #0C5CAB;
     }
 `;
 
 const ConfigCard = styled.div<{ $selected: boolean }>`
-    background-color: ${props => props.$selected ? 'rgba(140, 82, 255, 0.1)' : 'hsl(var(--accent))'};
-    border: 1px solid ${props => props.$selected ? 'hsl(var(--primary))' : 'var(--border-light)'};
+    background-color: ${props => props.$selected ? 'rgba(12, 92, 171, 0.1)' : 'rgba(12, 92, 171, 0.1)'};
+    border: 1px solid ${props => props.$selected ? '#0C5CAB' : 'rgba(255, 255, 255, 0.06)'};
     border-radius: 8px;
     padding: 12px;
     cursor: pointer;
@@ -992,8 +992,8 @@ const ConfigCard = styled.div<{ $selected: boolean }>`
     gap: 8px;
 
     &:hover {
-        border-color: ${props => props.$selected ? 'hsl(var(--primary))' : 'var(--border-medium)'};
-        background-color: ${props => props.$selected ? 'rgba(140, 82, 255, 0.15)' : 'var(--overlay-light)'};
+        border-color: ${props => props.$selected ? '#0C5CAB' : 'rgba(255, 255, 255, 0.1)'};
+        background-color: ${props => props.$selected ? 'rgba(12, 92, 171, 0.15)' : 'rgba(255, 255, 255, 0.04)'};
     }
 `;
 
@@ -1006,7 +1006,7 @@ const CardHeader = styled.div`
 const CardTitle = styled.span`
     font-size: 12px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1015,7 +1015,7 @@ const CardTitle = styled.span`
 const MiniIconButton = styled.div`
     padding: 2px;
     border-radius: 4px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1023,19 +1023,19 @@ const MiniIconButton = styled.div`
     transition: all 0.2s;
 
     &:hover {
-        background-color: var(--overlay-medium);
-        color: hsl(var(--foreground));
+        background-color: rgba(255, 255, 255, 0.08);
+        color: #e1e4e8;
     }
 `;
 
 const CardMeta = styled.span`
     font-size: 10px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const EmptyText = styled.p`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-style: italic;
     margin: 0;
 `;
@@ -1045,8 +1045,8 @@ const MultiSelectContainer = styled.div`
     flex-wrap: wrap;
     gap: 8px;
     padding: 8px;
-    background-color: hsl(var(--accent));
-    border: 1px solid var(--border-light);
+    background-color: rgba(12, 92, 171, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
 `;
 
@@ -1055,25 +1055,25 @@ const TypeCheckbox = styled.div<{ $checked: boolean }>`
     align-items: center;
     gap: 8px;
     padding: 6px 12px;
-    background-color: ${props => props.$checked ? 'rgba(140, 82, 255, 0.2)' : 'var(--overlay-light)'};
-    border: 1px solid ${props => props.$checked ? 'hsl(var(--primary))' : 'transparent'};
+    background-color: ${props => props.$checked ? 'rgba(12, 92, 171, 0.2)' : 'rgba(255, 255, 255, 0.04)'};
+    border: 1px solid ${props => props.$checked ? '#0C5CAB' : 'transparent'};
     border-radius: 6px;
     font-size: 12px;
-    color: ${props => props.$checked ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'};
+    color: ${props => props.$checked ? '#e1e4e8' : '#8899a6'};
     cursor: pointer;
     transition: all 0.2s;
     user-select: none;
 
     &:hover {
-        background-color: ${props => props.$checked ? 'rgba(140, 82, 255, 0.3)' : 'var(--overlay-medium)'};
+        background-color: ${props => props.$checked ? 'rgba(12, 92, 171, 0.3)' : 'rgba(255, 255, 255, 0.08)'};
     }
 
     .checkbox {
         width: 14px;
         height: 14px;
         border-radius: 3px;
-        border: 1px solid ${props => props.$checked ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'};
-        background-color: ${props => props.$checked ? 'hsl(var(--primary))' : 'transparent'};
+        border: 1px solid ${props => props.$checked ? '#0C5CAB' : '#8899a6'};
+        background-color: ${props => props.$checked ? '#0C5CAB' : 'transparent'};
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1110,21 +1110,21 @@ const CarouselButton = styled.button<{ direction: 'left' | 'right' }>`
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background-color: hsl(var(--muted));
-    border: 1px solid var(--border-medium);
-    color: hsl(var(--foreground));
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e1e4e8;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     opacity: 0.8;
-    &:hover { opacity: 1; background-color: var(--overlay-strong); }
+    &:hover { opacity: 1; background-color: rgba(255, 255, 255, 0.15); }
 `;
 
 const TypeHeader = styled.div`
     font-size: 11px;
     font-weight: 600;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-transform: uppercase;
     margin-bottom: 8px;
     display: flex;
@@ -1135,7 +1135,7 @@ const TypeHeader = styled.div`
         content: '';
         flex: 1;
         height: 1px;
-        background-color: var(--border-light);
+        background-color: rgba(255, 255, 255, 0.06);
     }
 `;
 
@@ -1150,11 +1150,11 @@ const SafetyCardContainer = styled.div<{ $enabled: boolean, $risk?: string }>`
     padding: 16px;
     border-radius: 12px;
     border: 1px solid ${props => props.$enabled
-        ? (props.$risk === 'High' ? 'rgba(239, 68, 68, 0.5)' : props.$risk ? 'rgba(140, 82, 255, 0.5)' : 'rgba(140, 82, 255, 0.5)')
-        : 'var(--border-light)'};
+        ? (props.$risk === 'High' ? 'rgba(239, 68, 68, 0.5)' : props.$risk ? 'rgba(12, 92, 171, 0.5)' : 'rgba(12, 92, 171, 0.5)')
+        : 'rgba(255, 255, 255, 0.06)'};
     background-color: ${props => props.$enabled
-        ? (props.$risk === 'High' ? 'rgba(127, 29, 29, 0.1)' : props.$risk ? 'rgba(140, 82, 255, 0.1)' : 'rgba(140, 82, 255, 0.1)')
-        : 'hsl(var(--accent))'};
+        ? (props.$risk === 'High' ? 'rgba(127, 29, 29, 0.1)' : props.$risk ? 'rgba(12, 92, 171, 0.1)' : 'rgba(12, 92, 171, 0.1)')
+        : 'rgba(12, 92, 171, 0.1)'};
     display: flex;
     flex-direction: column;
     transition: all 0.2s;
@@ -1163,7 +1163,7 @@ const SafetyCardContainer = styled.div<{ $enabled: boolean, $risk?: string }>`
     min-height: 120px;
 
     &:hover {
-        border-color: ${props => props.$enabled ? '' : 'var(--border-medium)'};
+        border-color: ${props => props.$enabled ? '' : 'rgba(255, 255, 255, 0.1)'};
     }
 `;
 
@@ -1187,13 +1187,13 @@ const SafetyCheckbox = styled.div<{ $checked: boolean, $risk?: string }>`
 
     ${props => props.$checked
         ? `
-            background-color: ${props.$risk === 'High' ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'};
-            border-color: ${props.$risk === 'High' ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'};
-            color: hsl(var(--primary-foreground));
+            background-color: ${props.$risk === 'High' ? '#f87171' : '#0C5CAB'};
+            border-color: ${props.$risk === 'High' ? '#f87171' : '#0C5CAB'};
+            color: #ffffff;
         `
         : `
-            background-color: var(--overlay-strong);
-            border-color: var(--border-medium);
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.1);
         `
     }
 `;
@@ -1201,7 +1201,7 @@ const SafetyCheckbox = styled.div<{ $checked: boolean, $risk?: string }>`
 const SafetyTitle = styled.h4<{ $enabled: boolean }>`
     font-size: 14px;
     font-weight: 700;
-    color: ${props => props.$enabled ? 'hsl(var(--foreground))' : 'hsl(var(--text-secondary))'};
+    color: ${props => props.$enabled ? '#e1e4e8' : '#6b7a8d'};
     margin: 0 0 4px 0;
 `;
 
@@ -1212,7 +1212,7 @@ const SafetyFooter = styled.div`
 
 const SafetyDesc = styled.p`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
 `;
 
@@ -1224,8 +1224,8 @@ const RiskTag = styled.span<{ $color: string }>`
     border: 1px solid;
     ${props => {
         switch(props.$color) {
-            case 'red': return `background-color: rgba(239, 68, 68, 0.1); color: hsl(var(--destructive)); border-color: rgba(239, 68, 68, 0.2);`;
-            case 'amber': return `background-color: rgba(245, 158, 11, 0.1); color: hsl(var(--warning)); border-color: rgba(245, 158, 11, 0.2);`;
+            case 'red': return `background-color: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2);`;
+            case 'amber': return `background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2);`;
             default: return `background-color: rgba(59, 130, 246, 0.1); color: #60a5fa; border-color: rgba(59, 130, 246, 0.2);`;
         }
     }}
@@ -1235,27 +1235,27 @@ const AddButton = styled.button`
     display: flex;
     align-items: center;
     padding: 4px 12px;
-    background-color: rgba(140, 82, 255, 0.1);
-    color: hsl(var(--primary));
-    border: 1px solid rgba(140, 82, 255, 0.2);
+    background-color: rgba(12, 92, 171, 0.1);
+    color: #0C5CAB;
+    border: 1px solid rgba(12, 92, 171, 0.2);
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
     &:hover {
-        background-color: rgba(140, 82, 255, 0.2);
+        background-color: rgba(12, 92, 171, 0.2);
     }
 `;
 
 const EmptyState = styled.div`
     padding: 32px;
-    border: 1px dashed var(--border-light);
+    border: 1px dashed rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     text-align: center;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 13px;
-    background-color: var(--overlay-subtle);
+    background-color: rgba(255, 255, 255, 0.02);
 `;
 
 const A2ARow = styled.div`
@@ -1264,15 +1264,15 @@ const A2ARow = styled.div`
     gap: 12px;
     margin-top: 8px;
     padding: 12px;
-    background: linear-gradient(145deg, var(--overlay-light) 0%, var(--overlay-subtle) 100%);
-    border: 1px solid var(--border-light);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     transition: all 0.2s ease;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 
     &:hover {
-        background: linear-gradient(145deg, var(--overlay-medium) 0%, var(--overlay-light) 100%);
-        border-color: rgba(140, 82, 255, 0.3);
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+        border-color: rgba(12, 92, 171, 0.3);
         transform: translateY(-1px);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     }
@@ -1289,14 +1289,14 @@ const A2ALabel = styled.label`
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     font-weight: 500;
     user-select: none;
 `;
 
 const Checkbox = styled.input`
-    accent-color: hsl(var(--primary));
+    accent-color: #0C5CAB;
     width: 16px;
     height: 16px;
     cursor: pointer;

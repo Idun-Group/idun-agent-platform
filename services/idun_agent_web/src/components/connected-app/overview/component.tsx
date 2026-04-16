@@ -49,8 +49,8 @@ const AppSection = styled.article`
     box-sizing: border-box;
     text-align: left;
 
-    background: var(--overlay-subtle);
-    box-shadow: 0 0 10px rgba(140, 82, 255, 0.38);
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: 0 0 10px rgba(12, 92, 171, 0.38);
     button {
         margin: 0;
     }
@@ -91,7 +91,7 @@ const TopSectionText = styled.div``;
 const TopSection = styled.section`
     display: flex;
     width: 90%;
-    border: 2px solid hsl(var(--border));
+    border: 2px solid rgba(255, 255, 255, 0.08);
     height: 80vh;
     gap: 24px;
     @media (max-width: 768px) {
@@ -106,7 +106,7 @@ const TopSection = styled.section`
         width: 30%;
         height: 100;
         background: #5050501c;
-        box-shadow: 0 0 10px #8c52ff61;
+        box-shadow: 0 0 10px #0C5CAB61;
         @media (max-width: 768px) {
             width: 100%;
             height: auto;
@@ -120,6 +120,6 @@ const InformationSection = styled.section`
     width: 90%;
     padding: 24px;
     height: 100%;
-    background: var(--overlay-subtle);
-    box-shadow: 0 0 10px rgba(140, 82, 255, 0.38);
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: 0 0 10px rgba(12, 92, 171, 0.38);
 `;

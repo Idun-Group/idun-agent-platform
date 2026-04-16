@@ -22,6 +22,9 @@ export const PageWrapper = styled.div`
     gap: 24px;
     animation: ${fadeIn} 0.3s ease;
     overflow-y: auto;
+    background: #0a0e17;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    color: #e1e4e8;
 `;
 
 export const PageHeader = styled.div`
@@ -36,23 +39,24 @@ export const TitleBlock = styled.div``;
 
 export const PageTitle = styled.h1`
     font-size: 24px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #e1e4e8;
     margin: 0 0 4px;
     letter-spacing: -0.02em;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 export const PageSubtitle = styled.p`
     font-size: 13px;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     margin: 0;
 `;
 
 export const DocsLink = styled.a`
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     text-decoration: none;
     transition: color 0.15s;
-    &:hover { color: #a78bfa; }
+    &:hover { color: #5B9BD5; }
 `;
 
 export const HeaderActions = styled.div`
@@ -65,24 +69,25 @@ export const SearchBar = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     transition: border-color 0.15s;
-    &:focus-within { border-color: hsl(var(--primary) / 0.5); }
+    &:focus-within { border-color: rgba(12, 92, 171, 0.5); }
 `;
 
 export const SearchInput = styled.input`
     background: transparent;
     border: none;
     outline: none;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     width: 200px;
-    &::placeholder { color: hsl(var(--text-tertiary)); }
+    font-family: 'IBM Plex Sans', sans-serif;
+    &::placeholder { color: #6b7a8d; }
 `;
 
 export const PrimaryBtn = styled.button`
@@ -91,10 +96,10 @@ export const PrimaryBtn = styled.button`
     gap: 8px;
     padding: 0 20px;
     height: 38px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 10px;
-    color: hsl(var(--primary-foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -117,15 +122,15 @@ export const CenterBox = styled.div`
 export const Spinner = styled.div`
     width: 32px;
     height: 32px;
-    border: 3px solid var(--border-light);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.06);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
 
 export const MutedText = styled.p`
     font-size: 14px;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     margin: 0;
 `;
 
@@ -146,7 +151,7 @@ export const EmptyState = styled.div`
         transform: translate(-50%, -50%);
         width: 400px;
         height: 400px;
-        background: radial-gradient(circle, rgba(140, 82, 255, 0.06) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(12, 92, 171, 0.06) 0%, transparent 70%);
         pointer-events: none;
     }
 `;
@@ -155,12 +160,12 @@ export const EmptyIconWrap = styled.div`
     width: 56px;
     height: 56px;
     border-radius: 14px;
-    background: rgba(140, 82, 255, 0.08);
-    border: 1px solid rgba(140, 82, 255, 0.15);
+    background: rgba(12, 92, 171, 0.08);
+    border: 1px solid rgba(12, 92, 171, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(140, 82, 255, 0.5);
+    color: rgba(12, 92, 171, 0.5);
     position: relative;
 `;
 
@@ -173,25 +178,25 @@ export const EmptyTextBlock = styled.div`
 
 export const EmptyTitle = styled.p`
     font-size: 18px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #e1e4e8;
     margin: 0;
     letter-spacing: -0.02em;
 `;
 
 export const EmptyDesc = styled.p`
     font-size: 14px;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     margin: 0;
     line-height: 1.5;
 
     code {
-        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-family: 'IBM Plex Mono', monospace;
         font-size: 12px;
         padding: 2px 6px;
         border-radius: 4px;
-        background: var(--overlay-light);
-        color: hsl(var(--text-secondary));
+        background: rgba(255, 255, 255, 0.04);
+        color: #8899a6;
     }
 `;
 
@@ -201,20 +206,20 @@ export const EmptyCTA = styled.button`
     gap: 8px;
     padding: 10px 24px;
     height: 42px;
-    background: rgba(140, 82, 255, 0.12);
-    border: 1px solid rgba(140, 82, 255, 0.25);
+    background: rgba(12, 92, 171, 0.12);
+    border: 1px solid rgba(12, 92, 171, 0.25);
     border-radius: 10px;
-    color: #a78bfa;
+    color: #5B9BD5;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
 
     &:hover {
-        background: rgba(140, 82, 255, 0.2);
-        border-color: rgba(140, 82, 255, 0.4);
-        color: #c4b5fd;
-        box-shadow: 0 0 24px rgba(140, 82, 255, 0.12);
+        background: rgba(12, 92, 171, 0.2);
+        border-color: rgba(12, 92, 171, 0.4);
+        color: #7CB9E8;
+        box-shadow: 0 0 24px rgba(12, 92, 171, 0.12);
     }
 `;
 
@@ -227,16 +232,16 @@ export const GroupList = styled.div`
 `;
 
 export const GroupCard = styled.div`
-    background: hsl(var(--card));
-    border: 1px solid var(--border-light);
-    border-left: 3px solid rgba(140, 82, 255, 0.3);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-left: 3px solid rgba(12, 92, 171, 0.3);
     border-radius: 16px;
     overflow: hidden;
     animation: ${fadeIn} 0.3s ease both;
     transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
     &:hover {
-        border-color: rgba(140, 82, 255, 0.25);
-        border-left-color: hsl(var(--primary));
+        border-color: rgba(12, 92, 171, 0.25);
+        border-left-color: #0C5CAB;
         box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
         transform: translateY(-1px);
     }
@@ -250,12 +255,12 @@ export const GroupHeader = styled.button`
     padding: 16px 22px;
     background: transparent;
     border: none;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     cursor: pointer;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
     text-align: left;
     transition: background 0.12s ease;
-    &:hover { background: var(--overlay-subtle); }
+    &:hover { background: rgba(255, 255, 255, 0.04); }
 `;
 
 export const GroupLeft = styled.div`
@@ -265,7 +270,7 @@ export const GroupLeft = styled.div`
 `;
 
 export const ChevronWrap = styled.span<{ $expanded: boolean }>`
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     display: flex;
     transition: transform 0.2s ease, color 0.15s;
     transform: rotate(${p => p.$expanded ? '90deg' : '0deg'});
@@ -274,24 +279,24 @@ export const ChevronWrap = styled.span<{ $expanded: boolean }>`
 export const GroupId = styled.span`
     font-size: 15px;
     font-weight: 600;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     letter-spacing: -0.02em;
 `;
 
 export const VersionBadge = styled.span`
     font-size: 11px;
     font-weight: 500;
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     padding: 2px 8px;
     border-radius: 6px;
-    background: rgba(140, 82, 255, 0.1);
-    color: #a78bfa;
-    border: 1px solid rgba(140, 82, 255, 0.15);
+    background: rgba(12, 92, 171, 0.1);
+    color: #5B9BD5;
+    border: 1px solid rgba(12, 92, 171, 0.15);
 `;
 
 export const VersionCount = styled.span`
     font-size: 11px;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
 `;
 
 export const GroupRight = styled.div`
@@ -307,12 +312,12 @@ export const VarGroup = styled.div`
 
 export const VarPill = styled.span`
     font-size: 10px;
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     padding: 2px 7px;
     border-radius: 4px;
-    background: var(--overlay-subtle);
-    color: hsl(var(--text-tertiary));
-    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.04);
+    color: #6b7a8d;
+    border: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 export const AgentIndicator = styled.span`
@@ -330,7 +335,7 @@ export const AgentIndicator = styled.span`
 /* ── Expanded Body ───────────────────────────────────────────────────────────── */
 
 export const ExpandedBody = styled.div`
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     padding: 20px 22px 22px;
     display: flex;
     flex-direction: column;
@@ -343,14 +348,14 @@ export const SectionLabel = styled.div`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     margin-bottom: 10px;
 `;
 
 /* ── Usage ───────────────────────────────────────────────────────────────────── */
 
 export const UsageSection = styled.div`
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     padding-bottom: 16px;
 `;
 
@@ -372,8 +377,8 @@ export const TooltipContent = styled.div`
     visibility: hidden;
     width: max-content;
     max-width: 300px;
-    background-color: hsl(var(--popover));
-    color: hsl(var(--popover-foreground));
+    background-color: #141a26;
+    color: #e1e4e8;
     text-align: left;
     border-radius: 6px;
     padding: 8px 12px;
@@ -387,7 +392,7 @@ export const TooltipContent = styled.div`
     font-weight: 400;
     line-height: 1.5;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     pointer-events: none;
     white-space: normal;
 
@@ -398,7 +403,7 @@ export const TooltipContent = styled.div`
         left: 17px;
         border-width: 5px;
         border-style: solid;
-        border-color: hsl(var(--popover)) transparent transparent transparent;
+        border-color: #141a26 transparent transparent transparent;
     }
 
     ${TooltipContainer}:hover & {
@@ -423,15 +428,15 @@ export const AssignBtn = styled.button`
     align-items: center;
     gap: 5px;
     padding: 5px 12px;
-    background: rgba(140, 82, 255, 0.08);
-    border: 1px solid rgba(140, 82, 255, 0.18);
+    background: rgba(12, 92, 171, 0.08);
+    border: 1px solid rgba(12, 92, 171, 0.18);
     border-radius: 8px;
-    color: #a78bfa;
+    color: #5B9BD5;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-    &:hover { background: rgba(140, 82, 255, 0.16); border-color: rgba(140, 82, 255, 0.3); }
+    &:hover { background: rgba(12, 92, 171, 0.16); border-color: rgba(12, 92, 171, 0.3); }
 `;
 
 export const ChipRow = styled.div`
@@ -445,36 +450,36 @@ export const AgentChip = styled.div`
     align-items: center;
     gap: 8px;
     padding: 6px 12px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     font-size: 13px;
-    color: hsl(var(--text-secondary));
+    color: #8899a6;
     transition: border-color 0.15s;
-    &:hover { border-color: var(--border-medium); }
+    &:hover { border-color: rgba(255, 255, 255, 0.1); }
 `;
 
 export const ChipX = styled.button`
     background: none;
     border: none;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     cursor: pointer;
     padding: 2px;
     display: flex;
     align-items: center;
     transition: color 0.15s;
-    &:hover { color: hsl(var(--destructive)); }
+    &:hover { color: #f87171; }
 `;
 
 export const EmptyAssign = styled.span`
     font-size: 13px;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
 `;
 
 /* ── Version History ─────────────────────────────────────────────────────────── */
 
 export const VersionSection = styled.div`
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     padding-top: 16px;
 `;
 
@@ -486,7 +491,7 @@ export const VersionRow = styled.div`
     justify-content: space-between;
     padding: 8px 0;
     animation: ${fadeIn} 0.15s ease both;
-    & + & { border-top: 1px solid var(--border-subtle); }
+    & + & { border-top: 1px solid rgba(255, 255, 255, 0.06); }
 `;
 
 export const VersionLeft = styled.div`
@@ -498,8 +503,8 @@ export const VersionLeft = styled.div`
 export const VNum = styled.span<{ $active?: boolean }>`
     font-size: 12px;
     font-weight: 600;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    color: ${p => p.$active ? '#a78bfa' : 'hsl(var(--text-secondary))'};
+    font-family: 'IBM Plex Mono', monospace;
+    color: ${p => p.$active ? '#5B9BD5' : '#8899a6'};
     min-width: 28px;
 `;
 
@@ -512,9 +517,9 @@ export const TagPill = styled.span<{ $latest?: boolean }>`
     font-size: 10px;
     padding: 2px 7px;
     border-radius: 4px;
-    background: ${p => p.$latest ? 'rgba(52, 211, 153, 0.1)' : 'var(--overlay-subtle)'};
-    color: ${p => p.$latest ? '#34d399' : 'hsl(var(--text-tertiary))'};
-    border: 1px solid ${p => p.$latest ? 'rgba(52, 211, 153, 0.18)' : 'var(--border-subtle)'};
+    background: ${p => p.$latest ? 'rgba(52, 211, 153, 0.1)' : 'rgba(255, 255, 255, 0.04)'};
+    color: ${p => p.$latest ? '#34d399' : '#6b7a8d'};
+    border: 1px solid ${p => p.$latest ? 'rgba(52, 211, 153, 0.18)' : 'rgba(255, 255, 255, 0.06)'};
 `;
 
 export const VersionRight = styled.div`
@@ -525,7 +530,7 @@ export const VersionRight = styled.div`
 
 export const VDate = styled.span`
     font-size: 11px;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
 `;
 
 export const DeleteIcon = styled.button`
@@ -533,35 +538,35 @@ export const DeleteIcon = styled.button`
     align-items: center;
     background: none;
     border: none;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
     transition: all 0.15s;
-    &:hover { color: hsl(var(--destructive)); background: rgba(248, 113, 113, 0.08); }
+    &:hover { color: #f87171; background: rgba(248, 113, 113, 0.08); }
 `;
 
 export const VersionContent = styled.pre`
     font-size: 13px;
-    color: hsl(var(--text-secondary));
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #8899a6;
+    font-family: 'IBM Plex Mono', monospace;
     white-space: pre-wrap;
     word-break: break-word;
     margin: 0 0 8px;
     max-height: 320px;
     overflow-y: auto;
     line-height: 1.6;
-    background: var(--overlay-subtle);
+    background: rgba(255, 255, 255, 0.04);
     padding: 14px 16px;
     border-radius: 10px;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 export const ViewToggle = styled.div`
     display: flex;
     gap: 2px;
     margin-bottom: 6px;
-    background: var(--overlay-subtle);
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 6px;
     padding: 2px;
     width: fit-content;
@@ -575,37 +580,37 @@ export const ToggleBtn = styled.button<{ $active: boolean }>`
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.15s;
-    background: ${p => p.$active ? 'rgba(140, 82, 255, 0.15)' : 'transparent'};
-    color: ${p => p.$active ? '#a78bfa' : 'hsl(var(--text-tertiary))'};
-    &:hover { color: ${p => p.$active ? '#a78bfa' : 'hsl(var(--text-secondary))'}; }
+    background: ${p => p.$active ? 'rgba(12, 92, 171, 0.15)' : 'transparent'};
+    color: ${p => p.$active ? '#5B9BD5' : '#6b7a8d'};
+    &:hover { color: ${p => p.$active ? '#5B9BD5' : '#8899a6'}; }
 `;
 
 export const MarkdownWrap = styled.div`
     font-size: 14px;
-    color: hsl(var(--foreground) / 0.85);
+    color: rgba(225, 228, 232, 0.85);
     line-height: 1.7;
     margin: 0 0 8px;
     max-height: 320px;
     overflow-y: auto;
-    background: var(--overlay-subtle);
+    background: rgba(255, 255, 255, 0.04);
     padding: 14px 16px;
     border-radius: 10px;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 
-    h1, h2, h3, h4 { color: hsl(var(--foreground)); margin: 0.5em 0 0.3em; }
+    h1, h2, h3, h4 { color: #e1e4e8; margin: 0.5em 0 0.3em; }
     h1 { font-size: 1.3em; }
     h2 { font-size: 1.15em; }
     h3 { font-size: 1.05em; }
     p { margin: 0.4em 0; }
     code {
-        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-family: 'IBM Plex Mono', monospace;
         font-size: 0.9em;
         padding: 2px 6px;
         border-radius: 4px;
-        background: var(--overlay-light);
+        background: rgba(255, 255, 255, 0.04);
     }
     pre {
-        background: var(--overlay-light);
+        background: rgba(255, 255, 255, 0.04);
         padding: 12px;
         border-radius: 8px;
         overflow-x: auto;
@@ -614,13 +619,13 @@ export const MarkdownWrap = styled.div`
     ul, ol { padding-left: 1.4em; margin: 0.4em 0; }
     li { margin: 0.2em 0; }
     blockquote {
-        border-left: 3px solid rgba(140, 82, 255, 0.3);
+        border-left: 3px solid rgba(12, 92, 171, 0.3);
         padding-left: 12px;
         margin: 0.5em 0;
-        color: hsl(var(--text-secondary));
+        color: #8899a6;
     }
-    a { color: #a78bfa; }
-    hr { border: none; border-top: 1px solid var(--border-light); margin: 0.8em 0; }
+    a { color: #5B9BD5; }
+    hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.06); margin: 0.8em 0; }
 `;
 
 /* ── Picker Modal ────────────────────────────────────────────────────────────── */
@@ -629,14 +634,15 @@ export const ModalOverlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 export const PickerModal = styled.div`
-    background: hsl(var(--card));
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
     border-radius: 16px;
     width: 420px;
     max-width: 94vw;
@@ -645,13 +651,13 @@ export const PickerModal = styled.div`
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     animation: ${fadeIn} 0.15s ease;
 `;
 
 export const PickerHeader = styled.div`
     padding: 22px 24px 18px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -659,25 +665,25 @@ export const PickerHeader = styled.div`
 
 export const PickerTitle = styled.h3`
     font-size: 16px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
+    font-weight: 600;
+    color: #e1e4e8;
     margin: 0;
 `;
 
 export const CloseBtn = styled.button`
-    background: var(--overlay-light);
+    background: rgba(255, 255, 255, 0.04);
     border: none;
     border-radius: 8px;
     width: 30px;
     height: 30px;
-    color: hsl(var(--text-secondary));
+    color: #8899a6;
     font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.15s;
-    &:hover { background: var(--overlay-medium); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.08); color: #e1e4e8; }
 `;
 
 export const PickerBody = styled.div`
@@ -689,7 +695,7 @@ export const PickerBody = styled.div`
 export const PickerEmpty = styled.div`
     padding: 36px;
     text-align: center;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     font-size: 13px;
 `;
 
@@ -702,12 +708,12 @@ export const PickerItem = styled.button`
     background: transparent;
     border: none;
     border-radius: 10px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     cursor: pointer;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
     text-align: left;
     transition: background 0.12s;
-    &:hover { background: var(--overlay-light); }
+    &:hover { background: rgba(255, 255, 255, 0.04); }
 `;
 
 export const PickerName = styled.span`
@@ -717,7 +723,7 @@ export const PickerName = styled.span`
 
 export const PickerMeta = styled.span`
     font-size: 11px;
-    color: hsl(var(--text-tertiary));
+    color: #6b7a8d;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 `;

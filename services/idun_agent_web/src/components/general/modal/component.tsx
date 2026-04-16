@@ -47,24 +47,26 @@ const Overlay = styled.div`
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: var(--overlay-backdrop);
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(4px);
 `;
 
 const ModalContainer = styled.div<{ width: string }>`
-    background-color: hsl(var(--card));
-    border: 1px solid var(--border-medium);
+    background-color: #0d1117;
+    border: 1px solid rgba(12, 92, 171, 0.15);
     border-radius: 12px;
     width: ${(props) => props.width};
     max-width: 90vw;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(12, 92, 171, 0.05);
     animation: fadeIn 0.2s ease-out;
 
     @keyframes fadeIn {
@@ -78,20 +80,20 @@ const Header = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 16px 24px;
-    border-bottom: 1px solid var(--border-medium);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 `;
 
 const Title = styled.h2`
     font-size: 18px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const CloseButton = styled.button`
     background: none;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
@@ -101,8 +103,8 @@ const CloseButton = styled.button`
     justify-content: center;
 
     &:hover {
-        color: hsl(var(--foreground));
-        background: var(--overlay-medium);
+        color: #e1e4e8;
+        background: rgba(255, 255, 255, 0.08);
     }
 `;
 

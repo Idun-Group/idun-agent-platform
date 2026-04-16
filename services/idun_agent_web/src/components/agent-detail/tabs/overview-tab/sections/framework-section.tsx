@@ -1,16 +1,18 @@
-import { Layers } from 'lucide-react';
+import { useState } from 'react';
+import { Layers, ChevronDown } from 'lucide-react';
 import { DynamicForm } from '../../../../general/dynamic-form/component';
 import { FRAMEWORK_SCHEMA_MAP } from '../../../../../utils/agent-config-utils';
 import type { BackendAgent } from '../../../../../services/agents';
 import {
     SectionCard,
-    SectionHeader,
     SectionTitle,
     SectionIcon,
     DetailRow,
     DetailLabel,
     DetailValue,
     Badge,
+    CollapsibleHeader,
+    CollapseChevron,
 } from './styled';
 
 interface FrameworkSectionProps {
@@ -23,6 +25,7 @@ interface FrameworkSectionProps {
 
 export default function FrameworkSection({ agent, isEditing, agentConfig, rootSchema, onConfigChange }: FrameworkSectionProps) {
     const framework = agent.framework || 'LANGGRAPH';
+    const [collapsed, setCollapsed] = useState(false);
 
     const getCurrentSchema = () => {
         if (!rootSchema) return null;
@@ -59,41 +62,48 @@ export default function FrameworkSection({ agent, isEditing, agentConfig, rootSc
 
     return (
         <SectionCard>
-            <SectionHeader>
+            <CollapsibleHeader $collapsed={collapsed} onClick={() => setCollapsed(c => !c)} type="button">
                 <SectionIcon $color="blue"><Layers size={16} /></SectionIcon>
                 <SectionTitle>Framework Configuration</SectionTitle>
-            </SectionHeader>
+                <CollapseChevron $collapsed={collapsed}>
+                    <ChevronDown size={16} />
+                </CollapseChevron>
+            </CollapsibleHeader>
 
-            <DetailRow>
-                <DetailLabel>Framework</DetailLabel>
-                <Badge $variant="default">{framework}</Badge>
-            </DetailRow>
-
-            {isEditing ? (
-                schema ? (
-                    <div style={{ marginTop: '16px' }}>
-                        <DynamicForm
-                            schema={schema}
-                            rootSchema={rootSchema}
-                            data={agentConfig}
-                            onChange={onConfigChange}
-                            excludeFields={['name', 'checkpointer', 'session_service', 'memory_service', 'observability', 'a2a', 'store']}
-                        />
-                    </div>
-                ) : (
-                    <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '12px' }}>
-                        Loading schema...
-                    </div>
-                )
-            ) : (
-                getKeyConfigValues().map((entry, i) => (
-                    <DetailRow key={i}>
-                        <DetailLabel>{entry.label}</DetailLabel>
-                        <DetailValue style={{ fontFamily: 'monospace', fontSize: '12px', maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {entry.value}
-                        </DetailValue>
+            {!collapsed && (
+                <>
+                    <DetailRow>
+                        <DetailLabel>Framework</DetailLabel>
+                        <Badge $variant="default">{framework}</Badge>
                     </DetailRow>
-                ))
+
+                    {isEditing ? (
+                        schema ? (
+                            <div style={{ marginTop: '16px' }}>
+                                <DynamicForm
+                                    schema={schema}
+                                    rootSchema={rootSchema}
+                                    data={agentConfig}
+                                    onChange={onConfigChange}
+                                    excludeFields={['name', 'checkpointer', 'session_service', 'memory_service', 'observability', 'a2a', 'store']}
+                                />
+                            </div>
+                        ) : (
+                            <div style={{ color: '#6b7280', fontSize: '13px', marginTop: '12px' }}>
+                                Loading schema...
+                            </div>
+                        )
+                    ) : (
+                        getKeyConfigValues().map((entry, i) => (
+                            <DetailRow key={i}>
+                                <DetailLabel>{entry.label}</DetailLabel>
+                                <DetailValue style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', maxWidth: '70%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {entry.value}
+                                </DetailValue>
+                            </DetailRow>
+                        ))
+                    )}
+                </>
             )}
         </SectionCard>
     );

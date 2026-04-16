@@ -10,7 +10,7 @@ import CodeSnippet from '../../../../pages/agent-form/components/code-snippet';
 
 function generateUsageSnippet(promptId: string, variables: string[]): string {
     const lines = [
-        'from idun_agent_engine import get_prompt',
+        'from idun_agent_engine.prompts import get_prompt',
         '',
         `prompt = get_prompt("${promptId}")`,
     ];
@@ -101,7 +101,7 @@ const PromptsTab = ({ agent }: Props) => {
                                     <UsageHeader>
                                         <UsageLabel style={{ marginBottom: 0 }}>Usage</UsageLabel>
                                         <TooltipContainer>
-                                            <Info size={13} color="hsl(var(--muted-foreground))" />
+                                            <Info size={13} color="#8899a6" />
                                             <TooltipText>
                                                 Prompts are not auto-injected. Your agent code must call get_prompt() to load the template, then .format() to render variables before passing it to the LLM.
                                             </TooltipText>
@@ -130,12 +130,12 @@ const Container = styled.div`
 `;
 
 const PromptCard = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-light);
+    background: #141a26;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     overflow: hidden;
     transition: border-color 0.2s;
-    &:hover { border-color: rgba(140, 82, 255, 0.25); }
+    &:hover { border-color: rgba(12, 92, 171, 0.25); }
 `;
 
 const CardHeader = styled.button`
@@ -146,7 +146,7 @@ const CardHeader = styled.button`
     padding: 14px 18px;
     background: transparent;
     border: none;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     cursor: pointer;
     font-family: inherit;
     text-align: left;
@@ -165,7 +165,7 @@ const Right = styled.div`
 `;
 
 const Chevron = styled.span<{ $expanded: boolean }>`
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     display: flex;
     transition: transform 0.2s;
     transform: rotate(${p => p.$expanded ? '90deg' : '0deg'});
@@ -183,9 +183,9 @@ const Badge = styled.span`
     font-family: 'SF Mono', 'Fira Code', monospace;
     padding: 2px 8px;
     border-radius: 6px;
-    background: rgba(140, 82, 255, 0.1);
-    color: #a78bfa;
-    border: 1px solid rgba(140, 82, 255, 0.15);
+    background: rgba(12, 92, 171, 0.1);
+    color: #5B9BD5;
+    border: 1px solid rgba(12, 92, 171, 0.15);
 `;
 
 const VarGroup = styled.div`
@@ -198,30 +198,30 @@ const VarPill = styled.span`
     font-family: 'SF Mono', 'Fira Code', monospace;
     padding: 2px 7px;
     border-radius: 4px;
-    background: var(--overlay-subtle);
-    color: hsl(var(--text-tertiary));
-    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.02);
+    color: #4a5568;
+    border: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const TagPill = styled.span<{ $latest?: boolean }>`
     font-size: 10px;
     padding: 2px 7px;
     border-radius: 4px;
-    background: ${p => p.$latest ? 'rgba(52, 211, 153, 0.1)' : 'var(--overlay-subtle)'};
-    color: ${p => p.$latest ? '#34d399' : 'hsl(var(--text-tertiary))'};
-    border: 1px solid ${p => p.$latest ? 'rgba(52, 211, 153, 0.18)' : 'var(--border-subtle)'};
+    background: ${p => p.$latest ? 'rgba(52, 211, 153, 0.1)' : 'rgba(255, 255, 255, 0.02)'};
+    color: ${p => p.$latest ? '#34d399' : '#4a5568'};
+    border: 1px solid ${p => p.$latest ? 'rgba(52, 211, 153, 0.18)' : 'rgba(255, 255, 255, 0.04)'};
 `;
 
 const ContentWrap = styled.div`
     padding: 0 18px 16px;
     font-size: 14px;
-    color: hsl(var(--foreground) / 0.85);
+    color: rgba(225, 228, 232, 0.85);
     line-height: 1.7;
-    background: var(--overlay-subtle);
-    border-top: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     padding-top: 14px;
 
-    h1, h2, h3, h4 { color: hsl(var(--foreground)); margin: 0.5em 0 0.3em; }
+    h1, h2, h3, h4 { color: #e1e4e8; margin: 0.5em 0 0.3em; }
     h1 { font-size: 1.3em; }
     h2 { font-size: 1.15em; }
     p { margin: 0.4em 0; }
@@ -230,10 +230,10 @@ const ContentWrap = styled.div`
         font-size: 0.9em;
         padding: 2px 6px;
         border-radius: 4px;
-        background: var(--overlay-light);
+        background: rgba(255, 255, 255, 0.04);
     }
     pre {
-        background: var(--overlay-light);
+        background: rgba(255, 255, 255, 0.04);
         padding: 12px;
         border-radius: 8px;
         overflow-x: auto;
@@ -242,17 +242,17 @@ const ContentWrap = styled.div`
     ul, ol { padding-left: 1.4em; margin: 0.4em 0; }
     li { margin: 0.2em 0; }
     blockquote {
-        border-left: 3px solid rgba(140, 82, 255, 0.3);
+        border-left: 3px solid rgba(12, 92, 171, 0.3);
         padding-left: 12px;
         margin: 0.5em 0;
-        color: hsl(var(--text-secondary));
+        color: #6b7a8d;
     }
 `;
 
 const Empty = styled.div`
     padding: 60px;
     text-align: center;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     font-size: 14px;
 `;
 
@@ -269,32 +269,32 @@ const IconWrap = styled.div`
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: rgba(140, 82, 255, 0.08);
-    border: 1px solid rgba(140, 82, 255, 0.15);
+    background: rgba(12, 92, 171, 0.08);
+    border: 1px solid rgba(12, 92, 171, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(140, 82, 255, 0.5);
+    color: rgba(12, 92, 171, 0.5);
 `;
 
 const EmptyTitle = styled.p`
     font-size: 15px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const EmptyDesc = styled.p`
     font-size: 13px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 0;
-    strong { color: hsl(var(--text-secondary)); }
+    strong { color: #6b7a8d; }
 `;
 
 const UsageWrap = styled.div`
     padding: 14px 18px 16px;
-    background: var(--overlay-subtle);
-    border-top: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const UsageHeader = styled.div`
@@ -309,7 +309,7 @@ const UsageLabel = styled.div`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin-bottom: 8px;
 `;
 
@@ -324,8 +324,8 @@ const TooltipText = styled.div`
     visibility: hidden;
     width: max-content;
     max-width: 300px;
-    background-color: hsl(var(--popover));
-    color: hsl(var(--popover-foreground));
+    background-color: #141a26;
+    color: #e1e4e8;
     text-align: left;
     border-radius: 6px;
     padding: 8px 12px;
@@ -339,7 +339,7 @@ const TooltipText = styled.div`
     font-weight: 400;
     line-height: 1.5;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     pointer-events: none;
     white-space: normal;
 
@@ -350,7 +350,7 @@ const TooltipText = styled.div`
         left: 17px;
         border-width: 5px;
         border-style: solid;
-        border-color: hsl(var(--popover)) transparent transparent transparent;
+        border-color: #141a26 transparent transparent transparent;
     }
 
     ${TooltipContainer}:hover & {

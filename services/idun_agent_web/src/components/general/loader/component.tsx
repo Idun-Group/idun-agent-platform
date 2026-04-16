@@ -17,7 +17,7 @@ const LoaderContainer = styled.div`
     display: inline-block;
     position: relative;
     border: 6px solid;
-    border-color: hsl(var(--foreground)) hsl(var(--foreground)) transparent transparent;
+    border-color: #e1e4e8 #e1e4e8 transparent transparent;
     box-sizing: border-box;
     animation: rotation 1s linear infinite;
 
@@ -32,7 +32,7 @@ const LoaderContainer = styled.div`
         bottom: 0;
         margin: auto;
         border: 6px solid;
-        border-color: transparent transparent #8c52ff;
+        border-color: transparent transparent #0C5CAB;
         width: 80px;
         height: 80px;
         border-radius: 50%;
@@ -44,7 +44,7 @@ const LoaderContainer = styled.div`
     &::before {
         width: 64px;
         height: 64px;
-        border-color: hsl(var(--foreground)) hsl(var(--foreground)) transparent transparent;
+        border-color: #e1e4e8 #e1e4e8 transparent transparent;
         animation: rotation s linear infinite;
     }
 

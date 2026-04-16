@@ -60,6 +60,7 @@ const PageWrapper = styled.div`
     gap: 24px;
     animation: ${fadeIn} 0.3s ease;
     overflow: hidden;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const PageHeader = styled.div`
@@ -76,13 +77,13 @@ const TitleBlock = styled.div``;
 const PageTitle = styled.h1`
     font-size: 24px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0 0 6px;
 `;
 
 const PageSubtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
 `;
 
@@ -98,10 +99,10 @@ const HeaderBtn = styled.a`
     gap: 6px;
     padding: 0 14px;
     height: 38px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -110,9 +111,9 @@ const HeaderBtn = styled.a`
     white-space: nowrap;
 
     &:hover {
-        color: hsl(var(--foreground));
-        border-color: var(--border-medium);
-        background: var(--overlay-medium);
+        color: #e1e4e8;
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
     }
 `;
 
@@ -120,8 +121,8 @@ const SearchBar = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
@@ -131,10 +132,10 @@ const SearchInput = styled.input`
     background: transparent;
     border: none;
     outline: none;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     width: 160px;
-    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &::placeholder { color: #8899a6; }
 `;
 
 // ── Two-column layout ────────────────────────────────────────────────────────
@@ -151,7 +152,7 @@ const MainLayout = styled.div`
 const TypeColumn = styled.div`
     width: 260px;
     flex-shrink: 0;
-    border-right: 1px solid var(--border-subtle);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
     padding-right: 24px;
     overflow-y: auto;
     scrollbar-width: none;
@@ -163,10 +164,10 @@ const GroupLabel = styled.p`
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 24px 0 10px 10px;
     padding-top: 16px;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -197,7 +198,7 @@ const TypeBtn = styled.button`
     border-radius: 10px;
     border: 1px solid transparent;
     background: transparent;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-size: 13px;
     font-weight: 400;
     cursor: pointer;
@@ -206,8 +207,8 @@ const TypeBtn = styled.button`
     margin-bottom: 2px;
 
     &:hover {
-        background: var(--overlay-light);
-        color: hsl(var(--foreground));
+        background: rgba(255, 255, 255, 0.04);
+        color: #e1e4e8;
     }
 `;
 
@@ -215,8 +216,8 @@ const TypeIconBox = styled.span`
     width: 28px;
     height: 28px;
     border-radius: 7px;
-    background: hsl(var(--primary) / 0.08);
-    color: hsl(var(--primary));
+    background: rgba(12, 92, 171, 0.08);
+    color: #0C5CAB;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -226,7 +227,7 @@ const TypeIconBox = styled.span`
 const AddIndicator = styled.span`
     margin-left: auto;
     font-size: 16px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     flex-shrink: 0;
     opacity: 0;
     transition: opacity 0.15s;
@@ -243,9 +244,9 @@ const RequestBtn = styled.button`
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px dashed var(--border-light);
+    border: 1px dashed rgba(255, 255, 255, 0.06);
     background: transparent;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 13px;
     font-weight: 400;
     cursor: pointer;
@@ -254,9 +255,9 @@ const RequestBtn = styled.button`
     margin-top: 16px;
 
     &:hover {
-        border-color: hsl(var(--primary) / 0.4);
-        color: hsl(var(--foreground));
-        background: hsl(var(--primary) / 0.04);
+        border-color: rgba(12, 92, 171, 0.4);
+        color: #e1e4e8;
+        background: rgba(12, 92, 171, 0.04);
     }
 `;
 
@@ -283,14 +284,14 @@ const EmptyState = styled.div`
 const EmptyTitle = styled.h3`
     font-size: 16px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const EmptyDescription = styled.p`
     font-size: 13px;
     line-height: 1.7;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin: 0;
     max-width: 420px;
 `;
@@ -328,16 +329,20 @@ const CardsGrid = styled.div`
 `;
 
 const Card = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-subtle);
+    background: rgba(20, 26, 38, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 14px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 
-    &:hover { border-color: hsl(var(--primary) / 0.3); }
+    &:hover {
+        border-color: rgba(12, 92, 171, 0.3);
+        box-shadow: 0 4px 24px rgba(12, 92, 171, 0.08);
+    }
 `;
 
 const CardHeader = styled.div`
@@ -356,8 +361,8 @@ const CardIcon = styled.div`
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: hsl(var(--primary) / 0.12);
-    color: hsl(var(--primary));
+    background: rgba(12, 92, 171, 0.12);
+    color: #0C5CAB;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -369,13 +374,13 @@ const CardMeta = styled.div``;
 const CardName = styled.p`
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0 0 2px;
 `;
 
 const CardType = styled.p`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
 `;
 
@@ -384,9 +389,9 @@ const TypeBadge = styled.span`
     font-weight: 500;
     padding: 3px 8px;
     border-radius: 20px;
-    background: hsl(var(--primary) / 0.1);
-    color: hsl(var(--primary));
-    border: 1px solid hsl(var(--primary) / 0.2);
+    background: rgba(12, 92, 171, 0.1);
+    color: #0C5CAB;
+    border: 1px solid rgba(12, 92, 171, 0.2);
     white-space: nowrap;
 `;
 
@@ -395,7 +400,7 @@ const StatusRow = styled.div`
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const StatusDot = styled.div<{ $color: string }>`
@@ -407,18 +412,18 @@ const StatusDot = styled.div<{ $color: string }>`
 
 const Divider = styled.hr`
     border: none;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     margin: 0;
 `;
 
 const AgentCountBadge = styled.span`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const UpdatedLabel = styled.span`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const CardActions = styled.div`
@@ -430,16 +435,16 @@ const CardActions = styled.div`
 const EditBtn = styled.button`
     flex: 1;
     padding: 7px;
-    background: var(--border-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-medium); }
+    &:hover { background: rgba(255, 255, 255, 0.08); }
 `;
 
 const DeleteBtn = styled.button`
@@ -448,7 +453,7 @@ const DeleteBtn = styled.button`
     background: rgba(248, 113, 113, 0.08);
     border: 1px solid rgba(248, 113, 113, 0.2);
     border-radius: 8px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -460,10 +465,10 @@ const DeleteBtn = styled.button`
 const VerifyBtn = styled.button`
     flex: 1;
     padding: 7px;
-    background: rgba(140, 82, 255, 0.08);
-    border: 1px solid rgba(140, 82, 255, 0.25);
+    background: rgba(12, 92, 171, 0.08);
+    border: 1px solid rgba(12, 92, 171, 0.25);
     border-radius: 8px;
-    color: #8c52ff;
+    color: #0C5CAB;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -472,7 +477,7 @@ const VerifyBtn = styled.button`
     align-items: center;
     justify-content: center;
     gap: 4px;
-    &:hover:not(:disabled) { background: rgba(140, 82, 255, 0.18); }
+    &:hover:not(:disabled) { background: rgba(12, 92, 171, 0.18); }
     &:disabled { opacity: 0.7; cursor: wait; }
 `;
 
@@ -502,14 +507,15 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: hsl(var(--card));
+    background: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(16px);
     border-radius: 16px;
     width: 480px;
     max-width: 95vw;
@@ -518,8 +524,9 @@ const Modal = styled.div`
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     animation: ${modalIn} 0.2s ease;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const ModalHeader = styled.div`
@@ -527,14 +534,14 @@ const ModalHeader = styled.div`
     align-items: center;
     gap: 14px;
     padding: 24px 28px 20px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const ModalIcon = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: hsl(var(--primary) / 0.12);
+    background: rgba(12, 92, 171, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -551,30 +558,30 @@ const ModalTitleBlock = styled.div`
 const ModalTitle = styled.h2`
     font-size: 16px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const ModalSubtitle = styled.p`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 2px 0 0;
 `;
 
 const CloseBtn = styled.button`
-    background: var(--overlay-light);
+    background: rgba(255, 255, 255, 0.04);
     border: none;
     border-radius: 8px;
     width: 32px;
     height: 32px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.15s;
     flex-shrink: 0;
-    &:hover { background: var(--border-medium); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.1); color: #e1e4e8; }
 `;
 
 const ModalBody = styled.div`
@@ -591,47 +598,47 @@ const Label = styled.label`
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin-bottom: 8px;
 `;
 
 const Required = styled.span`
-    color: hsl(var(--destructive));
+    color: #f87171;
 `;
 
 
 const FieldHint = styled.p`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 8px 0 0;
     line-height: 1.5;
     code {
-        background: rgba(140, 82, 255, 0.1);
+        background: rgba(12, 92, 171, 0.1);
         padding: 2px 6px;
         border-radius: 4px;
         font-size: 11px;
-        color: #8c52ff;
+        color: #0C5CAB;
     }
 `;
 
 const Input = styled.input`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.15s, box-shadow 0.15s;
-    &::placeholder { color: hsl(var(--muted-foreground)); }
-    &:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12); }
+    &::placeholder { color: #8899a6; }
+    &:focus { border-color: #0C5CAB; box-shadow: 0 0 0 2px rgba(12, 92, 171, 0.12); }
 `;
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin: 0 0 16px;
     padding: 10px 14px;
     background: rgba(248, 113, 113, 0.1);
@@ -644,28 +651,28 @@ const ModalFooter = styled.div`
     justify-content: flex-end;
     gap: 12px;
     padding: 20px 28px;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const CancelBtn = styled.button`
     padding: 10px 20px;
     background: transparent;
-    border: 1px solid var(--border-medium);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-    &:hover { background: var(--overlay-light); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.04); color: #e1e4e8; }
 `;
 
 const SubmitBtn = styled.button`
     padding: 10px 24px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 8px;
-    color: hsl(var(--primary-foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -680,15 +687,15 @@ const SubmitBtn = styled.button`
 const SmallSpinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid var(--overlay-strong);
-    border-top-color: hsl(var(--foreground));
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #e1e4e8;
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
 
 const NoConfigText = styled.p`
     font-size: 13px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-style: italic;
     margin: 0;
 `;
@@ -784,7 +791,7 @@ const MemoryModal: React.FC<MemoryModalProps> = ({ provider, framework, appToEdi
                         {provider.logo ? (
                             <img src={provider.logo} alt={provider.name} />
                         ) : (
-                            <HardDrive size={20} color="hsl(var(--primary))" />
+                            <HardDrive size={20} color="#0C5CAB" />
                         )}
                     </ModalIcon>
                     <ModalTitleBlock>
@@ -867,15 +874,15 @@ const CenterBox = styled.div`
     justify-content: center;
     gap: 12px;
     padding: 80px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-align: center;
 `;
 
 const LoadingSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid var(--border-light);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.06);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -970,7 +977,7 @@ const MemoryPage: React.FC = () => {
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
-                        <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+                        <Search size={14} style={{ color: '#8899a6', flexShrink: 0 }} />
                         <SearchInput placeholder="Search stores..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </SearchBar>
                     <HeaderBtn href="https://docs.idunplatform.com/memory/overview" target="_blank" rel="noopener noreferrer">
@@ -997,7 +1004,7 @@ const MemoryPage: React.FC = () => {
                                     {provider.logo ? (
                                         <ProviderLogo src={provider.logo} alt={provider.name} />
                                     ) : (
-                                        <HardDrive size={18} color="hsl(var(--muted-foreground))" />
+                                        <HardDrive size={18} color="#8899a6" />
                                     )}
                                     {provider.name}
                                     <AddIndicator>+</AddIndicator>
@@ -1029,7 +1036,7 @@ const MemoryPage: React.FC = () => {
                                 Persist conversation context across sessions. Choose a storage backend for your agent framework.
                             </EmptyDescription>
                             <EmptyChips>
-                                <Chip $color="#8b5cf6">LangGraph</Chip>
+                                <Chip $color="#0C5CAB">LangGraph</Chip>
                                 <Chip $color="#3b82f6">ADK</Chip>
                             </EmptyChips>
                             <EmptyImage src="/img/memory-flow.png" alt="" />
@@ -1064,7 +1071,7 @@ const MemoryPage: React.FC = () => {
                                         </CardHeader>
 
                                         <StatusRow>
-                                            <StatusDot $color="hsl(var(--success))" />
+                                            <StatusDot $color="#34d399" />
                                             Active
                                         </StatusRow>
 

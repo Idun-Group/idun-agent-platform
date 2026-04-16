@@ -54,19 +54,19 @@ const Item = styled.li`
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    background: hsl(var(--background));
-    border: 1px solid hsl(var(--border));
+    background: #0a0e17;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     p {
         margin: 4px 0 0 0;
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
     }
     button {
         padding: 8px 12px;
         border-radius: 6px;
         border: none;
-        background: hsl(var(--app-purple));
-        color: hsl(var(--foreground));
+        background: #0C5CAB;
+        color: #e1e4e8;
         cursor: pointer;
     }
 `;

@@ -88,12 +88,14 @@ export default SettingSideBar;
 
 const SideBarContainer = styled.div<{ $collapsed?: boolean }>`
     width: ${({ $collapsed }) => ($collapsed ? '72px' : '250px')};
-    border-right: 1px solid #25325a;
-    background: #030711;
-    color: #ffffff;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0d1117;
+    color: #e1e4e8;
     transition: width 300ms ease, padding 300ms ease, background-color 300ms ease, color 300ms ease;
     position: relative;
-    padding-bottom: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')}; /* reserve space for fixed user info */
+    padding-bottom: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')};
+    font-family: 'IBM Plex Sans', sans-serif;
+    backdrop-filter: blur(12px);
 `;
 
 const NavButton = styled.button`
@@ -102,10 +104,10 @@ const NavButton = styled.button`
     text-align: left;
     width: 100%;
     cursor: pointer;
-    color: #ffffff;
+    color: #e1e4e8;
     font-size: 15px;
     font-weight: 400;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const NavList = styled.ul`
@@ -120,22 +122,21 @@ const NavPoint = styled.li<{ $selected: boolean }>`
     border-radius: 0;
     height: 47px;
     padding: 0 16px 0 30px;
-    background: #040210;
+    background: #0d1117;
     &:hover {
-        background: #000000; /* maximum contrast vs default */
+        background: #0a0e17;
     }
 
     ${({ $selected: selected }) => {
         return selected
             ? `
-            background: #000000; /* maximum contrast */
+            background: #0a0e17;
             font-weight: 400;
             border-right: none;
         `
             : '';
     }}
 
-    /* Separator only for the top 4 items with 15% side margins */
     position: relative;
     &:nth-child(-n + 4)::after {
         content: '';
@@ -144,13 +145,13 @@ const NavPoint = styled.li<{ $selected: boolean }>`
         right: 15%;
         bottom: 0;
         height: 1px;
-        background: rgb(130, 111, 149);
+        background: rgba(12, 92, 171, 0.3);
     }
 `;
 
 const UserInfo = styled.div<{ $collapsed?: boolean }>`
-    border-top: 1px solid hsl(var(--sidebar-border));
-    height: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')}; /* reserve space so it doesn't jump */
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    height: ${({ $collapsed }) => ($collapsed ? '47px' : '120px')};
     position: absolute;
     left: 0;
     right: 0;
@@ -162,11 +163,11 @@ const UserInfo = styled.div<{ $collapsed?: boolean }>`
 
 const ButtonSwitchAccount = styled(Button)`
     margin-top: 16px;
-    color: #8c52ff;
+    color: #0C5CAB;
 
     &:hover {
-        background-color: #8c52ff;
-        color: white;
+        background-color: #0a4e94;
+        color: #ffffff;
     }
     padding: 8px 0;
 `;

@@ -21,6 +21,7 @@ const PageWrapper = styled.div`
     gap: 24px;
     animation: ${fadeIn} 0.3s ease;
     overflow-y: auto;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const PageHeader = styled.div`
@@ -36,13 +37,13 @@ const TitleBlock = styled.div``;
 const PageTitle = styled.h1`
     font-size: 24px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0 0 6px;
 `;
 
 const PageSubtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
 `;
 
@@ -56,8 +57,8 @@ const SearchBar = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
@@ -67,11 +68,11 @@ const SearchInput = styled.input`
     background: transparent;
     border: none;
     outline: none;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     width: 180px;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &::placeholder { color: #8899a6; }
 `;
 
 const DocsButton = styled.a`
@@ -80,10 +81,10 @@ const DocsButton = styled.a`
     gap: 6px;
     padding: 0 14px;
     height: 38px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -91,9 +92,9 @@ const DocsButton = styled.a`
     transition: all 0.15s;
     white-space: nowrap;
     &:hover {
-        color: hsl(var(--foreground));
-        border-color: var(--border-medium);
-        background: var(--overlay-medium);
+        color: #e1e4e8;
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
     }
 `;
 
@@ -103,10 +104,10 @@ const AddButton = styled.button`
     gap: 8px;
     padding: 0 18px;
     height: 38px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 10px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -127,16 +128,20 @@ const Grid = styled.div`
 // ── Cards ─────────────────────────────────────────────────────────────────────
 
 const Card = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-subtle);
+    background: rgba(20, 26, 38, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 16px;
     padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 
-    &:hover { border-color: hsl(var(--primary) / 0.3); }
+    &:hover {
+        border-color: rgba(12, 92, 171, 0.3);
+        box-shadow: 0 4px 24px rgba(12, 92, 171, 0.08);
+    }
 `;
 
 const CardHeader = styled.div`
@@ -155,7 +160,7 @@ const ProviderIcon = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: var(--border-subtle);
+    background: rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -168,13 +173,13 @@ const ProviderName = styled.div``;
 const ProviderTitle = styled.p`
     font-size: 15px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const ProviderType = styled.p`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
     margin-top: 2px;
 `;
@@ -184,14 +189,14 @@ const StatusBadge = styled.span<{ $active: boolean }>`
     font-weight: 600;
     padding: 4px 10px;
     border-radius: 20px;
-    background: ${p => p.$active ? 'hsl(var(--success) / 0.15)' : 'var(--border-subtle)'};
-    color: ${p => p.$active ? 'hsl(var(--success))' : 'hsl(var(--muted-foreground))'};
-    border: 1px solid ${p => p.$active ? 'hsl(var(--success) / 0.3)' : 'transparent'};
+    background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'rgba(255, 255, 255, 0.04)'};
+    color: ${p => p.$active ? '#34d399' : '#8899a6'};
+    border: 1px solid ${p => p.$active ? 'rgba(52, 211, 153, 0.3)' : 'transparent'};
 `;
 
 const Divider = styled.hr`
     border: none;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     margin: 0;
 `;
 
@@ -210,13 +215,13 @@ const ConfigRow = styled.div`
 
 const ConfigKey = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     flex-shrink: 0;
 `;
 
 const ConfigValue = styled.span`
     font-size: 12px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -235,14 +240,14 @@ const Tag = styled.span`
     font-size: 11px;
     padding: 2px 8px;
     border-radius: 6px;
-    background: hsl(var(--primary) / 0.12);
-    color: hsl(var(--primary));
-    border: 1px solid hsl(var(--primary) / 0.2);
+    background: rgba(12, 92, 171, 0.12);
+    color: #0C5CAB;
+    border: 1px solid rgba(12, 92, 171, 0.2);
 `;
 
 const AgentCountBadge = styled.span`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -257,31 +262,31 @@ const CardActions = styled.div`
 const EditBtn = styled.button`
     flex: 1;
     padding: 8px;
-    background: var(--border-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-medium); }
+    &:hover { background: rgba(255, 255, 255, 0.08); }
 `;
 
 const DeleteBtn = styled.button`
     flex: 1;
     padding: 8px;
-    background: hsl(var(--destructive) / 0.08);
-    border: 1px solid hsl(var(--destructive) / 0.2);
+    background: rgba(248, 113, 113, 0.08);
+    border: 1px solid rgba(248, 113, 113, 0.2);
     border-radius: 8px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: hsl(var(--destructive) / 0.18); }
+    &:hover { background: rgba(248, 113, 113, 0.18); }
 `;
 
 // ── Add Card ──────────────────────────────────────────────────────────────────
@@ -293,7 +298,7 @@ const AddCard = styled.button`
     justify-content: center;
     gap: 12px;
     background: transparent;
-    border: 2px dashed var(--border-light);
+    border: 2px dashed rgba(255, 255, 255, 0.06);
     border-radius: 16px;
     padding: 40px 24px;
     cursor: pointer;
@@ -301,24 +306,24 @@ const AddCard = styled.button`
     min-height: 200px;
 
     &:hover {
-        border-color: hsl(var(--primary));
-        background: hsl(var(--primary) / 0.05);
+        border-color: #0C5CAB;
+        background: rgba(12, 92, 171, 0.05);
 
-        span { color: hsl(var(--primary)); }
-        p { color: hsl(var(--foreground)); }
+        span { color: #0C5CAB; }
+        p { color: #e1e4e8; }
     }
 `;
 
 const AddIcon = styled.span`
     font-size: 32px;
-    color: var(--overlay-strong);
+    color: rgba(255, 255, 255, 0.15);
     transition: color 0.2s;
 `;
 
 const AddLabel = styled.p`
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
     transition: color 0.2s;
 `;
@@ -332,15 +337,15 @@ const CenterBox = styled.div`
     justify-content: center;
     gap: 12px;
     padding: 80px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-align: center;
 `;
 
 const LoadingSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid var(--border-light);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.06);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -405,7 +410,7 @@ const SSOPage: React.FC = () => {
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
-                        <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 14 }}>🔍</span>
+                        <span style={{ color: '#8899a6', fontSize: 14 }}>🔍</span>
                         <SearchInput
                             placeholder="Search configs..."
                             value={searchTerm}

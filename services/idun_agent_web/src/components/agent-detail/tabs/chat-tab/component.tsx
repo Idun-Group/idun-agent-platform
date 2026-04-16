@@ -49,14 +49,14 @@ function groupEventsByRun(events: StreamEvent[]): RunGroup[] {
 }
 
 const typeColor = (type: string) => {
-  if (type.includes('ERROR')) return '#ef4444';
+  if (type.includes('ERROR')) return '#f87171';
   if (type.includes('RUN_')) return '#8b5cf6';
   if (type.includes('STEP_')) return '#6366f1';
-  if (type.includes('TEXT_MESSAGE')) return '#22c55e';
+  if (type.includes('TEXT_MESSAGE')) return '#34d399';
   if (type.includes('TOOL_CALL')) return '#f59e0b';
-  if (type.includes('STATE_') || type.includes('MESSAGES_')) return '#06b6d4';
+  if (type.includes('STATE_') || type.includes('MESSAGES_')) return '#4a9ede';
   if (type.includes('REASONING')) return '#ec4899';
-  return '#94a3b8';
+  return '#8899a6';
 };
 
 function EventInspector({ events, isOpen, onToggle }: {
@@ -1034,7 +1034,7 @@ const ChatTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
   };
 
   return (
-    <div className="agui-chat" style={{ height: 'calc(100vh - 260px)', minHeight: '500px' }}>
+    <div className="agui-chat" style={{ height: 'calc(100vh - 260px)', minHeight: '500px', fontFamily: "'IBM Plex Sans', sans-serif" }}>
       {/* Compact toolbar */}
       <div className="chat-toolbar">
         <div className="toolbar-group">

@@ -66,9 +66,9 @@ export default function FrameworkGuide({ framework }: FrameworkGuideProps) {
 }
 
 const Container = styled.div`
-    border: 1px solid rgba(140, 82, 255, 0.2);
+    border: 1px solid rgba(12, 92, 171, 0.2);
     border-radius: 8px;
-    background-color: rgba(140, 82, 255, 0.05);
+    background-color: rgba(12, 92, 171, 0.05);
     overflow: hidden;
 `;
 
@@ -87,7 +87,7 @@ const Toggle = styled.button`
     transition: background-color 0.2s;
 
     &:hover {
-        background-color: rgba(140, 82, 255, 0.1);
+        background-color: rgba(12, 92, 171, 0.1);
     }
 `;
 

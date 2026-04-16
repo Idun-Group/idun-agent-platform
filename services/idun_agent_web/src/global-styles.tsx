@@ -295,7 +295,7 @@ const GlobalStyles = createGlobalStyle`
 
     body {
       margin: 0;
-      font-family: 'Inter', 'SF Pro Display', -apple-system, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+      font-family: 'IBM Plex Sans', -apple-system, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background-color: hsl(var(--background));
       color: hsl(var(--foreground));
       font-feature-settings: 'rlig' 1, 'calt' 1;

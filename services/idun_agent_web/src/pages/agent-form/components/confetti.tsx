@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 
-const COLORS = ['#8c52ff', '#c084fc', '#34d399', '#60a5fa', '#fbbf24', '#f472b6', '#10b981'];
+const COLORS = ['#0C5CAB', '#5B9BD5', '#34d399', '#60a5fa', '#fbbf24', '#f472b6', '#10b981'];
 const PARTICLE_COUNT = 80;
 const DURATION_MS = 3000;
 

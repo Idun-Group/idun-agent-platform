@@ -160,25 +160,27 @@ const Container = styled.div`
     display: flex;
     flex-direction: column;
     gap: 24px;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const Card = styled.div`
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-subtle);
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
     padding: 24px;
+    backdrop-filter: blur(12px);
 `;
 
 const CardTitle = styled.h3`
     font-size: 16px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0 0 4px 0;
 `;
 
 const CardDescription = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0 0 20px 0;
 `;
 
@@ -191,39 +193,39 @@ const FormRow = styled.div`
 const Input = styled.input`
     flex: 1;
     padding: 10px 14px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
     transition: border-color 150ms ease;
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--primary));
+        border-color: #0C5CAB;
     }
 
     &::placeholder {
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
     }
 `;
 
 const SaveButton = styled.button`
     padding: 10px 20px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 8px;
-    color: hsl(var(--primary-foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 500;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
     cursor: pointer;
     transition: all 150ms ease;
     white-space: nowrap;
 
     &:hover:not(:disabled) {
-        filter: brightness(0.9);
+        background: #0a4e94;
     }
 
     &:disabled {
@@ -238,7 +240,7 @@ const MetaRow = styled.div`
     gap: 12px;
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const MetaLabel = styled.span`
@@ -246,34 +248,36 @@ const MetaLabel = styled.span`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     min-width: 40px;
 `;
 
 const MetaValue = styled.span`
     font-size: 13px;
-    color: hsl(var(--muted-foreground));
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #8899a6;
+    font-family: 'IBM Plex Mono', monospace;
 `;
 
 const LoadingText = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     padding: 24px 0;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const EmptyText = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     padding: 24px 0;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const PlaceholderText = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     padding: 16px;
-    background: var(--overlay-subtle);
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 6px;
-    border: 1px dashed var(--border-light);
+    border: 1px dashed rgba(255, 255, 255, 0.06);
     margin: 0;
 `;

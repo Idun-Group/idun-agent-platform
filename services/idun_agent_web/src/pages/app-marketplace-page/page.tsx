@@ -85,7 +85,7 @@ const Sidebar = styled.aside`
     display: flex;
     flex-direction: column;
     gap: 24px;
-    border-right: 1px solid hsl(var(--border));
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
     padding-right: 24px;
 `;
 
@@ -106,13 +106,14 @@ const Header = styled.div`
 const Title = styled.h1`
     font-size: 28px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const Subtitle = styled.h2`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-weight: normal;
     margin: 0;
 `;
@@ -121,7 +122,7 @@ const SearchInput = styled(TextInput)`
     width: 100%;
 
     input {
-        background: hsl(var(--card));
+        background: rgba(255, 255, 255, 0.03);
     }
 `;
 
@@ -135,7 +136,7 @@ const FilterTitle = styled.h3`
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
     padding-left: 8px;
 `;
@@ -147,8 +148,8 @@ const FilterList = styled.div`
 `;
 
 const FilterItem = styled.button<{ $isActive: boolean }>`
-    background: ${props => props.$isActive ? 'hsl(var(--primary))' : 'transparent'};
-    color: ${props => props.$isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'};
+    background: ${props => props.$isActive ? '#0C5CAB' : 'transparent'};
+    color: ${props => props.$isActive ? '#e1e4e8' : '#8899a6'};
     border: none;
     border-radius: 6px;
     padding: 10px 12px;
@@ -157,10 +158,11 @@ const FilterItem = styled.button<{ $isActive: boolean }>`
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     &:hover {
-        background: ${props => props.$isActive ? 'hsl(var(--primary))' : 'hsl(var(--surface-elevated))'};
-        color: hsl(var(--foreground));
+        background: ${props => props.$isActive ? '#0C5CAB' : '#141a26'};
+        color: #e1e4e8;
     }
 `;
 
@@ -188,9 +190,9 @@ const CardWrapper = styled.div`
 const NoResults = styled.div`
     grid-column: 1 / -1;
     text-align: center;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     padding: 40px;
-    background: hsl(var(--surface-elevated));
+    background: #141a26;
     border-radius: 8px;
-    border: 1px dashed hsl(var(--border));
+    border: 1px dashed rgba(255, 255, 255, 0.08);
 `;

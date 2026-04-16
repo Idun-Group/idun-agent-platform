@@ -93,8 +93,8 @@ export default function AgentInfo({
 }
 
 const InfoContainer = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid hsl(var(--border));
+    background: #141a26;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     padding: 24px;
 `;
@@ -106,7 +106,7 @@ const InfoHeader = styled.div`
 const InfoTitle = styled.h3`
     font-size: 18px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
@@ -125,7 +125,7 @@ const InfoSection = styled.div`
 const SectionLabel = styled.div`
     font-size: 14px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const Badge = styled.span<{ $color: 'blue' | 'purple' | 'green' }>`
@@ -149,9 +149,9 @@ const Badge = styled.span<{ $color: 'blue' | 'purple' | 'green' }>`
         `;
             case 'purple':
                 return `
-          background: rgba(140, 82, 255, 0.2);
+          background: rgba(12, 92, 171, 0.2);
           color: #a78bfa;
-          border: 1px solid rgba(140, 82, 255, 0.3);
+          border: 1px solid rgba(12, 92, 171, 0.3);
         `;
             case 'green':
                 return `
@@ -173,16 +173,16 @@ const SourceInfo = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-weight: 500;
 
     svg {
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
     }
 `;
 
 const SourceUrl = styled.a`
-    color: hsl(var(--primary));
+    color: #0C5CAB;
     font-size: 14px;
     text-decoration: none;
 
@@ -201,11 +201,11 @@ const ToolItem = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
 
     svg {
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
     }
 `;
 
@@ -213,11 +213,11 @@ const LastRunInfo = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-weight: 500;
 
     svg {
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
     }
 `;
 

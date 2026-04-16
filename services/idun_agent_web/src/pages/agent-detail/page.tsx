@@ -125,8 +125,8 @@ export default function AgentDetailPage() {
         return (
             <PageContainer>
                 <div style={{ padding: '40px', textAlign: 'center' }}>
-                    <h2 style={{ color: 'hsl(var(--destructive))', marginBottom: '16px' }}>Failed to load agent</h2>
-                    <p style={{ color: 'hsl(var(--muted-foreground))', marginBottom: '24px' }}>{error}</p>
+                    <h2 style={{ color: '#ef4444', marginBottom: '16px' }}>Failed to load agent</h2>
+                    <p style={{ color: '#8899a6', marginBottom: '24px' }}>{error}</p>
                     <Button onClick={() => window.location.reload()}>Retry</Button>
                 </div>
             </PageContainer>
@@ -137,30 +137,29 @@ export default function AgentDetailPage() {
 
     return (
         <PageContainer>
-            <TopNav>
-                <BackButton onClick={() => navigate('/agents')}>
-                    <ArrowLeft size={14} style={{ marginRight: '6px' }} /> Back to Agents
-                </BackButton>
-            </TopNav>
-
             <HeaderSection>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <AvatarContainer>
-                        <AgentAvatar name={agent?.name || 'Agent'} size={80} />
+                        <AgentAvatar name={agent?.name || 'Agent'} size={72} />
                         <StatusDot $status={agent?.status || 'draft'} />
                     </AvatarContainer>
 
                     <div>
-                        <Title>{agent?.name}</Title>
+                        <Title>
+                            <BackArrow onClick={() => navigate('/agents')} title="Back to Agents">
+                                <ArrowLeft size={18} />
+                            </BackArrow>
+                            {agent?.name}
+                        </Title>
                         <MetaInfo>
                             <StatusBadge $status={agent?.status || 'draft'}>
-                                {agent?.status || 'DRAFT'}
+                                {agent?.status?.toLowerCase() === 'active' ? 'Online' : (agent?.status || 'Draft')}
                             </StatusBadge>
                             <Separator>•</Separator>
                             <MetaText>ID: {agent?.id}</MetaText>
                             <Separator>•</Separator>
                             <MetaText style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Layers size={12} color="hsl(var(--primary))" /> {agent?.framework || 'LANGGRAPH'}
+                                <Layers size={12} color="#0C5CAB" /> {agent?.framework || 'LANGGRAPH'}
                             </MetaText>
                             {engineVersion && (
                                 <>
@@ -251,39 +250,36 @@ export default function AgentDetailPage() {
 // Styled Components
 const PageContainer = styled.div`
     min-height: 100vh;
-
-    color: hsl(var(--foreground));
-    padding: 24px 40px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: #e1e4e8;
+    padding: 16px 40px;
     display: flex;
     flex-direction: column;
     height: fit-content;
     width: 100%;
 `;
 
-const TopNav = styled.div`
-    margin-bottom: 24px;
-`;
-
-const BackButton = styled.button`
-    display: flex;
+const BackArrow = styled.button`
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     background: none;
     border: none;
-    color: hsl(var(--muted-foreground));
-    font-size: 12px;
-    font-weight: 500;
+    color: #8899a6;
     cursor: pointer;
-    padding: 0;
-    &:hover { color: hsl(var(--foreground)); }
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    &:hover { color: #e1e4e8; background: rgba(255, 255, 255, 0.06); }
 `;
 
 const HeaderSection = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 32px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
-    gap: 24px;
+    gap: 16px;
 `;
 
 const AvatarContainer = styled.div`
@@ -297,17 +293,21 @@ const StatusDot = styled.div<{ $status: string }>`
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    border: 4px solid hsl(var(--card));
-    background-color: ${props => props.$status.toLowerCase() === 'active' ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}; // Emerald or Red (or Gray for draft)
-    ${props => props.$status.toLowerCase() === 'draft' && 'background-color: hsl(var(--muted-foreground));'}
+    border: 3px solid #0a0e17;
+    background-color: ${props => props.$status.toLowerCase() === 'active' ? '#34d399' : '#f87171'};
+    ${props => props.$status.toLowerCase() === 'draft' && 'background-color: #6b7280;'}
 `;
 
 const Title = styled.h1`
-    font-size: 32px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
-    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 28px;
+    font-weight: 600;
+    color: #e1e4e8;
+    margin: 0 0 6px 0;
     letter-spacing: -0.02em;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const MetaInfo = styled.div`
@@ -335,13 +335,13 @@ const StatusBadge = styled.span<{ $status: string }>`
 `;
 
 const Separator = styled.span`
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const MetaText = styled.span`
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 12px;
-    font-family: monospace;
+    font-family: 'IBM Plex Mono', monospace;
 `;
 
 const Actions = styled.div`
@@ -359,20 +359,21 @@ const HeaderButton = styled.button<{ $primary?: boolean }>`
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     ${props => props.$primary
         ? `
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
+            background-color: #0C5CAB;
+            color: #ffffff;
             border: none;
-            box-shadow: 0 0 15px rgba(140, 82, 255, 0.3);
-            &:hover { background-color: hsl(var(--primary) / 0.85); box-shadow: 0 0 20px rgba(140, 82, 255, 0.5); }
+            box-shadow: 0 0 15px rgba(12, 92, 171, 0.3);
+            &:hover { background-color: #0a4e94; box-shadow: 0 0 20px rgba(12, 92, 171, 0.5); }
         `
         : `
-            background-color: var(--overlay-light);
-            color: hsl(var(--muted-foreground));
-            border: 1px solid var(--border-light);
-            &:hover { background-color: var(--overlay-medium); color: hsl(var(--foreground)); }
+            background-color: rgba(255, 255, 255, 0.04);
+            color: #8899a6;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            &:hover { background-color: rgba(255, 255, 255, 0.08); color: #e1e4e8; }
         `
     }
 `;
@@ -380,8 +381,8 @@ const HeaderButton = styled.button<{ $primary?: boolean }>`
 const TabsNav = styled.div`
     display: flex;
     gap: 32px;
-    border-bottom: 1px solid var(--overlay-light);
-    margin-bottom: 32px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 24px;
 `;
 
 const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
@@ -389,17 +390,18 @@ const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
     align-items: center;
     background: none;
     border: none;
-    padding: 16px 4px;
+    padding: 12px 4px;
     font-size: 14px;
     font-weight: 500;
     cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
     position: relative;
     transition: all 0.2s;
     opacity: ${props => props.$disabled ? 0.4 : 1};
+    font-family: 'IBM Plex Sans', sans-serif;
 
     ${props => props.$active
-        ? `color: hsl(var(--foreground));`
-        : `color: hsl(var(--muted-foreground)); &:hover { color: hsl(var(--foreground)); }`
+        ? `color: #e1e4e8;`
+        : `color: #8899a6; &:hover { color: #e1e4e8; }`
     }
 
     &::after {
@@ -408,19 +410,19 @@ const TabButton = styled.button<{ $active: boolean; $disabled?: boolean }>`
         bottom: -1px;
         left: 0;
         right: 0;
-        height: 2px;
-        background-color: hsl(var(--primary));
+        height: 3px;
+        background-color: #0C5CAB;
         opacity: ${props => props.$active ? 1 : 0};
         transition: opacity 0.2s;
     }
 
     svg {
-        color: ${props => props.$active ? 'hsl(var(--primary))' : 'currentColor'};
+        color: ${props => props.$active ? '#0C5CAB' : 'currentColor'};
         transition: color 0.2s;
     }
 
     &:hover svg {
-        color: ${props => props.$active ? 'hsl(var(--primary))' : 'hsl(var(--foreground))'};
+        color: ${props => props.$active ? '#0C5CAB' : '#e1e4e8'};
     }
 `;
 
@@ -439,7 +441,7 @@ const VersionBadge = styled.span<{ $status: 'ok' | 'outdated' | 'neutral'; $tool
     border-radius: 999px;
     font-size: 11px;
     font-weight: 600;
-    font-family: monospace;
+    font-family: 'IBM Plex Mono', monospace;
     position: relative;
     cursor: default;
     ${props => {
@@ -454,9 +456,9 @@ const VersionBadge = styled.span<{ $status: 'ok' | 'outdated' | 'neutral'; $tool
             border: 1px solid rgba(245, 158, 11, 0.2);
         `;
         return `
-            background-color: rgba(140, 82, 255, 0.1);
-            color: hsl(var(--primary));
-            border: 1px solid rgba(140, 82, 255, 0.2);
+            background-color: rgba(12, 92, 171, 0.1);
+            color: #4a9ede;
+            border: 1px solid rgba(12, 92, 171, 0.2);
         `;
     }}
 
@@ -472,8 +474,8 @@ const VersionBadge = styled.span<{ $status: 'ok' | 'outdated' | 'neutral'; $tool
             font-size: 11px;
             font-weight: 500;
             white-space: nowrap;
-            background-color: hsl(var(--foreground));
-            color: hsl(var(--background));
+            background-color: #e1e4e8;
+            color: #0d1117;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.15s;
@@ -486,10 +488,11 @@ const VersionBadge = styled.span<{ $status: 'ok' | 'outdated' | 'neutral'; $tool
 
 const Button = styled.button`
     padding: 8px 16px;
-    background-color: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
+    background-color: #0C5CAB;
+    color: #ffffff;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 500;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;

@@ -115,6 +115,7 @@ const PageWrapper = styled.div`
     gap: 24px;
     animation: ${fadeIn} 0.3s ease;
     overflow: hidden;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const PageHeader = styled.div`
@@ -131,13 +132,13 @@ const TitleBlock = styled.div``;
 const PageTitle = styled.h1`
     font-size: 24px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0 0 6px;
 `;
 
 const PageSubtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
 `;
 
@@ -155,10 +156,10 @@ const HeaderBtn = styled.a`
     gap: 6px;
     padding: 0 14px;
     height: 38px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -167,9 +168,9 @@ const HeaderBtn = styled.a`
     white-space: nowrap;
 
     &:hover {
-        color: hsl(var(--foreground));
-        border-color: var(--border-medium);
-        background: var(--overlay-medium);
+        color: #e1e4e8;
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
     }
 `;
 
@@ -187,7 +188,7 @@ const MainLayout = styled.div`
 const TypeColumn = styled.div`
     width: 260px;
     flex-shrink: 0;
-    border-right: 1px solid var(--border-subtle);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
     padding-right: 24px;
     overflow-y: auto;
     scrollbar-width: none;
@@ -199,7 +200,7 @@ const GroupLabel = styled.p`
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 20px 0 8px 10px;
 
     &:first-child { margin-top: 0; }
@@ -214,7 +215,7 @@ const TypeBtn = styled.button<{ $disabled?: boolean }>`
     border-radius: 10px;
     border: 1px solid transparent;
     background: transparent;
-    color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--text-secondary))'};
+    color: ${p => p.$disabled ? '#8899a6' : '#6b7a8d'};
     font-size: 13px;
     font-weight: 400;
     cursor: ${p => p.$disabled ? 'default' : 'pointer'};
@@ -224,8 +225,8 @@ const TypeBtn = styled.button<{ $disabled?: boolean }>`
     margin-bottom: 2px;
 
     &:hover {
-        background: ${p => p.$disabled ? 'transparent' : 'var(--overlay-light)'};
-        color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))'};
+        background: ${p => p.$disabled ? 'transparent' : 'rgba(255, 255, 255, 0.04)'};
+        color: ${p => p.$disabled ? '#8899a6' : '#e1e4e8'};
     }
 `;
 
@@ -233,8 +234,8 @@ const TypeIconBox = styled.span`
     width: 28px;
     height: 28px;
     border-radius: 7px;
-    background: hsl(var(--primary) / 0.08);
-    color: hsl(var(--primary));
+    background: rgba(12, 92, 171, 0.08);
+    color: #0C5CAB;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -244,7 +245,7 @@ const TypeIconBox = styled.span`
 const AddIndicator = styled.span`
     margin-left: auto;
     font-size: 16px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     flex-shrink: 0;
     opacity: 0;
     transition: opacity 0.15s;
@@ -261,9 +262,9 @@ const RequestBtn = styled.button`
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px dashed var(--border-light);
+    border: 1px dashed rgba(255, 255, 255, 0.06);
     background: transparent;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 13px;
     font-weight: 400;
     cursor: pointer;
@@ -272,9 +273,9 @@ const RequestBtn = styled.button`
     margin-top: 16px;
 
     &:hover {
-        border-color: hsl(var(--primary) / 0.4);
-        color: hsl(var(--foreground));
-        background: hsl(var(--primary) / 0.04);
+        border-color: rgba(12, 92, 171, 0.4);
+        color: #e1e4e8;
+        background: rgba(12, 92, 171, 0.04);
     }
 `;
 
@@ -301,14 +302,14 @@ const EmptyState = styled.div`
 const EmptyTitle = styled.h3`
     font-size: 16px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const EmptyDescription = styled.p`
     font-size: 13px;
     line-height: 1.7;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin: 0;
     max-width: 420px;
 `;
@@ -343,8 +344,8 @@ const SearchBar = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
@@ -354,11 +355,11 @@ const SearchInput = styled.input`
     background: transparent;
     border: none;
     outline: none;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     width: 100%;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &::placeholder { color: #8899a6; }
 `;
 
 // ── Stats Bar ─────────────────────────────────────────────────────────────────
@@ -375,20 +376,20 @@ const StatChip = styled.div`
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 10px;
     font-size: 13px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
 
-    strong { color: hsl(var(--foreground)); font-weight: 700; }
+    strong { color: #e1e4e8; font-weight: 700; }
 `;
 
 // ── Quick Start ────────────────────────────────────────────────────────────────
 
 const QuickStart = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-subtle);
+    background: #141a26;
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 14px;
     overflow: hidden;
     margin-bottom: 16px;
@@ -404,9 +405,9 @@ const QuickStartHeader = styled.button`
     border: none;
     cursor: pointer;
     text-align: left;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 
-    &:hover { background: var(--overlay-subtle); }
+    &:hover { background: rgba(255, 255, 255, 0.02); }
 `;
 
 const QuickStartTitle = styled.span`
@@ -415,7 +416,7 @@ const QuickStartTitle = styled.span`
     gap: 10px;
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 `;
 
 const QuickStartBadge = styled.span`
@@ -423,16 +424,16 @@ const QuickStartBadge = styled.span`
     font-weight: 700;
     padding: 2px 7px;
     border-radius: 999px;
-    background: hsl(var(--primary) / 0.15);
-    color: hsl(var(--primary));
-    border: 1px solid hsl(var(--primary) / 0.25);
+    background: rgba(12, 92, 171, 0.15);
+    color: #0C5CAB;
+    border: 1px solid rgba(12, 92, 171, 0.25);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 `;
 
 const QuickStartBody = styled.div<{ $open: boolean }>`
     display: ${p => p.$open ? 'block' : 'none'};
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     padding: 20px;
 `;
 
@@ -444,19 +445,26 @@ const CodeGrid = styled.div`
     @media (max-width: 640px) { grid-template-columns: 1fr; }
 `;
 
+const CodeLabelRow = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+`;
+
 const CodeLabel = styled.p`
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    color: hsl(var(--primary));
-    margin: 0 0 8px;
+    color: #0C5CAB;
+    margin: 0;
 `;
 
 const CodeBlock = styled.div`
     position: relative;
     background: rgba(0, 0, 0, 0.35);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     padding: 16px;
 
@@ -465,28 +473,25 @@ const CodeBlock = styled.div`
         font-family: 'Fira Code', 'Cascadia Code', monospace;
         font-size: 12px;
         line-height: 1.7;
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
         white-space: pre;
         overflow-x: auto;
     }
 `;
 
 const CodeCopyBtn = styled.button`
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 6px;
     padding: 4px 8px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 11px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 4px;
 
-    &:hover { color: hsl(var(--foreground)); background: var(--overlay-medium); }
+    &:hover { color: #e1e4e8; background: rgba(255, 255, 255, 0.08); }
 `;
 
 const LANGGRAPH_EXAMPLE = `from idun_agent_engine.mcp.helpers import get_langchain_tools
@@ -571,16 +576,20 @@ const ServerList = styled.div`
 `;
 
 const ServerCard = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-subtle);
+    background: rgba(20, 26, 38, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 14px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 
-    &:hover { border-color: hsl(var(--primary) / 0.3); }
+    &:hover {
+        border-color: rgba(12, 92, 171, 0.3);
+        box-shadow: 0 4px 24px rgba(12, 92, 171, 0.08);
+    }
 `;
 
 const ServerHeader = styled.div`
@@ -593,7 +602,7 @@ const ServerIcon = styled.div`
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: var(--border-subtle);
+    background: rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -615,13 +624,13 @@ const ServerMeta = styled.div`
 const ServerName = styled.p`
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0 0 2px;
 `;
 
 const ServerSubtitle = styled.p`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -640,7 +649,7 @@ const StatusBadge = styled.span<{ $active: boolean }>`
     font-weight: 600;
     padding: 4px 10px;
     border-radius: 20px;
-    background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'var(--border-subtle)'};
+    background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'rgba(255, 255, 255, 0.04)'};
     color: ${p => p.$active ? '#34d399' : '#888'};
     border: 1px solid ${p => p.$active ? 'rgba(52, 211, 153, 0.3)' : 'transparent'};
 `;
@@ -650,22 +659,22 @@ const TransportBadge = styled.span`
     font-weight: 600;
     padding: 4px 10px;
     border-radius: 20px;
-    background: hsl(var(--primary) / 0.12);
-    color: hsl(var(--primary));
-    border: 1px solid hsl(var(--primary) / 0.2);
+    background: rgba(12, 92, 171, 0.12);
+    color: #0C5CAB;
+    border: 1px solid rgba(12, 92, 171, 0.2);
 `;
 
 const ChevronIcon = styled.span<{ $open: boolean }>`
     font-size: 12px;
     transition: transform 0.2s;
     transform: ${p => p.$open ? 'rotate(180deg)' : 'rotate(0deg)'};
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const AccordionBody = styled.div<{ $open: boolean }>`
     display: ${p => p.$open ? 'block' : 'none'};
     animation: ${p => p.$open ? expandDown : 'none'} 0.25s ease;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     padding: 20px;
 `;
 
@@ -686,13 +695,13 @@ const SectionTitle = styled.p`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0 0 4px;
 `;
 
 const Divider = styled.hr`
     border: none;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     margin: 0;
 `;
 
@@ -717,14 +726,14 @@ const ConfigRow = styled.div`
 
 const ConfigKey = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-transform: capitalize;
     flex-shrink: 0;
 `;
 
 const ConfigValue = styled.span`
     font-size: 12px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -741,7 +750,7 @@ const SecretValue = styled.div`
 
 const SecretText = styled.span`
     font-size: 12px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -751,13 +760,13 @@ const SecretText = styled.span`
 const EyeBtn = styled.button`
     background: none;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     padding: 0;
     font-size: 12px;
     flex-shrink: 0;
 
-    &:hover { color: hsl(var(--foreground)); }
+    &:hover { color: #e1e4e8; }
 `;
 
 const DiscoverButton = styled.button`
@@ -767,17 +776,17 @@ const DiscoverButton = styled.button`
     gap: 8px;
     width: 100%;
     padding: 12px 16px;
-    background: hsl(var(--primary) / 0.06);
-    border: 1px dashed hsl(var(--primary) / 0.25);
+    background: rgba(12, 92, 171, 0.06);
+    border: 1px dashed rgba(12, 92, 171, 0.25);
     border-radius: 10px;
-    color: hsl(var(--primary));
+    color: #0C5CAB;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s;
 
     &:hover {
-        background: hsl(var(--primary) / 0.12);
+        background: rgba(12, 92, 171, 0.12);
         border-style: solid;
     }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -796,39 +805,39 @@ const ToolCountBadge = styled.span`
     font-weight: 600;
     padding: 3px 8px;
     border-radius: 20px;
-    background: hsl(var(--primary) / 0.1);
-    color: hsl(var(--primary));
-    border: 1px solid hsl(var(--primary) / 0.2);
+    background: rgba(12, 92, 171, 0.1);
+    color: #0C5CAB;
+    border: 1px solid rgba(12, 92, 171, 0.2);
 `;
 
 const ToolItem = styled.div`
     padding: 10px 14px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 10px;
     transition: border-color 0.15s;
 
-    &:hover { border-color: hsl(var(--primary) / 0.2); }
+    &:hover { border-color: rgba(12, 92, 171, 0.2); }
 `;
 
 const ToolName = styled.p`
     font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--primary));
+    color: #0C5CAB;
     margin: 0 0 3px;
     font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 `;
 
 const ToolDescription = styled.p`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
     line-height: 1.4;
 `;
 
 const DiscoverError = styled.p`
     font-size: 13px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin: 0;
     text-align: center;
 `;
@@ -836,15 +845,15 @@ const DiscoverError = styled.p`
 const DiscoverSpinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid hsl(var(--primary) / 0.2);
-    border-top-color: hsl(var(--primary));
+    border: 2px solid rgba(12, 92, 171, 0.2);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
 
 const AgentCountBadge = styled.span`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -855,21 +864,21 @@ const BodyActions = styled.div`
     gap: 10px;
     margin-top: 20px;
     padding-top: 16px;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const EditBtn = styled.button`
     padding: 8px 18px;
-    background: var(--border-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-medium); }
+    &:hover { background: rgba(255, 255, 255, 0.08); }
 `;
 
 const DeleteBtn = styled.button`
@@ -877,7 +886,7 @@ const DeleteBtn = styled.button`
     background: rgba(248, 113, 113, 0.08);
     border: 1px solid rgba(248, 113, 113, 0.2);
     border-radius: 8px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -894,14 +903,15 @@ const Overlay = styled.div`
     position: fixed;
     inset: 0;
     z-index: 1001;
-    background: var(--overlay-backdrop);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
 `;
 
 const Modal = styled.div`
-    background: hsl(var(--card));
+    background: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(16px);
     border-radius: 16px;
     width: 520px;
     max-width: 95vw;
@@ -910,8 +920,9 @@ const Modal = styled.div`
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     animation: ${modalIn} 0.2s ease;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const ModalHeader = styled.div`
@@ -919,15 +930,15 @@ const ModalHeader = styled.div`
     align-items: center;
     gap: 14px;
     padding: 24px 28px 20px;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const ModalIconBox = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: hsl(var(--primary) / 0.12);
-    color: hsl(var(--primary));
+    background: rgba(12, 92, 171, 0.12);
+    color: #0C5CAB;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -941,23 +952,23 @@ const ModalTitleBlock = styled.div`
 const ModalTitle = styled.h2`
     font-size: 17px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const ModalSubtitle = styled.p`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 2px 0 0;
 `;
 
 const CloseBtn = styled.button`
-    background: var(--overlay-light);
+    background: rgba(255, 255, 255, 0.04);
     border: none;
     border-radius: 8px;
     width: 32px;
     height: 32px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -965,7 +976,7 @@ const CloseBtn = styled.button`
     transition: all 0.15s;
     flex-shrink: 0;
 
-    &:hover { background: var(--border-medium); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.1); color: #e1e4e8; }
 `;
 
 const ModalBody = styled.div`
@@ -982,34 +993,34 @@ const Label = styled.label`
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin-bottom: 8px;
 `;
 
 const Required = styled.span`
-    color: hsl(var(--destructive));
+    color: #f87171;
 `;
 
 const Hint = styled.p`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 4px 0 0;
 `;
 
 const Input = styled.input`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.15s, box-shadow 0.15s;
 
-    &::placeholder { color: hsl(var(--muted-foreground)); }
-    &:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12); }
+    &::placeholder { color: #8899a6; }
+    &:focus { border-color: #0C5CAB; box-shadow: 0 0 0 2px rgba(12, 92, 171, 0.12); }
 `;
 
 const PasswordWrapper = styled.div`
@@ -1023,19 +1034,19 @@ const PasswordToggleBtn = styled.button`
     right: 12px;
     background: none;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     padding: 0;
     display: flex;
     align-items: center;
     flex-shrink: 0;
 
-    &:hover { color: hsl(var(--foreground)); }
+    &:hover { color: #e1e4e8; }
 `;
 
 const ErrorMsg = styled.p`
     font-size: 13px;
-    color: hsl(var(--destructive));
+    color: #f87171;
     margin: 0 0 16px;
     padding: 10px 14px;
     background: rgba(248, 113, 113, 0.1);
@@ -1048,29 +1059,29 @@ const ModalFooter = styled.div`
     justify-content: flex-end;
     gap: 12px;
     padding: 20px 28px;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
 `;
 
 const CancelBtn = styled.button`
     padding: 10px 20px;
     background: transparent;
-    border: 1px solid var(--border-medium);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
 
-    &:hover { background: var(--overlay-light); color: hsl(var(--foreground)); }
+    &:hover { background: rgba(255, 255, 255, 0.04); color: #e1e4e8; }
 `;
 
 const SubmitBtn = styled.button`
     padding: 10px 24px;
-    background: hsl(var(--primary));
+    background: #0C5CAB;
     border: none;
     border-radius: 8px;
-    color: hsl(var(--primary-foreground));
+    color: #ffffff;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -1086,8 +1097,8 @@ const SubmitBtn = styled.button`
 const SmallSpinner = styled.div`
     width: 14px;
     height: 14px;
-    border: 2px solid var(--overlay-strong);
-    border-top-color: hsl(var(--foreground));
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #e1e4e8;
     border-radius: 50%;
     animation: ${spin} 0.7s linear infinite;
 `;
@@ -1101,15 +1112,15 @@ const CenterBox = styled.div`
     justify-content: center;
     gap: 12px;
     padding: 80px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-align: center;
 `;
 
 const LoadingSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid var(--border-light);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.06);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -1392,7 +1403,7 @@ const MCPPage: React.FC = () => {
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
-                        <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+                        <Search size={14} style={{ color: '#8899a6', flexShrink: 0 }} />
                         <SearchInput
                             placeholder="Search servers..."
                             value={searchTerm}
@@ -1444,7 +1455,7 @@ const MCPPage: React.FC = () => {
                                 Connect your agents to external tools and data sources via Model Context Protocol. Add an MCP server to get started.
                             </EmptyDescription>
                             <EmptyChips>
-                                <Chip $color="#8b5cf6">Streamable HTTP</Chip>
+                                <Chip $color="#0C5CAB">Streamable HTTP</Chip>
                                 <Chip $color="#f59e0b">SSE</Chip>
                                 <Chip $color="#10b981">WebSocket</Chip>
                                 <Chip $color="#ef4444">STDIO</Chip>
@@ -1464,28 +1475,32 @@ const MCPPage: React.FC = () => {
                                         Quick Start
                                         <QuickStartBadge>Guide</QuickStartBadge>
                                     </QuickStartTitle>
-                                    <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 12 }}>
+                                    <span style={{ color: '#8899a6', fontSize: 12 }}>
                                         {quickStartOpen ? '\u25B2' : '\u25BC'}
                                     </span>
                                 </QuickStartHeader>
                                 <QuickStartBody $open={quickStartOpen}>
                                     <CodeGrid>
                                         <div>
-                                            <CodeLabel>LangGraph</CodeLabel>
-                                            <CodeBlock>
-                                                <pre><PyHighlight code={LANGGRAPH_EXAMPLE} /></pre>
+                                            <CodeLabelRow>
+                                                <CodeLabel>LangGraph</CodeLabel>
                                                 <CodeCopyBtn onClick={() => navigator.clipboard.writeText(LANGGRAPH_EXAMPLE)}>
                                                     <Copy size={11} /> Copy
                                                 </CodeCopyBtn>
+                                            </CodeLabelRow>
+                                            <CodeBlock>
+                                                <pre><PyHighlight code={LANGGRAPH_EXAMPLE} /></pre>
                                             </CodeBlock>
                                         </div>
                                         <div>
-                                            <CodeLabel>Google ADK</CodeLabel>
-                                            <CodeBlock>
-                                                <pre><PyHighlight code={ADK_EXAMPLE} /></pre>
+                                            <CodeLabelRow>
+                                                <CodeLabel>Google ADK</CodeLabel>
                                                 <CodeCopyBtn onClick={() => navigator.clipboard.writeText(ADK_EXAMPLE)}>
                                                     <Copy size={11} /> Copy
                                                 </CodeCopyBtn>
+                                            </CodeLabelRow>
+                                            <CodeBlock>
+                                                <pre><PyHighlight code={ADK_EXAMPLE} /></pre>
                                             </CodeBlock>
                                         </div>
                                     </CodeGrid>

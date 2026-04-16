@@ -94,6 +94,7 @@ const Container = styled.div`
     flex: 1;
     padding: 24px 32px;
     gap: 24px;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const MobileNav = styled.nav`
@@ -107,12 +108,12 @@ const MobileNav = styled.nav`
 const MobileSelect = styled.select`
     width: 100%;
     padding: 10px 14px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
     cursor: pointer;
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23826F95' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -121,13 +122,13 @@ const MobileSelect = styled.select`
 
     &:focus {
         outline: none;
-        border-color: hsl(var(--primary));
+        border-color: #0C5CAB;
     }
 
     option,
     optgroup {
-        background: hsl(var(--popover));
-        color: hsl(var(--foreground));
+        background: #141a26;
+        color: #e1e4e8;
     }
 `;
 
@@ -148,7 +149,7 @@ const Sidebar = styled.nav`
     display: flex;
     flex-direction: column;
     gap: 4px;
-    border-right: 1px solid var(--border-subtle);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
     padding-right: 16px;
 `;
 
@@ -160,7 +161,7 @@ const SidebarGroup = styled.div`
     & + & {
         margin-top: 16px;
         padding-top: 16px;
-        border-top: 1px solid var(--border-subtle);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
     }
 `;
 
@@ -169,7 +170,7 @@ const GroupLabel = styled.span`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     padding: 0 12px;
     margin-bottom: 4px;
 `;
@@ -181,11 +182,11 @@ const TabItem = styled.button<{ $isActive?: boolean }>`
     border: none;
     border-radius: 6px;
     background: ${({ $isActive }) =>
-        $isActive ? 'hsla(var(--primary) / 0.12)' : 'transparent'};
-    color: ${({ $isActive }) => ($isActive ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))')};
+        $isActive ? 'rgba(12, 92, 171, 0.12)' : 'transparent'};
+    color: ${({ $isActive }) => ($isActive ? '#e1e4e8' : '#8899a6')};
     font-size: 14px;
     font-weight: ${({ $isActive }) => ($isActive ? '600' : '400')};
-    font-family: inherit;
+    font-family: 'IBM Plex Sans', sans-serif;
     cursor: pointer;
     transition: all 150ms ease;
     text-align: left;
@@ -204,14 +205,14 @@ const TabItem = styled.button<{ $isActive?: boolean }>`
             width: 3px;
             height: 16px;
             border-radius: 0 2px 2px 0;
-            background: hsl(var(--primary));
+            background: #0C5CAB;
         }
     `}
 
     &:hover {
         background: ${({ $isActive }) =>
-            $isActive ? 'hsla(var(--primary) / 0.12)' : 'var(--overlay-subtle)'};
-        color: hsl(var(--foreground));
+            $isActive ? 'rgba(12, 92, 171, 0.12)' : 'rgba(255, 255, 255, 0.03)'};
+        color: #e1e4e8;
     }
 `;
 

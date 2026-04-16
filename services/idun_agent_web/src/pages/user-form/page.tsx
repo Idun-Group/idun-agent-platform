@@ -225,8 +225,9 @@ const MainContainer = styled.main`
     height: 100%;
     min-height: 0;
     padding: 24px 40px 40px;
-    background: hsl(var(--background));
+    background: #0a0e17;
     overflow: hidden; /* avoid page-level scroll; inner form handles its own scroll */
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const TopActions = styled.div`
@@ -243,19 +244,19 @@ const Header = styled.div`
     gap: 16px;
 
     svg {
-        color: hsl(var(--primary));
+        color: #0C5CAB;
     }
 
     h1 {
         font-size: 32px;
-        font-weight: 700;
+        font-weight: 600;
         margin: 0;
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
     }
 
     p {
         font-size: 18px;
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
         margin: 0;
         line-height: 1.5;
         max-width: 600px;
@@ -268,13 +269,13 @@ const SectionTitle = styled.h3`
     gap: 12px;
     font-size: 18px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 32px 0 24px 0;
     padding-bottom: 12px;
-    border-bottom: 1px solid hsl(var(--border));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
     svg {
-        color: hsl(var(--primary));
+        color: #0C5CAB;
     }
 
     &:first-of-type {
@@ -295,8 +296,8 @@ const WorkspaceSelectionContainer = styled.div`
     margin-bottom: 24px;
     padding: 16px;
     border-radius: 8px;
-    border: 1px solid hsl(var(--border));
-    background-color: hsl(var(--input));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.06);
 
     p {
         margin: 0 0 8px 0;
@@ -323,27 +324,27 @@ const PermissionGrid = styled.div`
 `;
 
 const PermissionCard = styled.div`
-    background: hsl(var(--accent));
-    border: 1px solid hsl(var(--border));
+    background: rgba(12, 92, 171, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     padding: 24px;
     transition: all 0.2s ease;
 
     &:hover {
-        border-color: hsl(var(--primary));
-        background: hsl(var(--primary) / 0.05);
+        border-color: #0C5CAB;
+        background: rgba(12, 92, 171, 0.05);
     }
 
     h4 {
         font-size: 16px;
         font-weight: 600;
         margin: 0 0 8px 0;
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
     }
 
     p {
         font-size: 14px;
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
         margin: 0 0 16px 0;
         line-height: 1.4;
     }
@@ -357,14 +358,14 @@ const CheckboxContainer = styled.div`
     input[type='checkbox'] {
         width: 16px;
         height: 16px;
-        accent-color: hsl(var(--primary));
+        accent-color: #0C5CAB;
         cursor: pointer;
     }
 
     label {
         font-size: 14px;
         font-weight: 500;
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
         cursor: pointer;
         margin: 0;
     }
@@ -376,23 +377,24 @@ const ButtonContainer = styled.div`
     gap: 16px;
     margin-top: 32px;
     padding-top: 32px;
-    border-top: 1px solid hsl(var(--border));
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 `;
 
 const CancelButton = styled.button`
     padding: 16px 32px;
     background: transparent;
-    border: 2px solid hsl(var(--border));
+    border: 2px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    font-family: 'IBM Plex Sans', sans-serif;
 
     &:hover {
-        background: hsl(var(--accent));
-        color: hsl(var(--foreground));
-        border-color: hsl(var(--muted-foreground));
+        background: rgba(12, 92, 171, 0.1);
+        color: #e1e4e8;
+        border-color: #8899a6;
     }
 `;

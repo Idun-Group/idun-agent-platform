@@ -55,10 +55,12 @@ export default function UsageChart({ title, data }: UsageChartProps) {
 }
 
 const ChartContainer = styled.div`
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     padding: 24px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    backdrop-filter: blur(12px);
 `;
 
 const ChartHeader = styled.div`
@@ -71,7 +73,7 @@ const ChartHeader = styled.div`
 const ChartTitle = styled.h3`
     font-size: 18px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
     display: flex;
     align-items: center;
@@ -93,7 +95,7 @@ const LegendItem = styled.div`
     align-items: center;
     gap: 8px;
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const LegendColor = styled.div<{ $color: string }>`
@@ -117,7 +119,7 @@ const ChartRow = styled.div`
 
 const DateLabel = styled.div`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     min-width: 50px;
     font-weight: 500;
 `;
@@ -132,7 +134,7 @@ const BarContainer = styled.div`
 const ProgressBar = styled.div`
     flex: 1;
     height: 20px;
-    background: hsl(var(--background));
+    background: #0a0e17;
     border-radius: 10px;
     overflow: hidden;
     position: relative;
@@ -141,21 +143,21 @@ const ProgressBar = styled.div`
 
 const SuccessBar = styled.div<{ $width: number }>`
     width: ${(props) => props.$width}%;
-    background: hsl(var(--success));
+    background: #34d399;
     height: 100%;
     border-radius: 10px 0 0 10px;
 `;
 
 const ErrorBar = styled.div<{ $width: number }>`
     width: ${(props) => props.$width}%;
-    background: hsl(var(--destructive));
+    background: #f87171;
     height: 100%;
 `;
 
 const ValueLabel = styled.div`
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     min-width: 30px;
     text-align: right;
 `;

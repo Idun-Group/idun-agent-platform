@@ -26,91 +26,21 @@ interface AgentLineProps {
     onDeleted?: (agentId: string) => void;
 }
 
-// const ActionButton = styled.button`
-//     background: transparent;
-//     border: 1px solid hsl(var(--border));
-//     border-radius: 6px;
-//     padding: 8px;
-//     color: hsl(var(--muted-foreground));
-//     cursor: pointer;
-//     transition: all var(--transition-default);
-//     display: inline-flex;
-//     align-items: center;
-//     justify-content: center;
-
-//     &:hover {
-//         background: hsl(var(--accent));
-//         color: hsl(var(--foreground));
-//         border-color: hsl(var(--primary));
-//     }
-
-//     &:active {
-//         background: hsl(var(--background));
-//     }
-// `;
-
-// const StatusIndicator = styled.div`
-//     display: flex;
-//     align-items: center;
-//     gap: 8px;
-// `;
-
-// const StatusDot = styled.div<{ color: string }>`
-//     width: 8px;
-//     height: 8px;
-//     border-radius: 50%;
-//     background-color: ${(props) => props.color};
-//     flex-shrink: 0;
-// `;
-
-// const StatusText = styled.span`
-//     color: hsl(var(--muted-foreground));
-//     font-size: 12px;
-//     text-transform: capitalize;
-// `;
-
-// const AgentLink = styled(Link)`
-//     color: hsl(var(--foreground));
-//     text-decoration: none;
-//     font-weight: 500;
-//     transition: color var(--transition-default);
-
-//     &:hover {
-//         color: hsl(var(--primary));
-//         text-decoration: underline;
-//     }
-// `;
-
-// const MetricValue = styled.span`
-//     color: hsl(var(--muted-foreground));
-//     font-size: 14px;
-// `;
-
-// const FrameworkTag = styled.span`
-//     background: hsl(var(--accent));
-//     color: hsl(var(--muted-foreground));
-//     padding: 4px 8px;
-//     border-radius: 4px;
-//     font-size: 12px;
-//     font-weight: 500;
-//     border: 1px solid hsl(var(--border));
-// `;
-
 export default function AgentLine({ agent, columns, onDeleted }: AgentLineProps) {
     const navigate = useNavigate();
     const selectStatus = (status: BackendAgent['status']) => {
         switch (status) {
             case 'active':
-                return 'green';
+                return '#34d399';
             case 'error':
-                return 'red';
+                return '#f87171';
             case 'deprecated':
-                return 'orange';
+                return '#fbbf24';
             case 'inactive':
-                return 'gray';
+                return '#6b7a8d';
             case 'draft':
             default:
-                return 'gray';
+                return '#6b7a8d';
         }
     };
 
@@ -200,36 +130,39 @@ const AgentStatusPoint = styled.div<{ color: string }>`
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background-color: ${(props) => props.color || 'grey'};
+    background-color: ${(props) => props.color || '#6b7a8d'};
     display: inline-block;
+    box-shadow: 0 0 6px ${(props) => props.color || '#6b7a8d'}40;
 `;
 
 const FrameworkBadge = styled.span`
-    background: rgba(140, 82, 255, 0.2);
-    color: #a78bfa;
+    background: rgba(12, 92, 171, 0.15);
+    color: #60a5fa;
     padding: 4px 8px;
     border-radius: 16px;
     font-size: 12px;
     font-weight: 600;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(140, 82, 255, 0.3);
+    border: 1px solid rgba(12, 92, 171, 0.25);
 `;
 
 const A2ABadge = styled.span<{ $active?: boolean }>`
-    background: ${props => props.$active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.2)'};
-    color: ${props => props.$active ? '#34d399' : '#9ca3af'};
+    background: ${props => props.$active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(107, 114, 128, 0.15)'};
+    color: ${props => props.$active ? '#34d399' : '#6b7a8d'};
     padding: 4px 8px;
     border-radius: 16px;
     font-size: 12px;
     font-weight: 600;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid ${props => props.$active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(107, 114, 128, 0.3)'};
+    border: 1px solid ${props => props.$active ? 'rgba(16, 185, 129, 0.25)' : 'rgba(107, 114, 128, 0.2)'};
 `;

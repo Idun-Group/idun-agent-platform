@@ -1,7 +1,0 @@
-{
-    "singleQuote": true,
-    "tabWidth": 4,
-    "excludeFiles": ["*.hbs", "**/*.hbs"],
-    "endOfLine": "lf"
-
-}

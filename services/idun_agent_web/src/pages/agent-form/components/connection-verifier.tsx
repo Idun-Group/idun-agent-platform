@@ -104,16 +104,16 @@ const VerifyButton = styled.button`
     padding: 10px 20px;
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
-    background-color: rgba(140, 82, 255, 0.15);
-    border: 1px solid rgba(140, 82, 255, 0.3);
+    color: #e1e4e8;
+    background-color: rgba(12, 92, 171, 0.15);
+    border: 1px solid rgba(12, 92, 171, 0.3);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
     align-self: flex-start;
 
     &:hover:not(:disabled) {
-        background-color: rgba(140, 82, 255, 0.25);
+        background-color: rgba(12, 92, 171, 0.25);
         border-color: #8c52ff;
     }
 

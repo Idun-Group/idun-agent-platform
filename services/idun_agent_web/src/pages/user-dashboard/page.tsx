@@ -127,8 +127,9 @@ const UserDashboardContainer = styled.div`
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: hsl(var(--background));
+    background: #0a0e17;
     flex: 1;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const DashboardHeader = styled.div`
@@ -136,8 +137,8 @@ const DashboardHeader = styled.div`
     justify-content: space-between;
     align-items: flex-start;
     padding: 2rem 1.5rem 1rem 1.5rem;
-    background: hsl(var(--background));
-    border-bottom: 1px solid hsl(var(--border));
+    background: #0a0e17;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     flex-shrink: 0;
 `;
 
@@ -150,13 +151,13 @@ const HeaderContent = styled.div`
 const Title = styled.h1`
     font-size: 2rem;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const Description = styled.p`
     font-size: 1rem;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
 `;
 

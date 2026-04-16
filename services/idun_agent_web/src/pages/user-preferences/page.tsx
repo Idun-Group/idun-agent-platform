@@ -62,6 +62,8 @@ const PageContainer = styled.div`
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    background: #0a0e17;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const PageHeader = styled.div`
@@ -70,7 +72,7 @@ const PageHeader = styled.div`
 
 const PageTitle = styled.h1`
     font-size: 24px;
-    font-weight: 700;
-    color: #ffffff;
+    font-weight: 600;
+    color: #e1e4e8;
     margin: 0;
 `;

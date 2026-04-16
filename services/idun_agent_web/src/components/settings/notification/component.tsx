@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 import { LabeledToggleButton } from '../../general/form/component';
 
 const NotificationSettings = () => {
     const { t } = useTranslation();
     return (
-        <div>
-            {/* Your component implementation here */}
-            <h1>{t('settings.notifications.title')} </h1>
-            <p>{t('settings.notifications.description')}</p>
+        <Container>
+            <Title>{t('settings.notifications.title')} </Title>
+            <Description>{t('settings.notifications.description')}</Description>
 
             <LabeledToggleButton
                 label={t('settings.notifications.agents-status-changes.label')}
@@ -42,7 +42,24 @@ const NotificationSettings = () => {
                 isOn={true}
                 onToggle={() => {}}
             />
-        </div>
+        </Container>
     );
 };
 export default NotificationSettings;
+
+const Container = styled.div`
+    font-family: 'IBM Plex Sans', sans-serif;
+`;
+
+const Title = styled.h1`
+    font-size: 20px;
+    font-weight: 600;
+    color: #e1e4e8;
+    margin: 0 0 4px 0;
+`;
+
+const Description = styled.p`
+    font-size: 14px;
+    color: #8899a6;
+    margin: 0 0 20px 0;
+`;

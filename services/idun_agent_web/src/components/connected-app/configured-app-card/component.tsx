@@ -38,8 +38,8 @@ const ConfiguredAppCard = ({ app, onClick }: ConfiguredAppCardProps) => {
 export default ConfiguredAppCard;
 
 const CardContainer = styled.div`
-    background: var(--overlay-subtle);
-    box-shadow: 0 0 10px rgba(140, 82, 255, 0.38);
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: 0 0 10px rgba(12, 92, 171, 0.38);
     border-radius: 8px;
     padding: 20px;
     display: flex;
@@ -52,7 +52,7 @@ const CardContainer = styled.div`
 
     &:hover {
         transform: translateY(-2px);
-        background: var(--overlay-light);
+        background: rgba(255, 255, 255, 0.04);
     }
 `;
 
@@ -79,13 +79,13 @@ const AppInfo = styled.div`
 const AppName = styled.h3`
     font-size: 16px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const AppType = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const MetaInfo = styled.div`
@@ -93,7 +93,7 @@ const MetaInfo = styled.div`
     flex-direction: column;
     gap: 8px;
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const MetaRow = styled.div`
@@ -102,19 +102,19 @@ const MetaRow = styled.div`
 `;
 
 const MetaLabel = styled.span`
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
 `;
 
 const MetaValue = styled.span`
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 `;
 
 const StatusTag = styled.div`
     position: absolute;
     top: 12px;
     right: 12px;
-    background: rgba(140, 82, 255, 0.2);
-    color: hsl(var(--primary));
+    background: rgba(12, 92, 171, 0.2);
+    color: #0C5CAB;
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 10px;

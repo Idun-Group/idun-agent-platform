@@ -62,6 +62,7 @@ const Container = styled.div`
     display: flex;
     align-items: center;
     gap: 10px;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const Button = styled.button`
@@ -71,16 +72,16 @@ const Button = styled.button`
     padding: 8px 16px;
     font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--foreground));
-    background-color: rgba(140, 82, 255, 0.15);
-    border: 1px solid rgba(140, 82, 255, 0.3);
+    color: #e1e4e8;
+    background-color: rgba(12, 92, 171, 0.15);
+    border: 1px solid rgba(12, 92, 171, 0.3);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
 
     &:hover:not(:disabled) {
-        background-color: rgba(140, 82, 255, 0.25);
-        border-color: #8c52ff;
+        background-color: rgba(12, 92, 171, 0.25);
+        border-color: #0C5CAB;
     }
 
     &:disabled {

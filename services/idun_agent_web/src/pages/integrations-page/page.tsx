@@ -103,6 +103,7 @@ const PageWrapper = styled.div`
     gap: 24px;
     animation: ${fadeIn} 0.3s ease;
     overflow: hidden;
+    font-family: 'IBM Plex Sans', sans-serif;
 `;
 
 const PageHeader = styled.div`
@@ -119,13 +120,13 @@ const TitleBlock = styled.div``;
 const PageTitle = styled.h1`
     font-size: 24px;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0 0 6px;
 `;
 
 const PageSubtitle = styled.p`
     font-size: 14px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 0;
 `;
 
@@ -141,10 +142,10 @@ const DocsButton = styled.a`
     gap: 6px;
     padding: 0 14px;
     height: 38px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -153,9 +154,9 @@ const DocsButton = styled.a`
     white-space: nowrap;
 
     &:hover {
-        color: hsl(var(--foreground));
-        border-color: var(--border-medium);
-        background: var(--overlay-medium);
+        color: #e1e4e8;
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
     }
 `;
 
@@ -163,8 +164,8 @@ const SearchBar = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     padding: 0 14px;
     height: 38px;
@@ -174,10 +175,10 @@ const SearchInput = styled.input`
     background: transparent;
     border: none;
     outline: none;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 14px;
     width: 160px;
-    &::placeholder { color: hsl(var(--muted-foreground)); }
+    &::placeholder { color: #8899a6; }
 `;
 
 // ── Two-column layout ─────────────────────────────────────────────────────────
@@ -194,7 +195,7 @@ const MainLayout = styled.div`
 const ProviderColumn = styled.div`
     width: 260px;
     flex-shrink: 0;
-    border-right: 1px solid var(--border-subtle);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
     padding-right: 24px;
     overflow-y: auto;
     scrollbar-width: none;
@@ -206,7 +207,7 @@ const GroupLabel = styled.p`
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     margin: 20px 0 8px 10px;
 
     &:first-child { margin-top: 0; }
@@ -221,7 +222,7 @@ const ProviderBtn = styled.button<{ $disabled?: boolean }>`
     border-radius: 10px;
     border: 1px solid transparent;
     background: transparent;
-    color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--text-secondary))'};
+    color: ${p => p.$disabled ? '#8899a6' : '#6b7a8d'};
     font-size: 13px;
     font-weight: 400;
     cursor: ${p => p.$disabled ? 'default' : 'pointer'};
@@ -231,8 +232,8 @@ const ProviderBtn = styled.button<{ $disabled?: boolean }>`
     margin-bottom: 2px;
 
     &:hover {
-        background: ${p => p.$disabled ? 'transparent' : 'var(--overlay-light)'};
-        color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))'};
+        background: ${p => p.$disabled ? 'transparent' : 'rgba(255, 255, 255, 0.04)'};
+        color: ${p => p.$disabled ? '#8899a6' : '#e1e4e8'};
     }
 `;
 
@@ -268,7 +269,7 @@ const ProviderIconBoxSmall = styled.div<{ $color: string }>`
 const AddIndicator = styled.span`
     margin-left: auto;
     font-size: 16px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     flex-shrink: 0;
     opacity: 0;
     transition: opacity 0.15s;
@@ -285,8 +286,8 @@ const ComingSoonBadge = styled.span`
     letter-spacing: 0.05em;
     padding: 2px 5px;
     border-radius: 4px;
-    background: var(--overlay-light);
-    color: hsl(var(--muted-foreground));
+    background: rgba(255, 255, 255, 0.04);
+    color: #8899a6;
     margin-left: auto;
     flex-shrink: 0;
 `;
@@ -298,9 +299,9 @@ const RequestBtn = styled.button`
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px dashed var(--border-light);
+    border: 1px dashed rgba(255, 255, 255, 0.06);
     background: transparent;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     font-size: 13px;
     font-weight: 400;
     cursor: pointer;
@@ -309,9 +310,9 @@ const RequestBtn = styled.button`
     margin-top: 16px;
 
     &:hover {
-        border-color: hsl(var(--primary) / 0.4);
-        color: hsl(var(--foreground));
-        background: hsl(var(--primary) / 0.04);
+        border-color: rgba(12, 92, 171, 0.4);
+        color: #e1e4e8;
+        background: rgba(12, 92, 171, 0.04);
     }
 `;
 
@@ -322,7 +323,7 @@ const RequestIcon = styled.span`
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: hsl(var(--primary));
+    color: #0C5CAB;
 `;
 
 // ── Right column: configs + empty state ───────────────────────────────────────
@@ -348,14 +349,14 @@ const EmptyState = styled.div`
 const EmptyTitle = styled.h3`
     font-size: 16px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const EmptyDescription = styled.p`
     font-size: 13px;
     line-height: 1.7;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin: 0;
     max-width: 420px;
 `;
@@ -387,16 +388,20 @@ const CardsGrid = styled.div`
 `;
 
 const Card = styled.div<{ $borderColor?: string }>`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid ${p => p.$borderColor ? `${p.$borderColor}20` : 'var(--border-subtle)'};
+    background: rgba(20, 26, 38, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid ${p => p.$borderColor ? `${p.$borderColor}20` : 'rgba(255, 255, 255, 0.04)'};
     border-radius: 14px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 
-    &:hover { border-color: ${p => p.$borderColor ? `${p.$borderColor}50` : 'hsl(var(--primary) / 0.3)'}; }
+    &:hover {
+        border-color: ${p => p.$borderColor ? `${p.$borderColor}50` : 'rgba(12, 92, 171, 0.3)'};
+        box-shadow: 0 4px 24px rgba(12, 92, 171, 0.08);
+    }
 `;
 
 const CardHeader = styled.div`
@@ -416,13 +421,13 @@ const ProviderName = styled.div``;
 const ProviderTitle = styled.p`
     font-size: 14px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     margin: 0;
 `;
 
 const ProviderType = styled.p`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     margin: 2px 0 0;
 `;
 
@@ -431,14 +436,14 @@ const StatusBadge = styled.span<{ $active: boolean }>`
     font-weight: 600;
     padding: 3px 8px;
     border-radius: 20px;
-    background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'var(--border-subtle)'};
+    background: ${p => p.$active ? 'rgba(52, 211, 153, 0.15)' : 'rgba(255, 255, 255, 0.04)'};
     color: ${p => p.$active ? '#34d399' : '#888'};
     border: 1px solid ${p => p.$active ? 'rgba(52, 211, 153, 0.3)' : 'transparent'};
 `;
 
 const Divider = styled.hr`
     border: none;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     margin: 0;
 `;
 
@@ -457,13 +462,13 @@ const ConfigRow = styled.div`
 
 const ConfigKey = styled.span`
     font-size: 12px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     flex-shrink: 0;
 `;
 
 const ConfigValue = styled.span`
     font-size: 12px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     font-family: monospace;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -473,7 +478,7 @@ const ConfigValue = styled.span`
 
 const AgentCountBadge = styled.span`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
 `;
 
 const CardActions = styled.div`
@@ -485,15 +490,15 @@ const CardActions = styled.div`
 const EditBtn = styled.button`
     flex: 1;
     padding: 7px;
-    background: var(--border-subtle);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-    &:hover { background: var(--overlay-medium); }
+    &:hover { background: rgba(255, 255, 255, 0.08); }
 `;
 
 const DeleteBtn = styled.button`
@@ -519,15 +524,15 @@ const CenterBox = styled.div`
     justify-content: center;
     gap: 12px;
     padding: 80px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-align: center;
 `;
 
 const LoadingSpinner = styled.div`
     width: 36px;
     height: 36px;
-    border: 3px solid var(--border-light);
-    border-top-color: hsl(var(--primary));
+    border: 3px solid rgba(255, 255, 255, 0.06);
+    border-top-color: #0C5CAB;
     border-radius: 50%;
     animation: ${spin} 0.8s linear infinite;
 `;
@@ -588,7 +593,7 @@ const IntegrationsPage: React.FC = () => {
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
-                        <Search size={14} style={{ color: 'hsl(var(--muted-foreground))', flexShrink: 0 }} />
+                        <Search size={14} style={{ color: '#8899a6', flexShrink: 0 }} />
                         <SearchInput placeholder="Search integrations..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </SearchBar>
                     <DocsButton href="https://docs.idunplatform.com/integrations/discord" target="_blank" rel="noopener noreferrer">
@@ -665,7 +670,7 @@ const IntegrationsPage: React.FC = () => {
                                 return (c.name?.toLowerCase().includes(term) || providerLabel.toLowerCase().includes(term));
                             }).map(config => {
                                 const provider = config.integration.provider;
-                                const meta = PROVIDERS[provider] ?? { label: provider, color: 'hsl(var(--primary))' };
+                                const meta = PROVIDERS[provider] ?? { label: provider, color: '#0C5CAB' };
                                 const Icon = PROVIDER_ICONS[provider];
 
                                 return (

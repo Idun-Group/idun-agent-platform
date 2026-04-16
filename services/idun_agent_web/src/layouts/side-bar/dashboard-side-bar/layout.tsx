@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import AccountInfo from '../../../components/side-bar/account-info/component';
 import UserPopover from '../../../components/side-bar/user-popover/component';
 import { useState, useEffect, useCallback, type ComponentType } from 'react';
-import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug, ChevronUp, FileText } from 'lucide-react';
+import { UserIcon, Settings, Activity, Database, Eye, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug, ChevronUp, FileText, Bot } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
@@ -53,7 +53,7 @@ const SideBar = ({}: SideBarProps) => {
 
     const menuItems: MenuItemConfig[] = [
         {
-            iconSrc: '/img/agent-icon.svg',
+            icon: Bot,
             label: t('sidebar.agents'),
             key: 'agent',
             path: '/agents',
@@ -131,6 +131,7 @@ const SideBar = ({}: SideBarProps) => {
                         $collapsed={collapsed}
                         onClick={item.onClick}
                     >
+                        <ActiveIndicator $visible={!!location.pathname.startsWith(item.path)} />
                         {item.iconSrc ? (
                             <IconMask
                                 $src={item.iconSrc}
@@ -140,15 +141,16 @@ const SideBar = ({}: SideBarProps) => {
                             />
                         ) : item.icon ? (
                             <item.icon
-                                size={17}
+                                size={18}
                                 color={
                                     location.pathname.startsWith(item.path)
-                                        ? 'hsl(var(--primary))'
-                                        : 'hsl(var(--sidebar-icon-inactive))'
+                                        ? '#0C5CAB'
+                                        : '#4a5568'
                                 }
                             />
                         ) : null}
                         {!collapsed && <MenuLabel>{item.label}</MenuLabel>}
+                        {collapsed && <Tooltip>{item.label}</Tooltip>}
                     </MenuItem>
                 ))}
             </SideBarNav>
@@ -156,7 +158,7 @@ const SideBar = ({}: SideBarProps) => {
             {!collapsed && !githubDismissed && (
                 <GithubCard>
                     <GithubHeader>
-                        <GithubTitle>⭐ Star Idun</GithubTitle>
+                        <GithubTitle>Star Idun</GithubTitle>
                         <GithubDismiss onClick={dismissGithub}>
                             <X size={14} />
                         </GithubDismiss>
@@ -182,30 +184,34 @@ const SideBar = ({}: SideBarProps) => {
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    <Sparkles size={17} color="hsl(var(--warning))" />
+                    <Sparkles size={18} color="#f59e0b" />
                     {!collapsed && <MenuLabel>Upgrade</MenuLabel>}
+                    {collapsed && <Tooltip>Upgrade</Tooltip>}
                 </BottomLink>
                 <BottomLink
                     $collapsed={collapsed}
                     href="mailto:contact@idun-group.com"
                 >
-                    <LifeBuoy size={17} color="hsl(var(--sidebar-icon-inactive))" />
+                    <LifeBuoy size={18} color="#4a5568" />
                     {!collapsed && <MenuLabel>Support</MenuLabel>}
+                    {collapsed && <Tooltip>Support</Tooltip>}
                 </BottomLink>
                 <MenuItem
                     $isActive={!!location.pathname.startsWith('/settings')}
                     $collapsed={collapsed}
                     onClick={() => navigate('/settings')}
                 >
+                    <ActiveIndicator $visible={!!location.pathname.startsWith('/settings')} />
                     <Settings
-                        size={17}
+                        size={18}
                         color={
                             location.pathname.startsWith('/settings')
-                                ? 'hsl(var(--primary))'
-                                : 'hsl(var(--sidebar-icon-inactive))'
+                                ? '#0C5CAB'
+                                : '#4a5568'
                         }
                     />
                     {!collapsed && <MenuLabel>{t('sidebar.settings', 'Settings')}</MenuLabel>}
+                    {collapsed && <Tooltip>{t('sidebar.settings', 'Settings')}</Tooltip>}
                 </MenuItem>
                 <UserRowWrapper>
                     {showUserPopover && <UserPopover onClose={closeUserPopover} />}
@@ -222,14 +228,14 @@ const SideBar = ({}: SideBarProps) => {
                                     onError={() => setAvatarError(true)}
                                 />
                             ) : (
-                                <UserIcon size={17} color="hsl(var(--sidebar-icon-inactive))" />
+                                <UserIcon size={18} color="#4a5568" />
                             )
                         ) : (
                             <>
                                 <AccountInfo />
                                 <ChevronUp
                                     size={15}
-                                    color="hsl(var(--muted-foreground))"
+                                    color="#8899a6"
                                     style={{
                                         flexShrink: 0,
                                         transition: 'transform 200ms ease',
@@ -248,69 +254,104 @@ const SideBar = ({}: SideBarProps) => {
 
 // Styled Components
 const SideBarContainer = styled.aside<{ $collapsed?: boolean }>`
-    width: ${({ $collapsed }) => ($collapsed ? '72px' : '250px')};
+    width: ${({ $collapsed }) => ($collapsed ? '64px' : '240px')};
     min-height: 100%;
-    background: hsl(var(--sidebar-background));
-    color: hsl(var(--sidebar-foreground));
-    border-right: 1px solid hsl(var(--sidebar-border));
+    background: #0d1117;
+    color: #8899a6;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    transition: width 300ms ease, background-color 300ms ease, color 300ms ease;
+    transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     z-index: 10;
 `;
 
 const SideBarNav = styled.nav<{ $collapsed?: boolean }>`
-    padding: 0;
+    padding: 8px;
     display: flex;
     flex-direction: column;
+    gap: 2px;
+`;
+
+const Tooltip = styled.span`
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1a2332;
+    color: #e1e4e8;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    z-index: 100;
+`;
+
+const ActiveIndicator = styled.span<{ $visible?: boolean }>`
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: #0C5CAB;
+    opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+    transition: opacity 200ms ease;
 `;
 
 const MenuItem = styled.button<{ $isActive?: boolean; $collapsed?: boolean }>`
     display: flex;
     align-items: center;
     gap: ${({ $collapsed }) => ($collapsed ? '0' : '10px')};
-    height: 47px;
-    padding: 0 16px 0 30px;
+    height: 40px;
+    padding: ${({ $collapsed }) => ($collapsed ? '0' : '0 12px 0 16px')};
     border: none;
-    border-radius: 0;
-    background: hsl(var(--sidebar-item-bg));
-    color: hsl(var(--foreground));
+    border-radius: 8px;
+    background: ${({ $isActive }) =>
+        $isActive ? 'rgba(12, 92, 171, 0.12)' : 'transparent'};
+    color: ${({ $isActive }) =>
+        $isActive ? '#e1e4e8' : '#8899a6'};
     cursor: pointer;
-    transition: background-color 200ms ease, color 200ms ease;
+    transition: background 150ms ease, color 150ms ease;
     text-align: left;
     width: 100%;
-    font-size: 15px;
-    font-weight: 400;
+    font-size: 13px;
+    font-weight: ${({ $isActive }) => ($isActive ? '600' : '400')};
     font-family: inherit;
     position: relative;
     justify-content: ${({ $collapsed }) =>
         $collapsed ? 'center' : 'flex-start'};
+    overflow: ${({ $collapsed }) => ($collapsed ? 'visible' : 'hidden')};
 
     &:hover {
-        background: hsl(var(--sidebar-item-hover));
-        color: hsl(var(--foreground));
+        background: ${({ $isActive }) =>
+            $isActive ? 'rgba(12, 92, 171, 0.12)' : 'rgba(255, 255, 255, 0.04)'};
     }
 
-    ${({ $isActive }) =>
-        $isActive &&
-        `
-        background: hsl(var(--sidebar-item-active));
-        font-weight: 700;
-        border-right: 3px solid hsl(var(--primary));
-    `}
+    &:hover > ${Tooltip} {
+        opacity: 1;
+    }
 `;
 
 const MenuLabel = styled.span`
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 `;
 
 const IconMask = styled.span<{ $src: string; $active?: boolean }>`
-    width: 17px;
-    height: 17px;
+    width: 18px;
+    height: 18px;
     display: inline-block;
-    background-color: ${(props) => (props.$active ? 'hsl(var(--primary))' : 'hsl(var(--sidebar-icon-inactive))')};
+    flex-shrink: 0;
+    background-color: ${(props) => (props.$active ? '#0C5CAB' : '#4a5568')};
     -webkit-mask: url(${(props) => props.$src}) no-repeat center / contain;
     mask: url(${(props) => props.$src}) no-repeat center / contain;
 `;
@@ -321,11 +362,13 @@ const BottomSection = styled.div`
     display: flex;
     flex-direction: column;
     margin-top: auto;
+    padding: 8px;
+    gap: 2px;
 `;
 
 const VersionLabel = styled.span`
     font-size: 11px;
-    color: hsl(var(--muted-foreground));
+    color: #4a5568;
     text-align: center;
     padding: 4px 0 8px;
 `;
@@ -335,21 +378,26 @@ const BottomLink = styled.a<{ $collapsed?: boolean }>`
     align-items: center;
     gap: ${({ $collapsed }) => ($collapsed ? '0' : '10px')};
     justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
-    height: 47px;
-    padding: 0 16px 0 30px;
-    background: hsl(var(--sidebar-item-bg));
-    color: hsl(var(--foreground));
+    height: 40px;
+    padding: ${({ $collapsed }) => ($collapsed ? '0' : '0 12px 0 16px')};
+    border-radius: 8px;
+    background: transparent;
+    color: #8899a6;
     text-decoration: none;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 400;
     font-family: inherit;
     cursor: pointer;
-    transition: background-color 200ms ease, color 200ms ease;
+    transition: background 150ms ease;
     width: 100%;
+    position: relative;
 
     &:hover {
-        background: hsl(var(--sidebar-item-hover));
-        color: hsl(var(--foreground));
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    &:hover > ${Tooltip} {
+        opacity: 1;
     }
 `;
 
@@ -357,24 +405,21 @@ const UserRow = styled.div<{ $collapsed?: boolean; $isActive?: boolean }>`
     display: flex;
     align-items: center;
     justify-content: ${({ $collapsed }) => ($collapsed ? 'center' : 'flex-start')};
-    min-height: 47px;
-    padding: 0 16px 0 30px;
+    min-height: 40px;
+    padding: ${({ $collapsed }) => ($collapsed ? '0' : '0 12px 0 16px')};
+    border-radius: 8px;
     background: ${({ $isActive }) =>
-        $isActive ? 'hsl(var(--sidebar-item-active))' : 'hsl(var(--sidebar-background))'};
-    border-top: 1px solid var(--border-subtle);
+        $isActive ? 'rgba(12, 92, 171, 0.12)' : 'transparent'};
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 4px;
+    padding-top: 4px;
     overflow: hidden;
     cursor: pointer;
-    transition: background-color 200ms ease;
+    transition: background 150ms ease;
 
     &:hover {
-        background: hsl(var(--sidebar-item-hover));
+        background: rgba(255, 255, 255, 0.04);
     }
-
-    ${({ $isActive }) =>
-        $isActive &&
-        `
-        border-right: 3px solid hsl(var(--primary));
-    `}
 `;
 
 const UserRowWrapper = styled.div`
@@ -390,11 +435,11 @@ const AvatarImg = styled.img`
 `;
 
 const GithubCard = styled.div`
-    margin: 12px 16px;
-    padding: 16px;
-    border-radius: 8px;
-    background: hsl(var(--muted));
-    border: 1px solid var(--border-light);
+    margin: 8px;
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const GithubHeader = styled.div`
@@ -405,31 +450,35 @@ const GithubHeader = styled.div`
 `;
 
 const GithubTitle = styled.span`
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
 `;
 
 const GithubDismiss = styled.button`
     background: none;
     border: none;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
 
     &:hover {
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
+        background: rgba(255, 255, 255, 0.04);
     }
 `;
 
 const GithubDesc = styled.p`
-    margin: 0 0 14px 0;
-    font-size: 13px;
-    color: hsl(var(--text-secondary));
-    line-height: 1.45;
+    margin: 0 0 12px 0;
+    font-size: 12px;
+    color: #6b7a8d;
+    line-height: 1.5;
 `;
 
 const GithubLink = styled.a`
@@ -438,17 +487,17 @@ const GithubLink = styled.a`
     gap: 6px;
     padding: 6px 12px;
     border-radius: 6px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
-    color: hsl(var(--foreground));
-    font-size: 13px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #e1e4e8;
+    font-size: 12px;
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
     transition: background 150ms ease;
 
     &:hover {
-        background: var(--overlay-medium);
-        color: hsl(var(--foreground));
+        background: rgba(255, 255, 255, 0.08);
+        color: #e1e4e8;
     }
 `;

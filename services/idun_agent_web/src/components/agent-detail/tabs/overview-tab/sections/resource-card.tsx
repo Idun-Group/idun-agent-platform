@@ -21,7 +21,6 @@ import {
     ViewDetailHeader,
     ViewDetailName,
     ViewDetailBadge,
-    ViewDetailMeta,
     QuickAddButton,
     ExpandedConfig,
     ExpandedConfigRow,
@@ -227,7 +226,7 @@ export default function ResourceCard({
             {isEditing && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {items.length === 0 && !onCreateNew && (
-                        <div style={{ color: '#6b7280', fontSize: '12px', fontStyle: 'italic' }}>
+                        <div style={{ color: '#6b7a8d', fontSize: '12px', fontStyle: 'italic' }}>
                             No configurations available
                         </div>
                     )}

@@ -29,19 +29,19 @@ const spin = keyframes`
 const Container = styled.div`
     flex: 1;
     padding: 24px;
-    background-color: hsl(var(--background));
+    background-color: #0a0e17;
     overflow-y: auto;
 `;
 
 const Card = styled.div`
-    background-color: hsl(var(--card));
-    border: 1px solid var(--overlay-light);
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 12px;
 `;
 
 const CardHeader = styled.div`
     padding: 24px;
-    border-bottom: 1px solid var(--overlay-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -56,7 +56,7 @@ const CardTitleIcon = styled.div`
         margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: hsl(var(--foreground));
+        color: #e1e4e8;
     }
 `;
 
@@ -90,7 +90,7 @@ const Label = styled.label`
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     text-transform: uppercase;
     margin-bottom: 8px;
 `;
@@ -98,8 +98,8 @@ const Label = styled.label`
 const InputGroup = styled.div`
     display: flex;
     align-items: center;
-    background-color: hsl(var(--accent));
-    border: 1px solid var(--border-light);
+    background-color: rgba(12, 92, 171, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
 `;
 
@@ -117,9 +117,9 @@ const CodeBlock = styled.code`
 const CopyButton = styled.button`
     background: transparent;
     border: none;
-    border-left: 1px solid var(--border-light);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
     padding: 12px 16px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
@@ -127,8 +127,8 @@ const CopyButton = styled.button`
     position: relative;
 
     &:hover {
-        color: hsl(var(--foreground));
-        background-color: var(--overlay-light);
+        color: #e1e4e8;
+        background-color: rgba(255, 255, 255, 0.04);
     }
 `;
 
@@ -139,7 +139,7 @@ const CopiedTooltip = styled.div`
     transform: translateX(-50%);
     margin-bottom: 8px;
     background-color: rgba(0, 0, 0, 0.9);
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 10px;
@@ -182,7 +182,7 @@ const TokenText = styled.span`
 const ActionButton = styled.button`
     font-size: 12px;
     font-weight: 500;
-    color: hsl(var(--primary));
+    color: #0C5CAB;
     background: none;
     border: none;
     padding: 0 16px;
@@ -190,7 +190,7 @@ const ActionButton = styled.button`
     display: flex;
     align-items: center;
     gap: 6px;
-    &:hover { color: #a78bfa; }
+    &:hover { color: #5B9BD5; }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
@@ -201,8 +201,8 @@ const EndpointsList = styled.div`
 `;
 
 const EndpointItem = styled.div`
-    background-color: hsl(var(--card));
-    border: 1px solid var(--overlay-light);
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 8px;
     overflow: hidden;
 `;
@@ -213,7 +213,7 @@ const EndpointHeader = styled.div`
     justify-content: space-between;
     padding: 12px;
     cursor: pointer;
-    &:hover { background-color: var(--overlay-light); }
+    &:hover { background-color: rgba(255, 255, 255, 0.04); }
 `;
 
 const EndpointMeta = styled.div`
@@ -235,7 +235,7 @@ const MethodBadge = styled.span<{ $method: string }>`
             case 'GET': return 'background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2);';
             case 'DELETE': return 'background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2);';
             case 'PUT': return 'background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2);';
-            default: return `background: rgba(107, 114, 128, 0.1); color: hsl(var(--muted-foreground)); border-color: rgba(107, 114, 128, 0.2);`;
+            default: return `background: rgba(107, 114, 128, 0.1); color: #8899a6; border-color: rgba(107, 114, 128, 0.2);`;
         }
     }}
 `;
@@ -248,14 +248,14 @@ const EndpointPath = styled.code`
 
 const EndpointDetails = styled.div`
     padding: 12px;
-    background-color: hsl(var(--accent));
-    border-top: 1px solid var(--overlay-light);
+    background-color: rgba(12, 92, 171, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
     animation: ${fadeIn} 0.2s ease-out;
 `;
 
 const Description = styled.p`
     font-size: 12px;
-    color: hsl(var(--text-secondary));
+    color: #6b7a8d;
     margin: 0 0 12px 0;
 `;
 
@@ -268,18 +268,18 @@ const SubLabel = styled.label`
     display: block;
     font-size: 10px;
     font-weight: 600;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     text-transform: uppercase;
     margin-bottom: 6px;
 `;
 
 const CodeSnippet = styled.div`
     background-color: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 6px;
     padding: 8px 12px;
     font-size: 12px;
-    color: hsl(var(--primary));
+    color: #0C5CAB;
     font-family: monospace;
     position: relative;
     display: flex;
@@ -288,7 +288,7 @@ const CodeSnippet = styled.div`
 
     pre {
         margin: 0;
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
         white-space: pre-wrap;
         overflow-x: auto;
     }
@@ -304,23 +304,23 @@ const ParamTable = styled.table`
 const ParamTh = styled.th`
     text-align: left;
     padding: 6px 8px;
-    color: hsl(var(--text-tertiary));
+    color: #4a5568;
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    border-bottom: 1px solid var(--border-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const ParamTd = styled.td`
     padding: 6px 8px;
-    color: hsl(var(--text-secondary));
-    border-bottom: 1px solid var(--overlay-light);
+    color: #6b7a8d;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     vertical-align: top;
 `;
 
 const ParamName = styled.code`
     font-family: monospace;
-    color: hsl(var(--primary));
+    color: #0C5CAB;
     font-size: 12px;
 `;
 
@@ -328,9 +328,9 @@ const InBadge = styled.span`
     font-size: 9px;
     padding: 1px 5px;
     border-radius: 3px;
-    background: var(--overlay-light);
-    color: hsl(var(--muted-foreground));
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    color: #8899a6;
+    border: 1px solid rgba(255, 255, 255, 0.06);
 `;
 
 const RequiredBadge = styled.span`
@@ -344,7 +344,7 @@ const RequiredBadge = styled.span`
 
 const CurlBlock = styled.div`
     background-color: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 6px;
     padding: 12px 12px 12px 12px;
     position: relative;
@@ -353,7 +353,7 @@ const CurlBlock = styled.div`
         margin: 0;
         font-family: monospace;
         font-size: 12px;
-        color: hsl(var(--muted-foreground));
+        color: #8899a6;
         white-space: pre-wrap;
         word-break: break-all;
         line-height: 1.6;
@@ -365,18 +365,18 @@ const CurlCopyBtn = styled.button`
     position: absolute;
     top: 8px;
     right: 8px;
-    background: var(--overlay-light);
-    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 4px;
     padding: 3px 6px;
-    color: hsl(var(--muted-foreground));
+    color: #8899a6;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 4px;
     font-size: 10px;
 
-    &:hover { color: hsl(var(--foreground)); background: var(--overlay-medium); }
+    &:hover { color: #e1e4e8; background: rgba(255, 255, 255, 0.08); }
 `;
 
 const LoadingSpinner = styled(Loader2)`
@@ -547,7 +547,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
             <Card>
                         <CardHeader>
                             <CardTitleIcon>
-                                <Terminal size={18} color="hsl(var(--primary))" />
+                                <Terminal size={18} color="#0C5CAB" />
                                 <h3>Endpoint Details</h3>
                             </CardTitleIcon>
                             {agent?.base_url && (
@@ -589,7 +589,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                     {authToken && showAuthToken && (
                                         <CopyButton
                                             onClick={handleCopyToken}
-                                            style={{ borderLeft: '1px solid var(--border-light)' }}
+                                            style={{ borderLeft: '1px solid rgba(255, 255, 255, 0.06)' }}
                                             title="Copy Token"
                                         >
                                             <Copy size={14} />
@@ -634,7 +634,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                 </InputGroup>
                             </Section>
 
-                            <Section style={{ borderTop: '1px solid var(--overlay-light)', paddingTop: '24px', marginTop: '24px' }}>
+                            <Section style={{ borderTop: '1px solid rgba(255, 255, 255, 0.04)', paddingTop: '24px', marginTop: '24px' }}>
                                 <Label style={{ marginBottom: '16px' }}>Available Endpoints</Label>
 
                                 <EndpointsList>
@@ -645,7 +645,7 @@ const GatewayTab: React.FC<{ agent?: BackendAgent | null }> = ({ agent }) => {
                                                     <MethodBadge $method={ep.method}>{ep.method}</MethodBadge>
                                                     <EndpointPath>{ep.path}</EndpointPath>
                                                 </EndpointMeta>
-                                                                <ChevronDown size={14} style={{ transform: expandedEndpoint === ep.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'hsl(var(--text-secondary))' }} />
+                                                                <ChevronDown size={14} style={{ transform: expandedEndpoint === ep.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#6b7a8d' }} />
                                             </EndpointHeader>
 
                                             {expandedEndpoint === ep.id && (

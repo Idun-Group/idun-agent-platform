@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Database, Eye, Server, Shield, KeyRound, Plug, Plus, Check } from 'lucide-react';
+import { Database, Eye, Server, Shield, KeyRound, Plug, Plus, Check, ChevronDown } from 'lucide-react';
 import { notify } from '../../../../toast/notify';
 import type { BackendAgent } from '../../../../../services/agents';
 import { patchAgent } from '../../../../../services/agents';
@@ -25,12 +25,14 @@ import type { ManagedSSO } from '../../../../../services/sso';
 import type { ManagedIntegration } from '../../../../../services/integrations';
 import ResourceCard from './resource-card';
 import type { AssignedResourceDetail, ConfigEntry } from './resource-card';
+import PipelineView, { type PipelineStage } from './pipeline-view';
 import {
     SectionCard,
-    SectionHeader,
     SectionTitle,
     SectionIcon,
     ResourceGrid,
+    CollapsibleHeader,
+    CollapseChevron,
 } from './styled';
 
 const VIRTUAL_IN_MEMORY = '__in_memory__';
@@ -91,6 +93,7 @@ export default function ResourcesSection({
     const [createTarget, setCreateTarget] = useState<CreateTarget | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [quickAddCategory, setQuickAddCategory] = useState<ResourceCategory | null>(null);
+    const [collapsed, setCollapsed] = useState(false);
 
     // ── Assigned names (existing logic) ──
 
@@ -440,7 +443,7 @@ export default function ResourcesSection({
             const port = agent.engine_config?.server?.api?.port;
             const formState = {
                 name: agent.name || '', version: agent.version || '1.0.0',
-                baseUrl: agent.base_url || '', description: agent.description || '',
+                baseUrl: agent.base_url || '',
                 serverPort: port ? String(port) : '8000',
                 agentType: agent.engine_config?.agent?.type || framework,
                 agentConfig: extractAgentConfig(agent.engine_config),
@@ -486,7 +489,7 @@ export default function ResourcesSection({
             const port = agent.engine_config?.server?.api?.port;
             const formState = {
                 name: agent.name || '', version: agent.version || '1.0.0',
-                baseUrl: agent.base_url || '', description: agent.description || '',
+                baseUrl: agent.base_url || '',
                 serverPort: port ? String(port) : '8000',
                 agentType: agent.engine_config?.agent?.type || framework,
                 agentConfig: extractAgentConfig(agent.engine_config),
@@ -629,14 +632,92 @@ export default function ResourcesSection({
     const quickAddIntegrationConfigs = quickAddCategory === 'Integrations' ? resources.integrationConfigs : [];
     const hasExistingItems = quickAddExistingConfigs.length > 0 || quickAddSSOConfigs.length > 0 || quickAddIntegrationConfigs.length > 0;
 
+    // ── Pipeline stages (view mode only) ────────────────────────────────────
+    const memNames = getMemoryAssigned();
+    const obsNames = getObservabilityAssigned();
+    const mcpNames = getMCPAssigned();
+    const guardNames = getGuardrailsAssigned();
+    const ssoNames = getSSOAssigned();
+    const intNames = getIntegrationsAssigned();
+
+    // upstream of agent: things that feed in / wrap input
+    const leftStages: PipelineStage[] = [
+        {
+            id: 'memory',
+            label: 'Memory',
+            icon: Database,
+            color: '#60a5fa',
+            // In-Memory is the default and counts as "not really configured"
+            configured: memNames.length > 0 && memNames[0] !== 'In-Memory',
+            assignedNames: memNames,
+            onClick: () => handleQuickAdd('Memory'),
+        },
+        {
+            id: 'guardrails',
+            label: 'Guardrails',
+            icon: Shield,
+            color: '#34d399',
+            configured: guardNames.length > 0,
+            assignedNames: guardNames,
+            onClick: () => handleQuickAdd('Guardrails'),
+        },
+        {
+            id: 'mcp',
+            label: 'MCP',
+            icon: Server,
+            color: '#fbbf24',
+            configured: mcpNames.length > 0,
+            assignedNames: mcpNames,
+            onClick: () => handleQuickAdd('MCP'),
+        },
+    ];
+
+    // downstream of agent: things that consume output / observe / route
+    const rightStages: PipelineStage[] = [
+        {
+            id: 'sso',
+            label: 'SSO',
+            icon: KeyRound,
+            color: '#f472b6',
+            configured: ssoNames.length > 0,
+            assignedNames: ssoNames,
+            onClick: () => handleQuickAdd('SSO'),
+        },
+        {
+            id: 'observability',
+            label: 'Obs',
+            icon: Eye,
+            color: '#22d3ee',
+            configured: obsNames.length > 0,
+            assignedNames: obsNames,
+            onClick: () => handleQuickAdd('Observability'),
+        },
+        {
+            id: 'integrations',
+            label: 'Integrations',
+            icon: Plug,
+            color: '#fb923c',
+            configured: intNames.length > 0,
+            assignedNames: intNames,
+            onClick: () => handleQuickAdd('Integrations'),
+        },
+    ];
+
     return (
         <SectionCard>
-            <SectionHeader>
+            <CollapsibleHeader $collapsed={collapsed} onClick={() => setCollapsed(c => !c)} type="button">
                 <SectionIcon $color="green"><Server size={16} /></SectionIcon>
                 <SectionTitle>Resources & Integrations</SectionTitle>
-            </SectionHeader>
+                <CollapseChevron $collapsed={collapsed}>
+                    <ChevronDown size={16} />
+                </CollapseChevron>
+            </CollapsibleHeader>
 
-            <ResourceGrid>
+            {!collapsed && !isEditing && (
+                <PipelineView agent={agent} leftStages={leftStages} rightStages={rightStages} />
+            )}
+
+            {!collapsed && isEditing && (<ResourceGrid>
                 <ResourceCard
                     icon={<Database size={14} color="#60a5fa" />}
                     title="Memory"
@@ -726,7 +807,7 @@ export default function ResourcesSection({
                     onQuickAdd={!isEditing ? () => handleQuickAdd('Integrations') : undefined}
                     onManage={!isEditing ? () => handleQuickAdd('Integrations') : undefined}
                 />
-            </ResourceGrid>
+            </ResourceGrid>)}
 
             {/* Quick-add / manage picker */}
             {isQuickAddPickerOpen && quickAddCategory && (() => {
@@ -895,8 +976,8 @@ const PickerOverlay = styled.div`
 `;
 
 const PickerPanel = styled.div`
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--border-light);
+    background: #141a26;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 12px;
     padding: 24px;
     max-width: 520px;
@@ -949,8 +1030,8 @@ const ExistingConfigCard = styled.button<{ $selected?: boolean }>`
     gap: 12px;
     padding: 12px 14px;
     border-radius: 8px;
-    border: 1px solid ${p => p.$selected ? 'rgba(140, 82, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)'};
-    background: ${p => p.$selected ? 'rgba(140, 82, 255, 0.08)' : 'rgba(255, 255, 255, 0.02)'};
+    border: 1px solid ${p => p.$selected ? 'rgba(12, 92, 171, 0.4)' : 'rgba(255, 255, 255, 0.08)'};
+    background: ${p => p.$selected ? 'rgba(12, 92, 171, 0.08)' : 'rgba(255, 255, 255, 0.02)'};
     color: #e5e7eb;
     cursor: pointer;
     text-align: left;
@@ -958,8 +1039,8 @@ const ExistingConfigCard = styled.button<{ $selected?: boolean }>`
     transition: all 0.15s;
 
     &:hover {
-        border-color: ${p => p.$selected ? 'rgba(140, 82, 255, 0.5)' : 'rgba(16, 185, 129, 0.4)'};
-        background: ${p => p.$selected ? 'rgba(140, 82, 255, 0.12)' : 'rgba(16, 185, 129, 0.06)'};
+        border-color: ${p => p.$selected ? 'rgba(12, 92, 171, 0.5)' : 'rgba(16, 185, 129, 0.4)'};
+        background: ${p => p.$selected ? 'rgba(12, 92, 171, 0.12)' : 'rgba(16, 185, 129, 0.06)'};
     }
 `;
 
@@ -984,7 +1065,7 @@ const PickerSaveButton = styled.button`
     padding: 10px 20px;
     border-radius: 8px;
     background: #8c52ff;
-    color: hsl(var(--foreground));
+    color: #e1e4e8;
     border: none;
     font-size: 14px;
     font-weight: 600;
@@ -1058,7 +1139,7 @@ const CreateNewPickerButton = styled.button`
     gap: 6px;
     padding: 10px 12px;
     border-radius: 8px;
-    border: 1px dashed rgba(140, 82, 255, 0.3);
+    border: 1px dashed rgba(12, 92, 171, 0.3);
     background: transparent;
     color: #a78bfa;
     cursor: pointer;
@@ -1069,7 +1150,8 @@ const CreateNewPickerButton = styled.button`
     margin-top: 8px;
 
     &:hover {
-        border-color: rgba(140, 82, 255, 0.5);
-        background: rgba(140, 82, 255, 0.04);
+        border-color: rgba(12, 92, 171, 0.5);
+        background: rgba(12, 92, 171, 0.04);
     }
 `;
+ 

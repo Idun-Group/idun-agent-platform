@@ -52,14 +52,14 @@ const ErrorContent: React.FC<{ message: string }> = ({ message }) => (
 
 const WarningContent: React.FC<{ message: string }> = ({ message }) => (
     <Row>
-        <IconWrap $color="#fbbf24"><AlertTriangle size={18} /></IconWrap>
+        <IconWrap $color="#f59e0b"><AlertTriangle size={18} /></IconWrap>
         <Message>{message}</Message>
     </Row>
 );
 
 const InfoContent: React.FC<{ message: string }> = ({ message }) => (
     <Row>
-        <IconWrap $color="#8c52ff"><Info size={18} /></IconWrap>
+        <IconWrap $color="#0C5CAB"><Info size={18} /></IconWrap>
         <Message>{message}</Message>
     </Row>
 );
