@@ -84,7 +84,7 @@ All resource routes are prefixed with `/api/v1/` and require authentication (ses
 - `POST /agents/` — Create agent (accepts `resources` field with FK/junction IDs, materializes `engine_config` JSONB)
 - `GET /agents/` — List agents (paginated, workspace-scoped)
 - `GET /agents/{id}` — Get agent by ID (returns `resources` with explicit resource IDs)
-- `PATCH /agents/{id}` — Update agent (syncs resource associations, recomputes materialized config)
+- `PATCH /agents/{id}` — Update agent (syncs resource associations, recomputes materialized config). Updatable fields include `name`, `version`, `base_url`, `description`, `engine_config`, and `resources`.
 - `DELETE /agents/{id}` — Delete agent (cascades junction rows)
 - `GET /agents/key?agent_id=...` — Generate API key (hashed with `scrypt`, stored as `agent_hash`)
 - `GET /agents/config` — Fetch config by API key (returns materialized `engine_config` JSONB directly, zero JOINs)

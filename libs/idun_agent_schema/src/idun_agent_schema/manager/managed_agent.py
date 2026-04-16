@@ -77,6 +77,7 @@ class ManagedAgentPatch(BaseModel):
     """Full replacement schema for PUT of a managed agent."""
 
     name: str
+    version: str | None = Field(None, description="Agent version")
     base_url: str | None = Field(None, description="Base URL")
     engine_config: EngineConfig = Field(
         ..., description="Idun Agent Engine configuration"

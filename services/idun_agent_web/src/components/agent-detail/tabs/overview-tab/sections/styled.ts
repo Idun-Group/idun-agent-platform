@@ -258,43 +258,6 @@ export const CreateNewButton = styled.button`
     }
 `;
 
-export const ActionBar = styled.div`
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 0 0;
-    margin-top: 8px;
-    border-top: 1px solid var(--overlay-light);
-`;
-
-export const ActionButton = styled.button<{ $primary?: boolean }>`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    ${p => p.$primary
-        ? `
-            background: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
-            border: none;
-            &:hover { background: #7c3aed; }
-            &:disabled { opacity: 0.5; cursor: not-allowed; }
-        `
-        : `
-            background: transparent;
-            color: hsl(var(--muted-foreground));
-            border: 1px solid var(--border-light);
-            &:hover { color: hsl(var(--foreground)); border-color: var(--overlay-strong); }
-        `
-    }
-`;
-
 export const CheckIndicator = styled.div<{ $checked?: boolean }>`
     width: 18px;
     height: 18px;
@@ -472,4 +435,72 @@ export const ExpandedConfigValue = styled.span`
     white-space: nowrap;
     font-family: monospace;
     font-size: 11px;
+`;
+
+// Edit button shown in section headers
+export const SectionEditButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-light);
+    background: transparent;
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-left: auto;
+    transition: all 0.15s;
+
+    &:hover {
+        color: hsl(var(--foreground));
+        border-color: var(--overlay-strong);
+        background: var(--overlay-subtle);
+    }
+`;
+
+// Row of Save/Cancel buttons shown at bottom of section in edit mode
+export const SectionActions = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 16px;
+    margin-top: 4px;
+    border-top: 1px solid var(--overlay-light);
+`;
+
+export const SectionSaveButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 7px;
+    border: none;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover:not(:disabled) { background: hsl(var(--primary) / 0.85); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
+export const SectionCancelButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border-light);
+    background: transparent;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover { color: hsl(var(--foreground)); border-color: var(--overlay-strong); }
 `;
