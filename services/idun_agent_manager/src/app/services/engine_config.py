@@ -10,6 +10,7 @@ import logging
 from typing import Any
 from uuid import UUID, uuid4
 
+from fastapi import HTTPException, status
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.manager.managed_agent import AgentResourceIds
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +20,12 @@ from app.infrastructure.db.models.agent_integration import AgentIntegrationModel
 from app.infrastructure.db.models.agent_mcp_server import AgentMCPServerModel
 from app.infrastructure.db.models.agent_observability import AgentObservabilityModel
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
+from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
+from app.infrastructure.db.models.managed_integration import ManagedIntegrationModel
+from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
+from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
+from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
+from app.infrastructure.db.models.managed_sso import ManagedSSOModel
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +175,8 @@ async def sync_resources(
         ],
     )
 
+    await _validate_resource_scope(session, model, resources)
+
     # 1:1 FKs
     model.memory_id = resources.memory_id
     model.sso_id = resources.sso_id
@@ -221,6 +230,48 @@ async def sync_resources(
                 agent_id=model.id,
                 integration_id=int_id,
             )
+        )
+
+
+async def _validate_resource_scope(
+    session: AsyncSession,
+    agent: ManagedAgentModel,
+    resources: AgentResourceIds,
+) -> None:
+    """Ensure every referenced resource belongs to the agent's workspace and project."""
+
+    async def _check_resource(resource_model, resource_id: UUID, label: str) -> None:
+        resource = await session.get(resource_model, resource_id)
+        if resource is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"{label} not found",
+            )
+        if (
+            resource.workspace_id != agent.workspace_id
+            or resource.project_id != agent.project_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{label} does not belong to the active project",
+            )
+
+    if resources.memory_id is not None:
+        await _check_resource(ManagedMemoryModel, resources.memory_id, "Memory config")
+    if resources.sso_id is not None:
+        await _check_resource(ManagedSSOModel, resources.sso_id, "SSO config")
+
+    for ref in resources.guardrail_ids or []:
+        await _check_resource(ManagedGuardrailModel, ref.id, "Guardrail config")
+    for resource_id in resources.mcp_server_ids or []:
+        await _check_resource(ManagedMCPServerModel, resource_id, "MCP server")
+    for resource_id in resources.observability_ids or []:
+        await _check_resource(
+            ManagedObservabilityModel, resource_id, "Observability config"
+        )
+    for resource_id in resources.integration_ids or []:
+        await _check_resource(
+            ManagedIntegrationModel, resource_id, "Integration config"
         )
 
 

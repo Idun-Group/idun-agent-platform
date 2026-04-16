@@ -24,6 +24,16 @@ from .managed_prompt import (  # noqa: F401
     ManagedPromptPatch,
     ManagedPromptRead,
 )
+from .project import (  # noqa: F401
+    ProjectAssignment,
+    ProjectCreate,
+    ProjectMemberAdd,
+    ProjectMemberPatch,
+    ProjectMemberRead,
+    ProjectPatch,
+    ProjectRead,
+    ProjectRole,
+)
 from .managed_sso import (  # noqa: F401
     ManagedSSOCreate,
     ManagedSSOPatch,

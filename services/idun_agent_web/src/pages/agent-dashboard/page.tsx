@@ -3,6 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { notify } from '../../components/toast/notify';
+import { useProject } from '../../hooks/use-project';
 import { Search, Plus, Bot } from 'lucide-react';
 import type { BackendAgent } from '../../services/agents';
 import { listAgents, deleteAgent, performHealthCheck } from '../../services/agents';
@@ -26,6 +27,7 @@ const spin = keyframes`
 const AgentDashboardPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { currentProject, canWrite, canAdmin } = useProject();
 
     const [agents, setAgents] = useState<BackendAgent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +36,13 @@ const AgentDashboardPage = () => {
 
     useEffect(() => {
         let cancelled = false;
+        if (!currentProject) {
+            setAgents([]);
+            setIsLoading(false);
+            return () => {
+                cancelled = true;
+            };
+        }
         setIsLoading(true);
         listAgents()
             .then((rows) => {
@@ -52,7 +61,7 @@ const AgentDashboardPage = () => {
             })
             .finally(() => setIsLoading(false));
         return () => { cancelled = true; };
-    }, []);
+    }, [currentProject]);
 
     const filteredAgents = useMemo(() => {
         if (!searchTerm) return agents;
@@ -80,13 +89,40 @@ const AgentDashboardPage = () => {
 
     // ── Empty state ──────────────────────────────────────────────────────────
 
+    if (!currentProject) {
+        return (
+            <PageWrapper>
+                <PageHeader>
+                    <TitleBlock>
+                        <PageTitle>{t('dashboard.agent.title')}</PageTitle>
+                        <PageSubtitle>Select a project to view or create agents.</PageSubtitle>
+                    </TitleBlock>
+                </PageHeader>
+
+                <EmptyState>
+                    <EmptyIcon>
+                        <Bot size={48} strokeWidth={1.2} />
+                    </EmptyIcon>
+                    <EmptyTitle>No active project</EmptyTitle>
+                    <EmptyDescription>
+                        Choose a project from the top navbar to scope your agents and configurations.
+                    </EmptyDescription>
+                    <CreateButton onClick={() => navigate('/settings/workspace-projects')}>
+                        <Plus size={18} />
+                        Manage projects
+                    </CreateButton>
+                </EmptyState>
+            </PageWrapper>
+        );
+    }
+
     if (!isLoading && agents.length === 0) {
         return (
             <PageWrapper>
                 <PageHeader>
                     <TitleBlock>
                         <PageTitle>{t('dashboard.agent.title')}</PageTitle>
-                        <PageSubtitle>{t('dashboard.agent.description')}</PageSubtitle>
+                        <PageSubtitle>{`Manage agents in ${currentProject.name}`}</PageSubtitle>
                     </TitleBlock>
                 </PageHeader>
 
@@ -96,10 +132,9 @@ const AgentDashboardPage = () => {
                     </EmptyIcon>
                     <EmptyTitle>No agents yet</EmptyTitle>
                     <EmptyDescription>
-                        Create your first agent to start monitoring and managing your AI
-                        workflows.
+                        {`Create your first agent in ${currentProject.name} to start monitoring and managing your AI workflows.`}
                     </EmptyDescription>
-                    <CreateButton onClick={() => navigate('/agents/create')}>
+                    <CreateButton onClick={() => navigate('/agents/create')} disabled={!canWrite}>
                         <Plus size={18} />
                         {t('dashboard.agent.create')}
                     </CreateButton>
@@ -115,7 +150,7 @@ const AgentDashboardPage = () => {
             <PageHeader>
                 <TitleBlock>
                     <PageTitle>{t('dashboard.agent.title')}</PageTitle>
-                    <PageSubtitle>{t('dashboard.agent.description')}</PageSubtitle>
+                    <PageSubtitle>{`Manage agents in ${currentProject.name}`}</PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -126,7 +161,7 @@ const AgentDashboardPage = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </SearchBar>
-                    <CreateButton onClick={() => navigate('/agents/create')}>
+                    <CreateButton onClick={() => navigate('/agents/create')} disabled={!canWrite}>
                         <Plus size={16} />
                         {t('dashboard.agent.create')}
                     </CreateButton>
@@ -145,10 +180,12 @@ const AgentDashboardPage = () => {
                             key={agent.id}
                             agent={agent}
                             onDeleteRequest={setAgentToDelete}
+                            canWrite={canWrite}
+                            canAdmin={canAdmin}
                         />
                     ))}
 
-                    <AddCard onClick={() => navigate('/agents/create')}>
+                    <AddCard onClick={() => canWrite && navigate('/agents/create')}>
                         <AddIconWrapper>
                             <Plus size={28} />
                         </AddIconWrapper>

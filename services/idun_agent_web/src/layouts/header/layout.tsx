@@ -1,20 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Settings, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import useWorkspace from '../../hooks/use-workspace';
 import { useProject } from '../../hooks/use-project';
-import { useAuth } from '../../hooks/use-auth';
 import type { WorkspaceSummary } from '../../utils/auth';
 import WorkspacePopover from '../../components/header/workspace-popover/component';
 import ProjectPopover from '../../components/header/project-popover/component';
-import UserAvatarPopover from '../../components/header/user-avatar-popover/component';
 import { getGradientForName } from '../../utils/workspace-colors';
 
 const Header = () => {
-    const navigate = useNavigate();
-
     const {
         selectedWorkspaceId,
         setSelectedWorkspaceId,
@@ -30,12 +25,10 @@ const Header = () => {
         currentRole,
         isLoadingProjects,
     } = useProject();
-    const { session } = useAuth();
 
     const [allWorkspaces, setAllWorkspaces] = useState<WorkspaceSummary[]>([]);
     const [showWorkspacePopover, setShowWorkspacePopover] = useState(false);
     const [showProjectPopover, setShowProjectPopover] = useState(false);
-    const [showUserPopover, setShowUserPopover] = useState(false);
 
     useEffect(() => {
         getAllWorkspace().then(setAllWorkspaces).catch(() => {});
@@ -44,19 +37,11 @@ const Header = () => {
     const toggleWorkspace = () => {
         setShowWorkspacePopover((prev) => !prev);
         setShowProjectPopover(false);
-        setShowUserPopover(false);
     };
 
     const toggleProject = () => {
         setShowProjectPopover((prev) => !prev);
         setShowWorkspacePopover(false);
-        setShowUserPopover(false);
-    };
-
-    const toggleUser = () => {
-        setShowUserPopover((prev) => !prev);
-        setShowWorkspacePopover(false);
-        setShowProjectPopover(false);
     };
 
     const handleWorkspaceSelect = (workspaceId: string) => {
@@ -68,17 +53,6 @@ const Header = () => {
         setSelectedProjectId(projectId);
         setShowProjectPopover(false);
     };
-
-    const email = session?.principal?.email ?? '';
-    const name =
-        (session as any)?.principal?.name || email.split('@')[0] || 'User';
-    const initials =
-        name
-            .split(' ')
-            .map((w: string) => w.charAt(0))
-            .slice(0, 2)
-            .join('')
-            .toUpperCase() || 'U';
 
     const workspaceName = currentWorkspace?.name ?? 'Workspace';
     const workspaceInitial = workspaceName.charAt(0).toUpperCase();
@@ -131,21 +105,14 @@ const Header = () => {
                         )}
                     </ProjectTrigger>
 
-                    <GearButton onClick={() => navigate('/settings')}>
-                        <Settings size={14} />
-                    </GearButton>
                 </SelectorGroup>
 
-                <VerticalDivider />
-
-                {currentRole && <RoleBadge>{currentRole}</RoleBadge>}
-
-                <AvatarTrigger onClick={toggleUser}>
-                    <AvatarCircle>{initials}</AvatarCircle>
-                    {showUserPopover && (
-                        <UserAvatarPopover onClose={() => setShowUserPopover(false)} />
-                    )}
-                </AvatarTrigger>
+                {currentRole && (
+                    <>
+                        <VerticalDivider />
+                        <RoleBadge>{currentRole}</RoleBadge>
+                    </>
+                )}
             </RightSection>
         </HeaderContainer>
     );
@@ -260,26 +227,6 @@ const SlashSeparator = styled.span`
     user-select: none;
 `;
 
-const GearButton = styled.button`
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    border: 1px solid var(--border-subtle);
-    background: transparent;
-    cursor: pointer;
-    color: hsl(var(--muted-foreground));
-    transition: background 150ms ease, color 150ms ease;
-    margin-left: 6px;
-
-    &:hover {
-        background: var(--overlay-light);
-        color: hsl(var(--foreground));
-    }
-`;
-
 const VerticalDivider = styled.div`
     width: 1px;
     height: 24px;
@@ -296,20 +243,3 @@ const RoleBadge = styled.span`
     padding: 3px 8px;
 `;
 
-const AvatarTrigger = styled.div`
-    position: relative;
-    cursor: pointer;
-`;
-
-const AvatarCircle = styled.div`
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: hsl(var(--primary));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    color: hsl(var(--primary-foreground));
-`;

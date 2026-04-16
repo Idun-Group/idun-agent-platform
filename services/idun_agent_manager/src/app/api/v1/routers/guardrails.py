@@ -18,15 +18,17 @@ from idun_agent_schema.manager.managed_guardrail import (
     ManagedGuardrailPatch,
     ManagedGuardrailRead,
 )
+from idun_agent_schema.manager.project import ProjectRole
 from pydantic import TypeAdapter
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
-    require_workspace,
+    require_project_role,
 )
 from app.infrastructure.db.models.agent_guardrail import AgentGuardrailModel
 from app.infrastructure.db.models.managed_guardrail import ManagedGuardrailModel
@@ -45,6 +47,7 @@ async def _get_guardrail(
     id: str,
     session: AsyncSession,
     workspace_id: UUID | None = None,
+    project_id: UUID | None = None,
 ) -> ManagedGuardrailModel:
     """Get guardrail config by ID, optionally scoped to a workspace."""
     try:
@@ -66,6 +69,11 @@ async def _get_guardrail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Guardrail config with id '{id}' not found",
         )
+    if project_id is not None and model.project_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Guardrail config with id '{id}' not found",
+        )
     return model
 
 
@@ -76,6 +84,7 @@ def _model_to_schema(
     guardrail = TypeAdapter(GuardrailConfig).validate_python(model.guardrail_config)
     return ManagedGuardrailRead(
         id=model.id,  # type: ignore
+        project_id=model.project_id,  # type: ignore
         name=model.name,
         guardrail=guardrail,
         agent_count=agent_count,
@@ -94,7 +103,9 @@ async def create_guardrail(
     request: ManagedGuardrailCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(
+        require_project_role(ProjectRole.CONTRIBUTOR)
+    ),
 ) -> ManagedGuardrailRead:
     """Create a new managed guardrail configuration."""
     now = datetime.now(UTC)
@@ -107,7 +118,8 @@ async def create_guardrail(
         guardrail_config=guardrail_config.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=project_access.workspace_id,
+        project_id=project_access.project_id,
     )
 
     session.add(model)
@@ -127,7 +139,7 @@ async def list_guardrails(
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> list[ManagedGuardrailRead]:
     """List managed guardrail configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -142,7 +154,10 @@ async def list_guardrails(
 
     stmt = (
         select(ManagedGuardrailModel)
-        .where(ManagedGuardrailModel.workspace_id == workspace_id)
+        .where(
+            ManagedGuardrailModel.workspace_id == project_access.workspace_id,
+            ManagedGuardrailModel.project_id == project_access.project_id,
+        )
         .limit(limit)
         .offset(offset)
     )
@@ -174,10 +189,15 @@ async def get_guardrail(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> ManagedGuardrailRead:
     """Get a managed guardrail configuration by ID."""
-    model = await _get_guardrail(id, session, workspace_id)
+    model = await _get_guardrail(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     count_stmt = select(func.count(func.distinct(AgentGuardrailModel.agent_id))).where(
         AgentGuardrailModel.guardrail_id == model.id
     )
@@ -194,10 +214,15 @@ async def delete_guardrail(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.ADMIN)),
 ) -> None:
     """Delete a managed guardrail configuration permanently."""
-    model = await _get_guardrail(id, session, workspace_id)
+    model = await _get_guardrail(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     # RESTRICT: check if any agent references this guardrail
     stmt = select(AgentGuardrailModel.agent_id).where(
@@ -224,10 +249,17 @@ async def patch_guardrail(
     request: ManagedGuardrailPatch,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(
+        require_project_role(ProjectRole.CONTRIBUTOR)
+    ),
 ) -> ManagedGuardrailRead:
     """Update a guardrail configuration."""
-    model = await _get_guardrail(id, session, workspace_id)
+    model = await _get_guardrail(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     model.name = request.name
     guardrail_config = request.guardrail

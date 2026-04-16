@@ -14,7 +14,6 @@ import UserPreferencesPage from './pages/user-preferences/page';
 import SideBar from './layouts/side-bar/dashboard-side-bar/layout';
 import SigninPage from './pages/signin/page';
 import { useAuth } from './hooks/use-auth';
-import ApplicationPage from './pages/application-page/page';
 import Loader from './components/general/loader/component';
 import { useLoader } from './hooks/use-loader';
 import ObservationPage from './pages/observation/page';

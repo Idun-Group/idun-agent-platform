@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import {
-    Database,
     HardDrive,
-    Layers,
-    Cpu,
     Users,
     BookOpen,
     GitPullRequest,
@@ -19,6 +16,7 @@ import { fetchApplications, deleteApplication, createApplication, updateApplicat
 import type { AppType } from '../../types/application.types';
 import type { ApplicationConfig } from '../../types/application.types';
 import { notify } from '../../components/toast/notify';
+import { useProject } from '../../hooks/use-project';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -718,11 +716,15 @@ const MemoryModal: React.FC<MemoryModalProps> = ({ provider, framework, appToEdi
     useEffect(() => {
         if (appToEdit) {
             setName(appToEdit.name ?? '');
-            const cfg = (appToEdit.config ?? {}) as Record<string, any>;
-            setConnectionUrl(cfg.connectionString ?? cfg.db_url ?? '');
-            setProjectId(cfg.project_id ?? cfg.projectId ?? '');
-            setLocation(cfg.location ?? '');
-            setReasoningEngineAppName(cfg.reasoning_engine_app_name ?? cfg.reasoningEngineAppName ?? '');
+            const cfg = (appToEdit.config ?? {}) as Record<string, unknown>;
+            setConnectionUrl(typeof (cfg.connectionString ?? cfg.db_url) === 'string' ? String(cfg.connectionString ?? cfg.db_url) : '');
+            setProjectId(typeof (cfg.project_id ?? cfg.projectId) === 'string' ? String(cfg.project_id ?? cfg.projectId) : '');
+            setLocation(typeof cfg.location === 'string' ? cfg.location : '');
+            setReasoningEngineAppName(
+                typeof (cfg.reasoning_engine_app_name ?? cfg.reasoningEngineAppName) === 'string'
+                    ? String(cfg.reasoning_engine_app_name ?? cfg.reasoningEngineAppName)
+                    : ''
+            );
         } else {
             setName('');
             setConnectionUrl('');
@@ -744,7 +746,7 @@ const MemoryModal: React.FC<MemoryModalProps> = ({ provider, framework, appToEdi
         setIsSubmitting(true);
         setErrorMessage(null);
         try {
-            let config: Record<string, string> = {};
+            const config: Record<string, string> = {};
             if (needsConnection) config.connectionString = connectionUrl.trim();
             if (isVertex) {
                 config.project_id = projectId.trim();
@@ -883,6 +885,7 @@ const LoadingSpinner = styled.div`
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 const MemoryPage: React.FC = () => {
+    const { currentProject, canWrite, canAdmin } = useProject();
     const [memories, setMemories] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -917,6 +920,11 @@ const MemoryPage: React.FC = () => {
     };
 
     const loadMemories = useCallback(async () => {
+        if (!currentProject) {
+            setMemories([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const apps = await fetchApplications();
@@ -928,7 +936,7 @@ const MemoryPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentProject]);
 
     useEffect(() => { loadMemories(); }, [loadMemories]);
 
@@ -966,7 +974,11 @@ const MemoryPage: React.FC = () => {
             <PageHeader>
                 <TitleBlock>
                     <PageTitle>Memory Stores</PageTitle>
-                    <PageSubtitle>Manage vector databases and state persistence by agent framework.</PageSubtitle>
+                    <PageSubtitle>
+                        {currentProject
+                            ? `Manage memory stores for ${currentProject.name} by agent framework.`
+                            : 'Select a project to manage memory stores'}
+                    </PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -992,7 +1004,7 @@ const MemoryPage: React.FC = () => {
                                 <TypeBtn
                                     key={provider.id}
                                     type="button"
-                                    onClick={() => openCreate(provider, group.key)}
+                                    onClick={() => canWrite && openCreate(provider, group.key)}
                                 >
                                     {provider.logo ? (
                                         <ProviderLogo src={provider.logo} alt={provider.name} />
@@ -1017,7 +1029,12 @@ const MemoryPage: React.FC = () => {
 
                 {/* ── Right: Configured stores ────────────────────── */}
                 <ContentColumn>
-                    {isLoading ? (
+                    {!currentProject ? (
+                        <CenterBox>
+                            <LoadingSpinner />
+                            <p>Select a project from the top navbar to manage memory stores.</p>
+                        </CenterBox>
+                    ) : isLoading ? (
                         <CenterBox>
                             <LoadingSpinner />
                             <p>Loading memory stores…</p>
@@ -1087,8 +1104,8 @@ const MemoryPage: React.FC = () => {
                                                     {verifying[mem.id!] ? <><VerifySpinner size={12} /> Checking...</> : <><Wifi size={12} /> Verify</>}
                                                 </VerifyBtn>
                                             )}
-                                            <EditBtn onClick={() => openEdit(mem)}>Edit</EditBtn>
-                                            <DeleteBtn onClick={() => setAppToDelete(mem)}>Remove</DeleteBtn>
+                                            {canWrite && <EditBtn onClick={() => openEdit(mem)}>Edit</EditBtn>}
+                                            {canAdmin && <DeleteBtn onClick={() => setAppToDelete(mem)}>Remove</DeleteBtn>}
                                         </CardActions>
                                         {verifyResult[mem.id!] && (
                                             <VerifyStatus $success={verifyResult[mem.id!].success}>

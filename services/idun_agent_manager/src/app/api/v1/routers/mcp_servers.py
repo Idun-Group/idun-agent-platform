@@ -28,9 +28,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
-    require_workspace,
+    require_project_admin,
+    require_project_contributor,
+    require_project_reader,
 )
 from app.infrastructure.db.models.agent_mcp_server import AgentMCPServerModel
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
@@ -49,6 +52,7 @@ async def _get_mcp_server(
     id: str,
     session: AsyncSession,
     workspace_id: UUID | None = None,
+    project_id: UUID | None = None,
 ) -> ManagedMCPServerModel:
     """Get MCP server config by ID, optionally scoped to a workspace."""
     try:
@@ -70,6 +74,11 @@ async def _get_mcp_server(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"MCP server with id '{id}' not found",
         )
+    if project_id is not None and model.project_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"MCP server with id '{id}' not found",
+        )
     return model
 
 
@@ -80,6 +89,7 @@ def _model_to_schema(
     mcp_server = MCPServer(**model.mcp_server_config)
     return ManagedMCPServerRead(
         id=model.id,
+        project_id=model.project_id,
         name=model.name,
         mcp_server=mcp_server,
         agent_count=agent_count,
@@ -98,7 +108,7 @@ async def create_mcp_server(
     request: ManagedMCPServerCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> ManagedMCPServerRead:
     """Create a new managed MCP server configuration."""
     now = datetime.now(UTC)
@@ -111,7 +121,8 @@ async def create_mcp_server(
         mcp_server_config=mcp_server_config.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=project_access.workspace_id,
+        project_id=project_access.project_id,
     )
 
     session.add(model)
@@ -131,7 +142,7 @@ async def list_mcp_servers(
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_reader),
 ) -> list[ManagedMCPServerRead]:
     """List managed MCP server configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -146,7 +157,10 @@ async def list_mcp_servers(
 
     stmt = (
         select(ManagedMCPServerModel)
-        .where(ManagedMCPServerModel.workspace_id == workspace_id)
+        .where(
+            ManagedMCPServerModel.workspace_id == project_access.workspace_id,
+            ManagedMCPServerModel.project_id == project_access.project_id,
+        )
         .limit(limit)
         .offset(offset)
     )
@@ -178,10 +192,15 @@ async def get_mcp_server(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_reader),
 ) -> ManagedMCPServerRead:
     """Get a managed MCP server configuration by ID."""
-    model = await _get_mcp_server(id, session, workspace_id)
+    model = await _get_mcp_server(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     count_stmt = select(func.count(func.distinct(AgentMCPServerModel.agent_id))).where(
         AgentMCPServerModel.mcp_server_id == model.id
     )
@@ -198,10 +217,15 @@ async def delete_mcp_server(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_admin),
 ) -> None:
     """Delete a managed MCP server configuration permanently."""
-    model = await _get_mcp_server(id, session, workspace_id)
+    model = await _get_mcp_server(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     # RESTRICT: check if any agent references this MCP server
     stmt = select(AgentMCPServerModel.agent_id).where(
@@ -228,10 +252,15 @@ async def patch_mcp_server(
     request: ManagedMCPServerPatch,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> ManagedMCPServerRead:
     """Update an MCP server configuration."""
-    model = await _get_mcp_server(id, session, workspace_id)
+    model = await _get_mcp_server(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     model.name = request.name
     mcp_server_config = MCPServer(**request.mcp_server.model_dump())
@@ -344,10 +373,15 @@ async def discover_tools(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_reader),
 ) -> MCPToolsResponse:
     """Connect to an MCP server and return its available tools."""
-    model = await _get_mcp_server(id, session, workspace_id)
+    model = await _get_mcp_server(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     config = MCPServer(**model.mcp_server_config)
 
     try:

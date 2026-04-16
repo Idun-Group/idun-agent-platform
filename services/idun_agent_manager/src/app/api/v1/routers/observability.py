@@ -16,14 +16,16 @@ from idun_agent_schema.manager.managed_observability import (
     ManagedObservabilityPatch,
     ManagedObservabilityRead,
 )
+from idun_agent_schema.manager.project import ProjectRole
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
-    require_workspace,
+    require_project_role,
 )
 from app.infrastructure.db.models.agent_observability import AgentObservabilityModel
 from app.infrastructure.db.models.managed_observability import ManagedObservabilityModel
@@ -47,7 +49,7 @@ PAGINATION_DEFAULT_LIMIT = 100
 async def check_observability_connection(
     request: ObservabilityConfig,
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> ConnectionCheckResponse:
     """Check connectivity to an observability provider before saving."""
     return await check_observability(request)
@@ -57,6 +59,7 @@ async def _get_observability(
     id: str,
     session: AsyncSession,
     workspace_id: UUID | None = None,
+    project_id: UUID | None = None,
 ) -> ManagedObservabilityModel:
     """Get observability config by ID, optionally scoped to a workspace."""
     try:
@@ -78,6 +81,11 @@ async def _get_observability(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Observability config with id '{id}' not found",
         )
+    if project_id is not None and model.project_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Observability config with id '{id}' not found",
+        )
     return model
 
 
@@ -88,6 +96,7 @@ def _model_to_schema(
     observability = ObservabilityConfig(**model.observability_config)
     return ManagedObservabilityRead(
         id=model.id,  # type: ignore
+        project_id=model.project_id,  # type: ignore
         name=model.name,
         observability=observability,
         agent_count=agent_count,
@@ -106,7 +115,9 @@ async def create_observability(
     request: ManagedObservabilityCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(
+        require_project_role(ProjectRole.CONTRIBUTOR)
+    ),
 ) -> ManagedObservabilityRead:
     """Create a new managed observability configuration."""
     now = datetime.now(UTC)
@@ -119,7 +130,8 @@ async def create_observability(
         observability_config=observability_config.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=project_access.workspace_id,
+        project_id=project_access.project_id,
     )
 
     session.add(model)
@@ -139,7 +151,7 @@ async def list_observabilities(
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> list[ManagedObservabilityRead]:
     """List managed observability configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -154,7 +166,10 @@ async def list_observabilities(
 
     stmt = (
         select(ManagedObservabilityModel)
-        .where(ManagedObservabilityModel.workspace_id == workspace_id)
+        .where(
+            ManagedObservabilityModel.workspace_id == project_access.workspace_id,
+            ManagedObservabilityModel.project_id == project_access.project_id,
+        )
         .limit(limit)
         .offset(offset)
     )
@@ -186,10 +201,15 @@ async def get_observability(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> ManagedObservabilityRead:
     """Get a managed observability configuration by ID."""
-    model = await _get_observability(id, session, workspace_id)
+    model = await _get_observability(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     count_stmt = select(func.count(func.distinct(AgentObservabilityModel.agent_id))).where(
         AgentObservabilityModel.observability_id == model.id
     )
@@ -206,10 +226,15 @@ async def delete_observability(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.ADMIN)),
 ) -> None:
     """Delete a managed observability configuration permanently."""
-    model = await _get_observability(id, session, workspace_id)
+    model = await _get_observability(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     stmt = select(AgentObservabilityModel.agent_id).where(
         AgentObservabilityModel.observability_id == model.id
@@ -235,10 +260,17 @@ async def patch_observability(
     request: ManagedObservabilityPatch,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(
+        require_project_role(ProjectRole.CONTRIBUTOR)
+    ),
 ) -> ManagedObservabilityRead:
     """Update an observability configuration."""
-    model = await _get_observability(id, session, workspace_id)
+    model = await _get_observability(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     model.name = request.name
     observability_config = ObservabilityConfig(**request.observability.model_dump())

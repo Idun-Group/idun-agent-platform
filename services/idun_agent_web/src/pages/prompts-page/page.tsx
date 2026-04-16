@@ -5,6 +5,7 @@ import { listPrompts, deletePrompt, assignPrompt, unassignPrompt, listAgentPromp
 import type { ManagedPrompt } from '../../services/prompts';
 import { listAgents } from '../../services/agents';
 import type { BackendAgent } from '../../services/agents';
+import { useProject } from '../../hooks/use-project';
 import { extractVariables } from '../../utils/jinja';
 import { notify } from '../../components/toast/notify';
 import CreatePromptModal from '../../components/prompts/create-prompt-modal/component';
@@ -62,6 +63,7 @@ const groupByPromptId = (prompts: ManagedPrompt[]): PromptGroup[] => {
 };
 
 const PromptsPage = () => {
+    const { currentProject, canWrite, canAdmin } = useProject();
     const [prompts, setPrompts] = useState<ManagedPrompt[]>([]);
     const [agents, setAgents] = useState<BackendAgent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -165,6 +167,10 @@ const PromptsPage = () => {
 
     const handleDeleteConfirm = async () => {
         if (!promptToDelete) return;
+        if (!canAdmin) {
+            notify.error('Project admin access required to delete prompts');
+            return;
+        }
         try {
             await deletePrompt(promptToDelete.id);
             notify.success('Prompt version deleted');
@@ -188,6 +194,10 @@ const PromptsPage = () => {
     };
 
     const handleAssign = async (prompt: ManagedPrompt, agentId: string) => {
+        if (!canWrite) {
+            notify.error('Contributor access required to assign prompts');
+            return;
+        }
         try {
             await assignPrompt(prompt.id, agentId);
             setAgentAssignments(prev => {
@@ -205,6 +215,10 @@ const PromptsPage = () => {
     };
 
     const handleUnassign = async (promptId: string, agentId: string) => {
+        if (!canWrite) {
+            notify.error('Contributor access required to update prompt assignments');
+            return;
+        }
         try {
             await unassignPrompt(promptId, agentId);
             setAgentAssignments(prev => {
@@ -266,7 +280,7 @@ const PromptsPage = () => {
                 <TitleBlock>
                     <PageTitle>Prompts</PageTitle>
                     <PageSubtitle>
-                        Versioned prompt templates with Jinja2 variables{' · '}
+                        Versioned prompt templates for {currentProject?.name ?? 'the active project'} with Jinja2 variables{' · '}
                         <DocsLink href={DOCS_URL} target="_blank" rel="noopener noreferrer">
                             Docs <ExternalLink size={10} style={{ verticalAlign: 'middle' }} />
                         </DocsLink>
@@ -282,7 +296,7 @@ const PromptsPage = () => {
                             aria-label="Search prompts"
                         />
                     </SearchBar>
-                    <PrimaryBtn onClick={() => setIsModalOpen(true)} aria-label="Create new prompt">
+                    <PrimaryBtn onClick={() => canWrite && setIsModalOpen(true)} aria-label="Create new prompt">
                         <Plus size={15} /> New Prompt
                     </PrimaryBtn>
                 </HeaderActions>
@@ -303,7 +317,7 @@ const PromptsPage = () => {
                             Use <code>get_prompt("id")</code> in your agent code to load them at runtime.
                         </EmptyDesc>
                     </EmptyTextBlock>
-                    <EmptyCTA onClick={() => setIsModalOpen(true)} aria-label="Create new prompt">
+                    <EmptyCTA onClick={() => canWrite && setIsModalOpen(true)} aria-label="Create new prompt">
                         <Plus size={15} /> New Prompt
                     </EmptyCTA>
                 </EmptyState>
@@ -373,8 +387,10 @@ const PromptsPage = () => {
                                             <SectionRow>
                                                 <SectionLabel>Agents</SectionLabel>
                                                 <AssignBtn
+                                                    disabled={!canWrite}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
+                                                        if (!canWrite) return;
                                                         setAssigningPrompt(group.latest);
                                                     }}
                                                     aria-label="Assign to agent"
@@ -406,8 +422,9 @@ const PromptsPage = () => {
                                                 <SectionLabel>Versions</SectionLabel>
                                                 <AssignBtn onClick={(e) => {
                                                     e.stopPropagation();
+                                                    if (!canWrite) return;
                                                     setUpdateTarget(group);
-                                                }}>
+                                                }} disabled={!canWrite}>
                                                     <Plus size={12} /> Update Version
                                                 </AssignBtn>
                                             </SectionRow>
@@ -434,6 +451,7 @@ const PromptsPage = () => {
                                                                 <VersionRight>
                                                                     <VDate>{new Date(v.created_at).toLocaleDateString()}</VDate>
                                                                     <DeleteIcon
+                                                                        disabled={!canAdmin}
                                                                         onClick={(e) => { e.stopPropagation(); setPromptToDelete(v); }}
                                                                         aria-label={`Delete version ${v.version}`}
                                                                     >

@@ -5,6 +5,7 @@ import { fetchApplications, deleteApplication, createApplication, updateApplicat
 import type { ApplicationConfig } from '../../types/application.types';
 import type { AppType } from '../../types/application.types';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -781,26 +782,6 @@ const flattenConfig = (config: unknown): Record<string, string> => {
     return result;
 };
 
-const getProviderUrl = (app: ApplicationConfig): string | null => {
-    const config = flattenConfig(app.config);
-    switch (app.type) {
-        case 'Langfuse':
-        case 'Phoenix':
-            return config.host || null;
-        case 'LangSmith': {
-            const endpoint = config.endpoint ?? '';
-            if (endpoint.includes('eu.api.smith.langchain.com') || endpoint.includes('eu.smith.langchain.com')) return 'https://eu.smith.langchain.com';
-            return 'https://smith.langchain.com';
-        }
-        case 'GoogleCloudLogging':
-            return config.gcpProjectId ? `https://console.cloud.google.com/logs/query?project=${config.gcpProjectId}` : null;
-        case 'GoogleCloudTrace':
-            return config.gcpProjectId ? `https://console.cloud.google.com/traces/list?project=${config.gcpProjectId}` : null;
-        default:
-            return null;
-    }
-};
-
 // ── SecretField ──────────────────────────────────────────────────────────────
 
 const SecretField: React.FC<{ value: string }> = ({ value }) => {
@@ -942,6 +923,7 @@ const ProviderModal: React.FC<ProviderModalProps> = ({ provider, appToEdit, onCl
 // ── Main page ────────────────────────────────────────────────────────────────
 
 const ObservabilityPage: React.FC = () => {
+    const { currentProject, canWrite, canAdmin } = useProject();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -958,6 +940,11 @@ const ObservabilityPage: React.FC = () => {
     const closeModal = () => { setModalProvider(null); setAppToEdit(null); };
 
     const loadApps = useCallback(async () => {
+        if (!currentProject) {
+            setApps([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const all = await fetchApplications();
@@ -967,7 +954,7 @@ const ObservabilityPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentProject]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
@@ -1003,7 +990,11 @@ const ObservabilityPage: React.FC = () => {
             <PageHeader>
                 <TitleBlock>
                     <PageTitle>Observability</PageTitle>
-                    <PageSubtitle>Monitor and trace your AI agent activity</PageSubtitle>
+                    <PageSubtitle>
+                        {currentProject
+                            ? `Monitor and trace AI agent activity in ${currentProject.name}`
+                            : 'Select a project to manage observability'}
+                    </PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -1030,7 +1021,7 @@ const ObservabilityPage: React.FC = () => {
                                         key={p.id}
                                         type="button"
                                         $disabled={!!p.comingSoon}
-                                        onClick={() => { if (!p.comingSoon) openModal(p); }}
+                                        onClick={() => { if (!p.comingSoon && canWrite) openModal(p); }}
                                     >
                                         <ProviderLogo><img src={p.logo} alt={p.label} /></ProviderLogo>
                                         {p.label}
@@ -1052,7 +1043,12 @@ const ObservabilityPage: React.FC = () => {
 
                 {/* ── Right: Configured providers ────────────────── */}
                 <ContentColumn>
-                    {isLoading ? (
+                    {!currentProject ? (
+                        <CenterBox>
+                            <LoadingSpinner />
+                            <p>Select a project from the top navbar to manage observability providers.</p>
+                        </CenterBox>
+                    ) : isLoading ? (
                         <CenterBox>
                             <LoadingSpinner />
                             <p>Loading…</p>
@@ -1114,8 +1110,8 @@ const ObservabilityPage: React.FC = () => {
                                             <VerifyBtn onClick={() => handleVerify(app)} disabled={verifying[app.id!]}>
                                                 {verifying[app.id!] ? <><VerifySpinner size={12} /> Checking...</> : <><Wifi size={12} /> Verify</>}
                                             </VerifyBtn>
-                                            <EditBtn onClick={() => providerMeta && openModal(providerMeta, app)}>Edit</EditBtn>
-                                            <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
+                                            {canWrite && <EditBtn onClick={() => providerMeta && openModal(providerMeta, app)}>Edit</EditBtn>}
+                                            {canAdmin && <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>}
                                         </CardActions>
                                         {verifyResult[app.id!] && (
                                             <VerifyStatus $success={verifyResult[app.id!].success}>

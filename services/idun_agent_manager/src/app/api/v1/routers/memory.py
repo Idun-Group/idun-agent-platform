@@ -17,15 +17,17 @@ from idun_agent_schema.manager.managed_memory import (
     ManagedMemoryRead,
     MemoryConfig,
 )
+from idun_agent_schema.manager.project import ProjectRole
 from pydantic import TypeAdapter
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
-    require_workspace,
+    require_project_role,
 )
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.infrastructure.db.models.managed_memory import ManagedMemoryModel
@@ -49,7 +51,7 @@ PAGINATION_DEFAULT_LIMIT = 100
 async def check_memory_connection(
     request: dict,
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> ConnectionCheckResponse:
     """Check connectivity to a memory store before saving."""
     return await check_memory(request)
@@ -59,6 +61,7 @@ async def _get_memory(
     id: str,
     session: AsyncSession,
     workspace_id: UUID | None = None,
+    project_id: UUID | None = None,
 ) -> ManagedMemoryModel:
     """Get memory config by ID, optionally scoped to a workspace."""
     try:
@@ -80,6 +83,11 @@ async def _get_memory(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Memory config with id '{id}' not found",
         )
+    if project_id is not None and model.project_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Memory config with id '{id}' not found",
+        )
     return model
 
 
@@ -92,6 +100,7 @@ def _model_to_schema(
 
     return ManagedMemoryRead(
         id=model.id,  # type: ignore
+        project_id=model.project_id,  # type: ignore
         name=model.name,
         agent_framework=AgentFramework(model.agent_framework),
         memory=memory_config,
@@ -111,7 +120,9 @@ async def create_memory(
     request: ManagedMemoryCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(
+        require_project_role(ProjectRole.CONTRIBUTOR)
+    ),
 ) -> ManagedMemoryRead:
     """Create a new managed memory configuration."""
     now = datetime.now(UTC)
@@ -123,7 +134,8 @@ async def create_memory(
         memory_config=request.memory.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=project_access.workspace_id,
+        project_id=project_access.project_id,
     )
 
     session.add(model)
@@ -144,7 +156,7 @@ async def list_memories(
     agent_framework: AgentFramework | None = None,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> list[ManagedMemoryRead]:
     """List managed memory configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -158,7 +170,8 @@ async def list_memories(
         )
 
     stmt = select(ManagedMemoryModel).where(
-        ManagedMemoryModel.workspace_id == workspace_id
+        ManagedMemoryModel.workspace_id == project_access.workspace_id,
+        ManagedMemoryModel.project_id == project_access.project_id,
     )
     if agent_framework:
         stmt = stmt.where(ManagedMemoryModel.agent_framework == agent_framework.value)
@@ -192,10 +205,15 @@ async def get_memory(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> ManagedMemoryRead:
     """Get a managed memory configuration by ID."""
-    model = await _get_memory(id, session, workspace_id)
+    model = await _get_memory(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     count_stmt = select(func.count(ManagedAgentModel.id)).where(
         ManagedAgentModel.memory_id == model.id
     )
@@ -212,10 +230,15 @@ async def delete_memory(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.ADMIN)),
 ) -> None:
     """Delete a managed memory configuration permanently."""
-    model = await _get_memory(id, session, workspace_id)
+    model = await _get_memory(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     stmt = select(ManagedAgentModel.id).where(
         ManagedAgentModel.memory_id == model.id
@@ -241,10 +264,17 @@ async def patch_memory(
     request: ManagedMemoryPatch,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(
+        require_project_role(ProjectRole.CONTRIBUTOR)
+    ),
 ) -> ManagedMemoryRead:
     """Update a memory configuration."""
-    model = await _get_memory(id, session, workspace_id)
+    model = await _get_memory(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     model.name = request.name
     model.agent_framework = request.agent_framework.value

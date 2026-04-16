@@ -59,6 +59,7 @@ class ManagedAgentRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    project_id: UUID
     name: str
     status: AgentStatus = Field(AgentStatus.DRAFT, description="Agent status")
     version: str | None = Field(None, description="Agent version")

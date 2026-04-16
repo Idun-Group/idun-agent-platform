@@ -4,6 +4,140 @@
  */
 
 export interface paths {
+    "/api/v1/auth/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List enabled OIDC providers
+         * @description Returns the list of configured OIDC provider names. Empty when SSO is disabled.
+         */
+        get: operations["list_providers_api_v1_auth_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Redirect to OIDC provider login
+         * @description Initiates the OIDC authorization code flow for the specified provider.
+         */
+        get: operations["login_with_provider_api_v1_auth_login__provider__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * OIDC callback
+         * @description Exchanges the authorization code for tokens and sets a session cookie.
+         */
+        get: operations["callback_api_v1_auth_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get current session
+         * @description Returns the current user session with fresh workspace data from DB.
+         */
+        get: operations["me_api_v1_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout
+         * @description Clears the session cookie.
+         */
+        post: operations["logout_api_v1_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/basic/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Basic Signup */
+        post: operations["basic_signup_api_v1_auth_basic_signup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/basic/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Basic Login */
+        post: operations["basic_login_api_v1_auth_basic_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/agents/": {
         parameters: {
             query?: never;
@@ -91,9 +225,29 @@ export interface paths {
         head?: never;
         /**
          * Partially update agent (PATCH)
-         * @description Partially update an agent's configuration. Only the name andengine_config field can be updated if provided.
+         * @description Partially update an agent's configuration. Only the name and engine_config field can be updated if provided.
          */
         patch: operations["patch_agent_api_v1_agents__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/agents/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update agent status
+         * @description Update only the status field of an agent. Used by the health check flow to set active/draft without touching config.
+         */
+        put: operations["update_agent_status_api_v1_agents__id__status_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/healthz": {
@@ -208,6 +362,46 @@ export interface paths {
         patch: operations["patch_mcp_server_api_v1_mcp_servers__id__patch"];
         trace?: never;
     };
+    "/api/v1/mcp-servers/{id}/tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discover tools from an MCP server
+         * @description Connect to an MCP server and return its available tools.
+         */
+        post: operations["discover_tools_api_v1_mcp_servers__id__tools_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/observability/check-connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check observability provider connectivity
+         * @description Check connectivity to an observability provider before saving.
+         */
+        post: operations["check_observability_connection_api_v1_observability_check_connection_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/observability/": {
         parameters: {
             query?: never;
@@ -258,6 +452,26 @@ export interface paths {
          * @description Update an observability configuration.
          */
         patch: operations["patch_observability_api_v1_observability__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/memory/check-connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check memory store connectivity
+         * @description Check connectivity to a memory store before saving.
+         */
+        post: operations["check_memory_connection_api_v1_memory_check_connection_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/memory/": {
@@ -384,7 +598,7 @@ export interface paths {
         patch: operations["patch_guardrail_api_v1_guardrails__id__patch"];
         trace?: never;
     };
-    "/": {
+    "/api/v1/workspaces/": {
         parameters: {
             query?: never;
             header?: never;
@@ -392,16 +606,441 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Root
-         * @description Root endpoint.
+         * List workspaces for current user
+         * @description Return all workspaces the current user is a member of.
          */
-        get: operations["root__get"];
+        get: operations["list_workspaces_api_v1_workspaces__get"];
+        put?: never;
+        /**
+         * Create a new workspace
+         * @description Create a workspace and add the current user as owner.
+         */
+        post: operations["create_workspace_api_v1_workspaces__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete workspace (owner only)
+         * @description Delete a workspace. Only owners can delete workspaces.
+         */
+        delete: operations["delete_workspace_api_v1_workspaces__workspace_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update workspace
+         * @description Update a workspace name. Requires workspace owner access.
+         */
+        patch: operations["patch_workspace_api_v1_workspaces__workspace_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/sso/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List managed SSO configs
+         * @description List managed SSO configurations with pagination.
+         */
+        get: operations["list_ssos_api_v1_sso__get"];
+        put?: never;
+        /**
+         * Create managed SSO config
+         * @description Create a new managed SSO configuration.
+         */
+        post: operations["create_sso_api_v1_sso__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sso/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get managed SSO config by ID
+         * @description Get a managed SSO configuration by ID.
+         */
+        get: operations["get_sso_api_v1_sso__id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete managed SSO config
+         * @description Delete a managed SSO configuration permanently.
+         */
+        delete: operations["delete_sso_api_v1_sso__id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update managed SSO config
+         * @description Update an SSO configuration.
+         */
+        patch: operations["patch_sso_api_v1_sso__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/integrations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List managed integrations
+         * @description List managed integration configurations with pagination.
+         */
+        get: operations["list_integrations_api_v1_integrations__get"];
+        put?: never;
+        /**
+         * Create managed integration
+         * @description Create a new managed integration configuration.
+         */
+        post: operations["create_integration_api_v1_integrations__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get managed integration by ID
+         * @description Get a managed integration configuration by ID.
+         */
+        get: operations["get_integration_api_v1_integrations__id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete managed integration
+         * @description Delete a managed integration configuration permanently.
+         */
+        delete: operations["delete_integration_api_v1_integrations__id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update managed integration
+         * @description Update an integration configuration.
+         */
+        patch: operations["patch_integration_api_v1_integrations__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List workspace members
+         * @description Return all members of a workspace with user details.
+         */
+        get: operations["list_members_api_v1_workspaces__workspace_id__members_get"];
+        put?: never;
+        /**
+         * Add a user to the workspace or create a pending invitation
+         * @description Add an existing user or create a pending invitation by email.
+         */
+        post: operations["add_member_api_v1_workspaces__workspace_id__members_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/members/{membership_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a member from the workspace
+         * @description Remove a member from the workspace.
+         */
+        delete: operations["remove_member_api_v1_workspaces__workspace_id__members__membership_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a member's workspace ownership
+         * @description Change a workspace member's ownership flag.
+         */
+        patch: operations["update_member_role_api_v1_workspaces__workspace_id__members__membership_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/invitations/{invitation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel a pending invitation
+         * @description Cancel a pending workspace invitation.
+         */
+        delete: operations["cancel_invitation_api_v1_workspaces__workspace_id__invitations__invitation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/invitations/{invitation_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a pending workspace invitation
+         * @description Accept a pending invitation for the current authenticated user.
+         */
+        post: operations["accept_invitation_api_v1_workspaces__workspace_id__invitations__invitation_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/prompts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List prompts
+         * @description List prompts with optional filters and pagination.
+         */
+        get: operations["list_prompts_api_v1_prompts__get"];
+        put?: never;
+        /**
+         * Create a new prompt version
+         * @description Create a new prompt version.
+         *
+         *     Auto-increments the version number for the given ``prompt_id`` within the
+         *     workspace.  The ``latest`` tag is added automatically and removed from any
+         *     previous version that carried it.
+         */
+        post: operations["create_prompt_api_v1_prompts__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/prompts/agent/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List prompts assigned to an agent
+         * @description List all prompts assigned to a specific agent.
+         */
+        get: operations["list_agent_prompts_api_v1_prompts_agent__agent_id__get"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/prompts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get prompt by ID
+         * @description Get a prompt by its UUID.
+         */
+        get: operations["get_prompt_api_v1_prompts__id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete prompt
+         * @description Delete a prompt version permanently.
+         *
+         *     If the deleted version carried the ``latest`` tag, the next-highest
+         *     version is promoted automatically.
+         */
+        delete: operations["delete_prompt_api_v1_prompts__id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update prompt tags
+         * @description Update a prompt's tags. Content is immutable.
+         *
+         *     The ``latest`` tag is auto-managed and cannot be manually added or removed.
+         */
+        patch: operations["patch_prompt_api_v1_prompts__id__patch"];
+        trace?: never;
+    };
+    "/api/v1/prompts/{id}/assign/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assign prompt to agent
+         * @description Assign a prompt to an agent. Both must belong to the same workspace.
+         */
+        post: operations["assign_prompt_api_v1_prompts__id__assign__agent_id__post"];
+        /**
+         * Unassign prompt from agent
+         * @description Remove a prompt assignment from an agent.
+         */
+        delete: operations["unassign_prompt_api_v1_prompts__id__assign__agent_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List projects
+         * @description List projects visible in the active workspace.
+         */
+        get: operations["list_projects_api_v1_projects__get"];
+        put?: never;
+        /**
+         * Create project
+         * @description Create a new project in the active workspace.
+         */
+        post: operations["create_project_api_v1_projects__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get project
+         * @description Get project details.
+         */
+        get: operations["get_project_api_v1_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete project
+         * @description Delete a project and return the number of scoped resources removed.
+         */
+        delete: operations["delete_project_api_v1_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update project
+         * @description Update a project.
+         */
+        patch: operations["patch_project_api_v1_projects__project_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project members
+         * @description List members of a project.
+         */
+        get: operations["list_project_members_api_v1_projects__project_id__members_get"];
+        put?: never;
+        /**
+         * Add project member
+         * @description Add an existing workspace member to a project.
+         */
+        post: operations["add_project_member_api_v1_projects__project_id__members_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/members/{membership_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove project member
+         * @description Remove a member from a project.
+         */
+        delete: operations["delete_project_member_api_v1_projects__project_id__members__membership_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update project member
+         * @description Update a project membership role.
+         */
+        patch: operations["patch_project_member_api_v1_projects__project_id__members__membership_id__patch"];
         trace?: never;
     };
 }
@@ -415,14 +1054,10 @@ export interface components {
         AdkAgentConfig: {
             /** Name */
             name: string;
-            /** Input Schema Definition */
-            input_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
-            /** Output Schema Definition */
-            output_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
+            /**
+             * @deprecated
+             * @description (Deprecated) Observability config is deprecated and will be removed in a future release.
+             */
             observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
             /**
              * Agent
@@ -432,6 +1067,7 @@ export interface components {
             /**
              * App Name
              * @description Application name for the agent
+             * @default
              */
             app_name: string;
             /**
@@ -457,7 +1093,7 @@ export interface components {
             type: "database";
             /**
              * Db Url
-             * @description Database URL (e.g. postgresql://...)
+             * @description Database URL (e.g. postgresql+psycopg://...)
              */
             db_url: string;
         };
@@ -539,19 +1175,10 @@ export interface components {
          * AgentConfig
          * @description Configuration for agent specification and settings.
          */
-        "AgentConfig-Input": {
+        AgentConfig: {
             type: components["schemas"]["AgentFramework"];
             /** Config */
-            config: components["schemas"]["BaseAgentConfig"] | components["schemas"]["LangGraphAgentConfig"] | components["schemas"]["HaystackAgentConfig"] | components["schemas"]["AdkAgentConfig"] | components["schemas"]["TranslationAgentConfig"] | components["schemas"]["CorrectionAgentConfig"] | components["schemas"]["DeepResearchAgentConfig"];
-        };
-        /**
-         * AgentConfig
-         * @description Configuration for agent specification and settings.
-         */
-        "AgentConfig-Output": {
-            type: components["schemas"]["AgentFramework"];
-            /** Config */
-            config: components["schemas"]["BaseAgentConfig"] | components["schemas"]["LangGraphAgentConfig"] | components["schemas"]["HaystackAgentConfig"] | components["schemas"]["AdkAgentConfig"] | components["schemas"]["TranslationAgentConfig"] | components["schemas"]["CorrectionAgentConfig"] | components["schemas"]["DeepResearchAgentConfig"];
+            config: components["schemas"]["LangGraphAgentConfig"] | components["schemas"]["HaystackAgentConfig"] | components["schemas"]["AdkAgentConfig"] | components["schemas"]["TranslationAgentConfig"] | components["schemas"]["CorrectionAgentConfig"] | components["schemas"]["DeepResearchAgentConfig"] | components["schemas"]["BaseAgentConfig"];
         };
         /**
          * AgentFramework
@@ -559,6 +1186,24 @@ export interface components {
          * @enum {string}
          */
         AgentFramework: "LANGGRAPH" | "ADK" | "CREWAI" | "HAYSTACK" | "CUSTOM" | "TRANSLATION_AGENT" | "CORRECTION_AGENT" | "DEEP_RESEARCH_AGENT";
+        /**
+         * AgentResourceIds
+         * @description Resource IDs for agent associations (source of truth for relations).
+         */
+        AgentResourceIds: {
+            /** Memory Id */
+            memory_id?: string | null;
+            /** Sso Id */
+            sso_id?: string | null;
+            /** Guardrail Ids */
+            guardrail_ids?: components["schemas"]["GuardrailRef"][] | null;
+            /** Mcp Server Ids */
+            mcp_server_ids?: string[] | null;
+            /** Observability Ids */
+            observability_ids?: string[] | null;
+            /** Integration Ids */
+            integration_ids?: string[] | null;
+        };
         /**
          * AgentStatus
          * @description Agent status enumeration.
@@ -585,6 +1230,21 @@ export interface components {
              */
             config_id: "ban_list";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default ban!!
+             */
+            reject_message: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/ban_list
+             */
+            guard_url: string;
+            /**
              * Banned Words
              * @description A list of strings (words or phrases) to block
              */
@@ -597,14 +1257,10 @@ export interface components {
         BaseAgentConfig: {
             /** Name */
             name: string;
-            /** Input Schema Definition */
-            input_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
-            /** Output Schema Definition */
-            output_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
+            /**
+             * @deprecated
+             * @description (Deprecated) Observability config is deprecated and will be removed in a future release.
+             */
             observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
         };
         /**
@@ -618,6 +1274,21 @@ export interface components {
              * @constant
              */
             config_id: "bias_check";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/bias_check
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Bias detected
+             */
+            reject_message: string;
             /**
              * Threshold
              * @description Sensitivity level for bias detection
@@ -636,6 +1307,21 @@ export interface components {
              */
             config_id: "code_scanner";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/code_scanner
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Unauthorized code detected
+             */
+            reject_message: string;
+            /**
              * Allowed Languages
              * @description List of allowed programming languages
              */
@@ -653,10 +1339,36 @@ export interface components {
              */
             config_id: "competition_check";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/competitor_check
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Competitor mentioned
+             */
+            reject_message: string;
+            /**
              * Competitors
              * @description Names of competitor companies or products
              */
             competitors: string[];
+        };
+        /** ConnectionCheckResponse */
+        ConnectionCheckResponse: {
+            /** Success */
+            success: boolean;
+            /** Message */
+            message: string;
+            /** Provider */
+            provider: string;
+            /** Duration Ms */
+            duration_ms: number;
         };
         /**
          * CorrectLanguageConfig
@@ -670,6 +1382,21 @@ export interface components {
              */
             config_id: "correct_language";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://scb-10x/correct_language
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Incorrect language detected
+             */
+            reject_message: string;
+            /**
              * Expected Languages
              * @description Valid ISO language codes (e.g., en, fr, es)
              */
@@ -682,14 +1409,10 @@ export interface components {
         CorrectionAgentConfig: {
             /** Name */
             name: string;
-            /** Input Schema Definition */
-            input_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
-            /** Output Schema Definition */
-            output_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
+            /**
+             * @deprecated
+             * @description (Deprecated) Observability config is deprecated and will be removed in a future release.
+             */
             observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
             /**
              * Language
@@ -707,50 +1430,16 @@ export interface components {
             checkpointer?: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"] | null;
         };
         /**
-         * CustomLLMConfig
-         * @description Custom LLM configuration.
-         */
-        CustomLLMConfig: {
-            /**
-             * Config Id
-             * @default custom_llm
-             * @constant
-             */
-            config_id: "custom_llm";
-            /**
-             * Name
-             * @description Name of the custom LLM config
-             */
-            name: string;
-            /** @description Specific underlying Large Language Model */
-            model: components["schemas"]["CustomLLMModel"];
-            /**
-             * Prompt
-             * @description System instruction prompt
-             */
-            prompt: string;
-        };
-        /**
-         * CustomLLMModel
-         * @description Supported models for Custom LLM guardrail.
-         * @enum {string}
-         */
-        CustomLLMModel: "Gemini 2.5 flash lite" | "Gemini 2.5 flash" | "Gemini 2.5 pro" | "Gemini 3 pro" | "OpenAi GPT-5.1" | "OpenAi GPT-5 mini" | "OpenAi GPT-5 nano";
-        /**
          * DeepResearchAgentConfig
          * @description Configuration model for the Deep Research Agent Template.
          */
         DeepResearchAgentConfig: {
             /** Name */
             name: string;
-            /** Input Schema Definition */
-            input_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
-            /** Output Schema Definition */
-            output_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
+            /**
+             * @deprecated
+             * @description (Deprecated) Observability config is deprecated and will be removed in a future release.
+             */
             observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
             /**
              * Model Name
@@ -794,6 +1483,21 @@ export interface components {
              */
             config_id: "detect_jailbreak";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/detect_pii
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Jailbreak attempt detected
+             */
+            reject_message: string;
+            /**
              * Threshold
              * @description Sensitivity level for jailbreak detection
              */
@@ -811,32 +1515,78 @@ export interface components {
              */
             config_id: "detect_pii";
             /**
-             * Pii Entities
-             * @description List of PII entities to detect
+             * Api Key
+             * @default
              */
-            pii_entities: components["schemas"]["PIIEntity"][];
+            api_key: string;
+            /**
+             * Reject Message
+             * @default PII detected
+             */
+            reject_message: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/detect_pii
+             */
+            guard_url: string;
+            /**
+             * Pii Entities
+             * @description List of PII entity types to detect
+             */
+            pii_entities: string[];
+            /**
+             * On Fail
+             * @default exception
+             */
+            on_fail: string;
+        };
+        /**
+         * DiscordIntegrationConfig
+         * @description Discord bot configuration for the Interactions Endpoint webhook.
+         *
+         *     Requires a Discord application with a bot user created at
+         *     https://discord.com/developers/applications.  The ``public_key`` is used
+         *     to verify Ed25519 signatures on incoming interaction payloads.
+         */
+        DiscordIntegrationConfig: {
+            /**
+             * Bottoken
+             * @description Discord bot token (used for REST API calls).
+             */
+            botToken: string;
+            /**
+             * Applicationid
+             * @description Discord application ID.
+             */
+            applicationId: string;
+            /**
+             * Publickey
+             * @description Ed25519 public key from the Discord application settings. Used to verify interaction webhook signatures.
+             */
+            publicKey: string;
+            /**
+             * Guildid
+             * @description Optional guild (server) ID to restrict the integration to.
+             */
+            guildId?: string | null;
         };
         /**
          * EngineConfig
          * @description Main engine configuration model for the entire Idun Agent Engine.
          */
-        "EngineConfig-Input": {
+        EngineConfig: {
             server?: components["schemas"]["ServerConfig"];
-            agent: components["schemas"]["AgentConfig-Input"];
-            /** Mcp Servers */
-            mcp_servers?: components["schemas"]["MCPServer"][] | null;
-            guardrails?: components["schemas"]["Guardrails-Input"] | null;
-        };
-        /**
-         * EngineConfig
-         * @description Main engine configuration model for the entire Idun Agent Engine.
-         */
-        "EngineConfig-Output": {
-            server?: components["schemas"]["ServerConfig"];
-            agent: components["schemas"]["AgentConfig-Output"];
-            /** Mcp Servers */
-            mcp_servers?: components["schemas"]["MCPServer"][] | null;
-            guardrails?: components["schemas"]["Guardrails-Output"] | null;
+            agent: components["schemas"]["AgentConfig"];
+            /** Mcpservers */
+            mcpServers?: components["schemas"]["MCPServer"][] | null;
+            guardrails?: components["schemas"]["GuardrailsV2"] | null;
+            /** Observability */
+            observability?: components["schemas"]["idun_agent_schema__engine__observability_v2__ObservabilityConfig"][] | null;
+            sso?: components["schemas"]["SSOConfig"] | null;
+            /** Integrations */
+            integrations?: components["schemas"]["IntegrationConfig"][] | null;
+            /** Prompts */
+            prompts?: components["schemas"]["PromptConfig"][] | null;
         };
         /**
          * GCPLoggingConfig
@@ -844,11 +1594,11 @@ export interface components {
          */
         GCPLoggingConfig: {
             /**
-             * Project Id
+             * Gcpprojectid
              * @description The project identifier where logs and traces will be sent.
              * @default
              */
-            project_id: string;
+            gcpProjectId: string;
             /**
              * Region
              * @description (Optional) The specific region/zone associated with the resource (e.g., us-central1).
@@ -856,17 +1606,17 @@ export interface components {
              */
             region: string;
             /**
-             * Log Name
+             * Logname
              * @description The identifier for the log stream (e.g., application-log).
              * @default
              */
-            log_name: string;
+            logName: string;
             /**
-             * Resource Type
+             * Resourcetype
              * @description The resource type label (e.g., global, gce_instance, cloud_run_revision).
              * @default
              */
-            resource_type: string;
+            resourceType: string;
             /**
              * Severity
              * @description Minimum level to record (e.g., INFO, WARNING, ERROR, CRITICAL).
@@ -886,11 +1636,11 @@ export interface components {
          */
         GCPTraceConfig: {
             /**
-             * Project Id
+             * Gcpprojectid
              * @description The project identifier where logs and traces will be sent.
              * @default
              */
-            project_id: string;
+            gcpProjectId: string;
             /**
              * Region
              * @description (Optional) The specific region/zone associated with the resource (e.g., us-central1).
@@ -898,29 +1648,29 @@ export interface components {
              */
             region: string;
             /**
-             * Trace Name
+             * Tracename
              * @description The name for the trace or tracing session.
              * @default
              */
-            trace_name: string;
+            traceName: string;
             /**
-             * Sampling Rate
+             * Samplingrate
              * @description A number between 0.0 and 1.0 indicating the probability of a request being traced (e.g., 1.0 for 100%, 0.1 for 10%).
              * @default 1
              */
-            sampling_rate: number;
+            samplingRate: number;
             /**
-             * Flush Interval
+             * Flushinterval
              * @description Time in seconds to wait before sending buffered traces to the cloud.
              * @default 5
              */
-            flush_interval: number;
+            flushInterval: number;
             /**
-             * Ignore Urls
+             * Ignoreurls
              * @description A list or comma-separated string of URL paths to exclude from tracing (e.g., /health, /metrics).
              * @default
              */
-            ignore_urls: string;
+            ignoreUrls: string;
         };
         /**
          * GibberishTextConfig
@@ -934,105 +1684,89 @@ export interface components {
              */
             config_id: "gibberish_text";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/gibberish_text
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Gibberish text detected
+             */
+            reject_message: string;
+            /**
              * Threshold
              * @description Sensitivity level for gibberish detection
              */
             threshold: number;
         };
         /**
-         * Guardrail
-         * @description Base class for defining guardrails.
+         * GoogleChatIntegrationConfig
+         * @description Google Chat app configuration.
+         *
+         *     Requires a GCP project with the Google Chat API enabled,
+         *     a service account for sending messages, and the project number
+         *     for verifying inbound JWT bearer tokens.
          */
-        Guardrail: {
-            /** @description Type of guardrail to use */
-            type: components["schemas"]["GuardrailType"];
+        GoogleChatIntegrationConfig: {
             /**
-             * Config
-             * @description Configuration for the specific guardrail type
+             * Serviceaccountcredentialsjson
+             * @description Service account credentials JSON for calling the Chat API.
              */
-            config: {
-                [key: string]: unknown;
-            };
+            serviceAccountCredentialsJson: string;
+            /**
+             * Projectnumber
+             * @description GCP project number used to verify inbound JWT tokens.
+             */
+            projectNumber: string;
+            /**
+             * Localmode
+             * @description When enabled, rewrites the webhook URL from http to https for JWT audience verification. Use this when developing behind a TLS-terminating proxy like ngrok.
+             * @default false
+             */
+            localMode: boolean;
         };
         /**
-         * GuardrailType
-         * @description Enum for different guardrails.
-         * @enum {string}
+         * GuardrailRef
+         * @description Reference to a managed guardrail with position metadata.
          */
-        GuardrailType: "CUSTOM_LLM" | "GUARDRAILS_HUB";
-        /**
-         * Guardrails
-         * @description Class for specifying the engine's Guardrails configuration.
-         */
-        "Guardrails-Input": {
+        GuardrailRef: {
             /**
-             * Enabled
-             * @description enable/disable guardrails
+             * Id
+             * Format: uuid
              */
-            enabled: boolean;
+            id: string;
             /**
-             * Input
-             * @description List of guardrails to apply to input messages
+             * Position
+             * @default input
+             * @enum {string}
              */
-            input?: components["schemas"]["Guardrail"][];
+            position: "input" | "output";
             /**
-             * Output
-             * @description List of guardrails to apply to output messages
+             * Sort Order
+             * @default 0
              */
-            output?: components["schemas"]["Guardrail"][];
-        };
-        /**
-         * Guardrails
-         * @description Class for specifying the engine's Guardrails configuration.
-         */
-        "Guardrails-Output": {
-            /**
-             * Enabled
-             * @description enable/disable guardrails
-             */
-            enabled: boolean;
-            /**
-             * Input
-             * @description List of guardrails to apply to input messages
-             */
-            input?: components["schemas"]["Guardrail"][];
-            /**
-             * Output
-             * @description List of guardrails to apply to output messages
-             */
-            output?: components["schemas"]["Guardrail"][];
+            sort_order: number;
         };
         /**
          * GuardrailsV2
          * @description Guardrails V2 configuration.
          */
-        "GuardrailsV2-Input": {
+        GuardrailsV2: {
             /**
              * Input
              * @description List of input guardrails
              */
-            input?: (components["schemas"]["ModelArmorConfig"] | components["schemas"]["CustomLLMConfig"] | components["schemas"]["BanListConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
+            input?: (components["schemas"]["BanListConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
             /**
              * Output
              * @description List of output guardrails
              */
-            output?: (components["schemas"]["ModelArmorConfig"] | components["schemas"]["CustomLLMConfig"] | components["schemas"]["BanListConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
-        };
-        /**
-         * GuardrailsV2
-         * @description Guardrails V2 configuration.
-         */
-        "GuardrailsV2-Output": {
-            /**
-             * Input
-             * @description List of input guardrails
-             */
-            input?: (components["schemas"]["ModelArmorConfig"] | components["schemas"]["CustomLLMConfig"] | components["schemas"]["BanListConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
-            /**
-             * Output
-             * @description List of output guardrails
-             */
-            output?: (components["schemas"]["ModelArmorConfig"] | components["schemas"]["CustomLLMConfig"] | components["schemas"]["BanListConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
+            output?: (components["schemas"]["BanListConfig"] | components["schemas"]["DetectPIIConfig"] | components["schemas"]["BiasCheckConfig"] | components["schemas"]["CompetitionCheckConfig"] | components["schemas"]["CorrectLanguageConfig"] | components["schemas"]["GibberishTextConfig"] | components["schemas"]["NSFWTextConfig"] | components["schemas"]["DetectJailbreakConfig"] | components["schemas"]["PromptInjectionConfig"] | components["schemas"]["RagHallucinationConfig"] | components["schemas"]["RestrictToTopicConfig"] | components["schemas"]["ToxicLanguageConfig"] | components["schemas"]["CodeScannerConfig"])[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1046,14 +1780,10 @@ export interface components {
         HaystackAgentConfig: {
             /** Name */
             name: string;
-            /** Input Schema Definition */
-            input_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
-            /** Output Schema Definition */
-            output_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
+            /**
+             * @deprecated
+             * @description (Deprecated) Observability config is deprecated and will be removed in a future release.
+             */
             observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
             /**
              * Type
@@ -1081,20 +1811,74 @@ export interface components {
             type: "memory";
         };
         /**
+         * IntegrationConfig
+         * @description Top-level integration configuration.
+         *
+         *     Each integration binds an external messaging provider to the agent.
+         *     When the engine starts, it registers webhook endpoints for each
+         *     enabled integration.
+         */
+        IntegrationConfig: {
+            /** @description The messaging provider type. */
+            provider: components["schemas"]["IntegrationProvider"];
+            /**
+             * Enabled
+             * @description Toggle this integration on or off.
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Config
+             * @description Provider-specific configuration.
+             */
+            config: components["schemas"]["WhatsAppIntegrationConfig"] | components["schemas"]["DiscordIntegrationConfig"] | components["schemas"]["SlackIntegrationConfig"] | components["schemas"]["GoogleChatIntegrationConfig"];
+        };
+        /**
+         * IntegrationProvider
+         * @description Supported integration providers.
+         * @enum {string}
+         */
+        IntegrationProvider: "WHATSAPP" | "DISCORD" | "SLACK" | "GOOGLE_CHAT";
+        /**
+         * InvitationRead
+         * @description A pending workspace invitation.
+         */
+        InvitationRead: {
+            /** Id */
+            id: string;
+            /** Email */
+            email: string;
+            /**
+             * Is Owner
+             * @default false
+             */
+            is_owner: boolean;
+            /** Project Assignments */
+            project_assignments?: components["schemas"]["ProjectAssignment"][];
+            /** Invited By */
+            invited_by?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Status
+             * @default pending
+             */
+            status: string;
+        };
+        /**
          * LangGraphAgentConfig
          * @description Configuration model for LangGraph agents.
          */
         LangGraphAgentConfig: {
             /** Name */
             name: string;
-            /** Input Schema Definition */
-            input_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
-            /** Output Schema Definition */
-            output_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
+            /**
+             * @deprecated
+             * @description (Deprecated) Observability config is deprecated and will be removed in a future release.
+             */
             observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
             /** Graph Definition */
             graph_definition: string;
@@ -1116,20 +1900,20 @@ export interface components {
              */
             host: string;
             /**
-             * Public Key
+             * Publickey
              * @default
              */
-            public_key: string;
+            publicKey: string;
             /**
-             * Secret Key
+             * Secretkey
              * @default
              */
-            secret_key: string;
+            secretKey: string;
             /**
-             * Run Name
+             * Runname
              * @default
              */
-            run_name: string;
+            runName: string;
         };
         /**
          * LangsmithConfig
@@ -1137,23 +1921,39 @@ export interface components {
          */
         LangsmithConfig: {
             /**
-             * Api Key
+             * Apikey
              * @description The unique authentication key from the LangSmith settings page.
              * @default
              */
-            api_key: string;
+            apiKey: string;
             /**
-             * Project Name
+             * Projectname
              * @description The name of the project in LangSmith to bucket these traces under (e.g., prod-chatbot-v1).
              * @default
              */
-            project_name: string;
+            projectName: string;
             /**
              * Endpoint
              * @description The URL endpoint, used primarily if you are self-hosting LangSmith or using a specific enterprise instance. (e.g., https://api.smith.langchain.com)
              * @default
              */
             endpoint: string;
+            /**
+             * Runname
+             * @description The display name for each trace run in LangSmith (e.g., my-agent).
+             * @default
+             */
+            runName: string;
+        };
+        /** LoginRequest */
+        LoginRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
         };
         /**
          * MCPServer
@@ -1212,53 +2012,60 @@ export interface components {
              */
             encoding?: string | null;
             /**
-             * Encoding Error Handler
+             * Encodingerrorhandler
              * @description Encoding error handler for stdio transport.
              */
-            encoding_error_handler?: ("strict" | "ignore" | "replace") | null;
+            encodingErrorHandler?: ("strict" | "ignore" | "replace") | null;
             /**
-             * Timeout Seconds
+             * Timeoutseconds
              * @description Timeout in seconds for HTTP/S transports (maps to `timeout`).
              */
-            timeout_seconds?: number | null;
+            timeoutSeconds?: number | null;
             /**
-             * Sse Read Timeout Seconds
+             * Ssereadtimeoutseconds
              * @description Timeout in seconds waiting for SSE events (maps to `sse_read_timeout`).
              */
-            sse_read_timeout_seconds?: number | null;
+            sseReadTimeoutSeconds?: number | null;
             /**
-             * Terminate On Close
+             * Terminateonclose
              * @description Whether to terminate Streamable HTTP sessions on close.
              */
-            terminate_on_close?: boolean | null;
+            terminateOnClose?: boolean | null;
             /**
-             * Session Kwargs
+             * Sessionkwargs
              * @description Extra keyword arguments forwarded to MCP ClientSession.
              */
-            session_kwargs?: {
+            sessionKwargs?: {
                 [key: string]: unknown;
             };
         };
         /**
-         * ManagedAgentCreate
-         * @description Create managed agent model for requests.
+         * MCPToolSchema
+         * @description Schema for a single MCP tool.
          */
-        "ManagedAgentCreate-Input": {
+        MCPToolSchema: {
             /** Name */
             name: string;
-            /**
-             * Version
-             * @description Agent version
-             */
-            version?: string | null;
-            /** @description Idun Agent Engine configuration */
-            engine_config: components["schemas"]["EngineConfig-Input"];
+            /** Description */
+            description?: string | null;
+            /** Input Schema */
+            input_schema?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * MCPToolsResponse
+         * @description Response containing discovered MCP tools.
+         */
+        MCPToolsResponse: {
+            /** Tools */
+            tools: components["schemas"]["MCPToolSchema"][];
         };
         /**
          * ManagedAgentCreate
          * @description Create managed agent model for requests.
          */
-        "ManagedAgentCreate-Output": {
+        ManagedAgentCreate: {
             /** Name */
             name: string;
             /**
@@ -1266,8 +2073,15 @@ export interface components {
              * @description Agent version
              */
             version?: string | null;
+            /**
+             * Base Url
+             * @description Base URL
+             */
+            base_url?: string | null;
             /** @description Idun Agent Engine configuration */
-            engine_config: components["schemas"]["EngineConfig-Output"];
+            engine_config: components["schemas"]["EngineConfig"];
+            /** @description Resource references (FK/junction) */
+            resources?: components["schemas"]["AgentResourceIds"] | null;
         };
         /**
          * ManagedAgentPatch
@@ -1276,8 +2090,15 @@ export interface components {
         ManagedAgentPatch: {
             /** Name */
             name: string;
+            /**
+             * Base Url
+             * @description Base URL
+             */
+            base_url?: string | null;
             /** @description Idun Agent Engine configuration */
-            engine_config: components["schemas"]["EngineConfig-Input"];
+            engine_config: components["schemas"]["EngineConfig"];
+            /** @description Resource references (FK/junction) */
+            resources?: components["schemas"]["AgentResourceIds"] | null;
         };
         /**
          * ManagedAgentRead
@@ -1289,6 +2110,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
             /** Name */
             name: string;
             /**
@@ -1301,8 +2127,20 @@ export interface components {
              * @description Agent version
              */
             version?: string | null;
-            /** @description Idun Agent Engine configuration */
-            engine_config: components["schemas"]["EngineConfig-Output"];
+            /**
+             * Base Url
+             * @description Base URL
+             */
+            base_url?: string | null;
+            /**
+             * Engine Config
+             * @description Materialized EngineConfig (full assembled config)
+             */
+            engine_config: {
+                [key: string]: unknown;
+            };
+            /** @description Resource references (FK/junction) */
+            resources?: components["schemas"]["AgentResourceIds"] | null;
             /**
              * Created At
              * Format: date-time
@@ -1317,14 +2155,25 @@ export interface components {
             updated_at: string;
         };
         /**
+         * ManagedAgentStatusUpdate
+         * @description Schema for updating only the agent status.
+         */
+        ManagedAgentStatusUpdate: {
+            /** @description New agent status */
+            status: components["schemas"]["AgentStatus"];
+        };
+        /**
          * ManagedGuardrailCreate
          * @description Create managed guardrail model for requests.
          */
         ManagedGuardrailCreate: {
             /** Name */
             name: string;
-            /** @description Guardrail configuration */
-            guardrail: components["schemas"]["GuardrailsV2-Input"];
+            /**
+             * Guardrail
+             * @description Guardrail configuration
+             */
+            guardrail: components["schemas"]["SimpleBanListConfig"] | components["schemas"]["SimplePIIConfig"] | components["schemas"]["SimpleNSFWTextConfig"] | components["schemas"]["SimpleToxicLanguageConfig"] | components["schemas"]["SimpleGibberishTextConfig"] | components["schemas"]["SimpleBiasCheckConfig"] | components["schemas"]["SimpleCompetitionCheckConfig"] | components["schemas"]["SimpleCorrectLanguageConfig"] | components["schemas"]["SimpleRestrictToTopicConfig"];
         };
         /**
          * ManagedGuardrailPatch
@@ -1333,8 +2182,11 @@ export interface components {
         ManagedGuardrailPatch: {
             /** Name */
             name: string;
-            /** @description Guardrail configuration */
-            guardrail: components["schemas"]["GuardrailsV2-Input"];
+            /**
+             * Guardrail
+             * @description Guardrail configuration
+             */
+            guardrail: components["schemas"]["SimpleBanListConfig"] | components["schemas"]["SimplePIIConfig"] | components["schemas"]["SimpleNSFWTextConfig"] | components["schemas"]["SimpleToxicLanguageConfig"] | components["schemas"]["SimpleGibberishTextConfig"] | components["schemas"]["SimpleBiasCheckConfig"] | components["schemas"]["SimpleCompetitionCheckConfig"] | components["schemas"]["SimpleCorrectLanguageConfig"] | components["schemas"]["SimpleRestrictToTopicConfig"];
         };
         /**
          * ManagedGuardrailRead
@@ -1346,10 +2198,82 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
             /** Name */
             name: string;
-            /** @description Guardrail configuration */
-            guardrail: components["schemas"]["GuardrailsV2-Output"];
+            /**
+             * Guardrail
+             * @description Guardrail configuration
+             */
+            guardrail: components["schemas"]["SimpleBanListConfig"] | components["schemas"]["SimplePIIConfig"] | components["schemas"]["SimpleNSFWTextConfig"] | components["schemas"]["SimpleToxicLanguageConfig"] | components["schemas"]["SimpleGibberishTextConfig"] | components["schemas"]["SimpleBiasCheckConfig"] | components["schemas"]["SimpleCompetitionCheckConfig"] | components["schemas"]["SimpleCorrectLanguageConfig"] | components["schemas"]["SimpleRestrictToTopicConfig"];
+            /**
+             * Agent Count
+             * @description Number of agents using this guardrail
+             * @default 0
+             */
+            agent_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description Last update timestamp
+             */
+            updated_at: string;
+        };
+        /**
+         * ManagedIntegrationCreate
+         * @description Create managed integration configuration request.
+         */
+        ManagedIntegrationCreate: {
+            /** Name */
+            name: string;
+            /** @description Integration configuration */
+            integration: components["schemas"]["IntegrationConfig"];
+        };
+        /**
+         * ManagedIntegrationPatch
+         * @description Update managed integration configuration request.
+         */
+        ManagedIntegrationPatch: {
+            /** Name */
+            name: string;
+            /** @description Integration configuration */
+            integration: components["schemas"]["IntegrationConfig"];
+        };
+        /**
+         * ManagedIntegrationRead
+         * @description Complete managed integration configuration response.
+         */
+        ManagedIntegrationRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Name */
+            name: string;
+            /** @description Integration configuration */
+            integration: components["schemas"]["IntegrationConfig"];
+            /**
+             * Agent Count
+             * @description Number of agents using this integration
+             * @default 0
+             */
+            agent_count: number;
             /**
              * Created At
              * Format: date-time
@@ -1393,10 +2317,21 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
             /** Name */
             name: string;
             /** @description MCP server configuration */
             mcp_server: components["schemas"]["MCPServer"];
+            /**
+             * Agent Count
+             * @description Number of agents using this MCP server
+             * @default 0
+             */
+            agent_count: number;
             /**
              * Created At
              * Format: date-time
@@ -1423,7 +2358,7 @@ export interface components {
              * Memory
              * @description Memory (checkpoint) configuration
              */
-            memory: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"];
+            memory: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"] | (components["schemas"]["AdkInMemorySessionConfig"] | components["schemas"]["AdkVertexAiSessionConfig"] | components["schemas"]["AdkDatabaseSessionConfig"]);
         };
         /**
          * ManagedMemoryPatch
@@ -1438,7 +2373,7 @@ export interface components {
              * Memory
              * @description Memory (checkpoint) configuration
              */
-            memory: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"];
+            memory: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"] | (components["schemas"]["AdkInMemorySessionConfig"] | components["schemas"]["AdkVertexAiSessionConfig"] | components["schemas"]["AdkDatabaseSessionConfig"]);
         };
         /**
          * ManagedMemoryRead
@@ -1450,6 +2385,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
             /** Name */
             name: string;
             /** @description Agent framework */
@@ -1458,7 +2398,13 @@ export interface components {
              * Memory
              * @description Memory (checkpoint) configuration
              */
-            memory: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"];
+            memory: components["schemas"]["SqliteCheckpointConfig"] | components["schemas"]["InMemoryCheckpointConfig"] | components["schemas"]["PostgresCheckpointConfig"] | (components["schemas"]["AdkInMemorySessionConfig"] | components["schemas"]["AdkVertexAiSessionConfig"] | components["schemas"]["AdkDatabaseSessionConfig"]);
+            /**
+             * Agent Count
+             * @description Number of agents using this memory config
+             * @default 0
+             */
+            agent_count: number;
             /**
              * Created At
              * Format: date-time
@@ -1502,10 +2448,21 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
             /** Name */
             name: string;
             /** @description Observability configuration */
-            observability: components["schemas"]["idun_agent_schema__engine__observability_v2__ObservabilityConfig"];
+            observability: components["schemas"]["ObservabilityConfig-Output"];
+            /**
+             * Agent Count
+             * @description Number of agents using this config
+             * @default 0
+             */
+            agent_count: number;
             /**
              * Created At
              * Format: date-time
@@ -1520,36 +2477,200 @@ export interface components {
             updated_at: string;
         };
         /**
-         * ModelArmorConfig
-         * @description Model Armor configuration.
+         * ManagedPromptCreate
+         * @description Request body for creating a new prompt version.
          */
-        ModelArmorConfig: {
+        ManagedPromptCreate: {
             /**
-             * Config Id
-             * @default model_armor
-             * @constant
+             * Prompt Id
+             * @description Logical prompt identifier
              */
-            config_id: "model_armor";
+            prompt_id: string;
             /**
-             * Name
-             * @description Name of the armor config
+             * Content
+             * @description Prompt text, supports Jinja2 {{ variables }}
              */
-            name: string;
+            content: string;
+            /**
+             * Tags
+             * @description User-defined tags
+             */
+            tags?: string[];
+        };
+        /**
+         * ManagedPromptPatch
+         * @description Request body for updating prompt tags. Content is immutable (append-only versioning).
+         */
+        ManagedPromptPatch: {
+            /**
+             * Tags
+             * @description Updated tags
+             */
+            tags: string[];
+        };
+        /**
+         * ManagedPromptRead
+         * @description Response body for a prompt.
+         */
+        ManagedPromptRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /**
              * Project Id
-             * @description ID of the project the model belongs to
+             * Format: uuid
              */
             project_id: string;
+            /** Prompt Id */
+            prompt_id: string;
+            /** Version */
+            version: number;
+            /** Content */
+            content: string;
+            /** Tags */
+            tags: string[];
             /**
-             * Location
-             * @description Location of the model
+             * Created At
+             * Format: date-time
              */
-            location: string;
+            created_at: string;
             /**
-             * Template Id
-             * @description ID of the template
+             * Updated At
+             * Format: date-time
              */
-            template_id: string;
+            updated_at: string;
+        };
+        /**
+         * ManagedSSOCreate
+         * @description Create managed SSO configuration request.
+         */
+        ManagedSSOCreate: {
+            /** Name */
+            name: string;
+            /** @description SSO (OIDC) configuration */
+            sso: components["schemas"]["SSOConfig"];
+        };
+        /**
+         * ManagedSSOPatch
+         * @description Update managed SSO configuration request.
+         */
+        ManagedSSOPatch: {
+            /** Name */
+            name: string;
+            /** @description SSO (OIDC) configuration */
+            sso: components["schemas"]["SSOConfig"];
+        };
+        /**
+         * ManagedSSORead
+         * @description Complete managed SSO configuration response.
+         */
+        ManagedSSORead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Name */
+            name: string;
+            /** @description SSO (OIDC) configuration */
+            sso: components["schemas"]["SSOConfig"];
+            /**
+             * Agent Count
+             * @description Number of agents using this SSO config
+             * @default 0
+             */
+            agent_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description Last update timestamp
+             */
+            updated_at: string;
+        };
+        /**
+         * MemberAdd
+         * @description Request body to add a user to a workspace.
+         */
+        MemberAdd: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /**
+             * Is Owner
+             * @default false
+             */
+            is_owner: boolean;
+            /** Project Assignments */
+            project_assignments?: components["schemas"]["ProjectAssignment"][];
+        };
+        /**
+         * MemberListResponse
+         * @description Paginated list of workspace members and pending invitations.
+         */
+        MemberListResponse: {
+            /** Members */
+            members: components["schemas"]["MemberRead"][];
+            /**
+             * Invitations
+             * @default []
+             */
+            invitations: components["schemas"]["InvitationRead"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * MemberPatch
+         * @description Request body to update a member's workspace ownership.
+         */
+        MemberPatch: {
+            /** Is Owner */
+            is_owner: boolean;
+        };
+        /**
+         * MemberRead
+         * @description A workspace member with user details.
+         */
+        MemberRead: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name?: string | null;
+            /** Picture Url */
+            picture_url?: string | null;
+            /**
+             * Is Owner
+             * @default false
+             */
+            is_owner: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Status
+             * @default active
+             */
+            status: string;
         };
         /**
          * NSFWTextConfig
@@ -1563,10 +2684,46 @@ export interface components {
              */
             config_id: "nsfw_text";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/nsfw_text
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default NSFW content detected
+             */
+            reject_message: string;
+            /**
              * Threshold
              * @description Sensitivity level for NSFW content
              */
             threshold: number;
+        };
+        /**
+         * OIDCProvider
+         * @description Supported OIDC authentication providers.
+         * @enum {string}
+         */
+        OIDCProvider: "google" | "microsoft";
+        /**
+         * ObservabilityConfig
+         * @description Observability configuration.
+         */
+        "ObservabilityConfig-Output": {
+            /** @default LANGFUSE */
+            provider: components["schemas"]["ObservabilityProvider"];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Config */
+            config: components["schemas"]["LangfuseConfig"] | components["schemas"]["PhoenixConfig"] | components["schemas"]["GCPLoggingConfig"] | components["schemas"]["GCPTraceConfig"] | components["schemas"]["LangsmithConfig"];
         };
         /**
          * ObservabilityProvider
@@ -1575,26 +2732,20 @@ export interface components {
          */
         ObservabilityProvider: "LANGFUSE" | "PHOENIX" | "GCP_LOGGING" | "GCP_TRACE" | "LANGSMITH";
         /**
-         * PIIEntity
-         * @description Personally Identifiable Information entities.
-         * @enum {string}
-         */
-        PIIEntity: "Email" | "Phone Number" | "Credit Card" | "SSN" | "Location";
-        /**
          * PhoenixConfig
          * @description Phoenix configuration.
          */
         PhoenixConfig: {
             /**
-             * Collector Endpoint
+             * Collectorendpoint
              * @default https://collector.phoenix.com
              */
-            collector_endpoint: string;
+            collectorEndpoint: string;
             /**
-             * Project Name
+             * Projectname
              * @default
              */
-            project_name: string;
+            projectName: string;
         };
         /**
          * PostgresCheckpointConfig
@@ -1610,6 +2761,149 @@ export interface components {
             db_url: string;
         };
         /**
+         * ProjectAssignment
+         * @description Workspace invite/member project assignment.
+         */
+        ProjectAssignment: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** @default reader */
+            role: components["schemas"]["ProjectRole"];
+        };
+        /**
+         * ProjectCreate
+         * @description Create a project within a workspace.
+         */
+        ProjectCreate: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+        };
+        /**
+         * ProjectMemberAdd
+         * @description Add or invite a member to a project.
+         */
+        ProjectMemberAdd: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** @default reader */
+            role: components["schemas"]["ProjectRole"];
+        };
+        /**
+         * ProjectMemberPatch
+         * @description Update a project member role.
+         */
+        ProjectMemberPatch: {
+            role: components["schemas"]["ProjectRole"];
+        };
+        /**
+         * ProjectMemberRead
+         * @description Project member response.
+         */
+        ProjectMemberRead: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name?: string | null;
+            /** Picture Url */
+            picture_url?: string | null;
+            role: components["schemas"]["ProjectRole"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * ProjectPatch
+         * @description Update a project.
+         */
+        ProjectPatch: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+        };
+        /**
+         * ProjectRead
+         * @description Project response schema.
+         */
+        ProjectRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default: boolean;
+            current_user_role?: components["schemas"]["ProjectRole"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * ProjectRole
+         * @description Project-level RBAC roles.
+         * @enum {string}
+         */
+        ProjectRole: "admin" | "contributor" | "reader";
+        /**
+         * PromptConfig
+         * @description Engine-level prompt configuration.
+         */
+        PromptConfig: {
+            /**
+             * Promptid
+             * @description Logical prompt identifier
+             */
+            promptId: string;
+            /**
+             * Version
+             * @description Prompt version number
+             */
+            version: number;
+            /**
+             * Content
+             * @description Prompt text, supports Jinja2 variables
+             */
+            content: string;
+            /**
+             * Tags
+             * @description Prompt tags
+             */
+            tags?: string[];
+        };
+        /**
          * PromptInjectionConfig
          * @description Prompt Injection configuration.
          */
@@ -1620,6 +2914,21 @@ export interface components {
              * @constant
              */
             config_id: "prompt_injection";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/detect_pii
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Prompt injection detected
+             */
+            reject_message: string;
             /**
              * Threshold
              * @description Sensitivity level for prompt injection
@@ -1638,10 +2947,37 @@ export interface components {
              */
             config_id: "rag_hallucination";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/rag_hallucination
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Hallucination detected
+             */
+            reject_message: string;
+            /**
              * Threshold
              * @description Sensitivity level for hallucination detection
              */
             threshold: number;
+        };
+        /** RegisterRequest */
+        RegisterRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
+            /** Name */
+            name?: string | null;
         };
         /**
          * RestrictToTopicConfig
@@ -1655,10 +2991,67 @@ export interface components {
              */
             config_id: "restrict_to_topic";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/restrict_to_topic
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Off-topic content detected
+             */
+            reject_message: string;
+            /**
              * Topics
              * @description List of allowed topics
              */
             topics: string[];
+        };
+        /**
+         * SSOConfig
+         * @description OIDC Single Sign-On configuration.
+         *
+         *     When enabled, the engine validates JWT tokens on protected routes
+         *     (``/agent/invoke``, ``/agent/stream``, ``/agent/copilotkit/stream``)
+         *     against the configured OIDC provider's JWKS endpoint, discovered via
+         *     ``{issuer}/.well-known/openid-configuration``.
+         */
+        SSOConfig: {
+            /**
+             * Enabled
+             * @description Toggle SSO enforcement on protected routes.
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Issuer
+             * @description OIDC issuer URL (e.g. https://accounts.google.com). Used to discover the JWKS endpoint via .well-known/openid-configuration.
+             */
+            issuer: string;
+            /**
+             * Clientid
+             * @description OAuth 2.0 client ID. Used as the default audience for JWT validation when 'audience' is not set.
+             */
+            clientId: string;
+            /**
+             * Audience
+             * @description Expected JWT 'aud' claim. Defaults to client_id if not set. Okta client credentials tokens use 'api://default'.
+             */
+            audience?: string | null;
+            /**
+             * Alloweddomains
+             * @description Optional list of allowed email domains (e.g. ['company.com']). When set, only tokens whose email claim matches one of these domains are accepted.
+             */
+            allowedDomains?: string[] | null;
+            /**
+             * Allowedemails
+             * @description Optional list of specific email addresses allowed access. When set, only tokens whose email claim exactly matches one of these values are accepted.
+             */
+            allowedEmails?: string[] | null;
         };
         /**
          * ServerAPIConfig
@@ -1677,6 +3070,242 @@ export interface components {
          */
         ServerConfig: {
             api?: components["schemas"]["ServerAPIConfig"];
+        };
+        /** SimpleBanListConfig */
+        SimpleBanListConfig: {
+            /**
+             * Config Id
+             * @default ban_list
+             * @constant
+             */
+            config_id: "ban_list";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default
+             */
+            reject_message: string;
+            /**
+             * Banned Words
+             * @description A list of strings (words or phrases) to block
+             */
+            banned_words: string[];
+        };
+        /** SimpleBiasCheckConfig */
+        SimpleBiasCheckConfig: {
+            /**
+             * Config Id
+             * @default bias_check
+             * @constant
+             */
+            config_id: "bias_check";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default
+             */
+            reject_message: string;
+            /**
+             * Threshold
+             * @description Sensitivity level for bias detection
+             */
+            threshold: number;
+        };
+        /** SimpleCompetitionCheckConfig */
+        SimpleCompetitionCheckConfig: {
+            /**
+             * Config Id
+             * @default competition_check
+             * @constant
+             */
+            config_id: "competition_check";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default
+             */
+            reject_message: string;
+            /**
+             * Competitors
+             * @description Names of competitor companies or products
+             */
+            competitors: string[];
+        };
+        /** SimpleCorrectLanguageConfig */
+        SimpleCorrectLanguageConfig: {
+            /**
+             * Config Id
+             * @default correct_language
+             * @constant
+             */
+            config_id: "correct_language";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default
+             */
+            reject_message: string;
+            /**
+             * Expected Languages
+             * @description Valid ISO language codes (e.g., en, fr, es)
+             */
+            expected_languages: string[];
+        };
+        /** SimpleGibberishTextConfig */
+        SimpleGibberishTextConfig: {
+            /**
+             * Config Id
+             * @default gibberish_text
+             * @constant
+             */
+            config_id: "gibberish_text";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default
+             */
+            reject_message: string;
+            /**
+             * Threshold
+             * @description Sensitivity level for gibberish detection
+             */
+            threshold: number;
+        };
+        /** SimpleNSFWTextConfig */
+        SimpleNSFWTextConfig: {
+            /**
+             * Config Id
+             * @default nsfw_text
+             * @constant
+             */
+            config_id: "nsfw_text";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default
+             */
+            reject_message: string;
+            /**
+             * Threshold
+             * @description Sensitivity level for NSFW content
+             */
+            threshold: number;
+        };
+        /** SimplePIIConfig */
+        SimplePIIConfig: {
+            /**
+             * Config Id
+             * @default detect_pii
+             * @constant
+             */
+            config_id: "detect_pii";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default
+             */
+            reject_message: string;
+            /**
+             * Pii Entities
+             * @description List of PII entity types to detect
+             */
+            pii_entities: string[];
+        };
+        /** SimpleRestrictToTopicConfig */
+        SimpleRestrictToTopicConfig: {
+            /**
+             * Config Id
+             * @default restrict_to_topic
+             * @constant
+             */
+            config_id: "restrict_to_topic";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default
+             */
+            reject_message: string;
+            /**
+             * Topics
+             * @description List of allowed topics
+             */
+            topics: string[];
+        };
+        /** SimpleToxicLanguageConfig */
+        SimpleToxicLanguageConfig: {
+            /**
+             * Config Id
+             * @default toxic_language
+             * @constant
+             */
+            config_id: "toxic_language";
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Reject Message
+             * @default
+             */
+            reject_message: string;
+            /**
+             * Threshold
+             * @description Sensitivity level for toxic language
+             */
+            threshold: number;
+        };
+        /**
+         * SlackIntegrationConfig
+         * @description Slack Events API configuration.
+         *
+         *     Requires a Slack app with a bot token and signing secret.
+         *     The ``signing_secret`` is used to verify incoming webhook requests
+         *     via HMAC-SHA256.
+         */
+        SlackIntegrationConfig: {
+            /**
+             * Bottoken
+             * @description Slack bot token (xoxb-...).
+             */
+            botToken: string;
+            /**
+             * Signingsecret
+             * @description Signing secret for verifying webhook requests.
+             */
+            signingSecret: string;
         };
         /**
          * SqliteCheckpointConfig
@@ -1703,6 +3332,21 @@ export interface components {
              */
             config_id: "toxic_language";
             /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Guard Url
+             * @default hub://guardrails/toxic_language
+             */
+            guard_url: string;
+            /**
+             * Reject Message
+             * @default Toxic language detected
+             */
+            reject_message: string;
+            /**
              * Threshold
              * @description Sensitivity level for toxic language
              */
@@ -1715,14 +3359,10 @@ export interface components {
         TranslationAgentConfig: {
             /** Name */
             name: string;
-            /** Input Schema Definition */
-            input_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
-            /** Output Schema Definition */
-            output_schema_definition?: {
-                [key: string]: unknown;
-            } | null;
+            /**
+             * @deprecated
+             * @description (Deprecated) Observability config is deprecated and will be removed in a future release.
+             */
             observability?: components["schemas"]["idun_agent_schema__engine__observability__ObservabilityConfig"] | null;
             /** Graph Definition */
             graph_definition: string;
@@ -1759,6 +3399,73 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * WhatsAppIntegrationConfig
+         * @description WhatsApp Business Cloud API configuration.
+         *
+         *     Requires a Meta Business account with a WhatsApp Business API setup.
+         *     The ``verify_token`` is used by Meta to validate the webhook endpoint
+         *     during initial registration.
+         */
+        WhatsAppIntegrationConfig: {
+            /**
+             * Accesstoken
+             * @description Meta Graph API permanent access token.
+             */
+            accessToken: string;
+            /**
+             * Phonenumberid
+             * @description WhatsApp Business phone number ID.
+             */
+            phoneNumberId: string;
+            /**
+             * Verifytoken
+             * @description Webhook verification token. Must match the token configured in the Meta App Dashboard webhook settings.
+             */
+            verifyToken: string;
+            /**
+             * Apiversion
+             * @description Meta Graph API version.
+             * @default v21.0
+             */
+            apiVersion: string;
+        };
+        /** WorkspaceCreate */
+        WorkspaceCreate: {
+            /** Name */
+            name: string;
+        };
+        /** WorkspacePatch */
+        WorkspacePatch: {
+            /** Name */
+            name?: string | null;
+        };
+        /** WorkspaceRead */
+        WorkspaceRead: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /**
+             * Icon
+             * @default
+             */
+            icon: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Is Owner
+             * @default false
+             */
+            is_owner: boolean;
+            /** Default Project Id */
+            default_project_id?: string | null;
         };
         /**
          * ObservabilityConfig
@@ -1811,13 +3518,203 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_providers_api_v1_auth_providers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string[];
+                    };
+                };
+            };
+        };
+    };
+    login_with_provider_api_v1_auth_login__provider__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: components["schemas"]["OIDCProvider"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    callback_api_v1_auth_callback_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    logout_api_v1_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+        };
+    };
+    basic_signup_api_v1_auth_basic_signup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    basic_login_api_v1_auth_basic_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_agents_api_v1_agents__get: {
         parameters: {
             query?: {
                 limit?: number;
                 offset?: number;
             };
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1846,13 +3743,16 @@ export interface operations {
     create_agent_api_v1_agents__post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ManagedAgentCreate-Input"];
+                "application/json": components["schemas"]["ManagedAgentCreate"];
             };
         };
         responses: {
@@ -1862,7 +3762,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ManagedAgentCreate-Output"];
+                    "application/json": components["schemas"]["ManagedAgentRead"];
                 };
             };
             /** @description Validation Error */
@@ -1881,7 +3781,10 @@ export interface operations {
             query: {
                 agent_id: string;
             };
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1924,7 +3827,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ManagedAgentRead"];
                 };
             };
             /** @description Validation Error */
@@ -1941,7 +3844,10 @@ export interface operations {
     get_agent_api_v1_agents__id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -1972,7 +3878,10 @@ export interface operations {
     delete_agent_api_v1_agents__id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2001,7 +3910,10 @@ export interface operations {
     patch_agent_api_v1_agents__id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2010,6 +3922,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ManagedAgentPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedAgentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_agent_status_api_v1_agents__id__status_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedAgentStatusUpdate"];
             };
         };
         responses: {
@@ -2105,7 +4055,10 @@ export interface operations {
                 limit?: number;
                 offset?: number;
             };
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2134,7 +4087,10 @@ export interface operations {
     create_mcp_server_api_v1_mcp_servers__post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2167,7 +4123,10 @@ export interface operations {
     get_mcp_server_api_v1_mcp_servers__id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2198,7 +4157,10 @@ export interface operations {
     delete_mcp_server_api_v1_mcp_servers__id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2227,7 +4189,10 @@ export interface operations {
     patch_mcp_server_api_v1_mcp_servers__id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2259,13 +4224,86 @@ export interface operations {
             };
         };
     };
+    discover_tools_api_v1_mcp_servers__id__tools_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MCPToolsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_observability_connection_api_v1_observability_check_connection_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["idun_agent_schema__engine__observability_v2__ObservabilityConfig"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_observabilities_api_v1_observability__get: {
         parameters: {
             query?: {
                 limit?: number;
                 offset?: number;
             };
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2294,7 +4332,10 @@ export interface operations {
     create_observability_api_v1_observability__post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2327,7 +4368,10 @@ export interface operations {
     get_observability_api_v1_observability__id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2358,7 +4402,10 @@ export interface operations {
     delete_observability_api_v1_observability__id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2387,7 +4434,10 @@ export interface operations {
     patch_observability_api_v1_observability__id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2419,13 +4469,55 @@ export interface operations {
             };
         };
     };
+    check_memory_connection_api_v1_memory_check_connection_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_memories_api_v1_memory__get: {
         parameters: {
             query?: {
                 limit?: number;
                 offset?: number;
+                agent_framework?: components["schemas"]["AgentFramework"] | null;
             };
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2454,7 +4546,10 @@ export interface operations {
     create_memory_api_v1_memory__post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2487,7 +4582,10 @@ export interface operations {
     get_memory_api_v1_memory__id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2518,7 +4616,10 @@ export interface operations {
     delete_memory_api_v1_memory__id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2547,7 +4648,10 @@ export interface operations {
     patch_memory_api_v1_memory__id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2605,7 +4709,10 @@ export interface operations {
                 limit?: number;
                 offset?: number;
             };
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2634,7 +4741,10 @@ export interface operations {
     create_guardrail_api_v1_guardrails__post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2667,7 +4777,10 @@ export interface operations {
     get_guardrail_api_v1_guardrails__id__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2698,7 +4811,10 @@ export interface operations {
     delete_guardrail_api_v1_guardrails__id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2727,7 +4843,10 @@ export interface operations {
     patch_guardrail_api_v1_guardrails__id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
             path: {
                 id: string;
             };
@@ -2759,9 +4878,12 @@ export interface operations {
             };
         };
     };
-    root__get: {
+    list_workspaces_api_v1_workspaces__get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2774,9 +4896,1259 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["WorkspaceRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_workspace_api_v1_workspaces__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkspaceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_workspace_api_v1_workspaces__workspace_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_workspace_api_v1_workspaces__workspace_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkspacePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_ssos_api_v1_sso__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedSSORead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_sso_api_v1_sso__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedSSOCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedSSORead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sso_api_v1_sso__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedSSORead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_sso_api_v1_sso__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_sso_api_v1_sso__id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedSSOPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedSSORead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_integrations_api_v1_integrations__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedIntegrationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_integration_api_v1_integrations__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedIntegrationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedIntegrationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_integration_api_v1_integrations__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedIntegrationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_integration_api_v1_integrations__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_integration_api_v1_integrations__id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedIntegrationPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedIntegrationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_members_api_v1_workspaces__workspace_id__members_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_member_api_v1_workspaces__workspace_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberAdd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberRead"] | components["schemas"]["InvitationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_member_api_v1_workspaces__workspace_id__members__membership_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                membership_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_member_role_api_v1_workspaces__workspace_id__members__membership_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                membership_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_invitation_api_v1_workspaces__workspace_id__invitations__invitation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                invitation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_invitation_api_v1_workspaces__workspace_id__invitations__invitation_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                invitation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_prompts_api_v1_prompts__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                prompt_id?: string | null;
+                tag?: string | null;
+                version?: number | null;
+            };
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedPromptRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_prompt_api_v1_prompts__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedPromptCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedPromptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_agent_prompts_api_v1_prompts_agent__agent_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedPromptRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_prompt_api_v1_prompts__id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedPromptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_prompt_api_v1_prompts__id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_prompt_api_v1_prompts__id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedPromptPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedPromptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assign_prompt_api_v1_prompts__id__assign__agent_id__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unassign_prompt_api_v1_prompts__id__assign__agent_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                id: string;
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_projects_api_v1_projects__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_project_api_v1_projects__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-workspace-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_api_v1_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_api_v1_projects__project_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number | boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_project_api_v1_projects__project_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_project_members_api_v1_projects__project_id__members_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_project_member_api_v1_projects__project_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMemberAdd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_member_api_v1_projects__project_id__members__membership_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                project_id: string;
+                membership_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_project_member_api_v1_projects__project_id__members__membership_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-project-id"?: string | null;
+                "x-workspace-id"?: string | null;
+            };
+            path: {
+                project_id: string;
+                membership_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMemberPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

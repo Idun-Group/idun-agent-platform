@@ -1,4 +1,3 @@
-import { notify } from '../components/toast/notify';
 import { runtimeConfig } from './runtime-config';
 
 const resolveBaseUrl = (): string => {
@@ -7,6 +6,65 @@ const resolveBaseUrl = (): string => {
 };
 
 export const API_BASE_URL = resolveBaseUrl();
+
+export const ACTIVE_WORKSPACE_KEY = 'activeWorkspaceId';
+export const LEGACY_WORKSPACE_KEY = 'activeTenantId';
+
+function getStorage(): Storage | null {
+    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
+    if (typeof localStorage !== 'undefined') return localStorage;
+    return null;
+}
+
+function projectStorageKey(workspaceId: string): string {
+    return `activeProjectId:${workspaceId}`;
+}
+
+export function getStoredWorkspaceId(): string | null {
+    const storage = getStorage();
+    if (!storage) return null;
+    return storage.getItem(ACTIVE_WORKSPACE_KEY) ?? storage.getItem(LEGACY_WORKSPACE_KEY);
+}
+
+export function setStoredWorkspaceId(workspaceId: string | null): void {
+    const storage = getStorage();
+    if (!storage) return;
+    if (!workspaceId) {
+        storage.removeItem(ACTIVE_WORKSPACE_KEY);
+        storage.removeItem(LEGACY_WORKSPACE_KEY);
+        return;
+    }
+    storage.setItem(ACTIVE_WORKSPACE_KEY, workspaceId);
+    storage.setItem(LEGACY_WORKSPACE_KEY, workspaceId);
+}
+
+export function getStoredProjectId(workspaceId?: string | null): string | null {
+    const storage = getStorage();
+    const resolvedWorkspaceId = workspaceId ?? getStoredWorkspaceId();
+    if (!storage || !resolvedWorkspaceId) return null;
+    return storage.getItem(projectStorageKey(resolvedWorkspaceId));
+}
+
+export function setStoredProjectId(workspaceId: string, projectId: string | null): void {
+    const storage = getStorage();
+    if (!storage) return;
+    const key = projectStorageKey(workspaceId);
+    if (!projectId) {
+        storage.removeItem(key);
+        return;
+    }
+    storage.setItem(key, projectId);
+}
+
+export function clearStoredProjectId(workspaceId: string): void {
+    const storage = getStorage();
+    if (!storage) return;
+    storage.removeItem(projectStorageKey(workspaceId));
+}
+
+function shouldAttachScopeHeaders(path: string): boolean {
+    return path.includes('/api/v1/') && !path.includes('/api/v1/auth/');
+}
 
 type ApiOptions = RequestInit & {
     headers?: Record<string, string>;
@@ -22,10 +80,17 @@ export function removeUnauthorizedHandler(handler: () => void): void {
 
 let hasNotifiedOn401 = false;
 
-// Tenant now derived from sid on backend; no tenant header logic needed
-
 export async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
     const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
+    const workspaceId = getStoredWorkspaceId();
+    const projectId = getStoredProjectId(workspaceId);
+    const scopeHeaders =
+        shouldAttachScopeHeaders(url) && workspaceId
+            ? {
+                  'X-Workspace-Id': workspaceId,
+                  ...(projectId ? { 'X-Project-Id': projectId } : {}),
+              }
+            : {};
     const response = await fetch(url, {
         credentials: 'include',
         ...options,
@@ -34,6 +99,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
             ...(options.body && !(options.headers && options.headers['Content-Type'])
                 ? { 'Content-Type': 'application/json' }
                 : {}),
+            ...scopeHeaders,
             ...(options.headers ?? {}),
         },
     });
@@ -41,7 +107,11 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
     if (response.status === 401) {
         // Notify listeners; do not redirect. Show a toast once to avoid spam.
         unauthorizedHandlers.forEach((h) => {
-            try { h(); } catch { }
+            try {
+                h();
+            } catch {
+                // Ignore handler errors so one broken consumer doesn't block auth recovery.
+            }
         });
         if (!hasNotifiedOn401) {
             hasNotifiedOn401 = true;

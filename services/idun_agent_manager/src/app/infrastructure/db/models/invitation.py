@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -28,7 +28,9 @@ class InvitationModel(Base):
         index=True,
     )
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    role: Mapped[str] = mapped_column(String(50), nullable=False, default="member")
+    is_owner: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )
     invited_by: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),

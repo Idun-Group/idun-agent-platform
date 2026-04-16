@@ -36,6 +36,7 @@ import {
     isSupportedGuardrailType,
 } from '../../services/guardrail-payloads';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Guardrail type metadata ──────────────────────────────────────────────────
 
@@ -1142,6 +1143,7 @@ const truncate = (s: string, max = 28) => s.length > max ? s.slice(0, max) + '�
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const GuardrailsPage: React.FC = () => {
+    const { currentProject, canWrite, canAdmin } = useProject();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -1173,6 +1175,11 @@ const GuardrailsPage: React.FC = () => {
     }, [dropdownOpen]);
 
     const loadApps = useCallback(async () => {
+        if (!currentProject) {
+            setApps([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const all = await fetchApplications();
@@ -1182,7 +1189,7 @@ const GuardrailsPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentProject]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
@@ -1212,7 +1219,11 @@ const GuardrailsPage: React.FC = () => {
             <PageHeader>
                 <TitleBlock>
                     <PageTitle>Guardrails</PageTitle>
-                    <PageSubtitle>Enforce safety rules and content policies on your agents</PageSubtitle>
+                    <PageSubtitle>
+                        {currentProject
+                            ? `Enforce safety rules and content policies in ${currentProject.name}`
+                            : 'Select a project to manage guardrails'}
+                    </PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -1270,7 +1281,7 @@ const GuardrailsPage: React.FC = () => {
                                         key={id}
                                         type="button"
                                         $disabled={!!meta.comingSoon}
-                                        onClick={() => { if (!meta.comingSoon) openCreate(id); }}
+                                        onClick={() => { if (!meta.comingSoon && canWrite) openCreate(id); }}
                                     >
                                         <TypeIconBox><meta.icon size={15} /></TypeIconBox>
                                         {id === 'BanList' ? 'Ban List' :
@@ -1307,7 +1318,12 @@ const GuardrailsPage: React.FC = () => {
 
                 {/* ── Right: Configured guardrails ───────────────── */}
                 <ContentColumn>
-                    {isLoading ? (
+                    {!currentProject ? (
+                        <CenterBox>
+                            <LoadingSpinner />
+                            <p>Select a project from the top navbar to manage guardrails.</p>
+                        </CenterBox>
+                    ) : isLoading ? (
                         <CenterBox>
                             <LoadingSpinner />
                             <p>Loading guardrails…</p>
@@ -1373,8 +1389,8 @@ const GuardrailsPage: React.FC = () => {
                                         )}
 
                                         <CardActions>
-                                            <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
-                                            <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
+                                            {canWrite && <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>}
+                                            {canAdmin && <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>}
                                         </CardActions>
                                     </Card>
                                 );

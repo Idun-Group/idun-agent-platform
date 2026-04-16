@@ -19,6 +19,7 @@ class ManagedGuardrailRead(BaseModel):
     """Complete managed guardrail model for responses."""
 
     id: UUID
+    project_id: UUID
     name: str
     guardrail: GuardrailConfig = Field(..., description="Guardrail configuration")
     agent_count: int = Field(0, description="Number of agents using this guardrail")

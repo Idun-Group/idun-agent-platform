@@ -5,6 +5,7 @@ import { fetchSSOs, deleteSSO } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
 import CreateSsoModal from '../../components/applications/create-sso-modal/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { useProject } from '../../hooks/use-project';
 
 // ── Animations ────────────────────────────────────────────────────────────────
 
@@ -358,6 +359,7 @@ const getIssuerLabel = (issuer: string): string => {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const SSOPage: React.FC = () => {
+    const { currentProject, canWrite, canAdmin } = useProject();
     const [configs, setConfigs] = useState<ManagedSSO[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -366,6 +368,11 @@ const SSOPage: React.FC = () => {
     const [configToDelete, setConfigToDelete] = useState<ManagedSSO | null>(null);
 
     const loadConfigs = useCallback(async () => {
+        if (!currentProject) {
+            setConfigs([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const data = await fetchSSOs();
@@ -375,7 +382,7 @@ const SSOPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentProject]);
 
     useEffect(() => { loadConfigs(); }, [loadConfigs]);
 
@@ -401,7 +408,11 @@ const SSOPage: React.FC = () => {
             <PageHeader>
                 <TitleBlock>
                     <PageTitle>SSO / OIDC</PageTitle>
-                    <PageSubtitle>Protect your agent endpoints with Single Sign-On</PageSubtitle>
+                    <PageSubtitle>
+                        {currentProject
+                            ? `Protect agent endpoints in ${currentProject.name} with Single Sign-On`
+                            : 'Select a project to manage SSO configurations'}
+                    </PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -415,13 +426,18 @@ const SSOPage: React.FC = () => {
                     <DocsButton href="https://docs.idunplatform.com/auth/overview" target="_blank" rel="noopener noreferrer">
                         <BookOpen size={15} /> Docs
                     </DocsButton>
-                    <AddButton onClick={openCreate}>
+                    <AddButton onClick={openCreate} disabled={!canWrite || !currentProject}>
                         + Add SSO config
                     </AddButton>
                 </HeaderActions>
             </PageHeader>
 
-            {isLoading ? (
+            {!currentProject ? (
+                <CenterBox>
+                    <LoadingSpinner />
+                    <p>Select a project from the top navbar to manage SSO configurations.</p>
+                </CenterBox>
+            ) : isLoading ? (
                 <CenterBox>
                     <LoadingSpinner />
                     <p>Loading SSO configurations…</p>
@@ -482,14 +498,14 @@ const SSOPage: React.FC = () => {
                                 )}
 
                                 <CardActions>
-                                    <EditBtn onClick={() => openEdit(config)}>Edit</EditBtn>
-                                    <DeleteBtn onClick={() => setConfigToDelete(config)}>Remove</DeleteBtn>
+                                    {canWrite && <EditBtn onClick={() => openEdit(config)}>Edit</EditBtn>}
+                                    {canAdmin && <DeleteBtn onClick={() => setConfigToDelete(config)}>Remove</DeleteBtn>}
                                 </CardActions>
                             </Card>
                         );
                     })}
 
-                    <AddCard onClick={openCreate}>
+                    <AddCard onClick={() => canWrite && openCreate()}>
                         <AddIcon>+</AddIcon>
                         <AddLabel>Add SSO configuration</AddLabel>
                     </AddCard>

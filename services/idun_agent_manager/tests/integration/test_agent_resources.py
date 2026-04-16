@@ -6,8 +6,12 @@ cascade recompute, and RESTRICT delete policy.
 """
 
 
+from uuid import UUID, uuid4
+
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 pytestmark = pytest.mark.asyncio
 
@@ -407,3 +411,127 @@ class TestRestrictDelete:
         # Now deleting the MCP server should succeed
         resp = await client.delete(f"/api/v1/mcp-servers/{mcp['id']}")
         assert resp.status_code == 204
+
+
+class TestProjectScopedResources:
+    async def test_memory_list_is_scoped_to_active_project(
+        self,
+        client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        from app.infrastructure.db.models.project import ProjectModel
+        from app.infrastructure.db.models.project_membership import (
+            ProjectMembershipModel,
+        )
+        from app.infrastructure.db.models.user import UserModel
+
+        await _auth(client)
+        me_response = await client.get("/api/v1/auth/me")
+        principal = me_response.json()["session"]["principal"]
+        workspace_id = UUID(principal["default_workspace_id"])
+        default_project_id = principal["workspaces"][0]["default_project_id"]
+
+        user = (
+            await db_session.execute(
+                select(UserModel).where(UserModel.email == "test@example.com")
+            )
+        ).scalar_one()
+        second_project = ProjectModel(
+            id=uuid4(),
+            workspace_id=workspace_id,
+            name="Second Project",
+            is_default=False,
+        )
+        db_session.add(second_project)
+        await db_session.flush()
+        db_session.add(
+            ProjectMembershipModel(
+                id=uuid4(),
+                project_id=second_project.id,
+                user_id=user.id,
+                role="admin",
+            )
+        )
+        await db_session.flush()
+
+        memory = await _create_memory(client)
+
+        default_list = await client.get(
+            "/api/v1/memory/",
+            headers={"X-Project-Id": default_project_id},
+        )
+        assert default_list.status_code == 200
+        assert len(default_list.json()) == 1
+        assert default_list.json()[0]["id"] == memory["id"]
+
+        second_list = await client.get(
+            "/api/v1/memory/",
+            headers={"X-Project-Id": str(second_project.id)},
+        )
+        assert second_list.status_code == 200
+        assert second_list.json() == []
+
+    async def test_agent_cannot_reference_resource_from_another_project(
+        self,
+        client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        from app.infrastructure.db.models.project import ProjectModel
+        from app.infrastructure.db.models.project_membership import (
+            ProjectMembershipModel,
+        )
+        from app.infrastructure.db.models.user import UserModel
+
+        await _auth(client)
+        me_response = await client.get("/api/v1/auth/me")
+        principal = me_response.json()["session"]["principal"]
+        workspace_id = UUID(principal["default_workspace_id"])
+        default_project_id = principal["workspaces"][0]["default_project_id"]
+
+        user = (
+            await db_session.execute(
+                select(UserModel).where(UserModel.email == "test@example.com")
+            )
+        ).scalar_one()
+        second_project = ProjectModel(
+            id=uuid4(),
+            workspace_id=workspace_id,
+            name="Resource Project Two",
+            is_default=False,
+        )
+        db_session.add(second_project)
+        await db_session.flush()
+        db_session.add(
+            ProjectMembershipModel(
+                id=uuid4(),
+                project_id=second_project.id,
+                user_id=user.id,
+                role="admin",
+            )
+        )
+        await db_session.flush()
+
+        foreign_memory_response = await client.post(
+            "/api/v1/memory/",
+            headers={"X-Project-Id": str(second_project.id)},
+            json={
+                "name": "foreign-mem",
+                "agent_framework": "LANGGRAPH",
+                "memory": {"type": "postgres", "db_url": "postgresql://localhost/db"},
+            },
+        )
+        assert foreign_memory_response.status_code == 201, foreign_memory_response.text
+        foreign_memory_id = foreign_memory_response.json()["id"]
+
+        create_agent_response = await client.post(
+            "/api/v1/agents/",
+            headers={"X-Project-Id": default_project_id},
+            json={
+                "name": "cross-project-agent",
+                "base_url": "http://localhost:9000",
+                "version": "0.1.0",
+                "engine_config": LANGGRAPH_CONFIG,
+                "resources": {"memory_id": foreign_memory_id},
+            },
+        )
+        assert create_agent_response.status_code == 400

@@ -24,9 +24,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
-    require_workspace,
+    require_project_admin,
+    require_project_contributor,
+    require_project_reader,
 )
 from app.infrastructure.db.models.agent_prompt_assignment import (
     AgentPromptAssignmentModel,
@@ -47,6 +50,7 @@ async def _get_prompt(
     id: str,
     session: AsyncSession,
     workspace_id: UUID | None = None,
+    project_id: UUID | None = None,
 ) -> ManagedPromptModel:
     """Get prompt by ID, optionally scoped to a workspace."""
     try:
@@ -68,6 +72,11 @@ async def _get_prompt(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Prompt with id '{id}' not found",
         )
+    if project_id is not None and model.project_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prompt with id '{id}' not found",
+        )
     return model
 
 
@@ -75,6 +84,7 @@ def _model_to_schema(model: ManagedPromptModel) -> ManagedPromptRead:
     """Transform database model to response schema."""
     return ManagedPromptRead(
         id=model.id,
+        project_id=model.project_id,
         prompt_id=model.prompt_id,
         version=model.version,
         content=model.content,
@@ -94,7 +104,7 @@ async def create_prompt(
     request: ManagedPromptCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> ManagedPromptRead:
     """Create a new prompt version.
 
@@ -108,7 +118,8 @@ async def create_prompt(
     max_version_stmt = select(
         func.coalesce(func.max(ManagedPromptModel.version), 0)
     ).where(
-        ManagedPromptModel.workspace_id == workspace_id,
+        ManagedPromptModel.workspace_id == project_access.workspace_id,
+        ManagedPromptModel.project_id == project_access.project_id,
         ManagedPromptModel.prompt_id == request.prompt_id,
     )
     result = await session.execute(max_version_stmt)
@@ -116,7 +127,8 @@ async def create_prompt(
 
     # Remove "latest" tag from previous versions
     prev_stmt = select(ManagedPromptModel).where(
-        ManagedPromptModel.workspace_id == workspace_id,
+        ManagedPromptModel.workspace_id == project_access.workspace_id,
+        ManagedPromptModel.project_id == project_access.project_id,
         ManagedPromptModel.prompt_id == request.prompt_id,
     )
     prev_result = await session.execute(prev_stmt)
@@ -137,7 +149,8 @@ async def create_prompt(
         tags=tags,
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=project_access.workspace_id,
+        project_id=project_access.project_id,
     )
 
     session.add(model)
@@ -147,7 +160,7 @@ async def create_prompt(
         logger.warning(
             "Version conflict for prompt_id '%s' in workspace %s",
             request.prompt_id,
-            workspace_id,
+            project_access.workspace_id,
         )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -171,7 +184,7 @@ async def list_prompts(
     version: int | None = None,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_reader),
 ) -> list[ManagedPromptRead]:
     """List prompts with optional filters and pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -186,7 +199,8 @@ async def list_prompts(
         )
 
     stmt = select(ManagedPromptModel).where(
-        ManagedPromptModel.workspace_id == workspace_id
+        ManagedPromptModel.workspace_id == project_access.workspace_id,
+        ManagedPromptModel.project_id == project_access.project_id,
     )
 
     if prompt_id is not None:
@@ -215,10 +229,15 @@ async def list_agent_prompts(
     agent_id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_reader),
 ) -> list[ManagedPromptRead]:
     """List all prompts assigned to a specific agent."""
-    agent = await _get_agent(agent_id, session, workspace_id)
+    agent = await _get_agent(
+        agent_id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     stmt = (
         select(ManagedPromptModel)
@@ -228,7 +247,8 @@ async def list_agent_prompts(
         )
         .where(
             AgentPromptAssignmentModel.agent_id == agent.id,
-            ManagedPromptModel.workspace_id == workspace_id,
+            ManagedPromptModel.workspace_id == project_access.workspace_id,
+            ManagedPromptModel.project_id == project_access.project_id,
         )
         .order_by(ManagedPromptModel.prompt_id, ManagedPromptModel.version.desc())
     )
@@ -245,10 +265,15 @@ async def get_prompt(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_reader),
 ) -> ManagedPromptRead:
     """Get a prompt by its UUID."""
-    model = await _get_prompt(id, session, workspace_id)
+    model = await _get_prompt(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     return _model_to_schema(model)
 
 
@@ -262,20 +287,26 @@ async def patch_prompt(
     request: ManagedPromptPatch,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> ManagedPromptRead:
     """Update a prompt's tags. Content is immutable.
 
     The ``latest`` tag is auto-managed and cannot be manually added or removed.
     """
-    model = await _get_prompt(id, session, workspace_id)
+    model = await _get_prompt(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     # Strip "latest" from incoming tags — it's auto-managed
     tags = [t for t in request.tags if t != "latest"]
 
     # Re-derive: if this is the highest version, it keeps "latest"
     max_version_stmt = select(func.max(ManagedPromptModel.version)).where(
-        ManagedPromptModel.workspace_id == workspace_id,
+        ManagedPromptModel.workspace_id == project_access.workspace_id,
+        ManagedPromptModel.project_id == project_access.project_id,
         ManagedPromptModel.prompt_id == model.prompt_id,
     )
     result = await session.execute(max_version_stmt)
@@ -300,14 +331,19 @@ async def delete_prompt(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_admin),
 ) -> None:
     """Delete a prompt version permanently.
 
     If the deleted version carried the ``latest`` tag, the next-highest
     version is promoted automatically.
     """
-    model = await _get_prompt(id, session, workspace_id)
+    model = await _get_prompt(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     was_latest = "latest" in (model.tags or [])
     prompt_id = model.prompt_id
 
@@ -318,7 +354,8 @@ async def delete_prompt(
         stmt = (
             select(ManagedPromptModel)
             .where(
-                ManagedPromptModel.workspace_id == workspace_id,
+                ManagedPromptModel.workspace_id == project_access.workspace_id,
+                ManagedPromptModel.project_id == project_access.project_id,
                 ManagedPromptModel.prompt_id == prompt_id,
             )
             .order_by(ManagedPromptModel.version.desc())
@@ -338,6 +375,7 @@ async def _get_agent(
     agent_id: str,
     session: AsyncSession,
     workspace_id: UUID,
+    project_id: UUID | None = None,
 ) -> ManagedAgentModel:
     """Get agent by ID, scoped to workspace."""
     try:
@@ -350,6 +388,11 @@ async def _get_agent(
 
     agent = await session.get(ManagedAgentModel, agent_uuid)
     if not agent or agent.workspace_id != workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id '{agent_id}' not found",
+        )
+    if project_id is not None and agent.project_id != project_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id '{agent_id}' not found",
@@ -367,11 +410,21 @@ async def assign_prompt(
     agent_id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> dict[str, str]:
     """Assign a prompt to an agent. Both must belong to the same workspace."""
-    prompt = await _get_prompt(id, session, workspace_id)
-    agent = await _get_agent(agent_id, session, workspace_id)
+    prompt = await _get_prompt(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
+    agent = await _get_agent(
+        agent_id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     assignment = AgentPromptAssignmentModel(
         agent_id=agent.id,
@@ -399,11 +452,21 @@ async def unassign_prompt(
     agent_id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> None:
     """Remove a prompt assignment from an agent."""
-    prompt = await _get_prompt(id, session, workspace_id)
-    agent = await _get_agent(agent_id, session, workspace_id)
+    prompt = await _get_prompt(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
+    agent = await _get_agent(
+        agent_id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     stmt = select(AgentPromptAssignmentModel).where(
         AgentPromptAssignmentModel.agent_id == agent.id,

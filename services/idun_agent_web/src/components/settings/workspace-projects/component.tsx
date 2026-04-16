@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { Star, Trash2, Users } from 'lucide-react';
 
 import { notify } from '../../toast/notify';
 import DeleteConfirmModal from '../../applications/delete-confirm-modal/component';
-import { createProject, deleteProject, listProjects, updateProject, type Project } from '../../../services/projects';
+import { createProject, deleteProject, listProjects, setDefaultProject, updateProject, type Project } from '../../../services/projects';
 import useWorkspace from '../../../hooks/use-workspace';
 import { useProject } from '../../../hooks/use-project';
+import MembersPanel from './members-panel';
 
 const WorkspaceProjectsTab = () => {
     const { t } = useTranslation();
@@ -21,6 +23,7 @@ const WorkspaceProjectsTab = () => {
     const [editingDescription, setEditingDescription] = useState('');
     const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
     const [deleteDescription, setDeleteDescription] = useState<string | undefined>(undefined);
+    const [membersProject, setMembersProject] = useState<Project | null>(null);
 
     const loadProjects = useCallback(async () => {
         if (!selectedWorkspaceId) {
@@ -108,6 +111,25 @@ const WorkspaceProjectsTab = () => {
         );
     };
 
+    const handleSetDefault = async (project: Project) => {
+        if (project.is_default) return;
+        try {
+            await setDefaultProject(project.id);
+            await loadProjects();
+            await refreshProjects();
+            notify.success(
+                t('settings.projects.defaultSet', '{{name}} is now the default project', {
+                    name: project.name,
+                }),
+            );
+        } catch (error) {
+            console.error(error);
+            notify.error(
+                error instanceof Error ? error.message : 'Failed to set default project',
+            );
+        }
+    };
+
     return (
         <Container>
             {isCurrentWorkspaceOwner && (
@@ -143,6 +165,27 @@ const WorkspaceProjectsTab = () => {
                     <List>
                         {projects.map((project) => (
                             <ProjectRow key={project.id}>
+                                <StarButton
+                                    $active={project.is_default}
+                                    $clickable={isCurrentWorkspaceOwner && !project.is_default}
+                                    onClick={() => {
+                                        if (isCurrentWorkspaceOwner && !project.is_default) {
+                                            void handleSetDefault(project);
+                                        }
+                                    }}
+                                    title={
+                                        project.is_default
+                                            ? t('settings.projects.isDefault', 'Default project')
+                                            : isCurrentWorkspaceOwner
+                                              ? t('settings.projects.setDefault', 'Set as default')
+                                              : ''
+                                    }
+                                >
+                                    <Star
+                                        size={16}
+                                        fill={project.is_default ? 'currentColor' : 'none'}
+                                    />
+                                </StarButton>
                                 <ProjectInfo>
                                     {editingProjectId === project.id ? (
                                         <EditStack>
@@ -159,10 +202,7 @@ const WorkspaceProjectsTab = () => {
                                         </EditStack>
                                     ) : (
                                         <>
-                                            <ProjectName>
-                                                {project.name}
-                                                {project.is_default && <Badge>Default</Badge>}
-                                            </ProjectName>
+                                            <ProjectName>{project.name}</ProjectName>
                                             <ProjectMeta>
                                                 {project.current_user_role ?? 'no role'}
                                                 {project.description ? ` • ${project.description}` : ''}
@@ -170,6 +210,13 @@ const WorkspaceProjectsTab = () => {
                                         </>
                                     )}
                                 </ProjectInfo>
+                                <MembersButton
+                                    onClick={() => setMembersProject(project)}
+                                    title={t('settings.projects.panel.members', 'Members')}
+                                >
+                                    <Users size={14} />
+                                    {t('settings.projects.panel.members', 'Members')}
+                                </MembersButton>
                                 {(isCurrentWorkspaceOwner || project.current_user_role === 'admin') && (
                                     <ActionRow>
                                         {editingProjectId === project.id ? (
@@ -193,9 +240,12 @@ const WorkspaceProjectsTab = () => {
                                             </InlineButton>
                                         )}
                                         {isCurrentWorkspaceOwner && !project.is_default && (
-                                            <DangerButton onClick={() => void handleRequestDelete(project)}>
-                                                {t('common.delete', 'Delete')}
-                                            </DangerButton>
+                                            <DeleteButton
+                                                onClick={() => void handleRequestDelete(project)}
+                                                title={t('common.delete', 'Delete')}
+                                            >
+                                                <Trash2 size={14} />
+                                            </DeleteButton>
                                         )}
                                     </ActionRow>
                                 )}
@@ -215,6 +265,13 @@ const WorkspaceProjectsTab = () => {
                 itemName={projectToDelete?.name ?? ''}
                 description={deleteDescription}
             />
+
+            {membersProject && (
+                <MembersPanel
+                    project={membersProject}
+                    onClose={() => setMembersProject(null)}
+                />
+            )}
         </Container>
     );
 };
@@ -290,7 +347,6 @@ const List = styled.div`
 const ProjectRow = styled.div`
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     padding: 14px 16px;
     border-radius: 8px;
@@ -298,11 +354,34 @@ const ProjectRow = styled.div`
     border: 1px solid var(--border-subtle);
 `;
 
+const StarButton = styled.button<{ $active: boolean; $clickable: boolean }>`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    flex-shrink: 0;
+    cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
+    color: ${({ $active }) =>
+        $active ? 'hsl(var(--warning))' : 'hsl(var(--muted-foreground))'};
+    opacity: ${({ $active, $clickable }) => ($active ? 1 : $clickable ? 0.4 : 0.2)};
+    transition: color 150ms ease, opacity 150ms ease, background 150ms ease;
+
+    &:hover {
+        opacity: ${({ $active, $clickable }) => ($active ? 1 : $clickable ? 0.8 : 0.2)};
+        background: ${({ $clickable }) => ($clickable ? 'var(--overlay-light)' : 'transparent')};
+    }
+`;
+
 const ProjectInfo = styled.div`
     display: flex;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+    flex: 1;
 `;
 
 const ProjectName = styled.div`
@@ -312,15 +391,6 @@ const ProjectName = styled.div`
     font-size: 13px;
     font-weight: 600;
     color: hsl(var(--foreground));
-`;
-
-const Badge = styled.span`
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: hsla(var(--primary) / 0.12);
-    color: hsl(var(--primary));
-    font-size: 12px;
-    font-weight: 600;
 `;
 
 const ProjectMeta = styled.span`
@@ -352,11 +422,42 @@ const InlineButton = styled.button`
     cursor: pointer;
 `;
 
-const DangerButton = styled.button`
-    border: none;
+const MembersButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border-subtle);
     background: transparent;
-    color: hsl(var(--destructive));
+    color: hsl(var(--foreground));
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: background 150ms ease, border-color 150ms ease;
+
+    &:hover {
+        background: var(--overlay-light);
+        border-color: hsl(var(--muted-foreground));
+    }
+`;
+
+const DeleteButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: hsla(var(--destructive) / 0.08);
+    color: hsl(var(--destructive));
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 150ms ease;
+
+    &:hover {
+        background: hsla(var(--destructive) / 0.18);
+    }
 `;

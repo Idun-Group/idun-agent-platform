@@ -6,20 +6,69 @@
     "version": "0.5.3"
   },
   "paths": {
-    "/api/v1/auth/login": {
+    "/api/v1/auth/providers": {
       "get": {
         "tags": [
           "Auth"
         ],
-        "summary": "Redirect to Google OIDC login",
-        "description": "Initiates the Google OIDC authorization code flow.",
-        "operationId": "login_api_v1_auth_login_get",
+        "summary": "List enabled OIDC providers",
+        "description": "Returns the list of configured OIDC provider names. Empty when SSO is disabled.",
+        "operationId": "list_providers_api_v1_auth_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "type": "object",
+                  "title": "Response List Providers Api V1 Auth Providers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login/{provider}": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Redirect to OIDC provider login",
+        "description": "Initiates the OIDC authorization code flow for the specified provider.",
+        "operationId": "login_with_provider_api_v1_auth_login__provider__get",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OIDCProvider"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -192,6 +241,22 @@
         "operationId": "create_agent_api_v1_agents__post",
         "parameters": [
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -270,6 +335,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -330,6 +411,22 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -435,6 +532,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -492,6 +605,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -539,6 +668,22 @@
             "schema": {
               "type": "string",
               "title": "Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -608,6 +753,22 @@
             "schema": {
               "type": "string",
               "title": "Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -749,6 +910,22 @@
         "operationId": "create_mcp_server_api_v1_mcp_servers__post",
         "parameters": [
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -827,6 +1004,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -890,6 +1083,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -947,6 +1156,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -994,6 +1219,22 @@
             "schema": {
               "type": "string",
               "title": "Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -1066,6 +1307,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1106,6 +1363,82 @@
         }
       }
     },
+    "/api/v1/observability/check-connection": {
+      "post": {
+        "tags": [
+          "Observability"
+        ],
+        "summary": "Check observability provider connectivity",
+        "description": "Check connectivity to an observability provider before saving.",
+        "operationId": "check_observability_connection_api_v1_observability_check_connection_post",
+        "parameters": [
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/idun_agent_schema__engine__observability_v2__ObservabilityConfig"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/observability/": {
       "post": {
         "tags": [
@@ -1115,6 +1448,22 @@
         "description": "Create a new managed observability configuration.",
         "operationId": "create_observability_api_v1_observability__post",
         "parameters": [
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
           {
             "name": "x-workspace-id",
             "in": "header",
@@ -1194,6 +1543,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1257,6 +1622,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1314,6 +1695,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1361,6 +1758,22 @@
             "schema": {
               "type": "string",
               "title": "Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -1414,6 +1827,84 @@
         }
       }
     },
+    "/api/v1/memory/check-connection": {
+      "post": {
+        "tags": [
+          "Memory"
+        ],
+        "summary": "Check memory store connectivity",
+        "description": "Check connectivity to a memory store before saving.",
+        "operationId": "check_memory_connection_api_v1_memory_check_connection_post",
+        "parameters": [
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/memory/": {
       "post": {
         "tags": [
@@ -1423,6 +1914,22 @@
         "description": "Create a new managed memory configuration.",
         "operationId": "create_memory_api_v1_memory__post",
         "parameters": [
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
           {
             "name": "x-workspace-id",
             "in": "header",
@@ -1518,6 +2025,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1581,6 +2104,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1638,6 +2177,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1685,6 +2240,22 @@
             "schema": {
               "type": "string",
               "title": "Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -1774,6 +2345,22 @@
         "operationId": "create_guardrail_api_v1_guardrails__post",
         "parameters": [
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1852,6 +2439,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1915,6 +2518,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -1972,6 +2591,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -2019,6 +2654,22 @@
             "schema": {
               "type": "string",
               "title": "Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -2176,7 +2827,7 @@
           "Workspaces"
         ],
         "summary": "Update workspace",
-        "description": "Update a workspace name. Requires admin or owner role.",
+        "description": "Update a workspace name. Requires workspace owner access.",
         "operationId": "patch_workspace_api_v1_workspaces__workspace_id__patch",
         "parameters": [
           {
@@ -2267,6 +2918,22 @@
         "operationId": "create_sso_api_v1_sso__post",
         "parameters": [
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -2345,6 +3012,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -2408,6 +3091,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -2465,6 +3164,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -2512,6 +3227,22 @@
             "schema": {
               "type": "string",
               "title": "Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -2574,6 +3305,22 @@
         "description": "Create a new managed integration configuration.",
         "operationId": "create_integration_api_v1_integrations__post",
         "parameters": [
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
           {
             "name": "x-workspace-id",
             "in": "header",
@@ -2653,6 +3400,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -2716,6 +3479,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -2773,6 +3552,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -2820,6 +3615,22 @@
             "schema": {
               "type": "string",
               "title": "Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -3000,8 +3811,8 @@
         "tags": [
           "Workspace Members"
         ],
-        "summary": "Update a member's role",
-        "description": "Change a workspace member's role.",
+        "summary": "Update a member's workspace ownership",
+        "description": "Change a workspace member's ownership flag.",
         "operationId": "update_member_role_api_v1_workspaces__workspace_id__members__membership_id__patch",
         "parameters": [
           {
@@ -3145,6 +3956,58 @@
         }
       }
     },
+    "/api/v1/workspaces/{workspace_id}/invitations/{invitation_id}/accept": {
+      "post": {
+        "tags": [
+          "Workspace Members"
+        ],
+        "summary": "Accept a pending workspace invitation",
+        "description": "Accept a pending invitation for the current authenticated user.",
+        "operationId": "accept_invitation_api_v1_workspaces__workspace_id__invitations__invitation_id__accept_post",
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "name": "invitation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invitation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/prompts/": {
       "post": {
         "tags": [
@@ -3154,6 +4017,22 @@
         "description": "Create a new prompt version.\n\nAuto-increments the version number for the given ``prompt_id`` within the\nworkspace.  The ``latest`` tag is added automatically and removed from any\nprevious version that carried it.",
         "operationId": "create_prompt_api_v1_prompts__post",
         "parameters": [
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
           {
             "name": "x-workspace-id",
             "in": "header",
@@ -3281,6 +4160,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -3341,6 +4236,22 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -3407,6 +4318,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -3461,6 +4388,22 @@
             "schema": {
               "type": "string",
               "title": "Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -3531,6 +4474,22 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -3589,6 +4548,22 @@
             "schema": {
               "type": "string",
               "title": "Agent Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
             }
           },
           {
@@ -3662,6 +4637,691 @@
             }
           },
           {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "List projects",
+        "description": "List projects visible in the active workspace.",
+        "operationId": "list_projects_api_v1_projects__get",
+        "parameters": [
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectRead"
+                  },
+                  "title": "Response List Projects Api V1 Projects  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Create project",
+        "description": "Create a new project in the active workspace.",
+        "operationId": "create_project_api_v1_projects__post",
+        "parameters": [
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Get project",
+        "description": "Get project details.",
+        "operationId": "get_project_api_v1_projects__project_id__get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Update project",
+        "description": "Update a project.",
+        "operationId": "patch_project_api_v1_projects__project_id__patch",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Delete project",
+        "description": "Delete a project and return the number of scoped resources removed.",
+        "operationId": "delete_project_api_v1_projects__project_id__delete",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  },
+                  "title": "Response Delete Project Api V1 Projects  Project Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/members": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "List project members",
+        "description": "List members of a project.",
+        "operationId": "list_project_members_api_v1_projects__project_id__members_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectMemberRead"
+                  },
+                  "title": "Response List Project Members Api V1 Projects  Project Id  Members Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Add project member",
+        "description": "Add an existing workspace member to a project.",
+        "operationId": "add_project_member_api_v1_projects__project_id__members_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMemberAdd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMemberRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/members/{membership_id}": {
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Update project member",
+        "description": "Update a project membership role.",
+        "operationId": "patch_project_member_api_v1_projects__project_id__members__membership_id__patch",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "membership_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Membership Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
+            "name": "x-workspace-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Workspace-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMemberPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMemberRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Remove project member",
+        "description": "Remove a member from a project.",
+        "operationId": "delete_project_member_api_v1_projects__project_id__members__membership_id__delete",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "membership_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Membership Id"
+            }
+          },
+          {
+            "name": "x-project-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Project-Id"
+            }
+          },
+          {
             "name": "x-workspace-id",
             "in": "header",
             "required": false,
@@ -3724,7 +5384,8 @@
           "app_name": {
             "type": "string",
             "title": "App Name",
-            "description": "Application name for the agent"
+            "description": "Application name for the agent",
+            "default": ""
           },
           "session_service": {
             "anyOf": [
@@ -3786,8 +5447,7 @@
         "type": "object",
         "required": [
           "name",
-          "agent",
-          "app_name"
+          "agent"
         ],
         "title": "AdkAgentConfig",
         "description": "Configuration model for ADK agents."
@@ -3803,7 +5463,7 @@
           "db_url": {
             "type": "string",
             "title": "Db Url",
-            "description": "Database URL (e.g. postgresql://...)"
+            "description": "Database URL (e.g. postgresql+psycopg://...)"
           }
         },
         "type": "object",
@@ -4262,6 +5922,34 @@
         ],
         "title": "CompetitionCheckConfig",
         "description": "Competition Check configuration."
+      },
+      "ConnectionCheckResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "provider",
+          "duration_ms"
+        ],
+        "title": "ConnectionCheckResponse"
       },
       "CorrectLanguageConfig": {
         "properties": {
@@ -4770,6 +6458,33 @@
         "title": "GibberishTextConfig",
         "description": "Gibberish Text configuration."
       },
+      "GoogleChatIntegrationConfig": {
+        "properties": {
+          "serviceAccountCredentialsJson": {
+            "type": "string",
+            "title": "Serviceaccountcredentialsjson",
+            "description": "Service account credentials JSON for calling the Chat API."
+          },
+          "projectNumber": {
+            "type": "string",
+            "title": "Projectnumber",
+            "description": "GCP project number used to verify inbound JWT tokens."
+          },
+          "localMode": {
+            "type": "boolean",
+            "title": "Localmode",
+            "description": "When enabled, rewrites the webhook URL from http to https for JWT audience verification. Use this when developing behind a TLS-terminating proxy like ngrok.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "serviceAccountCredentialsJson",
+          "projectNumber"
+        ],
+        "title": "GoogleChatIntegrationConfig",
+        "description": "Google Chat app configuration.\n\nRequires a GCP project with the Google Chat API enabled,\na service account for sending messages, and the project number\nfor verifying inbound JWT bearer tokens."
+      },
       "GuardrailRef": {
         "properties": {
           "id": {
@@ -4998,6 +6713,9 @@
               },
               {
                 "$ref": "#/components/schemas/SlackIntegrationConfig"
+              },
+              {
+                "$ref": "#/components/schemas/GoogleChatIntegrationConfig"
               }
             ],
             "title": "Config",
@@ -5017,7 +6735,8 @@
         "enum": [
           "WHATSAPP",
           "DISCORD",
-          "SLACK"
+          "SLACK",
+          "GOOGLE_CHAT"
         ],
         "title": "IntegrationProvider",
         "description": "Supported integration providers."
@@ -5032,8 +6751,17 @@
             "type": "string",
             "title": "Email"
           },
-          "role": {
-            "$ref": "#/components/schemas/WorkspaceRole"
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner",
+            "default": false
+          },
+          "project_assignments": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAssignment"
+            },
+            "type": "array",
+            "title": "Project Assignments"
           },
           "invited_by": {
             "anyOf": [
@@ -5061,7 +6789,6 @@
         "required": [
           "id",
           "email",
-          "role",
           "created_at"
         ],
         "title": "InvitationRead",
@@ -5172,6 +6899,12 @@
             "type": "string",
             "title": "Endpoint",
             "description": "The URL endpoint, used primarily if you are self-hosting LangSmith or using a specific enterprise instance. (e.g., https://api.smith.langchain.com)",
+            "default": ""
+          },
+          "runName": {
+            "type": "string",
+            "title": "Runname",
+            "description": "The display name for each trace run in LangSmith (e.g., my-agent).",
             "default": ""
           }
         },
@@ -5513,6 +7246,11 @@
             "format": "uuid",
             "title": "Id"
           },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -5579,6 +7317,7 @@
         "type": "object",
         "required": [
           "id",
+          "project_id",
           "name",
           "engine_config",
           "created_at",
@@ -5704,6 +7443,11 @@
             "format": "uuid",
             "title": "Id"
           },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -5763,6 +7507,7 @@
         "type": "object",
         "required": [
           "id",
+          "project_id",
           "name",
           "guardrail",
           "created_at",
@@ -5816,6 +7561,11 @@
             "format": "uuid",
             "title": "Id"
           },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -5846,6 +7596,7 @@
         "type": "object",
         "required": [
           "id",
+          "project_id",
           "name",
           "integration",
           "created_at",
@@ -5899,6 +7650,11 @@
             "format": "uuid",
             "title": "Id"
           },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -5929,6 +7685,7 @@
         "type": "object",
         "required": [
           "id",
+          "project_id",
           "name",
           "mcp_server",
           "created_at",
@@ -6056,6 +7813,11 @@
             "format": "uuid",
             "title": "Id"
           },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -6122,6 +7884,7 @@
         "type": "object",
         "required": [
           "id",
+          "project_id",
           "name",
           "agent_framework",
           "memory",
@@ -6176,6 +7939,11 @@
             "format": "uuid",
             "title": "Id"
           },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -6206,6 +7974,7 @@
         "type": "object",
         "required": [
           "id",
+          "project_id",
           "name",
           "observability",
           "created_at",
@@ -6268,6 +8037,11 @@
             "format": "uuid",
             "title": "Id"
           },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
           "prompt_id": {
             "type": "string",
             "title": "Prompt Id"
@@ -6301,6 +8075,7 @@
         "type": "object",
         "required": [
           "id",
+          "project_id",
           "prompt_id",
           "version",
           "content",
@@ -6356,6 +8131,11 @@
             "format": "uuid",
             "title": "Id"
           },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -6386,6 +8166,7 @@
         "type": "object",
         "required": [
           "id",
+          "project_id",
           "name",
           "sso",
           "created_at",
@@ -6401,10 +8182,17 @@
             "format": "email",
             "title": "Email"
           },
-          "role": {
-            "$ref": "#/components/schemas/WorkspaceRole",
-            "description": "Role to assign. Owners can assign any role; admins can assign member or viewer.",
-            "default": "member"
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner",
+            "default": false
+          },
+          "project_assignments": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectAssignment"
+            },
+            "type": "array",
+            "title": "Project Assignments"
           }
         },
         "type": "object",
@@ -6446,16 +8234,17 @@
       },
       "MemberPatch": {
         "properties": {
-          "role": {
-            "$ref": "#/components/schemas/WorkspaceRole"
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner"
           }
         },
         "type": "object",
         "required": [
-          "role"
+          "is_owner"
         ],
         "title": "MemberPatch",
-        "description": "Request body to update a member's role."
+        "description": "Request body to update a member's workspace ownership."
       },
       "MemberRead": {
         "properties": {
@@ -6493,8 +8282,10 @@
             ],
             "title": "Picture Url"
           },
-          "role": {
-            "$ref": "#/components/schemas/WorkspaceRole"
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner",
+            "default": false
           },
           "created_at": {
             "type": "string",
@@ -6512,7 +8303,6 @@
           "id",
           "user_id",
           "email",
-          "role",
           "created_at"
         ],
         "title": "MemberRead",
@@ -6555,6 +8345,15 @@
         ],
         "title": "NSFWTextConfig",
         "description": "NSFW Text configuration."
+      },
+      "OIDCProvider": {
+        "type": "string",
+        "enum": [
+          "google",
+          "microsoft"
+        ],
+        "title": "OIDCProvider",
+        "description": "Supported OIDC authentication providers."
       },
       "ObservabilityConfig-Output": {
         "properties": {
@@ -6643,6 +8442,247 @@
         ],
         "title": "PostgresCheckpointConfig",
         "description": "Configuration for Postgres checkpointer."
+      },
+      "ProjectAssignment": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole",
+            "default": "reader"
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id"
+        ],
+        "title": "ProjectAssignment",
+        "description": "Workspace invite/member project assignment."
+      },
+      "ProjectCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ProjectCreate",
+        "description": "Create a project within a workspace."
+      },
+      "ProjectMemberAdd": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole",
+            "default": "reader"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "ProjectMemberAdd",
+        "description": "Add or invite a member to a project."
+      },
+      "ProjectMemberPatch": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "ProjectMemberPatch",
+        "description": "Update a project member role."
+      },
+      "ProjectMemberRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "picture_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picture Url"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ProjectRole"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "email",
+          "role",
+          "created_at"
+        ],
+        "title": "ProjectMemberRead",
+        "description": "Project member response."
+      },
+      "ProjectPatch": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "ProjectPatch",
+        "description": "Update a project."
+      },
+      "ProjectRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Workspace Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "default": false
+          },
+          "current_user_role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workspace_id",
+          "name",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProjectRead",
+        "description": "Project response schema."
+      },
+      "ProjectRole": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "contributor",
+          "reader"
+        ],
+        "title": "ProjectRole",
+        "description": "Project-level RBAC roles."
       },
       "PromptConfig": {
         "properties": {
@@ -7489,6 +9529,22 @@
             "type": "string",
             "title": "Description",
             "default": ""
+          },
+          "is_owner": {
+            "type": "boolean",
+            "title": "Is Owner",
+            "default": false
+          },
+          "default_project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Project Id"
           }
         },
         "type": "object",
@@ -7498,17 +9554,6 @@
           "slug"
         ],
         "title": "WorkspaceRead"
-      },
-      "WorkspaceRole": {
-        "type": "string",
-        "enum": [
-          "owner",
-          "admin",
-          "member",
-          "viewer"
-        ],
-        "title": "WorkspaceRole",
-        "description": "Workspace membership roles, ordered by privilege level."
       },
       "idun_agent_schema__engine__observability__ObservabilityConfig": {
         "properties": {

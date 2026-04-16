@@ -19,6 +19,7 @@ import type { MCPTool } from '../../services/applications';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import type { ApplicationConfig } from '../../types/application.types';
 import type { AppType } from '../../types/application.types';
+import { useProject } from '../../hooks/use-project';
 
 // ── Transport type metadata ──────────────────────────────────────────────────
 
@@ -103,7 +104,6 @@ const TRANSPORT_MAP: Record<TransportType, TransportMeta> = Object.fromEntries(
 
 const fadeIn = keyframes`from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); }`;
 const spin = keyframes`from { transform: rotate(0deg); } to { transform: rotate(360deg); }`;
-const expandDown = keyframes`from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 600px; }`;
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 
@@ -628,13 +628,6 @@ const ServerSubtitle = styled.p`
     white-space: nowrap;
 `;
 
-const ServerHeaderRight = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-`;
-
 const StatusBadge = styled.span<{ $active: boolean }>`
     font-size: 11px;
     font-weight: 600;
@@ -653,41 +646,6 @@ const TransportBadge = styled.span`
     background: hsl(var(--primary) / 0.12);
     color: hsl(var(--primary));
     border: 1px solid hsl(var(--primary) / 0.2);
-`;
-
-const ChevronIcon = styled.span<{ $open: boolean }>`
-    font-size: 12px;
-    transition: transform 0.2s;
-    transform: ${p => p.$open ? 'rotate(180deg)' : 'rotate(0deg)'};
-    color: hsl(var(--muted-foreground));
-`;
-
-const AccordionBody = styled.div<{ $open: boolean }>`
-    display: ${p => p.$open ? 'block' : 'none'};
-    animation: ${p => p.$open ? expandDown : 'none'} 0.25s ease;
-    border-top: 1px solid var(--border-subtle);
-    padding: 20px;
-`;
-
-const BodyGrid = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-`;
-
-const Section = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-`;
-
-const SectionTitle = styled.p`
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: hsl(var(--muted-foreground));
-    margin: 0 0 4px;
 `;
 
 const Divider = styled.hr`
@@ -848,14 +806,6 @@ const AgentCountBadge = styled.span`
     display: flex;
     align-items: center;
     gap: 4px;
-`;
-
-const BodyActions = styled.div`
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border-subtle);
 `;
 
 const EditBtn = styled.button`
@@ -1314,10 +1264,10 @@ const TransportModal: React.FC<TransportModalProps> = ({ transportId, appToEdit,
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const MCPPage: React.FC = () => {
+    const { currentProject, canWrite, canAdmin } = useProject();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [openId, setOpenId] = useState<string | null>(null);
     const [quickStartOpen, setQuickStartOpen] = useState(true);
 
     // Modal
@@ -1346,6 +1296,11 @@ const MCPPage: React.FC = () => {
     };
 
     const loadApps = useCallback(async () => {
+        if (!currentProject) {
+            setApps([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const all = await fetchApplications();
@@ -1355,7 +1310,7 @@ const MCPPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentProject]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
@@ -1388,7 +1343,11 @@ const MCPPage: React.FC = () => {
             <PageHeader>
                 <TitleBlock>
                     <PageTitle>MCP Servers</PageTitle>
-                    <PageSubtitle>Model Context Protocol integrations for your agents</PageSubtitle>
+                    <PageSubtitle>
+                        {currentProject
+                            ? `Model Context Protocol integrations for ${currentProject.name}`
+                            : 'Select a project to manage MCP servers'}
+                    </PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -1413,7 +1372,7 @@ const MCPPage: React.FC = () => {
                         <TypeBtn
                             key={transport.id}
                             type="button"
-                            onClick={() => openCreate(transport.id)}
+                            onClick={() => canWrite && openCreate(transport.id)}
                         >
                             <TypeIconBox><transport.icon size={15} /></TypeIconBox>
                             {transport.label}
@@ -1432,7 +1391,12 @@ const MCPPage: React.FC = () => {
 
                 {/* ── Right: Configured servers ─────────────────── */}
                 <ContentColumn>
-                    {isLoading ? (
+                    {!currentProject ? (
+                        <CenterBox>
+                            <LoadingSpinner />
+                            <p>Select a project from the top navbar to manage MCP servers.</p>
+                        </CenterBox>
+                    ) : isLoading ? (
                         <CenterBox>
                             <LoadingSpinner />
                             <p>Loading MCP servers…</p>
@@ -1581,8 +1545,8 @@ const MCPPage: React.FC = () => {
                                             )}
 
                                             <CardActions>
-                                                <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
-                                                <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
+                                                {canWrite && <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>}
+                                                {canAdmin && <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>}
                                             </CardActions>
                                         </ServerCard>
                                     );

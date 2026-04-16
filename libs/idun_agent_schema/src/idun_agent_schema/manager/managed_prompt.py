@@ -22,6 +22,7 @@ class ManagedPromptRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    project_id: UUID
     prompt_id: str
     version: int
     content: str

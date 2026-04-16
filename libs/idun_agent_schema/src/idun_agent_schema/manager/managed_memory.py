@@ -24,6 +24,7 @@ class ManagedMemoryRead(BaseModel):
     """Complete managed memory model for responses."""
 
     id: UUID
+    project_id: UUID
     name: str
     agent_framework: AgentFramework = Field(..., description="Agent framework")
     memory: MemoryConfig = Field(..., description="Memory (checkpoint) configuration")

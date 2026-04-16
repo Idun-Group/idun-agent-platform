@@ -4,12 +4,22 @@ import { runtimeConfig } from './runtime-config';
 
 const USE_MOCKS = runtimeConfig.USE_MOCKS === 'true';
 
+export interface WorkspaceSummary {
+    id: string;
+    name: string;
+    slug: string;
+    is_owner: boolean;
+    default_project_id?: string | null;
+}
+
 export interface SessionPrincipal {
     user_id?: string;
     email?: string;
     roles?: string[];
     workspace_ids?: string[];
     default_workspace_id?: string | null;
+    session_version?: number;
+    workspaces?: WorkspaceSummary[];
 }
 
 export interface Session {
@@ -25,7 +35,17 @@ export async function logoutBasic(): Promise<void> {
     await postJson('/api/v1/auth/logout', {});
 }
 
-export async function signupBasic(params: { email: string; password: string; name?: string | null; roles?: string[]; workspaces?: string[] }): Promise<{ id: string; email: string; name?: string | null; roles?: string[]; workspace_ids?: string[] }> {
+export async function signupBasic(
+    params: { email: string; password: string; name?: string | null; roles?: string[]; workspaces?: string[] }
+): Promise<{
+    id: string;
+    email: string;
+    name?: string | null;
+    roles?: string[];
+    workspace_ids?: string[];
+    default_workspace_id?: string | null;
+    workspaces?: WorkspaceSummary[];
+}> {
     return postJson('/api/v1/auth/basic/signup', params);
 }
 

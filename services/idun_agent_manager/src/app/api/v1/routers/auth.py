@@ -28,6 +28,7 @@ from uuid import UUID, uuid4
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from idun_agent_schema.manager.project import ProjectAssignment, ProjectRole
 from itsdangerous import (  # type: ignore[import-untyped]
     BadSignature,
     SignatureExpired,
@@ -210,10 +211,11 @@ def _read_session_cookie(request: Request) -> dict[str, Any] | None:
 def encrypt_payload(payload: str) -> bytes:
     """Derive a deterministic key for a payload using scrypt.
 
-    Salt is taken from AUTH__SECRET_KEY environment variable.
+    Salt is taken from AUTH__SECRET_KEY via app settings, with a direct
+    environment fallback for compatibility in thin scripts.
     Returns 32-byte derived key.
     """
-    secret = os.environ.get("AUTH__SECRET_KEY")
+    secret = get_settings().auth.secret_key or os.environ.get("AUTH__SECRET_KEY")
     if not secret:
         raise ValueError("AUTH__SECRET_KEY environment variable is required")
     return hashlib.scrypt(
@@ -233,7 +235,12 @@ async def _consume_pending_invitations(
 
     Returns list of workspace IDs the user was added to.
     """
+    from app.api.v1.routers.members import (
+        _apply_project_memberships,
+        _normalize_project_assignments,
+    )
     from app.infrastructure.db.models.invitation import InvitationModel
+    from app.infrastructure.db.models.invitation_project import InvitationProjectModel
     from app.infrastructure.db.models.membership import MembershipModel
 
     inv_stmt = select(InvitationModel).where(InvitationModel.email == email)
@@ -241,20 +248,49 @@ async def _consume_pending_invitations(
 
     new_workspace_ids: list[str] = []
     for inv in invitations:
-        # Check no duplicate membership exists
         dup_stmt = select(MembershipModel).where(
             MembershipModel.user_id == user_id,
             MembershipModel.workspace_id == inv.workspace_id,
         )
-        if (await db_session.execute(dup_stmt)).scalar_one_or_none() is None:
+        membership = (await db_session.execute(dup_stmt)).scalar_one_or_none()
+        if membership is None:
             membership = MembershipModel(
                 id=uuid4(),
                 user_id=user_id,
                 workspace_id=inv.workspace_id,
-                role=inv.role,
+                is_owner=inv.is_owner,
             )
             db_session.add(membership)
             new_workspace_ids.append(str(inv.workspace_id))
+        else:
+            membership.is_owner = membership.is_owner or inv.is_owner
+
+        invitation_assignments = (
+            await db_session.execute(
+                select(InvitationProjectModel).where(
+                    InvitationProjectModel.invitation_id == inv.id
+                )
+            )
+        ).scalars().all()
+        normalized_assignments = await _normalize_project_assignments(
+            db_session,
+            workspace_id=inv.workspace_id,
+            is_owner=membership.is_owner,
+            project_assignments=[
+                ProjectAssignment(
+                    project_id=assignment.project_id,
+                    role=ProjectRole(assignment.role),
+                )
+                for assignment in invitation_assignments
+            ],
+        )
+        await _apply_project_memberships(
+            db_session,
+            user_id=user_id,
+            workspace_id=inv.workspace_id,
+            is_owner=membership.is_owner,
+            assignments=normalized_assignments,
+        )
 
         await db_session.delete(inv)
 
@@ -262,6 +298,80 @@ async def _consume_pending_invitations(
         await db_session.flush()
 
     return new_workspace_ids
+
+
+async def _get_workspace_summaries(
+    session: AsyncSession, user_id: UUID
+) -> list[dict[str, Any]]:
+    from app.infrastructure.db.models.membership import MembershipModel
+    from app.infrastructure.db.models.project import ProjectModel
+    from app.infrastructure.db.models.workspace import WorkspaceModel
+
+    rows = (
+        await session.execute(
+            select(WorkspaceModel, MembershipModel.is_owner)
+            .join(MembershipModel, MembershipModel.workspace_id == WorkspaceModel.id)
+            .where(MembershipModel.user_id == user_id)
+            .order_by(WorkspaceModel.created_at.asc())
+        )
+    ).all()
+
+    workspace_ids = [workspace.id for workspace, _ in rows]
+    default_projects: dict[UUID, str] = {}
+    if workspace_ids:
+        projects = (
+            await session.execute(
+                select(ProjectModel).where(
+                    ProjectModel.workspace_id.in_(workspace_ids),
+                    ProjectModel.is_default.is_(True),
+                )
+            )
+        ).scalars().all()
+        default_projects = {
+            project.workspace_id: str(project.id)
+            for project in projects
+        }
+
+    return [
+        {
+            "id": str(workspace.id),
+            "name": workspace.name,
+            "slug": workspace.slug,
+            "is_owner": is_owner,
+            "default_project_id": default_projects.get(workspace.id),
+        }
+        for workspace, is_owner in rows
+    ]
+
+
+async def _build_session_principal(
+    session: AsyncSession,
+    user: Any,
+) -> dict[str, Any]:
+    workspaces = await _get_workspace_summaries(session, user.id)
+    workspace_ids = [workspace["id"] for workspace in workspaces]
+    return {
+        "user_id": str(user.id),
+        "email": user.email,
+        "roles": [],
+        "workspace_ids": workspace_ids,
+        "default_workspace_id": str(user.default_workspace_id)
+        if user.default_workspace_id
+        else None,
+        "workspaces": workspaces,
+        "session_version": user.session_version,
+    }
+
+
+def _build_auth_response(user: Any, principal: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "name": user.name,
+        "workspace_ids": principal["workspace_ids"],
+        "default_workspace_id": principal["default_workspace_id"],
+        "workspaces": principal["workspaces"],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -458,24 +568,16 @@ async def callback(
             user.default_workspace_id = UUID(workspace_ids[0])
             await session.flush()
 
-    # Build session payload matching the frontend Session interface
+    principal = await _build_session_principal(session, user)
     session_payload = {
         "provider": provider_name,
-        "principal": {
-            "user_id": str(user.id),
-            "email": email,
-            "roles": ["admin"],
-            "workspace_ids": workspace_ids,
-            "default_workspace_id": str(user.default_workspace_id)
-            if user.default_workspace_id
-            else None,
-        },
+        "principal": principal,
         "created_at": int(time.time()),
     }
 
     redirect_url = (
         f"{settings.auth.frontend_url}/agents"
-        if workspace_ids
+        if principal["workspace_ids"]
         else f"{settings.auth.frontend_url}/onboarding"
     )
     response = RedirectResponse(url=redirect_url, status_code=302)
@@ -511,31 +613,17 @@ async def me(
     user_id = principal.get("user_id")
     cookie_dirty = False
     if user_id:
-        from app.infrastructure.db.models.membership import MembershipModel
         from app.infrastructure.db.models.user import UserModel
 
         try:
             user_uuid = UUID(user_id)
-            ws_stmt = select(MembershipModel.workspace_id).where(
-                MembershipModel.user_id == user_uuid
-            )
-            ws_result = await session.execute(ws_stmt)
-            workspace_ids = [str(wid) for (wid,) in ws_result.all()]
-
-            old_ws_ids = principal.get("workspace_ids", [])
-            principal["workspace_ids"] = workspace_ids
-
             user = await session.get(UserModel, user_uuid)
-            new_default = (
-                str(user.default_workspace_id)
-                if user and user.default_workspace_id
-                else None
-            )
-            old_default = principal.get("default_workspace_id")
-            principal["default_workspace_id"] = new_default
-
-            if workspace_ids != old_ws_ids or new_default != old_default:
-                cookie_dirty = True
+            if user is not None:
+                fresh_principal = await _build_session_principal(session, user)
+                if principal != fresh_principal:
+                    payload["principal"] = fresh_principal
+                    principal = fresh_principal
+                    cookie_dirty = True
         except Exception:
             logger.exception("Failed to refresh workspace data for user %s", user_id)
 
@@ -599,12 +687,10 @@ async def basic_signup(
         session.add(user)
         await session.flush()
 
-        # Consume any pending invitations for this email
         invited_ws_ids = await _consume_pending_invitations(
             session, user.id, request.email
         )
 
-        # Set default workspace if invitations provided one
         if invited_ws_ids and user.default_workspace_id is None:
             user.default_workspace_id = UUID(invited_ws_ids[0])
             await session.flush()
@@ -615,32 +701,15 @@ async def basic_signup(
             detail="Database error",
         ) from e
 
-    workspace_ids = invited_ws_ids
-
+    principal = await _build_session_principal(session, user)
     session_payload = {
         "provider": "local",
-        "principal": {
-            "user_id": str(user.id),
-            "email": request.email,
-            "roles": ["admin"],
-            "workspace_ids": workspace_ids,
-            "default_workspace_id": str(user.default_workspace_id)
-            if user.default_workspace_id
-            else None,
-        },
+        "principal": principal,
         "created_at": int(time.time()),
     }
     _set_session_cookie(response, session_payload)
 
-    return {
-        "id": str(user.id),
-        "email": user.email,
-        "name": user.name,
-        "workspace_ids": workspace_ids,
-        "default_workspace_id": str(user.default_workspace_id)
-        if user.default_workspace_id
-        else None,
-    }
+    return _build_auth_response(user, principal)
 
 
 @router.post("/basic/login")
@@ -689,7 +758,6 @@ async def basic_login(
         ws_result = await session.execute(ws_stmt)
         workspace_ids = [str(wid) for (wid,) in ws_result.all()]
 
-        # Backfill default_workspace_id for users created before the migration
         if user.default_workspace_id is None and workspace_ids:
             user.default_workspace_id = UUID(workspace_ids[0])
             await session.flush()
@@ -700,27 +768,12 @@ async def basic_login(
             detail="Database error",
         ) from e
 
+    principal = await _build_session_principal(session, user)
     session_payload = {
         "provider": "local",
-        "principal": {
-            "user_id": str(user.id),
-            "email": user.email,
-            "roles": ["admin"],
-            "workspace_ids": workspace_ids,
-            "default_workspace_id": str(user.default_workspace_id)
-            if user.default_workspace_id
-            else None,
-        },
+        "principal": principal,
         "created_at": int(time.time()),
     }
     _set_session_cookie(response, session_payload)
 
-    return {
-        "id": str(user.id),
-        "email": user.email,
-        "name": user.name,
-        "workspace_ids": workspace_ids,
-        "default_workspace_id": str(user.default_workspace_id)
-        if user.default_workspace_id
-        else None,
-    }
+    return _build_auth_response(user, principal)

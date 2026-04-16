@@ -23,6 +23,7 @@ class ManagedObservabilityRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    project_id: UUID
     name: str
     observability: ObservabilityConfig = Field(
         ..., description="Observability configuration"

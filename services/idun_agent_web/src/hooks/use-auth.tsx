@@ -1,6 +1,13 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getSession, loginBasic, logoutBasic, signupBasic } from '../utils/auth';
-import { addUnauthorizedHandler, removeUnauthorizedHandler, API_BASE_URL } from '../utils/api';
+import {
+    addUnauthorizedHandler,
+    removeUnauthorizedHandler,
+    API_BASE_URL,
+    getStoredWorkspaceId,
+    setStoredWorkspaceId,
+} from '../utils/api';
 import type { Session, SessionPrincipal } from '../utils/auth';
 import { useAnalytics } from './use-analytics';
 
@@ -18,12 +25,16 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function syncActiveWorkspace(principal: SessionPrincipal | undefined) {
     if (typeof window === 'undefined' || !principal) return;
-    const current = localStorage.getItem('activeTenantId');
-    const ids = principal.workspace_ids || [];
+    const current = getStoredWorkspaceId();
+    const ids = principal.workspace_ids || principal.workspaces?.map((workspace) => workspace.id) || [];
+    if (!ids.length) {
+        setStoredWorkspaceId(null);
+        return;
+    }
     if (!current || !ids.includes(current)) {
         const defaultId = principal.default_workspace_id;
         const activeId = (defaultId && ids.includes(defaultId)) ? defaultId : ids[0];
-        if (activeId) localStorage.setItem('activeTenantId', activeId);
+        if (activeId) setStoredWorkspaceId(activeId);
     }
 }
 
@@ -55,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = useCallback(async () => {
         await logoutBasic();
         setSession(null);
+        setStoredWorkspaceId(null);
     }, []);
 
     const signup = useCallback(async (params: { email: string; password: string; name?: string | null }) => {

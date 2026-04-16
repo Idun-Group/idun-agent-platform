@@ -78,6 +78,7 @@ class AuthSettings(BaseSettings):
     provider: str = Field(default="google")
     redirect_uri: str = Field(default="http://localhost:8000/api/v1/auth/callback")
     frontend_url: str = Field(default="http://localhost:5173")
+    secret_key: str = Field(default="")
     session_secret: str = Field(
         default="change-me-to-a-random-secret-at-least-32-chars!"
     )

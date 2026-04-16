@@ -3,30 +3,39 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from idun_agent_schema.manager.project import ProjectRole
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
+    require_project_admin,
+    require_project_contributor,
+    require_project_reader,
     require_workspace,
 )
 from app.infrastructure.db.models.managed_agent import ManagedAgentModel
 from app.infrastructure.db.models.managed_prompt import ManagedPromptModel
+from app.infrastructure.db.models.project import ProjectModel
+from app.infrastructure.db.models.project_membership import ProjectMembershipModel
 from app.infrastructure.db.models.workspace import WorkspaceModel
 
 pytestmark = pytest.mark.asyncio
 
 WORKSPACE_ID = uuid4()
+PROJECT_ID = uuid4()
 FAKE_USER = CurrentUser(
     user_id=str(uuid4()),
     email="test@test.com",
     workspace_ids=[str(WORKSPACE_ID)],
+    default_workspace_id=str(WORKSPACE_ID),
 )
 
 
@@ -45,6 +54,22 @@ async def seeded_workspace(db_session: AsyncSession) -> WorkspaceModel:
         updated_at=datetime.now(UTC),
     )
     db_session.add(ws)
+    db_session.add(
+        ProjectModel(
+            id=PROJECT_ID,
+            workspace_id=WORKSPACE_ID,
+            name="Default Project",
+            is_default=True,
+        )
+    )
+    db_session.add(
+        ProjectMembershipModel(
+            id=uuid4(),
+            project_id=PROJECT_ID,
+            user_id=UUID(FAKE_USER.user_id),
+            role="admin",
+        )
+    )
     await db_session.flush()
     return ws
 
@@ -61,6 +86,24 @@ async def authed_client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_current_user] = lambda: FAKE_USER
     app.dependency_overrides[require_workspace] = lambda: WORKSPACE_ID
+    app.dependency_overrides[require_project_reader] = lambda: ProjectAccess(
+        project_id=PROJECT_ID,
+        workspace_id=WORKSPACE_ID,
+        role=ProjectRole.ADMIN,
+        is_default=True,
+    )
+    app.dependency_overrides[require_project_contributor] = lambda: ProjectAccess(
+        project_id=PROJECT_ID,
+        workspace_id=WORKSPACE_ID,
+        role=ProjectRole.ADMIN,
+        is_default=True,
+    )
+    app.dependency_overrides[require_project_admin] = lambda: ProjectAccess(
+        project_id=PROJECT_ID,
+        workspace_id=WORKSPACE_ID,
+        role=ProjectRole.ADMIN,
+        is_default=True,
+    )
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -78,6 +121,7 @@ async def seeded_prompt(db_session: AsyncSession) -> ManagedPromptModel:
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
         workspace_id=WORKSPACE_ID,
+        project_id=PROJECT_ID,
     )
     db_session.add(model)
     await db_session.flush()
@@ -100,6 +144,7 @@ async def seeded_agent(db_session: AsyncSession) -> ManagedAgentModel:
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
         workspace_id=WORKSPACE_ID,
+        project_id=PROJECT_ID,
     )
     db_session.add(model)
     await db_session.flush()

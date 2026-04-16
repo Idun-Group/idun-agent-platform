@@ -1,6 +1,6 @@
 import { deleteRequest, getJson, patchJson, postJson } from '../utils/api';
 
-export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'viewer';
+export type ProjectRole = 'admin' | 'contributor' | 'reader';
 
 export type WorkspaceMember = {
     id: string;
@@ -8,14 +8,20 @@ export type WorkspaceMember = {
     email: string;
     name: string | null;
     picture_url: string | null;
-    role: WorkspaceRole;
+    is_owner: boolean;
     created_at: string;
+};
+
+export type ProjectAssignment = {
+    project_id: string;
+    role: ProjectRole;
 };
 
 export type WorkspaceInvitation = {
     id: string;
     email: string;
-    role: WorkspaceRole;
+    is_owner: boolean;
+    project_assignments: ProjectAssignment[];
     invited_by: string | null;
     created_at: string;
     status: 'pending';
@@ -42,20 +48,20 @@ export async function listMembers(
 
 export async function addMember(
     workspaceId: string,
-    body: { email: string; role: WorkspaceRole },
+    body: { email: string; is_owner: boolean; project_assignments?: ProjectAssignment[] },
 ): Promise<WorkspaceMember> {
-    return postJson<WorkspaceMember, { email: string; role: WorkspaceRole }>(
+    return postJson<WorkspaceMember, { email: string; is_owner: boolean; project_assignments?: ProjectAssignment[] }>(
         `/api/v1/workspaces/${workspaceId}/members`,
         body,
     );
 }
 
-export async function updateMemberRole(
+export async function updateMemberOwnership(
     workspaceId: string,
     membershipId: string,
-    body: { role: WorkspaceRole },
+    body: { is_owner: boolean },
 ): Promise<WorkspaceMember> {
-    return patchJson<WorkspaceMember, { role: WorkspaceRole }>(
+    return patchJson<WorkspaceMember, { is_owner: boolean }>(
         `/api/v1/workspaces/${workspaceId}/members/${membershipId}`,
         body,
     );
@@ -77,39 +83,6 @@ export async function cancelInvitation(
     );
 }
 
-/** Labels for display */
-export const ROLE_LABELS: Record<WorkspaceRole, string> = {
-    owner: 'Owner',
-    admin: 'Admin',
-    member: 'Member',
-    viewer: 'Viewer',
-};
-
-/** Hierarchy for permission checks */
-export const ROLE_HIERARCHY: Record<WorkspaceRole, number> = {
-    owner: 4,
-    admin: 3,
-    member: 2,
-    viewer: 1,
-};
-
-/** Permission matrix per role */
-export const ROLE_PERMISSIONS: Record<WorkspaceRole, string[]> = {
-    owner: [
-        'Full workspace control',
-        'Delete workspace',
-        'Manage all members',
-        'Assign any role',
-        'Rename workspace',
-        'Manage spaces',
-        'View all data',
-    ],
-    admin: [
-        'Manage members (member/viewer)',
-        'Rename workspace',
-        'Manage spaces',
-        'View all data',
-    ],
-    member: ['Use agents and tools', 'View spaces', 'View members'],
-    viewer: ['Read-only access', 'View spaces', 'View members'],
-};
+export function formatWorkspaceAccessLabel(member: WorkspaceMember | WorkspaceInvitation): string {
+    return member.is_owner ? 'Owner' : 'Member';
+}

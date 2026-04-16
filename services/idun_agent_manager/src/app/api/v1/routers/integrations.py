@@ -16,14 +16,16 @@ from idun_agent_schema.manager.managed_integration import (
     ManagedIntegrationPatch,
     ManagedIntegrationRead,
 )
+from idun_agent_schema.manager.project import ProjectRole
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
-    require_workspace,
+    require_project_role,
 )
 from app.infrastructure.db.models.agent_integration import AgentIntegrationModel
 from app.infrastructure.db.models.managed_integration import (
@@ -44,6 +46,7 @@ async def _get_integration(
     id: str,
     session: AsyncSession,
     workspace_id: UUID | None = None,
+    project_id: UUID | None = None,
 ) -> ManagedIntegrationModel:
     """Get integration config by ID, optionally scoped to a workspace."""
     try:
@@ -65,6 +68,11 @@ async def _get_integration(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Integration with id '{id}' not found",
         )
+    if project_id is not None and model.project_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Integration with id '{id}' not found",
+        )
     return model
 
 
@@ -75,6 +83,7 @@ def _model_to_schema(
     integration = IntegrationConfig(**model.integration_config)
     return ManagedIntegrationRead(
         id=model.id,
+        project_id=model.project_id,
         name=model.name,
         integration=integration,
         agent_count=agent_count,
@@ -93,7 +102,9 @@ async def create_integration(
     request: ManagedIntegrationCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(
+        require_project_role(ProjectRole.CONTRIBUTOR)
+    ),
 ) -> ManagedIntegrationRead:
     """Create a new managed integration configuration."""
     now = datetime.now(UTC)
@@ -106,7 +117,8 @@ async def create_integration(
         integration_config=integration_config.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=project_access.workspace_id,
+        project_id=project_access.project_id,
     )
 
     session.add(model)
@@ -126,7 +138,7 @@ async def list_integrations(
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> list[ManagedIntegrationRead]:
     """List managed integration configurations with pagination."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -142,7 +154,10 @@ async def list_integrations(
 
     stmt = (
         select(ManagedIntegrationModel)
-        .where(ManagedIntegrationModel.workspace_id == workspace_id)
+        .where(
+            ManagedIntegrationModel.workspace_id == project_access.workspace_id,
+            ManagedIntegrationModel.project_id == project_access.project_id,
+        )
         .limit(limit)
         .offset(offset)
     )
@@ -174,10 +189,15 @@ async def get_integration(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.READER)),
 ) -> ManagedIntegrationRead:
     """Get a managed integration configuration by ID."""
-    model = await _get_integration(id, session, workspace_id)
+    model = await _get_integration(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     count_stmt = select(func.count(func.distinct(AgentIntegrationModel.agent_id))).where(
         AgentIntegrationModel.integration_id == model.id
     )
@@ -194,10 +214,15 @@ async def delete_integration(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_role(ProjectRole.ADMIN)),
 ) -> None:
     """Delete a managed integration configuration permanently."""
-    model = await _get_integration(id, session, workspace_id)
+    model = await _get_integration(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     stmt = select(AgentIntegrationModel.agent_id).where(
         AgentIntegrationModel.integration_id == model.id
@@ -223,10 +248,17 @@ async def patch_integration(
     request: ManagedIntegrationPatch,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(
+        require_project_role(ProjectRole.CONTRIBUTOR)
+    ),
 ) -> ManagedIntegrationRead:
     """Update an integration configuration."""
-    model = await _get_integration(id, session, workspace_id)
+    model = await _get_integration(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     model.name = request.name
     integration_config = IntegrationConfig(

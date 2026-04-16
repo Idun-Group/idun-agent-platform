@@ -23,7 +23,11 @@ class ManagedPromptModel(Base):
     __tablename__ = "managed_prompts"
     __table_args__ = (
         UniqueConstraint(
-            "workspace_id", "prompt_id", "version", name="uq_workspace_prompt_version"
+            "workspace_id",
+            "project_id",
+            "prompt_id",
+            "version",
+            name="uq_workspace_project_prompt_version",
         ),
     )
 
@@ -44,6 +48,12 @@ class ManagedPromptModel(Base):
     workspace_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    project_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

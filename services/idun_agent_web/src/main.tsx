@@ -13,6 +13,7 @@ import { WorkspaceProvider } from './hooks/use-workspace.tsx';
 import { ToggleThemeModeProvider } from './hooks/use-toggle-theme-mode.tsx';
 import { LoaderProvider } from './hooks/use-loader.tsx';
 import { AuthProvider } from './hooks/use-auth.tsx';
+import { ProjectProvider } from './hooks/use-project.tsx';
 import { PostHogProvider, usePostHog } from '@posthog/react';
 import { runtimeConfig } from './utils/runtime-config.ts';
 import { getDeploymentType } from './utils/deployment.ts';
@@ -57,9 +58,10 @@ createRoot(document.getElementById('root')!).render(
         <Analytics>
         <BrowserRouter>
             <ToggleThemeModeProvider>
-                <WorkspaceProvider>
-                    <LoaderProvider>
-                        <AuthProvider>
+                <AuthProvider>
+                    <WorkspaceProvider>
+                        <ProjectProvider>
+                            <LoaderProvider>
                             <GlobalStyles />
                             <ToastStyles />
                             <App />
@@ -77,9 +79,10 @@ createRoot(document.getElementById('root')!).render(
                                 transition={Slide}
                                 limit={5}
                             />
-                        </AuthProvider>
-                    </LoaderProvider>
-                </WorkspaceProvider>
+                            </LoaderProvider>
+                        </ProjectProvider>
+                    </WorkspaceProvider>
+                </AuthProvider>
             </ToggleThemeModeProvider>
         </BrowserRouter>
         </Analytics>

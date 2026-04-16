@@ -10,6 +10,13 @@ type AgentFramework = components['schemas']['AgentFramework'];
 
 type ListAgentsQuery = operations['list_agents_api_v1_agents__get']['parameters']['query'];
 
+type EngineConfigShape = {
+    agent?: {
+        type?: AgentFramework;
+        config?: Record<string, unknown>;
+    };
+};
+
 export type BackendAgent = ManagedAgent & {
     framework: AgentFramework;
     description: string | null;
@@ -27,6 +34,7 @@ const createMockManagedAgent = (index: number): ManagedAgent => {
 
     const base = {
         id: `00000000-0000-0000-0000-00000000000${index + 1}`,
+        project_id: `11111111-1111-1111-1111-11111111111${index + 1}`,
         name: `Mock Agent ${index + 1}`,
         status: (index % 2 === 0 ? 'draft' : 'active') as ManagedAgent['status'],
         version: '0.1.0',
@@ -60,8 +68,18 @@ const MOCK_MANAGED_AGENTS: ManagedAgent[] = Array.from({ length: 8 }).map((_, in
     createMockManagedAgent(index)
 );
 
+const getAgentSection = (agent: ManagedAgent): EngineConfigShape['agent'] => {
+    const engineConfig = agent.engine_config as EngineConfigShape | undefined;
+    return engineConfig?.agent;
+};
+
+const getAgentConfig = (agent: ManagedAgent): Record<string, unknown> | undefined => {
+    const config = getAgentSection(agent)?.config;
+    return config && typeof config === 'object' ? config : undefined;
+};
+
 const deriveDescription = (agent: ManagedAgent): string | null => {
-    const config = agent.engine_config?.agent?.config as Record<string, unknown> | undefined;
+    const config = getAgentConfig(agent);
     const maybe = config && typeof config.description === 'string' ? config.description : null;
     return maybe ?? null;
 };
@@ -69,7 +87,7 @@ const deriveDescription = (agent: ManagedAgent): string | null => {
 const deriveRunConfig = (
     agent: ManagedAgent
 ): BackendAgent['run_config'] | undefined => {
-    const config = agent.engine_config?.agent?.config as Record<string, unknown> | undefined;
+    const config = getAgentConfig(agent);
     if (!config) return undefined;
 
     const maybeRunConfig = (config as Record<string, unknown>).run_config;
@@ -84,15 +102,15 @@ const deriveRunConfig = (
         }
     }
     return undefined;
-        };
+};
 
 const decorateAgent = (agent: ManagedAgent): BackendAgent => {
-    const framework = agent.engine_config.agent.type;
+    const framework = getAgentSection(agent)?.type ?? 'LANGGRAPH';
     return {
         ...agent,
         framework,
         description: deriveDescription(agent),
-        config: agent.engine_config.agent.config,
+        config: getAgentConfig(agent),
         run_config: deriveRunConfig(agent),
     };
 };
@@ -211,7 +229,7 @@ export function performHealthCheck(
         })
         .then(data => {
             const isHealthy = data?.status === 'ok';
-            const config = agent.engine_config?.agent?.config as Record<string, unknown> | undefined;
+            const config = getAgentConfig(agent);
             const expectedName = config?.name;
             const returnedName = data?.agent_name;
             const identityMatch = !expectedName || !returnedName || returnedName === expectedName;

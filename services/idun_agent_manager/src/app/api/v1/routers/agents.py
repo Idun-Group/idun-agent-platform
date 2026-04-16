@@ -40,9 +40,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
-    require_workspace,
+    require_project_admin,
+    require_project_contributor,
+    require_project_reader,
 )
 from app.api.v1.routers.auth import encrypt_payload
 from app.infrastructure.db.models.agent_prompt_assignment import (
@@ -71,6 +74,7 @@ async def _get_agent(
     agent_id: str,
     session: AsyncSession,
     workspace_id: UUID | None = None,
+    project_id: UUID | None = None,
 ) -> ManagedAgentModel:
     """Get agent by ID, optionally scoped to a workspace."""
     try:
@@ -92,6 +96,11 @@ async def _get_agent(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id '{agent_id}' not found",
         )
+    if project_id is not None and model.project_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Agent with id '{agent_id}' not found",
+        )
     return model
 
 
@@ -103,6 +112,7 @@ def _model_to_schema(model: ManagedAgentModel) -> ManagedAgentRead:
     """
     return ManagedAgentRead(
         id=model.id,  # type: ignore
+        project_id=model.project_id,  # type: ignore
         base_url=model.base_url,
         name=model.name,
         status=AgentStatus(model.status),
@@ -125,7 +135,7 @@ async def create_agent(
     request: ManagedAgentCreate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> ManagedAgentRead:
     """Create a new managed agent."""
     now = datetime.now(UTC)
@@ -141,7 +151,8 @@ async def create_agent(
         engine_config=engine_config.model_dump(),
         created_at=now,
         updated_at=now,
-        workspace_id=workspace_id,
+        workspace_id=project_access.workspace_id,
+        project_id=project_access.project_id,
     )
 
     session.add(model)
@@ -167,7 +178,7 @@ async def generate_key(
     agent_id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> dict[str, Any]:
     try:
         uuid = UUID(agent_id)
@@ -184,7 +195,11 @@ async def generate_key(
             detail="Unexpected error occured. Please try again later",
         ) from e
 
-    if not model or model.workspace_id != workspace_id:
+    if (
+        not model
+        or model.workspace_id != project_access.workspace_id
+        or model.project_id != project_access.project_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Agent with id: {agent_id} not found",
@@ -271,6 +286,7 @@ async def config(
 
     return ManagedAgentRead(
         id=agent_model.id,  # type: ignore
+        project_id=agent_model.project_id,  # type: ignore
         base_url=agent_model.base_url,
         name=agent_model.name,
         status=AgentStatus(agent_model.status),
@@ -292,7 +308,7 @@ async def list_agents(
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_reader),
 ) -> list[ManagedAgentRead]:
     """List managed agents with pagination, scoped to workspace."""
     if not (1 <= limit <= PAGINATION_MAX_LIMIT):
@@ -307,7 +323,10 @@ async def list_agents(
 
     stmt = (
         select(ManagedAgentModel)
-        .where(ManagedAgentModel.workspace_id == workspace_id)
+        .where(
+            ManagedAgentModel.workspace_id == project_access.workspace_id,
+            ManagedAgentModel.project_id == project_access.project_id,
+        )
         .limit(limit)
         .offset(offset)
     )
@@ -328,10 +347,15 @@ async def get_agent(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_reader),
 ) -> ManagedAgentRead:
     """Get a managed agent by ID."""
-    model = await _get_agent(id, session, workspace_id)
+    model = await _get_agent(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     return _model_to_schema(model)
 
 
@@ -345,10 +369,15 @@ async def delete_agent(
     id: str,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_admin),
 ) -> None:
     """Delete a managed agent permanently."""
-    model = await _get_agent(id, session, workspace_id)
+    model = await _get_agent(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     await session.delete(model)
     await session.flush()
 
@@ -364,10 +393,15 @@ async def patch_agent(
     request: ManagedAgentPatch,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> ManagedAgentRead:
     """Partially update an agent's configuration."""
-    model = await _get_agent(id, session, workspace_id)
+    model = await _get_agent(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
 
     model.name = request.name
     model.base_url = request.base_url
@@ -396,10 +430,15 @@ async def update_agent_status(
     request: ManagedAgentStatusUpdate,
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
-    workspace_id: UUID = Depends(require_workspace),
+    project_access: ProjectAccess = Depends(require_project_contributor),
 ) -> ManagedAgentRead:
     """Update agent status without modifying other fields."""
-    model = await _get_agent(id, session, workspace_id)
+    model = await _get_agent(
+        id,
+        session,
+        project_access.workspace_id,
+        project_access.project_id,
+    )
     model.status = request.status.value
     model.updated_at = datetime.now(UTC)
     await session.flush()

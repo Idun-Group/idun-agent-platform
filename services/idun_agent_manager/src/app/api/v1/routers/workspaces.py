@@ -12,10 +12,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.deps import CurrentUser, get_current_user, get_session
-from app.api.v1.routers.members import require_workspace_role
-from app.api.v1.schemas.workspace_members import WorkspaceRole
+from app.api.v1.deps import (
+    CurrentUser,
+    get_current_user,
+    get_session,
+)
 from app.infrastructure.db.models.membership import MembershipModel
+from app.infrastructure.db.models.project import ProjectModel
+from app.infrastructure.db.models.project_membership import ProjectMembershipModel
 from app.infrastructure.db.models.user import UserModel
 from app.infrastructure.db.models.workspace import WorkspaceModel
 
@@ -35,6 +39,8 @@ class WorkspaceRead(BaseModel):
     slug: str
     icon: str = ""
     description: str = ""
+    is_owner: bool = False
+    default_project_id: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -65,22 +71,36 @@ async def list_workspaces(
 ) -> list[WorkspaceRead]:
     """Return all workspaces the current user is a member of."""
     stmt = (
-        select(WorkspaceModel)
+        select(WorkspaceModel, MembershipModel.is_owner)
         .join(MembershipModel, MembershipModel.workspace_id == WorkspaceModel.id)
         .where(MembershipModel.user_id == UUID(user.user_id))
         .limit(limit)
         .offset(offset)
     )
-    result = await session.execute(stmt)
-    rows = result.scalars().all()
+    rows = (await session.execute(stmt)).all()
+
+    workspace_ids = [workspace.id for workspace, _ in rows]
+    default_projects: dict[UUID, str] = {}
+    if workspace_ids:
+        project_stmt = select(ProjectModel).where(
+            ProjectModel.workspace_id.in_(workspace_ids),
+            ProjectModel.is_default.is_(True),
+        )
+        projects = (await session.execute(project_stmt)).scalars().all()
+        default_projects = {
+            project.workspace_id: str(project.id)
+            for project in projects
+        }
 
     return [
         WorkspaceRead(
-            id=str(w.id),
-            name=w.name,
-            slug=w.slug,
+            id=str(workspace.id),
+            name=workspace.name,
+            slug=workspace.slug,
+            is_owner=is_owner,
+            default_project_id=default_projects.get(workspace.id),
         )
-        for w in rows
+        for workspace, is_owner in rows
     ]
 
 
@@ -115,9 +135,31 @@ async def create_workspace(
         id=uuid4(),
         user_id=UUID(user.user_id),
         workspace_id=ws_id,
-        role=WorkspaceRole.OWNER.value,
+        is_owner=True,
     )
     session.add(membership)
+    await session.flush()
+
+    default_project = ProjectModel(
+        id=uuid4(),
+        workspace_id=ws_id,
+        name="Default Project",
+        description="Automatically created default project",
+        created_by=UUID(user.user_id),
+        is_default=True,
+        created_at=now,
+        updated_at=now,
+    )
+    session.add(default_project)
+    await session.flush()
+
+    project_membership = ProjectMembershipModel(
+        id=uuid4(),
+        project_id=default_project.id,
+        user_id=UUID(user.user_id),
+        role="admin",
+    )
+    session.add(project_membership)
     await session.flush()
 
     # Set as default workspace if user doesn't have one yet
@@ -130,6 +172,8 @@ async def create_workspace(
         id=str(workspace.id),
         name=workspace.name,
         slug=workspace.slug,
+        is_owner=True,
+        default_project_id=str(default_project.id),
     )
 
 
@@ -144,7 +188,7 @@ async def patch_workspace(
     session: AsyncSession = Depends(get_session),
     user: CurrentUser = Depends(get_current_user),
 ) -> WorkspaceRead:
-    """Update a workspace name. Requires admin or owner role."""
+    """Update a workspace name. Requires workspace owner access."""
     try:
         ws_uuid = UUID(workspace_id)
     except ValueError as err:
@@ -153,7 +197,11 @@ async def patch_workspace(
             detail="Invalid workspace id",
         ) from err
 
-    await require_workspace_role(ws_uuid, user, session, WorkspaceRole.ADMIN)
+    if not user.is_owner_for(ws_uuid):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Workspace owner access required",
+        )
 
     workspace = await session.get(WorkspaceModel, ws_uuid)
     if not workspace:
@@ -169,10 +217,21 @@ async def patch_workspace(
     await session.flush()
     await session.refresh(workspace)
 
+    default_project = (
+        await session.execute(
+            select(ProjectModel).where(
+                ProjectModel.workspace_id == workspace.id,
+                ProjectModel.is_default.is_(True),
+            )
+        )
+    ).scalar_one_or_none()
+
     return WorkspaceRead(
         id=str(workspace.id),
         name=workspace.name,
         slug=workspace.slug,
+        is_owner=True,
+        default_project_id=str(default_project.id) if default_project else None,
     )
 
 
@@ -195,7 +254,11 @@ async def delete_workspace(
             detail="Invalid workspace id",
         ) from err
 
-    await require_workspace_role(ws_uuid, user, session, WorkspaceRole.OWNER)
+    if not user.is_owner_for(ws_uuid):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Workspace owner access required",
+        )
 
     workspace = await session.get(WorkspaceModel, ws_uuid)
     if not workspace:

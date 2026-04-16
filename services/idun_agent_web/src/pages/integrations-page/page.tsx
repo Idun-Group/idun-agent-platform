@@ -7,6 +7,7 @@ import CreateIntegrationModal from '../../components/applications/create-integra
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import type { IntegrationProvider } from '../../services/integrations';
 import { useTranslation } from 'react-i18next';
+import { useProject } from '../../hooks/use-project';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -543,6 +544,7 @@ const maskToken = (token: string): string => {
 
 const IntegrationsPage: React.FC = () => {
     const { t } = useTranslation();
+    const { currentProject, canWrite, canAdmin } = useProject();
     const [configs, setConfigs] = useState<ManagedIntegration[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -552,6 +554,11 @@ const IntegrationsPage: React.FC = () => {
     const [configToDelete, setConfigToDelete] = useState<ManagedIntegration | null>(null);
 
     const loadConfigs = useCallback(async () => {
+        if (!currentProject) {
+            setConfigs([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const data = await fetchIntegrations();
@@ -561,7 +568,7 @@ const IntegrationsPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [currentProject]);
 
     useEffect(() => { loadConfigs(); }, [loadConfigs]);
 
@@ -584,7 +591,11 @@ const IntegrationsPage: React.FC = () => {
             <PageHeader>
                 <TitleBlock>
                     <PageTitle>{t('integrations.title', 'Integrations')}</PageTitle>
-                    <PageSubtitle>{t('integrations.subtitle', 'Connect external messaging platforms to your agents')}</PageSubtitle>
+                    <PageSubtitle>
+                        {currentProject
+                            ? `Connect external messaging platforms for ${currentProject.name}`
+                            : 'Select a project to manage integrations'}
+                    </PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -614,7 +625,7 @@ const IntegrationsPage: React.FC = () => {
                                             key={key}
                                             type="button"
                                             $disabled={isDisabled}
-                                            onClick={() => { if (!isDisabled) openCreate(key as IntegrationProvider); }}
+                                            onClick={() => { if (!isDisabled && canWrite) openCreate(key as IntegrationProvider); }}
                                         >
                                             <ProviderIconBoxSmall $color={meta.color}>
                                                 {Icon ? <Icon /> : <span>+</span>}
@@ -639,7 +650,12 @@ const IntegrationsPage: React.FC = () => {
 
                 {/* ── Right: Configured integrations ────────────────── */}
                 <ContentColumn>
-                    {isLoading ? (
+                    {!currentProject ? (
+                        <CenterBox>
+                            <LoadingSpinner />
+                            <p>Select a project from the top navbar to manage integrations.</p>
+                        </CenterBox>
+                    ) : isLoading ? (
                         <CenterBox>
                             <LoadingSpinner />
                             <p>{t('integrations.loading', 'Loading integrations...')}</p>
@@ -762,8 +778,8 @@ const IntegrationsPage: React.FC = () => {
                                         )}
 
                                         <CardActions>
-                                            <EditBtn onClick={() => openEdit(config)}>Edit</EditBtn>
-                                            <DeleteBtn onClick={() => setConfigToDelete(config)}>Remove</DeleteBtn>
+                                            {canWrite && <EditBtn onClick={() => openEdit(config)}>Edit</EditBtn>}
+                                            {canAdmin && <DeleteBtn onClick={() => setConfigToDelete(config)}>Remove</DeleteBtn>}
                                         </CardActions>
                                     </Card>
                                 );

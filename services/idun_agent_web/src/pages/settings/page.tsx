@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { lazy, Suspense } from 'react';
 import styled from 'styled-components';
-import { Settings as SettingsIcon, Users, FolderOpen, UserPlus } from 'lucide-react';
+import { Settings as SettingsIcon, Users, FolderOpen } from 'lucide-react';
 import PagedSettingsContainer, {
     type SettingsPage as SettingsPageConfig,
 } from '../../components/settings/paged-settings-container/component';
@@ -16,9 +16,6 @@ const WorkspaceUsersTab = lazy(
 );
 const WorkspaceProjectsTab = lazy(
     () => import('../../components/settings/workspace-projects/component'),
-);
-const ProjectMembersTab = lazy(
-    () => import('../../components/settings/project-members/component'),
 );
 
 const DEFAULT_PAGE = 'workspace-general';
@@ -61,17 +58,6 @@ const SettingsPage = () => {
             content: (
                 <Suspense fallback={<Loader />}>
                     <WorkspaceProjectsTab />
-                </Suspense>
-            ),
-        },
-        {
-            title: t('settings.tabs.projectMembers', 'Project Members'),
-            slug: 'project-members',
-            group: t('settings.groups.projects', 'Projects'),
-            icon: <UserPlus size={14} />,
-            content: (
-                <Suspense fallback={<Loader />}>
-                    <ProjectMembersTab />
                 </Suspense>
             ),
         },

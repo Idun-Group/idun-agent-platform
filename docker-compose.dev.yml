@@ -28,8 +28,8 @@ services:
     container_name: idun-manager-dev
     env_file: .env
     environment:
-      - AUTH__SECRET_KEY=$2b$12$6p5XpY.kO8qA4C9uG.k7u.
-      - DEBUG=true
+      AUTH__SECRET_KEY: idun-dev-agent-api-key-secret
+      DEBUG: "true"
     volumes:
       - ./services/idun_agent_manager/src:/app/src
       - ./services/idun_agent_manager/alembic:/app/alembic

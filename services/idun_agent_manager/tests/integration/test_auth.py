@@ -93,12 +93,21 @@ class TestBasicSignup:
     ):
         """If a pending invitation exists for the email, signup consumes it."""
         from app.infrastructure.db.models.invitation import InvitationModel
+        from app.infrastructure.db.models.project import ProjectModel
         from app.infrastructure.db.models.workspace import WorkspaceModel
 
         # Create a workspace first (directly in DB)
         ws_id = uuid4()
         ws = WorkspaceModel(id=ws_id, name="Invited WS", slug="invited-ws")
         db_session.add(ws)
+        db_session.add(
+            ProjectModel(
+                id=uuid4(),
+                workspace_id=ws_id,
+                name="Default Project",
+                is_default=True,
+            )
+        )
         await db_session.flush()
 
         # Create a pending invitation
@@ -106,7 +115,7 @@ class TestBasicSignup:
             id=uuid4(),
             workspace_id=ws_id,
             email="invited@example.com",
-            role="member",
+            is_owner=False,
         )
         db_session.add(inv)
         await db_session.flush()
@@ -188,7 +197,7 @@ class TestBasicLogin:
         ws = WorkspaceModel(id=ws_id, name="Backfill WS", slug="backfill-ws")
         db_session.add(ws)
         membership = MembershipModel(
-            id=uuid4(), user_id=user.id, workspace_id=ws_id, role="owner"
+            id=uuid4(), user_id=user.id, workspace_id=ws_id, is_owner=True
         )
         db_session.add(membership)
         await db_session.flush()

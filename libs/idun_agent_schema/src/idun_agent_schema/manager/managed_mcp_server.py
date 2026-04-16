@@ -20,6 +20,7 @@ class ManagedMCPServerRead(BaseModel):
     """Complete managed MCP server model for responses."""
 
     id: UUID
+    project_id: UUID
     name: str
     mcp_server: MCPServer = Field(..., description="MCP server configuration")
     agent_count: int = Field(0, description="Number of agents using this MCP server")

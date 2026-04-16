@@ -11,6 +11,8 @@ import { FeatureIcons } from './feature-icons';
 interface AgentCardProps {
     agent: BackendAgent;
     onDeleteRequest: (agent: BackendAgent) => void;
+    canWrite?: boolean;
+    canAdmin?: boolean;
 }
 
 // ── Status helpers ───────────────────────────────────────────────────────────
@@ -67,7 +69,12 @@ const formatFramework = (fw: string) => {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, onDeleteRequest }) => {
+const AgentCard: React.FC<AgentCardProps> = ({
+    agent,
+    onDeleteRequest,
+    canWrite = true,
+    canAdmin = true,
+}) => {
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -143,28 +150,32 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onDeleteRequest }) => {
                                     <Eye size={14} />
                                     View
                                 </MenuItem>
-                                <MenuItem
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setMenuOpen(false);
-                                        navigate(`/agents/${agent.id}?edit=true`);
-                                    }}
-                                >
-                                    <Pencil size={14} />
-                                    Edit
-                                </MenuItem>
-                                <MenuDivider />
-                                <MenuItem
-                                    $danger
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setMenuOpen(false);
-                                        onDeleteRequest(agent);
-                                    }}
-                                >
-                                    <Trash2 size={14} />
-                                    Delete
-                                </MenuItem>
+                                {canWrite && (
+                                    <MenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuOpen(false);
+                                            navigate(`/agents/${agent.id}?edit=true`);
+                                        }}
+                                    >
+                                        <Pencil size={14} />
+                                        Edit
+                                    </MenuItem>
+                                )}
+                                {canAdmin && canWrite && <MenuDivider />}
+                                {canAdmin && (
+                                    <MenuItem
+                                        $danger
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMenuOpen(false);
+                                            onDeleteRequest(agent);
+                                        }}
+                                    >
+                                        <Trash2 size={14} />
+                                        Delete
+                                    </MenuItem>
+                                )}
                             </MenuPopover>
                         )}
                     </MenuWrapper>

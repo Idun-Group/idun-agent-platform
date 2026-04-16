@@ -11,22 +11,27 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from idun_agent_schema.engine.mcp_server import MCPServer
 from idun_agent_schema.manager.managed_mcp_server import MCPToolSchema
+from idun_agent_schema.manager.project import ProjectRole
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import (
     CurrentUser,
+    ProjectAccess,
     get_current_user,
     get_session,
+    require_project_reader,
     require_workspace,
 )
 from app.api.v1.routers.mcp_servers import _get_transport, _list_tools
 from app.infrastructure.db.models.managed_mcp_server import ManagedMCPServerModel
 
 WORKSPACE_ID = uuid4()
+PROJECT_ID = uuid4()
 FAKE_USER = CurrentUser(
     user_id=str(uuid4()),
     email="test@test.com",
     workspace_ids=[str(WORKSPACE_ID)],
+    default_workspace_id=str(WORKSPACE_ID),
 )
 
 
@@ -48,6 +53,12 @@ async def client_with_mcp(db_session: AsyncSession) -> AsyncIterator[AsyncClient
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_current_user] = lambda: FAKE_USER
     app.dependency_overrides[require_workspace] = lambda: WORKSPACE_ID
+    app.dependency_overrides[require_project_reader] = lambda: ProjectAccess(
+        project_id=PROJECT_ID,
+        workspace_id=WORKSPACE_ID,
+        role=ProjectRole.ADMIN,
+        is_default=True,
+    )
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -69,6 +80,7 @@ async def seeded_mcp(db_session: AsyncSession) -> ManagedMCPServerModel:
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
         workspace_id=WORKSPACE_ID,
+        project_id=PROJECT_ID,
     )
     db_session.add(model)
     await db_session.flush()

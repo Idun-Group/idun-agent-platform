@@ -2,27 +2,10 @@
 
 from __future__ import annotations
 
-import enum
 from datetime import datetime
 
+from idun_agent_schema.manager.project import ProjectAssignment
 from pydantic import BaseModel, EmailStr, Field
-
-
-class WorkspaceRole(str, enum.Enum):
-    """Workspace membership roles, ordered by privilege level."""
-
-    OWNER = "owner"
-    ADMIN = "admin"
-    MEMBER = "member"
-    VIEWER = "viewer"
-
-
-ROLE_HIERARCHY: dict[WorkspaceRole, int] = {
-    WorkspaceRole.OWNER: 4,
-    WorkspaceRole.ADMIN: 3,
-    WorkspaceRole.MEMBER: 2,
-    WorkspaceRole.VIEWER: 1,
-}
 
 
 class MemberRead(BaseModel):
@@ -33,7 +16,7 @@ class MemberRead(BaseModel):
     email: str
     name: str | None = None
     picture_url: str | None = None
-    role: WorkspaceRole
+    is_owner: bool = False
     created_at: datetime
     status: str = "active"
 
@@ -44,16 +27,14 @@ class MemberAdd(BaseModel):
     """Request body to add a user to a workspace."""
 
     email: EmailStr
-    role: WorkspaceRole = Field(
-        default=WorkspaceRole.MEMBER,
-        description="Role to assign. Owners can assign any role; admins can assign member or viewer.",
-    )
+    is_owner: bool = Field(default=False)
+    project_assignments: list[ProjectAssignment] = Field(default_factory=list)
 
 
 class MemberPatch(BaseModel):
-    """Request body to update a member's role."""
+    """Request body to update a member's workspace ownership."""
 
-    role: WorkspaceRole
+    is_owner: bool
 
 
 class InvitationRead(BaseModel):
@@ -61,7 +42,8 @@ class InvitationRead(BaseModel):
 
     id: str
     email: str
-    role: WorkspaceRole
+    is_owner: bool = False
+    project_assignments: list[ProjectAssignment] = Field(default_factory=list)
     invited_by: str | None = None
     created_at: datetime
     status: str = "pending"

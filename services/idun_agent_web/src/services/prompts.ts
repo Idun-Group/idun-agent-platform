@@ -2,6 +2,7 @@ import { getJson, postJson, deleteRequest } from '../utils/api';
 
 export interface ManagedPrompt {
     id: string;
+    project_id: string;
     prompt_id: string;
     version: number;
     content: string;
