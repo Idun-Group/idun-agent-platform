@@ -30,9 +30,10 @@ interface OverviewTabProps {
     onCancel: () => void;
     saveTrigger?: number;
     onAgentRefresh?: () => void;
+    canWrite?: boolean;
 }
 
-const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentRefresh }: OverviewTabProps) => {
+const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentRefresh, canWrite = false }: OverviewTabProps) => {
     // Form state (initialized when entering edit mode)
     const [formState, setFormState] = useState<AgentFormState>({
         name: '',
@@ -193,6 +194,7 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
                 <ResourcesSection
                     agent={agent}
                     isEditing={isEditing}
+                    canWrite={canWrite}
                     resources={resources}
                     selections={selections}
                     onSelectionChange={handleSelectionChange}
@@ -201,7 +203,7 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
                 />
             </TwoColumnGrid>
 
-            {isEditing && (
+            {isEditing && canWrite && (
                 <ActionBar>
                     <ActionButton onClick={onCancel}>Cancel</ActionButton>
                     <ActionButton $primary onClick={handleSave} disabled={isSaving}>

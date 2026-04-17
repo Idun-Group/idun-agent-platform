@@ -3,9 +3,11 @@ import styled from 'styled-components';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { notify } from '../../components/toast/notify';
 import { useAuth } from '../../hooks/use-auth';
+import { useProject } from '../../hooks/use-project';
 import {
     getAgent,
     patchAgent,
+    deleteAgent,
     restartAgent,
     performHealthCheck,
     fetchEngineHealth,
@@ -15,12 +17,14 @@ import {
 import Loader from '../../components/general/loader/component';
 import { AgentAvatar } from '../../components/general/agent-avatar/component';
 import EnrollmentSection from '../../components/agent-detail/tabs/overview-tab/sections/enrollment-section';
+import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import {
     ArrowLeft,
     RotateCcw,
     Edit3,
     X,
     Save,
+    Trash2,
     LayoutDashboard,
     Webhook,
     Settings,
@@ -55,8 +59,10 @@ export default function AgentDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [saveTrigger, setSaveTrigger] = useState(0);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     const { isLoading: isAuthLoading } = useAuth();
+    const { canWrite, canAdmin } = useProject();
 
     const loadAgent = () => {
         if (!id) return;
@@ -118,6 +124,19 @@ export default function AgentDetailPage() {
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to restart agent';
             notify.error(errorMsg);
+        }
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!agent) return;
+        try {
+            await deleteAgent(agent.id);
+            notify.success('Agent deleted');
+            navigate('/agents');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to delete agent';
+            notify.error(errorMsg);
+            throw err;
         }
     };
 
@@ -184,19 +203,26 @@ export default function AgentDetailPage() {
                 </div>
 
                 <Actions>
-                    {!isEditing && (
+                    {canWrite && !isEditing && (
                         <HeaderButton onClick={handleRestart}>
                             <RotateCcw size={16} /> Restart
                         </HeaderButton>
                     )}
-                    {isEditing && (
+                    {canWrite && isEditing && (
                         <HeaderButton $primary onClick={() => setSaveTrigger(t => t + 1)}>
                             <Save size={16} /> Save Changes
                         </HeaderButton>
                     )}
-                    <HeaderButton $primary={!isEditing} onClick={isEditing ? () => setIsEditing(false) : handleEditToggle}>
-                        {isEditing ? <><X size={16} /> Cancel Edit</> : <><Edit3 size={16} /> Edit Agent</>}
-                    </HeaderButton>
+                    {canWrite && (
+                        <HeaderButton $primary={!isEditing} onClick={isEditing ? () => setIsEditing(false) : handleEditToggle}>
+                            {isEditing ? <><X size={16} /> Cancel Edit</> : <><Edit3 size={16} /> Edit Agent</>}
+                        </HeaderButton>
+                    )}
+                    {canAdmin && !isEditing && (
+                        <HeaderButton $danger onClick={() => setIsDeleteOpen(true)}>
+                            <Trash2 size={16} /> Delete Agent
+                        </HeaderButton>
+                    )}
                 </Actions>
             </HeaderSection>
 
@@ -234,6 +260,7 @@ export default function AgentDetailPage() {
                             onCancel={() => setIsEditing(false)}
                             saveTrigger={saveTrigger}
                             onAgentRefresh={loadAgent}
+                            canWrite={canWrite}
                         />
                         </>
                     )}
@@ -244,6 +271,12 @@ export default function AgentDetailPage() {
                 </Suspense>
             </ContentArea>
 
+            <DeleteConfirmModal
+                isOpen={isDeleteOpen}
+                onClose={() => setIsDeleteOpen(false)}
+                onConfirm={handleDeleteConfirm}
+                itemName={agent?.name ?? ''}
+            />
         </PageContainer>
     );
 }
@@ -349,7 +382,7 @@ const Actions = styled.div`
     gap: 12px;
 `;
 
-const HeaderButton = styled.button<{ $primary?: boolean }>`
+const HeaderButton = styled.button<{ $primary?: boolean; $danger?: boolean }>`
     display: flex;
     align-items: center;
     gap: 8px;
@@ -360,7 +393,14 @@ const HeaderButton = styled.button<{ $primary?: boolean }>`
     cursor: pointer;
     transition: all 0.2s;
 
-    ${props => props.$primary
+    ${props => props.$danger
+        ? `
+            background-color: transparent;
+            color: hsl(var(--destructive));
+            border: 1px solid hsl(var(--destructive) / 0.4);
+            &:hover { background-color: hsl(var(--destructive) / 0.1); border-color: hsl(var(--destructive) / 0.6); }
+        `
+        : props.$primary
         ? `
             background-color: hsl(var(--primary));
             color: hsl(var(--primary-foreground));

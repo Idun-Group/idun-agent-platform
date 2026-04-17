@@ -70,6 +70,7 @@ type CreateTarget =
 interface ResourcesSectionProps {
     agent: BackendAgent;
     isEditing: boolean;
+    canWrite?: boolean;
     resources: AvailableResources;
     selections: AgentSelections;
     onSelectionChange: (updated: Partial<AgentSelections>) => void;
@@ -80,6 +81,7 @@ interface ResourcesSectionProps {
 export default function ResourcesSection({
     agent,
     isEditing,
+    canWrite = true,
     resources,
     selections,
     onSelectionChange,
@@ -647,9 +649,9 @@ export default function ResourcesSection({
                     onToggle={handleMemoryToggle}
                     assignedNames={getMemoryAssigned()}
                     assignedDetails={getMemoryDetails()}
-                    onCreateNew={isEditing ? () => openCreatePicker('Memory') : undefined}
-                    onQuickAdd={!isEditing ? () => handleQuickAdd('Memory') : undefined}
-                    onManage={!isEditing ? () => handleQuickAdd('Memory') : undefined}
+                    onCreateNew={isEditing && canWrite ? () => openCreatePicker('Memory') : undefined}
+                    onQuickAdd={!isEditing && canWrite ? () => handleQuickAdd('Memory') : undefined}
+                    onManage={!isEditing && canWrite ? () => handleQuickAdd('Memory') : undefined}
                 />
 
                 <ResourceCard
@@ -662,9 +664,9 @@ export default function ResourcesSection({
                     onToggle={handleObsToggle}
                     assignedNames={getObservabilityAssigned()}
                     assignedDetails={getObservabilityDetails()}
-                    onCreateNew={isEditing ? () => openCreatePicker('Observability') : undefined}
-                    onQuickAdd={!isEditing ? () => handleQuickAdd('Observability') : undefined}
-                    onManage={!isEditing ? () => handleQuickAdd('Observability') : undefined}
+                    onCreateNew={isEditing && canWrite ? () => openCreatePicker('Observability') : undefined}
+                    onQuickAdd={!isEditing && canWrite ? () => handleQuickAdd('Observability') : undefined}
+                    onManage={!isEditing && canWrite ? () => handleQuickAdd('Observability') : undefined}
                 />
 
                 <ResourceCard
@@ -677,9 +679,9 @@ export default function ResourcesSection({
                     onToggle={handleMCPToggle}
                     assignedNames={getMCPAssigned()}
                     assignedDetails={getMCPDetails()}
-                    onCreateNew={isEditing ? () => openCreatePicker('MCP') : undefined}
-                    onQuickAdd={!isEditing ? () => handleQuickAdd('MCP') : undefined}
-                    onManage={!isEditing ? () => handleQuickAdd('MCP') : undefined}
+                    onCreateNew={isEditing && canWrite ? () => openCreatePicker('MCP') : undefined}
+                    onQuickAdd={!isEditing && canWrite ? () => handleQuickAdd('MCP') : undefined}
+                    onManage={!isEditing && canWrite ? () => handleQuickAdd('MCP') : undefined}
                 />
 
                 <ResourceCard
@@ -692,9 +694,9 @@ export default function ResourcesSection({
                     onToggle={handleGuardToggle}
                     assignedNames={getGuardrailsAssigned()}
                     assignedDetails={getGuardrailsDetails()}
-                    onCreateNew={isEditing ? () => openCreatePicker('Guardrails') : undefined}
-                    onQuickAdd={!isEditing ? () => handleQuickAdd('Guardrails') : undefined}
-                    onManage={!isEditing ? () => handleQuickAdd('Guardrails') : undefined}
+                    onCreateNew={isEditing && canWrite ? () => openCreatePicker('Guardrails') : undefined}
+                    onQuickAdd={!isEditing && canWrite ? () => handleQuickAdd('Guardrails') : undefined}
+                    onManage={!isEditing && canWrite ? () => handleQuickAdd('Guardrails') : undefined}
                 />
 
                 <ResourceCard
@@ -707,9 +709,9 @@ export default function ResourcesSection({
                     onToggle={handleSSOToggle}
                     assignedNames={getSSOAssigned()}
                     assignedDetails={getSSODetails()}
-                    onCreateNew={isEditing ? () => { setCreateTarget({ category: 'SSO' }); setIsCreateModalOpen(true); } : undefined}
-                    onQuickAdd={!isEditing ? () => handleQuickAdd('SSO') : undefined}
-                    onManage={!isEditing ? () => handleQuickAdd('SSO') : undefined}
+                    onCreateNew={isEditing && canWrite ? () => { setCreateTarget({ category: 'SSO' }); setIsCreateModalOpen(true); } : undefined}
+                    onQuickAdd={!isEditing && canWrite ? () => handleQuickAdd('SSO') : undefined}
+                    onManage={!isEditing && canWrite ? () => handleQuickAdd('SSO') : undefined}
                 />
 
                 <ResourceCard
@@ -722,9 +724,9 @@ export default function ResourcesSection({
                     onToggle={handleIntegrationToggle}
                     assignedNames={getIntegrationsAssigned()}
                     assignedDetails={getIntegrationsDetails()}
-                    onCreateNew={isEditing ? () => { setCreateTarget({ category: 'Integrations' }); setIsCreateModalOpen(true); } : undefined}
-                    onQuickAdd={!isEditing ? () => handleQuickAdd('Integrations') : undefined}
-                    onManage={!isEditing ? () => handleQuickAdd('Integrations') : undefined}
+                    onCreateNew={isEditing && canWrite ? () => { setCreateTarget({ category: 'Integrations' }); setIsCreateModalOpen(true); } : undefined}
+                    onQuickAdd={!isEditing && canWrite ? () => handleQuickAdd('Integrations') : undefined}
+                    onManage={!isEditing && canWrite ? () => handleQuickAdd('Integrations') : undefined}
                 />
             </ResourceGrid>
 
