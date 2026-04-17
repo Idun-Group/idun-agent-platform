@@ -321,6 +321,17 @@ async def remove_member(
     await _bump_session_version(session, target.user_id)
     await session.flush()
 
+    # Clear default_workspace_id if it pointed at the workspace we just removed
+    # access to. Keep it simple: null-and-done — the user re-establishes a
+    # default the next time they visit any remaining workspace.
+    target_user = (
+        await session.execute(select(UserModel).where(UserModel.id == target.user_id))
+    ).scalar_one()
+    if target_user.default_workspace_id == ws_uuid:
+        target_user.default_workspace_id = None
+        session.add(target_user)
+        await session.flush()
+
 
 @router.delete(
     "/{workspace_id}/invitations/{invitation_id}",
