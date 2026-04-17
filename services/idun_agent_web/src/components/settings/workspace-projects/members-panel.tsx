@@ -26,8 +26,7 @@ type Props = {
 const MembersPanel = ({ project, onClose }: Props) => {
     const { t } = useTranslation();
     const { isCurrentWorkspaceOwner } = useWorkspace();
-    const canAdmin =
-        isCurrentWorkspaceOwner || project.current_user_role === 'admin';
+    const canAdmin = project.current_user_role === 'admin';
 
     const [members, setMembers] = useState<ProjectMember[]>([]);
     const [loading, setLoading] = useState(true);

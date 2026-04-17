@@ -165,27 +165,27 @@ const WorkspaceProjectsTab = () => {
                     <List>
                         {projects.map((project) => (
                             <ProjectRow key={project.id}>
-                                <StarButton
-                                    $active={project.is_default}
-                                    $clickable={isCurrentWorkspaceOwner && !project.is_default}
-                                    onClick={() => {
-                                        if (isCurrentWorkspaceOwner && !project.is_default) {
-                                            void handleSetDefault(project);
+                                {isCurrentWorkspaceOwner && (
+                                    <StarButton
+                                        $active={project.is_default}
+                                        $clickable={!project.is_default}
+                                        onClick={() => {
+                                            if (!project.is_default) {
+                                                void handleSetDefault(project);
+                                            }
+                                        }}
+                                        title={
+                                            project.is_default
+                                                ? t('settings.projects.isDefault', 'Default project')
+                                                : t('settings.projects.setDefault', 'Set as default')
                                         }
-                                    }}
-                                    title={
-                                        project.is_default
-                                            ? t('settings.projects.isDefault', 'Default project')
-                                            : isCurrentWorkspaceOwner
-                                              ? t('settings.projects.setDefault', 'Set as default')
-                                              : ''
-                                    }
-                                >
-                                    <Star
-                                        size={16}
-                                        fill={project.is_default ? 'currentColor' : 'none'}
-                                    />
-                                </StarButton>
+                                    >
+                                        <Star
+                                            size={16}
+                                            fill={project.is_default ? 'currentColor' : 'none'}
+                                        />
+                                    </StarButton>
+                                )}
                                 <ProjectInfo>
                                     {editingProjectId === project.id ? (
                                         <EditStack>
@@ -217,7 +217,7 @@ const WorkspaceProjectsTab = () => {
                                     <Users size={14} />
                                     {t('settings.projects.panel.members', 'Members')}
                                 </MembersButton>
-                                {(isCurrentWorkspaceOwner || project.current_user_role === 'admin') && (
+                                {isCurrentWorkspaceOwner && (
                                     <ActionRow>
                                         {editingProjectId === project.id ? (
                                             <>
