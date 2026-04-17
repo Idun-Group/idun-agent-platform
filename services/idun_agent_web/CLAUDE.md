@@ -209,12 +209,86 @@ Context-based (React Context API, no external state library):
 | Provider | Hook | Purpose |
 |---|---|---|
 | `AuthProvider` | `useAuth()` | Session, login/logout/signup, OIDC |
-| `WorkspaceProvider` | `useWorkspace()` | Multi-tenancy workspace selection |
+| `WorkspaceProvider` | `useWorkspace()` | Multi-tenancy workspace selection, `is_owner` flag |
+| `ProjectProvider` | `useProject()` | Active project selection, project role (`canWrite` / `canAdmin`) |
 | `ToggleThemeModeProvider` | `useToggleThemeMode()` | Dark/light/system theme |
 | `LoaderProvider` | `useLoader()` | Global loading spinner |
 | `AgentProvider` | `useAgent()` | Agent creation form state |
 | `AgentFileProvider` | `useAgentFile()` | Agent file upload state |
 | `SettingPageProvider` | `useSettingsPage()` | Settings tab navigation |
+
+## RBAC Model
+
+The platform uses a two-tier access model:
+
+- **Workspaces** define tenant ownership. A user is either a workspace owner (`is_owner === true`) or a non-owner member. Only owners manage tenant-wide admin (membership, project creation/deletion).
+- **Projects** define operational scope. Every managed resource (agents, prompts, memory, MCP, guardrails, observability, SSO, integrations) is project-scoped. Each workspace auto-creates a default project. Project roles are `admin`, `contributor`, `reader`.
+
+### Reading role state in the UI
+
+Use the existing hooks — do **not** introduce new role-derivation logic:
+
+| What you need | Where to read it |
+|---|---|
+| Active project role booleans | `useProject().canWrite` (admin + contributor), `useProject().canAdmin` (admin only) |
+| Workspace ownership | `useWorkspace().isCurrentWorkspaceOwner` |
+| Active project ID | `useProject().selectedProjectId` |
+| List of accessible projects | `useProject().projects` |
+
+### Request scope headers
+
+`src/utils/api.ts` automatically attaches `X-Workspace-Id` and `X-Project-Id` to every request routed through `apiFetch`/`getJson`/`postJson`/`patchJson`/`deleteRequest`. All service files in `src/services/` use these helpers — never call `fetch` directly. Backend routers enforce project scoping server-side.
+
+### Role-gating convention
+
+Gate mutation affordances with **conditional rendering**, not the `disabled` prop:
+
+```tsx
+// correct
+{canWrite && <CreateButton onClick={openCreate} />}
+{canAdmin && <DeleteButton onClick={openDelete} />}
+
+// wrong — keep buttons in the DOM with disabled attribute
+<CreateButton disabled={!canWrite} onClick={openCreate} />
+```
+
+Reference pages: `memory-page`, `mcp-page`, `guardrails-page`, `observability-page`, `prompts-page`, `integrations-page`, `sso-page`.
+
+**`DeleteConfirmModal` stays always mounted.** Control its visibility via `isOpen={!!configToDelete}` and gate the Remove button that sets `configToDelete` — this matches the sibling-page convention. Do not wrap the modal itself in `{canAdmin && ...}`.
+
+### Empty / blocked state
+
+When `!selectedProjectId`, every project-scoped page short-circuits to `<NoProjectState />` instead of rendering an ambiguous empty list. Three variants cover the real cases:
+
+- `none-selected` — the user has projects but hasn't picked one (CTA explains the navbar selector).
+- `no-access-owner` — workspace owner with no projects (CTA: create a project in Settings).
+- `no-access-member` — non-owner with no project membership (passive message: ask a workspace owner).
+
+The component lives at `src/components/general/no-project-state/component.tsx`. Each scoped page short-circuits via:
+
+```tsx
+const { selectedProjectId, projects, isLoadingProjects } = useProject();
+const { isCurrentWorkspaceOwner } = useWorkspace();
+if (isLoadingProjects) return <Loader />;
+if (!selectedProjectId) {
+  const variant = projects.length === 0
+    ? (isCurrentWorkspaceOwner ? 'no-access-owner' : 'no-access-member')
+    : 'none-selected';
+  return <NoProjectState variant={variant} />;
+}
+```
+
+### Cross-project reference safety
+
+Resource pickers and list effects include `selectedProjectId` in their `useEffect` dep arrays so lists re-fetch when the active project changes. Stale state is cleared before refetch.
+
+Opening an Agent Detail page for an agent whose `project_id !== selectedProjectId` renders a blocked state with a CTA that calls `useProject().setSelectedProjectId(agent.project_id)`. **Never auto-switch silently** — explicit user click only.
+
+### Separation of concerns
+
+Workspace ownership gates **tenant-admin** surfaces (Workspace Users, Workspace Projects admin actions, invite flow). Project roles gate **operational** actions (create/edit/delete scoped resources, manage project members).
+
+A workspace owner is **not** automatically a project admin — they need actual project membership to manage project-scoped content. This is intentional and is enforced both in the UI (Workspace Projects `members-panel` gates on `useProject().canAdmin` only) and by backend validation.
 
 ## Agent Config & Resource Model
 
@@ -301,8 +375,8 @@ npm run generate:manager-types
 
 When adding a new resource type (like SSO, MCP, Guardrails, etc.), update all of these:
 
-1. **Dedicated page** — `src/pages/{feature}-page/page.tsx` (card grid with CRUD, search, agent count badges)
-2. **API service** — `src/services/{feature}.ts` (CRUD functions, map `agent_count` from response)
+1. **Dedicated page** — `src/pages/{feature}-page/page.tsx` (card grid with CRUD, search, agent count badges). If the resource is project-scoped (it should be), short-circuit to `<NoProjectState />` when `!selectedProjectId` and gate create/edit/delete via `canWrite`/`canAdmin` (see **RBAC Model** section above).
+2. **API service** — `src/services/{feature}.ts` (CRUD functions routed through `apiFetch`, map `agent_count` from response). The central helper injects `X-Project-Id` automatically; do not attach it manually.
 3. **Route** — `src/App.tsx` (register the route)
 4. **Sidebar** — `src/layouts/side-bar/dashboard-side-bar/layout.tsx` (add nav entry)
 5. **Agent config utils** — `src/utils/agent-config-utils.ts`:
@@ -310,9 +384,9 @@ When adding a new resource type (like SSO, MCP, Guardrails, etc.), update all of
    - Add resource list to `AvailableResources`
    - Update `buildAgentPatchPayload()` to include the ID in `resources`
    - Update `extractSelectionsFromAgent()` to read from `response.resources`
-6. **Agent overview resources section** — `src/components/agent-detail/tabs/overview-tab/sections/resources-section.tsx` (add selection UI)
+6. **Agent overview resources section** — `src/components/agent-detail/tabs/overview-tab/sections/resources-section.tsx` (add selection UI). Add `selectedProjectId` to the list-fetching effect's deps so it refetches on project switch.
 7. **Agent dashboard card badges** — `src/components/dashboard/agents/agent-card/feature-icons.tsx` (add detection logic + badge)
-8. **Backend** — Add junction table/FK, update `engine_config.py` assembly, add cascade recompute to resource router
-9. **i18n** — `src/i18n/locales/*.json` (add translation keys)
+8. **Backend** — Add junction table/FK with both `workspace_id` and `project_id`, update `engine_config.py` assembly, add cascade recompute to resource router, ensure list endpoints filter by `project_id`.
+9. **i18n** — `src/i18n/locales/*.json` (add translation keys across all 7 locales)
 
 Missing any of these will result in the feature being partially integrated.
