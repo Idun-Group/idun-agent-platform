@@ -619,6 +619,13 @@
     },
     "titles": {
       "agentLogs": "Journaux de l'agent"
+    },
+    "agentNotFound": {
+      "title": "Agent indisponible ici",
+      "description": "Cet agent n'est pas disponible dans {{project}}. Il appartient peut-être à un autre projet, ou il a pu être supprimé."
+    },
+    "agentLoadFailed": {
+      "title": "Échec du chargement de l'agent"
     }
   },
   "settings": {

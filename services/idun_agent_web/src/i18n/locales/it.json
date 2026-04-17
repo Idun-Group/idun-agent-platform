@@ -571,6 +571,13 @@
     },
     "titles": {
       "agentLogs": "Registri dell'agente"
+    },
+    "agentNotFound": {
+      "title": "Agente non disponibile qui",
+      "description": "Questo agente non è disponibile in {{project}}. Potrebbe appartenere a un altro progetto oppure essere stato eliminato."
+    },
+    "agentLoadFailed": {
+      "title": "Impossibile caricare l'agente"
     }
   },
   "settings": {

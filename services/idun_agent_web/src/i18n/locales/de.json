@@ -576,6 +576,13 @@
     },
     "titles": {
       "agentLogs": "Agenten-Protokolle"
+    },
+    "agentNotFound": {
+      "title": "Agent hier nicht verfügbar",
+      "description": "Dieser Agent ist in {{project}} nicht verfügbar. Er gehört möglicherweise zu einem anderen Projekt oder wurde gelöscht."
+    },
+    "agentLoadFailed": {
+      "title": "Agent konnte nicht geladen werden"
     }
   },
   "settings": {

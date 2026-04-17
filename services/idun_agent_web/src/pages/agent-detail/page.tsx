@@ -64,7 +64,7 @@ export default function AgentDetailPage() {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     const { isLoading: isAuthLoading } = useAuth();
-    const { canWrite, canAdmin, selectedProjectId, projects, setSelectedProjectId } = useProject();
+    const { canWrite, canAdmin, selectedProjectId, projects, setSelectedProjectId, currentProject } = useProject();
     const { t } = useTranslation();
 
     const loadAgent = () => {
@@ -146,13 +146,40 @@ export default function AgentDetailPage() {
     };
 
     if (error) {
+        const isNotFound = /not found|404/i.test(error);
         return (
             <PageContainer>
-                <div style={{ padding: '40px', textAlign: 'center' }}>
-                    <h2 style={{ color: 'hsl(var(--destructive))', marginBottom: '16px' }}>Failed to load agent</h2>
-                    <p style={{ color: 'hsl(var(--muted-foreground))', marginBottom: '24px' }}>{error}</p>
-                    <Button onClick={() => window.location.reload()}>Retry</Button>
-                </div>
+                <TopNav>
+                    <BackButton onClick={() => navigate('/agents')}>
+                        <ArrowLeft size={14} style={{ marginRight: '6px' }} /> {t('agentDetails.backToAgents')}
+                    </BackButton>
+                </TopNav>
+                <BlockedState>
+                    <BlockedIconWrap>
+                        <FolderLock size={28} strokeWidth={1.5} />
+                    </BlockedIconWrap>
+                    <BlockedTextBlock>
+                        <BlockedTitle>
+                            {isNotFound
+                                ? t('agentDetails.agentNotFound.title', 'Agent not available here')
+                                : t('agentDetails.agentLoadFailed.title', 'Failed to load agent')}
+                        </BlockedTitle>
+                        <BlockedDesc>
+                            {isNotFound
+                                ? t('agentDetails.agentNotFound.description', {
+                                      project: currentProject?.name ?? 'the current project',
+                                      defaultValue:
+                                          currentProject
+                                              ? `This agent isn't available in ${currentProject.name}. It may belong to another project, or it may have been deleted.`
+                                              : "This agent isn't available in the current project.",
+                                  })
+                                : error}
+                        </BlockedDesc>
+                    </BlockedTextBlock>
+                    <BlockedCTA onClick={() => navigate('/agents')}>
+                        {t('agentDetails.backToAgents')}
+                    </BlockedCTA>
+                </BlockedState>
             </PageContainer>
         );
     }

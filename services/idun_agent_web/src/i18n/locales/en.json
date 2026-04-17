@@ -533,6 +533,13 @@
       "cta": "Switch to that project",
       "hint": "Switch projects from the navbar to open this agent."
     },
+    "agentNotFound": {
+      "title": "Agent not available here",
+      "description": "This agent isn't available in {{project}}. It may belong to another project, or it may have been deleted."
+    },
+    "agentLoadFailed": {
+      "title": "Failed to load agent"
+    },
     "configure": "Configure",
     "testAgent": "Test agent",
     "pause": "Pause",
