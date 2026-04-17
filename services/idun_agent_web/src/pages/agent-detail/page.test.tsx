@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import React from 'react';
 
@@ -47,6 +47,23 @@ vi.mock('../../components/agent-detail/tabs/overview-tab/sections/enrollment-sec
 vi.mock('../../components/applications/delete-confirm-modal/component', () => ({
     default: ({ isOpen }: { isOpen: boolean }) =>
         isOpen ? <div data-testid="delete-modal-open" /> : <div data-testid="delete-modal-closed" />,
+}));
+
+// Stub i18n — returns the key so assertions can rely on the key path.
+// We still expose the {{projectName}} interpolation so the "Named" copy
+// surfaces the project name the page interpolates in.
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string, params?: Record<string, unknown>) => {
+            if (params && typeof params === 'object') {
+                return Object.entries(params).reduce(
+                    (acc, [k, v]) => acc.replace(`{{${k}}}`, String(v)),
+                    key,
+                );
+            }
+            return key;
+        },
+    }),
 }));
 
 import { useProject } from '../../hooks/use-project';
@@ -236,5 +253,97 @@ describe('AgentDetailPage — DeleteConfirmModal always mounted', () => {
         renderPage();
         await screen.findByTestId('overview-tab');
         expect(screen.queryByTestId('delete-modal-closed')).not.toBeNull();
+    });
+});
+
+// ── Project scope refetch ───────────────────────────────────────────────────
+
+describe('AgentDetailPage — refetches on active project change', () => {
+    it('calls getAgent again when selectedProjectId switches', async () => {
+        mockUseProject.mockReturnValue(makeProjectHook(true, false));
+
+        const { rerender } = render(
+            <MemoryRouter initialEntries={['/agents/agent-1']}>
+                <Routes>
+                    <Route path="/agents/:id" element={<AgentDetailPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+        await screen.findByTestId('overview-tab');
+        expect(mockGetAgent).toHaveBeenCalledTimes(1);
+
+        // Flip the active project — the page must refetch so backend
+        // project scoping (X-Project-Id) kicks in on the next request.
+        mockUseProject.mockReturnValue({
+            ...makeProjectHook(true, false),
+            selectedProjectId: 'proj-2',
+            currentProject: { ...baseProject, id: 'proj-2', name: 'Other Project' },
+        });
+        rerender(
+            <MemoryRouter initialEntries={['/agents/agent-1']}>
+                <Routes>
+                    <Route path="/agents/:id" element={<AgentDetailPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(mockGetAgent).toHaveBeenCalledTimes(2);
+        });
+    });
+});
+
+// ── Cross-project blocked state ─────────────────────────────────────────────
+
+describe('AgentDetailPage — cross-project blocked state', () => {
+    it('renders the blocked state when the loaded agent is in a different project', async () => {
+        const setSelectedProjectId = vi.fn();
+        mockUseProject.mockReturnValue({
+            ...makeProjectHook(true, true),
+            selectedProjectId: 'proj-2',
+            currentProject: { ...baseProject, id: 'proj-2', name: 'Other Project' },
+            projects: [
+                baseProject,
+                { ...baseProject, id: 'proj-2', name: 'Other Project', is_default: false },
+            ],
+            setSelectedProjectId,
+        });
+
+        renderPage();
+
+        // Blocked state title surfaces the i18n key.
+        await screen.findByText('agentDetails.crossProjectBlocked.title');
+
+        // No editable affordances are rendered.
+        expect(screen.queryByText(/edit agent/i)).toBeNull();
+        expect(screen.queryByText(/restart/i)).toBeNull();
+        expect(screen.queryByText(/delete agent/i)).toBeNull();
+        expect(screen.queryByTestId('overview-tab')).toBeNull();
+
+        // The CTA calls setSelectedProjectId with the agent's project_id —
+        // the switch is explicit, never automatic.
+        const cta = screen.getByText('agentDetails.crossProjectBlocked.cta');
+        cta.click();
+        expect(setSelectedProjectId).toHaveBeenCalledWith('proj-1');
+    });
+
+    it('does not auto-switch the active project on mount', async () => {
+        const setSelectedProjectId = vi.fn();
+        mockUseProject.mockReturnValue({
+            ...makeProjectHook(true, true),
+            selectedProjectId: 'proj-2',
+            currentProject: { ...baseProject, id: 'proj-2', name: 'Other Project' },
+            projects: [
+                baseProject,
+                { ...baseProject, id: 'proj-2', name: 'Other Project', is_default: false },
+            ],
+            setSelectedProjectId,
+        });
+
+        renderPage();
+        await screen.findByText('agentDetails.crossProjectBlocked.title');
+
+        // Mount alone must not change the active project.
+        expect(setSelectedProjectId).not.toHaveBeenCalled();
     });
 });

@@ -7,6 +7,7 @@ import { fetchApplications } from '../../../../services/applications';
 import { fetchSSOs } from '../../../../services/sso';
 import { fetchIntegrations } from '../../../../services/integrations';
 import { API_BASE_URL } from '../../../../utils/api';
+import { useProject } from '../../../../hooks/use-project';
 import {
     extractAgentConfig,
     extractSelectionsFromAgent,
@@ -34,6 +35,8 @@ interface OverviewTabProps {
 }
 
 const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentRefresh, canWrite = false }: OverviewTabProps) => {
+    const { selectedProjectId } = useProject();
+
     // Form state (initialized when entering edit mode)
     const [formState, setFormState] = useState<AgentFormState>({
         name: '',
@@ -63,11 +66,21 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
         setGraphRefreshKey(k => k + 1);
     }, []);
 
-    // Fetch available resources on mount (needed for quick-add in view mode)
+    // Fetch available resources whenever the agent or active project changes.
+    // Clearing stale state up-front avoids flashing cross-project resources
+    // while the new list loads.
     useEffect(() => {
         if (!agent) return;
+        setResources({
+            observabilityApps: [],
+            memoryApps: [],
+            mcpApps: [],
+            guardApps: [],
+            ssoConfigs: [],
+            integrationConfigs: [],
+        });
         loadResources();
-    }, [agent?.id]);
+    }, [agent?.id, selectedProjectId]);
 
     const loadResources = async () => {
         try {

@@ -477,6 +477,13 @@
   },
   "agentDetails": {
     "backToAgents": "Volver a los agentes",
+    "crossProjectBlocked": {
+      "title": "Este agente pertenece a otro proyecto",
+      "description": "Cambia al proyecto del agente para verlo o editarlo.",
+      "descriptionNamed": "Este agente pertenece al proyecto «{{projectName}}». Cambia a ese proyecto para verlo o editarlo.",
+      "cta": "Cambiar a ese proyecto",
+      "hint": "Cambia de proyecto desde la barra de navegación para abrir este agente."
+    },
     "configure": "Configurar",
     "testAgent": "Probar agente",
     "pause": "Pausa",

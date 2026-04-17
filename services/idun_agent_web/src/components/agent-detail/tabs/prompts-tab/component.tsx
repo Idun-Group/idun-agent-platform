@@ -5,6 +5,7 @@ import { listAgentPrompts } from '../../../../services/prompts';
 import type { ManagedPrompt } from '../../../../services/prompts';
 import { extractVariables } from '../../../../utils/jinja';
 import type { BackendAgent } from '../../../../services/agents';
+import { useProject } from '../../../../hooks/use-project';
 import ReactMarkdown from 'react-markdown';
 import CodeSnippet from '../../../../pages/agent-form/components/code-snippet';
 
@@ -26,6 +27,7 @@ interface Props {
 }
 
 const PromptsTab = ({ agent }: Props) => {
+    const { selectedProjectId } = useProject();
     const [prompts, setPrompts] = useState<ManagedPrompt[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -33,6 +35,7 @@ const PromptsTab = ({ agent }: Props) => {
     const load = useCallback(async () => {
         if (!agent) return;
         setIsLoading(true);
+        setPrompts([]);
         try {
             const data = await listAgentPrompts(agent.id);
             setPrompts(data);
@@ -43,7 +46,7 @@ const PromptsTab = ({ agent }: Props) => {
         }
     }, [agent]);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => { load(); }, [load, selectedProjectId]);
 
     if (isLoading) {
         return <Empty>Loading prompts…</Empty>;

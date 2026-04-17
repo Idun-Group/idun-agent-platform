@@ -526,6 +526,13 @@
   },
   "agentDetails": {
     "backToAgents": "Back to agents",
+    "crossProjectBlocked": {
+      "title": "This agent belongs to a different project",
+      "description": "Switch to the agent's project to view or edit it.",
+      "descriptionNamed": "This agent belongs to project \"{{projectName}}\". Switch to that project to view or edit it.",
+      "cta": "Switch to that project",
+      "hint": "Switch projects from the navbar to open this agent."
+    },
     "configure": "Configure",
     "testAgent": "Test agent",
     "pause": "Pause",

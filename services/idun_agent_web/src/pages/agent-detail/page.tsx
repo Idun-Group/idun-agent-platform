@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { notify } from '../../components/toast/notify';
 import { useAuth } from '../../hooks/use-auth';
 import { useProject } from '../../hooks/use-project';
@@ -33,6 +34,7 @@ import {
     AlertTriangle,
     CheckCircle2,
     FileText,
+    FolderLock,
 } from 'lucide-react';
 
 const OverviewTab = lazy(() => import('../../components/agent-detail/tabs/overview-tab/component'));
@@ -62,10 +64,13 @@ export default function AgentDetailPage() {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     const { isLoading: isAuthLoading } = useAuth();
-    const { canWrite, canAdmin } = useProject();
+    const { canWrite, canAdmin, selectedProjectId, projects, setSelectedProjectId } = useProject();
+    const { t } = useTranslation();
 
     const loadAgent = () => {
         if (!id) return;
+        setAgent(null);
+        setError(null);
         getAgent(id)
             .then((loaded) => {
                 setAgent(loaded);
@@ -87,7 +92,7 @@ export default function AgentDetailPage() {
     useEffect(() => {
         if (!id || isAuthLoading) return;
         loadAgent();
-    }, [id, isAuthLoading]);
+    }, [id, isAuthLoading, selectedProjectId]);
 
     const handleTabClick = (tabId: string) => {
         if (isEditing && tabId !== 'overview') return;
@@ -153,6 +158,46 @@ export default function AgentDetailPage() {
     }
 
     if (!agent && !error) return <Loader />;
+
+    // Cross-project guard: block the detail view if the loaded agent belongs
+    // to a project other than the currently active one. We intentionally do
+    // not auto-switch — the user must confirm the switch explicitly.
+    const agentBelongsToActiveProject =
+        !agent || !selectedProjectId || agent.project_id === selectedProjectId;
+
+    if (agent && !agentBelongsToActiveProject) {
+        const agentProject = projects.find(p => p.id === agent.project_id);
+        const canSwitch = typeof setSelectedProjectId === 'function' && !!agentProject;
+        return (
+            <PageContainer>
+                <TopNav>
+                    <BackButton onClick={() => navigate('/agents')}>
+                        <ArrowLeft size={14} style={{ marginRight: '6px' }} /> {t('agentDetails.backToAgents')}
+                    </BackButton>
+                </TopNav>
+                <BlockedState>
+                    <BlockedIconWrap>
+                        <FolderLock size={28} strokeWidth={1.5} />
+                    </BlockedIconWrap>
+                    <BlockedTextBlock>
+                        <BlockedTitle>{t('agentDetails.crossProjectBlocked.title')}</BlockedTitle>
+                        <BlockedDesc>
+                            {agentProject?.name
+                                ? t('agentDetails.crossProjectBlocked.descriptionNamed', { projectName: agentProject.name })
+                                : t('agentDetails.crossProjectBlocked.description')}
+                        </BlockedDesc>
+                    </BlockedTextBlock>
+                    {canSwitch ? (
+                        <BlockedCTA onClick={() => setSelectedProjectId(agent.project_id)}>
+                            {t('agentDetails.crossProjectBlocked.cta')}
+                        </BlockedCTA>
+                    ) : (
+                        <BlockedHint>{t('agentDetails.crossProjectBlocked.hint')}</BlockedHint>
+                    )}
+                </BlockedState>
+            </PageContainer>
+        );
+    }
 
     return (
         <PageContainer>
@@ -532,4 +577,77 @@ const Button = styled.button`
     border-radius: 6px;
     cursor: pointer;
     font-weight: 500;
+`;
+
+const BlockedState = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding: 80px 40px 60px;
+    text-align: center;
+`;
+
+const BlockedIconWrap = styled.div`
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: hsl(var(--primary) / 0.08);
+    border: 1px solid hsl(var(--primary) / 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--primary) / 0.6);
+`;
+
+const BlockedTextBlock = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 440px;
+`;
+
+const BlockedTitle = styled.p`
+    font-size: 18px;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    margin: 0;
+    letter-spacing: -0.02em;
+`;
+
+const BlockedDesc = styled.p`
+    font-size: 14px;
+    color: hsl(var(--muted-foreground));
+    margin: 0;
+    line-height: 1.5;
+`;
+
+const BlockedCTA = styled.button`
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    height: 42px;
+    background: hsl(var(--primary) / 0.12);
+    border: 1px solid hsl(var(--primary) / 0.25);
+    border-radius: 10px;
+    color: hsl(var(--primary));
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+
+    &:hover {
+        background: hsl(var(--primary) / 0.2);
+        border-color: hsl(var(--primary) / 0.4);
+        box-shadow: 0 0 24px hsl(var(--primary) / 0.12);
+    }
+`;
+
+const BlockedHint = styled.p`
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+    margin: 0;
+    max-width: 440px;
+    line-height: 1.5;
 `;
