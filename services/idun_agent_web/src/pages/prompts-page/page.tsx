@@ -6,6 +6,8 @@ import type { ManagedPrompt } from '../../services/prompts';
 import { listAgents } from '../../services/agents';
 import type { BackendAgent } from '../../services/agents';
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
+import NoProjectState from '../../components/general/no-project-state/component';
 import { extractVariables } from '../../utils/jinja';
 import { notify } from '../../components/toast/notify';
 import CreatePromptModal from '../../components/prompts/create-prompt-modal/component';
@@ -63,7 +65,8 @@ const groupByPromptId = (prompts: ManagedPrompt[]): PromptGroup[] => {
 };
 
 const PromptsPage = () => {
-    const { currentProject, canWrite, canAdmin } = useProject();
+    const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
     const [prompts, setPrompts] = useState<ManagedPrompt[]>([]);
     const [agents, setAgents] = useState<BackendAgent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -273,6 +276,22 @@ const PromptsPage = () => {
     const handlePickerKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Escape') setAssigningPrompt(null);
     };
+
+    if (!isLoadingProjects && !selectedProjectId) {
+        const variant =
+            projects.length === 0
+                ? isCurrentWorkspaceOwner
+                    ? 'no-access-owner'
+                    : 'no-access-member'
+                : 'none-selected';
+        return (
+            <NoProjectState
+                variant={variant}
+                pageTitle="Prompts"
+                pageSubtitle="Versioned prompt templates you can assign to any agent."
+            />
+        );
+    }
 
     return (
         <PageWrapper>

@@ -37,6 +37,8 @@ import {
 } from '../../services/guardrail-payloads';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
+import NoProjectState from '../../components/general/no-project-state/component';
 
 // ── Guardrail type metadata ──────────────────────────────────────────────────
 
@@ -1143,7 +1145,8 @@ const truncate = (s: string, max = 28) => s.length > max ? s.slice(0, max) + '�
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const GuardrailsPage: React.FC = () => {
-    const { currentProject, canWrite, canAdmin } = useProject();
+    const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -1213,6 +1216,22 @@ const GuardrailsPage: React.FC = () => {
     };
 
     const hasApiKey = !!localStorage.getItem(LOCALSTORAGE_KEY);
+
+    if (!isLoadingProjects && !selectedProjectId) {
+        const variant =
+            projects.length === 0
+                ? isCurrentWorkspaceOwner
+                    ? 'no-access-owner'
+                    : 'no-access-member'
+                : 'none-selected';
+        return (
+            <NoProjectState
+                variant={variant}
+                pageTitle="Guardrails"
+                pageSubtitle="Enforce safety rules and content policies on agent traffic."
+            />
+        );
+    }
 
     return (
         <PageWrapper>

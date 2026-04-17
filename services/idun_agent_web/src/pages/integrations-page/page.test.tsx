@@ -7,6 +7,7 @@ import React from 'react';
 // ── Module mocks ────────────────────────────────────────────────────────────
 
 vi.mock('../../hooks/use-project');
+vi.mock('../../hooks/use-workspace');
 vi.mock('../../services/integrations');
 
 // Stub modals so they don't need their own heavy deps
@@ -28,12 +29,25 @@ vi.mock('react-i18next', () => ({
 }));
 
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
 import { fetchIntegrations, deleteIntegration } from '../../services/integrations';
 import type { ManagedIntegration } from '../../services/integrations';
 import IntegrationsPage from './page';
 
 const mockUseProject = vi.mocked(useProject);
+const mockUseWorkspace = vi.mocked(useWorkspace);
 const mockFetchIntegrations = vi.mocked(fetchIntegrations);
+
+function defaultWorkspaceHook() {
+    return {
+        selectedWorkspaceId: 'ws-1',
+        currentWorkspace: { id: 'ws-1', name: 'Test Workspace', is_owner: true },
+        workspaces: [],
+        isCurrentWorkspaceOwner: true,
+        setSelectedWorkspaceId: vi.fn(),
+        getAllWorkspace: vi.fn().mockResolvedValue([]),
+    };
+}
 
 // ── Fixture integration ────────────────────────────────────────────────────
 
@@ -95,6 +109,7 @@ afterEach(() => {
 describe('IntegrationsPage — Reader (canWrite=false, canAdmin=false)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(false, false));
         mockFetchIntegrations.mockResolvedValue([fixtureIntegration]);
         vi.mocked(deleteIntegration).mockResolvedValue(undefined);
@@ -135,6 +150,7 @@ describe('IntegrationsPage — Reader (canWrite=false, canAdmin=false)', () => {
 describe('IntegrationsPage — Contributor (canWrite=true, canAdmin=false)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(true, false));
         mockFetchIntegrations.mockResolvedValue([fixtureIntegration]);
         vi.mocked(deleteIntegration).mockResolvedValue(undefined);
@@ -166,6 +182,7 @@ describe('IntegrationsPage — Contributor (canWrite=true, canAdmin=false)', () 
 describe('IntegrationsPage — Admin (canWrite=true, canAdmin=true)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(true, true));
         mockFetchIntegrations.mockResolvedValue([fixtureIntegration]);
         vi.mocked(deleteIntegration).mockResolvedValue(undefined);

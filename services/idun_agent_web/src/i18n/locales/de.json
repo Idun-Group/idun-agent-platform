@@ -1131,5 +1131,21 @@
     "created": "Project created",
     "deleted": "Project deleted",
     "empty": "No projects available."
+  },
+  "noProject": {
+    "noneSelected": {
+      "title": "Kein Projekt ausgewählt",
+      "description": "Wählen Sie oben in der Navigationsleiste ein Projekt aus, um dessen Ressourcen zu laden.",
+      "cta": "Projekt auswählen"
+    },
+    "noAccessOwner": {
+      "title": "Dieser Workspace hat keine Projekte",
+      "description": "Erstellen Sie ein Projekt, um Agenten und Ressourcen zu konfigurieren.",
+      "cta": "Projekt erstellen"
+    },
+    "noAccessMember": {
+      "title": "Kein Projektzugriff",
+      "description": "Bitten Sie einen Workspace-Owner, Sie einem Projekt hinzuzufügen."
+    }
   }
 }

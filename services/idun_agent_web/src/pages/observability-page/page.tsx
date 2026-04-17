@@ -6,6 +6,8 @@ import type { ApplicationConfig } from '../../types/application.types';
 import type { AppType } from '../../types/application.types';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
+import NoProjectState from '../../components/general/no-project-state/component';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -923,7 +925,8 @@ const ProviderModal: React.FC<ProviderModalProps> = ({ provider, appToEdit, onCl
 // ── Main page ────────────────────────────────────────────────────────────────
 
 const ObservabilityPage: React.FC = () => {
-    const { currentProject, canWrite, canAdmin } = useProject();
+    const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -984,6 +987,22 @@ const ObservabilityPage: React.FC = () => {
         setAppToDelete(null);
         loadApps();
     };
+
+    if (!isLoadingProjects && !selectedProjectId) {
+        const variant =
+            projects.length === 0
+                ? isCurrentWorkspaceOwner
+                    ? 'no-access-owner'
+                    : 'no-access-member'
+                : 'none-selected';
+        return (
+            <NoProjectState
+                variant={variant}
+                pageTitle="Observability"
+                pageSubtitle="Monitor and trace AI agent activity."
+            />
+        );
+    }
 
     return (
         <PageWrapper>

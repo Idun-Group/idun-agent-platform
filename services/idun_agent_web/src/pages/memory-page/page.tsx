@@ -17,6 +17,8 @@ import type { AppType } from '../../types/application.types';
 import type { ApplicationConfig } from '../../types/application.types';
 import { notify } from '../../components/toast/notify';
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
+import NoProjectState from '../../components/general/no-project-state/component';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -885,7 +887,8 @@ const LoadingSpinner = styled.div`
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 const MemoryPage: React.FC = () => {
-    const { currentProject, canWrite, canAdmin } = useProject();
+    const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
     const [memories, setMemories] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -968,6 +971,22 @@ const MemoryPage: React.FC = () => {
         setAppToDelete(null);
         loadMemories();
     };
+
+    if (!isLoadingProjects && !selectedProjectId) {
+        const variant =
+            projects.length === 0
+                ? isCurrentWorkspaceOwner
+                    ? 'no-access-owner'
+                    : 'no-access-member'
+                : 'none-selected';
+        return (
+            <NoProjectState
+                variant={variant}
+                pageTitle="Memory Stores"
+                pageSubtitle="Persist conversation context across agent sessions."
+            />
+        );
+    }
 
     return (
         <PageWrapper>

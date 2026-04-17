@@ -1188,5 +1188,21 @@
     "created": "Project created",
     "deleted": "Project deleted",
     "empty": "No projects available."
+  },
+  "noProject": {
+    "noneSelected": {
+      "title": "No project selected",
+      "description": "Pick a project from the selector in the top navbar to load its resources.",
+      "cta": "Select a project"
+    },
+    "noAccessOwner": {
+      "title": "This workspace has no projects",
+      "description": "Create a project to start configuring agents and resources.",
+      "cta": "Create project"
+    },
+    "noAccessMember": {
+      "title": "No project access",
+      "description": "Ask a workspace owner to add you to a project."
+    }
   }
 }

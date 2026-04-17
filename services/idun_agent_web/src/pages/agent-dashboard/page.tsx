@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { notify } from '../../components/toast/notify';
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
 import { Search, Plus, Bot } from 'lucide-react';
 import type { BackendAgent } from '../../services/agents';
 import { listAgents, deleteAgent, performHealthCheck } from '../../services/agents';
 import AgentCard from '../../components/dashboard/agents/agent-card/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import NoProjectState from '../../components/general/no-project-state/component';
 
 // ── Animations ───────────────────────────────────────────────────────────────
 
@@ -27,7 +29,8 @@ const spin = keyframes`
 const AgentDashboardPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const { currentProject, canWrite, canAdmin } = useProject();
+    const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
 
     const [agents, setAgents] = useState<BackendAgent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -89,30 +92,29 @@ const AgentDashboardPage = () => {
 
     // ── Empty state ──────────────────────────────────────────────────────────
 
-    if (!currentProject) {
+    if (!selectedProjectId) {
+        if (isLoadingProjects) {
+            return (
+                <PageWrapper>
+                    <CenterBox>
+                        <LoadingSpinner />
+                        <LoadingText>Loading project…</LoadingText>
+                    </CenterBox>
+                </PageWrapper>
+            );
+        }
+        const variant =
+            projects.length === 0
+                ? isCurrentWorkspaceOwner
+                    ? 'no-access-owner'
+                    : 'no-access-member'
+                : 'none-selected';
         return (
-            <PageWrapper>
-                <PageHeader>
-                    <TitleBlock>
-                        <PageTitle>{t('dashboard.agent.title')}</PageTitle>
-                        <PageSubtitle>Select a project to view or create agents.</PageSubtitle>
-                    </TitleBlock>
-                </PageHeader>
-
-                <EmptyState>
-                    <EmptyIcon>
-                        <Bot size={48} strokeWidth={1.2} />
-                    </EmptyIcon>
-                    <EmptyTitle>No active project</EmptyTitle>
-                    <EmptyDescription>
-                        Choose a project from the top navbar to scope your agents and configurations.
-                    </EmptyDescription>
-                    <CreateButton onClick={() => navigate('/settings/workspace-projects')}>
-                        <Plus size={18} />
-                        Manage projects
-                    </CreateButton>
-                </EmptyState>
-            </PageWrapper>
+            <NoProjectState
+                variant={variant}
+                pageTitle={t('dashboard.agent.title')}
+                pageSubtitle={t('dashboard.agent.description', 'Manage and monitor your AI agents.')}
+            />
         );
     }
 

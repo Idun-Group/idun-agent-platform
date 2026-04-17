@@ -20,6 +20,8 @@ import DeleteConfirmModal from '../../components/applications/delete-confirm-mod
 import type { ApplicationConfig } from '../../types/application.types';
 import type { AppType } from '../../types/application.types';
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
+import NoProjectState from '../../components/general/no-project-state/component';
 
 // ── Transport type metadata ──────────────────────────────────────────────────
 
@@ -1264,7 +1266,8 @@ const TransportModal: React.FC<TransportModalProps> = ({ transportId, appToEdit,
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const MCPPage: React.FC = () => {
-    const { currentProject, canWrite, canAdmin } = useProject();
+    const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -1337,6 +1340,22 @@ const MCPPage: React.FC = () => {
     );
 
     const activeCount = apps.length;
+
+    if (!isLoadingProjects && !selectedProjectId) {
+        const variant =
+            projects.length === 0
+                ? isCurrentWorkspaceOwner
+                    ? 'no-access-owner'
+                    : 'no-access-member'
+                : 'none-selected';
+        return (
+            <NoProjectState
+                variant={variant}
+                pageTitle="MCP Servers"
+                pageSubtitle="Connect model context protocol servers to your agents."
+            />
+        );
+    }
 
     return (
         <PageWrapper>

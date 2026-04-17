@@ -7,6 +7,7 @@ import React from 'react';
 // ── Module mocks ────────────────────────────────────────────────────────────
 
 vi.mock('../../hooks/use-project');
+vi.mock('../../hooks/use-workspace');
 vi.mock('../../services/agents');
 
 vi.mock('../../components/dashboard/agents/agent-card/component', () => ({
@@ -47,12 +48,25 @@ vi.mock('react-i18next', () => ({
 }));
 
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
 import { listAgents, performHealthCheck } from '../../services/agents';
 import type { BackendAgent } from '../../services/agents';
 import AgentDashboardPage from './page';
 
 const mockUseProject = vi.mocked(useProject);
+const mockUseWorkspace = vi.mocked(useWorkspace);
 const mockListAgents = vi.mocked(listAgents);
+
+function defaultWorkspaceHook() {
+    return {
+        selectedWorkspaceId: 'ws-1',
+        currentWorkspace: { id: 'ws-1', name: 'Test Workspace', is_owner: true },
+        workspaces: [],
+        isCurrentWorkspaceOwner: true,
+        setSelectedWorkspaceId: vi.fn(),
+        getAllWorkspace: vi.fn().mockResolvedValue([]),
+    };
+}
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -111,6 +125,7 @@ afterEach(() => {
 describe('AgentDashboardPage — Reader (canWrite=false, canAdmin=false)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(false, false));
         mockListAgents.mockResolvedValue([fixtureAgent]);
         vi.mocked(performHealthCheck).mockImplementation(() => undefined);
@@ -134,6 +149,7 @@ describe('AgentDashboardPage — Reader (canWrite=false, canAdmin=false)', () =>
 describe('AgentDashboardPage — Reader with no agents (empty state)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(false, false));
         mockListAgents.mockResolvedValue([]);
         vi.mocked(performHealthCheck).mockImplementation(() => undefined);
@@ -150,6 +166,7 @@ describe('AgentDashboardPage — Reader with no agents (empty state)', () => {
 describe('AgentDashboardPage — Contributor (canWrite=true, canAdmin=false)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(true, false));
         mockListAgents.mockResolvedValue([fixtureAgent]);
         vi.mocked(performHealthCheck).mockImplementation(() => undefined);
@@ -173,6 +190,7 @@ describe('AgentDashboardPage — Contributor (canWrite=true, canAdmin=false)', (
 describe('AgentDashboardPage — Contributor with no agents (empty state)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(true, false));
         mockListAgents.mockResolvedValue([]);
         vi.mocked(performHealthCheck).mockImplementation(() => undefined);
@@ -189,6 +207,7 @@ describe('AgentDashboardPage — Contributor with no agents (empty state)', () =
 describe('AgentDashboardPage — Admin (canWrite=true, canAdmin=true)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(true, true));
         mockListAgents.mockResolvedValue([fixtureAgent]);
         vi.mocked(performHealthCheck).mockImplementation(() => undefined);
@@ -219,6 +238,7 @@ describe('AgentDashboardPage — Admin (canWrite=true, canAdmin=true)', () => {
 describe('AgentDashboardPage — DeleteConfirmModal always mounted', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(false, false));
         mockListAgents.mockResolvedValue([fixtureAgent]);
         vi.mocked(performHealthCheck).mockImplementation(() => undefined);

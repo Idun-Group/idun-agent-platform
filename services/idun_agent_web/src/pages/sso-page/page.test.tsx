@@ -7,6 +7,7 @@ import React from 'react';
 // ── Module mocks ────────────────────────────────────────────────────────────
 
 vi.mock('../../hooks/use-project');
+vi.mock('../../hooks/use-workspace');
 vi.mock('../../services/sso');
 
 // Stub modals so they don't need their own heavy deps
@@ -21,12 +22,25 @@ vi.mock('../../components/applications/delete-confirm-modal/component', () => ({
 }));
 
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
 import { fetchSSOs, deleteSSO } from '../../services/sso';
 import type { ManagedSSO } from '../../services/sso';
 import SSOPage from './page';
 
 const mockUseProject = vi.mocked(useProject);
+const mockUseWorkspace = vi.mocked(useWorkspace);
 const mockFetchSSOs = vi.mocked(fetchSSOs);
+
+function defaultWorkspaceHook() {
+    return {
+        selectedWorkspaceId: 'ws-1',
+        currentWorkspace: { id: 'ws-1', name: 'Test Workspace', is_owner: true },
+        workspaces: [],
+        isCurrentWorkspaceOwner: true,
+        setSelectedWorkspaceId: vi.fn(),
+        getAllWorkspace: vi.fn().mockResolvedValue([]),
+    };
+}
 
 // ── Fixture SSO config ─────────────────────────────────────────────────────
 
@@ -87,6 +101,7 @@ afterEach(() => {
 describe('SSOPage — Reader (canWrite=false, canAdmin=false)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(false, false));
         mockFetchSSOs.mockResolvedValue([fixtureSso]);
         vi.mocked(deleteSSO).mockResolvedValue(undefined);
@@ -124,6 +139,7 @@ describe('SSOPage — Reader (canWrite=false, canAdmin=false)', () => {
 describe('SSOPage — Contributor (canWrite=true, canAdmin=false)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(true, false));
         mockFetchSSOs.mockResolvedValue([fixtureSso]);
         vi.mocked(deleteSSO).mockResolvedValue(undefined);
@@ -162,6 +178,7 @@ describe('SSOPage — Contributor (canWrite=true, canAdmin=false)', () => {
 describe('SSOPage — Admin (canWrite=true, canAdmin=true)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
         mockUseProject.mockReturnValue(makeProjectHook(true, true));
         mockFetchSSOs.mockResolvedValue([fixtureSso]);
         vi.mocked(deleteSSO).mockResolvedValue(undefined);

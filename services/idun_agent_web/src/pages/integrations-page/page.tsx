@@ -8,6 +8,8 @@ import DeleteConfirmModal from '../../components/applications/delete-confirm-mod
 import type { IntegrationProvider } from '../../services/integrations';
 import { useTranslation } from 'react-i18next';
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
+import NoProjectState from '../../components/general/no-project-state/component';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -544,7 +546,8 @@ const maskToken = (token: string): string => {
 
 const IntegrationsPage: React.FC = () => {
     const { t } = useTranslation();
-    const { currentProject, canWrite, canAdmin } = useProject();
+    const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
     const [configs, setConfigs] = useState<ManagedIntegration[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -585,6 +588,22 @@ const IntegrationsPage: React.FC = () => {
 
     const availableProviders = Object.entries(PROVIDERS).filter(([, meta]) => !meta.comingSoon);
     const comingSoonProviders = Object.entries(PROVIDERS).filter(([, meta]) => meta.comingSoon);
+
+    if (!isLoadingProjects && !selectedProjectId) {
+        const variant =
+            projects.length === 0
+                ? isCurrentWorkspaceOwner
+                    ? 'no-access-owner'
+                    : 'no-access-member'
+                : 'none-selected';
+        return (
+            <NoProjectState
+                variant={variant}
+                pageTitle={t('integrations.title', 'Integrations')}
+                pageSubtitle={t('integrations.subtitle', 'Connect external messaging platforms to your agents.')}
+            />
+        );
+    }
 
     return (
         <PageWrapper>

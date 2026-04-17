@@ -6,6 +6,8 @@ import type { ManagedSSO } from '../../services/sso';
 import CreateSsoModal from '../../components/applications/create-sso-modal/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import { useProject } from '../../hooks/use-project';
+import useWorkspace from '../../hooks/use-workspace';
+import NoProjectState from '../../components/general/no-project-state/component';
 
 // ── Animations ────────────────────────────────────────────────────────────────
 
@@ -359,7 +361,8 @@ const getIssuerLabel = (issuer: string): string => {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const SSOPage: React.FC = () => {
-    const { currentProject, canWrite, canAdmin } = useProject();
+    const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
     const [configs, setConfigs] = useState<ManagedSSO[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -402,6 +405,22 @@ const SSOPage: React.FC = () => {
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.sso.issuer.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    if (!isLoadingProjects && !selectedProjectId) {
+        const variant =
+            projects.length === 0
+                ? isCurrentWorkspaceOwner
+                    ? 'no-access-owner'
+                    : 'no-access-member'
+                : 'none-selected';
+        return (
+            <NoProjectState
+                variant={variant}
+                pageTitle="SSO / OIDC"
+                pageSubtitle="Protect agent endpoints with Single Sign-On."
+            />
+        );
+    }
 
     return (
         <PageWrapper>

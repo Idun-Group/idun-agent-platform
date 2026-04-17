@@ -1174,5 +1174,21 @@
     "created": "Project created",
     "deleted": "Project deleted",
     "empty": "No projects available."
+  },
+  "noProject": {
+    "noneSelected": {
+      "title": "Aucun projet sélectionné",
+      "description": "Choisissez un projet dans le sélecteur en haut pour charger ses ressources.",
+      "cta": "Sélectionner un projet"
+    },
+    "noAccessOwner": {
+      "title": "Cet espace de travail n'a aucun projet",
+      "description": "Créez un projet pour commencer à configurer agents et ressources.",
+      "cta": "Créer un projet"
+    },
+    "noAccessMember": {
+      "title": "Aucun accès projet",
+      "description": "Demandez à un propriétaire de l'espace de travail de vous ajouter à un projet."
+    }
   }
 }
