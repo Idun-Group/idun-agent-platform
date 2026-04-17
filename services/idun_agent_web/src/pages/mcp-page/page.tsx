@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 import {
     Globe,
@@ -1266,6 +1267,7 @@ const TransportModal: React.FC<TransportModalProps> = ({ transportId, appToEdit,
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const MCPPage: React.FC = () => {
+    const { t } = useTranslation();
     const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
     const { isCurrentWorkspaceOwner } = useWorkspace();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
@@ -1422,17 +1424,30 @@ const MCPPage: React.FC = () => {
                         </CenterBox>
                     ) : apps.length === 0 ? (
                         <EmptyState>
-                            <EmptyTitle>Add an MCP server to get started</EmptyTitle>
-                            <EmptyDescription>
-                                Connect your agents to external tools and data sources via Model Context Protocol. Add an MCP server to get started.
-                            </EmptyDescription>
-                            <EmptyChips>
-                                <Chip $color="#8b5cf6">Streamable HTTP</Chip>
-                                <Chip $color="#f59e0b">SSE</Chip>
-                                <Chip $color="#10b981">WebSocket</Chip>
-                                <Chip $color="#ef4444">STDIO</Chip>
-                            </EmptyChips>
-                            <EmptyImage src="/img/mcp-flow.png" alt="" />
+                            {canWrite ? (
+                                <>
+                                    <EmptyTitle>Add an MCP server to get started</EmptyTitle>
+                                    <EmptyDescription>
+                                        Connect your agents to external tools and data sources via Model Context Protocol. Add an MCP server to get started.
+                                    </EmptyDescription>
+                                    <EmptyChips>
+                                        <Chip $color="#8b5cf6">Streamable HTTP</Chip>
+                                        <Chip $color="#f59e0b">SSE</Chip>
+                                        <Chip $color="#10b981">WebSocket</Chip>
+                                        <Chip $color="#ef4444">STDIO</Chip>
+                                    </EmptyChips>
+                                    <EmptyImage src="/img/mcp-flow.png" alt="" />
+                                </>
+                            ) : (
+                                <>
+                                    <EmptyTitle>
+                                        {t('scopedEmpty.mcp.readerTitle', 'No MCP servers in {{project}} yet', { project: currentProject.name })}
+                                    </EmptyTitle>
+                                    <EmptyDescription>
+                                        {t('scopedEmpty.mcp.readerDescription', 'Ask a contributor or admin to add one.')}
+                                    </EmptyDescription>
+                                </>
+                            )}
                         </EmptyState>
                     ) : (
                         <>

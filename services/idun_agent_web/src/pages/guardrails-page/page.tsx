@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 import {
     Ban,
@@ -1145,6 +1146,7 @@ const truncate = (s: string, max = 28) => s.length > max ? s.slice(0, max) + '�
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const GuardrailsPage: React.FC = () => {
+    const { t } = useTranslation();
     const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
     const { isCurrentWorkspaceOwner } = useWorkspace();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
@@ -1349,17 +1351,30 @@ const GuardrailsPage: React.FC = () => {
                         </CenterBox>
                     ) : apps.length === 0 ? (
                         <EmptyState>
-                            <EmptyTitle>Select a guardrail to get started</EmptyTitle>
-                            <EmptyDescription>
-                                15+ ready-to-use guardrails for AI governance. Block PII leaks with prompt injection protection, topic filtering, and custom guardrails tailored to your use case.
-                            </EmptyDescription>
-                            <EmptyChips>
-                                <Chip $color="#ef4444">Content Safety</Chip>
-                                <Chip $color="#f59e0b">Identity &amp; Security</Chip>
-                                <Chip $color="#8b5cf6">Enterprise</Chip>
-                                <Chip $color="#10b981">Context &amp; Quality</Chip>
-                            </EmptyChips>
-                            <EmptyImage src="/img/guardrails-flow.png" alt="" />
+                            {canWrite ? (
+                                <>
+                                    <EmptyTitle>Select a guardrail to get started</EmptyTitle>
+                                    <EmptyDescription>
+                                        15+ ready-to-use guardrails for AI governance. Block PII leaks with prompt injection protection, topic filtering, and custom guardrails tailored to your use case.
+                                    </EmptyDescription>
+                                    <EmptyChips>
+                                        <Chip $color="#ef4444">Content Safety</Chip>
+                                        <Chip $color="#f59e0b">Identity &amp; Security</Chip>
+                                        <Chip $color="#8b5cf6">Enterprise</Chip>
+                                        <Chip $color="#10b981">Context &amp; Quality</Chip>
+                                    </EmptyChips>
+                                    <EmptyImage src="/img/guardrails-flow.png" alt="" />
+                                </>
+                            ) : (
+                                <>
+                                    <EmptyTitle>
+                                        {t('scopedEmpty.guardrails.readerTitle', 'No guardrails configured in {{project}}', { project: currentProject.name })}
+                                    </EmptyTitle>
+                                    <EmptyDescription>
+                                        {t('scopedEmpty.guardrails.readerDescription', 'Ask a contributor or admin to add one.')}
+                                    </EmptyDescription>
+                                </>
+                            )}
                         </EmptyState>
                     ) : (
                         <CardsGrid>

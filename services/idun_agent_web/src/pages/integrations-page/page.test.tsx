@@ -21,10 +21,20 @@ vi.mock('../../components/applications/delete-confirm-modal/component', () => ({
         isOpen ? <div data-testid="delete-modal-open" /> : <div data-testid="delete-modal-closed" />,
 }));
 
-// Stub i18n — returns the key or fallback
+// Stub i18n — returns the fallback (or key) and supports {{var}} interpolation
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (_key: string, fallback?: string) => fallback ?? _key,
+        t: (key: string, fallbackOrOptions?: string | Record<string, unknown>, maybeOptions?: Record<string, unknown>) => {
+            const fallback = typeof fallbackOrOptions === 'string' ? fallbackOrOptions : undefined;
+            const options = typeof fallbackOrOptions === 'object' ? fallbackOrOptions : maybeOptions;
+            let value = fallback ?? key;
+            if (options) {
+                for (const [k, v] of Object.entries(options)) {
+                    value = value.replace(new RegExp(`{{${k}}}`, 'g'), String(v));
+                }
+            }
+            return value;
+        },
     }),
 }));
 
@@ -200,5 +210,25 @@ describe('IntegrationsPage — Admin (canWrite=true, canAdmin=true)', () => {
             expect(screen.queryAllByText('Edit').length).toBeGreaterThan(0);
             expect(screen.queryAllByText('Remove').length).toBeGreaterThan(0);
         });
+    });
+});
+
+describe('IntegrationsPage — Reader with no integrations (empty state)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockUseWorkspace.mockReturnValue(defaultWorkspaceHook() as ReturnType<typeof useWorkspace>);
+        mockUseProject.mockReturnValue(makeProjectHook(false, false));
+        mockFetchIntegrations.mockResolvedValue([]);
+        vi.mocked(deleteIntegration).mockResolvedValue(undefined);
+    });
+
+    it('renders reader-aware empty-state copy (passive title, ask-admin description)', async () => {
+        renderPage();
+        await vi.waitFor(() => {
+            expect(screen.queryByText(/No integrations configured in Test Project/i)).not.toBeNull();
+            expect(screen.queryByText(/Ask a contributor or admin to connect one/i)).not.toBeNull();
+        });
+        // The writer-flavored invitation to act must not appear for readers.
+        expect(screen.queryByText(/Connect a messaging platform to get started/i)).toBeNull();
     });
 });

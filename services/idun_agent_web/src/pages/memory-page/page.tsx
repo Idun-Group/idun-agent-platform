@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 import {
     HardDrive,
@@ -887,6 +888,7 @@ const LoadingSpinner = styled.div`
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 const MemoryPage: React.FC = () => {
+    const { t } = useTranslation();
     const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
     const { isCurrentWorkspaceOwner } = useWorkspace();
     const [memories, setMemories] = useState<ApplicationConfig[]>([]);
@@ -1060,15 +1062,28 @@ const MemoryPage: React.FC = () => {
                         </CenterBox>
                     ) : memories.length === 0 ? (
                         <EmptyState>
-                            <EmptyTitle>Configure a memory store to get started</EmptyTitle>
-                            <EmptyDescription>
-                                Persist conversation context across sessions. Choose a storage backend for your agent framework.
-                            </EmptyDescription>
-                            <EmptyChips>
-                                <Chip $color="#8b5cf6">LangGraph</Chip>
-                                <Chip $color="#3b82f6">ADK</Chip>
-                            </EmptyChips>
-                            <EmptyImage src="/img/memory-flow.png" alt="" />
+                            {canWrite ? (
+                                <>
+                                    <EmptyTitle>Configure a memory store to get started</EmptyTitle>
+                                    <EmptyDescription>
+                                        Persist conversation context across sessions. Choose a storage backend for your agent framework.
+                                    </EmptyDescription>
+                                    <EmptyChips>
+                                        <Chip $color="#8b5cf6">LangGraph</Chip>
+                                        <Chip $color="#3b82f6">ADK</Chip>
+                                    </EmptyChips>
+                                    <EmptyImage src="/img/memory-flow.png" alt="" />
+                                </>
+                            ) : (
+                                <>
+                                    <EmptyTitle>
+                                        {t('scopedEmpty.memory.readerTitle', 'No memory stores in {{project}} yet', { project: currentProject.name })}
+                                    </EmptyTitle>
+                                    <EmptyDescription>
+                                        {t('scopedEmpty.memory.readerDescription', 'Ask a contributor or admin to configure one.')}
+                                    </EmptyDescription>
+                                </>
+                            )}
                         </EmptyState>
                     ) : (
                         <CardsGrid>

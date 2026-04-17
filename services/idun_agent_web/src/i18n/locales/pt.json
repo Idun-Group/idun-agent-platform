@@ -1131,5 +1131,35 @@
       "title": "Sem acesso a projetos",
       "description": "Peça a um proprietário do workspace para adicionar você a um projeto."
     }
+  },
+  "scopedEmpty": {
+    "agents": {
+      "readerTitle": "Ainda não há agentes em {{project}}",
+      "readerDescription": "Peça a um colaborador ou administrador para criar um."
+    },
+    "memory": {
+      "readerTitle": "Ainda não há memórias em {{project}}",
+      "readerDescription": "Peça a um colaborador ou administrador para configurar uma."
+    },
+    "mcp": {
+      "readerTitle": "Ainda não há servidores MCP em {{project}}",
+      "readerDescription": "Peça a um colaborador ou administrador para adicionar um."
+    },
+    "prompts": {
+      "readerTitle": "Ainda não há prompts em {{project}}",
+      "readerDescription": "Peça a um colaborador ou administrador para criar um."
+    },
+    "guardrails": {
+      "readerTitle": "Nenhum guardrail configurado em {{project}}",
+      "readerDescription": "Peça a um colaborador ou administrador para adicionar um."
+    },
+    "observability": {
+      "readerTitle": "Nenhum provedor de observabilidade configurado em {{project}}",
+      "readerDescription": "Peça a um colaborador ou administrador para conectar um."
+    },
+    "integrations": {
+      "readerTitle": "Nenhuma integração configurada em {{project}}",
+      "readerDescription": "Peça a um colaborador ou administrador para conectar uma."
+    }
   }
 }

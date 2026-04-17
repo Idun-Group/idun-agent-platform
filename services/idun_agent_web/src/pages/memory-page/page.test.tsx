@@ -19,10 +19,20 @@ vi.mock('../../components/toast/notify', () => ({
     notify: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
-// Stub i18n — return fallback when provided, else key
+// Stub i18n — return fallback when provided, else key. Supports {{var}} interpolation.
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string, fallback?: string) => fallback ?? key,
+        t: (key: string, fallbackOrOptions?: string | Record<string, unknown>, maybeOptions?: Record<string, unknown>) => {
+            const fallback = typeof fallbackOrOptions === 'string' ? fallbackOrOptions : undefined;
+            const options = typeof fallbackOrOptions === 'object' ? fallbackOrOptions : maybeOptions;
+            let value = fallback ?? key;
+            if (options) {
+                for (const [k, v] of Object.entries(options)) {
+                    value = value.replace(new RegExp(`{{${k}}}`, 'g'), String(v));
+                }
+            }
+            return value;
+        },
     }),
 }));
 
@@ -54,6 +64,20 @@ function projectHookSelected() {
         currentRole: 'admin' as const,
         canWrite: true,
         canAdmin: true,
+        isLoadingProjects: false,
+        setSelectedProjectId: vi.fn(),
+        refreshProjects: vi.fn().mockResolvedValue([]),
+    };
+}
+
+function projectHookReader() {
+    return {
+        selectedProjectId: 'proj-1',
+        currentProject: { ...baseProject, current_user_role: 'reader' as const },
+        projects: [baseProject],
+        currentRole: 'reader' as const,
+        canWrite: false,
+        canAdmin: false,
         isLoadingProjects: false,
         setSelectedProjectId: vi.fn(),
         refreshProjects: vi.fn().mockResolvedValue([]),
@@ -195,5 +219,40 @@ describe('MemoryPage — project selected (happy path)', () => {
         renderPage();
         expect(screen.queryByRole('link', { name: /create project/i })).toBeNull();
         expect(screen.queryByRole('button', { name: /select a project/i })).toBeNull();
+    });
+});
+
+describe('MemoryPage — Reader with no memory stores (empty state)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockUseProject.mockReturnValue(projectHookReader());
+        mockUseWorkspace.mockReturnValue(workspaceHook(true) as ReturnType<typeof useWorkspace>);
+        mockFetchApplications.mockResolvedValue([]);
+    });
+
+    it('renders reader-aware empty-state copy (passive title, ask-admin description)', async () => {
+        renderPage();
+        await vi.waitFor(() => {
+            expect(screen.queryByText(/No memory stores in Test Project yet/i)).not.toBeNull();
+            expect(screen.queryByText(/Ask a contributor or admin to configure one/i)).not.toBeNull();
+        });
+        // The writer-flavored invitation to act must not appear for readers.
+        expect(screen.queryByText(/Configure a memory store to get started/i)).toBeNull();
+    });
+});
+
+describe('MemoryPage — Admin with no memory stores (empty state)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockUseProject.mockReturnValue(projectHookSelected());
+        mockUseWorkspace.mockReturnValue(workspaceHook(true) as ReturnType<typeof useWorkspace>);
+        mockFetchApplications.mockResolvedValue([]);
+    });
+
+    it('renders the write-flavored empty-state title ("Configure a memory store to get started")', async () => {
+        renderPage();
+        await vi.waitFor(() => {
+            expect(screen.queryByText(/Configure a memory store to get started/i)).not.toBeNull();
+        });
     });
 });

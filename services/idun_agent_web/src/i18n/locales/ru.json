@@ -1131,5 +1131,35 @@
       "title": "Нет доступа к проектам",
       "description": "Попросите владельца рабочего пространства добавить вас в проект."
     }
+  },
+  "scopedEmpty": {
+    "agents": {
+      "readerTitle": "В {{project}} пока нет агентов",
+      "readerDescription": "Попросите участника или администратора создать его."
+    },
+    "memory": {
+      "readerTitle": "В {{project}} пока нет хранилищ памяти",
+      "readerDescription": "Попросите участника или администратора настроить одно."
+    },
+    "mcp": {
+      "readerTitle": "В {{project}} пока нет MCP-серверов",
+      "readerDescription": "Попросите участника или администратора добавить один."
+    },
+    "prompts": {
+      "readerTitle": "В {{project}} пока нет промптов",
+      "readerDescription": "Попросите участника или администратора создать его."
+    },
+    "guardrails": {
+      "readerTitle": "В {{project}} не настроены guardrails",
+      "readerDescription": "Попросите участника или администратора добавить один."
+    },
+    "observability": {
+      "readerTitle": "В {{project}} не настроены провайдеры наблюдаемости",
+      "readerDescription": "Попросите участника или администратора подключить одного."
+    },
+    "integrations": {
+      "readerTitle": "В {{project}} не настроены интеграции",
+      "readerDescription": "Попросите участника или администратора подключить одну."
+    }
   }
 }

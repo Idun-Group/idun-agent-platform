@@ -33,16 +33,24 @@ vi.mock('../../components/applications/delete-confirm-modal/component', () => ({
         isOpen ? <div data-testid="delete-modal-open" /> : <div data-testid="delete-modal-closed" />,
 }));
 
-// Stub i18n — returns the key or fallback
+// Stub i18n — returns the key or fallback with interpolation
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string) => {
+        t: (key: string, fallbackOrOptions?: string | Record<string, unknown>, maybeOptions?: Record<string, unknown>) => {
             const map: Record<string, string> = {
                 'dashboard.agent.title': 'Agents',
                 'dashboard.agent.create': 'Create agent',
                 'dashboard.search.placeholder': 'Search...',
             };
-            return map[key] ?? key;
+            const fallback = typeof fallbackOrOptions === 'string' ? fallbackOrOptions : undefined;
+            const options = typeof fallbackOrOptions === 'object' ? fallbackOrOptions : maybeOptions;
+            let value = map[key] ?? fallback ?? key;
+            if (options) {
+                for (const [k, v] of Object.entries(options)) {
+                    value = value.replace(new RegExp(`{{${k}}}`, 'g'), String(v));
+                }
+            }
+            return value;
         },
     }),
 }));
@@ -161,6 +169,16 @@ describe('AgentDashboardPage — Reader with no agents (empty state)', () => {
             expect(screen.queryByText('Create agent')).toBeNull();
         });
     });
+
+    it('renders reader-aware empty-state copy (passive title, ask-admin description)', async () => {
+        renderPage();
+        await vi.waitFor(() => {
+            expect(screen.queryByText(/No agents in Test Project yet/i)).not.toBeNull();
+            expect(screen.queryByText(/Ask a contributor or admin to create one/i)).not.toBeNull();
+        });
+        // The writer-flavored invitation to act must not appear for readers.
+        expect(screen.queryByText(/Create your first agent/i)).toBeNull();
+    });
 });
 
 describe('AgentDashboardPage — Contributor (canWrite=true, canAdmin=false)', () => {
@@ -200,6 +218,13 @@ describe('AgentDashboardPage — Contributor with no agents (empty state)', () =
         renderPage();
         await vi.waitFor(() => {
             expect(screen.queryByText('Create agent')).not.toBeNull();
+        });
+    });
+
+    it('renders the write-flavored empty-state title ("No agents yet")', async () => {
+        renderPage();
+        await vi.waitFor(() => {
+            expect(screen.queryByText('No agents yet')).not.toBeNull();
         });
     });
 });

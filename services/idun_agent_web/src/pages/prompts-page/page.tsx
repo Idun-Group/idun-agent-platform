@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import { ChevronRight, Search, Plus, Trash2, Link, Unlink, FileText, ExternalLink, Info } from 'lucide-react';
 import { listPrompts, deletePrompt, assignPrompt, unassignPrompt, listAgentPrompts } from '../../services/prompts';
@@ -65,6 +66,7 @@ const groupByPromptId = (prompts: ManagedPrompt[]): PromptGroup[] => {
 };
 
 const PromptsPage = () => {
+    const { t } = useTranslation();
     const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
     const { isCurrentWorkspaceOwner } = useWorkspace();
     const [prompts, setPrompts] = useState<ManagedPrompt[]>([]);
@@ -330,11 +332,24 @@ const PromptsPage = () => {
                 <EmptyState>
                     <EmptyIconWrap><FileText size={28} strokeWidth={1.5} /></EmptyIconWrap>
                     <EmptyTextBlock>
-                        <EmptyTitle>Create your first prompt</EmptyTitle>
-                        <EmptyDesc>
-                            Versioned templates you can assign to any agent.
-                            Use <code>get_prompt("id")</code> in your agent code to load them at runtime.
-                        </EmptyDesc>
+                        {canWrite ? (
+                            <>
+                                <EmptyTitle>Create your first prompt</EmptyTitle>
+                                <EmptyDesc>
+                                    Versioned templates you can assign to any agent.
+                                    Use <code>get_prompt("id")</code> in your agent code to load them at runtime.
+                                </EmptyDesc>
+                            </>
+                        ) : (
+                            <>
+                                <EmptyTitle>
+                                    {t('scopedEmpty.prompts.readerTitle', 'No prompts in {{project}} yet', { project: currentProject?.name ?? 'the active project' })}
+                                </EmptyTitle>
+                                <EmptyDesc>
+                                    {t('scopedEmpty.prompts.readerDescription', 'Ask a contributor or admin to create one.')}
+                                </EmptyDesc>
+                            </>
+                        )}
                     </EmptyTextBlock>
                     <EmptyCTA onClick={() => canWrite && setIsModalOpen(true)} aria-label="Create new prompt">
                         <Plus size={15} /> New Prompt

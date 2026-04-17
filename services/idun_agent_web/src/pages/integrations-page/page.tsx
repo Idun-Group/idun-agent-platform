@@ -682,15 +682,28 @@ const IntegrationsPage: React.FC = () => {
                         </CenterBox>
                     ) : configs.length === 0 ? (
                         <EmptyState>
-                            <EmptyTitle>{t('integrations.emptyTitle', 'Connect a messaging platform to get started')}</EmptyTitle>
-                            <EmptyDescription>
-                                {t('integrations.emptyDescription', 'Bridge your AI agents to messaging platforms. Idun handles webhooks, message routing, and bidirectional communication so your agents can interact with users on any channel.')}
-                            </EmptyDescription>
-                            <EmptyChips>
-                                {availableProviders.map(([key, meta]) => (
-                                    <Chip key={key} $color={meta.color}>{meta.label}</Chip>
-                                ))}
-                            </EmptyChips>
+                            {canWrite ? (
+                                <>
+                                    <EmptyTitle>{t('integrations.emptyTitle', 'Connect a messaging platform to get started')}</EmptyTitle>
+                                    <EmptyDescription>
+                                        {t('integrations.emptyDescription', 'Bridge your AI agents to messaging platforms. Idun handles webhooks, message routing, and bidirectional communication so your agents can interact with users on any channel.')}
+                                    </EmptyDescription>
+                                    <EmptyChips>
+                                        {availableProviders.map(([key, meta]) => (
+                                            <Chip key={key} $color={meta.color}>{meta.label}</Chip>
+                                        ))}
+                                    </EmptyChips>
+                                </>
+                            ) : (
+                                <>
+                                    <EmptyTitle>
+                                        {t('scopedEmpty.integrations.readerTitle', 'No integrations configured in {{project}}', { project: currentProject.name })}
+                                    </EmptyTitle>
+                                    <EmptyDescription>
+                                        {t('scopedEmpty.integrations.readerDescription', 'Ask a contributor or admin to connect one.')}
+                                    </EmptyDescription>
+                                </>
+                            )}
                         </EmptyState>
                     ) : (
                         <CardsGrid>

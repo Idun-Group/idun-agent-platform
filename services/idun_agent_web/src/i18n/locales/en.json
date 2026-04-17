@@ -1204,5 +1204,35 @@
       "title": "No project access",
       "description": "Ask a workspace owner to add you to a project."
     }
+  },
+  "scopedEmpty": {
+    "agents": {
+      "readerTitle": "No agents in {{project}} yet",
+      "readerDescription": "Ask a contributor or admin to create one."
+    },
+    "memory": {
+      "readerTitle": "No memory stores in {{project}} yet",
+      "readerDescription": "Ask a contributor or admin to configure one."
+    },
+    "mcp": {
+      "readerTitle": "No MCP servers in {{project}} yet",
+      "readerDescription": "Ask a contributor or admin to add one."
+    },
+    "prompts": {
+      "readerTitle": "No prompts in {{project}} yet",
+      "readerDescription": "Ask a contributor or admin to create one."
+    },
+    "guardrails": {
+      "readerTitle": "No guardrails configured in {{project}}",
+      "readerDescription": "Ask a contributor or admin to add one."
+    },
+    "observability": {
+      "readerTitle": "No observability providers configured in {{project}}",
+      "readerDescription": "Ask a contributor or admin to connect one."
+    },
+    "integrations": {
+      "readerTitle": "No integrations configured in {{project}}",
+      "readerDescription": "Ask a contributor or admin to connect one."
+    }
   }
 }

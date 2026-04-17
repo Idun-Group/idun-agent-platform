@@ -1190,5 +1190,35 @@
       "title": "Aucun accès projet",
       "description": "Demandez à un propriétaire de l'espace de travail de vous ajouter à un projet."
     }
+  },
+  "scopedEmpty": {
+    "agents": {
+      "readerTitle": "Aucun agent dans {{project}} pour l'instant",
+      "readerDescription": "Demandez à un contributeur ou à un administrateur d'en créer un."
+    },
+    "memory": {
+      "readerTitle": "Aucune mémoire dans {{project}} pour l'instant",
+      "readerDescription": "Demandez à un contributeur ou à un administrateur d'en configurer une."
+    },
+    "mcp": {
+      "readerTitle": "Aucun serveur MCP dans {{project}} pour l'instant",
+      "readerDescription": "Demandez à un contributeur ou à un administrateur d'en ajouter un."
+    },
+    "prompts": {
+      "readerTitle": "Aucun prompt dans {{project}} pour l'instant",
+      "readerDescription": "Demandez à un contributeur ou à un administrateur d'en créer un."
+    },
+    "guardrails": {
+      "readerTitle": "Aucun garde-fou configuré dans {{project}}",
+      "readerDescription": "Demandez à un contributeur ou à un administrateur d'en ajouter un."
+    },
+    "observability": {
+      "readerTitle": "Aucun fournisseur d'observabilité configuré dans {{project}}",
+      "readerDescription": "Demandez à un contributeur ou à un administrateur d'en connecter un."
+    },
+    "integrations": {
+      "readerTitle": "Aucune intégration configurée dans {{project}}",
+      "readerDescription": "Demandez à un contributeur ou à un administrateur d'en connecter une."
+    }
   }
 }

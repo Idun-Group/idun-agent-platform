@@ -1143,5 +1143,35 @@
       "title": "Sin acceso a proyectos",
       "description": "Pide a un propietario del espacio de trabajo que te agregue a un proyecto."
     }
+  },
+  "scopedEmpty": {
+    "agents": {
+      "readerTitle": "Aún no hay agentes en {{project}}",
+      "readerDescription": "Pide a un contribuidor o administrador que cree uno."
+    },
+    "memory": {
+      "readerTitle": "Aún no hay memorias en {{project}}",
+      "readerDescription": "Pide a un contribuidor o administrador que configure una."
+    },
+    "mcp": {
+      "readerTitle": "Aún no hay servidores MCP en {{project}}",
+      "readerDescription": "Pide a un contribuidor o administrador que añada uno."
+    },
+    "prompts": {
+      "readerTitle": "Aún no hay prompts en {{project}}",
+      "readerDescription": "Pide a un contribuidor o administrador que cree uno."
+    },
+    "guardrails": {
+      "readerTitle": "No hay guardrails configurados en {{project}}",
+      "readerDescription": "Pide a un contribuidor o administrador que añada uno."
+    },
+    "observability": {
+      "readerTitle": "No hay proveedores de observabilidad configurados en {{project}}",
+      "readerDescription": "Pide a un contribuidor o administrador que conecte uno."
+    },
+    "integrations": {
+      "readerTitle": "No hay integraciones configuradas en {{project}}",
+      "readerDescription": "Pide a un contribuidor o administrador que conecte una."
+    }
   }
 }

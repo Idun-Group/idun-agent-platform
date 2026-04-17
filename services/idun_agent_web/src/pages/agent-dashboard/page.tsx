@@ -132,10 +132,23 @@ const AgentDashboardPage = () => {
                     <EmptyIcon>
                         <Bot size={48} strokeWidth={1.2} />
                     </EmptyIcon>
-                    <EmptyTitle>No agents yet</EmptyTitle>
-                    <EmptyDescription>
-                        {`Create your first agent in ${currentProject.name} to start monitoring and managing your AI workflows.`}
-                    </EmptyDescription>
+                    {canWrite ? (
+                        <>
+                            <EmptyTitle>No agents yet</EmptyTitle>
+                            <EmptyDescription>
+                                {`Create your first agent in ${currentProject.name} to start monitoring and managing your AI workflows.`}
+                            </EmptyDescription>
+                        </>
+                    ) : (
+                        <>
+                            <EmptyTitle>
+                                {t('scopedEmpty.agents.readerTitle', 'No agents in {{project}} yet', { project: currentProject.name })}
+                            </EmptyTitle>
+                            <EmptyDescription>
+                                {t('scopedEmpty.agents.readerDescription', 'Ask a contributor or admin to create one.')}
+                            </EmptyDescription>
+                        </>
+                    )}
                     {canWrite && (
                         <CreateButton onClick={() => navigate('/agents/create')}>
                             <Plus size={18} />

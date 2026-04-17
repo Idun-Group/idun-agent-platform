@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 import { Eye, EyeOff, X, BookOpen, GitPullRequest, Search, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { fetchApplications, deleteApplication, createApplication, updateApplication, checkObservabilityConnection, mapConfigToApi, mapTypeToProvider } from '../../services/applications';
@@ -925,6 +926,7 @@ const ProviderModal: React.FC<ProviderModalProps> = ({ provider, appToEdit, onCl
 // ── Main page ────────────────────────────────────────────────────────────────
 
 const ObservabilityPage: React.FC = () => {
+    const { t } = useTranslation();
     const { selectedProjectId, projects, isLoadingProjects, currentProject, canWrite, canAdmin } = useProject();
     const { isCurrentWorkspaceOwner } = useWorkspace();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
@@ -1074,18 +1076,31 @@ const ObservabilityPage: React.FC = () => {
                         </CenterBox>
                     ) : apps.length === 0 ? (
                         <EmptyState>
-                            <EmptyTitle>Connect a provider to get started</EmptyTitle>
-                            <EmptyDescription>
-                                Full AI agent monitoring and visibility into every run. Idun auto-instruments your agents with OpenTelemetry and routes traces to any backend without any configuration.
-                            </EmptyDescription>
-                            <EmptyChips>
-                                <Chip $color="#3b82f6">Logging</Chip>
-                                <Chip $color="#f59e0b">Debug</Chip>
-                                <Chip $color="#10b981">Cost tracking</Chip>
-                                <Chip $color="#8b5cf6">Token usage</Chip>
-                                <Chip $color="#ef4444">Latency</Chip>
-                                <Chip $color="#06b6d4">AI compliance</Chip>
-                            </EmptyChips>
+                            {canWrite ? (
+                                <>
+                                    <EmptyTitle>Connect a provider to get started</EmptyTitle>
+                                    <EmptyDescription>
+                                        Full AI agent monitoring and visibility into every run. Idun auto-instruments your agents with OpenTelemetry and routes traces to any backend without any configuration.
+                                    </EmptyDescription>
+                                    <EmptyChips>
+                                        <Chip $color="#3b82f6">Logging</Chip>
+                                        <Chip $color="#f59e0b">Debug</Chip>
+                                        <Chip $color="#10b981">Cost tracking</Chip>
+                                        <Chip $color="#8b5cf6">Token usage</Chip>
+                                        <Chip $color="#ef4444">Latency</Chip>
+                                        <Chip $color="#06b6d4">AI compliance</Chip>
+                                    </EmptyChips>
+                                </>
+                            ) : (
+                                <>
+                                    <EmptyTitle>
+                                        {t('scopedEmpty.observability.readerTitle', 'No observability providers configured in {{project}}', { project: currentProject.name })}
+                                    </EmptyTitle>
+                                    <EmptyDescription>
+                                        {t('scopedEmpty.observability.readerDescription', 'Ask a contributor or admin to connect one.')}
+                                    </EmptyDescription>
+                                </>
+                            )}
                         </EmptyState>
                     ) : (
                         <CardsGrid>
