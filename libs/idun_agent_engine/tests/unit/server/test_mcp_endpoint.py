@@ -4,7 +4,12 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from ag_ui.core.events import EventType, RunErrorEvent, TextMessageContentEvent
+from ag_ui.core.events import (
+    EventType,
+    RunErrorEvent,
+    StateSnapshotEvent,
+    TextMessageContentEvent,
+)
 from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.capabilities import (
     AgentCapabilities,
@@ -15,6 +20,7 @@ from idun_agent_schema.engine.capabilities import (
 
 from idun_agent_engine.server.mcp_endpoint import (
     _collect_response,
+    _filter_state_by_schema,
     _format_result,
     _make_run_input,
     _override_tool_schema,
@@ -81,6 +87,35 @@ COMPLEX_CAPS = AgentCapabilities(
     input=InputDescriptor(mode="structured", schema_=COMPLEX_SCHEMA),
     output=OutputDescriptor(mode="structured"),
 )
+
+OUTPUT_ANSWER_SCHEMA = {
+    "type": "object",
+    "properties": {"answer": {"type": "string"}},
+}
+
+CHAT_IN_STRUCTURED_OUT_CAPS = AgentCapabilities(
+    framework=AgentFramework.LANGGRAPH,
+    capabilities=CapabilityFlags(),
+    input=InputDescriptor(mode="chat"),
+    output=OutputDescriptor(mode="structured", schema_=OUTPUT_ANSWER_SCHEMA),
+)
+
+STRUCTURED_IN_STRUCTURED_OUT_CAPS = AgentCapabilities(
+    framework=AgentFramework.LANGGRAPH,
+    capabilities=CapabilityFlags(),
+    input=InputDescriptor(mode="structured", schema_=STRUCTURED_SCHEMA),
+    output=OutputDescriptor(mode="structured", schema_=OUTPUT_ANSWER_SCHEMA),
+)
+
+
+def _state_event(snapshot):
+    return StateSnapshotEvent(type=EventType.STATE_SNAPSHOT, snapshot=snapshot)
+
+
+def _text_event(delta: str, message_id: str = "m1"):
+    return TextMessageContentEvent(
+        type=EventType.TEXT_MESSAGE_CONTENT, message_id=message_id, delta=delta,
+    )
 
 
 def _mock_agent(name: str = "Test Agent") -> MagicMock:
@@ -535,3 +570,280 @@ class TestStructuredHandlerInvocation:
             "input_data": {"request_id": "r1", "objective": "test"}
         })
         assert result == "Error: the agent encountered an internal error"
+
+
+# ---------------------------------------------------------------------------
+# _filter_state_by_schema
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestFilterStateBySchema:
+    def test_keeps_only_matching_keys(self):
+        state = {"answer": "42", "messages": [1, 2], "internal": True}
+        schema = {"properties": {"answer": {"type": "string"}}}
+        assert _filter_state_by_schema(state, schema) == {"answer": "42"}
+
+    def test_multiple_properties(self):
+        state = {"a": 1, "b": 2, "c": 3}
+        schema = {"properties": {"a": {}, "b": {}}}
+        assert _filter_state_by_schema(state, schema) == {"a": 1, "b": 2}
+
+    def test_missing_properties_key(self):
+        assert _filter_state_by_schema({"a": 1}, {"type": "object"}) == {}
+
+    def test_none_schema(self):
+        assert _filter_state_by_schema({"a": 1}, None) == {}
+
+    def test_non_dict_properties(self):
+        assert _filter_state_by_schema({"a": 1}, {"properties": []}) == {}
+
+    def test_no_overlap(self):
+        state = {"x": 1}
+        schema = {"properties": {"y": {}}}
+        assert _filter_state_by_schema(state, schema) == {}
+
+
+# ---------------------------------------------------------------------------
+# _collect_response — output mode matrix
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestCollectResponseStructuredOutput:
+    @pytest.mark.asyncio
+    async def test_structured_state_filtered_by_schema(self):
+        events = [_state_event({"answer": "42", "messages": ["internal"]})]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=OUTPUT_ANSWER_SCHEMA,
+        )
+        assert json.loads(result) == {"answer": "42"}
+
+    @pytest.mark.asyncio
+    async def test_structured_full_state_when_no_schema_match(self):
+        events = [_state_event({"foo": "bar", "baz": 1})]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=OUTPUT_ANSWER_SCHEMA,
+        )
+        assert json.loads(result) == {"foo": "bar", "baz": 1}
+
+    @pytest.mark.asyncio
+    async def test_structured_full_state_when_schema_none(self):
+        events = [_state_event({"foo": "bar"})]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=None,
+        )
+        assert json.loads(result) == {"foo": "bar"}
+
+    @pytest.mark.asyncio
+    async def test_structured_uses_last_state_snapshot(self):
+        events = [
+            _state_event({"answer": "draft"}),
+            _state_event({"answer": "final"}),
+        ]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=OUTPUT_ANSWER_SCHEMA,
+        )
+        assert json.loads(result) == {"answer": "final"}
+
+    @pytest.mark.asyncio
+    async def test_structured_falls_back_to_text_when_no_state(self):
+        """ADK-style: structured output delivered as JSON in a text message."""
+        events = [_text_event('{"answer": "42"}')]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=OUTPUT_ANSWER_SCHEMA,
+        )
+        assert result == '{"answer": "42"}'
+
+    @pytest.mark.asyncio
+    async def test_structured_state_preferred_over_text(self):
+        events = [
+            _text_event("partial stream text"),
+            _state_event({"answer": "final"}),
+        ]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=OUTPUT_ANSWER_SCHEMA,
+        )
+        assert json.loads(result) == {"answer": "final"}
+
+    @pytest.mark.asyncio
+    async def test_structured_empty_state_falls_back_to_text(self):
+        events = [_state_event({}), _text_event("hello")]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=OUTPUT_ANSWER_SCHEMA,
+        )
+        assert result == "hello"
+
+    @pytest.mark.asyncio
+    async def test_structured_error_when_no_state_no_text(self):
+        events = [
+            RunErrorEvent(type=EventType.RUN_ERROR, message="boom", code="E"),
+        ]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=OUTPUT_ANSWER_SCHEMA,
+        )
+        assert result == "Error: boom"
+
+    @pytest.mark.asyncio
+    async def test_structured_empty_when_no_events(self):
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter([]))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=OUTPUT_ANSWER_SCHEMA,
+        )
+        assert result == ""
+
+    @pytest.mark.asyncio
+    async def test_structured_non_dict_state_ignored(self):
+        """A snapshot that isn't a dict is ignored; falls back to text."""
+        events = [_state_event("not a dict"), _text_event("fallback")]  # type: ignore[arg-type]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"),
+            output_mode="structured", output_schema=OUTPUT_ANSWER_SCHEMA,
+        )
+        assert result == "fallback"
+
+
+@pytest.mark.unit
+class TestCollectResponseTextOutput:
+    @pytest.mark.asyncio
+    async def test_text_mode_ignores_state_snapshots(self):
+        events = [
+            _state_event({"answer": "in state"}),
+            _text_event("hello from stream"),
+        ]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(
+            agent, _make_run_input("t", "hi"), output_mode="text",
+        )
+        assert result == "hello from stream"
+
+    @pytest.mark.asyncio
+    async def test_text_mode_default(self):
+        """Default mode is 'text' — state snapshots ignored."""
+        events = [_state_event({"answer": "x"}), _text_event("plain")]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        result = await _collect_response(agent, _make_run_input("t", "hi"))
+        assert result == "plain"
+
+
+# ---------------------------------------------------------------------------
+# Handler invocation — input × output matrix
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestHandlerOutputModeMatrix:
+    """End-to-end matrix: every (input, output) combo the platform supports."""
+
+    @pytest.mark.asyncio
+    async def test_chat_in_text_out(self):
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter([_text_event("hi back")]))
+
+        mcp = create_mcp_server(agent, CHAT_CAPS)
+        tool = mcp._tool_manager._tools["Test_Agent"]
+        result = await tool.run({"message": "hello"})
+        assert result == "hi back"
+
+    @pytest.mark.asyncio
+    async def test_chat_in_structured_out_state_based(self):
+        """LangGraph-style: chat in, structured result written to state."""
+        events = [_state_event({"answer": "forty-two", "messages": [1]})]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        mcp = create_mcp_server(agent, CHAT_IN_STRUCTURED_OUT_CAPS)
+        tool = mcp._tool_manager._tools["Test_Agent"]
+        result = await tool.run({"message": "what is 6x7?"})
+        assert json.loads(result) == {"answer": "forty-two"}
+
+    @pytest.mark.asyncio
+    async def test_chat_in_structured_out_text_based(self):
+        """ADK-style: chat in, structured result delivered as JSON text."""
+        agent = _mock_agent()
+        agent.run = MagicMock(
+            return_value=_async_iter([_text_event('{"answer": "42"}')])
+        )
+
+        mcp = create_mcp_server(agent, CHAT_IN_STRUCTURED_OUT_CAPS)
+        tool = mcp._tool_manager._tools["Test_Agent"]
+        result = await tool.run({"message": "what is 6x7?"})
+        assert result == '{"answer": "42"}'
+
+    @pytest.mark.asyncio
+    async def test_structured_in_text_out(self):
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter([_text_event("done")]))
+
+        mcp = create_mcp_server(agent, STRUCTURED_CAPS)
+        tool = mcp._tool_manager._tools["Test_Agent"]
+        result = await tool.run({
+            "input_data": {"request_id": "r1", "objective": "test"}
+        })
+        assert result == "done"
+
+    @pytest.mark.asyncio
+    async def test_structured_in_structured_out(self):
+        events = [_state_event({"answer": "ok", "trace": "ignored"})]
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter(events))
+
+        mcp = create_mcp_server(agent, STRUCTURED_IN_STRUCTURED_OUT_CAPS)
+        tool = mcp._tool_manager._tools["Test_Agent"]
+        result = await tool.run({
+            "input_data": {"request_id": "r1", "objective": "test"}
+        })
+        assert json.loads(result) == {"answer": "ok"}
+
+    @pytest.mark.asyncio
+    async def test_chat_in_structured_out_empty_returns_empty_string(self):
+        """No state, no text, no error → empty string (regression for celeste bug)."""
+        agent = _mock_agent()
+        agent.run = MagicMock(return_value=_async_iter([]))
+
+        mcp = create_mcp_server(agent, CHAT_IN_STRUCTURED_OUT_CAPS)
+        tool = mcp._tool_manager._tools["Test_Agent"]
+        result = await tool.run({"message": "anything"})
+        assert result == ""

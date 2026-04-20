@@ -18,6 +18,10 @@ export interface WizardState {
     serverPort: string;
     remoteUrl: string;
 
+    // MCP exposure
+    asMcp: boolean;
+    mcpDescription: string;
+
     // Step 3 - populated after creation
     createdAgentId: string | null;
     apiKey: string | null;
@@ -49,6 +53,8 @@ export const INITIAL_WIZARD_STATE: WizardState = {
     hostMode: 'localhost',
     serverPort: '8800',
     remoteUrl: '',
+    asMcp: true,
+    mcpDescription: '',
     createdAgentId: null,
     apiKey: null,
 };

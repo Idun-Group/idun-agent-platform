@@ -158,6 +158,8 @@ export interface AgentFormState {
     serverPort: string;
     agentType: string;
     agentConfig: Record<string, any>;
+    asMcp: boolean;
+    mcpDescription: string;
 }
 
 /**
@@ -229,7 +231,11 @@ export function buildAgentPatchPayload(
         version: state.version.trim() || '1.0.0',
         base_url: state.baseUrl.trim() || null,
         engine_config: {
-            server: { api: { port: parsedPort } },
+            server: {
+                api: { port: parsedPort },
+                as_mcp: state.asMcp,
+                mcp_description: state.mcpDescription.trim() || null,
+            },
             agent: { type: state.agentType, config: finalAgentConfig },
         },
         resources: {

@@ -3,7 +3,9 @@ import styled from 'styled-components';
 import { CheckCircle2, AlertCircle, Copy, Check, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { notify } from '../../../components/toast/notify';
 import { createAgent, patchAgent, getAgentApiKey, performHealthCheck } from '../../../services/agents';
+import { fetchApplications } from '../../../services/applications';
 import { API_BASE_URL } from '../../../utils/api';
+import { ensureAgentMcpServer } from '../../../utils/agent-mcp-registration';
 import { type WizardState, resolveBaseUrl, resolveServerPort } from '../types';
 import CodeSnippet from '../components/code-snippet';
 import ConnectionVerifier from '../components/connection-verifier';
@@ -25,13 +27,30 @@ function buildPayload(state: WizardState) {
         name,
         base_url: resolveBaseUrl(state) || null,
         engine_config: {
-            server: { api: { port: resolveServerPort(state) } },
+            server: {
+                api: { port: resolveServerPort(state) },
+                as_mcp: state.asMcp,
+                mcp_description: state.mcpDescription.trim() || null,
+            },
             agent: {
                 type: framework,
                 config: agentConfig,
             },
         },
     };
+}
+
+async function registerAgentAsMcp(state: WizardState) {
+    if (!state.asMcp) return;
+    const baseUrl = resolveBaseUrl(state);
+    if (!baseUrl) return;
+    try {
+        const apps = await fetchApplications();
+        const mcpApps = apps.filter(a => a.category === 'MCP');
+        await ensureAgentMcpServer(state.name, baseUrl, mcpApps);
+    } catch (err) {
+        console.error('Failed to auto-register MCP server', err);
+    }
 }
 
 export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps) {
@@ -82,6 +101,7 @@ export default function EnrollmentStep({ state, onCreated }: EnrollmentStepProps
                 lastPayloadRef.current = payloadJson;
                 onCreated(agent.id, apiKey);
                 performHealthCheck(agent);
+                registerAgentAsMcp(state);
                 setShowConfetti(true);
                 setPhase('ready');
             } catch (err) {

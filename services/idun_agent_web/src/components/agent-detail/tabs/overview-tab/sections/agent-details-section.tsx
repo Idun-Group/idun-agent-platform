@@ -18,7 +18,7 @@ interface AgentDetailsSectionProps {
     agent: BackendAgent;
     isEditing: boolean;
     formState: AgentFormState;
-    onFieldChange: (field: keyof AgentFormState, value: string) => void;
+    onFieldChange: (field: keyof AgentFormState, value: string | boolean) => void;
 }
 
 const formatDate = (dateStr: string) =>

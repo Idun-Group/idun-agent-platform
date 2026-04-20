@@ -35,11 +35,11 @@ export default function AgentFormPage() {
     const toSnakeCase = (s: string) =>
         s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 
-    const updateField = useCallback((field: string, value: string) => {
+    const updateField = useCallback((field: string, value: string | boolean) => {
         setState(prev => {
             const next = { ...prev, [field]: value };
             // Auto-derive adkAppName from agent name
-            if (field === 'name') {
+            if (field === 'name' && typeof value === 'string') {
                 next.adkAppName = toSnakeCase(value);
             }
             return next;
@@ -119,6 +119,8 @@ export default function AgentFormPage() {
                             hostMode={state.hostMode}
                             serverPort={state.serverPort}
                             remoteUrl={state.remoteUrl}
+                            asMcp={state.asMcp}
+                            mcpDescription={state.mcpDescription}
                             onFieldChange={updateField}
                         />
                     )}

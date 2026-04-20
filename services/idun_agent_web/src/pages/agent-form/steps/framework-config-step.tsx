@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Monitor, Globe, ChevronUp, ChevronDown } from 'lucide-react';
+import { Monitor, Globe, ChevronUp, ChevronDown, Share2 } from 'lucide-react';
 import { useRef, useCallback } from 'react';
 import type { Framework, HostMode } from '../types';
 import FrameworkGuide from '../components/framework-guide';
@@ -12,7 +12,9 @@ interface FrameworkConfigStepProps {
     hostMode: HostMode;
     serverPort: string;
     remoteUrl: string;
-    onFieldChange: (field: string, value: string) => void;
+    asMcp: boolean;
+    mcpDescription: string;
+    onFieldChange: (field: string, value: string | boolean) => void;
 }
 
 export default function FrameworkConfigStep({
@@ -23,6 +25,8 @@ export default function FrameworkConfigStep({
     hostMode,
     serverPort,
     remoteUrl,
+    asMcp,
+    mcpDescription,
     onFieldChange,
 }: FrameworkConfigStepProps) {
     return (
@@ -105,6 +109,38 @@ export default function FrameworkConfigStep({
                             onChange={e => onFieldChange('remoteUrl', e.target.value)}
                         />
                         <Hint>The public URL where your agent is deployed (e.g. https://my-agent.example.com)</Hint>
+                    </FieldGroup>
+                )}
+
+                <McpToggleRow>
+                    <McpToggleInfo>
+                        <McpIconWrap>
+                            <Share2 size={14} />
+                        </McpIconWrap>
+                        <div>
+                            <McpToggleLabel>Expose as MCP Server</McpToggleLabel>
+                            <Hint>Other agents and clients can invoke this agent as an MCP tool</Hint>
+                        </div>
+                    </McpToggleInfo>
+                    <Switch
+                        $on={asMcp}
+                        onClick={() => onFieldChange('asMcp', !asMcp)}
+                        type="button"
+                        aria-pressed={asMcp}
+                    >
+                        <SwitchKnob $on={asMcp} />
+                    </Switch>
+                </McpToggleRow>
+
+                {asMcp && (
+                    <FieldGroup>
+                        <InputLabel>MCP Tool Description</InputLabel>
+                        <StyledInput
+                            placeholder={`Invoke the ${framework === 'LANGGRAPH' ? 'LangGraph' : 'ADK'} agent`}
+                            value={mcpDescription}
+                            onChange={e => onFieldChange('mcpDescription', e.target.value)}
+                        />
+                        <Hint>Optional. Defaults to the agent name if left blank.</Hint>
                     </FieldGroup>
                 )}
             </FormSection>
@@ -344,4 +380,65 @@ const PortStepBtn = styled.button`
     &:active {
         background: rgba(140, 82, 255, 0.25);
     }
+`;
+
+const McpToggleRow = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    background: hsl(var(--accent));
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    margin-bottom: 16px;
+`;
+
+const McpToggleInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+`;
+
+const McpIconWrap = styled.div`
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    flex-shrink: 0;
+`;
+
+const McpToggleLabel = styled.p`
+    font-size: 13px;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin: 0 0 2px;
+`;
+
+const Switch = styled.button<{ $on: boolean }>`
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    border: none;
+    background: ${p => p.$on ? 'hsl(var(--primary))' : 'var(--overlay-medium)'};
+    position: relative;
+    cursor: pointer;
+    transition: background 0.15s;
+    padding: 0;
+    flex-shrink: 0;
+`;
+
+const SwitchKnob = styled.span<{ $on: boolean }>`
+    position: absolute;
+    top: 2px;
+    left: ${p => p.$on ? '20px' : '2px'};
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    transition: left 0.15s;
 `;

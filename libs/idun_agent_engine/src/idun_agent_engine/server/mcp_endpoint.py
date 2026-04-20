@@ -14,7 +14,11 @@ import uuid
 from copy import deepcopy
 from typing import Any
 
-from ag_ui.core.events import RunErrorEvent, TextMessageContentEvent
+from ag_ui.core.events import (
+    RunErrorEvent,
+    StateSnapshotEvent,
+    TextMessageContentEvent,
+)
 from ag_ui.core.types import RunAgentInput, UserMessage
 from idun_agent_schema.engine.capabilities import AgentCapabilities
 from mcp.server.fastmcp import FastMCP
@@ -31,9 +35,7 @@ def _sanitize_tool_name(name: str) -> str:
     return sanitized or "agent"
 
 
-def _override_tool_schema(
-    mcp: FastMCP, tool_name: str, schema: dict[str, Any]
-) -> None:
+def _override_tool_schema(mcp: FastMCP, tool_name: str, schema: dict[str, Any]) -> None:
     """Override a registered tool's input schema.
 
     Accesses mcp._tool_manager._tools (private API, tested against mcp 1.26.0).
@@ -67,30 +69,65 @@ def _make_run_input(thread_id: str, content: str) -> RunAgentInput:
     )
 
 
-async def _collect_response(agent: BaseAgent, run_input: RunAgentInput) -> str:
-    """Run the agent and collect the full text response from AG-UI events."""
+def _filter_state_by_schema(
+    state: dict[str, Any], schema: dict[str, Any] | None
+) -> dict[str, Any]:
+    """Return the subset of state whose keys match schema.properties."""
+    if not isinstance(schema, dict):
+        return {}
+    props = schema.get("properties")
+    if not isinstance(props, dict):
+        return {}
+    return {k: state[k] for k in props if k in state}
+
+
+async def _collect_response(
+    agent: BaseAgent,
+    run_input: RunAgentInput,
+    output_mode: str = "text",
+    output_schema: dict[str, Any] | None = None,
+) -> str:
+    """Run the agent and collect a response from AG-UI events.
+
+    When output_mode is "structured", prefer the last StateSnapshotEvent
+    (filtered by output_schema.properties when available), falling back
+    to collected text chunks if no state was emitted. This covers LangGraph
+    agents that write structured output to state and ADK agents that return
+    JSON in a final text message.
+    """
     chunks: list[str] = []
+    final_state: Any = None
     error_message: str | None = None
 
     async for event in agent.run(run_input):
         if isinstance(event, TextMessageContentEvent):
             chunks.append(event.delta)
+        elif isinstance(event, StateSnapshotEvent):
+            final_state = event.snapshot
         elif isinstance(event, RunErrorEvent):
             error_message = event.message
             logger.error(
                 "Agent returned error — thread=%s error=%s",
-                run_input.thread_id, error_message,
+                run_input.thread_id,
+                error_message,
             )
 
-    if error_message and not chunks:
+    if output_mode == "structured" and isinstance(final_state, dict):
+        filtered = _filter_state_by_schema(final_state, output_schema)
+        if filtered:
+            return json.dumps(filtered, default=str)
+        if final_state:
+            return json.dumps(final_state, default=str)
+
+    text = "".join(chunks)
+    if text:
+        return text
+
+    if error_message:
         return f"Error: {error_message}"
 
-    if not chunks:
-        logger.warning(
-            "Agent returned no text content — thread=%s", run_input.thread_id
-        )
-
-    return "".join(chunks)
+    logger.warning("Agent returned no output — thread=%s", run_input.thread_id)
+    return ""
 
 
 def _format_result(result: Any) -> str:
@@ -129,6 +166,9 @@ def create_mcp_server(
 
     mcp = FastMCP(name=agent_name, streamable_http_path="/")
 
+    output_mode = capabilities.output.mode
+    output_schema = capabilities.output.schema_
+
     if is_structured:
 
         async def structured_handler(input_data: dict) -> str:
@@ -148,16 +188,21 @@ def create_mcp_server(
                     context=[],
                     forwardedProps={},
                 )
-                response = await _collect_response(agent, run_input)
+                response = await _collect_response(
+                    agent, run_input, output_mode, output_schema
+                )
                 logger.debug(
                     "MCP structured response — tool=%s thread=%s len=%d",
-                    tool_name, session_id, len(response),
+                    tool_name,
+                    session_id,
+                    len(response),
                 )
                 return _format_result(response)
             except Exception:
                 logger.exception(
                     "MCP tool invocation failed — tool=%s thread=%s",
-                    tool_name, session_id,
+                    tool_name,
+                    session_id,
                 )
                 return "Error: the agent encountered an internal error"
 
@@ -168,11 +213,15 @@ def create_mcp_server(
         )
 
         schema = deepcopy(capabilities.input.schema_)
-        _override_tool_schema(mcp, tool_name, {
-            "type": "object",
-            "properties": {"input_data": schema},
-            "required": ["input_data"],
-        })
+        _override_tool_schema(
+            mcp,
+            tool_name,
+            {
+                "type": "object",
+                "properties": {"input_data": schema},
+                "required": ["input_data"],
+            },
+        )
 
     else:
 
@@ -185,16 +234,21 @@ def create_mcp_server(
             )
             try:
                 run_input = _make_run_input(sid, message)
-                response = await _collect_response(agent, run_input)
+                response = await _collect_response(
+                    agent, run_input, output_mode, output_schema
+                )
                 logger.debug(
                     "MCP chat response — tool=%s thread=%s len=%d",
-                    tool_name, sid, len(response),
+                    tool_name,
+                    sid,
+                    len(response),
                 )
                 return _format_result(response)
             except Exception:
                 logger.exception(
                     "MCP tool invocation failed — tool=%s thread=%s",
-                    tool_name, sid,
+                    tool_name,
+                    sid,
                 )
                 return "Error: the agent encountered an internal error"
 
@@ -206,6 +260,8 @@ def create_mcp_server(
 
     logger.info(
         "🔌 MCP server created — agent='%s' tool='%s' mode=%s",
-        agent_name, tool_name, "structured" if is_structured else "chat",
+        agent_name,
+        tool_name,
+        "structured" if is_structured else "chat",
     )
     return mcp

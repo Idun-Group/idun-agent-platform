@@ -20,8 +20,10 @@ import {
 import AgentDetailsSection from './sections/agent-details-section';
 import FrameworkSection from './sections/framework-section';
 import GraphSection from './sections/graph-section';
+import McpExposureSection from './sections/mcp-exposure-section';
 import ResourcesSection from './sections/resources-section';
 import { ActionBar, ActionButton, TwoColumnGrid, ColumnStack } from './sections/styled';
+import { ensureAgentMcpServer } from '../../../../utils/agent-mcp-registration';
 
 interface OverviewTabProps {
     agent: BackendAgent | null;
@@ -42,6 +44,8 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
         serverPort: '8000',
         agentType: 'LANGGRAPH',
         agentConfig: {},
+        asMcp: true,
+        mcpDescription: '',
     });
 
     const [selections, setSelections] = useState<AgentSelections>(getDefaultSelections());
@@ -121,6 +125,7 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
 
         // Initialize form state from agent
         const port = agent.engine_config?.server?.api?.port;
+        const server = agent.engine_config?.server || {};
         setFormState({
             name: agent.name || '',
             version: agent.version || '1.0.0',
@@ -129,10 +134,12 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
             serverPort: port ? String(port) : '8000',
             agentType: agent.engine_config?.agent?.type || agent.framework || 'LANGGRAPH',
             agentConfig: extractAgentConfig(agent.engine_config),
+            asMcp: server.as_mcp ?? true,
+            mcpDescription: server.mcp_description || '',
         });
     }, [isEditing, agent]);
 
-    const handleFieldChange = (field: keyof AgentFormState, value: string) => {
+    const handleFieldChange = (field: keyof AgentFormState, value: string | boolean) => {
         setFormState(prev => ({ ...prev, [field]: value }));
     };
 
@@ -155,6 +162,25 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
         try {
             const payload = buildAgentPatchPayload(formState, selections);
             await onSave(payload);
+
+            // Auto-register the agent as an MCP server when toggle is on
+            // and no existing MCP resource points at this agent's /mcp endpoint
+            if (formState.asMcp && formState.baseUrl.trim()) {
+                try {
+                    const created = await ensureAgentMcpServer(
+                        formState.name,
+                        formState.baseUrl,
+                        resources.mcpApps,
+                    );
+                    if (created) {
+                        notify.success('Registered agent as MCP server');
+                        await loadResources();
+                    }
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Failed to register MCP server';
+                    notify.error(msg);
+                }
+            }
         } finally {
             setIsSaving(false);
         }
@@ -175,6 +201,13 @@ const OverviewTab = ({ agent, isEditing, onSave, onCancel, saveTrigger, onAgentR
                     <GraphSection agent={agent} refreshKey={graphRefreshKey} />
 
                     <AgentDetailsSection
+                        agent={agent}
+                        isEditing={isEditing}
+                        formState={formState}
+                        onFieldChange={handleFieldChange}
+                    />
+
+                    <McpExposureSection
                         agent={agent}
                         isEditing={isEditing}
                         formState={formState}
