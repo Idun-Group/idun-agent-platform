@@ -39,7 +39,8 @@ def _mock_app(engine_config=None):
     app.state.engine_config = engine_config or _make_engine_config()
     app.state.mcp_app = None
     app.state.capabilities = None
-    app.mount = MagicMock()
+    app.router = MagicMock()
+    app.router.routes = []
     return app
 
 
@@ -64,9 +65,8 @@ class TestConfigureAppMCPMount:
             mock_cb.initialize_agent_from_config = AsyncMock(return_value=mock_agent)
             await configure_app(app, config)
 
-        app.mount.assert_called_once()
-        mount_path = app.mount.call_args[0][0]
-        assert mount_path == "/mcp"
+        assert app.state.mcp_app is not None
+        assert len(app.router.routes) > 0
 
     @pytest.mark.asyncio
     async def test_mcp_not_mounted_when_as_mcp_false(self):
@@ -85,7 +85,8 @@ class TestConfigureAppMCPMount:
             mock_cb.initialize_agent_from_config = AsyncMock(return_value=mock_agent)
             await configure_app(app, config)
 
-        app.mount.assert_not_called()
+        assert app.state.mcp_app is None
+        assert app.router.routes == []
 
     @pytest.mark.asyncio
     async def test_mcp_not_mounted_when_capabilities_unavailable(self):
@@ -105,7 +106,8 @@ class TestConfigureAppMCPMount:
             mock_cb.initialize_agent_from_config = AsyncMock(return_value=mock_agent)
             await configure_app(app, config)
 
-        app.mount.assert_not_called()
+        assert app.state.mcp_app is None
+        assert app.router.routes == []
 
     @pytest.mark.asyncio
     async def test_mcp_mount_failure_is_non_fatal(self):

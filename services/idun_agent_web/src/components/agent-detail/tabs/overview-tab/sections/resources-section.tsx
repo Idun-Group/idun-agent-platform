@@ -10,7 +10,7 @@ import {
     FRAMEWORK_MEMORY_MAP,
     extractSelectionsFromAgent,
     buildAgentPatchPayload,
-    extractAgentConfig,
+    formStateFromAgent,
 } from '../../../../../utils/agent-config-utils';
 import { fetchApplications } from '../../../../../services/applications';
 import { fetchSSOs } from '../../../../../services/sso';
@@ -437,15 +437,10 @@ export default function ResourcesSection({
                     break;
             }
 
-            const port = agent.engine_config?.server?.api?.port;
-            const formState = {
-                name: agent.name || '', version: agent.version || '1.0.0',
-                baseUrl: agent.base_url || '', description: agent.description || '',
-                serverPort: port ? String(port) : '8000',
-                agentType: agent.engine_config?.agent?.type || framework,
-                agentConfig: extractAgentConfig(agent.engine_config),
-            };
-            const payload = buildAgentPatchPayload(formState, currentSelections);
+            const payload = buildAgentPatchPayload(
+                formStateFromAgent(agent, framework),
+                currentSelections,
+            );
             await patchAgent(agent.id, payload);
             notify.success('Resources updated');
             onAgentRefresh?.();
@@ -483,15 +478,10 @@ export default function ResourcesSection({
                 currentSelections.selectedSSOId = id;
             }
 
-            const port = agent.engine_config?.server?.api?.port;
-            const formState = {
-                name: agent.name || '', version: agent.version || '1.0.0',
-                baseUrl: agent.base_url || '', description: agent.description || '',
-                serverPort: port ? String(port) : '8000',
-                agentType: agent.engine_config?.agent?.type || framework,
-                agentConfig: extractAgentConfig(agent.engine_config),
-            };
-            const payload = buildAgentPatchPayload(formState, currentSelections);
+            const payload = buildAgentPatchPayload(
+                formStateFromAgent(agent, framework),
+                currentSelections,
+            );
             await patchAgent(agent.id, payload);
             notify.success(`${name} assigned to agent`);
             onAgentRefresh?.();

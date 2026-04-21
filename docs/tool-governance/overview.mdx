@@ -114,3 +114,48 @@ These functions discover all MCP servers attached to your agent and make their t
 <Warning>
   `get_langchain_tools()` is an async function. Use `await` when calling it.
 </Warning>
+
+## Expose an agent as an MCP server
+
+Any engine-hosted agent can also be consumed as an MCP tool by other agents and MCP clients. The engine serves a streamable HTTP MCP endpoint at `/mcp` that exposes the agent as a single tool named after the agent.
+
+The tool's input schema is derived from the agent's declared capabilities:
+
+- **Chat input** agents take `message` (string) and optional `session_id`.
+- **Structured input** agents take an `input_data` object matching the agent's full JSON schema.
+
+The tool's output respects the agent's output mode. For structured output, the engine returns the final state filtered to the keys declared in the output schema, falling back to the full state and then to streamed text. That covers both LangGraph agents that write results to state and ADK agents that return JSON in a text message.
+
+### Enable
+
+Exposure is enabled by default. Control it through the `server` section of your engine config:
+
+```yaml
+server:
+  api:
+    port: 8000
+  as_mcp: true
+  mcp_description: "Query the support knowledge base"
+```
+
+| Field | Type | Default | Purpose |
+|---|---|---|---|
+| `as_mcp` | boolean | `true` | Serve the `/mcp` endpoint |
+| `mcp_description` | string, optional | null | Tool description shown to MCP clients. Falls back to `"Invoke the <agent-name> agent"` |
+
+In the Manager UI, toggle **Expose as MCP Server** on the agent creation wizard or the agent detail page. When enabled, the platform registers a matching MCP server entry pointing at the agent's `/mcp` URL so you can attach it to other agents with one click.
+
+### Consume the agent from another agent
+
+Register the agent's endpoint as a `streamable_http` MCP server:
+
+```yaml
+mcp_servers:
+  - name: support-agent
+    transport: streamable_http
+    url: https://support.example.com/mcp
+```
+
+When the manager runs in a container and the target agent runs on the host, use `host.docker.internal` (Mac and Windows) or the host's routable address instead of `localhost`.
+
+Authentication follows the agent's [SSO config](/auth/overview). When SSO is enabled on the agent, MCP clients must present a valid bearer token through the `Authorization` header.

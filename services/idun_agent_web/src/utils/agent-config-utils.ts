@@ -163,6 +163,26 @@ export interface AgentFormState {
 }
 
 /**
+ * Build a full AgentFormState from a persisted agent.
+ * Use for quick-edit flows that patch without entering full edit mode.
+ */
+export function formStateFromAgent(agent: any, fallbackFramework: string): AgentFormState {
+    const port = agent.engine_config?.server?.api?.port;
+    const server = agent.engine_config?.server || {};
+    return {
+        name: agent.name || '',
+        version: agent.version || '1.0.0',
+        baseUrl: agent.base_url || '',
+        description: agent.description || '',
+        serverPort: port ? String(port) : '8000',
+        agentType: agent.engine_config?.agent?.type || fallbackFramework,
+        agentConfig: extractAgentConfig(agent.engine_config),
+        asMcp: server.as_mcp ?? true,
+        mcpDescription: server.mcp_description || '',
+    };
+}
+
+/**
  * Validate agent form state. Returns error message or null.
  */
 export function validateAgentForm(state: AgentFormState): string | null {

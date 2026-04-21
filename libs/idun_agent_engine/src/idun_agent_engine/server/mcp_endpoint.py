@@ -164,7 +164,7 @@ def create_mcp_server(
             "interface, cannot expose as MCP server"
         )
 
-    mcp = FastMCP(name=agent_name, streamable_http_path="/")
+    mcp = FastMCP(name=agent_name, streamable_http_path="/mcp")
 
     output_mode = capabilities.output.mode
     output_schema = capabilities.output.schema_

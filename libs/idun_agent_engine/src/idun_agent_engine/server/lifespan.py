@@ -139,7 +139,7 @@ async def configure_app(app: FastAPI, engine_config):
                     agent_instance, capabilities, description=mcp_description
                 )
                 mcp_app = mcp_server.streamable_http_app()
-                app.mount("/mcp", mcp_app)
+                app.router.routes.extend(mcp_app.router.routes)
                 app.state.mcp_app = mcp_app
                 logger.info("🔌 Agent exposed as MCP server at /mcp")
             except Exception as e:

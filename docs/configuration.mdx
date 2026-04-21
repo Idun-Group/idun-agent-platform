@@ -70,7 +70,7 @@ Values support `${ENV_VAR}` syntax for referencing environment variables at load
 
 ## Config sections
 
-**`server`** -- HTTP server binding. Exposes `api.port` (default: `8000`). CORS allows all origins. The engine adds `Access-Control-Allow-Private-Network: true` so hosted UIs can reach local agents.
+**`server`** -- HTTP server binding. Exposes `api.port` (default: `8000`). CORS allows all origins. The engine adds `Access-Control-Allow-Private-Network: true` so hosted UIs can reach local agents. Two optional fields control [exposing the agent as an MCP server](/tool-governance/overview#expose-an-agent-as-an-mcp-server): `as_mcp` (boolean, default `true`) serves a `/mcp` endpoint that exposes the agent as a single MCP tool, and `mcp_description` (string) customizes the tool description.
 
 **`agent`** -- Framework type and framework-specific settings. The `config` fields change based on the `type` value. Supported types: `LANGGRAPH`, `ADK`. See the [frameworks overview](/frameworks/overview) for per-framework config details.
 
