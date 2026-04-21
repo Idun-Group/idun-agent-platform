@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { lazy, Suspense } from 'react';
 import styled from 'styled-components';
@@ -7,6 +7,7 @@ import PagedSettingsContainer, {
     type SettingsPage as SettingsPageConfig,
 } from '../../components/settings/paged-settings-container/component';
 import Loader from '../../components/general/loader/component';
+import useWorkspace from '../../hooks/use-workspace';
 
 const WorkspaceGeneralTab = lazy(
     () => import('../../components/settings/workspace-general/component'),
@@ -24,6 +25,13 @@ const SettingsPage = () => {
     const { page } = useParams<{ page?: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
+
+    // Every tab on this page is a workspace-admin surface. Non-owners have no
+    // reason to be here — bounce them back to the agents dashboard.
+    if (!isCurrentWorkspaceOwner) {
+        return <Navigate to="/agents" replace />;
+    }
 
     const activeSlug = page || DEFAULT_PAGE;
 

@@ -1033,7 +1033,7 @@ const MemoryPage: React.FC = () => {
                                         <HardDrive size={18} color="hsl(var(--muted-foreground))" />
                                     )}
                                     {provider.name}
-                                    <AddIndicator>+</AddIndicator>
+                                    {canWrite && <AddIndicator>+</AddIndicator>}
                                 </TypeBtn>
                             ))}
                         </React.Fragment>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { ChevronDown } from 'lucide-react';
 import useWorkspace from '../../hooks/use-workspace';
@@ -7,9 +8,9 @@ import { useProject } from '../../hooks/use-project';
 import type { WorkspaceSummary } from '../../utils/auth';
 import WorkspacePopover from '../../components/header/workspace-popover/component';
 import ProjectPopover from '../../components/header/project-popover/component';
-import { getGradientForName } from '../../utils/workspace-colors';
 
 const Header = () => {
+    const { t } = useTranslation();
     const {
         selectedWorkspaceId,
         setSelectedWorkspaceId,
@@ -55,8 +56,6 @@ const Header = () => {
     };
 
     const workspaceName = currentWorkspace?.name ?? 'Workspace';
-    const workspaceInitial = workspaceName.charAt(0).toUpperCase();
-    const workspaceGradient = getGradientForName(workspaceName);
 
     const projectName = currentProject?.name ?? (isLoadingProjects ? '...' : 'Project');
 
@@ -73,12 +72,12 @@ const Header = () => {
 
             <RightSection>
                 <SelectorGroup>
-                    <WorkspaceTrigger onClick={toggleWorkspace}>
-                        <WorkspaceIcon style={{ background: workspaceGradient }}>
-                            {workspaceInitial}
-                        </WorkspaceIcon>
-                        <span>{workspaceName}</span>
-                        <ChevronDown size={12} />
+                    <WorkspaceTrigger onClick={toggleWorkspace} $open={showWorkspacePopover}>
+                        <TriggerLabel>{t('header.workspace.label', 'Workspace')}</TriggerLabel>
+                        <TriggerValue>
+                            <TriggerValueText>{workspaceName}</TriggerValueText>
+                            <ChevronDown size={12} />
+                        </TriggerValue>
                         {showWorkspacePopover && (
                             <WorkspacePopover
                                 workspaces={allWorkspaces}
@@ -91,9 +90,12 @@ const Header = () => {
 
                     <SlashSeparator>/</SlashSeparator>
 
-                    <ProjectTrigger onClick={toggleProject}>
-                        <span>{projectName}</span>
-                        <ChevronDown size={12} />
+                    <ProjectTrigger onClick={toggleProject} $open={showProjectPopover}>
+                        <TriggerLabel>{t('header.project.label', 'Project')}</TriggerLabel>
+                        <TriggerValue>
+                            <TriggerValueText>{projectName}</TriggerValueText>
+                            <ChevronDown size={12} />
+                        </TriggerValue>
                         {showProjectPopover && (
                             <ProjectPopover
                                 projects={projects}
@@ -181,43 +183,79 @@ const SelectorGroup = styled.div`
     gap: 0;
 `;
 
-const TriggerButton = styled.button`
-    display: flex;
+const TriggerButton = styled.button<{ $open?: boolean }>`
+    display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 7px;
-    background: var(--overlay-subtle);
-    border: 1px solid var(--border-subtle);
+    justify-content: center;
+    gap: 4px;
+    min-height: 40px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: ${({ $open }) => ($open ? 'var(--overlay-medium)' : 'var(--overlay-subtle)')};
+    border: 1px solid
+        ${({ $open }) =>
+            $open ? 'hsla(var(--primary) / 0.4)' : 'var(--border-subtle)'};
     cursor: pointer;
     position: relative;
     font-family: inherit;
     color: hsl(var(--foreground));
-    font-size: 13px;
-    font-weight: 500;
-    transition: background 150ms ease;
+    transition: background 150ms ease, border-color 150ms ease;
+
+    svg {
+        color: ${({ $open }) =>
+            $open ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'};
+        transition: color 150ms ease, transform 150ms ease;
+        transform: rotate(${({ $open }) => ($open ? '180deg' : '0deg')});
+    }
 
     &:hover {
-        background: var(--overlay-light);
+        background: ${({ $open }) => ($open ? 'var(--overlay-medium)' : 'var(--overlay-light)')};
+        border-color: ${({ $open }) =>
+            $open ? 'hsla(var(--primary) / 0.4)' : 'var(--border-light)'};
     }
+
+    &:focus-visible {
+        outline: none;
+        border-color: hsla(var(--primary) / 0.5);
+        box-shadow: 0 0 0 3px hsla(var(--primary) / 0.18);
+    }
+`;
+
+const TriggerLabel = styled.span`
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--primary));
+    line-height: 1;
+    user-select: none;
+`;
+
+const TriggerValue = styled.span`
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+    line-height: 1;
+
+    svg {
+        flex-shrink: 0;
+    }
+`;
+
+const TriggerValueText = styled.span`
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
 `;
 
 const WorkspaceTrigger = styled(TriggerButton)``;
 
 const ProjectTrigger = styled(TriggerButton)``;
-
-const WorkspaceIcon = styled.div`
-    width: 20px;
-    height: 20px;
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: 700;
-    color: hsl(var(--primary-foreground));
-    flex-shrink: 0;
-`;
 
 const SlashSeparator = styled.span`
     font-size: 16px;

@@ -43,13 +43,17 @@
     "create": "Criar",
     "settings": "Configurações",
     "workspace": {
-      "select": "Selecionar um espaço de trabalho"
+      "select": "Selecionar um espaço de trabalho",
+      "label": "Espaço de trabalho"
     },
     "environment": {
       "select": "Selecionar um ambiente",
       "development": "Desenvolvimento",
       "staging": "Homologação",
       "production": "Produção"
+    },
+    "project": {
+      "label": "Projeto"
     }
   },
   "workspace": {
@@ -872,7 +876,10 @@
       "isDefault": "Projeto padrão",
       "setDefault": "Definir como padrão",
       "panel.members": "Membros",
-      "panel.add": "Adicionar"
+      "panel.add": "Adicionar",
+      "defaultBadge": "Padrão",
+      "setDefaultTitle": "Definir projeto padrão",
+      "setDefaultConfirm": "Tornar {{name}} o projeto padrão deste espaço de trabalho? Novos membros sem atribuição explícita serão direcionados para aqui."
     }
   },
   "guard": {
@@ -1111,7 +1118,8 @@
     "underDevelopment": "Esta funcionalidade está em desenvolvimento",
     "back": "Voltar",
     "saving": "A guardar...",
-    "adding": "A adicionar..."
+    "adding": "A adicionar...",
+    "working": "Processando…"
   },
   "theme": {
     "toggleToLight": "Mudar para o modo claro",
@@ -1168,5 +1176,21 @@
       "readerTitle": "Nenhuma integração configurada em {{project}}",
       "readerDescription": "Peça a um colaborador ou administrador para conectar uma."
     }
+  },
+  "workspaceCreate": {
+    "title": "Criar um espaço de trabalho",
+    "intro": "Os espaços de trabalho isolam tenants na plataforma. Cada espaço começa com um projeto padrão onde você pode configurar agentes e recursos.",
+    "name": {
+      "label": "Nome do espaço de trabalho",
+      "placeholder": "ex. Acme Produção"
+    },
+    "description": {
+      "label": "Descrição (opcional)",
+      "placeholder": "Para que será usado este espaço de trabalho?"
+    },
+    "submit": "Criar espaço de trabalho",
+    "submitting": "Criando…",
+    "success": "{{name}} está pronto",
+    "error": "Não foi possível criar o espaço de trabalho. Tente novamente."
   }
 }

@@ -55,13 +55,17 @@
     "create": "Créer",
     "settings": "Paramètres",
     "workspace": {
-      "select": "Sélectionner un espace de travail"
+      "select": "Sélectionner un espace de travail",
+      "label": "Espace de travail"
     },
     "environment": {
       "select": "Sélectionner un environnement",
       "development": "Développement",
       "staging": "Intégration",
       "production": "Production"
+    },
+    "project": {
+      "label": "Projet"
     }
   },
   "workspace": {
@@ -920,7 +924,10 @@
       "isDefault": "Projet par défaut",
       "setDefault": "Définir par défaut",
       "panel.members": "Membres",
-      "panel.add": "Ajouter"
+      "panel.add": "Ajouter",
+      "defaultBadge": "Par défaut",
+      "setDefaultTitle": "Définir le projet par défaut",
+      "setDefaultConfirm": "Définir {{name}} comme projet par défaut de cet espace de travail ? Les nouveaux membres sans affectation explicite y seront dirigés."
     }
   },
   "guard": {
@@ -1159,7 +1166,8 @@
     "underDevelopment": "Cette fonctionnalité est en cours de développement",
     "back": "Retour",
     "saving": "Enregistrement...",
-    "adding": "Ajout en cours..."
+    "adding": "Ajout en cours...",
+    "working": "En cours…"
   },
   "integrations": {
     "title": "Intégrations",
@@ -1227,5 +1235,21 @@
       "readerTitle": "Aucune intégration configurée dans {{project}}",
       "readerDescription": "Demandez à un contributeur ou à un administrateur d'en connecter une."
     }
+  },
+  "workspaceCreate": {
+    "title": "Créer un espace de travail",
+    "intro": "Les espaces de travail isolent les tenants sur la plateforme. Chaque espace démarre avec un projet par défaut dans lequel vous pouvez configurer agents et ressources.",
+    "name": {
+      "label": "Nom de l'espace de travail",
+      "placeholder": "ex. Acme Production"
+    },
+    "description": {
+      "label": "Description (facultatif)",
+      "placeholder": "À quoi cet espace de travail va-t-il servir ?"
+    },
+    "submit": "Créer l'espace de travail",
+    "submitting": "Création…",
+    "success": "{{name}} est prêt",
+    "error": "Impossible de créer l'espace de travail. Veuillez réessayer."
   }
 }

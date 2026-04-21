@@ -1,0 +1,15 @@
+node_modules
+dist
+build
+.vite
+.git
+.gitignore
+Dockerfile
+Dockerfile.dev
+*.log
+.env
+.env.local
+.env.*.local
+coverage
+.nyc_output
+.DS_Store

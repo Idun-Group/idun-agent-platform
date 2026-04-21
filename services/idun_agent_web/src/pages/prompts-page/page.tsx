@@ -317,9 +317,11 @@ const PromptsPage = () => {
                             aria-label="Search prompts"
                         />
                     </SearchBar>
-                    <PrimaryBtn onClick={() => canWrite && setIsModalOpen(true)} aria-label="Create new prompt">
-                        <Plus size={15} /> New Prompt
-                    </PrimaryBtn>
+                    {canWrite && (
+                        <PrimaryBtn onClick={() => setIsModalOpen(true)} aria-label="Create new prompt">
+                            <Plus size={15} /> New Prompt
+                        </PrimaryBtn>
+                    )}
                 </HeaderActions>
             </PageHeader>
 
@@ -351,9 +353,11 @@ const PromptsPage = () => {
                             </>
                         )}
                     </EmptyTextBlock>
-                    <EmptyCTA onClick={() => canWrite && setIsModalOpen(true)} aria-label="Create new prompt">
-                        <Plus size={15} /> New Prompt
-                    </EmptyCTA>
+                    {canWrite && (
+                        <EmptyCTA onClick={() => setIsModalOpen(true)} aria-label="Create new prompt">
+                            <Plus size={15} /> New Prompt
+                        </EmptyCTA>
+                    )}
                 </EmptyState>
             ) : (
                 <GroupList>

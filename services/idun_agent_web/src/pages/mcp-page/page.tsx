@@ -1397,7 +1397,7 @@ const MCPPage: React.FC = () => {
                         >
                             <TypeIconBox><transport.icon size={15} /></TypeIconBox>
                             {transport.label}
-                            <AddIndicator>+</AddIndicator>
+                            {canWrite && <AddIndicator>+</AddIndicator>}
                         </TypeBtn>
                     ))}
 

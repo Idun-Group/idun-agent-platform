@@ -98,7 +98,7 @@ const WorkspacePopover = ({
                 <CreateWorkspaceLink
                     onClick={() => {
                         onClose();
-                        navigate('/onboarding');
+                        navigate('/workspaces/new');
                     }}
                 >
                     <PlusIcon>

@@ -6,6 +6,7 @@ import { Plus, ChevronDown, Trash2 } from 'lucide-react';
 import { notify } from '../../toast/notify';
 import useWorkspace from '../../../hooks/use-workspace';
 import { useProject } from '../../../hooks/use-project';
+import { useAuth } from '../../../hooks/use-auth';
 import {
     addMember,
     cancelInvitation,
@@ -22,6 +23,8 @@ const WorkspaceUsersTab = () => {
     const { t } = useTranslation();
     const { selectedWorkspaceId, currentWorkspace } = useWorkspace();
     const { projects } = useProject();
+    const { session } = useAuth();
+    const currentUserId = session?.principal?.user_id ?? null;
     const [members, setMembers] = useState<WorkspaceMember[]>([]);
     const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
     const [loading, setLoading] = useState(true);
@@ -34,6 +37,16 @@ const WorkspaceUsersTab = () => {
     const roleDropdownRef = useRef<HTMLDivElement>(null);
 
     const canManage = currentWorkspace?.is_owner ?? false;
+    const ownerCount = members.filter((m) => m.is_owner).length;
+
+    const canRemoveMember = (member: WorkspaceMember) => {
+        if (!canManage) return false;
+        // No one removes themselves — leaving requires a fellow owner to act.
+        if (member.user_id === currentUserId) return false;
+        // A workspace must always retain at least one owner.
+        if (member.is_owner && ownerCount <= 1) return false;
+        return true;
+    };
 
     const refreshMembers = useCallback(async () => {
         if (!selectedWorkspaceId) {
@@ -244,12 +257,14 @@ const WorkspaceUsersTab = () => {
                                     {canManage && (
                                         <td>
                                             <ActionsCell>
-                                                <RemoveButton
-                                                    onClick={() => void handleRemove(member)}
-                                                    title={t('settings.workspaces.users.remove', 'Remove')}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </RemoveButton>
+                                                {canRemoveMember(member) && (
+                                                    <RemoveButton
+                                                        onClick={() => void handleRemove(member)}
+                                                        title={t('settings.workspaces.users.remove', 'Remove')}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </RemoveButton>
+                                                )}
                                             </ActionsCell>
                                         </td>
                                     )}

@@ -5,6 +5,7 @@ import UserPopover from '../../../components/side-bar/user-popover/component';
 import { useState, useCallback, type ComponentType } from 'react';
 import { UserIcon, Settings, Activity, Database, Wrench, ShieldCheck, KeyRound, Sparkles, LifeBuoy, Github, X, Plug, ChevronUp, FileText } from 'lucide-react';
 import { useAuth } from '../../../hooks/use-auth';
+import useWorkspace from '../../../hooks/use-workspace';
 import { useTranslation } from 'react-i18next';
 
 const GITHUB_DISMISSED_KEY = 'idun-github-card-dismissed';
@@ -22,6 +23,7 @@ const SideBar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { session } = useAuth();
+    const { isCurrentWorkspaceOwner } = useWorkspace();
     // by default the sidebar should be collapsed; hovering will expand it
     const [isCollapsed] = useState(true);
     const [isHovered, setIsHovered] = useState(false);
@@ -177,21 +179,23 @@ const SideBar = () => {
                     <LifeBuoy size={17} color="hsl(var(--sidebar-icon-inactive))" />
                     {!collapsed && <MenuLabel>Support</MenuLabel>}
                 </BottomLink>
-                <MenuItem
-                    $isActive={!!location.pathname.startsWith('/settings')}
-                    $collapsed={collapsed}
-                    onClick={() => navigate('/settings')}
-                >
-                    <Settings
-                        size={17}
-                        color={
-                            location.pathname.startsWith('/settings')
-                                ? 'hsl(var(--primary))'
-                                : 'hsl(var(--sidebar-icon-inactive))'
-                        }
-                    />
-                    {!collapsed && <MenuLabel>{t('sidebar.settings', 'Settings')}</MenuLabel>}
-                </MenuItem>
+                {isCurrentWorkspaceOwner && (
+                    <MenuItem
+                        $isActive={!!location.pathname.startsWith('/settings')}
+                        $collapsed={collapsed}
+                        onClick={() => navigate('/settings')}
+                    >
+                        <Settings
+                            size={17}
+                            color={
+                                location.pathname.startsWith('/settings')
+                                    ? 'hsl(var(--primary))'
+                                    : 'hsl(var(--sidebar-icon-inactive))'
+                            }
+                        />
+                        {!collapsed && <MenuLabel>{t('sidebar.settings', 'Settings')}</MenuLabel>}
+                    </MenuItem>
+                )}
                 <UserRowWrapper>
                     {showUserPopover && <UserPopover onClose={closeUserPopover} />}
                     <UserRow

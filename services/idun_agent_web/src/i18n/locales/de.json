@@ -43,13 +43,17 @@
     "create": "Erstellen",
     "settings": "Einstellungen",
     "workspace": {
-      "select": "Arbeitsbereich auswählen"
+      "select": "Arbeitsbereich auswählen",
+      "label": "Arbeitsbereich"
     },
     "environment": {
       "select": "Umgebung auswählen",
       "development": "Entwicklung",
       "staging": "Staging",
       "production": "Produktion"
+    },
+    "project": {
+      "label": "Projekt"
     }
   },
   "workspace": {
@@ -877,7 +881,10 @@
       "isDefault": "Standardprojekt",
       "setDefault": "Als Standard festlegen",
       "panel.members": "Mitglieder",
-      "panel.add": "Hinzufügen"
+      "panel.add": "Hinzufügen",
+      "defaultBadge": "Standard",
+      "setDefaultTitle": "Standardprojekt festlegen",
+      "setDefaultConfirm": "{{name}} als Standardprojekt für diesen Arbeitsbereich festlegen? Neue Mitglieder ohne explizite Projektzuweisung landen hier."
     }
   },
   "guard": {
@@ -1116,7 +1123,8 @@
     "underDevelopment": "Diese Funktion ist in Entwicklung",
     "back": "Zurück",
     "saving": "Speichern...",
-    "adding": "Hinzufügen..."
+    "adding": "Hinzufügen...",
+    "working": "Wird verarbeitet…"
   },
   "integrations": {
     "title": "Integrationen",
@@ -1184,5 +1192,21 @@
       "readerTitle": "Keine Integrationen in {{project}} konfiguriert",
       "readerDescription": "Bitten Sie einen Mitwirkenden oder Administrator, eine zu verbinden."
     }
+  },
+  "workspaceCreate": {
+    "title": "Arbeitsbereich erstellen",
+    "intro": "Arbeitsbereiche isolieren Tenants auf der Plattform. Jeder Arbeitsbereich startet mit einem Standardprojekt, in dem Sie Agenten und Ressourcen konfigurieren können.",
+    "name": {
+      "label": "Arbeitsbereichsname",
+      "placeholder": "z. B. Acme Production"
+    },
+    "description": {
+      "label": "Beschreibung (optional)",
+      "placeholder": "Wofür wird dieser Arbeitsbereich verwendet?"
+    },
+    "submit": "Arbeitsbereich erstellen",
+    "submitting": "Wird erstellt…",
+    "success": "{{name}} ist bereit",
+    "error": "Arbeitsbereich konnte nicht erstellt werden. Bitte erneut versuchen."
   }
 }

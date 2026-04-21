@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { Star, Trash2, Users } from 'lucide-react';
+import { Trash2, Users } from 'lucide-react';
 
 import { notify } from '../../toast/notify';
 import DeleteConfirmModal from '../../applications/delete-confirm-modal/component';
@@ -24,6 +24,8 @@ const WorkspaceProjectsTab = () => {
     const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
     const [deleteDescription, setDeleteDescription] = useState<string | undefined>(undefined);
     const [membersProject, setMembersProject] = useState<Project | null>(null);
+    const [defaultTarget, setDefaultTarget] = useState<Project | null>(null);
+    const [isSettingDefault, setIsSettingDefault] = useState(false);
 
     const loadProjects = useCallback(async () => {
         if (!selectedWorkspaceId) {
@@ -111,22 +113,31 @@ const WorkspaceProjectsTab = () => {
         );
     };
 
-    const handleSetDefault = async (project: Project) => {
+    const handleRequestSetDefault = (project: Project) => {
         if (project.is_default) return;
+        setDefaultTarget(project);
+    };
+
+    const handleSetDefaultConfirm = async () => {
+        if (!defaultTarget) return;
+        setIsSettingDefault(true);
         try {
-            await setDefaultProject(project.id);
+            await setDefaultProject(defaultTarget.id);
             await loadProjects();
             await refreshProjects();
             notify.success(
                 t('settings.projects.defaultSet', '{{name}} is now the default project', {
-                    name: project.name,
+                    name: defaultTarget.name,
                 }),
             );
+            setDefaultTarget(null);
         } catch (error) {
             console.error(error);
             notify.error(
                 error instanceof Error ? error.message : 'Failed to set default project',
             );
+        } finally {
+            setIsSettingDefault(false);
         }
     };
 
@@ -165,27 +176,6 @@ const WorkspaceProjectsTab = () => {
                     <List>
                         {projects.map((project) => (
                             <ProjectRow key={project.id}>
-                                {isCurrentWorkspaceOwner && (
-                                    <StarButton
-                                        $active={project.is_default}
-                                        $clickable={!project.is_default}
-                                        onClick={() => {
-                                            if (!project.is_default) {
-                                                void handleSetDefault(project);
-                                            }
-                                        }}
-                                        title={
-                                            project.is_default
-                                                ? t('settings.projects.isDefault', 'Default project')
-                                                : t('settings.projects.setDefault', 'Set as default')
-                                        }
-                                    >
-                                        <Star
-                                            size={16}
-                                            fill={project.is_default ? 'currentColor' : 'none'}
-                                        />
-                                    </StarButton>
-                                )}
                                 <ProjectInfo>
                                     {editingProjectId === project.id ? (
                                         <EditStack>
@@ -202,7 +192,14 @@ const WorkspaceProjectsTab = () => {
                                         </EditStack>
                                     ) : (
                                         <>
-                                            <ProjectName>{project.name}</ProjectName>
+                                            <ProjectName>
+                                                {project.name}
+                                                {project.is_default && (
+                                                    <DefaultBadge>
+                                                        {t('settings.projects.defaultBadge', 'Default')}
+                                                    </DefaultBadge>
+                                                )}
+                                            </ProjectName>
                                             <ProjectMeta>
                                                 {project.current_user_role ?? 'no role'}
                                                 {project.description ? ` • ${project.description}` : ''}
@@ -239,7 +236,15 @@ const WorkspaceProjectsTab = () => {
                                                 {t('common.rename', 'Rename')}
                                             </InlineButton>
                                         )}
-                                        {isCurrentWorkspaceOwner && !project.is_default && (
+                                        {!project.is_default && editingProjectId !== project.id && (
+                                            <SetDefaultButton
+                                                onClick={() => handleRequestSetDefault(project)}
+                                                title={t('settings.projects.setDefault', 'Set as default')}
+                                            >
+                                                {t('settings.projects.setDefault', 'Set as default')}
+                                            </SetDefaultButton>
+                                        )}
+                                        {!project.is_default && (
                                             <DeleteButton
                                                 onClick={() => void handleRequestDelete(project)}
                                                 title={t('common.delete', 'Delete')}
@@ -265,6 +270,52 @@ const WorkspaceProjectsTab = () => {
                 itemName={projectToDelete?.name ?? ''}
                 description={deleteDescription}
             />
+
+            {defaultTarget && (
+                <ConfirmOverlay
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !isSettingDefault) {
+                            setDefaultTarget(null);
+                        }
+                    }}
+                >
+                    <ConfirmModal>
+                        <ConfirmHeader>
+                            <ConfirmTitle>
+                                {t(
+                                    'settings.projects.setDefaultTitle',
+                                    'Set default project',
+                                )}
+                            </ConfirmTitle>
+                        </ConfirmHeader>
+                        <ConfirmBody>
+                            <ConfirmMessage>
+                                {t(
+                                    'settings.projects.setDefaultConfirm',
+                                    'Make {{name}} the default project for this workspace? New members without an explicit project assignment will land here.',
+                                    { name: defaultTarget.name },
+                                )}
+                            </ConfirmMessage>
+                        </ConfirmBody>
+                        <ConfirmFooter>
+                            <ConfirmCancel
+                                onClick={() => setDefaultTarget(null)}
+                                disabled={isSettingDefault}
+                            >
+                                {t('common.cancel', 'Cancel')}
+                            </ConfirmCancel>
+                            <ConfirmPrimary
+                                onClick={() => void handleSetDefaultConfirm()}
+                                disabled={isSettingDefault}
+                            >
+                                {isSettingDefault
+                                    ? t('common.working', 'Working…')
+                                    : t('settings.projects.setDefault', 'Set as default')}
+                            </ConfirmPrimary>
+                        </ConfirmFooter>
+                    </ConfirmModal>
+                </ConfirmOverlay>
+            )}
 
             {membersProject && (
                 <MembersPanel
@@ -354,25 +405,37 @@ const ProjectRow = styled.div`
     border: 1px solid var(--border-subtle);
 `;
 
-const StarButton = styled.button<{ $active: boolean; $clickable: boolean }>`
-    display: flex;
+const DefaultBadge = styled.span`
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: none;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: hsla(var(--primary) / 0.12);
+    color: hsl(var(--primary));
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    line-height: 1.4;
+`;
+
+const SetDefaultButton = styled.button`
+    padding: 6px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--border-subtle);
     background: transparent;
-    border-radius: 6px;
-    flex-shrink: 0;
-    cursor: ${({ $clickable }) => ($clickable ? 'pointer' : 'default')};
-    color: ${({ $active }) =>
-        $active ? 'hsl(var(--warning))' : 'hsl(var(--muted-foreground))'};
-    opacity: ${({ $active, $clickable }) => ($active ? 1 : $clickable ? 0.4 : 0.2)};
-    transition: color 150ms ease, opacity 150ms ease, background 150ms ease;
+    color: hsl(var(--foreground));
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
 
     &:hover {
-        opacity: ${({ $active, $clickable }) => ($active ? 1 : $clickable ? 0.8 : 0.2)};
-        background: ${({ $clickable }) => ($clickable ? 'var(--overlay-light)' : 'transparent')};
+        background: hsla(var(--primary) / 0.08);
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary));
     }
 `;
 
@@ -459,5 +522,96 @@ const DeleteButton = styled.button`
 
     &:hover {
         background: hsla(var(--destructive) / 0.18);
+    }
+`;
+
+const ConfirmOverlay = styled.div`
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    background: var(--overlay-backdrop);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+
+const ConfirmModal = styled.div`
+    background: hsl(var(--card));
+    border-radius: 16px;
+    width: 440px;
+    max-width: 94vw;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+`;
+
+const ConfirmHeader = styled.div`
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+`;
+
+const ConfirmTitle = styled.h2`
+    font-size: 16px;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    margin: 0;
+`;
+
+const ConfirmBody = styled.div`
+    padding: 20px 24px;
+`;
+
+const ConfirmMessage = styled.p`
+    font-size: 14px;
+    color: hsl(var(--text-secondary));
+    margin: 0;
+    line-height: 1.55;
+`;
+
+const ConfirmFooter = styled.div`
+    padding: 16px 24px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+`;
+
+const ConfirmCancel = styled.button`
+    padding: 9px 18px;
+    background: transparent;
+    border: 1px solid var(--border-medium);
+    border-radius: 8px;
+    color: hsl(var(--text-secondary));
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease;
+
+    &:hover:not(:disabled) {
+        background: var(--overlay-light);
+        color: hsl(var(--foreground));
+    }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+`;
+
+const ConfirmPrimary = styled.button`
+    padding: 9px 20px;
+    background: hsl(var(--primary));
+    border: none;
+    border-radius: 8px;
+    color: hsl(var(--primary-foreground));
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 150ms ease;
+
+    &:hover:not(:disabled) {
+        opacity: 0.9;
+    }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 `;

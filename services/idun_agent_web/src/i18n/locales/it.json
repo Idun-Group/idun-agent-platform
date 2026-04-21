@@ -43,13 +43,17 @@
     "create": "Crea",
     "settings": "Impostazioni",
     "workspace": {
-      "select": "Seleziona uno spazio di lavoro"
+      "select": "Seleziona uno spazio di lavoro",
+      "label": "Area di lavoro"
     },
     "environment": {
       "select": "Seleziona un ambiente",
       "development": "Sviluppo",
       "staging": "Staging",
       "production": "Produzione"
+    },
+    "project": {
+      "label": "Progetto"
     }
   },
   "workspace": {
@@ -872,7 +876,10 @@
       "isDefault": "Progetto predefinito",
       "setDefault": "Imposta come predefinito",
       "panel.members": "Membri",
-      "panel.add": "Aggiungi"
+      "panel.add": "Aggiungi",
+      "defaultBadge": "Predefinito",
+      "setDefaultTitle": "Imposta progetto predefinito",
+      "setDefaultConfirm": "Impostare {{name}} come progetto predefinito di quest'area di lavoro? I nuovi membri senza assegnazione esplicita atterreranno qui."
     }
   },
   "guard": {
@@ -1111,7 +1118,8 @@
     "underDevelopment": "Questa funzionalità è in fase di sviluppo",
     "back": "Indietro",
     "saving": "Salvataggio...",
-    "adding": "Aggiunta..."
+    "adding": "Aggiunta...",
+    "working": "Elaborazione…"
   },
   "theme": {
     "toggleToLight": "Passa alla modalità chiara",
@@ -1168,5 +1176,21 @@
       "readerTitle": "Nessuna integrazione configurata in {{project}}",
       "readerDescription": "Chiedi a un collaboratore o a un amministratore di collegarne una."
     }
+  },
+  "workspaceCreate": {
+    "title": "Crea un'area di lavoro",
+    "intro": "Le aree di lavoro isolano i tenant sulla piattaforma. Ogni area parte con un progetto predefinito in cui puoi configurare agenti e risorse.",
+    "name": {
+      "label": "Nome dell'area di lavoro",
+      "placeholder": "es. Acme Production"
+    },
+    "description": {
+      "label": "Descrizione (opzionale)",
+      "placeholder": "A cosa servirà quest'area di lavoro?"
+    },
+    "submit": "Crea area di lavoro",
+    "submitting": "Creazione…",
+    "success": "{{name}} è pronta",
+    "error": "Impossibile creare l'area di lavoro. Riprova."
   }
 }

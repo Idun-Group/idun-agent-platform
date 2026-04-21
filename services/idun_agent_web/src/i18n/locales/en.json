@@ -58,11 +58,13 @@
       "select": "Select a workspace",
       "search": "Search workspaces...",
       "empty": "No workspaces found",
-      "create": "Create workspace"
+      "create": "Create workspace",
+      "label": "Workspace"
     },
     "project": {
       "empty": "No projects found",
-      "create": "Create project"
+      "create": "Create project",
+      "label": "Project"
     },
     "environment": {
       "select": "Select an environment",
@@ -922,7 +924,10 @@
       "isDefault": "Default project",
       "setDefault": "Set as default",
       "panel.members": "Members",
-      "panel.add": "Add"
+      "panel.add": "Add",
+      "defaultBadge": "Default",
+      "setDefaultTitle": "Set default project",
+      "setDefaultConfirm": "Make {{name}} the default project for this workspace? New members without an explicit project assignment will land here."
     }
   },
   "guard": {
@@ -1161,7 +1166,8 @@
     "underDevelopment": "This feature is under development",
     "back": "Back",
     "saving": "Saving...",
-    "adding": "Adding..."
+    "adding": "Adding...",
+    "working": "Working…"
   },
   "integrations": {
     "title": "Integrations",
@@ -1241,5 +1247,21 @@
       "readerTitle": "No integrations configured in {{project}}",
       "readerDescription": "Ask a contributor or admin to connect one."
     }
+  },
+  "workspaceCreate": {
+    "title": "Create a workspace",
+    "intro": "Workspaces isolate tenants on the platform. Each workspace starts with a default project where you can configure agents and resources.",
+    "name": {
+      "label": "Workspace name",
+      "placeholder": "e.g. Acme Production"
+    },
+    "description": {
+      "label": "Description (optional)",
+      "placeholder": "What will this workspace be used for?"
+    },
+    "submit": "Create workspace",
+    "submitting": "Creating…",
+    "success": "{{name}} is ready",
+    "error": "Could not create the workspace. Please try again."
   }
 }

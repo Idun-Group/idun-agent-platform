@@ -1321,7 +1321,11 @@ const GuardrailsPage: React.FC = () => {
                                          id === 'RestrictTopic' ? 'Restrict Topic' :
                                          id === 'RagHallucination' ? 'RAG Hallucination' :
                                          id}
-                                        {meta.comingSoon ? <ComingSoonBadge>Soon</ComingSoonBadge> : <AddIndicator>+</AddIndicator>}
+                                        {meta.comingSoon ? (
+                                            <ComingSoonBadge>Soon</ComingSoonBadge>
+                                        ) : canWrite ? (
+                                            <AddIndicator>+</AddIndicator>
+                                        ) : null}
                                     </TypeBtn>
                                 ))}
                             </React.Fragment>

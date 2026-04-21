@@ -26,6 +26,7 @@ import SSOPage from './pages/sso-page/page';
 import IntegrationsPage from './pages/integrations-page/page';
 import OnboardingPage from './pages/onboarding/page';
 import PromptsPage from './pages/prompts-page/page';
+import WorkspaceCreatePage from './pages/workspace-create/page';
 // PLOP_IMPORT
 
 function App() {
@@ -44,6 +45,20 @@ function App() {
                 {/* Protected routes */}
                 <Route element={<RequireAuth />}>
                     <Route path="/onboarding" element={<OnboardingPage />} />
+                    <Route
+                        path="/workspaces/new"
+                        element={
+                            <AppLayout>
+                                <Header />
+                                <ContentLayout>
+                                    <SideBar />
+                                    <MainContent>
+                                        <WorkspaceCreatePage />
+                                    </MainContent>
+                                </ContentLayout>
+                            </AppLayout>
+                        }
+                    />
                     <Route
                         path="/agents"
                         element={

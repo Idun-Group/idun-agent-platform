@@ -29,16 +29,18 @@ ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app
 
-# Copy dependency files for fresh install
-COPY pyproject.toml ./
-# Reproducible build (commented out for fresh installs):
-# COPY uv.lock* ./
+# Copy dependency files for fresh install.
+# Build context is the monorepo root so we can install the local
+# idun-agent-schema package (PyPI releases lag the monorepo).
+COPY services/idun_agent_manager/pyproject.toml ./pyproject.toml
+COPY libs/idun_agent_schema /tmp/schema
 
-# Install runtime dependencies into virtual environment
-# --no-dev: skip development dependencies
-# Reproducible build flag (commented out for fresh installs):
-# --frozen: use exact versions from lockfile
-RUN uv sync --no-dev --python 3.12
+# Install runtime dependencies. This pulls idun-agent-schema from PyPI
+# first; we then overwrite it with the local package so the manager
+# sees any new modules (e.g. project RBAC schemas) not yet released.
+RUN uv sync --no-dev --python 3.12 \
+    && uv pip uninstall --python /app/.venv/bin/python idun-agent-schema \
+    && uv pip install --python /app/.venv/bin/python --no-deps /tmp/schema
 
 # ============================================================================
 # Stage 2: Runtime - Minimal production image
@@ -70,10 +72,10 @@ WORKDIR /app
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy application code
-COPY src/ /app/src/
-COPY alembic.ini /app/alembic.ini
-COPY alembic/ /app/alembic/
+# Copy application code (paths relative to the monorepo root build context)
+COPY services/idun_agent_manager/src/ /app/src/
+COPY services/idun_agent_manager/alembic.ini /app/alembic.ini
+COPY services/idun_agent_manager/alembic/ /app/alembic/
 
 # Create non-root user for security
 RUN groupadd -r appuser --gid 1000 && \

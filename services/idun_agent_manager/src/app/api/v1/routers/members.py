@@ -307,11 +307,17 @@ async def remove_member(
     mem_uuid = _parse_uuid(membership_id, "membership")
 
     target = await _get_membership(session, mem_uuid, ws_uuid)
-    is_self = target.user_id == user.user_uuid
-    if not is_self:
-        await _require_workspace_owner(ws_uuid, user, session)
-    else:
-        await _require_workspace_member(ws_uuid, user, session)
+
+    # Only workspace owners may remove members, and no one may remove themselves.
+    # Leaving the workspace requires the user to ask a fellow owner — this keeps
+    # accidental self-removal (especially by the sole owner) impossible, and
+    # makes membership changes always an authorized, audited action.
+    await _require_workspace_owner(ws_uuid, user, session)
+    if target.user_id == user.user_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot remove yourself from the workspace",
+        )
 
     if target.is_owner:
         await _ensure_not_last_owner(session, ws_uuid)

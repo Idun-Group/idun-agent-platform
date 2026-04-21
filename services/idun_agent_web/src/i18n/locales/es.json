@@ -43,13 +43,17 @@
     "create": "Crear",
     "settings": "Configuración",
     "workspace": {
-      "select": "Seleccionar un espacio de trabajo"
+      "select": "Seleccionar un espacio de trabajo",
+      "label": "Espacio de trabajo"
     },
     "environment": {
       "select": "Seleccionar un entorno",
       "development": "Desarrollo",
       "staging": "Homologación",
       "production": "Producción"
+    },
+    "project": {
+      "label": "Proyecto"
     }
   },
   "workspace": {
@@ -873,7 +877,10 @@
       "isDefault": "Proyecto predeterminado",
       "setDefault": "Establecer como predeterminado",
       "panel.members": "Miembros",
-      "panel.add": "Añadir"
+      "panel.add": "Añadir",
+      "defaultBadge": "Predeterminado",
+      "setDefaultTitle": "Establecer proyecto predeterminado",
+      "setDefaultConfirm": "¿Establecer {{name}} como el proyecto predeterminado de este espacio de trabajo? Los nuevos miembros sin asignación explícita aterrizarán aquí."
     }
   },
   "guard": {
@@ -1112,7 +1119,8 @@
     "underDevelopment": "Esta funcionalidad está en desarrollo",
     "back": "Volver",
     "saving": "Guardando...",
-    "adding": "Añadiendo..."
+    "adding": "Añadiendo...",
+    "working": "Procesando…"
   },
   "integrations": {
     "title": "Integraciones",
@@ -1180,5 +1188,21 @@
       "readerTitle": "No hay integraciones configuradas en {{project}}",
       "readerDescription": "Pide a un contribuidor o administrador que conecte una."
     }
+  },
+  "workspaceCreate": {
+    "title": "Crear un espacio de trabajo",
+    "intro": "Los espacios de trabajo aíslan tenants en la plataforma. Cada espacio comienza con un proyecto predeterminado donde puedes configurar agentes y recursos.",
+    "name": {
+      "label": "Nombre del espacio de trabajo",
+      "placeholder": "p. ej. Acme Producción"
+    },
+    "description": {
+      "label": "Descripción (opcional)",
+      "placeholder": "¿Para qué se usará este espacio de trabajo?"
+    },
+    "submit": "Crear espacio de trabajo",
+    "submitting": "Creando…",
+    "success": "{{name}} está listo",
+    "error": "No se pudo crear el espacio de trabajo. Inténtalo de nuevo."
   }
 }

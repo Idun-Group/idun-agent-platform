@@ -651,7 +651,11 @@ const IntegrationsPage: React.FC = () => {
                                                 {Icon ? <Icon /> : <span>+</span>}
                                             </ProviderIconBoxSmall>
                                             {meta.label}
-                                            {isDisabled ? <ComingSoonBadge>Soon</ComingSoonBadge> : <AddIndicator>+</AddIndicator>}
+                                            {isDisabled ? (
+                                                <ComingSoonBadge>Soon</ComingSoonBadge>
+                                            ) : canWrite ? (
+                                                <AddIndicator>+</AddIndicator>
+                                            ) : null}
                                         </ProviderBtn>
                                     );
                                 })}

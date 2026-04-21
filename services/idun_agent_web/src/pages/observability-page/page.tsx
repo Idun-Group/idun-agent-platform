@@ -1046,7 +1046,11 @@ const ObservabilityPage: React.FC = () => {
                                     >
                                         <ProviderLogo><img src={p.logo} alt={p.label} /></ProviderLogo>
                                         {p.label}
-                                        {p.comingSoon ? <ComingSoonBadge>Soon</ComingSoonBadge> : <AddIndicator>+</AddIndicator>}
+                                        {p.comingSoon ? (
+                                            <ComingSoonBadge>Soon</ComingSoonBadge>
+                                        ) : canWrite ? (
+                                            <AddIndicator>+</AddIndicator>
+                                        ) : null}
                                     </ProviderBtn>
                                 ))}
                             </React.Fragment>
