@@ -406,12 +406,12 @@ class LanggraphAgent(agent_base.BaseAgent):
             )
 
             # Preserve interrupt_before/after from the user's compile() call
-            self._interrupt_before = getattr(
-                graph_builder, "interrupt_before_nodes", None
-            ) or None
-            self._interrupt_after = getattr(
-                graph_builder, "interrupt_after_nodes", None
-            ) or None
+            self._interrupt_before = (
+                getattr(graph_builder, "interrupt_before_nodes", None) or None
+            )
+            self._interrupt_after = (
+                getattr(graph_builder, "interrupt_after_nodes", None) or None
+            )
 
             if self._interrupt_before or self._interrupt_after:
                 logger.info(
@@ -648,11 +648,34 @@ class LanggraphAgent(agent_base.BaseAgent):
         # wrapper's ``model_fields`` contain a single ``root`` entry whose
         # annotation is the original TypedDict.  Otherwise the wrapper
         # directly exposes the state fields.
-        input_schema_cls = getattr(graph, "input_schema", None)
-        output_schema_cls = getattr(graph, "output_schema", None)
-
-        input_fields = self._unwrap_schema_fields(input_schema_cls)
-        output_fields = self._unwrap_schema_fields(output_schema_cls)
+        #
+        # Schema materialization goes through ``pydantic.create_model`` on
+        # the state annotations.  That can fail on valid LangGraph state
+        # schemas whose annotations use TypedDict-only qualifiers like
+        # ``NotRequired`` (e.g. LangChain's ``PlanningState`` used by
+        # DeepAgents' ``TodoListMiddleware`` triggers
+        # ``PydanticForbiddenQualifier``).  Schema introspection is
+        # metadata — a failure here must not take down the runtime.  Fall
+        # back to chat/text mode and cache the fallback so subsequent calls
+        # are O(1) and ``/agent/run`` keeps streaming.
+        try:
+            input_schema_cls = getattr(graph, "input_schema", None)
+            output_schema_cls = getattr(graph, "output_schema", None)
+            input_fields = self._unwrap_schema_fields(input_schema_cls)
+            output_fields = self._unwrap_schema_fields(output_schema_cls)
+        except Exception as e:
+            logger.warning(
+                "Graph schema introspection failed (%s: %s). Falling back "
+                "to chat/text capabilities. Streaming is unaffected. This "
+                "is commonly seen with LangChain middleware that uses "
+                "TypedDict-only qualifiers (e.g. DeepAgents + PlanningState).",
+                type(e).__name__,
+                e,
+            )
+            input_schema_cls = None
+            output_schema_cls = None
+            input_fields = None
+            output_fields = None
 
         # Detect input mode
         input_mode = "chat"
