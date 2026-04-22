@@ -1,5 +1,6 @@
 """Tests for agent capability auto-discovery."""
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -148,3 +149,82 @@ async def test_langgraph_structured_discovery_json_schema_shape():
     assert output_schema is not None
     assert output_schema["type"] == "object"
     assert "graph_output" in output_schema["properties"]
+
+
+@pytest.mark.asyncio
+async def test_discover_capabilities_falls_back_when_schema_introspection_raises(
+    caplog,
+):
+    """Schema introspection failures must not crash discovery.
+
+    Reproduces the LangChain 1.2 / LangGraph 1.x / Pydantic 2
+    ``PydanticForbiddenQualifier`` condition that breaks DeepAgents on
+    Idun (LangChain's ``PlanningState.todos`` uses ``NotRequired``, which
+    LangGraph forwards to ``pydantic.create_model`` without unwrapping).
+
+    Contract: any exception while accessing ``graph.input_schema`` or
+    ``graph.output_schema`` must degrade to chat/text mode, emit a
+    warning, and cache the fallback so subsequent calls are O(1).
+    """
+    from idun_agent_engine.core.config_builder import ConfigBuilder
+
+    mock_graph_path = (
+        Path(__file__).parent.parent.parent / "fixtures" / "agents" / "mock_graph.py"
+    )
+
+    config = {
+        "agent": {
+            "type": "LANGGRAPH",
+            "config": {
+                "name": "boom_agent",
+                "graph_definition": f"{mock_graph_path}:graph",
+            },
+        },
+    }
+
+    engine_config = ConfigBuilder.from_dict(config).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+
+    # Replace the compiled graph with one whose schema @properties raise,
+    # mimicking LangGraph's pregel create_model failure on a state schema
+    # that includes TypedDict-only qualifiers (e.g. PlanningState).
+    class _BoomGraph:
+        @property
+        def input_schema(self):
+            raise RuntimeError("boom: NotRequired not allowed here")
+
+        @property
+        def output_schema(self):
+            raise RuntimeError("boom: NotRequired not allowed here")
+
+    agent._agent_instance = _BoomGraph()
+    agent._cached_capabilities = None
+
+    with caplog.at_level(logging.WARNING, logger="idun_agent_engine"):
+        capabilities = agent.discover_capabilities()
+
+    assert capabilities.framework.value == "LANGGRAPH"
+    assert capabilities.input.mode == "chat"
+    assert capabilities.input.schema_ is None
+    assert capabilities.output.mode == "text"
+    assert capabilities.output.schema_ is None
+
+    assert any(
+        "Graph schema introspection failed" in rec.message for rec in caplog.records
+    ), "expected a warning log describing the introspection failure"
+
+    # Second call must hit the cache — the raising @property must not be
+    # accessed again, proving the fallback was cached on the first call.
+    class _ExplodeIfTouched:
+        @property
+        def input_schema(self):
+            raise AssertionError("cache was not used — input_schema re-accessed")
+
+        @property
+        def output_schema(self):
+            raise AssertionError("cache was not used — output_schema re-accessed")
+
+    agent._agent_instance = _ExplodeIfTouched()
+
+    cached = agent.discover_capabilities()
+    assert cached is capabilities
