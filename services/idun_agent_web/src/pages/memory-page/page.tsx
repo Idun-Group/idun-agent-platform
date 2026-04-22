@@ -20,6 +20,7 @@ import { notify } from '../../components/toast/notify';
 import { useProject } from '../../hooks/use-project';
 import useWorkspace from '../../hooks/use-workspace';
 import NoProjectState from '../../components/general/no-project-state/component';
+import Tooltip from '../../components/general/tooltip/component';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -925,8 +926,9 @@ const MemoryPage: React.FC = () => {
     };
 
     const loadMemories = useCallback(async () => {
-        if (!currentProject) {
-            setMemories([]);
+        // Clear synchronously so switching projects never shows stale rows.
+        setMemories([]);
+        if (!selectedProjectId) {
             setIsLoading(false);
             return;
         }
@@ -941,7 +943,7 @@ const MemoryPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentProject]);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadMemories(); }, [loadMemories]);
 
@@ -1022,19 +1024,27 @@ const MemoryPage: React.FC = () => {
                                 {group.label}
                             </GroupLabel>
                             {group.providers.map(provider => (
-                                <TypeBtn
+                                <Tooltip
                                     key={provider.id}
-                                    type="button"
-                                    onClick={() => canWrite && openCreate(provider, group.key)}
+                                    enabled={!canWrite}
+                                    message={t('common.readerCannotCreate', "Readers can't create resources, ask a contributor or admin.")}
+                                    placement="top"
+                                    style={{ display: 'block' }}
                                 >
-                                    {provider.logo ? (
-                                        <ProviderLogo src={provider.logo} alt={provider.name} />
-                                    ) : (
-                                        <HardDrive size={18} color="hsl(var(--muted-foreground))" />
-                                    )}
-                                    {provider.name}
-                                    {canWrite && <AddIndicator>+</AddIndicator>}
-                                </TypeBtn>
+                                    <TypeBtn
+                                        type="button"
+                                        onClick={() => canWrite && openCreate(provider, group.key)}
+                                        style={{ width: '100%' }}
+                                    >
+                                        {provider.logo ? (
+                                            <ProviderLogo src={provider.logo} alt={provider.name} />
+                                        ) : (
+                                            <HardDrive size={18} color="hsl(var(--muted-foreground))" />
+                                        )}
+                                        {provider.name}
+                                        {canWrite && <AddIndicator>+</AddIndicator>}
+                                    </TypeBtn>
+                                </Tooltip>
                             ))}
                         </React.Fragment>
                     ))}

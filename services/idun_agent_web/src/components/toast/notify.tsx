@@ -3,79 +3,77 @@ import { toast, type ToastOptions } from 'react-toastify';
 import { CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react';
 import styled from 'styled-components';
 
-/* ── Layout ── */
+/**
+ * Toast content renderers for Option A (Minimal Bar).
+ *
+ * Layout contract: icon (18px, flex-shrink: 0) + message (flex: 1, min-width: 0
+ * so long strings wrap instead of overflowing). The close button is positioned
+ * absolutely from `toast-styles.tsx` — nothing to reserve space for here beyond
+ * the body padding defined there.
+ */
 
 const Row = styled.div`
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    min-height: 60px;
-    justify-content: center;
-    align-items: anchor-center;
-    padding-left: 15px;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
 `;
 
-const IconWrap = styled.div<{ $color: string }>`
+const IconWrap = styled.span<{ $color: string }>`
     flex-shrink: 0;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
-    margin-top: 1px;
-    color: ${p => p.$color};
+    width: 18px;
+    height: 18px;
+    color: ${({ $color }) => $color};
 `;
 
 const Message = styled.span`
     flex: 1;
-    font-size: 15px;
-    font-weight: 600;
+    min-width: 0;
+    word-break: break-word;
+    font-size: 13px;
+    font-weight: 500;
     line-height: 1.5;
-    color: rgba(226, 228, 240, 0.92);
+    letter-spacing: -0.005em;
+    color: hsl(var(--foreground));
 `;
-
-/* ── Renderers ── */
 
 const SuccessContent: React.FC<{ message: string }> = ({ message }) => (
     <Row>
-        <IconWrap $color="#34d399"><CheckCircle2 size={18} /></IconWrap>
+        <IconWrap $color="hsl(var(--success, 142 71% 45%))"><CheckCircle2 size={18} /></IconWrap>
         <Message>{message}</Message>
     </Row>
 );
 
 const ErrorContent: React.FC<{ message: string }> = ({ message }) => (
     <Row>
-        <IconWrap $color="#f87171"><XCircle size={18} /></IconWrap>
+        <IconWrap $color="hsl(var(--destructive, 0 72% 51%))"><XCircle size={18} /></IconWrap>
         <Message>{message}</Message>
     </Row>
 );
 
 const WarningContent: React.FC<{ message: string }> = ({ message }) => (
     <Row>
-        <IconWrap $color="#fbbf24"><AlertTriangle size={18} /></IconWrap>
+        <IconWrap $color="hsl(var(--warning, 45 93% 47%))"><AlertTriangle size={18} /></IconWrap>
         <Message>{message}</Message>
     </Row>
 );
 
 const InfoContent: React.FC<{ message: string }> = ({ message }) => (
     <Row>
-        <IconWrap $color="#8c52ff"><Info size={18} /></IconWrap>
+        <IconWrap $color="hsl(var(--primary))"><Info size={18} /></IconWrap>
         <Message>{message}</Message>
     </Row>
 );
 
-/* ── Public API ── */
-
 /**
  * Drop-in replacement for `toast.success / error / warning / info`.
- *
- * Uses Lucide icons instead of the default react-toastify emojis
- * and wraps text in a properly padded row layout.
  *
  * @example
  *   import { notify } from '@/components/toast/notify';
  *   notify.success('Agent updated');
- *   notify.error('Something went wrong');
  */
 export const notify = {
     success(message: string, opts?: ToastOptions) {

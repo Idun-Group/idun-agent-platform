@@ -24,8 +24,10 @@ services:
 
   manager:
     build:
-      context: ./services/idun_agent_manager
-      dockerfile: Dockerfile
+      # Use monorepo root as context so the Dockerfile can COPY the
+      # local idun-agent-schema package from libs/ alongside the manager.
+      context: .
+      dockerfile: services/idun_agent_manager/Dockerfile
     container_name: idun-manager
     env_file: .env
     ports:

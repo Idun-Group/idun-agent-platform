@@ -1,17 +1,20 @@
 import { createGlobalStyle } from 'styled-components';
 
 /**
- * Custom toast notification styles for the Idun Platform.
+ * Toast styles — "Option A / Minimal Bar".
  *
- * Overrides react-toastify defaults to produce dark, pill-shaped
- * notifications with Lucide icons, generous inner padding, a left
- * accent bar, and smooth slide animations.
+ * Design goals:
+ *  1. Single accent layer (3px left stripe) — no background gradients.
+ *  2. Close X is absolutely positioned; stays aligned at every viewport.
+ *  3. Container is responsive: 360px desktop, full-width minus 16px at ≤480px.
+ *  4. No `!important`, no negative `top` hacks, no `anchor-center`.
  */
 const ToastStyles = createGlobalStyle`
-  /* ── Container ── */
+  /* ─── Container ──────────────────────────────────────────────── */
   .Toastify__toast-container {
+    width: 360px;
     padding: 0;
-    width: 400px;
+    box-sizing: border-box;
   }
 
   .Toastify__toast-container--top-right {
@@ -19,24 +22,36 @@ const ToastStyles = createGlobalStyle`
     right: 16px;
   }
 
-  /* ── Base toast card ── */
-  .Toastify__toast {
-    font-family: 'Inter', 'SF Pro Display', -apple-system, system-ui, sans-serif;
-    background: hsl(var(--surface-elevated));
-    border: 1px solid var(--overlay-medium);
-    border-radius: 12px;
-    padding: 0;
-    margin-bottom: 12px;
-    box-shadow:
-      0 12px 40px rgba(0, 0, 0, 0.6),
-      0 4px 12px rgba(0, 0, 0, 0.4);
-    overflow: hidden;
-    min-height: unset;
-    cursor: default;
-    position: relative;
+  @media (max-width: 480px) {
+    .Toastify__toast-container {
+      width: calc(100vw - 32px);
+    }
+    .Toastify__toast-container--top-right {
+      top: 12px;
+      right: 16px;
+      left: 16px;
+    }
   }
 
-  /* ── Left accent stripe ── */
+  /* ─── Base toast card ────────────────────────────────────────── */
+  .Toastify__toast {
+    position: relative;
+    font-family: 'Inter', 'SF Pro Display', -apple-system, system-ui, sans-serif;
+    background: hsl(var(--surface-elevated));
+    border: 1px solid hsl(var(--border));
+    border-radius: 10px;
+    padding: 0;
+    margin-bottom: 10px;
+    min-height: unset;
+    overflow: hidden;
+    cursor: default;
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.25),
+      0 1px 4px rgba(0, 0, 0, 0.15);
+    transition: border-color 150ms ease;
+  }
+
+  /* Left accent stripe — the only color layer */
   .Toastify__toast::before {
     content: '';
     position: absolute;
@@ -44,132 +59,117 @@ const ToastStyles = createGlobalStyle`
     top: 0;
     bottom: 0;
     width: 3px;
-    background: rgba(140, 82, 255, 0.5);
+    border-radius: 10px 0 0 10px;
+    background: hsl(var(--muted-foreground));
   }
 
-  /* ── Hide default react-toastify icon (we use custom ones) ── */
+  /* Hide react-toastify's default icon (we render our own inside the body) */
   .Toastify__toast-icon {
     display: none !important;
   }
 
-  /* ── Toast body ── */
+  /* ─── Body ───────────────────────────────────────────────────── */
   .Toastify__toast-body {
-    padding: 14px 16px 14px 18px;
     margin: 0;
+    padding: 13px 40px 13px 18px; /* right padding reserves space for the abs close button */
     display: flex;
     align-items: center;
-    gap: 0;
+    gap: 10px;
     font-size: 13px;
-    font-weight: 450;
+    font-weight: 500;
     line-height: 1.5;
-    letter-spacing: -0.006em;
+    letter-spacing: -0.005em;
     color: hsl(var(--foreground));
   }
 
+  /* react-toastify wraps content in a div; make it flex-grow */
   .Toastify__toast-body > div:last-child {
     flex: 1;
+    min-width: 0;
   }
 
-  /* ── Close button ── */
+  /* ─── Close button — absolute, predictable, no hacks ─────────── */
   .Toastify__close-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
     color: hsl(var(--muted-foreground));
     opacity: 1;
-    padding: 2px;
-    margin: 12px 12px 0 0;
-    align-self: flex-start;
-    transition: color 0.15s ease, transform 0.15s ease;
-    flex-shrink: 0;
+    cursor: pointer;
+    transition: color 150ms ease, background 150ms ease;
   }
 
   .Toastify__close-button:hover {
     color: hsl(var(--foreground));
-    transform: scale(1.15);
+    background: var(--overlay-medium);
   }
 
   .Toastify__close-button > svg {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
   }
 
-  /* ── Progress bar ── */
+  /* ─── Variant accents — stripe + hover border only ───────────── */
+  .Toastify__toast--success::before { background: hsl(var(--success, 142 71% 45%)); }
+  .Toastify__toast--success:hover   { border-color: hsl(var(--success, 142 71% 45%) / 0.35); }
+
+  .Toastify__toast--error::before   { background: hsl(var(--destructive, 0 72% 51%)); }
+  .Toastify__toast--error:hover     { border-color: hsl(var(--destructive, 0 72% 51%) / 0.35); }
+
+  .Toastify__toast--warning::before { background: hsl(var(--warning, 45 93% 47%)); }
+  .Toastify__toast--warning:hover   { border-color: hsl(var(--warning, 45 93% 47%) / 0.35); }
+
+  .Toastify__toast--info::before    { background: hsl(var(--primary)); }
+  .Toastify__toast--info:hover      { border-color: hsl(var(--primary) / 0.35); }
+
+  /* ─── Progress bar — hidden in Option A (keep the rule so
+     re-enabling is one prop flip on <ToastContainer />) ────────── */
   .Toastify__progress-bar {
-    height: 2px;
-    border-radius: 0 0 12px 12px;
-    background: rgba(140, 82, 255, 0.3);
+    display: none;
   }
 
-  .Toastify__progress-bar--bg {
-    background: var(--overlay-subtle);
-    height: 2px;
-  }
-    .Toastify__close-button {
-    top: -3px !important;
+  /* ─── Animations ─────────────────────────────────────────────── */
+  @keyframes idunToastIn {
+    from {
+      opacity: 0;
+      transform: translateX(24px) scale(0.97);
     }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+  @keyframes idunToastOut {
+    from {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(24px) scale(0.97);
+    }
+  }
 
-  /* ═══════ SUCCESS ═══════ */
-  .Toastify__toast--success {
-    background: linear-gradient(135deg, hsl(var(--surface-elevated)) 0%, #0f2a1a 100%);
-    border-color: rgba(52, 211, 153, 0.25);
+  .Toastify__slide-enter--top-right,
+  .Toastify__bounce-enter--top-right {
+    animation: idunToastIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .Toastify__toast--success::before { background: #34d399; }
-  .Toastify__toast--success .Toastify__progress-bar {
-    background: linear-gradient(90deg, rgba(52, 211, 153, 0.6) 0%, rgba(52, 211, 153, 0.1) 100%);
+  .Toastify__slide-exit--top-right,
+  .Toastify__bounce-exit--top-right {
+    animation: idunToastOut 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .Toastify__toast--success .Toastify__progress-bar--bg { background: rgba(52, 211, 153, 0.06); }
-
-  /* ═══════ ERROR ═══════ */
-  .Toastify__toast--error {
-    background: linear-gradient(135deg, hsl(var(--surface-elevated)) 0%, #2a1015 100%);
-    border-color: rgba(248, 113, 113, 0.25);
-  }
-  .Toastify__toast--error::before { background: #f87171; }
-  .Toastify__toast--error .Toastify__progress-bar {
-    background: linear-gradient(90deg, rgba(248, 113, 113, 0.6) 0%, rgba(248, 113, 113, 0.1) 100%);
-  }
-  .Toastify__toast--error .Toastify__progress-bar--bg { background: rgba(248, 113, 113, 0.06); }
-
-  /* ═══════ WARNING ═══════ */
-  .Toastify__toast--warning {
-    background: linear-gradient(135deg, hsl(var(--surface-elevated)) 0%, #2a220e 100%);
-    border-color: rgba(251, 191, 36, 0.25);
-  }
-  .Toastify__toast--warning::before { background: #fbbf24; }
-  .Toastify__toast--warning .Toastify__progress-bar {
-    background: linear-gradient(90deg, rgba(251, 191, 36, 0.6) 0%, rgba(251, 191, 36, 0.1) 100%);
-  }
-  .Toastify__toast--warning .Toastify__progress-bar--bg { background: rgba(251, 191, 36, 0.06); }
-
-  /* ═══════ INFO ═══════ */
-  .Toastify__toast--info {
-    background: linear-gradient(135deg, hsl(var(--surface-elevated)) 0%, #1a152e 100%);
-    border-color: rgba(140, 82, 255, 0.25);
-  }
-  .Toastify__toast--info::before { background: #8c52ff; }
-  .Toastify__toast--info .Toastify__progress-bar {
-    background: linear-gradient(90deg, rgba(140, 82, 255, 0.6) 0%, rgba(140, 82, 255, 0.1) 100%);
-  }
-  .Toastify__toast--info .Toastify__progress-bar--bg { background: rgba(140, 82, 255, 0.06); }
-
-  /* ═══════ ANIMATIONS ═══════ */
-  @keyframes idunSlideIn {
-    0%   { opacity: 0; transform: translateX(28px) scale(0.97); }
-    100% { opacity: 1; transform: translateX(0) scale(1); }
-  }
-  @keyframes idunSlideOut {
-    0%   { opacity: 1; transform: translateX(0) scale(1); }
-    100% { opacity: 0; transform: translateX(20px) scale(0.98); }
-  }
-  .Toastify__slide-enter--top-right  { animation: idunSlideIn  0.3s cubic-bezier(0.22,1,0.36,1); }
-  .Toastify__slide-exit--top-right   { animation: idunSlideOut 0.2s cubic-bezier(0.22,1,0.36,1); }
-  .Toastify__bounce-enter--top-right { animation: idunSlideIn  0.3s cubic-bezier(0.22,1,0.36,1); }
-  .Toastify__bounce-exit--top-right  { animation: idunSlideOut 0.2s cubic-bezier(0.22,1,0.36,1); }
-
-  /* ═══════ HOVER ═══════ */
-  .Toastify__toast:hover                { border-color: var(--border-medium); }
-  .Toastify__toast--success:hover       { border-color: rgba(52,211,153,0.35); }
-  .Toastify__toast--error:hover         { border-color: rgba(248,113,113,0.35); }
-  .Toastify__toast--warning:hover       { border-color: rgba(251,191,36,0.35); }
-  .Toastify__toast--info:hover          { border-color: rgba(140,82,255,0.35); }
 `;
 
 export default ToastStyles;

@@ -39,8 +39,10 @@ const AgentDashboardPage = () => {
 
     useEffect(() => {
         let cancelled = false;
-        if (!currentProject) {
-            setAgents([]);
+        // Clear stale rows synchronously so a project switch never briefly
+        // shows the previous project's agents while the new list is in flight.
+        setAgents([]);
+        if (!selectedProjectId) {
             setIsLoading(false);
             return () => {
                 cancelled = true;
@@ -49,6 +51,7 @@ const AgentDashboardPage = () => {
         setIsLoading(true);
         listAgents()
             .then((rows) => {
+                if (cancelled) return;
                 setAgents(rows);
                 for (const agent of rows) {
                     performHealthCheck(agent, (updated) => {
@@ -59,12 +62,15 @@ const AgentDashboardPage = () => {
                 }
             })
             .catch((error) => {
+                if (cancelled) return;
                 const message = error instanceof Error ? error.message : String(error);
                 notify.error(message);
             })
-            .finally(() => setIsLoading(false));
+            .finally(() => {
+                if (!cancelled) setIsLoading(false);
+            });
         return () => { cancelled = true; };
-    }, [currentProject]);
+    }, [selectedProjectId]);
 
     const filteredAgents = useMemo(() => {
         if (!searchTerm) return agents;

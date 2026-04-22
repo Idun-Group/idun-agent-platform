@@ -9,6 +9,7 @@ import DeleteConfirmModal from '../../components/applications/delete-confirm-mod
 import { useProject } from '../../hooks/use-project';
 import useWorkspace from '../../hooks/use-workspace';
 import NoProjectState from '../../components/general/no-project-state/component';
+import Tooltip from '../../components/general/tooltip/component';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -945,8 +946,8 @@ const ObservabilityPage: React.FC = () => {
     const closeModal = () => { setModalProvider(null); setAppToEdit(null); };
 
     const loadApps = useCallback(async () => {
-        if (!currentProject) {
-            setApps([]);
+        setApps([]);
+        if (!selectedProjectId) {
             setIsLoading(false);
             return;
         }
@@ -959,7 +960,7 @@ const ObservabilityPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentProject]);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
@@ -1038,20 +1039,28 @@ const ObservabilityPage: React.FC = () => {
                             <React.Fragment key={group}>
                                 <GroupLabel>{group}</GroupLabel>
                                 {providers.map(p => (
-                                    <ProviderBtn
+                                    <Tooltip
                                         key={p.id}
-                                        type="button"
-                                        $disabled={!!p.comingSoon}
-                                        onClick={() => { if (!p.comingSoon && canWrite) openModal(p); }}
+                                        enabled={!canWrite && !p.comingSoon}
+                                        message={t('common.readerCannotCreate', "Readers can't create resources, ask a contributor or admin.")}
+                                        placement="top"
+                                        style={{ display: 'block' }}
                                     >
-                                        <ProviderLogo><img src={p.logo} alt={p.label} /></ProviderLogo>
-                                        {p.label}
-                                        {p.comingSoon ? (
-                                            <ComingSoonBadge>Soon</ComingSoonBadge>
-                                        ) : canWrite ? (
-                                            <AddIndicator>+</AddIndicator>
-                                        ) : null}
-                                    </ProviderBtn>
+                                        <ProviderBtn
+                                            type="button"
+                                            $disabled={!!p.comingSoon}
+                                            onClick={() => { if (!p.comingSoon && canWrite) openModal(p); }}
+                                            style={{ width: '100%' }}
+                                        >
+                                            <ProviderLogo><img src={p.logo} alt={p.label} /></ProviderLogo>
+                                            {p.label}
+                                            {p.comingSoon ? (
+                                                <ComingSoonBadge>Soon</ComingSoonBadge>
+                                            ) : canWrite ? (
+                                                <AddIndicator>+</AddIndicator>
+                                            ) : null}
+                                        </ProviderBtn>
+                                    </Tooltip>
                                 ))}
                             </React.Fragment>
                         );

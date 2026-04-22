@@ -1167,7 +1167,8 @@
     "back": "Back",
     "saving": "Saving...",
     "adding": "Adding...",
-    "working": "Working…"
+    "working": "Working…",
+    "readerCannotCreate": "Readers can't create resources, ask a contributor or admin."
   },
   "integrations": {
     "title": "Integrations",

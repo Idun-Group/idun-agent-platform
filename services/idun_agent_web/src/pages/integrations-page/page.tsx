@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useProject } from '../../hooks/use-project';
 import useWorkspace from '../../hooks/use-workspace';
 import NoProjectState from '../../components/general/no-project-state/component';
+import Tooltip from '../../components/general/tooltip/component';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -557,8 +558,8 @@ const IntegrationsPage: React.FC = () => {
     const [configToDelete, setConfigToDelete] = useState<ManagedIntegration | null>(null);
 
     const loadConfigs = useCallback(async () => {
-        if (!currentProject) {
-            setConfigs([]);
+        setConfigs([]);
+        if (!selectedProjectId) {
             setIsLoading(false);
             return;
         }
@@ -571,7 +572,7 @@ const IntegrationsPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentProject]);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadConfigs(); }, [loadConfigs]);
 
@@ -639,24 +640,31 @@ const IntegrationsPage: React.FC = () => {
                                 {providers.map(([key, meta]) => {
                                     const Icon = PROVIDER_ICONS[key];
                                     const isDisabled = !!meta.comingSoon;
-                                    if (!isDisabled && !canWrite) return null;
                                     return (
-                                        <ProviderBtn
+                                        <Tooltip
                                             key={key}
-                                            type="button"
-                                            $disabled={isDisabled}
-                                            onClick={() => { if (!isDisabled && canWrite) openCreate(key as IntegrationProvider); }}
+                                            enabled={!canWrite && !isDisabled}
+                                            message={t('common.readerCannotCreate', "Readers can't create resources, ask a contributor or admin.")}
+                                            placement="top"
+                                            style={{ display: 'block' }}
                                         >
-                                            <ProviderIconBoxSmall $color={meta.color}>
-                                                {Icon ? <Icon /> : <span>+</span>}
-                                            </ProviderIconBoxSmall>
-                                            {meta.label}
-                                            {isDisabled ? (
-                                                <ComingSoonBadge>Soon</ComingSoonBadge>
-                                            ) : canWrite ? (
-                                                <AddIndicator>+</AddIndicator>
-                                            ) : null}
-                                        </ProviderBtn>
+                                            <ProviderBtn
+                                                type="button"
+                                                $disabled={isDisabled}
+                                                onClick={() => { if (!isDisabled && canWrite) openCreate(key as IntegrationProvider); }}
+                                                style={{ width: '100%' }}
+                                            >
+                                                <ProviderIconBoxSmall $color={meta.color}>
+                                                    {Icon ? <Icon /> : <span>+</span>}
+                                                </ProviderIconBoxSmall>
+                                                {meta.label}
+                                                {isDisabled ? (
+                                                    <ComingSoonBadge>Soon</ComingSoonBadge>
+                                                ) : canWrite ? (
+                                                    <AddIndicator>+</AddIndicator>
+                                                ) : null}
+                                            </ProviderBtn>
+                                        </Tooltip>
                                     );
                                 })}
                             </React.Fragment>

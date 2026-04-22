@@ -23,6 +23,7 @@ import type { AppType } from '../../types/application.types';
 import { useProject } from '../../hooks/use-project';
 import useWorkspace from '../../hooks/use-workspace';
 import NoProjectState from '../../components/general/no-project-state/component';
+import Tooltip from '../../components/general/tooltip/component';
 
 // ── Transport type metadata ──────────────────────────────────────────────────
 
@@ -1301,8 +1302,8 @@ const MCPPage: React.FC = () => {
     };
 
     const loadApps = useCallback(async () => {
-        if (!currentProject) {
-            setApps([]);
+        setApps([]);
+        if (!selectedProjectId) {
             setIsLoading(false);
             return;
         }
@@ -1315,7 +1316,7 @@ const MCPPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentProject]);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
@@ -1390,15 +1391,23 @@ const MCPPage: React.FC = () => {
                 <TypeColumn>
                     <GroupLabel>Transports</GroupLabel>
                     {TRANSPORTS.map(transport => (
-                        <TypeBtn
+                        <Tooltip
                             key={transport.id}
-                            type="button"
-                            onClick={() => canWrite && openCreate(transport.id)}
+                            enabled={!canWrite}
+                            message={t('common.readerCannotCreate', "Readers can't create resources, ask a contributor or admin.")}
+                            placement="top"
+                            style={{ display: 'block' }}
                         >
-                            <TypeIconBox><transport.icon size={15} /></TypeIconBox>
-                            {transport.label}
-                            {canWrite && <AddIndicator>+</AddIndicator>}
-                        </TypeBtn>
+                            <TypeBtn
+                                type="button"
+                                onClick={() => canWrite && openCreate(transport.id)}
+                                style={{ width: '100%' }}
+                            >
+                                <TypeIconBox><transport.icon size={15} /></TypeIconBox>
+                                {transport.label}
+                                {canWrite && <AddIndicator>+</AddIndicator>}
+                            </TypeBtn>
+                        </Tooltip>
                     ))}
 
                     <RequestBtn

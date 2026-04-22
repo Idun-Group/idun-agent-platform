@@ -83,6 +83,15 @@ const PromptsPage = () => {
     const [rawVersions, setPreviewVersions] = useState<Set<string>>(new Set());
 
     const loadData = useCallback(async () => {
+        // Reset immediately so switching project clears stale rows before
+        // the new response lands.
+        setPrompts([]);
+        setAgents([]);
+        setAgentAssignments(new Map());
+        if (!selectedProjectId) {
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const [promptData, agentData] = await Promise.all([
@@ -114,7 +123,7 @@ const PromptsPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadData(); }, [loadData]);
 

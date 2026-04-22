@@ -371,8 +371,8 @@ const SSOPage: React.FC = () => {
     const [configToDelete, setConfigToDelete] = useState<ManagedSSO | null>(null);
 
     const loadConfigs = useCallback(async () => {
-        if (!currentProject) {
-            setConfigs([]);
+        setConfigs([]);
+        if (!selectedProjectId) {
             setIsLoading(false);
             return;
         }
@@ -385,7 +385,7 @@ const SSOPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentProject]);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadConfigs(); }, [loadConfigs]);
 

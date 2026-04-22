@@ -1119,7 +1119,8 @@
     "back": "Indietro",
     "saving": "Salvataggio...",
     "adding": "Aggiunta...",
-    "working": "Elaborazione…"
+    "working": "Elaborazione…",
+    "readerCannotCreate": "I lettori non possono creare risorse — chiedi a un contributor o admin."
   },
   "theme": {
     "toggleToLight": "Passa alla modalità chiara",

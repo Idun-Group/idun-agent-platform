@@ -1119,7 +1119,8 @@
     "back": "Voltar",
     "saving": "A guardar...",
     "adding": "A adicionar...",
-    "working": "Processando…"
+    "working": "Processando…",
+    "readerCannotCreate": "Leitores não podem criar recursos — peça a um contributor ou admin."
   },
   "theme": {
     "toggleToLight": "Mudar para o modo claro",

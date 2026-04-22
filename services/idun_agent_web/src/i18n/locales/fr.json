@@ -1167,7 +1167,8 @@
     "back": "Retour",
     "saving": "Enregistrement...",
     "adding": "Ajout en cours...",
-    "working": "En cours…"
+    "working": "En cours…",
+    "readerCannotCreate": "Les lecteurs ne peuvent pas créer de ressources — demandez à un contributeur ou un admin."
   },
   "integrations": {
     "title": "Intégrations",

@@ -1120,7 +1120,8 @@
     "back": "Volver",
     "saving": "Guardando...",
     "adding": "Añadiendo...",
-    "working": "Procesando…"
+    "working": "Procesando…",
+    "readerCannotCreate": "Los lectores no pueden crear recursos — pide a un contributor o admin."
   },
   "integrations": {
     "title": "Integraciones",

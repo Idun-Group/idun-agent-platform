@@ -40,6 +40,7 @@ import DeleteConfirmModal from '../../components/applications/delete-confirm-mod
 import { useProject } from '../../hooks/use-project';
 import useWorkspace from '../../hooks/use-workspace';
 import NoProjectState from '../../components/general/no-project-state/component';
+import Tooltip from '../../components/general/tooltip/component';
 
 // ── Guardrail type metadata ──────────────────────────────────────────────────
 
@@ -1180,8 +1181,8 @@ const GuardrailsPage: React.FC = () => {
     }, [dropdownOpen]);
 
     const loadApps = useCallback(async () => {
-        if (!currentProject) {
-            setApps([]);
+        setApps([]);
+        if (!selectedProjectId) {
             setIsLoading(false);
             return;
         }
@@ -1194,7 +1195,7 @@ const GuardrailsPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentProject]);
+    }, [selectedProjectId]);
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
@@ -1298,35 +1299,43 @@ const GuardrailsPage: React.FC = () => {
                             <React.Fragment key={group}>
                                 <GroupLabel>{group}</GroupLabel>
                                 {types.map(([id, meta]) => (
-                                    <TypeBtn
+                                    <Tooltip
                                         key={id}
-                                        type="button"
-                                        $disabled={!!meta.comingSoon}
-                                        onClick={() => { if (!meta.comingSoon && canWrite) openCreate(id); }}
+                                        enabled={!canWrite && !meta.comingSoon}
+                                        message={t('common.readerCannotCreate', "Readers can't create resources, ask a contributor or admin.")}
+                                        placement="top"
+                                        style={{ display: 'block' }}
                                     >
-                                        <TypeIconBox><meta.icon size={15} /></TypeIconBox>
-                                        {id === 'BanList' ? 'Ban List' :
-                                         id === 'NSFWText' ? 'NSFW Text' :
-                                         id === 'ToxicLanguage' ? 'Toxic Language' :
-                                         id === 'GibberishText' ? 'Gibberish Text' :
-                                         id === 'CodeScanner' ? 'Code Scanner' :
-                                         id === 'DetectPII' ? 'Detect PII' :
-                                         id === 'DetectJailbreak' ? 'Detect Jailbreak' :
-                                         id === 'PromptInjection' ? 'Prompt Injection' :
-                                         id === 'ModelArmor' ? 'Model Armor' :
-                                         id === 'CustomLLM' ? 'Custom LLM' :
-                                         id === 'BiasCheck' ? 'Bias Check' :
-                                         id === 'CompetitionCheck' ? 'Competition Check' :
-                                         id === 'CorrectLanguage' ? 'Correct Language' :
-                                         id === 'RestrictTopic' ? 'Restrict Topic' :
-                                         id === 'RagHallucination' ? 'RAG Hallucination' :
-                                         id}
-                                        {meta.comingSoon ? (
-                                            <ComingSoonBadge>Soon</ComingSoonBadge>
-                                        ) : canWrite ? (
-                                            <AddIndicator>+</AddIndicator>
-                                        ) : null}
-                                    </TypeBtn>
+                                        <TypeBtn
+                                            type="button"
+                                            $disabled={!!meta.comingSoon}
+                                            onClick={() => { if (!meta.comingSoon && canWrite) openCreate(id); }}
+                                            style={{ width: '100%' }}
+                                        >
+                                            <TypeIconBox><meta.icon size={15} /></TypeIconBox>
+                                            {id === 'BanList' ? 'Ban List' :
+                                             id === 'NSFWText' ? 'NSFW Text' :
+                                             id === 'ToxicLanguage' ? 'Toxic Language' :
+                                             id === 'GibberishText' ? 'Gibberish Text' :
+                                             id === 'CodeScanner' ? 'Code Scanner' :
+                                             id === 'DetectPII' ? 'Detect PII' :
+                                             id === 'DetectJailbreak' ? 'Detect Jailbreak' :
+                                             id === 'PromptInjection' ? 'Prompt Injection' :
+                                             id === 'ModelArmor' ? 'Model Armor' :
+                                             id === 'CustomLLM' ? 'Custom LLM' :
+                                             id === 'BiasCheck' ? 'Bias Check' :
+                                             id === 'CompetitionCheck' ? 'Competition Check' :
+                                             id === 'CorrectLanguage' ? 'Correct Language' :
+                                             id === 'RestrictTopic' ? 'Restrict Topic' :
+                                             id === 'RagHallucination' ? 'RAG Hallucination' :
+                                             id}
+                                            {meta.comingSoon ? (
+                                                <ComingSoonBadge>Soon</ComingSoonBadge>
+                                            ) : canWrite ? (
+                                                <AddIndicator>+</AddIndicator>
+                                            ) : null}
+                                        </TypeBtn>
+                                    </Tooltip>
                                 ))}
                             </React.Fragment>
                         );

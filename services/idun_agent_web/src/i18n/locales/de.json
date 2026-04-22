@@ -1124,7 +1124,8 @@
     "back": "Zurück",
     "saving": "Speichern...",
     "adding": "Hinzufügen...",
-    "working": "Wird verarbeitet…"
+    "working": "Wird verarbeitet…",
+    "readerCannotCreate": "Leser können keine Ressourcen anlegen — bitte einen Contributor oder Admin fragen."
   },
   "integrations": {
     "title": "Integrationen",
