@@ -42,7 +42,7 @@ const ToastStyles = createGlobalStyle`
     border-radius: 10px;
     padding: 0;
     margin-bottom: 10px;
-    min-height: unset;
+    min-height: 64px;
     overflow: hidden;
     cursor: default;
     box-shadow:
@@ -71,10 +71,10 @@ const ToastStyles = createGlobalStyle`
   /* ─── Body ───────────────────────────────────────────────────── */
   .Toastify__toast-body {
     margin: 0;
-    padding: 13px 40px 13px 18px; /* right padding reserves space for the abs close button */
+    padding: 18px 44px 18px 20px; /* right padding reserves space for the abs close button */
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     font-size: 13px;
     font-weight: 500;
     line-height: 1.5;
