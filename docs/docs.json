@@ -118,7 +118,7 @@
           {
             "group": "Advanced",
             "icon": "gear",
-            "pages": ["configuration", "prompts", "cli/overview", "faq"]
+            "pages": ["configuration", "prompts", "cli/overview", "chat-ui", "faq"]
           }
         ]
       },
