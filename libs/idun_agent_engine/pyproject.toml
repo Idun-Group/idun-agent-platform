@@ -121,6 +121,11 @@ include = [
     "src/idun_platform_cli",
 ]
 
+# The built chat UI is carried through the sdist so the wheel build (which
+# runs from the extracted sdist) can find it.
+[tool.hatch.build.targets.sdist.force-include]
+"web/out" = "web/out"
+
 [tool.hatch.build.targets.wheel]
 include = [
   "src/idun_agent_engine",
@@ -131,6 +136,14 @@ include = [
 [tool.hatch.build.targets.wheel.sources]
 "src/idun_agent_engine" = "idun_agent_engine"
 "src/idun_platform_cli" = "idun_platform_cli"
+
+# CI runs `pnpm install && pnpm build` inside web/, producing web/out/.
+# Hatch force-includes that directory into the wheel at
+# idun_agent_engine/_web, where the app factory finds it via
+# importlib.resources. Editable installs that skip the build produce a
+# wheel without the UI; operators can still pass --ui-dir to the CLI.
+[tool.hatch.build.targets.wheel.force-include]
+"web/out" = "idun_agent_engine/_web"
 
 [build-system]
 requires = ["hatchling"]

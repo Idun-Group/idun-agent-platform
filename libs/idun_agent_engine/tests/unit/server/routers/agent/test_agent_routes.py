@@ -307,7 +307,7 @@ class TestBaseRoutes:
         app = create_app(engine_config=config)
 
         with TestClient(app) as client:
-            response = client.get("/")
+            response = client.get("/api")
 
             assert response.status_code == 200
             data = response.json()

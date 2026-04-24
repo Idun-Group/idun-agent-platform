@@ -25,12 +25,18 @@ class ServerSource(StrEnum):
 class Serve:
     """Helper class to run the server."""
 
-    def __init__(self, source: ServerSource, path: str | None = None) -> None:
+    def __init__(
+        self,
+        source: ServerSource,
+        path: str | None = None,
+        ui_dir: str | None = None,
+    ) -> None:
         setup_logging()
         print_banner()
 
         self._source: ServerSource = source
         self._path: str | None = path or None
+        self._ui_dir: str | None = ui_dir or None
 
         if self._source == ServerSource.MANAGER and (
             not os.getenv("IDUN_AGENT_API_KEY") or not os.getenv("IDUN_MANAGER_HOST")
@@ -81,7 +87,10 @@ class Serve:
     def serve(self) -> None:
         """Run the server using the idun engine."""
         try:
-            app = create_app(engine_config=self._config)
+            app = create_app(
+                engine_config=self._config,
+                ui_dir_override=self._ui_dir,
+            )
             run_server(app, port=self._config.server.api.port, reload=False)  # pyright: ignore
         except Exception as e:
             raise ValueError(f"[ERROR]: Cannot start the agent server: {e}") from e
@@ -90,15 +99,24 @@ class Serve:
 @click.command("serve")
 @click.option("--source", required=True)
 @click.option("--path")
+@click.option(
+    "--ui-dir",
+    "ui_dir",
+    default=None,
+    help=(
+        "Path to a prebuilt static UI directory (must contain index.html). "
+        "Overrides the default UI bundled with the engine."
+    ),
+)
 @track_command("agent serve")
-def serve_command(source: str, path: str | None):
+def serve_command(source: str, path: str | None, ui_dir: str | None):
     """Reads a config and exposes it's agent as an API. Config is either fetched from the manager, or from a path.
 
     Note: Fetching from the manager requires env vars: IDUN_AGENT_API_KEY and IDUN_MANAGER_HOST.
     """
     match source:
         case ServerSource.MANAGER:
-            s = Serve(source=source)
+            s = Serve(source=source, ui_dir=ui_dir)
             s.serve()
 
         case ServerSource.FILE:
@@ -107,7 +125,7 @@ def serve_command(source: str, path: str | None):
                     "No config path provided. Specify the path of your config.yaml"
                 )
                 sys.exit(1)
-            s = Serve(source=source, path=path)
+            s = Serve(source=source, path=path, ui_dir=ui_dir)
             s.serve()
         case _:
             logger.error(f"Argument {source} not recognized.")
