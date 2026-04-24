@@ -147,6 +147,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.next/
+*.tsbuildinfo
+
+# Engine bundled chat UI build output (keep the directory via .gitkeep so
+# hatch's force-include has a target during editable installs; CI overwrites
+# with the real Next.js export before `uv build`).
+libs/idun_agent_engine/web/out/*
+!libs/idun_agent_engine/web/out/.gitkeep
+libs/idun_agent_engine/src/idun_agent_engine/_web/
 
 # Spyder project settings
 .spyderproject
