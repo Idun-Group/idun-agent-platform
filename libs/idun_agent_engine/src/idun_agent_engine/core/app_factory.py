@@ -5,11 +5,15 @@ application with their agent integrated. It handles all the complexity of
 setting up routes, dependencies, and lifecycle management behind the scenes.
 """
 
+import importlib.resources
+import logging
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -20,11 +24,109 @@ from ..server.routers.base import base_router
 from .config_builder import ConfigBuilder
 from .engine_config import EngineConfig
 
+logger = logging.getLogger(__name__)
+
+_BUNDLED_UI_RESOURCE = "_web"
+_INDEX_FILE = "index.html"
+
+
+def _find_bundled_ui() -> Path | None:
+    """Return the path to the bundled chat UI if present in this install.
+
+    CI pre-builds the Next.js bundle and force-includes it at
+    ``idun_agent_engine/_web`` inside the wheel. Editable source installs
+    skip this step, so the directory is absent. Any failure to resolve the
+    resource is treated as "no bundle" and we fall back to the JSON landing.
+    """
+    try:
+        resource = importlib.resources.files("idun_agent_engine") / _BUNDLED_UI_RESOURCE
+    except (ModuleNotFoundError, FileNotFoundError, TypeError) as exc:
+        logger.debug("Bundled UI resource not found: %s", exc)
+        return None
+
+    try:
+        path = Path(str(resource))
+    except (TypeError, ValueError) as exc:
+        logger.debug("Bundled UI resource not a filesystem path: %s", exc)
+        return None
+
+    if not path.is_dir():
+        logger.debug("Bundled UI path is not a directory: %s", path)
+        return None
+    if not (path / _INDEX_FILE).is_file():
+        logger.debug("Bundled UI path missing %s: %s", _INDEX_FILE, path)
+        return None
+
+    return path
+
+
+def _resolve_ui_dir(ui_dir_override: str | None) -> Path | None:
+    """Pick the UI directory to serve: explicit override wins, else bundled, else None."""
+    if ui_dir_override is not None:
+        raw = ui_dir_override.strip()
+        if not raw:
+            raise ValueError("UI dir override is empty")
+        override = Path(raw).expanduser().resolve()
+        if not override.exists():
+            raise ValueError(f"UI dir does not exist: {override}")
+        if not override.is_dir():
+            raise ValueError(f"UI dir is not a directory: {override}")
+        if not (override / _INDEX_FILE).is_file():
+            hint = ""
+            if (override / "package.json").is_file() and (override / "out").is_dir():
+                hint = (
+                    f" (hint: {override} looks like a Next.js source dir; "
+                    f"try {override / 'out'} after running `pnpm build`)"
+                )
+            raise ValueError(
+                f"UI dir missing {_INDEX_FILE}: {override}{hint}"
+            )
+        logger.info("Using UI override at %s", override)
+        return override
+
+    bundled = _find_bundled_ui()
+    if bundled is None:
+        logger.info("No UI bundle found; / will return the JSON landing")
+    else:
+        logger.info("Using bundled UI at %s", bundled)
+    return bundled
+
+
+def _register_root(app: FastAPI, ui_dir: Path | None) -> None:
+    """Own the / route. Mount the UI when resolved, else serve JSON landing.
+
+    Must run after all explicit routers are attached so /docs, /health,
+    /agent/*, /integrations/* and friends win over the mount's catch-all.
+    """
+    if ui_dir is not None:
+        app.mount(
+            "/",
+            StaticFiles(directory=str(ui_dir), html=True),
+            name="ui",
+        )
+        logger.info("Chat UI mounted at / (source: %s)", ui_dir)
+        return
+
+    @app.get("/", include_in_schema=False)
+    def _root_fallback() -> dict[str, Any]:
+        return {
+            "message": "Welcome to your Idun Agent Engine server!",
+            "docs": "/docs",
+            "health": "/health",
+            "agent_endpoints": {
+                "run": "/agent/run",
+                "capabilities": "/agent/capabilities",
+            },
+        }
+
+    logger.info("No chat UI configured; / returns the JSON landing")
+
 
 def create_app(
     config_path: str | None = None,
     config_dict: dict[str, Any] | None = None,
     engine_config: EngineConfig | None = None,
+    ui_dir_override: str | None = None,
 ) -> FastAPI:
     """Create a FastAPI application with an integrated agent.
 
@@ -38,11 +140,16 @@ def create_app(
         config_dict: Optional dictionary containing configuration. If provided,
             takes precedence over config_path. Useful for programmatic configuration.
         engine_config: Pre-validated EngineConfig instance (from ConfigBuilder.build()).
-        Takes precedence over other options.
+            Takes precedence over other options.
+        ui_dir_override: Optional path to a prebuilt static UI directory (containing
+            index.html). Overrides the bundled default UI. Resolved against the
+            current working directory. Raises ValueError at startup if the path is
+            missing or lacks an index.html.
 
     Returns:
         FastAPI: A configured FastAPI application ready to serve your agent.
     """
+    ui_dir = _resolve_ui_dir(ui_dir_override)
     # Resolve configuration from various sources using ConfigBuilder's umbrella function
     validated_config = ConfigBuilder.resolve_config(
         config_path=config_path, config_dict=config_dict, engine_config=engine_config
@@ -123,5 +230,9 @@ def create_app(
                     )
                 case _:
                     pass
+
+    # Root owner registered last so /docs, /health, /agent/*, /integrations/*
+    # win over the static mount's catch-all.
+    _register_root(app, ui_dir)
 
     return app

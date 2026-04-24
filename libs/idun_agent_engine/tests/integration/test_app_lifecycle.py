@@ -50,7 +50,7 @@ class TestAppStartup:
         )
 
         with TestClient(app) as client:
-            response = client.get("/")
+            response = client.get("/api")
             assert response.status_code == 200
             data = response.json()
             assert "agent_endpoints" in data

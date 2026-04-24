@@ -84,15 +84,36 @@ async def reload_config(request: Request, body: ReloadRequest | None = None):
         )
 
 
-# Add a root endpoint with helpful information
-@base_router.get("/")
-def read_root():
-    """Root endpoint with basic information about the service."""
+# Landing JSON is exposed at /api so the static UI (mounted in app_factory) can own /.
+@base_router.get("/api")
+def read_root(request: Request):
+    """Landing endpoint with basic information about the service."""
+    agent = getattr(request.app.state, "agent", None)
+    configuration = getattr(agent, "configuration", None)
+    agent_name = getattr(configuration, "name", None)
     return {
         "message": "Welcome to your Idun Agent Engine server!",
+        "agentName": agent_name,
         "docs": "/docs",
         "health": "/health",
-        "agent_endpoints": {"invoke": "/agent/invoke", "stream": "/agent/stream"},
+        "agent_endpoints": {"run": "/agent/run", "capabilities": "/agent/capabilities"},
+    }
+
+
+@base_router.get("/auth/config")
+def auth_config(request: Request) -> dict:
+    """Return SSO metadata the UI needs before it has a token."""
+    cfg = getattr(request.app.state, "engine_config", None)
+    sso = getattr(cfg, "sso", None) if cfg is not None else None
+    if sso is None or not getattr(sso, "enabled", False):
+        return {"sso": {"enabled": False}}
+    return {
+        "sso": {
+            "enabled": True,
+            "issuer": sso.issuer,
+            "clientId": sso.client_id,
+            "audience": sso.audience or sso.client_id,
+        }
     }
 
 

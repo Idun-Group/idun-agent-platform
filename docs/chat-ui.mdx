@@ -1,0 +1,85 @@
+---
+title: "Chat UI"
+description: "The engine ships a browser chat UI at /. It loads automatically when you run idun agent serve, and you can point it at a custom build with --ui-dir."
+keywords: ["chat UI", "idun agent serve", "ui-dir", "AG-UI", "auth config", "self-hosted"]
+---
+
+Every install of `idun-agent-engine` ships a browser chat UI served at the engine's root path. After you install the package and start an agent, open the engine URL in a browser and you can talk to your agent without any extra frontend work.
+
+## Using the default UI
+
+Install and run the engine against your config:
+
+```bash
+pip install idun-agent-engine
+idun agent serve --source file --path config.yaml
+```
+
+Open `http://localhost:<port>/` (the port comes from `server.api.port`, default `8000`). The UI reads the agent name from `/api` and greets you with it.
+
+<Frame caption="The welcome screen when the UI first loads">
+  <img src="/images/chat-ui/chat-ui-welcome.png" alt="Chat UI welcome screen showing 'Hi, I'm Idun UI Demo Agent' with the Idun mark above and a message input below" />
+</Frame>
+
+While the agent runs, the UI displays each reasoning step and any tool calls as they arrive.
+
+<Frame caption="Tool call in flight during reasoning">
+  <img src="/images/chat-ui/chat-ui-reasoning.png" alt="Chat UI showing a user message and an inline search_idun_platform tool call card while the agent reasons" />
+</Frame>
+
+When the run finishes, the UI collapses the reasoning steps into a single expandable panel and renders the agent's markdown response below.
+
+<Frame caption="Final response with the reasoning panel expanded">
+  <img src="/images/chat-ui/chat-ui-response.png" alt="Chat UI showing the agent's final markdown response and an expanded reasoning panel listing two actions" />
+</Frame>
+
+## AG-UI compatibility
+
+The UI is a reference implementation of the [AG-UI protocol](https://github.com/ag-ui-protocol/ag-ui). It subscribes to the engine's `/agent/run` SSE stream and renders each event it receives (`TEXT_MESSAGE_CONTENT`, `TOOL_CALL_START`, `TOOL_CALL_ARGS`, `TOOL_CALL_END`, `STEP_STARTED`, and others).
+
+Any AG-UI compliant agent served by the engine works with this UI without additional wiring. That also means any AG-UI client (CopilotKit, a custom React app, a terminal client) can talk to the same engine endpoint.
+
+## Replacing the default UI
+
+If you ship your own frontend build, point `--ui-dir` at the directory containing its `index.html`:
+
+```bash
+idun agent serve --source file --path config.yaml \
+                --ui-dir ./path/to/your/web/build
+```
+
+The engine resolves `--ui-dir` against the current working directory. Startup fails with a clear error if the path does not exist or has no `index.html`. Any static directory with an `index.html` entry works.
+
+## Resolution order
+
+The engine picks which UI to serve at `/` in this order:
+
+1. `--ui-dir PATH` if you passed it on the command line.
+2. The UI bundled inside the installed wheel, if present.
+3. A JSON landing at `/` (typically only in editable source installs where no wheel UI was built).
+
+The JSON landing is always available at `/api` regardless of which UI is mounted. Use it to confirm the engine is running when the page at `/` is not what you expect.
+
+## Endpoints the UI calls
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api` | Reads the configured agent name for the welcome screen. |
+| `GET /auth/config` | Discovers whether SSO is enabled and which OIDC provider to use, before the user has a token. |
+| `POST /agent/run` | Streams AG-UI events for each user message. |
+
+`/agent/run` enforces auth when SSO is configured. `/api` and `/auth/config` are public by design so the browser can bootstrap before login.
+
+## Building from source
+
+If you install the engine in editable mode from a clone, the wheel step is skipped and no UI is bundled by default. Build the UI locally once:
+
+```bash
+cd libs/idun_agent_engine/web
+pnpm install
+pnpm build
+```
+
+`pnpm build` stages the output into `libs/idun_agent_engine/src/idun_agent_engine/_web/`, so the next `idun agent serve` finds it at the same location the wheel would use. No `--ui-dir` needed.
+
+The UI source lives under `libs/idun_agent_engine/web/` (Next.js 14 static export). CI runs this same build before `uv build` so the published wheel ships with the UI inside.

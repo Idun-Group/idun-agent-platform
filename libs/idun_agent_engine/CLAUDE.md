@@ -218,7 +218,9 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 
 | Endpoint | Method | Purpose |
 |---|---|---|
-| `/` | GET | Service info |
+| `/` | GET | Serves the bundled chat UI when present, else JSON landing. See "Chat UI" below. |
+| `/api` | GET | JSON landing with basic service info. Always available. |
+| `/auth/config` | GET | Public SSO discovery. Returns `{sso: {enabled, issuer, clientId, audience}}` so the UI can bootstrap an OIDC flow before it has a token. Unauthenticated. Never exposes `allowedDomains` / `allowedEmails`. |
 | `/health` | GET | Health check |
 | `/docs` | GET | OpenAPI docs |
 | `/reload` | POST | Hot-reload agent config without restarting the server |
@@ -232,6 +234,33 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 | `/integrations/discord/webhook` | POST | Discord Interactions Endpoint (Ed25519 verified, handles PING + slash commands) |
 
 `/reload` is not currently protected by the SSO dependency used on `/agent/*` routes. Because engine CORS remains wildcard, any browser origin that can reach the agent can call `/reload` cross-origin as well.
+
+## Chat UI
+
+The engine serves a prebuilt static chat UI at `/`. Resolution priority:
+
+1. `--ui-dir PATH` CLI flag on `idun agent serve` (path resolved against CWD).
+2. Bundled UI: the Next.js export built from `libs/idun_agent_engine/web/`, copied into the wheel at `idun_agent_engine/_web/` via `[tool.hatch.build.targets.wheel.force-include]`.
+3. JSON landing (the `/api` body) returned at `/` when neither of the above resolves.
+
+The source lives at `libs/idun_agent_engine/web/` (Next.js 14 + React 18 + Tailwind, `output: "export"`). CI builds it before `uv build`:
+
+```bash
+cd libs/idun_agent_engine/web && pnpm install && pnpm build   # produces web/out/
+cd .. && uv build                                             # sdist + wheel include _web/
+```
+
+Editable/source installs don't build wheels, so the runtime bundle needs to land in the source tree. `pnpm build` runs a `postbuild` script that stages `web/out/` into `src/idun_agent_engine/_web/`. After running it once, editable installs serve the UI at `/` with no extra flags. The staged directory is gitignored.
+
+`web/out/.gitkeep` is committed so hatch's force-include has a target during fresh sdist builds before anyone has run `pnpm build`.
+
+`--ui-dir PATH` remains available to point at any other build:
+
+```bash
+idun agent serve --source file --path ./config.yaml --ui-dir ./my/other/build
+```
+
+Invalid `--ui-dir` values (missing path, missing `index.html`) raise `ValueError` at startup. UI directory changes via `/reload` are not picked up because mounts are bound at app-create time; a full restart is required.
 
 ## Guardrails
 
@@ -288,6 +317,9 @@ idun agent serve --source file --path config.yaml
 
 # Serve from the manager (requires env vars: IDUN_AGENT_API_KEY and IDUN_MANAGER_HOST)
 idun agent serve --source manager
+
+# Override the bundled chat UI with a custom build
+idun agent serve --source file --path config.yaml --ui-dir ./my/web/out
 
 # Interactive TUI for creating config + launching server
 idun init

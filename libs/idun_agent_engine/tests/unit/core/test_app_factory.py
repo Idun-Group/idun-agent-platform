@@ -130,7 +130,7 @@ class TestAppFactoryRoutes:
         assert resp.status_code == 200
         assert resp.json().get("status") == "ok"
 
-        resp = client.get("/")
+        resp = client.get("/api")
         assert resp.status_code == 200
         assert "agent_endpoints" in resp.json()
 
@@ -204,3 +204,147 @@ class TestAppFactoryCors:
             == "https://evil.example.com"
         )
         assert response.headers.get("access-control-allow-private-network") == "true"
+
+
+def _minimal_config(tmp_path):
+    return {
+        "server": {"api": {"port": 0}},
+        "agent": {
+            "type": "LANGGRAPH",
+            "config": {
+                "name": "Test Agent",
+                "graph_definition": str(tmp_path / "agent.py:graph"),
+            },
+        },
+    }
+
+
+@pytest.fixture
+def ui_bundle(tmp_path):
+    out = tmp_path / "bundle"
+    out.mkdir()
+    (out / "index.html").write_text(
+        "<!doctype html><html><body>hello</body></html>"
+    )
+    return out
+
+
+@pytest.mark.unit
+class TestAppFactoryUI:
+    """UI mount behavior at /: bundled default, --ui-dir override, JSON fallback."""
+
+    def test_no_override_no_bundle_returns_json_welcome(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        """No bundled UI and no override -> GET / returns the JSON welcome."""
+        import idun_agent_engine.core.app_factory as factory
+
+        monkeypatch.setattr(factory, "_find_bundled_ui", lambda: None)
+
+        app = create_app(config_dict=_minimal_config(tmp_path))
+        client = TestClient(app)
+
+        resp = client.get("/")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert "agent_endpoints" in body
+
+    def test_bundled_default_serves_index_html(
+        self, tmp_path, monkeypatch, ui_bundle
+    ) -> None:
+        """Bundled UI detected -> GET / returns its index.html."""
+        import idun_agent_engine.core.app_factory as factory
+
+        monkeypatch.setattr(factory, "_find_bundled_ui", lambda: ui_bundle)
+
+        app = create_app(config_dict=_minimal_config(tmp_path))
+        client = TestClient(app)
+
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert resp.headers["content-type"].startswith("text/html")
+        assert "hello" in resp.text
+
+    def test_override_beats_bundled_default(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        """ui_dir_override wins over the bundled default."""
+        import idun_agent_engine.core.app_factory as factory
+
+        bundle = tmp_path / "bundle"
+        bundle.mkdir()
+        (bundle / "index.html").write_text(
+            "<!doctype html><html><body>bundled</body></html>"
+        )
+        override = tmp_path / "override"
+        override.mkdir()
+        (override / "index.html").write_text(
+            "<!doctype html><html><body>override</body></html>"
+        )
+
+        monkeypatch.setattr(factory, "_find_bundled_ui", lambda: bundle)
+
+        app = create_app(
+            config_dict=_minimal_config(tmp_path),
+            ui_dir_override=str(override),
+        )
+        client = TestClient(app)
+
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert "override" in resp.text
+        assert "bundled" not in resp.text
+
+    def test_override_missing_path_raises(self, tmp_path, monkeypatch) -> None:
+        """Non-existent ui_dir_override path -> ValueError at create_app."""
+        import idun_agent_engine.core.app_factory as factory
+
+        monkeypatch.setattr(factory, "_find_bundled_ui", lambda: None)
+
+        with pytest.raises(ValueError, match="does not exist"):
+            create_app(
+                config_dict=_minimal_config(tmp_path),
+                ui_dir_override=str(tmp_path / "does-not-exist"),
+            )
+
+    def test_override_missing_index_html_raises(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        """ui_dir_override without an index.html -> ValueError at create_app."""
+        import idun_agent_engine.core.app_factory as factory
+
+        monkeypatch.setattr(factory, "_find_bundled_ui", lambda: None)
+        empty_dir = tmp_path / "empty"
+        empty_dir.mkdir()
+
+        with pytest.raises(ValueError, match="index.html"):
+            create_app(
+                config_dict=_minimal_config(tmp_path),
+                ui_dir_override=str(empty_dir),
+            )
+
+    def test_explicit_routes_win_over_ui_mount(
+        self, tmp_path, monkeypatch, ui_bundle
+    ) -> None:
+        """With UI mounted, explicit API routes still respond (not shadowed)."""
+        import idun_agent_engine.core.app_factory as factory
+
+        monkeypatch.setattr(factory, "_find_bundled_ui", lambda: ui_bundle)
+
+        app = create_app(config_dict=_minimal_config(tmp_path))
+        client = TestClient(app)
+
+        resp = client.get("/health")
+        assert resp.status_code == 200
+        assert resp.json().get("status") == "ok"
+
+        resp = client.get("/docs")
+        assert resp.status_code == 200
+        assert "text/html" in resp.headers["content-type"]
+
+        # /agent/capabilities is registered via app.include_router. The mount
+        # at / must not shadow it. Without lifespan (no agent init) the route
+        # returns an error, but it is NOT the UI's index.html.
+        resp = client.get("/agent/capabilities")
+        assert resp.status_code != 404
+        assert "hello" not in resp.text

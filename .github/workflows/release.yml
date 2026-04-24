@@ -83,6 +83,24 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: libs/idun_agent_engine/web/pnpm-lock.yaml
+
+      - name: Build chat UI
+        working-directory: libs/idun_agent_engine/web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
       - name: Extract version from tag
         id: version
         run: |
