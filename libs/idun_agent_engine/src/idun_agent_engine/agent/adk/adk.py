@@ -49,6 +49,7 @@ class AdkAgent(agent_base.BaseAgent):
 
     def __init__(self):
         """Initialize an unconfigured AdkAgent with default state."""
+        super().__init__()
         self._id = str(uuid.uuid4())
         self._agent_type = "ADK"
         self._agent_instance: Any = None

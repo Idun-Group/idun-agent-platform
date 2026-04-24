@@ -36,6 +36,7 @@ class HaystackAgent(BaseAgent):
 
     def __init__(self):
         """Initialize an unconfigured haystack agent with default state."""
+        super().__init__()
         self._id: str = str(uuid.uuid4())
         self._agent_type: str = "haystack"
         self._agent_instance: Any = None

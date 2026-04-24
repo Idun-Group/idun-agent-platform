@@ -13,6 +13,11 @@ from idun_agent_schema.engine.agent import BaseAgentConfig
 from idun_agent_schema.engine.capabilities import AgentCapabilities
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 
+from idun_agent_engine.agent.observers import (
+    RunEventObserver,
+    RunEventObserverRegistry,
+)
+
 
 class BaseAgent[ConfigType: BaseAgentConfig](ABC):
     """Abstract base for agents pluggable into the Idun Agent Engine.
@@ -21,6 +26,18 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
     """
 
     _configuration: ConfigType
+
+    def __init__(self) -> None:
+        """Initialize shared agent state.
+
+        Subclasses must call ``super().__init__()`` to populate the
+        run-event observer registry.
+        """
+        self.run_event_observers: RunEventObserverRegistry = RunEventObserverRegistry()
+
+    def register_run_event_observer(self, observer: RunEventObserver) -> None:
+        """Register an async observer for run events."""
+        self.run_event_observers.register(observer)
 
     @property
     @abstractmethod

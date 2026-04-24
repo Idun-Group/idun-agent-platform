@@ -63,6 +63,7 @@ class LanggraphAgent(agent_base.BaseAgent):
 
     def __init__(self):
         """Initialize an unconfigured LanggraphAgent with default state."""
+        super().__init__()
         self._id = str(uuid.uuid4())
         self._agent_type = "LangGraph"
         self._input_schema: Any = None
