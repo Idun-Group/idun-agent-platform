@@ -64,7 +64,6 @@ from idun_agent_standalone.db.base import (
 from idun_agent_standalone.db.base import (
     create_sessionmaker as _create_sessionmaker,
 )
-from idun_agent_standalone.db.migrate import upgrade_head
 from idun_agent_standalone.errors import install_exception_handlers
 from idun_agent_standalone.middleware import install_request_id_middleware
 from idun_agent_standalone.reload import ReloadOutcome, orchestrate_reload
@@ -133,19 +132,31 @@ def _make_reload_orchestrator(app: FastAPI):
 
 
 def _resolve_ui_dir(settings: StandaloneSettings) -> Path | None:
+    """Return a UI directory iff it actually contains a built SPA.
+
+    Presence of ``index.html`` is the signal — the bundled ``static/``
+    directory is shipped with only a ``.gitkeep`` placeholder until the
+    UI build pipeline (Phase 14) drops a real export there.
+    """
     if settings.ui_dir:
         p = Path(settings.ui_dir)
-        if p.is_dir():
+        if p.is_dir() and (p / "index.html").is_file():
             return p
     bundled = Path(__file__).parent / "static"
-    if bundled.is_dir() and any(bundled.iterdir()):
+    if bundled.is_dir() and (bundled / "index.html").is_file():
         return bundled
     return None
 
 
 async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
+    """Build the production FastAPI app.
+
+    NOTE: ``upgrade_head()`` is NOT called here because Alembic's env.py
+    spins up its own ``asyncio.run`` and would clash with the loop already
+    running this coroutine. Callers must run migrations in sync context
+    before invoking this helper. ``runtime.run_server`` does so.
+    """
     settings.validate_for_runtime()
-    upgrade_head()
 
     db_engine = _create_db_engine(settings.database_url)
     sessionmaker = _create_sessionmaker(db_engine)

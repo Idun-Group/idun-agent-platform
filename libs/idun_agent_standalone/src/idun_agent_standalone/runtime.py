@@ -86,6 +86,13 @@ def run_server(
 
     settings = StandaloneSettings()
 
+    # Run Alembic migrations in sync context BEFORE entering the asyncio
+    # loop — the env.py uses ``asyncio.run`` internally and cannot be
+    # called from inside an already-running loop.
+    from idun_agent_standalone.db.migrate import upgrade_head
+
+    upgrade_head()
+
     async def _build():
         return await create_standalone_app(settings)
 
