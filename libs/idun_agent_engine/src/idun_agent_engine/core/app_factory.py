@@ -25,6 +25,8 @@ def create_app(
     config_path: str | None = None,
     config_dict: dict[str, Any] | None = None,
     engine_config: EngineConfig | None = None,
+    *,
+    reload_auth: Callable[..., Any] | None = None,
 ) -> FastAPI:
     """Create a FastAPI application with an integrated agent.
 
@@ -39,6 +41,11 @@ def create_app(
             takes precedence over config_path. Useful for programmatic configuration.
         engine_config: Pre-validated EngineConfig instance (from ConfigBuilder.build()).
         Takes precedence over other options.
+        reload_auth: Optional callable invoked as a FastAPI dependency on
+            ``POST /reload``. When ``None`` (default), the route remains
+            unprotected for backwards compatibility. The callable must raise
+            :class:`fastapi.HTTPException` to deny a request; both sync and
+            async callables are supported.
 
     Returns:
         FastAPI: A configured FastAPI application ready to serve your agent.
@@ -91,6 +98,12 @@ def create_app(
 
     # Store configuration in app state for lifespan to use
     app.state.engine_config = validated_config
+
+    # Store the optional /reload auth dependency on app state so the
+    # `_reload_auth_dep` resolver in `routers.base` can pick it up. Always
+    # set it (None by default) so `getattr(..., "reload_auth", None)` is
+    # well-defined regardless of how the app is constructed.
+    app.state.reload_auth = reload_auth
 
     # Include the routers
     app.include_router(agent_router, prefix="/agent", tags=["Agent"])

@@ -1,9 +1,10 @@
 """Base routes for service health and landing info."""
 
+import inspect
 import logging
 import os
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from ..._version import __version__
@@ -19,6 +20,24 @@ class ReloadRequest(BaseModel):
     """Request body for reload endpoint."""
 
     path: str | None = None
+
+
+async def _reload_auth_dep(request: Request) -> None:
+    """Resolve the optional /reload auth dependency from app state.
+
+    When ``app.state.reload_auth`` is ``None`` (the default), this is a
+    no-op so ``/reload`` remains unprotected for backwards compatibility.
+    Otherwise the callable is invoked; it is expected to raise
+    :class:`fastapi.HTTPException` on rejection. Both sync and async
+    callables are supported.
+    """
+    auth = getattr(request.app.state, "reload_auth", None)
+    if auth is None:
+        return None
+    result = auth()
+    if inspect.isawaitable(result):
+        await result
+    return None
 
 
 @base_router.get("/health")
@@ -38,10 +57,18 @@ def health_check(request: Request):
 
 
 @base_router.post("/reload")
-async def reload_config(request: Request, body: ReloadRequest | None = None):
-    # TODO: This endpoint is not SSO-protected. Add require_auth dependency
-    # to prevent unauthorized config reloads. See /agent/* routes for pattern.
-    """Reload the agent configuration from the manager or a file."""
+async def reload_config(
+    request: Request,
+    body: ReloadRequest | None = None,
+    _auth: None = Depends(_reload_auth_dep),
+):
+    """Reload the agent configuration from the manager or a file.
+
+    The optional ``_auth`` dependency consults
+    ``app.state.reload_auth`` (configured via ``create_app(reload_auth=...)``)
+    and, if set, invokes it. The configured callable is responsible for
+    raising :class:`fastapi.HTTPException` to deny the request.
+    """
     try:
         if body and body.path:
             logger.info(f"🔄 Reloading configuration from file: {body.path}...")
