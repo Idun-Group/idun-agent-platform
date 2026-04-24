@@ -16,6 +16,7 @@ from idun_agent_schema.engine.guardrails import Guardrail
 from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
+from idun_agent_engine.agent.observers import RunContext
 from idun_agent_engine.server.auth import get_verified_user
 from idun_agent_engine.server.dependencies import (
     get_agent,
@@ -102,6 +103,13 @@ async def run(
     async def event_generator():
         try:
             async for event in agent.run(input_data):
+                await agent.run_event_observers.dispatch(
+                    event,
+                    RunContext(
+                        thread_id=input_data.thread_id,
+                        run_id=input_data.run_id,
+                    ),
+                )
                 try:
                     yield encoder.encode(event)
                 except Exception as encoding_error:
