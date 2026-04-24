@@ -36,6 +36,7 @@ from idun_agent_schema.engine.adk import (
     AdkVertexAiSessionConfig,
 )
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.skills import SkillConfig
 from pydantic import BaseModel
 
 from idun_agent_engine import observability
@@ -129,9 +130,11 @@ class AdkAgent(agent_base.BaseAgent):
         self,
         config: AdkAgentConfig,
         observability_config: list[ObservabilityConfig] | None = None,
+        skills_config: list[SkillConfig] | None = None,
     ) -> None:
         """Initialize the ADK agent asynchronously."""
         self._configuration = AdkAgentConfig.model_validate(config)
+        self._skills_config = skills_config
 
         self._name = self._configuration.app_name or "Unnamed ADK Agent"
         self._infos["name"] = self._name
@@ -238,6 +241,10 @@ class AdkAgent(agent_base.BaseAgent):
         # Load the agent instance
         agent = self._load_agent(self._configuration.agent)
 
+        # Inject skills toolset if skills are configured
+        if self._skills_config:
+            agent = self._inject_skills(agent, self._skills_config)
+
         self._agent_instance = App(root_agent=agent, name=self._name)
 
         # Initialize CopilotKit/AG-UI Agent Wrapper
@@ -326,6 +333,65 @@ class AdkAgent(agent_base.BaseAgent):
             raise ValueError(
                 f"Failed to load agent from {agent_definition}: {e}"
             ) from e
+
+    def _inject_skills(self, agent: Any, skills_config: list[SkillConfig]) -> Any:
+        """Inject skills from config into the agent's tools list.
+
+        Converts SkillConfig Pydantic models to ADK's native Skill objects
+        and wraps them in a SkillToolset. The toolset is appended to the
+        agent's existing tools list.
+
+        Args:
+            agent: The loaded ADK agent instance.
+            skills_config: List of skill configurations from the engine config.
+
+        Returns:
+            The agent instance with skills injected into its tools.
+        """
+        try:
+            from google.adk.skills import models as skill_models
+            from google.adk.tools import skill_toolset
+        except ImportError:
+            logger.warning(
+                "google-adk[skills] not installed. Skills from config will be ignored. "
+                "Install google-adk >= 1.25.0 for skills support."
+            )
+            return agent
+
+        adk_skills = []
+        for sc in skills_config:
+            # Build L3 resources if provided
+            resources = None
+            if sc.resources and (
+                sc.resources.references or sc.resources.assets or sc.resources.scripts
+            ):
+                resources = skill_models.Resources(
+                    references=sc.resources.references or {},
+                    assets=sc.resources.assets or {},
+                )
+
+            adk_skill = skill_models.Skill(
+                frontmatter=skill_models.Frontmatter(
+                    name=sc.name,
+                    description=sc.description,
+                    version=sc.version,
+                ),
+                instructions=sc.instructions,
+                resources=resources,
+            )
+            adk_skills.append(adk_skill)
+            logger.info(f"Loaded skill '{sc.name}' v{sc.version}")
+
+        if adk_skills:
+            toolset = skill_toolset.SkillToolset(skills=adk_skills)
+            # Append to existing tools
+            existing_tools = getattr(agent, "tools", None) or []
+            agent.tools = [*existing_tools, toolset]
+            logger.info(
+                f"Injected {len(adk_skills)} skill(s) into agent '{agent.name}'"
+            )
+
+        return agent
 
     def _get_text_from_message(self, message: Any) -> str:
         if isinstance(message, BaseModel):
