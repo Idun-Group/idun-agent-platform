@@ -5,11 +5,15 @@ application with their agent integrated. It handles all the complexity of
 setting up routes, dependencies, and lifecycle management behind the scenes.
 """
 
+import logging
+import os
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -19,6 +23,28 @@ from ..server.routers.agent import agent_router, register_invoke_route
 from ..server.routers.base import base_router
 from .config_builder import ConfigBuilder
 from .engine_config import EngineConfig
+
+logger = logging.getLogger(__name__)
+
+
+def _maybe_mount_static_ui(app: FastAPI) -> None:
+    """Mount a static UI bundle at ``/`` when ``IDUN_UI_DIR`` is set.
+
+    The mount overrides the default ``GET /`` info handler. The same payload
+    remains available at ``GET /_engine/info``. Mounted only after every
+    other router so explicit routes win.
+    """
+    ui_dir = os.environ.get("IDUN_UI_DIR")
+    if not ui_dir:
+        return
+    ui_path = Path(ui_dir)
+    if not ui_path.is_dir():
+        logger.warning(
+            "IDUN_UI_DIR=%s does not exist; skipping static UI mount", ui_dir
+        )
+        return
+    app.mount("/", StaticFiles(directory=str(ui_path), html=True), name="ui")
+    logger.info("mounted static UI at / from %s", ui_dir)
 
 
 def create_app(
@@ -136,5 +162,8 @@ def create_app(
                     )
                 case _:
                     pass
+
+    # Mount the static UI last so explicit routes (everything above) win.
+    _maybe_mount_static_ui(app)
 
     return app

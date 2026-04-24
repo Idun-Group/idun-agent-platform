@@ -111,16 +111,24 @@ async def reload_config(
         )
 
 
-# Add a root endpoint with helpful information
-@base_router.get("/")
-def read_root():
-    """Root endpoint with basic information about the service."""
+# Engine info — moved from `/` to `/_engine/info` so that `/` can be
+# repurposed as a static UI mount when IDUN_UI_DIR is set (see app_factory).
+# `/` falls through to this info JSON only if no static UI is mounted.
+@base_router.get("/_engine/info")
+def engine_info():
+    """Engine info endpoint — basic information about the service."""
     return {
         "message": "Welcome to your Idun Agent Engine server!",
         "docs": "/docs",
         "health": "/health",
         "agent_endpoints": {"invoke": "/agent/invoke", "stream": "/agent/stream"},
     }
+
+
+@base_router.get("/")
+def read_root():
+    """Root endpoint — same payload as /_engine/info when no static UI is mounted."""
+    return engine_info()
 
 
 # # Add info endpoint for detailed server and agent information
