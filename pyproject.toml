@@ -8,9 +8,10 @@ readme = "README.md"
 license = "GPL-3.0-only"
 dependencies = [
     "cryptography>=46.0.3",
-    "idun-agent-engine>=0.5.4,<0.6.0",
+    "idun-agent-engine>=0.6.0,<0.7.0",
     "idun-agent-manager>=0.5.4,<0.6.0",
     "idun-agent-schema>=0.5.4,<0.6.0",
+    "idun-agent-standalone",
     "posthog>=7.7.0",
     "setuptools>=80.9.0,<83.0.0",
     "spacy-curated-transformers>=2.1.2",
@@ -49,6 +50,7 @@ package = false
 idun-agent-engine = { path = "libs/idun_agent_engine", editable = true }
 idun-agent-manager = { path = "services/idun_agent_manager", editable = true }
 idun-agent-schema = { path = "libs/idun_agent_schema", editable = true }
+idun-agent-standalone = { path = "libs/idun_agent_standalone", editable = true }
 
 [build-system]
 requires = ["hatchling"]

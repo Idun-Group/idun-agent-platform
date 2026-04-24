@@ -203,6 +203,18 @@ wheels = [
 ]
 
 [[package]]
+name = "apscheduler"
+version = "3.11.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzlocal" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/07/12/3e4389e5920b4c1763390c6d371162f3784f86f85cd6d6c1bfe68eef14e2/apscheduler-3.11.2.tar.gz", hash = "sha256:2a9966b052ec805f020c8c4c3ae6e6a06e24b1bf19f2e11d91d8cca0473eef41", size = 108683, upload-time = "2025-12-22T00:39:34.884Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9f/64/2e54428beba8d9992aa478bb8f6de9e4ecaa5f8f513bcfd567ed7fb0262d/apscheduler-3.11.2-py3-none-any.whl", hash = "sha256:ce005177f741409db4e4dd40a7431b76feb856b9dd69d57e0da49d6715bfd26d", size = 64439, upload-time = "2025-12-22T00:39:33.303Z" },
+]
+
+[[package]]
 name = "arize-phoenix"
 version = "13.11.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1926,7 +1938,7 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
-version = "0.5.4"
+version = "0.6.0"
 source = { editable = "libs/idun_agent_engine" }
 dependencies = [
     { name = "ag-ui-adk" },
@@ -2135,6 +2147,7 @@ dependencies = [
     { name = "idun-agent-engine" },
     { name = "idun-agent-manager" },
     { name = "idun-agent-schema" },
+    { name = "idun-agent-standalone" },
     { name = "posthog" },
     { name = "setuptools" },
     { name = "spacy-curated-transformers" },
@@ -2172,6 +2185,7 @@ requires-dist = [
     { name = "idun-agent-engine", editable = "libs/idun_agent_engine" },
     { name = "idun-agent-manager", editable = "services/idun_agent_manager" },
     { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },
+    { name = "idun-agent-standalone", editable = "libs/idun_agent_standalone" },
     { name = "posthog", specifier = ">=7.7.0" },
     { name = "setuptools", specifier = ">=80.9.0,<83.0.0" },
     { name = "spacy-curated-transformers", specifier = ">=2.1.2" },
@@ -2218,6 +2232,49 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.0,<4.0.0" },
     { name = "pydantic", specifier = ">=2.11.7,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.7.0,<3.0.0" },
+]
+
+[[package]]
+name = "idun-agent-standalone"
+version = "0.1.0"
+source = { editable = "libs/idun_agent_standalone" }
+dependencies = [
+    { name = "aiosqlite" },
+    { name = "alembic" },
+    { name = "apscheduler" },
+    { name = "asyncpg" },
+    { name = "bcrypt" },
+    { name = "click" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "idun-agent-engine" },
+    { name = "idun-agent-schema" },
+    { name = "itsdangerous" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "pyyaml" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiosqlite", specifier = ">=0.20" },
+    { name = "alembic", specifier = ">=1.13" },
+    { name = "apscheduler", specifier = ">=3.10" },
+    { name = "asyncpg", specifier = ">=0.29" },
+    { name = "bcrypt", specifier = ">=4.0" },
+    { name = "click", specifier = ">=8.1" },
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "idun-agent-engine", specifier = ">=0.6.0,<0.7.0" },
+    { name = "idun-agent-schema", specifier = ">=0.5.4,<0.6.0" },
+    { name = "itsdangerous", specifier = ">=2.2" },
+    { name = "pydantic", specifier = ">=2.11" },
+    { name = "pydantic-settings", specifier = ">=2.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
 
 [[package]]
