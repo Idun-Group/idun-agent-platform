@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev -p 3002",
     "build": "next build",
+    "postbuild": "rm -rf ../src/idun_agent_engine/_web && cp -r out ../src/idun_agent_engine/_web && touch out/.gitkeep",
     "start": "next start -p 3002",
     "lint": "next lint"
   },

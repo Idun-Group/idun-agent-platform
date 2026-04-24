@@ -130,7 +130,7 @@ class TestAppFactoryRoutes:
         assert resp.status_code == 200
         assert resp.json().get("status") == "ok"
 
-        resp = client.get("/")
+        resp = client.get("/api")
         assert resp.status_code == 200
         assert "agent_endpoints" in resp.json()
 

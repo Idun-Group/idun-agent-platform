@@ -9,19 +9,21 @@ pnpm install
 pnpm build
 ```
 
-Output lands in `./out/`. CI copies this directory into the Python wheel (see `pyproject.toml`'s `[tool.hatch.build.targets.wheel.force-include]`), so `pip install idun-agent-engine` ships the built UI.
+`pnpm build` produces two things:
+
+- `./out/` — the Next.js static export. CI copies this into the Python wheel via `[tool.hatch.build.targets.wheel.force-include]`, so `pip install idun-agent-engine` ships the built UI.
+- `../src/idun_agent_engine/_web/` — a staging copy so editable source installs (`pip install -e .`) also serve the UI without a `--ui-dir` flag. Gitignored; created by the `postbuild` script.
 
 ## Local dev against a running engine
 
 ```bash
-pnpm dev  # starts Next.js on :3002
-# point it at a running engine by setting the agent URL in the UI or env
+pnpm dev  # starts Next.js on :3002, talks to a running engine
 ```
 
-For manual engine-side testing of the static mount, build once (`pnpm build`) and run:
+For engine-side testing of the mount, build once (`pnpm build`) and run:
 
 ```bash
-idun agent serve --source file --path /path/to/config.yaml --ui-dir libs/idun_agent_engine/web/out
+idun agent serve --source file --path /path/to/config.yaml
 ```
 
-`--ui-dir` overrides the bundled default.
+The engine finds the staged `_web/` and serves it at `/`. Pass `--ui-dir PATH` to override with a different build.
