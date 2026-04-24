@@ -103,6 +103,10 @@ async def run(
     async def event_generator():
         try:
             async for event in agent.run(input_data):
+                # Registry isolates per-observer exceptions, so dispatch cannot
+                # masquerade as an agent failure here. Route-synthesized
+                # RunErrorEvent fallbacks below are NOT dispatched — observers
+                # see only events yielded by the agent itself.
                 await agent.run_event_observers.dispatch(
                     event,
                     RunContext(
