@@ -22,10 +22,9 @@ from idun_agent_engine import create_app
 async def test_root_serves_info_when_no_ui_dir(monkeypatch, echo_agent_config):
     monkeypatch.delenv("IDUN_UI_DIR", raising=False)
     app = create_app(config_dict=echo_agent_config)
-    async with AsyncClient(
+    async with app.router.lifespan_context(app), AsyncClient(
         transport=ASGITransport(app=app), base_url="http://t"
     ) as c:
-        await c.get("/health")  # trigger lifespan
         r = await c.get("/")
         assert r.status_code == 200
         assert "application/json" in r.headers["content-type"]
@@ -42,10 +41,9 @@ async def test_root_serves_static_index_when_ui_dir_set(
     monkeypatch.setenv("IDUN_UI_DIR", str(tmp_path))
     app = create_app(config_dict=echo_agent_config)
 
-    async with AsyncClient(
+    async with app.router.lifespan_context(app), AsyncClient(
         transport=ASGITransport(app=app), base_url="http://t"
     ) as c:
-        await c.get("/health")
         r = await c.get("/")
         assert r.status_code == 200
         assert "TEST" in r.text

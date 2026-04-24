@@ -27,24 +27,41 @@ from .engine_config import EngineConfig
 logger = logging.getLogger(__name__)
 
 
-def _maybe_mount_static_ui(app: FastAPI) -> None:
+def _maybe_mount_static_ui(app: FastAPI) -> bool:
     """Mount a static UI bundle at ``/`` when ``IDUN_UI_DIR`` is set.
 
-    The mount overrides the default ``GET /`` info handler. The same payload
-    remains available at ``GET /_engine/info``. Mounted only after every
-    other router so explicit routes win.
+    Returns ``True`` if a static mount was registered. The same JSON
+    info payload is always available at ``/_engine/info``; the bare ``/``
+    info handler is only registered (later) when this returns ``False``.
     """
     ui_dir = os.environ.get("IDUN_UI_DIR")
     if not ui_dir:
-        return
+        return False
     ui_path = Path(ui_dir)
     if not ui_path.is_dir():
         logger.warning(
             "IDUN_UI_DIR=%s does not exist; skipping static UI mount", ui_dir
         )
-        return
+        return False
     app.mount("/", StaticFiles(directory=str(ui_path), html=True), name="ui")
     logger.info("mounted static UI at / from %s", ui_dir)
+    return True
+
+
+def _register_default_root(app: FastAPI) -> None:
+    """Serve the engine info payload at ``/`` when no static UI is mounted."""
+
+    @app.get("/", include_in_schema=False)
+    def _root():
+        return {
+            "message": "Welcome to your Idun Agent Engine server!",
+            "docs": "/docs",
+            "health": "/health",
+            "agent_endpoints": {
+                "invoke": "/agent/invoke",
+                "stream": "/agent/stream",
+            },
+        }
 
 
 def create_app(
@@ -164,6 +181,8 @@ def create_app(
                     pass
 
     # Mount the static UI last so explicit routes (everything above) win.
-    _maybe_mount_static_ui(app)
+    # When no UI dir is configured, fall back to the JSON info payload at /.
+    if not _maybe_mount_static_ui(app):
+        _register_default_root(app)
 
     return app

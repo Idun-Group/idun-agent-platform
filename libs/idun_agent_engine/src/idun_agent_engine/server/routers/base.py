@@ -111,9 +111,10 @@ async def reload_config(
         )
 
 
-# Engine info — moved from `/` to `/_engine/info` so that `/` can be
-# repurposed as a static UI mount when IDUN_UI_DIR is set (see app_factory).
-# `/` falls through to this info JSON only if no static UI is mounted.
+# Engine info — always served at /_engine/info. The bare `/` route is
+# registered conditionally by `app_factory.create_app` only when no static
+# UI is mounted at `/`, so users can override `/` by setting IDUN_UI_DIR
+# without route shadowing.
 @base_router.get("/_engine/info")
 def engine_info():
     """Engine info endpoint — basic information about the service."""
@@ -123,12 +124,6 @@ def engine_info():
         "health": "/health",
         "agent_endpoints": {"invoke": "/agent/invoke", "stream": "/agent/stream"},
     }
-
-
-@base_router.get("/")
-def read_root():
-    """Root endpoint — same payload as /_engine/info when no static UI is mounted."""
-    return engine_info()
 
 
 # # Add info endpoint for detailed server and agent information
