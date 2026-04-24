@@ -38,6 +38,9 @@ from idun_agent_standalone.admin.routers import (
 from idun_agent_standalone.admin.routers import (
     theme as theme_router,
 )
+from idun_agent_standalone.admin.routers import (
+    traces as traces_router,
+)
 from idun_agent_standalone.db.base import (
     Base,
     create_db_engine,
@@ -79,5 +82,6 @@ async def make_test_app() -> tuple[FastAPI, object]:
     app.include_router(mcp_router.router)
     app.include_router(prompts_router.router)
     app.include_router(integrations_router.router)
+    app.include_router(traces_router.router)
 
     return app, sm
