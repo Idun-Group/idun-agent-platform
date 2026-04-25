@@ -1,0 +1,66 @@
+---
+title: Quickstart
+description: Run your first agent in under 5 minutes.
+---
+
+## 1. Install
+
+```bash
+pip install idun-agent-standalone
+```
+
+## 2. Scaffold a project
+
+```bash
+idun-standalone init my-agent
+cd my-agent
+```
+
+This creates:
+
+- `agent.py` — a minimal LangGraph echo agent (no LLM key required).
+- `config.yaml` — pointing at the agent.
+- `.env.example` — env-var reference.
+- `requirements.txt` and `README.md`.
+
+Edit `agent.py` and `config.yaml` to point at your real agent. The default agent works out of the box for trying the rest of the platform.
+
+## 3. Run
+
+```bash
+idun-standalone serve
+```
+
+- **Chat**: <http://localhost:8000/>
+- **Admin**: <http://localhost:8000/admin/>
+- **Traces**: <http://localhost:8000/traces/>
+
+By default, auth is `none` on a laptop — admin is open. When deployed inside a container the published image sets `IDUN_IN_CONTAINER=1`, defaulting to `password` and requiring `IDUN_ADMIN_PASSWORD_HASH` and `IDUN_SESSION_SECRET`.
+
+## 4. Configure password auth
+
+```bash
+HASH=$(idun-standalone hash-password)
+SECRET=$(openssl rand -hex 32)
+
+IDUN_ADMIN_AUTH_MODE=password \
+IDUN_ADMIN_PASSWORD_HASH="$HASH" \
+IDUN_SESSION_SECRET="$SECRET" \
+idun-standalone serve
+```
+
+Sign in at <http://localhost:8000/login/> with the password you typed into `hash-password`.
+
+## 5. Edit the agent live
+
+Open `/admin/agent/`, change the agent name, click "Save & reload". A toast confirms the running agent was hot-swapped. Structural changes (framework, graph_definition path) require a process restart — the UI shows a banner.
+
+## 6. Watch traces
+
+Send a few messages from `/`. Open `/traces/` — your sessions appear with the full event timeline.
+
+## Next
+
+- [Deploy to Cloud Run →](/standalone/cloud-run)
+- [Deploy with docker-compose →](/standalone/docker-compose)
+- [Customize the chat UI →](/standalone/customizing-ui)

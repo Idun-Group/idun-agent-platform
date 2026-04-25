@@ -61,6 +61,17 @@
             "pages": ["index", "quickstart", "templates", "architecture"]
           },
           {
+            "group": "Standalone",
+            "icon": "box",
+            "pages": [
+              "standalone/overview",
+              "standalone/quickstart",
+              "standalone/cloud-run",
+              "standalone/docker-compose",
+              "standalone/customizing-ui"
+            ]
+          },
+          {
             "group": "Manager",
             "icon": "grid-2",
             "pages": ["manager/overview", "manager/tutorial"]

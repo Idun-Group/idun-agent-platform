@@ -1,0 +1,60 @@
+---
+title: Deploy to Cloud Run
+description: Single-container deploy on Google Cloud Run with managed Postgres.
+---
+
+Cloud Run runs a single container per request, scales to zero by default, and forwards HTTPS. The standalone is designed to fit.
+
+## 1. Set up Cloud SQL (Postgres)
+
+The standalone uses SQLite by default; on Cloud Run that disappears between revisions. Use Cloud SQL Postgres:
+
+```bash
+gcloud sql instances create idun-postgres \
+    --database-version=POSTGRES_16 --region=europe-west1 --tier=db-f1-micro
+gcloud sql databases create idun --instance=idun-postgres
+gcloud sql users create idun --instance=idun-postgres --password='changeme'
+```
+
+URL form (Cloud SQL Auth Proxy / unix socket):
+
+```
+postgresql+asyncpg://idun:changeme@/idun?host=/cloudsql/PROJECT:REGION:idun-postgres
+```
+
+## 2. Store secrets in Secret Manager
+
+```bash
+echo -n "$(idun-standalone hash-password)" | gcloud secrets create idun-admin-hash --data-file=-
+openssl rand -hex 32 | gcloud secrets create idun-session-secret --data-file=-
+echo -n "postgresql+asyncpg://..." | gcloud secrets create idun-db-url --data-file=-
+```
+
+## 3. Build & push
+
+Use `Dockerfile.example` as a starting point:
+
+```bash
+docker build -f Dockerfile.example -t gcr.io/PROJECT/my-agent:0.1.0 .
+docker push gcr.io/PROJECT/my-agent:0.1.0
+```
+
+## 4. Deploy
+
+Edit `cloud-run.example.yaml` (in `libs/idun_agent_standalone/docker/`) — replace `PROJECT` and the image tag — then:
+
+```bash
+gcloud run services replace cloud-run.yaml --region=europe-west1
+```
+
+Recommended settings:
+
+- `minScale: "1"` — eliminates cold starts and keeps the trace retention scheduler running.
+- `cpu-throttling: "false"` — keeps the trace writer flushing between requests.
+- 1 GiB memory, 1 vCPU is plenty for a small agent.
+
+## Caveats
+
+- **MCP servers using `command: docker run …`** won't work on Cloud Run. Switch to `transport: stdio` with a binary command (e.g. `npx`, `uvx`, a precompiled binary) or use HTTP transport pointing at another Cloud Run service.
+- **Trace retention purge** runs hourly via APScheduler — when Cloud Run scales to zero the scheduler stops too. With `minScale: "1"` it runs continuously.
+- Cookies need `Secure` — Cloud Run's load balancer sets `X-Forwarded-Proto: https`. The standalone honors that automatically.

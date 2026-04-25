@@ -1,0 +1,46 @@
+---
+title: Overview
+description: A self-sufficient single-agent deployment with embedded chat UI, admin panel, and traces viewer.
+---
+
+**Idun Agent Standalone** packages one agent into a single FastAPI process — chat UI, admin panel, traces viewer, and a local DB included. Deploy on Google Cloud Run, a VM, or your laptop.
+
+## What you get
+
+- **Chat UI** at `/` — themeable, AG-UI streaming, three layout variants (branded / minimal / inspector).
+- **Admin panel** at `/admin/` — edit agent config, guardrails, MCP servers, prompts, observability, integrations, and theme. Hot-reload of the running agent on save.
+- **First-party traces** at `/traces/` — every AG-UI run event captured locally; debug an agent without external observability.
+- **Single Docker image**, single Python process. SQLite by default; Postgres for production.
+
+## When to use it
+
+- You ship ONE agent and don't need the governance hub.
+- You want to iterate on an agent locally with the full Idun stack — not just the engine SDK.
+- You want a branded chat UI without writing a frontend.
+
+## When NOT to use it
+
+- You manage many agents and need workspaces / RBAC → use the [governance hub](/manager/overview).
+- Your primary observability tool is Langfuse / Phoenix / GCP — keep using the engine SDK directly.
+
+## Architecture in 60 seconds
+
+The standalone is a thin layer over `idun-agent-engine`. The engine still runs the agent and serves `/agent/run`. The standalone adds:
+
+- A SQLite/Postgres-backed admin REST surface at `/admin/api/v1/*`.
+- A run-event observer that pipes AG-UI events into a local `trace_event` table.
+- A bundled Next.js static export served at `/`.
+- Auth (`none` / `password`) gating the admin surface.
+- Hot-reload of the live agent when admin config changes.
+
+```text
+Browser ──HTTP──▶ FastAPI process
+                   ├─ / ─────────── static UI (chat / admin / traces)
+                   ├─ /agent/* ──── engine routes (AG-UI run, capabilities)
+                   ├─ /admin/api/v1/* ── admin REST + auth
+                   └─ /runtime-config.js ── theme + auth-mode bootstrap
+                         │
+                         └─▶ SQLite (default) or Postgres
+```
+
+Continue to the [Quickstart →](/standalone/quickstart).
