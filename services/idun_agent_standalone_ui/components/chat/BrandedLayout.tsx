@@ -6,7 +6,7 @@ import { useChat } from "@/lib/use-chat";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
 import { EmptyState } from "./EmptyState";
-import { SessionSwitcher } from "./SessionSwitcher";
+import { HeaderActions } from "./HeaderActions";
 
 export function BrandedLayout({ threadId }: { threadId: string }) {
   const [theme, setTheme] = useState<ThemeConfig | null>(null);
@@ -28,7 +28,7 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
         <div className="h-6 w-6 rounded bg-white/20" />
         <strong>{theme?.appName ?? "Idun Agent"}</strong>
         <div className="ml-auto">
-          <SessionSwitcher threadId={threadId} />
+          <HeaderActions threadId={threadId} tone="onPrimary" />
         </div>
       </header>
       <div className="flex-1 flex flex-col gap-3 p-4 overflow-auto">

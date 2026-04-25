@@ -3,6 +3,7 @@
 import { useChat } from "@/lib/use-chat";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
+import { HeaderActions } from "./HeaderActions";
 
 export function InspectorLayout({ threadId }: { threadId: string }) {
   const { messages, status, send, stop } = useChat(threadId);
@@ -23,6 +24,12 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
         </div>
       </aside>
       <main className="flex flex-col">
+        <div className="flex items-center px-4 py-2 border-b border-[var(--color-border)]">
+          <strong className="text-sm">Idun Agent</strong>
+          <div className="ml-auto">
+            <HeaderActions threadId={threadId} />
+          </div>
+        </div>
         <div className="flex-1 flex flex-col gap-3 p-4 overflow-auto">
           {messages.map((m) => (
             <ChatMessage key={m.id} m={m} />

@@ -4,7 +4,7 @@ import { useChat } from "@/lib/use-chat";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
 import { EmptyState } from "./EmptyState";
-import { SessionSwitcher } from "./SessionSwitcher";
+import { HeaderActions } from "./HeaderActions";
 
 export function MinimalLayout({ threadId }: { threadId: string }) {
   const { messages, status, send, stop } = useChat(threadId);
@@ -13,7 +13,7 @@ export function MinimalLayout({ threadId }: { threadId: string }) {
       <header className="flex items-center gap-3 px-6 py-4 border-b border-[var(--color-border)]">
         <strong>Idun Agent</strong>
         <div className="ml-auto">
-          <SessionSwitcher threadId={threadId} />
+          <HeaderActions threadId={threadId} />
         </div>
       </header>
       <div className="flex-1 flex flex-col gap-3 p-6 overflow-auto">
