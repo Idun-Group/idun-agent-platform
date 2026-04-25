@@ -1,0 +1,128 @@
+name: Standalone CI
+
+on:
+  pull_request:
+    paths:
+      - "libs/idun_agent_standalone/**"
+      - "libs/idun_agent_engine/**"
+      - "libs/idun_agent_schema/**"
+      - "services/idun_agent_standalone_ui/**"
+      - ".github/workflows/standalone-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --no-cache-dir uv
+      - run: uv sync --all-groups
+      - run: uv run pytest libs/idun_agent_standalone/tests -q
+      - run: uv run pytest libs/idun_agent_engine/tests/integration/server libs/idun_agent_engine/tests/unit/agent/test_observers.py -q
+
+  ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/idun_agent_standalone_ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: services/idun_agent_standalone_ui/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: services/idun_agent_standalone_ui/pnpm-lock.yaml
+      - name: Build standalone image
+        run: |
+          docker build \
+            -f libs/idun_agent_standalone/docker/Dockerfile.base \
+            -t standalone:ci \
+            .
+      - name: Boot image and hit /admin/api/v1/health
+        run: |
+          mkdir -p /tmp/standalone-smoke
+          cat > /tmp/standalone-smoke/config.yaml <<'EOF'
+          agent:
+            type: LANGGRAPH
+            config:
+              name: CI Smoke
+              graph_definition: idun_agent_standalone.testing:echo_graph
+              checkpointer:
+                type: memory
+          EOF
+          HASH=$(docker run --rm --entrypoint idun-standalone standalone:ci hash-password --password ci-smoke-pass | tail -1)
+          SECRET=$(openssl rand -hex 32)
+          docker run --rm -d --name standalone-smoke -p 8000:8000 \
+            -v /tmp/standalone-smoke:/app/agent:ro \
+            -e IDUN_ADMIN_AUTH_MODE=password \
+            -e IDUN_ADMIN_PASSWORD_HASH="$HASH" \
+            -e IDUN_SESSION_SECRET="$SECRET" \
+            standalone:ci
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/admin/api/v1/health; then
+              echo
+              echo "health ok after ${i}s"
+              docker stop standalone-smoke >/dev/null
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "health check failed; container logs:"
+          docker logs standalone-smoke
+          docker stop standalone-smoke >/dev/null || true
+          exit 1
+
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/idun_agent_standalone_ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: services/idun_agent_standalone_ui/pnpm-lock.yaml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --no-cache-dir uv
+      - name: Sync workspace deps
+        working-directory: ${{ github.workspace }}
+        run: uv sync --all-groups
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+        env:
+          # The test harness reads these to drive the boot script.
+          IDUN_E2E_PYTHON: ${{ github.workspace }}/.venv/bin/python
