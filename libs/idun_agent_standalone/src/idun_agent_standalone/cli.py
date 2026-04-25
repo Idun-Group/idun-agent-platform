@@ -89,10 +89,29 @@ def db_migrate() -> None:
 
 @main.command("init")
 @click.argument("name", required=False)
-def init_cmd(name: str | None) -> None:
+@click.option(
+    "--target",
+    "target",
+    type=click.Path(),
+    default=None,
+    help="Directory to scaffold into (defaults to ./<name>).",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Overwrite an existing non-empty directory.",
+)
+def init_cmd(name: str | None, target: str | None, force: bool) -> None:
     """Scaffold a new agent project directory."""
+    from pathlib import Path
+
     from idun_agent_standalone.scaffold import scaffold_project
 
-    target = name or "my-agent"
-    scaffold_project(target)
-    click.echo(f"Scaffolded {target}/")
+    project_name = name or "my-agent"
+    target_dir = Path(target) if target else None
+    scaffolded = scaffold_project(project_name, target_dir, force=force)
+    click.echo(
+        f"Scaffolded {scaffolded}. Next: "
+        f"cd {scaffolded.name} && cp .env.example .env && idun-standalone serve"
+    )

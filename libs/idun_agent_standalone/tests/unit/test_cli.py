@@ -7,6 +7,8 @@ later phases.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from click.testing import CliRunner
 from idun_agent_standalone.cli import main
 
@@ -24,3 +26,39 @@ def test_hash_password_produces_bcrypt_hash():
     out = r.output.strip()
     assert out.startswith("$2")
     assert len(out) >= 59
+
+
+def test_init_scaffolds_project(tmp_path: Path):
+    target = tmp_path / "demo-cli"
+    r = CliRunner().invoke(main, ["init", "demo-cli", "--target", str(target)])
+    assert r.exit_code == 0, r.output
+    for filename in (
+        "config.yaml",
+        "agent.py",
+        ".env.example",
+        "requirements.txt",
+        "README.md",
+    ):
+        assert (target / filename).is_file(), f"missing {filename}"
+    assert "Scaffolded" in r.output
+    assert "idun-standalone serve" in r.output
+
+
+def test_init_refuses_existing_non_empty_dir(tmp_path: Path):
+    target = tmp_path / "demo-cli"
+    target.mkdir()
+    (target / "x.txt").write_text("hi")
+    r = CliRunner().invoke(main, ["init", "demo-cli", "--target", str(target)])
+    assert r.exit_code != 0
+    assert "refusing to overwrite" in r.output
+
+
+def test_init_force_overwrites(tmp_path: Path):
+    target = tmp_path / "demo-cli"
+    target.mkdir()
+    (target / "x.txt").write_text("hi")
+    r = CliRunner().invoke(
+        main, ["init", "demo-cli", "--target", str(target), "--force"]
+    )
+    assert r.exit_code == 0, r.output
+    assert (target / "config.yaml").is_file()
