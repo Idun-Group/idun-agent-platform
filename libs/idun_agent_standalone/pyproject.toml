@@ -44,3 +44,10 @@ include = ["src/idun_agent_standalone", "alembic.ini"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+pythonpath = [
+    "src",
+    "tests",
+    "../idun_agent_engine/src",
+    "../idun_agent_schema/src",
+]
+addopts = "-ra -q --strict-markers --import-mode=importlib"
