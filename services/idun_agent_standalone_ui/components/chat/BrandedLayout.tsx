@@ -17,15 +17,21 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
 
   return (
     <div className="flex flex-col h-screen">
-      <header
-        className="flex items-center gap-3 px-4 py-3 text-white"
-        style={{
-          background: theme
-            ? `linear-gradient(90deg, ${theme.colors.light.primary}, ${theme.colors.light.accent})`
-            : "linear-gradient(90deg, #4f46e5, #7c3aed)",
-        }}
-      >
-        <div className="h-6 w-6 rounded bg-white/20" />
+      <header className="flex items-center gap-3 px-4 py-3 text-white bg-[linear-gradient(90deg,var(--color-primary),var(--color-accent))]">
+        <div className="h-6 w-6 rounded bg-white/20 flex items-center justify-center overflow-hidden">
+          {theme?.logo.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={theme.logo.imageUrl}
+              alt="logo"
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <span className="text-[10px] font-semibold">
+              {theme?.logo.text ?? "IA"}
+            </span>
+          )}
+        </div>
         <strong>{theme?.appName ?? "Idun Agent"}</strong>
         <div className="ml-auto">
           <HeaderActions threadId={threadId} tone="onPrimary" />

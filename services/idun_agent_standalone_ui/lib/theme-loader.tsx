@@ -27,6 +27,7 @@ export function ThemeLoader() {
       root.style.setProperty(cssKey, v);
     });
     root.style.setProperty("--radius", `${cfg.theme.radius}rem`);
+    document.title = cfg.theme.appName || "Idun Agent";
   }, []);
   return null;
 }
