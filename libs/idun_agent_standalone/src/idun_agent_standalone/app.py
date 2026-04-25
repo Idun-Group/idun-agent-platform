@@ -75,6 +75,11 @@ from idun_agent_standalone.reload import ReloadOutcome, orchestrate_reload
 from idun_agent_standalone.settings import StandaloneSettings
 from idun_agent_standalone.theme.runtime_config import router as runtime_config_router
 from idun_agent_standalone.traces.observer import make_observer
+from idun_agent_standalone.traces.retention import (
+    purge_once,
+    start_retention_scheduler,
+    stop_retention_scheduler,
+)
 from idun_agent_standalone.traces.sink import DatabaseTraceSink
 from idun_agent_standalone.traces.writer import BatchedTraceWriter
 
@@ -285,9 +290,20 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
                 logger.warning(
                     "no agent on app.state — traces will not be captured"
                 )
+            # Catch up any backlog from before this boot, then schedule
+            # the hourly job. ``start_retention_scheduler`` returns None
+            # when ``traces_retention_days <= 0`` so disabling is a no-op.
+            try:
+                await purge_once(sessionmaker, settings.traces_retention_days)
+            except Exception:  # noqa: BLE001
+                logger.exception("startup trace retention purge failed")
+            retention_scheduler = start_retention_scheduler(
+                sessionmaker, settings.traces_retention_days
+            )
             try:
                 yield
             finally:
+                stop_retention_scheduler(retention_scheduler)
                 await trace_writer.drain()
                 await db_engine.dispose()
 
