@@ -1,5 +1,6 @@
 "use client";
 
+import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 
@@ -15,7 +16,7 @@ export default function Dashboard() {
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
         <h2 className="font-semibold text-[var(--color-fg)]">Dashboard</h2>
-        <Badge tone="warning">Coming soon — mocked data</Badge>
+        <ComingSoonBadge />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {KPIS.map((k) => (

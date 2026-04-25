@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/Badge";
+import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
 
 const LEVELS = ["All", "Info", "Warn", "Error", "Debug"] as const;
 
@@ -30,13 +30,15 @@ export default function LogsPage() {
     <div className="flex flex-col h-full">
       <header className="px-6 py-3 border-b border-[var(--color-border)] flex items-center gap-3">
         <h2 className="font-semibold">Logs</h2>
-        <Badge tone="warning">Coming soon — mocked data</Badge>
+        <ComingSoonBadge />
         <div className="ml-4 flex gap-1 text-xs">
           {LEVELS.map((l) => (
             <button
               type="button"
               key={l}
-              className={`px-2 py-0.5 rounded ${l === "All" ? "bg-[var(--color-primary)] text-white" : "hover:bg-[var(--color-muted)]"}`}
+              disabled
+              title="Coming in MVP-2"
+              className={`px-2 py-0.5 rounded cursor-not-allowed opacity-50 ${l === "All" ? "bg-[var(--color-primary)] text-white" : ""}`}
             >
               {l}
             </button>
@@ -49,13 +51,17 @@ export default function LogsPage() {
           </span>
           <button
             type="button"
-            className="px-2 py-1 border border-[var(--color-border)] rounded"
+            disabled
+            title="Coming in MVP-2"
+            className="px-2 py-1 border border-[var(--color-border)] rounded cursor-not-allowed opacity-50"
           >
             Pause
           </button>
           <button
             type="button"
-            className="px-2 py-1 border border-[var(--color-border)] rounded"
+            disabled
+            title="Coming in MVP-2"
+            className="px-2 py-1 border border-[var(--color-border)] rounded cursor-not-allowed opacity-50"
           >
             Clear
           </button>

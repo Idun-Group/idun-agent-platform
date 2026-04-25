@@ -61,7 +61,7 @@ sync-engine:
 	cd libs/idun_agent_engine && uv sync --active --all-groups
 
 # ─── Standalone UI ──────────────────────────────────────────────────────────────
-.PHONY: build-standalone-ui clean-standalone-ui
+.PHONY: build-standalone-ui clean-standalone-ui build-standalone-wheel build-standalone-all
 
 build-standalone-ui:
 	cd services/idun_agent_standalone_ui && pnpm install --frozen-lockfile && pnpm build
@@ -73,3 +73,8 @@ clean-standalone-ui:
 	rm -rf libs/idun_agent_standalone/src/idun_agent_standalone/static
 	mkdir -p libs/idun_agent_standalone/src/idun_agent_standalone/static
 	touch libs/idun_agent_standalone/src/idun_agent_standalone/static/.gitkeep
+
+build-standalone-wheel:
+	cd libs/idun_agent_standalone && uv build --out-dir $(CURDIR)/dist/
+
+build-standalone-all: build-standalone-ui build-standalone-wheel

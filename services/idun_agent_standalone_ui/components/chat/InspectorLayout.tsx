@@ -1,5 +1,6 @@
 "use client";
 
+import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
 import { useChat } from "@/lib/use-chat";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
@@ -10,8 +11,9 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
   return (
     <div className="grid grid-cols-[180px_1fr_220px] h-screen">
       <aside className="border-r border-[var(--color-border)] p-3 text-sm bg-[var(--color-muted)]/40">
-        <div className="text-[10px] uppercase tracking-wider text-[var(--color-fg)]/50 mb-2">
-          Sessions
+        <div className="text-[10px] uppercase tracking-wider text-[var(--color-fg)]/50 mb-2 flex items-center gap-2">
+          <span>Sessions</span>
+          <ComingSoonBadge variant="preview" />
         </div>
         <button
           type="button"
@@ -38,8 +40,9 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
         <ChatInput onSend={send} streaming={status === "streaming"} onStop={stop} />
       </main>
       <aside className="border-l border-[var(--color-border)] p-3 text-xs font-mono bg-[var(--color-muted)]/40">
-        <div className="text-[10px] uppercase tracking-wider text-[var(--color-fg)]/50 mb-2">
-          Run events
+        <div className="text-[10px] uppercase tracking-wider text-[var(--color-fg)]/50 mb-2 flex items-center gap-2">
+          <span>Run events</span>
+          <ComingSoonBadge variant="preview" />
         </div>
         <div className="text-[var(--color-fg)]/50">
           Live event inspector — wires up via /admin/api/v1/traces in next iteration.

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { type TraceEvent, api } from "@/lib/api";
+import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
 import { Badge } from "@/components/ui/Badge";
 
 const FILTERS = ["All", "Messages", "Tools", "Thinking", "Errors"] as const;
@@ -84,7 +85,7 @@ function SessionDetail() {
           {view === "waterfall" ? (
             <div className="p-8 grid place-items-center h-full">
               <div className="max-w-md text-center space-y-3">
-                <Badge tone="warning">Preview — available in MVP-2</Badge>
+                <ComingSoonBadge variant="preview" />
                 <h3 className="font-semibold">Waterfall view</h3>
                 <p className="text-sm text-[var(--color-fg)]/70">
                   LLM call-level timing, graph node spans, and model/cost
