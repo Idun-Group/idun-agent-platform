@@ -78,6 +78,10 @@ async def configure_app(app: FastAPI, engine_config):
         mcp_registry = MCPClientRegistry()
     set_active_registry(mcp_registry)
     app.state.mcp_registry = mcp_registry
+    # Surface per-server failures so embedders (e.g. the standalone
+    # admin UI) can render a "failed" badge instead of guessing from
+    # logs. Replaced on every reload so stale failures don't linger.
+    app.state.failed_mcp_servers = mcp_registry.failed
     try:
         agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config, mcp_registry)
     except Exception as e:

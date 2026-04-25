@@ -107,11 +107,20 @@ def get_active_registry() -> MCPClientRegistry | None:
 
 
 class MCPClientRegistry:
-    """Wraps `MultiServerMCPClient` with convenience helpers."""
+    """Wraps `MultiServerMCPClient` with convenience helpers.
+
+    Per-server failure isolation (D6): if one server fails to convert to
+    a connection dict, the surviving servers continue to load. The
+    registry exposes a ``failed`` list so embedders can surface per-server
+    failure status (e.g. a red badge in the standalone admin UI).
+    """
 
     def __init__(self, configs: list[MCPServer] | None = None) -> None:
         self._configs = configs or []
         self._client: MultiServerMCPClient | None = None
+        # ``failed`` carries one entry per server whose init was skipped,
+        # in the same order as ``configs``. Embedders join on ``name``.
+        self._failed: list[dict[str, str]] = []
 
         if self._configs:
             connections: dict[str, Connection] = {}
@@ -120,20 +129,58 @@ class MCPClientRegistry:
                     connections[config.name] = cast(
                         Connection, config.as_connection_dict()
                     )
-                except Exception:
-                    logger.exception(
-                        "⚠️ Failed to build connection for MCP server '%s', skipping.",
+                except Exception as exc:
+                    logger.warning(
+                        "⚠️ MCP server '%s' (%s) failed to initialize: %s — "
+                        "skipping; surviving servers continue to load.",
                         config.name,
+                        config.transport,
+                        exc,
+                    )
+                    self._failed.append(
+                        {
+                            "name": config.name,
+                            "kind": str(config.transport),
+                            "reason": str(exc) or repr(exc),
+                        }
                     )
 
             if connections:
                 try:
                     self._client = MultiServerMCPClient(connections)
-                except Exception:
-                    logger.exception(
-                        "⚠️ Failed to create MultiServerMCPClient, "
-                        "continuing without MCP servers."
+                except Exception as exc:
+                    logger.warning(
+                        "⚠️ Failed to create MultiServerMCPClient (%s): %s — "
+                        "marking every remaining server as failed and "
+                        "continuing without MCP support.",
+                        type(exc).__name__,
+                        exc,
                     )
+                    # Surface every server still in ``connections`` as a
+                    # failure so the UI doesn't claim they are running.
+                    for config in self._configs:
+                        if config.name in connections and not any(
+                            f["name"] == config.name for f in self._failed
+                        ):
+                            self._failed.append(
+                                {
+                                    "name": config.name,
+                                    "kind": str(config.transport),
+                                    "reason": (
+                                        f"client construction failed: "
+                                        f"{exc}"
+                                    ),
+                                }
+                            )
+
+    @property
+    def failed(self) -> list[dict[str, str]]:
+        """Return per-server failure records (read-only snapshot).
+
+        Each entry is ``{"name": ..., "kind": <transport>, "reason": ...}``.
+        Empty when every configured server initialised successfully.
+        """
+        return list(self._failed)
 
     @property
     def enabled(self) -> bool:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
@@ -25,6 +25,12 @@ class McpServerRead(BaseModel):
     name: str
     config: dict[str, Any]
     enabled: bool
+    # D6 — surfaces per-server engine init failures so the UI can show
+    # a red badge without operators having to scrape logs. ``"running"``
+    # means the engine accepted the server (or it isn't enabled at all);
+    # ``"failed"`` means MCPClientRegistry recorded an init error.
+    status: Literal["running", "failed"] = "running"
+    failure_reason: str | None = None
 
 
 class McpServerCreate(BaseModel):
@@ -45,12 +51,31 @@ def _to_read(row: McpServerRow) -> McpServerRead:
     )
 
 
+def _failures_by_name(request: Request) -> dict[str, dict[str, str]]:
+    """Return ``{name: failure_record}`` from ``app.state.failed_mcp_servers``.
+
+    Defensive: when the engine hasn't initialised yet (test setups,
+    import-time access) the attribute is missing or None.
+    """
+    raw = getattr(request.app.state, "failed_mcp_servers", None) or []
+    return {entry.get("name", ""): entry for entry in raw if entry.get("name")}
+
+
 @router.get("", response_model=list[McpServerRead])
 async def list_mcp(request: Request) -> list[McpServerRead]:
     sm = request.app.state.sessionmaker
+    failures = _failures_by_name(request)
     async with sm() as s:
         rows = (await s.execute(select(McpServerRow))).scalars().all()
-        return [_to_read(r) for r in rows]
+        out: list[McpServerRead] = []
+        for r in rows:
+            read = _to_read(r)
+            failure = failures.get(read.name)
+            if failure is not None:
+                read.status = "failed"
+                read.failure_reason = failure.get("reason")
+            out.append(read)
+        return out
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -80,7 +105,12 @@ async def get_mcp(mcp_id: str, request: Request) -> McpServerRead:
         ).scalar_one_or_none()
         if row is None:
             raise HTTPException(status_code=404, detail="not_found")
-        return _to_read(row)
+        read = _to_read(row)
+        failure = _failures_by_name(request).get(read.name)
+        if failure is not None:
+            read.status = "failed"
+            read.failure_reason = failure.get("reason")
+        return read
 
 
 @router.patch("/{mcp_id}")
