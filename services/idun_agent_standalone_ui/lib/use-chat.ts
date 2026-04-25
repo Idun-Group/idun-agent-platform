@@ -33,6 +33,12 @@ export function useChat(threadId: string) {
           prev.map((x) => (x.id === assistantMsg.id ? fn(x) : x)),
         );
 
+      // Track open text segments so we can append content to the right slot.
+      // Today the chat renders a single bubble per assistant message; START/END
+      // are handled but don't yet split text into multiple segments client-side.
+      // Thinking blocks are append-only — START allocates a buffer, CONTENT
+      // appends to the last buffer, END is a no-op.
+
       try {
         await runAgent({
           threadId,
@@ -42,6 +48,13 @@ export function useChat(threadId: string) {
           onEvent: (e) => {
             const t = String(e.type ?? "");
             switch (t) {
+              // — Text lifecycle ----------------------------------------
+              case "TEXT_MESSAGE_START":
+              case "TextMessageStart":
+                // Pragmatic: today we already accumulate into a single bubble.
+                // If the buffer is non-empty we leave it alone; downstream
+                // consumers can split on START boundaries when the UX needs it.
+                break;
               case "TEXT_MESSAGE_CONTENT":
               case "TextMessageContent":
                 updateAssistant((m) =>
@@ -50,6 +63,13 @@ export function useChat(threadId: string) {
                     : m,
                 );
                 break;
+              case "TEXT_MESSAGE_END":
+              case "TextMessageEnd":
+                // Close the current text segment. With the single-bubble model
+                // there's nothing to do — the buffer is already final.
+                break;
+
+              // — Tool call lifecycle -----------------------------------
               case "TOOL_CALL_START":
               case "ToolCallStart":
                 updateAssistant((m) =>
@@ -102,13 +122,45 @@ export function useChat(threadId: string) {
                     : m,
                 );
                 break;
+
+              // — Thinking lifecycle ------------------------------------
               case "THINKING_START":
               case "ThinkingStart":
+              case "THINKING_TEXT_MESSAGE_START":
+              case "ThinkingTextMessageStart":
                 updateAssistant((m) =>
                   m.role === "assistant"
                     ? { ...m, thinking: [...m.thinking, ""] }
                     : m,
                 );
+                break;
+              case "THINKING_TEXT_MESSAGE_CONTENT":
+              case "ThinkingTextMessageContent":
+                updateAssistant((m) => {
+                  if (m.role !== "assistant") return m;
+                  const idx = m.thinking.length - 1;
+                  if (idx < 0)
+                    return {
+                      ...m,
+                      thinking: [String(e.delta ?? "")],
+                    };
+                  const next = m.thinking.slice();
+                  next[idx] = next[idx] + String(e.delta ?? "");
+                  return { ...m, thinking: next };
+                });
+                break;
+              case "THINKING_TEXT_MESSAGE_END":
+              case "ThinkingTextMessageEnd":
+              case "THINKING_END":
+              case "ThinkingEnd":
+                // Close the current thinking buffer; the contents are already
+                // committed to state.
+                break;
+
+              // — Run lifecycle -----------------------------------------
+              case "RUN_STARTED":
+              case "RunStarted":
+                // No-op; status is already 'streaming' from send().
                 break;
               case "RUN_FINISHED":
               case "RunFinished":
@@ -118,6 +170,26 @@ export function useChat(threadId: string) {
               case "RunError":
                 setStatus("error");
                 setError(String(e.message ?? "run error"));
+                break;
+
+              // — Step / state events (no-op for this UI) ---------------
+              case "STEP_STARTED":
+              case "StepStarted":
+              case "STEP_FINISHED":
+              case "StepFinished":
+              case "STATE_DELTA":
+              case "StateDelta":
+              case "STATE_SNAPSHOT":
+              case "StateSnapshot":
+              case "MESSAGES_SNAPSHOT":
+              case "MessagesSnapshot":
+              case "RAW":
+              case "Raw":
+                break;
+
+              default:
+                // Unhandled event types are intentionally silent — verbose
+                // warning here would flood the console for proxy-only events.
                 break;
             }
           },
