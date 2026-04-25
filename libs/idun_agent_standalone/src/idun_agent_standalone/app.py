@@ -31,6 +31,9 @@ from idun_agent_standalone.admin.routers import (
     auth as auth_router,
 )
 from idun_agent_standalone.admin.routers import (
+    config as config_router,
+)
+from idun_agent_standalone.admin.routers import (
     guardrails as guardrails_router,
 )
 from idun_agent_standalone.admin.routers import (
@@ -322,6 +325,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.include_router(prompts_router.router)
     app.include_router(integrations_router.router)
     app.include_router(traces_router.router)
+    app.include_router(config_router.router)
     app.include_router(runtime_config_router)
 
     # Mount the static UI LAST so the catch-all at "/" doesn't shadow

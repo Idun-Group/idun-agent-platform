@@ -1,0 +1,37 @@
+# Multi-container deployment template: standalone + Postgres.
+
+version: "3.9"
+
+services:
+  standalone:
+    image: ghcr.io/idun-group/idun-agent-standalone:0.1.0
+    ports:
+      - "8000:8000"
+    environment:
+      IDUN_ADMIN_AUTH_MODE: password
+      IDUN_ADMIN_PASSWORD_HASH: ${IDUN_ADMIN_PASSWORD_HASH}
+      IDUN_SESSION_SECRET: ${IDUN_SESSION_SECRET}
+      DATABASE_URL: postgresql+asyncpg://idun:idun@postgres:5432/idun
+      IDUN_CONFIG_PATH: /app/agent/config.yaml
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - ./my_agent:/app/agent:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: idun
+      POSTGRES_PASSWORD: idun
+      POSTGRES_DB: idun
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U idun -d idun"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata: {}

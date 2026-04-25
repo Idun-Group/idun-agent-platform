@@ -15,6 +15,9 @@ from idun_agent_standalone.admin.routers import (
     auth as auth_router,
 )
 from idun_agent_standalone.admin.routers import (
+    config as config_router,
+)
+from idun_agent_standalone.admin.routers import (
     guardrails as guardrails_router,
 )
 from idun_agent_standalone.admin.routers import (
@@ -89,5 +92,6 @@ async def make_test_app() -> tuple[FastAPI, object]:
     app.include_router(prompts_router.router)
     app.include_router(integrations_router.router)
     app.include_router(traces_router.router)
+    app.include_router(config_router.router)
 
     return app, sm

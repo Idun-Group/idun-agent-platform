@@ -1,0 +1,49 @@
+# Deploy to Google Cloud Run.
+# Build first:
+#   docker build -f Dockerfile.example -t gcr.io/PROJECT/my-agent:0.1 .
+#   docker push gcr.io/PROJECT/my-agent:0.1
+# Then:
+#   gcloud run services replace cloud-run.yaml --region europe-west1
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: my-agent
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        run.googleapis.com/cpu-throttling: "false"
+    spec:
+      containers:
+        - image: gcr.io/PROJECT/my-agent:0.1.0
+          ports:
+            - containerPort: 8000
+          env:
+            - name: IDUN_ADMIN_AUTH_MODE
+              value: password
+            - name: IDUN_ADMIN_PASSWORD_HASH
+              valueFrom:
+                secretKeyRef:
+                  name: idun-admin-hash
+                  key: latest
+            - name: IDUN_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: idun-session-secret
+                  key: latest
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: idun-db-url
+                  key: latest
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-api-key
+                  key: latest
+          resources:
+            limits:
+              memory: 1Gi
+              cpu: "1"

@@ -1,0 +1,93 @@
+# Multi-stage build for idun-agent-standalone
+# Stage 1 (ui)      — build the Next.js static export
+# Stage 2 (wheel)   — build wheels for the three local libs (engine, schema, standalone)
+# Stage 3 (runtime) — slim Python image with all three wheels installed (no PyPI fetch)
+
+# ---- UI stage ----
+FROM node:20-slim AS ui
+
+WORKDIR /app
+RUN corepack enable
+
+COPY services/idun_agent_standalone_ui/package.json services/idun_agent_standalone_ui/pnpm-lock.yaml ./services/idun_agent_standalone_ui/
+
+WORKDIR /app/services/idun_agent_standalone_ui
+RUN pnpm install --frozen-lockfile --prod=false
+
+WORKDIR /app
+COPY services/idun_agent_standalone_ui ./services/idun_agent_standalone_ui
+
+WORKDIR /app/services/idun_agent_standalone_ui
+RUN pnpm build
+
+# ---- Wheel stage ----
+FROM python:3.12-slim AS wheel
+
+WORKDIR /build
+RUN pip install --no-cache-dir uv
+
+COPY libs/idun_agent_schema ./libs/idun_agent_schema
+COPY libs/idun_agent_engine ./libs/idun_agent_engine
+COPY libs/idun_agent_standalone ./libs/idun_agent_standalone
+
+# Bring the built UI into the wheel source tree so it ends up inside the wheel.
+COPY --from=ui /app/services/idun_agent_standalone_ui/out \
+     ./libs/idun_agent_standalone/src/idun_agent_standalone/static
+
+# Build all three wheels into /dist. Build the schema first because the engine
+# and the standalone both depend on it; the standalone also depends on the
+# engine. We rely on `uv build` building a sdist+wheel without resolving
+# transitive deps (deps are installed in the runtime stage, not at build time).
+WORKDIR /build/libs/idun_agent_schema
+RUN uv build --out-dir /dist
+WORKDIR /build/libs/idun_agent_engine
+RUN uv build --out-dir /dist
+WORKDIR /build/libs/idun_agent_standalone
+RUN uv build --out-dir /dist
+
+# ---- Runtime ----
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    IDUN_IN_CONTAINER=1 \
+    IDUN_HOST=0.0.0.0 \
+    IDUN_PORT=8000 \
+    IDUN_CONFIG_PATH=/app/agent/config.yaml
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        tini curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install all three local wheels in one layer. pip resolves the local wheels
+# against the runtime PyPI for transitive deps (fastapi, uvicorn, sqlalchemy,
+# langgraph, etc.) but the three Idun packages themselves come from the wheel
+# stage — no PyPI dependency on the standalone pre-publish.
+COPY --from=wheel /dist/*.whl /tmp/wheels/
+RUN pip install --no-cache-dir \
+        /tmp/wheels/idun_agent_schema-*.whl \
+        /tmp/wheels/idun_agent_engine-*.whl \
+        /tmp/wheels/idun_agent_standalone-*.whl \
+    && rm -rf /tmp/wheels
+
+# The standalone package resolves ``alembic.ini`` via ``Path(__file__).parents[3]``
+# from ``…/site-packages/idun_agent_standalone/db/migrate.py``. In an editable
+# install this resolves to the repo root; for wheel installs ``parents[3]`` is
+# one level above ``site-packages``. Drop a copy there so the migration runner
+# finds it. Wave A backend fix supersedes this; harmless when that lands.
+RUN PY_VER=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')") \
+    && SITE=$(python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])") \
+    && cp "$SITE/alembic.ini" "/usr/local/lib/python$PY_VER/alembic.ini"
+
+RUN mkdir -p /app/agent /app/data
+VOLUME ["/app/data"]
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/admin/api/v1/health || exit 1
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["idun-standalone", "serve"]
