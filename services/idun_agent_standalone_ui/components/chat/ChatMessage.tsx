@@ -1,3 +1,5 @@
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Message } from "@/lib/agui";
 
 export function ChatMessage({ m }: { m: Message }) {
@@ -34,8 +36,33 @@ export function ChatMessage({ m }: { m: Message }) {
         </div>
       ))}
       {m.text && (
-        <div className="rounded-xl rounded-bl-sm bg-[var(--color-muted)] text-[var(--color-fg)] px-4 py-2 text-sm whitespace-pre-wrap">
-          {m.text}
+        <div className="prose prose-sm max-w-none rounded-xl rounded-bl-sm bg-[var(--color-muted)] text-[var(--color-fg)] px-4 py-2 text-sm">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: (p) => (
+                <a
+                  {...p}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                />
+              ),
+              code: ({ inline, children, ...p }: any) =>
+                inline ? (
+                  <code className="bg-[var(--color-muted)] rounded px-1 text-[0.9em]">
+                    {children}
+                  </code>
+                ) : (
+                  <pre className="bg-[var(--color-muted)] rounded p-2 text-xs overflow-x-auto">
+                    <code {...p}>{children}</code>
+                  </pre>
+                ),
+              p: (p) => <p className="last:mb-0" {...p} />,
+            }}
+          >
+            {m.text}
+          </ReactMarkdown>
         </div>
       )}
     </div>

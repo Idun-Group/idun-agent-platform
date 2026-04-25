@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 
@@ -14,11 +14,21 @@ export function ChatInput({
   onStop: () => void;
 }) {
   const [text, setText] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const resetHeight = () => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+  };
+
   const submit = () => {
     if (!text.trim()) return;
     onSend(text.trim());
     setText("");
+    resetHeight();
   };
+
   return (
     <form
       className="flex gap-2 border-t border-[var(--color-border)] p-3"
@@ -28,8 +38,14 @@ export function ChatInput({
       }}
     >
       <Textarea
+        ref={textareaRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onInput={(e) => {
+          const ta = e.currentTarget;
+          ta.style.height = "auto";
+          ta.style.height = `${ta.scrollHeight}px`;
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
