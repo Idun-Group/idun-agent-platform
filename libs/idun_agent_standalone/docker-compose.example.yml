@@ -1,6 +1,6 @@
 # Multi-container deployment template: standalone + Postgres.
-
-version: "3.9"
+# The Compose Specification supersedes legacy `version:` keys — Compose v2
+# ignores it and warns when set. We rely on the spec defaults.
 
 services:
   standalone:
