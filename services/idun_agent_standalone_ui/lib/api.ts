@@ -133,16 +133,26 @@ export const api = {
     apiFetch<void>(`/admin/api/v1/integrations/${id}`, { method: "DELETE" }),
 
   // traces
-  listSessions: (params: { limit?: number; offset?: number } = {}) =>
-    apiFetch<{ items: SessionSummary[]; total: number }>(
-      `/admin/api/v1/traces/sessions?limit=${params.limit ?? 50}&offset=${
-        params.offset ?? 0
-      }`,
-    ),
+  listSessions: (
+    params: { limit?: number; offset?: number; search?: string } = {},
+  ) => {
+    const qp = new URLSearchParams();
+    qp.set("limit", String(params.limit ?? 50));
+    qp.set("offset", String(params.offset ?? 0));
+    if (params.search) qp.set("search", params.search);
+    return apiFetch<{ items: SessionSummary[]; total: number }>(
+      `/admin/api/v1/traces/sessions?${qp.toString()}`,
+    );
+  },
   getSessionEvents: (id: string) =>
     apiFetch<{ events: TraceEvent[]; truncated: boolean }>(
       `/admin/api/v1/traces/sessions/${id}/events`,
     ),
+  patchSession: (id: string, body: { title: string | null }) =>
+    apiFetch<SessionSummary>(`/admin/api/v1/traces/sessions/${id}`, {
+      method: "PATCH",
+      body: j(body),
+    }),
   deleteSession: (id: string) =>
     apiFetch<void>(`/admin/api/v1/traces/sessions/${id}`, { method: "DELETE" }),
 };
