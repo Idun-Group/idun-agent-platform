@@ -46,6 +46,43 @@ async def test_login_success_sets_cookie_then_me_works(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_login_sets_secure_cookie_under_forwarded_proto_https(
+    tmp_path, monkeypatch
+):
+    """X-Forwarded-Proto: https → cookie must ship with Secure flag.
+
+    Behind Cloud Run / a TLS-terminating proxy ``request.url.scheme`` is
+    plain ``http`` unless ProxyHeadersMiddleware rewrites it. Without the
+    rewrite the session cookie loses ``Secure`` in production.
+    """
+    monkeypatch.setenv(
+        "DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'sec.db'}"
+    )
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "password")
+    monkeypatch.setenv("IDUN_SESSION_SECRET", "s" * 40)
+    monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("hunter2"))
+    app, sm = await make_test_app()
+    async with sm() as s:
+        s.add(AdminUserRow(id="admin", password_hash=hash_password("hunter2")))
+        await s.commit()
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://t"
+    ) as c:
+        r = await c.post(
+            "/admin/api/v1/auth/login",
+            json={"password": "hunter2"},
+            headers={"X-Forwarded-Proto": "https", "X-Forwarded-For": "203.0.113.1"},
+        )
+        assert r.status_code == 200, r.text
+        # httpx exposes the raw Set-Cookie header so we can assert the flag
+        # is on the wire, not just trust the cookiejar's parser.
+        set_cookie = r.headers.get("set-cookie", "")
+        assert "sid=" in set_cookie
+        assert "Secure" in set_cookie, set_cookie
+
+
+@pytest.mark.asyncio
 async def test_login_wrong_password_returns_401(tmp_path, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'b.db'}")
     monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "password")
