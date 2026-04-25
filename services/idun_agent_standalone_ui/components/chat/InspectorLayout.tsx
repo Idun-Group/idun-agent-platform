@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
 import { type ChatEvent, useChat } from "@/lib/use-chat";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
@@ -41,6 +42,11 @@ function EventRow({
 export function InspectorLayout({ threadId }: { threadId: string }) {
   const { messages, events, status, send, stop } = useChat(threadId);
   const [selected, setSelected] = useState<ChatEvent | null>(null);
+  const [theme, setTheme] = useState<ThemeConfig | null>(null);
+  useEffect(() => {
+    setTheme(getRuntimeConfig().theme);
+  }, []);
+  const appName = theme?.appName ?? "Idun Agent";
 
   // When new events stream in, auto-scroll the inspector pane to the bottom
   // unless the user picked a specific event to inspect.
@@ -62,7 +68,7 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
       </aside>
       <main className="flex flex-col">
         <div className="flex items-center px-4 py-2 border-b border-[var(--color-border)]">
-          <strong className="text-sm">Idun Agent</strong>
+          <strong className="text-sm">{appName}</strong>
           <div className="ml-auto">
             <HeaderActions threadId={threadId} />
           </div>
