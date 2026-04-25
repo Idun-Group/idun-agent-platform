@@ -100,6 +100,183 @@ async def test_login_wrong_password_returns_401(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_change_password_happy_path(tmp_path, monkeypatch):
+    """Successful rotation: old hash dies, new hash works, caller stays in."""
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'cp.db'}")
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "password")
+    monkeypatch.setenv("IDUN_SESSION_SECRET", "s" * 40)
+    monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("first-pw"))
+    app, sm = await make_test_app()
+    async with sm() as s:
+        s.add(AdminUserRow(id="admin", password_hash=hash_password("first-pw")))
+        await s.commit()
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://t"
+    ) as c:
+        r = await c.post(
+            "/admin/api/v1/auth/login", json={"password": "first-pw"}
+        )
+        assert r.status_code == 200, r.text
+
+        rc = await c.post(
+            "/admin/api/v1/auth/change-password",
+            json={"current": "first-pw", "new": "second-pw"},
+        )
+        assert rc.status_code == 200, rc.text
+        assert "sid" in rc.cookies  # caller's cookie was reissued
+
+        # The new password should now log a fresh client in.
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://t"
+        ) as c2:
+            r2 = await c2.post(
+                "/admin/api/v1/auth/login", json={"password": "second-pw"}
+            )
+            assert r2.status_code == 200, r2.text
+            r_old = await c2.post(
+                "/admin/api/v1/auth/login", json={"password": "first-pw"}
+            )
+            assert r_old.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_change_password_rejects_wrong_current(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'cw.db'}")
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "password")
+    monkeypatch.setenv("IDUN_SESSION_SECRET", "s" * 40)
+    monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("right"))
+    app, sm = await make_test_app()
+    async with sm() as s:
+        s.add(AdminUserRow(id="admin", password_hash=hash_password("right")))
+        await s.commit()
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://t"
+    ) as c:
+        await c.post("/admin/api/v1/auth/login", json={"password": "right"})
+        rc = await c.post(
+            "/admin/api/v1/auth/change-password",
+            json={"current": "wrong", "new": "newpasswd"},
+        )
+        assert rc.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_change_password_rejects_short_new_password(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'cs.db'}")
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "password")
+    monkeypatch.setenv("IDUN_SESSION_SECRET", "s" * 40)
+    monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("right"))
+    app, sm = await make_test_app()
+    async with sm() as s:
+        s.add(AdminUserRow(id="admin", password_hash=hash_password("right")))
+        await s.commit()
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://t"
+    ) as c:
+        await c.post("/admin/api/v1/auth/login", json={"password": "right"})
+        rc = await c.post(
+            "/admin/api/v1/auth/change-password",
+            json={"current": "right", "new": "short"},
+        )
+        # Pydantic raises a RequestValidationError; the standalone's
+        # global handler maps that to a 400 with error="validation_failed".
+        assert rc.status_code == 400, rc.text
+        assert rc.json()["error"] == "validation_failed"
+
+
+@pytest.mark.asyncio
+async def test_session_issued_before_rotation_is_rejected(tmp_path, monkeypatch):
+    """A cookie minted before password_rotated_at must fail auth.
+
+    Bug-6 regression: without iat-vs-rotated comparison, rotating the
+    password didn't actually log the previous session out.
+    """
+    import time as _time
+
+    from idun_agent_standalone.auth.session import sign_session
+
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'sr.db'}")
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "password")
+    monkeypatch.setenv("IDUN_SESSION_SECRET", "s" * 40)
+    monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("right"))
+    app, sm = await make_test_app()
+
+    # Stamp an iat that predates the row's password_rotated_at.
+    stale_token = sign_session(
+        secret="s" * 40, payload={"uid": "admin", "iat": int(_time.time()) - 1000}
+    )
+    from datetime import UTC, datetime
+
+    async with sm() as s:
+        s.add(
+            AdminUserRow(
+                id="admin",
+                password_hash=hash_password("right"),
+                password_rotated_at=datetime.now(UTC),
+            )
+        )
+        await s.commit()
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://t",
+        cookies={"sid": stale_token},
+    ) as c:
+        r = await c.get("/admin/api/v1/auth/me")
+        assert r.status_code == 401, r.text
+
+
+@pytest.mark.asyncio
+async def test_sliding_renewal_refreshes_cookie(tmp_path, monkeypatch):
+    """When the cookie age crosses 90% of TTL, the response sets a fresh one."""
+    import time as _time
+
+    from idun_agent_standalone.auth.session import sign_session
+
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'sl.db'}")
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "password")
+    monkeypatch.setenv("IDUN_SESSION_SECRET", "s" * 40)
+    monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("right"))
+    monkeypatch.setenv("IDUN_SESSION_TTL_SECONDS", "100")
+    app, sm = await make_test_app()
+    async with sm() as s:
+        s.add(AdminUserRow(id="admin", password_hash=hash_password("right")))
+        await s.commit()
+
+    # Forge a cookie that's already 95 seconds old (95% of 100s TTL) by
+    # manipulating its iat. itsdangerous stamps its own timestamp on
+    # serialization; we cannot rewrite that easily, so instead rely on the
+    # serializer's behaviour: a cookie whose serialized timestamp is in
+    # the recent past will be flagged for refresh once age > 90% of TTL.
+    # Easier route: set TTL to 1 second and sleep 1.0 second so age
+    # crosses the threshold while the serializer still considers the
+    # cookie valid (we'll bump TTL while the test is running).
+    monkeypatch.setenv("IDUN_SESSION_TTL_SECONDS", "1")
+    # The settings are read once per request from app.state, but
+    # make_test_app caches the StandaloneSettings instance — re-read so
+    # the TTL change is observed by require_auth.
+    from idun_agent_standalone.settings import StandaloneSettings
+
+    app.state.settings = StandaloneSettings()
+
+    token = sign_session(
+        secret="s" * 40, payload={"uid": "admin", "iat": int(_time.time())}
+    )
+
+    # Sleep just under TTL so the cookie is still valid but >90% aged.
+    _time.sleep(0.95)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://t",
+        cookies={"sid": token},
+    ) as c:
+        r = await c.get("/admin/api/v1/auth/me")
+        assert r.status_code == 200, r.text
+        # Renewal middleware should have set a fresh cookie.
+        assert "sid" in r.cookies, r.headers.get("set-cookie", "")
+
+
+@pytest.mark.asyncio
 async def test_singleton_resources_get_put_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setenv(
         "DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 's.db'}"

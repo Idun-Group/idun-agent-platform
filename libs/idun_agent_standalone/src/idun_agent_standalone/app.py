@@ -69,6 +69,7 @@ from idun_agent_standalone.errors import install_exception_handlers
 from idun_agent_standalone.middleware import (
     install_proxy_headers_middleware,
     install_request_id_middleware,
+    install_session_refresh_middleware,
 )
 from idun_agent_standalone.reload import ReloadOutcome, orchestrate_reload
 from idun_agent_standalone.settings import StandaloneSettings
@@ -235,6 +236,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 
     install_request_id_middleware(app)
     install_proxy_headers_middleware(app)
+    install_session_refresh_middleware(app)
     install_exception_handlers(app)
 
     app.state.settings = settings
