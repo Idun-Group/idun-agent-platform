@@ -59,3 +59,11 @@ def test_resolved_session_secret_raises_in_password_mode_without_secret(monkeypa
     monkeypatch.delenv("IDUN_SESSION_SECRET", raising=False)
     with pytest.raises(ValueError):
         StandaloneSettings().resolved_session_secret()
+
+
+def test_validate_for_runtime_rejects_oidc(monkeypatch):
+    """OIDC is reserved for MVP-2; selecting it must fail fast."""
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "oidc")
+    s = StandaloneSettings()
+    with pytest.raises(ValueError, match="reserved for MVP-2"):
+        s.validate_for_runtime()

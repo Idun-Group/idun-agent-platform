@@ -75,7 +75,19 @@ class StandaloneSettings(BaseSettings):
         )
 
     def validate_for_runtime(self) -> None:
-        """Fail fast if password mode is missing required secrets."""
+        """Fail fast on missing/unsupported auth configuration.
+
+        Spec §8.1 defers OIDC to MVP-2; the enum value is reserved so
+        the API doesn't move when MVP-2 lands, but selecting it today
+        produces a confusing 401 wall (no IdP wiring exists). Raising
+        here turns it into a clear startup error.
+        """
+        if self.auth_mode == AuthMode.OIDC:
+            raise ValueError(
+                "IDUN_ADMIN_AUTH_MODE=oidc is reserved for MVP-2 and not "
+                "implemented yet. Set it to 'none' (laptop dev) or "
+                "'password' (containerized deploy)."
+            )
         if self.auth_mode == AuthMode.PASSWORD:
             if not self.admin_password_hash:
                 raise ValueError(

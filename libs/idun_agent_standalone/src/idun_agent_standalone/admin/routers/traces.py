@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel
 from sqlalchemy import delete, func, select
@@ -98,24 +99,35 @@ async def get_session(sid: str, request: Request):
 
 
 @router.get("/sessions/{sid}/events", response_model=EventsResponse)
-async def get_session_events(sid: str, request: Request):
+async def get_session_events(
+    sid: str,
+    request: Request,
+    search: str | None = Query(
+        None,
+        description=(
+            "Case-insensitive substring filter on event_type and the JSON "
+            "payload. Spec §4.7 — server-side LIKE for MVP-1; FTS deferred."
+        ),
+    ),
+):
     sm = request.app.state.sessionmaker
     async with sm() as s:
+        stmt = select(TraceEventRow).where(TraceEventRow.session_id == sid)
+        count_stmt = select(func.count(TraceEventRow.id)).where(
+            TraceEventRow.session_id == sid
+        )
+        if search:
+            needle = f"%{search.lower()}%"
+            payload_text = func.cast(TraceEventRow.payload, sa.String)
+            search_pred = func.lower(TraceEventRow.event_type).like(
+                needle
+            ) | func.lower(payload_text).like(needle)
+            stmt = stmt.where(search_pred)
+            count_stmt = count_stmt.where(search_pred)
         rows = (
-            await s.execute(
-                select(TraceEventRow)
-                .where(TraceEventRow.session_id == sid)
-                .order_by(TraceEventRow.sequence.asc())
-                .limit(1000)
-            )
+            await s.execute(stmt.order_by(TraceEventRow.sequence.asc()).limit(1000))
         ).scalars().all()
-        total = (
-            await s.execute(
-                select(func.count(TraceEventRow.id)).where(
-                    TraceEventRow.session_id == sid
-                )
-            )
-        ).scalar_one()
+        total = (await s.execute(count_stmt)).scalar_one()
         return EventsResponse(
             events=[
                 TraceEvent(
