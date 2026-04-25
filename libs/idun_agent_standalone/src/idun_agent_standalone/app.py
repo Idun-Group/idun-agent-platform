@@ -61,7 +61,13 @@ from idun_agent_standalone.admin.routers import (
     traces as traces_router,
 )
 from idun_agent_standalone.config_assembly import assemble_engine_config
-from idun_agent_standalone.config_io import is_db_empty, seed_from_yaml
+from idun_agent_standalone.config_io import (
+    compute_config_hash,
+    get_bootstrap_hash,
+    is_db_empty,
+    record_bootstrap_hash,
+    seed_from_yaml,
+)
 from idun_agent_standalone.db.base import (
     create_db_engine as _create_db_engine,
 )
@@ -90,11 +96,43 @@ logger = logging.getLogger(__name__)
 
 
 async def _bootstrap_if_needed(settings: StandaloneSettings, sm) -> None:
-    """Seed the DB from ``IDUN_CONFIG_PATH`` on first boot."""
+    """Seed from ``IDUN_CONFIG_PATH`` on first boot, warn on YAML drift after.
+
+    Spec §3.1 — the YAML is bootstrap-only. Subsequent edits go through
+    the admin REST surface; the on-disk file becomes a stale snapshot.
+    Operators get a one-line warning when the YAML hash drifts so they
+    know to re-export (``GET /admin/api/v1/config/export``) or stop
+    editing the file.
+    """
+    if not settings.config_path.exists():
+        return
+
+    yaml_bytes = settings.config_path.read_bytes()
+    current_hash = compute_config_hash(yaml_bytes)
+
     async with sm() as session:
-        if await is_db_empty(session) and settings.config_path.exists():
+        if await is_db_empty(session):
             await seed_from_yaml(session, settings.config_path)
+            await record_bootstrap_hash(session, current_hash)
             await session.commit()
+            return
+
+        stored_hash = await get_bootstrap_hash(session)
+        if stored_hash is None:
+            # Pre-migration DB — record the current hash without warning.
+            await record_bootstrap_hash(session, current_hash)
+            await session.commit()
+            return
+
+        if stored_hash != current_hash:
+            logger.warning(
+                "IDUN_CONFIG_PATH YAML hash differs from bootstrap hash "
+                "(yaml=%s..., bootstrap=%s...). The DB is the source of "
+                "truth after first boot — edits to the file are ignored. "
+                "Use GET /admin/api/v1/config/export to refresh the file.",
+                current_hash[:8],
+                stored_hash[:8],
+            )
 
 
 async def _bootstrap_admin_user(settings: StandaloneSettings, sm) -> None:

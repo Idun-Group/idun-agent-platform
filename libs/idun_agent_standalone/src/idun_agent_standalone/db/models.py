@@ -153,3 +153,22 @@ class AdminUserRow(Base):
     password_rotated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, onupdate=_utcnow
     )
+
+
+class BootstrapMetaRow(Base):
+    """Singleton row recording the YAML hash used at first-boot seed.
+
+    Spec §3.1 — *"On subsequent starts the YAML is ignored — a one-line
+    log warning is emitted if its hash differs from the bootstrap
+    hash."* The DB is the source of truth after first boot, so a
+    drifting YAML on disk is a footgun (the operator may believe edits
+    are taking effect when the engine reads from DB instead). The
+    warning gives operators a single signal to act on.
+    """
+
+    __tablename__ = "bootstrap_meta"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    config_hash: Mapped[str] = mapped_column(String(64))
+    bootstrapped_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )

@@ -7,6 +7,7 @@ backup or hub migration.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import uuid
 from pathlib import Path
@@ -18,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from idun_agent_standalone.db.models import (
     AgentRow,
+    BootstrapMetaRow,
     GuardrailRow,
     IntegrationRow,
     McpServerRow,
@@ -33,6 +35,26 @@ logger = logging.getLogger(__name__)
 async def is_db_empty(session: AsyncSession) -> bool:
     res = await session.execute(select(AgentRow.id))
     return res.scalar_one_or_none() is None
+
+
+def compute_config_hash(yaml_bytes: bytes) -> str:
+    """SHA-256 hex digest of the raw YAML bytes used for bootstrap-drift detection."""
+    return hashlib.sha256(yaml_bytes).hexdigest()
+
+
+async def get_bootstrap_hash(session: AsyncSession) -> str | None:
+    """Read the singleton bootstrap hash, if any."""
+    row = (await session.execute(select(BootstrapMetaRow))).scalar_one_or_none()
+    return row.config_hash if row else None
+
+
+async def record_bootstrap_hash(session: AsyncSession, config_hash: str) -> None:
+    """Insert or update the bootstrap-meta singleton. Caller commits."""
+    row = (await session.execute(select(BootstrapMetaRow))).scalar_one_or_none()
+    if row is None:
+        session.add(BootstrapMetaRow(id="singleton", config_hash=config_hash))
+    else:
+        row.config_hash = config_hash
 
 
 def _agent_payload(data: dict[str, Any]) -> dict[str, Any]:
