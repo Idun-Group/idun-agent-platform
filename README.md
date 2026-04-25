@@ -55,12 +55,18 @@ docker compose -f docker-compose.dev.yml up --build
 
 Open [localhost:3000](http://localhost:3000). Create an account. Deploy your first agent in 3 clicks.
 
-> [!TIP]
-> **Don't need the full platform?** Run a standalone agent with no Manager and no database:
-> ```bash
-> pip install idun-agent-engine && idun init
-> ```
-> The interactive TUI configures framework, memory, observability, guardrails, and MCP in one pass. See the [CLI docs](https://docs.idunplatform.com/cli/overview).
+## Want a single-agent deployment?
+
+Use **`idun-agent-standalone`** — a self-sufficient FastAPI process bundling
+one agent with chat UI, admin panel, and a traces viewer:
+
+```bash
+pip install idun-agent-standalone
+idun-standalone init my-agent
+cd my-agent && idun-standalone serve
+```
+
+See the [Standalone docs →](https://docs.idunplatform.com/standalone/overview).
 
 ---
 

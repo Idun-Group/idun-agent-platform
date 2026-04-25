@@ -10,8 +10,10 @@ Idun Agent Platform is a self-hosted control plane that wraps LangGraph/ADK agen
 
 - `libs/idun_agent_schema/` — Shared Pydantic models (published to PyPI)
 - `libs/idun_agent_engine/` — SDK runtime that wraps agents into FastAPI services (published to PyPI)
+- `libs/idun_agent_standalone/` — Single-process agent (chat UI + admin + traces) — published to PyPI as `idun-agent-standalone`
 - `services/idun_agent_manager/` — FastAPI + PostgreSQL backend for agent config CRUD, auth, policy enforcement
 - `services/idun_agent_web/` — React 19 + Vite + TypeScript admin dashboard
+- `services/idun_agent_standalone_ui/` — Next.js 15 SPA bundled into the standalone wheel
 - `docs/` — Mintlify documentation site (deployed to docs.idunplatform.com)
 - `old-docs/` — Legacy MkDocs documentation (archived, do not edit)
 
@@ -21,8 +23,10 @@ Each package/service has its own `CLAUDE.md` with detailed architecture, module 
 
 - `libs/idun_agent_schema/CLAUDE.md` — Schema library: Pydantic models, config hierarchy, discriminated unions, manager schemas
 - `libs/idun_agent_engine/CLAUDE.md` — Engine SDK: agent adapters, config flow, server endpoints, guardrails, observability, MCP, CLI
+- `libs/idun_agent_standalone/CLAUDE.md` — Standalone runtime: admin REST, traces capture, reload orchestration, auth, Docker
 - `services/idun_agent_manager/CLAUDE.md` — Manager API: routes, auth (OIDC + basic), multi-tenancy, database models, migrations
 - `services/idun_agent_web/CLAUDE.md` — Web UI: routes, auth flow, API layer, styling, i18n, state management
+- `services/idun_agent_standalone_ui/CLAUDE.md` — Standalone UI: Next.js app, theme system, admin editors, traces viewer
 
 ## Build & Development Commands
 
