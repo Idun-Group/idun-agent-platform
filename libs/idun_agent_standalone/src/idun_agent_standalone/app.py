@@ -85,6 +85,39 @@ async def _bootstrap_if_needed(settings: StandaloneSettings, sm) -> None:
             await session.commit()
 
 
+async def _bootstrap_admin_user(settings: StandaloneSettings, sm) -> None:
+    """Sync the bcrypt hash from ``IDUN_ADMIN_PASSWORD_HASH`` into ``admin_user``.
+
+    Runs on every boot (not just first) so rotating the env var rotates
+    the stored hash. No-op when ``auth_mode != PASSWORD`` (the login
+    route short-circuits in ``none`` mode anyway). Without this the
+    login route always returns 401 because the row never exists.
+    """
+    from sqlalchemy import select
+
+    from idun_agent_standalone.db.models import AdminUserRow
+    from idun_agent_standalone.settings import AuthMode
+
+    if settings.auth_mode != AuthMode.PASSWORD:
+        return
+    if not settings.admin_password_hash:
+        return
+
+    async with sm() as session:
+        existing = (
+            await session.execute(select(AdminUserRow))
+        ).scalar_one_or_none()
+        if existing is None:
+            session.add(
+                AdminUserRow(
+                    id="admin", password_hash=settings.admin_password_hash
+                )
+            )
+        elif existing.password_hash != settings.admin_password_hash:
+            existing.password_hash = settings.admin_password_hash
+        await session.commit()
+
+
 def _make_reload_orchestrator(observer):
     """Bind a closure that admin routers call after every committed mutation.
 
@@ -176,6 +209,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     db_engine = _create_db_engine(settings.database_url)
     sessionmaker = _create_sessionmaker(db_engine)
     await _bootstrap_if_needed(settings, sessionmaker)
+    await _bootstrap_admin_user(settings, sessionmaker)
 
     async with sessionmaker() as s:
         engine_config = await assemble_engine_config(s)
