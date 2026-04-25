@@ -21,6 +21,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from idun_agent_engine import create_app as create_engine_app
+from idun_agent_engine.server.lifespan import cleanup_agent, configure_app
 
 from idun_agent_standalone.admin.deps import require_auth
 from idun_agent_standalone.admin.routers import (
@@ -85,7 +86,7 @@ async def _bootstrap_if_needed(settings: StandaloneSettings, sm) -> None:
 
 
 def _make_reload_orchestrator(app: FastAPI):
-    """Bind a closure that admin routers can call after committing."""
+    """Bind a closure that admin routers call after committing."""
 
     async def _trigger(request, db_session) -> JSONResponse | None:
         previous_cfg = getattr(request.app.state, "current_engine_config", None)
@@ -108,10 +109,12 @@ def _make_reload_orchestrator(app: FastAPI):
             return None
 
         outcome: ReloadOutcome = await orchestrate_reload(
-            engine=engine_agent,
+            app=request.app,
             new_config=new_cfg,
             previous_config=previous_cfg,
             structural_change=structural,
+            cleanup=cleanup_agent,
+            configure=configure_app,
         )
         request.app.state.current_engine_config = new_cfg
 
@@ -199,17 +202,36 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     )
     app.state.trace_writer = trace_writer
 
-    @app.on_event("startup")
-    async def _start_traces() -> None:
-        await trace_writer.start()
-        agent = getattr(app.state, "agent", None)
-        if agent is not None:
-            agent.register_run_event_observer(make_observer(trace_writer))
+    # The engine builds the app with `lifespan=...`; FastAPI then ignores
+    # `@app.on_event("startup")` decorators. Wrap the engine's lifespan so
+    # we can register the observer AFTER the engine has set
+    # `app.state.agent`, and drain the trace writer on shutdown.
+    from contextlib import asynccontextmanager
 
-    @app.on_event("shutdown")
-    async def _stop_traces() -> None:
-        await trace_writer.drain()
-        await db_engine.dispose()
+    engine_lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def _standalone_lifespan(_app):
+        async with engine_lifespan(_app):
+            await trace_writer.start()
+            agent = getattr(_app.state, "agent", None)
+            if agent is not None:
+                agent.register_run_event_observer(make_observer(trace_writer))
+                logger.info(
+                    "registered trace observer on agent (%s)",
+                    type(agent).__name__,
+                )
+            else:
+                logger.warning(
+                    "no agent on app.state — traces will not be captured"
+                )
+            try:
+                yield
+            finally:
+                await trace_writer.drain()
+                await db_engine.dispose()
+
+    app.router.lifespan_context = _standalone_lifespan
 
     # Admin REST + runtime config (theme is included; included BEFORE the
     # engine's /reload route so dependencies resolve in expected order).
