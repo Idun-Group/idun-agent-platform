@@ -85,8 +85,15 @@ async def _bootstrap_if_needed(settings: StandaloneSettings, sm) -> None:
             await session.commit()
 
 
-def _make_reload_orchestrator(app: FastAPI):
-    """Bind a closure that admin routers call after committing."""
+def _make_reload_orchestrator(observer):
+    """Bind a closure that admin routers call after every committed mutation.
+
+    ``observer`` is the long-lived run-event observer created at first
+    boot; on every successful reload we re-attach it to the freshly built
+    agent. Each call to ``configure_app`` rebuilds ``BaseAgent`` from
+    scratch — its observer registry starts empty — so without re-attach
+    the trace pipeline goes silent after the first admin save.
+    """
 
     async def _trigger(request, db_session) -> JSONResponse | None:
         previous_cfg = getattr(request.app.state, "current_engine_config", None)
@@ -129,6 +136,13 @@ def _make_reload_orchestrator(app: FastAPI):
                     "recovered": outcome.recovered,
                 },
             )
+
+        # Re-attach the trace observer to the freshly built agent so
+        # subsequent runs continue to populate trace_event.
+        new_agent = getattr(request.app.state, "agent", None)
+        if new_agent is not None and observer is not None:
+            new_agent.register_run_event_observer(observer)
+
         return None
 
     return _trigger
@@ -192,15 +206,23 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.state.sessionmaker = sessionmaker
     app.state.current_engine_config = engine_config
 
-    # Wire the reload orchestrator into the admin reload_hook
-    app.state.reload_orchestrator = _make_reload_orchestrator(app)
-
     # Traces capture
     trace_sink = DatabaseTraceSink(sessionmaker)
     trace_writer = BatchedTraceWriter(
         sink=trace_sink, batch_size=25, max_latency_ms=250
     )
     app.state.trace_writer = trace_writer
+
+    # Build a single observer closure that's reused for the boot agent
+    # AND every subsequent hot-swap. Per-run sequence numbers live inside
+    # the closure keyed by ``thread_id:run_id`` so reload doesn't disturb
+    # them.
+    trace_observer = make_observer(trace_writer)
+    app.state.trace_observer = trace_observer
+
+    # Wire the reload orchestrator into the admin reload_hook with the
+    # shared observer so each post-reload agent gets it re-attached.
+    app.state.reload_orchestrator = _make_reload_orchestrator(trace_observer)
 
     # The engine builds the app with `lifespan=...`; FastAPI then ignores
     # `@app.on_event("startup")` decorators. Wrap the engine's lifespan so
@@ -216,7 +238,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
             await trace_writer.start()
             agent = getattr(_app.state, "agent", None)
             if agent is not None:
-                agent.register_run_event_observer(make_observer(trace_writer))
+                agent.register_run_event_observer(trace_observer)
                 logger.info(
                     "registered trace observer on agent (%s)",
                     type(agent).__name__,
