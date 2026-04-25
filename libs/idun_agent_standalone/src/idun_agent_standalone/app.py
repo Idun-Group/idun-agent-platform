@@ -168,14 +168,14 @@ async def _bootstrap_admin_user(settings: StandaloneSettings, sm) -> None:
         await session.commit()
 
 
-def _make_reload_orchestrator(observer):
+def _make_reload_orchestrator():
     """Bind a closure that admin routers call after every committed mutation.
 
-    ``observer`` is the long-lived run-event observer created at first
-    boot; on every successful reload we re-attach it to the freshly built
-    agent. Each call to ``configure_app`` rebuilds ``BaseAgent`` from
-    scratch — its observer registry starts empty — so without re-attach
-    the trace pipeline goes silent after the first admin save.
+    The freshly built agent inherits the trace observer via the engine's
+    ``post_configure_callbacks`` hook (registered once at boot in
+    ``create_standalone_app``), so this orchestrator no longer needs to
+    re-attach manually — the engine's own ``POST /reload`` and the admin
+    code path now share one re-attach mechanism.
     """
 
     async def _trigger(request, db_session) -> JSONResponse | None:
@@ -217,12 +217,6 @@ def _make_reload_orchestrator(observer):
                     "recovered": outcome.recovered,
                 },
             )
-
-        # Re-attach the trace observer to the freshly built agent so
-        # subsequent runs continue to populate trace_event.
-        new_agent = getattr(request.app.state, "agent", None)
-        if new_agent is not None and observer is not None:
-            new_agent.register_run_event_observer(observer)
 
         return None
 
@@ -304,9 +298,32 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     trace_observer = make_observer(trace_writer)
     app.state.trace_observer = trace_observer
 
-    # Wire the reload orchestrator into the admin reload_hook with the
-    # shared observer so each post-reload agent gets it re-attached.
-    app.state.reload_orchestrator = _make_reload_orchestrator(trace_observer)
+    # Register the trace re-attach callback on the engine so EVERY
+    # ``configure_app`` invocation — boot, admin reload, AND the engine's
+    # own ``POST /reload`` route — wires our observer onto the freshly
+    # built agent. Without this, the engine's own /reload silently drops
+    # the trace pipeline because it rebuilds ``app.state.agent`` and the
+    # standalone never sees the swap.
+    async def _reattach_trace_observer(_app: FastAPI) -> None:
+        agent = getattr(_app.state, "agent", None)
+        if agent is None:
+            logger.warning(
+                "post_configure callback fired with no agent on app.state — "
+                "skipping trace observer re-attach"
+            )
+            return
+        agent.register_run_event_observer(trace_observer)
+        logger.debug(
+            "re-attached trace observer to agent (%s) via post_configure",
+            type(agent).__name__,
+        )
+
+    app.state.post_configure_callbacks = [_reattach_trace_observer]
+
+    # The admin reload orchestrator no longer needs the observer in its
+    # closure — the engine fires the re-attach callback after every
+    # ``configure_app`` call.
+    app.state.reload_orchestrator = _make_reload_orchestrator()
 
     # The engine builds the app with `lifespan=...`; FastAPI then ignores
     # `@app.on_event("startup")` decorators. Wrap the engine's lifespan so
@@ -320,11 +337,14 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     async def _standalone_lifespan(_app):
         async with engine_lifespan(_app):
             await trace_writer.start()
+            # The engine's ``configure_app`` already invoked our
+            # ``_reattach_trace_observer`` callback during boot, so the
+            # observer is wired onto ``_app.state.agent``. We only log
+            # here for operator visibility.
             agent = getattr(_app.state, "agent", None)
             if agent is not None:
-                agent.register_run_event_observer(trace_observer)
                 logger.info(
-                    "registered trace observer on agent (%s)",
+                    "trace observer attached on agent (%s)",
                     type(agent).__name__,
                 )
             else:

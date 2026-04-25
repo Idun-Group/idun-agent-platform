@@ -30,11 +30,43 @@ async def _reload_auth_dep(request: Request) -> None:
     Otherwise the callable is invoked; it is expected to raise
     :class:`fastapi.HTTPException` on rejection. Both sync and async
     callables are supported.
+
+    The registered callable may itself be a FastAPI dependency that
+    declares ``Depends(...)``-typed parameters (e.g. the standalone's
+    ``require_auth`` which depends on injected ``Settings``). We run it
+    through FastAPI's dependency solver so those nested deps resolve
+    correctly. A no-arg or single-``request`` callable still works
+    because the solver fills only the parameters it needs.
     """
     auth = getattr(request.app.state, "reload_auth", None)
     if auth is None:
         return None
-    result = auth()
+
+    from contextlib import AsyncExitStack
+
+    from fastapi.dependencies.utils import get_dependant, solve_dependencies
+
+    dependant = get_dependant(path="/reload", call=auth)
+    async with AsyncExitStack() as stack:
+        solved = await solve_dependencies(
+            request=request,
+            dependant=dependant,
+            async_exit_stack=stack,
+            embed_body_fields=False,
+        )
+    # solve_dependencies returns a SolvedDependency(values, errors, ...) in
+    # FastAPI 0.115+. Older releases returned a tuple; we support both.
+    if hasattr(solved, "values"):
+        kwargs = solved.values
+        errors = solved.errors
+    else:  # pragma: no cover — older FastAPI shapes
+        kwargs, errors, *_ = solved
+    if errors:
+        from fastapi.exceptions import RequestValidationError
+
+        raise RequestValidationError(errors)
+
+    result = auth(**kwargs)
     if inspect.isawaitable(result):
         await result
     return None

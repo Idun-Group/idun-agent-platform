@@ -4,7 +4,7 @@ Initializes the agent at startup and cleans up resources on shutdown.
 """
 import inspect
 import logging
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -17,6 +17,9 @@ from ..guardrails.base import BaseGuardrail
 from ..telemetry import get_telemetry, sanitize_telemetry_config
 
 logger = logging.getLogger(__name__)
+
+
+PostConfigureCallback = Callable[[FastAPI], Awaitable[None]]
 
 
 def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
@@ -44,7 +47,21 @@ async def cleanup_agent(app: FastAPI):
 
 
 async def configure_app(app: FastAPI, engine_config):
-    """Initialize the agent, MCP registry, guardrails, and app state with the given engine config."""
+    """Initialize the agent, MCP registry, guardrails, and app state with the given engine config.
+
+    After all setup is done — including reload via ``POST /reload`` — every
+    callback registered in ``app.state.post_configure_callbacks`` is awaited.
+    Embedders (e.g. ``idun_agent_standalone``) use this hook to re-attach
+    cross-cutting concerns (run-event observers, telemetry instrumentation)
+    that would otherwise be lost when ``configure_app`` rebuilds the agent
+    from scratch.
+    """
+    # Preserve any callbacks the embedder registered before the engine
+    # lifespan ran. Reload only mutates ``app.state.agent`` etc., so the
+    # callback list naturally survives across reloads.
+    if not hasattr(app.state, "post_configure_callbacks"):
+        app.state.post_configure_callbacks = []
+
     guardrails_obj = engine_config.guardrails
     try:
         guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
@@ -135,6 +152,20 @@ async def configure_app(app: FastAPI, engine_config):
         )
     else:
         app.state.integrations = []
+
+    # Run embedder-supplied post-configure callbacks. We deliberately log
+    # and continue on failure so a misbehaving callback can't take the
+    # whole reload down with it (the agent itself is already live by now).
+    callbacks: list[PostConfigureCallback] = list(
+        getattr(app.state, "post_configure_callbacks", [])
+    )
+    for cb in callbacks:
+        try:
+            await cb(app)
+        except Exception:
+            logger.exception(
+                "post_configure_callback %r raised; continuing", cb
+            )
 
 
 @asynccontextmanager
