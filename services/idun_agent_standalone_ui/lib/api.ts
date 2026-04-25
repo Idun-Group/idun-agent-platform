@@ -52,6 +52,12 @@ export const api = {
     apiFetch<{ authenticated: boolean; auth_mode: string }>(
       "/admin/api/v1/auth/me",
     ),
+  changePassword: (body: { current: string; next: string }) =>
+    apiFetch<{ ok: boolean }>("/admin/api/v1/auth/change-password", {
+      method: "POST",
+      // Note: backend field is `new` (Python keyword); we serialize from `next`.
+      body: j({ current: body.current, new: body.next }),
+    }),
 
   // agent
   getAgent: () => apiFetch<AgentRead>("/admin/api/v1/agent"),
