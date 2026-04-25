@@ -46,11 +46,25 @@ dev = [
 [tool.uv]
 package = false
 
+# Declare the three Idun libs as a uv workspace so `uv build --package
+# idun-agent-standalone` works from the repo root and resolves the inter-lib
+# editable installs by name. ``services/idun_agent_manager`` is intentionally
+# excluded — it ships with its own self-contained uv lockfile and pins
+# conflicting pytest-asyncio versions; merging it into the root workspace
+# makes ``uv sync`` unsolvable. The path-based source below preserves the
+# previous behavior for manager.
+[tool.uv.workspace]
+members = [
+    "libs/idun_agent_engine",
+    "libs/idun_agent_schema",
+    "libs/idun_agent_standalone",
+]
+
 [tool.uv.sources]
-idun-agent-engine = { path = "libs/idun_agent_engine", editable = true }
+idun-agent-engine = { workspace = true }
+idun-agent-schema = { workspace = true }
+idun-agent-standalone = { workspace = true }
 idun-agent-manager = { path = "services/idun_agent_manager", editable = true }
-idun-agent-schema = { path = "libs/idun_agent_schema", editable = true }
-idun-agent-standalone = { path = "libs/idun_agent_standalone", editable = true }
 
 [build-system]
 requires = ["hatchling"]
