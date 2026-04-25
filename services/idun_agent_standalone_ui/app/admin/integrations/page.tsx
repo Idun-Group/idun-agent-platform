@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { type IntegrationRead, api } from "@/lib/api";
 import { JsonEditor } from "@/components/admin/JsonEditor";
+import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -57,7 +58,16 @@ export default function IntegrationsPage() {
               <Badge tone={r.enabled ? "success" : "neutral"}>
                 {r.enabled ? "enabled" : "disabled"}
               </Badge>
-              <div className="ml-auto flex gap-2">
+              <div className="ml-auto flex gap-2 items-center">
+                <span
+                  title="Test webhook is part of MVP-2 (engine has no test_connection yet)."
+                  className="flex items-center gap-1"
+                >
+                  <Button size="sm" variant="ghost" disabled>
+                    Test webhook
+                  </Button>
+                  <ComingSoonBadge variant="preview" />
+                </span>
                 <Button
                   size="sm"
                   variant="ghost"
