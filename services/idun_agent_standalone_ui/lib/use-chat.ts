@@ -1,15 +1,29 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { type Message, runAgent } from "@/lib/agui";
+import { type AGUIEvent, type Message, runAgent } from "@/lib/agui";
 
 type Status = "idle" | "streaming" | "error";
 
+/** Event ring kept by the chat hook so layouts like InspectorLayout can render
+ * a live event stream alongside the chat. We cap at MAX_EVENTS so a long-
+ * running session doesn't grow without bound. */
+const MAX_EVENTS = 200;
+
+export type ChatEvent = AGUIEvent & {
+  /** Stable id for React key — assigned on capture. */
+  _id: number;
+  /** Capture timestamp (ms epoch). */
+  _at: number;
+};
+
 export function useChat(threadId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [events, setEvents] = useState<ChatEvent[]>([]);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const eventIdRef = useRef(0);
 
   const send = useCallback(
     async (text: string) => {
@@ -47,6 +61,19 @@ export function useChat(threadId: string) {
           signal: abortRef.current.signal,
           onEvent: (e) => {
             const t = String(e.type ?? "");
+            // Capture every event for downstream surfaces (inspector layout,
+            // dev console). The ring is capped to MAX_EVENTS.
+            const captured: ChatEvent = {
+              ...e,
+              _id: ++eventIdRef.current,
+              _at: Date.now(),
+            };
+            setEvents((prev) => {
+              const next = [...prev, captured];
+              return next.length > MAX_EVENTS
+                ? next.slice(next.length - MAX_EVENTS)
+                : next;
+            });
             switch (t) {
               // — Text lifecycle ----------------------------------------
               case "TEXT_MESSAGE_START":
@@ -211,5 +238,5 @@ export function useChat(threadId: string) {
     abortRef.current?.abort();
   }, []);
 
-  return { messages, status, error, send, stop };
+  return { messages, events, status, error, send, stop };
 }
