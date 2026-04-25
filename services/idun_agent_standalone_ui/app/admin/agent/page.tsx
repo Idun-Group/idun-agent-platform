@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { type AgentRead, ApiError, api } from "@/lib/api";
 import { JsonEditor } from "@/components/admin/JsonEditor";
 import { SaveToolbar } from "@/components/admin/SaveToolbar";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 const FRAMEWORKS = ["langgraph", "adk", "haystack"] as const;
@@ -49,6 +50,19 @@ export default function AgentPage() {
     },
   });
 
+  const reload = useMutation({
+    mutationFn: () => api.forceReload(),
+    onSuccess: () => {
+      toast.success("Agent reloaded");
+      qc.invalidateQueries({ queryKey: ["agent"] });
+    },
+    onError: (e: unknown) => {
+      const detail = e instanceof ApiError ? e.detail : undefined;
+      const message = (detail as { message?: string } | undefined)?.message;
+      toast.error(message ?? "Reload failed");
+    },
+  });
+
   if (isLoading || !draft) return <div className="p-6">Loading…</div>;
   const dirty = JSON.stringify(draft) !== JSON.stringify(data);
 
@@ -60,6 +74,18 @@ export default function AgentPage() {
         busy={save.isPending}
         onRevert={() => data && setDraft(data)}
         onSave={() => save.mutate(draft)}
+        extraActions={
+          <Button
+            size="sm"
+            variant="ghost"
+            type="button"
+            title="Reload now (no config change)"
+            disabled={reload.isPending}
+            onClick={() => reload.mutate()}
+          >
+            {reload.isPending ? "Reloading…" : "Reload now"}
+          </Button>
+        }
       />
       {restartRequired && (
         <div className="m-6 mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-700 px-3 py-2 text-sm">
