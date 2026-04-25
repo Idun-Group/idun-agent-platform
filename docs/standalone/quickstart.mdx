@@ -59,8 +59,23 @@ Open `/admin/agent/`, change the agent name, click "Save & reload". A toast conf
 
 Send a few messages from `/`. Open `/traces/` — your sessions appear with the full event timeline.
 
+## Local development from a checkout
+
+If you are hacking on the standalone itself or the bundled UI, work from a clone of the repo:
+
+```bash
+git clone https://github.com/Idun-Group/idun-agent-platform.git
+cd idun-agent-platform
+make sync                # Install all Python deps via uv
+make build-standalone-all  # Build the UI and the wheel
+uv run idun-standalone serve --config path/to/your/config.yaml
+```
+
+`make build-standalone-all` runs `pnpm build` for the Next.js UI and `uv build` for the wheel; the UI static export ends up bundled inside the wheel. See the [CLI reference](/standalone/cli) for every flag and env var.
+
 ## Next
 
 - [Deploy to Cloud Run →](/standalone/cloud-run)
 - [Deploy with docker-compose →](/standalone/docker-compose)
 - [Customize the chat UI →](/standalone/customizing-ui)
+- [CLI reference →](/standalone/cli)

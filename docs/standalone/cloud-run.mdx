@@ -41,13 +41,20 @@ docker push gcr.io/PROJECT/my-agent:0.1.0
 
 ## 4. Deploy
 
-Edit `cloud-run.example.yaml` (in `libs/idun_agent_standalone/docker/`) — replace `PROJECT` and the image tag — then:
+Copy the template into your deploy directory, then edit it:
 
 ```bash
+cp /path/to/idun-agent-platform/libs/idun_agent_standalone/docker/cloud-run.example.yaml cloud-run.yaml
+# Replace PROJECT, REGION, and the image tag in cloud-run.yaml.
 gcloud run services replace cloud-run.yaml --region=europe-west1
 ```
 
-Recommended settings:
+The template ships two annotations you must keep:
+
+- `metadata.annotations."run.googleapis.com/cloudsql-instances"` — attaches the Cloud SQL instance to the service. Required for the unix-socket form `host=/cloudsql/PROJECT:REGION:idun-postgres` in `DATABASE_URL`.
+- `spec.template.metadata.annotations."run.googleapis.com/cloudsql-instances"` — same value at the revision level. Cloud Run requires both for new revisions to inherit the connection.
+
+Recommended runtime settings (already set in the template):
 
 - `minScale: "1"` — eliminates cold starts and keeps the trace retention scheduler running.
 - `cpu-throttling: "false"` — keeps the trace writer flushing between requests.

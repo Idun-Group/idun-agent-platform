@@ -1,0 +1,90 @@
+---
+title: CLI reference
+description: Every idun-standalone command, the flags it accepts, and what it does.
+keywords: ["idun-standalone", "cli", "serve", "init", "hash-password", "export", "import", "db migrate"]
+---
+
+`idun-standalone` is the single entry point installed by the `idun-agent-standalone` package. All commands accept `--help` for inline documentation.
+
+## serve
+
+Run the standalone server. The DB is the source of truth in steady state; on first boot, if the DB is empty and `IDUN_CONFIG_PATH` points to a YAML file, the file seeds the DB.
+
+```bash
+idun-standalone serve
+```
+
+Flags (all optional — env vars take precedence when unset on the CLI):
+
+| Flag | Env var | Default | Description |
+|------|---------|---------|-------------|
+| `--config <path>` | `IDUN_CONFIG_PATH` | `./config.yaml` | Bootstrap YAML file. |
+| `--host <addr>` | `IDUN_HOST` | `127.0.0.1` (laptop), `0.0.0.0` (container) | Bind address. |
+| `--port <int>` | `IDUN_PORT` | `8000` | Bind port. |
+| `--auth-mode <mode>` | `IDUN_ADMIN_AUTH_MODE` | `none` (laptop), `password` (container) | Admin gate. `oidc` is reserved for MVP-2. |
+| `--ui-dir <path>` | `IDUN_UI_DIR` | bundled static export | Override the chat/admin UI directory. |
+| `--database-url <url>` | `DATABASE_URL` | `sqlite+aiosqlite:///./idun.db` | SQLAlchemy URL. Use `postgresql+asyncpg://…` for Postgres. |
+
+## init
+
+Scaffold a new agent project from the bundled template — a minimal LangGraph echo agent with a `config.yaml`, `.env.example`, `requirements.txt`, and a starter `README.md`.
+
+```bash
+idun-standalone init my-agent
+cd my-agent
+```
+
+Flags:
+
+- `--target <dir>` — write into a specific directory (defaults to `./<name>`).
+- `--force` — overwrite a non-empty target directory.
+
+## hash-password
+
+Bcrypt the admin password so it can be stored in `IDUN_ADMIN_PASSWORD_HASH` (or a Secret Manager secret).
+
+```bash
+idun-standalone hash-password
+```
+
+Prompts for the password and prints the hash on stdout. The container image accepts the same hash via the `IDUN_ADMIN_PASSWORD_HASH` env var.
+
+## export
+
+Dump the current DB-backed config to YAML on stdout. Equivalent to `GET /admin/api/v1/config/export`.
+
+```bash
+idun-standalone export > my-config.yaml
+```
+
+Use this for backups, migrating to the [governance hub](/manager/overview), or diffing against the bootstrap YAML.
+
+## import
+
+Load a YAML file into the DB, replacing the current state. Mirrors the bootstrap flow but runs on demand.
+
+```bash
+idun-standalone import my-config.yaml
+```
+
+The next admin write triggers a hot reload of the running agent against the imported state.
+
+## db migrate
+
+Run Alembic migrations to head. Called automatically on `serve` startup; the standalone exposes the command directly so operators can pre-stage migrations during deploys.
+
+```bash
+idun-standalone db migrate
+```
+
+## Environment variables
+
+Every flag has an env-var equivalent. Additional variables not exposed as flags:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IDUN_ADMIN_PASSWORD_HASH` | — | Required when `auth_mode = password`. |
+| `IDUN_SESSION_SECRET` | — | 32-byte hex secret signing session cookies. Required when `auth_mode = password`. |
+| `IDUN_SESSION_TTL_SECONDS` | `86400` | Sliding-renewal cookie lifetime. |
+| `IDUN_TRACES_RETENTION_DAYS` | `30` | Hourly purge keeps the last N days of trace events. |
+| `IDUN_IN_CONTAINER` | unset | Set to `1` in container images to flip auth defaults to `password`. |

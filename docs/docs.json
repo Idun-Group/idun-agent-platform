@@ -66,6 +66,7 @@
             "pages": [
               "standalone/overview",
               "standalone/quickstart",
+              "standalone/cli",
               "standalone/cloud-run",
               "standalone/docker-compose",
               "standalone/customizing-ui"
