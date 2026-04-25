@@ -6,6 +6,11 @@ __pycache__/
 # Superpowers brainstorming artifacts
 .superpowers/
 
+# Standalone UI build output gets baked into the wheel by the Makefile
+# (`make build-standalone-ui`); the static/ directory is otherwise empty.
+libs/idun_agent_standalone/src/idun_agent_standalone/static/*
+!libs/idun_agent_standalone/src/idun_agent_standalone/static/.gitkeep
+
 
 
 .python-version

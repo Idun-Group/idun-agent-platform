@@ -59,3 +59,17 @@ sync-manager:
 
 sync-engine:
 	cd libs/idun_agent_engine && uv sync --active --all-groups
+
+# ─── Standalone UI ──────────────────────────────────────────────────────────────
+.PHONY: build-standalone-ui clean-standalone-ui
+
+build-standalone-ui:
+	cd services/idun_agent_standalone_ui && pnpm install --frozen-lockfile && pnpm build
+	rm -rf libs/idun_agent_standalone/src/idun_agent_standalone/static
+	cp -R services/idun_agent_standalone_ui/out libs/idun_agent_standalone/src/idun_agent_standalone/static
+
+clean-standalone-ui:
+	rm -rf services/idun_agent_standalone_ui/{node_modules,.next,out}
+	rm -rf libs/idun_agent_standalone/src/idun_agent_standalone/static
+	mkdir -p libs/idun_agent_standalone/src/idun_agent_standalone/static
+	touch libs/idun_agent_standalone/src/idun_agent_standalone/static/.gitkeep

@@ -165,16 +165,21 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     async with sessionmaker() as s:
         engine_config = await assemble_engine_config(s)
 
-    # Surface IDUN_UI_DIR to the engine before it builds the FastAPI app, so
-    # the engine's _maybe_mount_static_ui (Phase 0) picks up the bundled
-    # static/ even when the operator did not set the env var explicitly.
+    # IMPORTANT: do NOT set IDUN_UI_DIR before create_engine_app — the
+    # engine's _maybe_mount_static_ui registers a "/" catch-all that
+    # would shadow every standalone route added later. We mount static
+    # OURSELVES at the end of this factory, after every admin/runtime-
+    # config router. The engine's info JSON falls back at /_engine/info.
     import os
 
-    ui_dir = _resolve_ui_dir(settings)
-    if ui_dir is not None and not os.environ.get("IDUN_UI_DIR"):
-        os.environ["IDUN_UI_DIR"] = str(ui_dir)
-
-    app = create_engine_app(engine_config=engine_config, reload_auth=require_auth)
+    saved_ui_dir = os.environ.pop("IDUN_UI_DIR", None)
+    try:
+        app = create_engine_app(
+            engine_config=engine_config, reload_auth=require_auth
+        )
+    finally:
+        if saved_ui_dir is not None:
+            os.environ["IDUN_UI_DIR"] = saved_ui_dir
 
     install_request_id_middleware(app)
     install_exception_handlers(app)
@@ -220,6 +225,25 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.include_router(integrations_router.router)
     app.include_router(traces_router.router)
     app.include_router(runtime_config_router)
+
+    # Mount the static UI LAST so the catch-all at "/" doesn't shadow
+    # any route registered above. We also drop the engine's default "/"
+    # JSON info route so the SPA index serves at /; /_engine/info is
+    # still available.
+    ui_dir = _resolve_ui_dir(settings)
+    if ui_dir is not None:
+        from fastapi.routing import APIRoute
+        from fastapi.staticfiles import StaticFiles
+
+        app.router.routes = [
+            r
+            for r in app.router.routes
+            if not (isinstance(r, APIRoute) and r.path == "/")
+        ]
+        app.mount(
+            "/", StaticFiles(directory=str(ui_dir), html=True), name="ui"
+        )
+        logger.info("mounted standalone UI at / from %s", ui_dir)
 
     return app
 
