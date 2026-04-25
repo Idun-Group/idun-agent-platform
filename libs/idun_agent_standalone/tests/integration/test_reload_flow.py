@@ -155,3 +155,48 @@ async def test_observer_survives_agent_reload(tmp_path: Path, monkeypatch):
 
                 # Restart writer so lifespan teardown's drain has a live task.
                 await app.state.trace_writer.start()
+
+
+@pytest.mark.asyncio
+async def test_name_change_is_not_structural(tmp_path: Path, monkeypatch):
+    """Bug-3 regression: a name change should hot-swap, not return 202.
+
+    Spec D11/§3.6 lists only ``framework`` and ``graph_definition`` as
+    structural; the previous code also compared ``name``, so renaming
+    the agent forced operators to restart the container even though
+    nothing about the live runtime had to change.
+    """
+    db_path = tmp_path / "rename.db"
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(yaml.safe_dump(_echo_yaml()))
+
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_path}")
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "none")
+    monkeypatch.setenv("IDUN_CONFIG_PATH", str(config_path))
+
+    async with _create_schema(f"sqlite+aiosqlite:///{db_path}"):
+        settings = StandaloneSettings()
+        app = await create_standalone_app(settings)
+
+        async with app.router.lifespan_context(app):
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://t"
+            ) as client:
+                resp = await client.put(
+                    "/admin/api/v1/agent",
+                    json={
+                        "name": "renamed-agent",
+                        "framework": "langgraph",
+                        "graph_definition": (
+                            "idun_agent_standalone.testing:echo_graph"
+                        ),
+                        "config": {"checkpointer": {"type": "memory"}},
+                    },
+                )
+                assert resp.status_code == 200, (
+                    f"name change forced restart_required: {resp.text}"
+                )
+                # Sanity check: the body should be the AgentRead, not a 202
+                # restart_required envelope.
+                body = resp.json()
+                assert body.get("name") == "renamed-agent"

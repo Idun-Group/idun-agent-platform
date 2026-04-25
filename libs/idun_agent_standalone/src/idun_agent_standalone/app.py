@@ -99,14 +99,12 @@ def _make_reload_orchestrator(observer):
         previous_cfg = getattr(request.app.state, "current_engine_config", None)
         new_cfg = await assemble_engine_config(db_session)
 
-        structural = (
-            previous_cfg is not None
-            and (
-                previous_cfg.agent.config.name != new_cfg.agent.config.name
-                or previous_cfg.agent.type != new_cfg.agent.type
-                or getattr(previous_cfg.agent.config, "graph_definition", None)
-                != getattr(new_cfg.agent.config, "graph_definition", None)
-            )
+        # Per spec D11/§3.6: only framework (agent.type) and graph_definition
+        # are structural — a name change can hot-swap.
+        structural = previous_cfg is not None and (
+            previous_cfg.agent.type != new_cfg.agent.type
+            or getattr(previous_cfg.agent.config, "graph_definition", None)
+            != getattr(new_cfg.agent.config, "graph_definition", None)
         )
 
         engine_agent = getattr(request.app.state, "agent", None)
