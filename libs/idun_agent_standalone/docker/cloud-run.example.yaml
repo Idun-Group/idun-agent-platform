@@ -9,12 +9,18 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: my-agent
+  annotations:
+    # Attach the Cloud SQL Postgres instance — required for the unix-socket
+    # form ``host=/cloudsql/PROJECT:REGION:idun-postgres`` in DATABASE_URL.
+    # Replace PROJECT and REGION with your values.
+    run.googleapis.com/cloudsql-instances: PROJECT:REGION:idun-postgres
 spec:
   template:
     metadata:
       annotations:
         autoscaling.knative.dev/minScale: "1"
         run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/cloudsql-instances: PROJECT:REGION:idun-postgres
     spec:
       containers:
         - image: gcr.io/PROJECT/my-agent:0.1.0
