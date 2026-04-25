@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete, select
 
 from idun_agent_standalone.admin.deps import require_auth
-from idun_agent_standalone.admin.reload_hook import trigger_reload
+from idun_agent_standalone.admin.reload_hook import commit_with_reload
 from idun_agent_standalone.db.models import IntegrationRow
 
 router = APIRouter(
@@ -63,10 +63,10 @@ async def create_integration(body: IntegrationCreate, request: Request):
             enabled=body.enabled,
         )
         s.add(row)
-        await s.commit()
-        reload_response = await trigger_reload(request, s)
+        reload_response = await commit_with_reload(request, s)
         if reload_response is not None:
             return reload_response
+        await s.refresh(row)
         return _to_read(row)
 
 
@@ -83,10 +83,10 @@ async def patch_integration(iid: str, body: IntegrationPatch, request: Request):
             row.config = body.config
         if body.enabled is not None:
             row.enabled = body.enabled
-        await s.commit()
-        reload_response = await trigger_reload(request, s)
+        reload_response = await commit_with_reload(request, s)
         if reload_response is not None:
             return reload_response
+        await s.refresh(row)
         return _to_read(row)
 
 
@@ -95,8 +95,7 @@ async def delete_integration(iid: str, request: Request):
     sm = request.app.state.sessionmaker
     async with sm() as s:
         await s.execute(delete(IntegrationRow).where(IntegrationRow.id == iid))
-        await s.commit()
-        reload_response = await trigger_reload(request, s)
+        reload_response = await commit_with_reload(request, s)
         if reload_response is not None:
             return reload_response
     return Response(status_code=status.HTTP_204_NO_CONTENT)

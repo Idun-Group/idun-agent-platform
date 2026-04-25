@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from idun_agent_standalone.admin.deps import require_auth
-from idun_agent_standalone.admin.reload_hook import trigger_reload
+from idun_agent_standalone.admin.reload_hook import commit_with_reload
 from idun_agent_standalone.db.models import AgentRow
 
 router = APIRouter(
@@ -76,10 +76,10 @@ async def put_agent(body: AgentUpdate, request: Request):
             row.framework = body.framework
             row.graph_definition = body.graph_definition
             row.config = body.config
-        await s.commit()
-        reload_response = await trigger_reload(request, s)
+        reload_response = await commit_with_reload(request, s)
         if reload_response is not None:
             return reload_response
+        await s.refresh(row)
         return _to_read(row)
 
 
@@ -87,7 +87,7 @@ async def put_agent(body: AgentUpdate, request: Request):
 async def force_reload(request: Request) -> JSONResponse | dict[str, str]:
     sm = request.app.state.sessionmaker
     async with sm() as s:
-        reload_response = await trigger_reload(request, s)
+        reload_response = await commit_with_reload(request, s)
         if reload_response is not None:
             return reload_response
     return {"status": "noop"}

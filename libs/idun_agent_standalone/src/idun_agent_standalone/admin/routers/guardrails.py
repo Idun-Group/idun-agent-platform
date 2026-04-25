@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from idun_agent_standalone.admin.deps import require_auth
-from idun_agent_standalone.admin.reload_hook import trigger_reload
+from idun_agent_standalone.admin.reload_hook import commit_with_reload
 from idun_agent_standalone.db.models import GuardrailRow
 
 router = APIRouter(
@@ -45,8 +45,8 @@ async def put_guardrails(body: GuardrailsPayload, request: Request):
         else:
             row.config = body.config
             row.enabled = body.enabled
-        await s.commit()
-        reload_response = await trigger_reload(request, s)
+        reload_response = await commit_with_reload(request, s)
         if reload_response is not None:
             return reload_response
+        await s.refresh(row)
         return GuardrailsPayload(config=row.config or {}, enabled=row.enabled)
