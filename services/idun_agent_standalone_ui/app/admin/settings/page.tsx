@@ -527,8 +527,39 @@ export default function SettingsPage() {
         </Button>
       </div>
 
+      <SessionsSection />
       {runtimeAuthMode === "password" && <SecuritySection />}
     </div>
+  );
+}
+
+function SessionsSection() {
+  // The session TTL is configured via env var (IDUN_SESSION_TTL_SECONDS) at
+  // process start, not stored in the DB. Surfacing it as read-only here keeps
+  // the spec parity ("Settings — session TTL editor") without a backend round
+  // trip; ops folks edit the env var on their VM / Cloud Run service.
+  const ttl =
+    typeof window !== "undefined"
+      ? (window.__IDUN_CONFIG__ as unknown as { sessionTtlSeconds?: number })
+          ?.sessionTtlSeconds ?? 86400
+      : 86400;
+  const hours = Math.round((ttl / 3600) * 10) / 10;
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="text-xs uppercase tracking-wider text-[var(--color-fg)]/60">
+        Sessions
+      </div>
+      <div className="text-sm text-[var(--color-fg)]/80">
+        Admin session TTL: <strong>{ttl.toLocaleString()}s</strong>
+        <span className="text-[var(--color-fg)]/60"> (~{hours}h)</span>
+      </div>
+      <div className="text-xs text-[var(--color-fg)]/60">
+        Configured via <code>IDUN_SESSION_TTL_SECONDS</code> on the standalone
+        process. Restart the container after changing it. Sliding renewal
+        re-issues the cookie when the user hits the API within 10% of the TTL
+        boundary.
+      </div>
+    </Card>
   );
 }
 
