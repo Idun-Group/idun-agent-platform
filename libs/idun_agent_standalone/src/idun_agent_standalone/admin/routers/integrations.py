@@ -52,6 +52,18 @@ async def list_integrations(request: Request):
         return [_to_read(r) for r in rows]
 
 
+@router.get("/{iid}", response_model=IntegrationRead)
+async def get_integration(iid: str, request: Request) -> IntegrationRead:
+    sm = request.app.state.sessionmaker
+    async with sm() as s:
+        row = (
+            await s.execute(select(IntegrationRow).where(IntegrationRow.id == iid))
+        ).scalar_one_or_none()
+        if row is None:
+            raise HTTPException(status_code=404, detail="not_found")
+        return _to_read(row)
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_integration(body: IntegrationCreate, request: Request):
     sm = request.app.state.sessionmaker

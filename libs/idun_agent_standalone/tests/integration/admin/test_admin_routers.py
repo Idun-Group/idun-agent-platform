@@ -331,6 +331,55 @@ async def test_mcp_collection_crud(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_integrations_collection_crud(tmp_path, monkeypatch):
+    """CRUD plus the per-id read added for spec §3.3 symmetry."""
+    monkeypatch.setenv(
+        "DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'int.db'}"
+    )
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "none")
+    app, _ = await make_test_app()
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://t"
+    ) as c:
+        r = await c.post(
+            "/admin/api/v1/integrations",
+            json={
+                "kind": "discord",
+                "config": {"bot_token": "T"},
+                "enabled": True,
+            },
+        )
+        assert r.status_code == 201, r.text
+        iid = r.json()["id"]
+
+        # Per-id GET (added in A3) should return the same payload.
+        r_get = await c.get(f"/admin/api/v1/integrations/{iid}")
+        assert r_get.status_code == 200, r_get.text
+        body = r_get.json()
+        assert body["id"] == iid
+        assert body["kind"] == "discord"
+        assert body["enabled"] is True
+        assert body["config"] == {"bot_token": "T"}
+
+        # Missing id → 404.
+        r_missing = await c.get("/admin/api/v1/integrations/does-not-exist")
+        assert r_missing.status_code == 404
+
+        # Patch then re-read.
+        r_patch = await c.patch(
+            f"/admin/api/v1/integrations/{iid}", json={"enabled": False}
+        )
+        assert r_patch.status_code == 200
+        r2 = await c.get(f"/admin/api/v1/integrations/{iid}")
+        assert r2.json()["enabled"] is False
+
+        r_del = await c.delete(f"/admin/api/v1/integrations/{iid}")
+        assert r_del.status_code == 204
+        r_after = await c.get(f"/admin/api/v1/integrations/{iid}")
+        assert r_after.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_prompts_versioning(tmp_path, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'p.db'}")
     monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "none")
