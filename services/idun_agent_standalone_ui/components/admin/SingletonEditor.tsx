@@ -4,8 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { type Singleton } from "@/lib/api";
-import { JsonEditor } from "@/components/admin/JsonEditor";
 import { SaveToolbar } from "@/components/admin/SaveToolbar";
+import { YamlEditor } from "@/components/admin/YamlEditor";
+import { Button } from "@/components/ui/Button";
 
 type Props<T> = {
   title: string;
@@ -25,6 +26,7 @@ export function SingletonEditor<T>({
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: [queryKey], queryFn: fetcher });
   const [draft, setDraft] = useState<Singleton<T> | null>(null);
+  const [editYaml, setEditYaml] = useState(false);
 
   useEffect(() => {
     if (data) setDraft(data);
@@ -53,6 +55,16 @@ export function SingletonEditor<T>({
         busy={save.isPending}
         onRevert={() => data && setDraft(data)}
         onSave={() => save.mutate(draft)}
+        extraActions={
+          <Button
+            size="sm"
+            variant="ghost"
+            type="button"
+            onClick={() => setEditYaml((v) => !v)}
+          >
+            {editYaml ? "Done editing YAML" : "Edit YAML"}
+          </Button>
+        }
       />
       <div className="p-6 max-w-3xl space-y-4">
         {initialEnabled !== undefined && (
@@ -69,11 +81,12 @@ export function SingletonEditor<T>({
         )}
         <div>
           <div className="text-xs uppercase tracking-wider text-[var(--color-fg)]/50 mb-2">
-            Configuration (JSON)
+            Configuration ({editYaml ? "YAML editor" : "YAML preview"})
           </div>
-          <JsonEditor
+          <YamlEditor
             value={draft.config}
             onChange={(v) => setDraft({ ...draft, config: v as T })}
+            readOnly={!editYaml}
           />
         </div>
       </div>

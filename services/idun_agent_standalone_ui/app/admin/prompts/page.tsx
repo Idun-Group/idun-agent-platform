@@ -4,11 +4,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { YamlEditor } from "@/components/admin/YamlEditor";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 
 export default function PromptsPage() {
   const qc = useQueryClient();
@@ -120,11 +120,11 @@ export default function PromptsPage() {
           </div>
           <div className="space-y-1">
             <label className="text-xs text-[var(--color-fg)]/70">Content</label>
-            <Textarea
-              rows={10}
-              value={draftContent}
-              onChange={(e) => setDraftContent(e.target.value)}
-              className="font-mono text-xs"
+            <YamlEditor
+              mode="jinja"
+              text={draftContent}
+              onChange={(v) => setDraftContent(typeof v === "string" ? v : "")}
+              rows={12}
             />
           </div>
           {variables.length > 0 && (

@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { type AgentRead, ApiError, api } from "@/lib/api";
-import { JsonEditor } from "@/components/admin/JsonEditor";
 import { SaveToolbar } from "@/components/admin/SaveToolbar";
+import { YamlEditor } from "@/components/admin/YamlEditor";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -19,6 +19,7 @@ export default function AgentPage() {
   });
   const [draft, setDraft] = useState<AgentRead | null>(null);
   const [restartRequired, setRestartRequired] = useState(false);
+  const [editYaml, setEditYaml] = useState(false);
 
   useEffect(() => {
     if (data) setDraft(data);
@@ -75,16 +76,26 @@ export default function AgentPage() {
         onRevert={() => data && setDraft(data)}
         onSave={() => save.mutate(draft)}
         extraActions={
-          <Button
-            size="sm"
-            variant="ghost"
-            type="button"
-            title="Reload now (no config change)"
-            disabled={reload.isPending}
-            onClick={() => reload.mutate()}
-          >
-            {reload.isPending ? "Reloading…" : "Reload now"}
-          </Button>
+          <>
+            <Button
+              size="sm"
+              variant="ghost"
+              type="button"
+              onClick={() => setEditYaml((v) => !v)}
+            >
+              {editYaml ? "Done editing YAML" : "Edit YAML"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              type="button"
+              title="Reload now (no config change)"
+              disabled={reload.isPending}
+              onClick={() => reload.mutate()}
+            >
+              {reload.isPending ? "Reloading…" : "Reload now"}
+            </Button>
+          </>
         }
       />
       {restartRequired && (
@@ -149,13 +160,14 @@ export default function AgentPage() {
         </section>
         <section className="space-y-2">
           <h3 className="text-xs uppercase tracking-wider text-[var(--color-fg)]/60">
-            Advanced (JSON)
+            Advanced ({editYaml ? "YAML editor" : "YAML preview"})
           </h3>
-          <JsonEditor
+          <YamlEditor
             value={draft.config}
             onChange={(v) =>
               setDraft({ ...draft, config: v as Record<string, unknown> })
             }
+            readOnly={!editYaml}
           />
         </section>
       </form>
