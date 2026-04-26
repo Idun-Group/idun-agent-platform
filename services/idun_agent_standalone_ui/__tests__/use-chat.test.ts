@@ -1,4 +1,4 @@
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { AGUIEvent, RunOptions } from "@/lib/agui";
 
@@ -9,6 +9,26 @@ import type { AGUIEvent, RunOptions } from "@/lib/agui";
 vi.mock("@/lib/agui", () => {
   return {
     runAgent: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
+// Mock the API module so hydration doesn't reach for window.fetch. By default
+// every test sees an empty trace history (matching a fresh thread) — tests
+// that exercise hydration override the resolved value explicitly.
+vi.mock("@/lib/api", () => {
+  class ApiError extends Error {
+    constructor(public status: number, public detail: unknown) {
+      super(`API ${status}`);
+    }
+  }
+  return {
+    ApiError,
+    api: {
+      getSessionEvents: vi.fn().mockResolvedValue({
+        events: [],
+        truncated: false,
+      }),
+    },
   };
 });
 
@@ -260,6 +280,111 @@ describe("useChat", () => {
     if (assistant && assistant.role === "assistant") {
       expect(assistant.text).toBe("ai-echo: ping");
     }
+  });
+
+  it("resets messages when threadId changes", async () => {
+    // P3.2: clicking a session in HistorySidebar pushes a new threadId.
+    // useChat must abort any in-flight stream and clear messages/events
+    // synchronously before hydration runs against the new id.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      { type: "TEXT_MESSAGE_CONTENT", delta: "first answer" },
+      { type: "RUN_FINISHED" },
+    ];
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) opts.onEvent(event);
+      },
+    );
+
+    const { result, rerender } = renderHook(
+      ({ tid }: { tid: string }) => useChat(tid),
+      { initialProps: { tid: "t1" } },
+    );
+
+    await act(async () => {
+      await result.current.send("hello");
+    });
+    expect(result.current.messages.length).toBeGreaterThan(0);
+    expect(result.current.events.length).toBeGreaterThan(0);
+
+    rerender({ tid: "t2" });
+
+    // The reset path is synchronous — messages/events/status all clear in
+    // the same effect tick. Hydration is async but the empty-events
+    // default mock ensures the lists stay empty.
+    await waitFor(() => {
+      expect(result.current.messages).toEqual([]);
+      expect(result.current.events).toEqual([]);
+    });
+    expect(result.current.status).toBe("idle");
+    expect(result.current.error).toBeNull();
+  });
+
+  it("hydrates messages from MESSAGES_SNAPSHOT on threadId change", async () => {
+    // P3.2: after switching threads, useChat replays persisted trace
+    // events. The pre-pass scans for the latest MESSAGES_SNAPSHOT and
+    // seeds the chat from it (cumulative under LangGraph's add_messages).
+    const { api } = (await import("@/lib/api")) as unknown as {
+      api: { getSessionEvents: ReturnType<typeof vi.fn> };
+    };
+    const { useChat } = await import("@/lib/use-chat");
+
+    // Mount fires hydration against "t1" too, then rerender against "t2"
+    // — return the snapshot only for the "t2" call so the assertion
+    // exercises the post-rerender hydration path specifically.
+    api.getSessionEvents.mockImplementation(async (id: string) => {
+      if (id === "t2") {
+        return {
+          events: [
+            {
+              id: 1,
+              session_id: "t2",
+              run_id: "r1",
+              sequence: 0,
+              event_type: "MessagesSnapshotEvent",
+              payload: {
+                type: "MESSAGES_SNAPSHOT",
+                messages: [
+                  { id: "u1", role: "user", content: "ping" },
+                  { id: "a1", role: "assistant", content: "echo: ping" },
+                ],
+              },
+              created_at: "2026-04-26T00:00:00Z",
+            },
+          ],
+          truncated: false,
+        };
+      }
+      return { events: [], truncated: false };
+    });
+
+    const { result, rerender } = renderHook(
+      ({ tid }: { tid: string }) => useChat(tid),
+      { initialProps: { tid: "t1" } },
+    );
+
+    rerender({ tid: "t2" });
+
+    await waitFor(() => {
+      expect(
+        result.current.messages.some(
+          (m) => m.role === "user" && m.text === "ping",
+        ),
+      ).toBe(true);
+      expect(
+        result.current.messages.some(
+          (m) =>
+            m.role === "assistant" &&
+            typeof m.text === "string" &&
+            m.text.includes("echo: ping"),
+        ),
+      ).toBe(true);
+    });
+    expect(result.current.status).toBe("idle");
   });
 
   it("does not overwrite streamed text when MESSAGES_SNAPSHOT also arrives", async () => {
