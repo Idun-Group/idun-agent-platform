@@ -1,10 +1,16 @@
 "use client";
 
+import { Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { type SessionSummary } from "@/lib/api";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
 import { useChat } from "@/lib/use-chat";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { ChatInput } from "./ChatInput";
 import { HeaderActions } from "./HeaderActions";
 import { HistorySidebar } from "./HistorySidebar";
@@ -20,6 +26,11 @@ import { WelcomeHero } from "./WelcomeHero";
  * the column splits into a logo+actions header, a scroll-faded thread, and
  * a gradient-faded composer dock.
  *
+ * On viewports below `md` (768px) the inline sidebar is hidden and a
+ * hamburger button in the header opens it inside a `<Sheet side="left">`
+ * drawer. The hamburger is also surfaced in the welcome state so users can
+ * reach prior conversations before sending their first message.
+ *
  * Owns navigation: the layout reads `threadId` from props but uses
  * `useRouter` to push `/?session=<uuid>` whenever the user picks a session
  * or starts a new conversation. The page-level component re-derives the
@@ -29,6 +40,7 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
   const router = useRouter();
   const { messages, send, stop, status } = useChat(threadId);
   const [theme, setTheme] = useState<ThemeConfig | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     setTheme(getRuntimeConfig().theme);
   }, []);
@@ -46,23 +58,52 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <HistorySidebar
-        activeId={threadId}
-        onPick={pickSession}
-        onNew={newConversation}
-      />
+      <div className="hidden md:block">
+        <HistorySidebar
+          activeId={threadId}
+          onPick={pickSession}
+          onNew={newConversation}
+        />
+      </div>
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent
+          side="left"
+          className="w-[300px] gap-0 p-0 sm:max-w-[300px]"
+        >
+          <SheetTitle className="sr-only">Conversation history</SheetTitle>
+          <HistorySidebar
+            activeId={threadId}
+            onPick={(s) => {
+              setDrawerOpen(false);
+              pickSession(s);
+            }}
+            onNew={() => {
+              setDrawerOpen(false);
+              newConversation();
+            }}
+          />
+        </SheetContent>
+      </Sheet>
       <div className="relative flex min-w-0 flex-1 flex-col">
         {empty ? (
-          <WelcomeHero
-            onSend={send}
-            streaming={status === "streaming"}
-            onStop={stop}
-          />
+          <>
+            <div className="absolute top-4 left-4 z-20 md:hidden">
+              <HamburgerButton onClick={() => setDrawerOpen(true)} />
+            </div>
+            <WelcomeHero
+              onSend={send}
+              streaming={status === "streaming"}
+              onStop={stop}
+            />
+          </>
         ) : (
           <>
             <header className="relative z-10">
-              <div className="mx-auto flex max-w-[720px] items-center justify-between px-6 pt-6 pb-4">
-                <Logo theme={theme} />
+              <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3 px-6 pt-6 pb-4">
+                <div className="flex items-center gap-3">
+                  <HamburgerButton onClick={() => setDrawerOpen(true)} />
+                  <Logo theme={theme} />
+                </div>
                 <HeaderActions
                   threadId={threadId}
                   onNewSession={newConversation}
@@ -92,6 +133,24 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Editorial pill-style hamburger button. Only visible below the `md`
+ * breakpoint where the inline `HistorySidebar` is hidden — opens the
+ * drawer Sheet so users can still reach session history.
+ */
+function HamburgerButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Open history"
+      className="md:hidden inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card/70 text-muted-foreground transition hover:border-foreground/20 hover:text-foreground"
+    >
+      <Menu className="h-4 w-4" />
+    </button>
   );
 }
 

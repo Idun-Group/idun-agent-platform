@@ -103,3 +103,61 @@ test("echo agent response renders in chat", async ({ page }) => {
     timeout: 15_000,
   });
 });
+
+test("chat usable on mobile viewport (375px) — sidebar collapses to drawer", async ({
+  browser,
+}) => {
+  // P3.7 regression: BrandedLayout must hide the inline 300px HistorySidebar
+  // below `md` (768px) and surface a hamburger that opens it inside a Sheet.
+  // We assert (a) composer reachable, (b) inline "+ New" pill is hidden,
+  // (c) hamburger visible, (d) opening the drawer surfaces the "+ New" pill.
+  const ctx = await browser.newContext({
+    viewport: { width: 375, height: 812 },
+  });
+  const page = await ctx.newPage();
+  await page.goto("/");
+
+  // Composer is reachable on mobile.
+  const composer = page.locator('textarea[placeholder^="Message"]');
+  await expect(composer).toBeVisible({ timeout: 15_000 });
+
+  // Inline HistorySidebar's "+ New" pill is hidden (its parent wrapper is
+  // `hidden md:block`). Pre-drawer-open we should not see it anywhere.
+  await expect(page.getByRole("button", { name: /^\+\s*New$/ })).toHaveCount(0);
+
+  // Hamburger trigger is the only mobile-visible "Open history" button.
+  const hamburger = page.getByRole("button", { name: /open history/i });
+  await expect(hamburger).toBeVisible();
+
+  // Opening the drawer mounts the HistorySidebar inside a Sheet — the
+  // "+ New" pill becomes reachable.
+  await hamburger.click();
+  await expect(page.getByRole("button", { name: /^\+\s*New$/ })).toBeVisible({
+    timeout: 5_000,
+  });
+
+  await ctx.close();
+});
+
+test("chat layout uses inline sidebar on desktop viewport (1280px)", async ({
+  browser,
+}) => {
+  // P3.7 regression: at `md+` we render HistorySidebar inline and the
+  // hamburger is hidden. The serif "History" header proves the inline
+  // sidebar is mounted.
+  const ctx = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+  });
+  const page = await ctx.newPage();
+  await page.goto("/");
+
+  // Inline HistorySidebar visible (heading "History"):
+  await expect(page.getByText(/^History$/).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  // No hamburger:
+  await expect(
+    page.getByRole("button", { name: /open history/i }),
+  ).toHaveCount(0);
+  await ctx.close();
+});

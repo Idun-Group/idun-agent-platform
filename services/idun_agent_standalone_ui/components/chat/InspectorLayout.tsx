@@ -1,10 +1,16 @@
 "use client";
 
+import { Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { type SessionSummary } from "@/lib/api";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
 import { type ChatEvent, useChat } from "@/lib/use-chat";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { ChatInput } from "./ChatInput";
 import { HeaderActions } from "./HeaderActions";
 import { HistorySidebar } from "./HistorySidebar";
@@ -44,9 +50,16 @@ function EventRow({
 /**
  * Developer-flavored chat layout (D5 in the MVP spec).
  *
- * Three-column editorial shell: a 260px `HistorySidebar` (dense) on the left,
- * a 1fr chat column in the middle reusing `MessageView`/`ChatInput`, and a
- * 320px right rail that surfaces the raw AG-UI event ring from `useChat`.
+ * Editorial three-column shell on `lg+` viewports: a 260px `HistorySidebar`
+ * (dense) on the left, a 1fr chat column in the middle reusing
+ * `MessageView`/`ChatInput`, and a 320px right rail that surfaces the raw
+ * AG-UI event ring from `useChat`.
+ *
+ * Responsive collapse rules:
+ * - `<md`: 1 column = chat only. Sessions move into a left `<Sheet>` opened
+ *   via a hamburger pill in the header. Right rail is hidden.
+ * - `md`: 2 columns = sessions + chat. Right rail still hidden.
+ * - `lg+`: full 3-column grid.
  *
  * The right panel is the only place in the redesigned chat UI that exposes
  * the underlying `events` array — auto-scroll keeps the latest event visible
@@ -57,6 +70,7 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
   const router = useRouter();
   const { messages, events, send, stop, status } = useChat(threadId);
   const [theme, setTheme] = useState<ThemeConfig | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     setTheme(getRuntimeConfig().theme);
   }, []);
@@ -85,15 +99,45 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
     router.push(`/?session=${encodeURIComponent(s.id)}`);
 
   return (
-    <div className="grid h-screen grid-cols-[260px_1fr_320px] bg-background text-foreground">
-      <HistorySidebar
-        activeId={threadId}
-        onPick={pickSession}
-        onNew={newConversation}
-        dense
-      />
+    <div className="grid h-screen grid-cols-1 bg-background text-foreground md:grid-cols-[260px_1fr] lg:grid-cols-[260px_1fr_320px]">
+      <div className="hidden md:block">
+        <HistorySidebar
+          activeId={threadId}
+          onPick={pickSession}
+          onNew={newConversation}
+          dense
+        />
+      </div>
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent
+          side="left"
+          className="w-[260px] gap-0 p-0 sm:max-w-[260px]"
+        >
+          <SheetTitle className="sr-only">Conversation history</SheetTitle>
+          <HistorySidebar
+            activeId={threadId}
+            onPick={(s) => {
+              setDrawerOpen(false);
+              pickSession(s);
+            }}
+            onNew={() => {
+              setDrawerOpen(false);
+              newConversation();
+            }}
+            dense
+          />
+        </SheetContent>
+      </Sheet>
       <main className="flex flex-col overflow-hidden">
-        <div className="flex items-center border-b border-border px-4 py-2">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-2">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open history"
+            className="md:hidden inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card/70 text-muted-foreground transition hover:border-foreground/20 hover:text-foreground"
+          >
+            <Menu className="h-4 w-4" />
+          </button>
           <strong className="text-sm font-medium">{appName}</strong>
           <div className="ml-auto">
             <HeaderActions
@@ -117,7 +161,7 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
           />
         </div>
       </main>
-      <aside className="flex flex-col overflow-hidden border-l border-border bg-card/30">
+      <aside className="hidden flex-col overflow-hidden border-l border-border bg-card/30 lg:flex">
         <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           <span>Run events</span>
           <span className="text-muted-foreground/40">·</span>
