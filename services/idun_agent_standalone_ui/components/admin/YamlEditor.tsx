@@ -7,7 +7,7 @@ import { parse, stringify } from "yaml";
 const Monaco = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
   loading: () => (
-    <div className="h-[300px] grid place-items-center text-xs text-[var(--color-fg)]/50">
+    <div className="h-[300px] grid place-items-center text-xs text-muted-foreground">
       Loading editor…
     </div>
   ),
@@ -79,7 +79,7 @@ export function YamlEditor({
   return (
     <div className="space-y-2">
       <div
-        className="rounded-md border border-[var(--color-border)] overflow-hidden"
+        className="rounded-md border border-border overflow-hidden"
         style={{ height }}
       >
         <Monaco

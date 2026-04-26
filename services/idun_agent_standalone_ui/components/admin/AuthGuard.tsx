@@ -14,7 +14,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   }, [data, error, isLoading, router]);
   if (isLoading)
     return (
-      <div className="p-8 text-sm text-[var(--color-fg)]/60">Loading…</div>
+      <div className="p-8 text-sm text-muted-foreground">Loading…</div>
     );
   if (!data?.authenticated) return null;
   return <>{children}</>;

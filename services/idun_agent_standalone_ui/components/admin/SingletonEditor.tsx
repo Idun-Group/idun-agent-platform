@@ -80,7 +80,7 @@ export function SingletonEditor<T>({
           </label>
         )}
         <div>
-          <div className="text-xs uppercase tracking-wider text-[var(--color-fg)]/50 mb-2">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
             Configuration ({editYaml ? "YAML editor" : "YAML preview"})
           </div>
           <YamlEditor

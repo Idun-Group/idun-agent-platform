@@ -31,6 +31,23 @@ SCHEMA_WHEEL=$(ls -t dist/idun_agent_schema-*.whl | head -1)
 ENGINE_WHEEL=$(ls -t dist/idun_agent_engine-*.whl | head -1)
 STANDALONE_WHEEL=$(ls -t dist/idun_agent_standalone-*.whl | head -1)
 
+echo "Inspecting wheel content..."
+WHEEL=$STANDALONE_WHEEL
+# Capture once: grep -q closes its stdin early, which under set -o pipefail
+# can surface as a SIGPIPE on unzip and fail the pipeline before grep returns.
+WHEEL_CONTENTS=$(unzip -l "$WHEEL")
+
+grep -q "idun_agent_standalone/alembic.ini" <<<"$WHEEL_CONTENTS" \
+  || { echo "MISSING: alembic.ini in wheel" >&2; exit 1; }
+
+grep -q "idun_agent_standalone/db/migrations/" <<<"$WHEEL_CONTENTS" \
+  || { echo "MISSING: db/migrations/ in wheel" >&2; exit 1; }
+
+grep -q "idun_agent_standalone/static/index.html" <<<"$WHEEL_CONTENTS" \
+  || { echo "MISSING: static/index.html in wheel" >&2; exit 1; }
+
+echo "Wheel content: OK"
+
 "$TMP/venv/bin/pip" install --quiet \
   "$SCHEMA_WHEEL" "$ENGINE_WHEEL" "$STANDALONE_WHEEL"
 

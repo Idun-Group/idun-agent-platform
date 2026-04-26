@@ -20,8 +20,8 @@ export function SaveToolbar({
   extraActions?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
-      <h2 className="font-semibold text-[var(--color-fg)]">{title}</h2>
+    <div className="flex items-center gap-3 px-6 py-3 border-b border-border bg-background">
+      <h2 className="font-semibold text-foreground">{title}</h2>
       {dirty && (
         <Badge
           variant="outline"
