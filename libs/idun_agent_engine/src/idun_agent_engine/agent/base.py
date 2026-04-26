@@ -12,6 +12,11 @@ from ag_ui.core.types import RunAgentInput
 from idun_agent_schema.engine.agent import BaseAgentConfig
 from idun_agent_schema.engine.capabilities import AgentCapabilities
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.sessions import (
+    HistoryCapabilities,
+    SessionDetail,
+    SessionSummary,
+)
 
 from idun_agent_engine.agent.observers import (
     RunEventObserver,
@@ -128,7 +133,9 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
         # For the ABC, we can't have a `yield` directly in the abstract method body.
         # The signature itself defines it as an async generator.
         # Example: async for chunk in agent.stream(message): ...
-        if False:  # pragma: no cover (This is just to make it a generator type for static analysis)
+        if (
+            False
+        ):  # pragma: no cover (This is just to make it a generator type for static analysis)
             yield
 
     @abstractmethod
@@ -151,3 +158,38 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
         """
         if False:  # pragma: no cover
             yield  # type: ignore[misc]
+
+    def history_capabilities(self) -> HistoryCapabilities:
+        """Declare session-history support for this adapter.
+
+        Default: not supported. Override in concrete adapters that wire a
+        memory backend (ADK ``session_service``, LangGraph ``checkpointer``).
+        """
+        return HistoryCapabilities(can_list=False, can_get=False)
+
+    async def list_sessions(
+        self, *, user_id: str | None = None
+    ) -> list[SessionSummary]:
+        """List sessions visible to ``user_id``.
+
+        Concrete adapters that report ``history_capabilities().can_list``
+        as ``True`` must override. The default raises
+        ``NotImplementedError`` so misconfiguration surfaces loudly
+        instead of silently returning empty data.
+        """
+        raise NotImplementedError(
+            f"list_sessions not implemented for {type(self).__name__}"
+        )
+
+    async def get_session(
+        self, session_id: str, *, user_id: str | None = None
+    ) -> SessionDetail | None:
+        """Return the reconstructed message thread for ``session_id``.
+
+        Concrete adapters that report ``history_capabilities().can_get``
+        as ``True`` must override. Returning ``None`` is the
+        404-equivalent at the route layer.
+        """
+        raise NotImplementedError(
+            f"get_session not implemented for {type(self).__name__}"
+        )
