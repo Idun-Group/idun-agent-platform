@@ -13,6 +13,7 @@ from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
 from idun_agent_schema.engine.capabilities import AgentCapabilities
 from idun_agent_schema.engine.guardrails import Guardrail
+from idun_agent_schema.engine.sessions import SessionDetail, SessionSummary
 from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
@@ -74,6 +75,73 @@ async def capabilities(
 ):
     """Return the agent's capability descriptor for UI auto-configuration."""
     return caps
+
+
+def _resolve_user_id(user: dict | None) -> str | None:
+    """Map a verified SSO claims dict to a user identifier for scoping.
+
+    Prefers ``email`` (matches ADK's per-user session model), falls back
+    to ``sub``. Returns ``None`` when SSO is off — the route relies on the
+    adapter's own scoping rules in that case.
+    """
+    if not user:
+        return None
+    return user.get("email") or user.get("sub")
+
+
+@agent_router.get("/sessions", response_model=list[SessionSummary])
+async def list_sessions(
+    request: Request,
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    user: Annotated[dict | None, Depends(get_verified_user)],
+):
+    """List session summaries from the active memory backend.
+
+    Returns 501 when the adapter doesn't support listing (Haystack, or a
+    LangGraph agent without a checkpointer). When SSO is enabled, the
+    user id from the JWT is forwarded to the adapter for per-user scoping.
+    """
+    caps = agent.history_capabilities()
+    if not caps.can_list:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail={
+                "error": "listing not supported by current memory backend",
+                "agent_type": agent.agent_type,
+            },
+        )
+    user_id = _resolve_user_id(user)
+    return await agent.list_sessions(user_id=user_id)
+
+
+@agent_router.get("/sessions/{session_id}", response_model=SessionDetail)
+async def get_session(
+    session_id: str,
+    request: Request,
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    user: Annotated[dict | None, Depends(get_verified_user)],
+):
+    """Return a single session's reconstructed text-only message thread.
+
+    Returns 501 when the adapter doesn't support detail retrieval and
+    404 when the session id is unknown (or when the SSO-scoped user
+    isn't allowed to see it — the adapter enforces that and returns
+    ``None``).
+    """
+    caps = agent.history_capabilities()
+    if not caps.can_get:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail={
+                "error": "session detail not supported by current memory backend",
+                "agent_type": agent.agent_type,
+            },
+        )
+    user_id = _resolve_user_id(user)
+    detail = await agent.get_session(session_id, user_id=user_id)
+    if detail is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return detail
 
 
 @agent_router.post("/run")
