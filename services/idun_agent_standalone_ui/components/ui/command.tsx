@@ -46,6 +46,11 @@ function CommandDialog({
   className?: string
   showCloseButton?: boolean
 }) {
+  // Wrap children with `<Command>` so cmdk's internal context
+  // (`useStore` / `useCommand`) is available to CommandInput/List/Empty.
+  // Without this wrapper the children call `useSyncExternalStore` against
+  // an `undefined` context and React throws
+  // "Cannot read properties of undefined (reading 'subscribe')".
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
@@ -59,7 +64,7 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        <Command>{children}</Command>
       </DialogContent>
     </Dialog>
   )

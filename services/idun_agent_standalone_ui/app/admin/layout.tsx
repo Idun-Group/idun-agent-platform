@@ -7,6 +7,7 @@ import { AuthGuard } from "@/components/admin/AuthGuard";
 import { GlobalCommand } from "@/components/admin/GlobalCommand";
 import { Topbar } from "@/components/admin/Topbar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [commandOpen, setCommandOpen] = useState(false);
@@ -26,14 +27,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <AuthGuard>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <Topbar onOpenCommand={() => setCommandOpen(true)} />
-          <main className="flex-1 overflow-y-auto bg-background">{children}</main>
-        </SidebarInset>
-        <GlobalCommand open={commandOpen} onOpenChange={setCommandOpen} />
-      </SidebarProvider>
+      {/* SidebarMenuButton wraps its trigger in a Tooltip when a `tooltip`
+          prop is set (for the collapsed icon-rail label). Provide a
+          TooltipProvider here so AppSidebar's items don't crash in
+          standalone admin pages. */}
+      <TooltipProvider delayDuration={0}>
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset>
+            <Topbar onOpenCommand={() => setCommandOpen(true)} />
+            <main className="flex-1 overflow-y-auto bg-background">
+              {children}
+            </main>
+          </SidebarInset>
+          <GlobalCommand open={commandOpen} onOpenChange={setCommandOpen} />
+        </SidebarProvider>
+      </TooltipProvider>
     </AuthGuard>
   );
 }
