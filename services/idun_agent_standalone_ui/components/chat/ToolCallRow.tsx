@@ -42,9 +42,11 @@ export function ToolCallRow({ n, call }: Props) {
   const parsed = parseArgs(call.name, call.args || "");
 
   const status = call.error ? "error" : call.done ? "ok" : "running";
+  // Match `BadgeTone` palette: destructive token for errors, emerald/amber
+  // for success/running (the codebase has no `--success`/`--warning` token).
   const statusColor =
     status === "error"
-      ? "bg-rose-500"
+      ? "bg-destructive"
       : status === "ok"
         ? "bg-emerald-500"
         : "bg-amber-400 animate-pulse";

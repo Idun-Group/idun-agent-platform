@@ -35,7 +35,7 @@ describe("HistorySidebar", () => {
     vi.clearAllMocks();
   });
 
-  it("renders shimmer skeletons while loading", () => {
+  it("renders shadcn Skeleton placeholders while loading", () => {
     // Pending promise — query stays in the loading state.
     listSessionsMock.mockImplementation(() => new Promise(() => {}));
 
@@ -46,7 +46,9 @@ describe("HistorySidebar", () => {
     );
 
     expect(screen.getByText("History")).toBeInTheDocument();
-    expect(container.querySelectorAll(".shimmer")).toHaveLength(3);
+    expect(
+      container.querySelectorAll('[data-slot="skeleton"]'),
+    ).toHaveLength(3);
   });
 
   it("renders empty-state copy when no sessions exist", async () => {

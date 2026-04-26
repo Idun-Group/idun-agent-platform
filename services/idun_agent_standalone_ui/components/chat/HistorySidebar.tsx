@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type SessionSummary, ApiError, api } from "@/lib/api";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -74,9 +75,9 @@ export function HistorySidebar({ activeId, onPick, onNew, dense = false }: Props
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {isLoading ? (
           <div className="flex flex-col gap-2 px-1">
-            <div className="shimmer h-12 rounded-lg" />
-            <div className="shimmer h-12 rounded-lg" />
-            <div className="shimmer h-12 rounded-lg" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+            <Skeleton className="h-12 w-full rounded-lg" />
+            <Skeleton className="h-12 w-full rounded-lg" />
           </div>
         ) : isError ? (
           <Alert variant="destructive" className="mx-1">
