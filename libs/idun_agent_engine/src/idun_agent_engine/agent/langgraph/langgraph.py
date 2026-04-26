@@ -25,6 +25,12 @@ from idun_agent_schema.engine.langgraph import (
     SqliteCheckpointConfig,
 )
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.sessions import (
+    HistoryCapabilities,
+    SessionDetail,
+    SessionMessage,
+    SessionSummary,
+)
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -56,6 +62,122 @@ def _extract_text_content(content: Any) -> str:
         ):
             parts.append(block["text"])
     return "".join(parts) if parts else str(content)
+
+
+def _lc_messages_to_session(messages: list[Any]) -> list[SessionMessage]:
+    """Map LangChain messages to text-only :class:`SessionMessage` rows.
+
+    Per the agent-sessions spec §5: ``HumanMessage`` becomes role
+    ``"user"``; ``AIMessage`` becomes role ``"assistant"``. ``ToolMessage``
+    is dropped along with any message whose stringified content is empty.
+    ``SystemMessage`` and other unexpected types are skipped — chat history
+    is meant to mirror the user-facing transcript, not the internal scaffolding.
+    """
+    from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+
+    out: list[SessionMessage] = []
+    for m in messages:
+        if isinstance(m, ToolMessage):
+            continue
+        # AIMessage.content can be a string OR a list of content blocks
+        # (Gemini, Claude, etc.). Coalesce to a string.
+        content = getattr(m, "content", "")
+        if isinstance(content, list):
+            text_parts = [
+                p.get("text")
+                for p in content
+                if isinstance(p, dict) and isinstance(p.get("text"), str)
+            ]
+            content = "".join(t for t in text_parts if t)
+        if not isinstance(content, str) or not content.strip():
+            continue
+        if isinstance(m, HumanMessage):
+            role: str = "user"
+        elif isinstance(m, AIMessage):
+            role = "assistant"
+        else:
+            # Skip SystemMessage, FunctionMessage, and unknown types.
+            continue
+        out.append(
+            SessionMessage(
+                id=str(getattr(m, "id", None) or f"msg-{len(out)}"),
+                role=role,  # type: ignore[arg-type]
+                content=content,
+                timestamp=None,  # LangChain messages don't carry timestamps
+            )
+        )
+    return out
+
+
+async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
+    """Best-effort thread enumeration from a LangGraph checkpointer.
+
+    Inspects internal storage / table layout per saver type. The public
+    ``BaseCheckpointSaver`` interface has no list-threads primitive
+    (verified via context7); this helper is the documented "internal-API
+    peek" from the agent-sessions spec §5. Stable on
+    ``langgraph-checkpoint`` 0.5–1.x where ``PRIMARY KEY (thread_id,
+    checkpoint_ns, checkpoint_id)`` is fixed.
+
+    Raises ``NotImplementedError`` for custom user-supplied checkpointers
+    so callers can degrade to an empty list with a warning instead of
+    silently returning misleading data.
+    """
+    # InMemorySaver — public attribute ``storage`` is a dict keyed by
+    # ``thread_id`` (verified on installed langgraph-checkpoint 1.x).
+    if isinstance(saver, InMemorySaver):
+        storage = getattr(saver, "storage", None)
+        if isinstance(storage, dict):
+            return list(storage.keys())[:limit]
+        return []
+
+    # AsyncSqliteSaver — query the underlying ``aiosqlite`` connection.
+    if isinstance(saver, AsyncSqliteSaver):
+        await saver.setup()
+        async with saver.lock, saver.conn.cursor() as cur:
+            await cur.execute(
+                "SELECT thread_id, MAX(checkpoint_id) AS latest "
+                "FROM checkpoints GROUP BY thread_id "
+                "ORDER BY latest DESC LIMIT ?",
+                (limit,),
+            )
+            rows = await cur.fetchall()
+            return [row[0] for row in rows]
+
+    # AsyncPostgresSaver — psycopg async cursor via the saver's lock.
+    if isinstance(saver, AsyncPostgresSaver):
+        async with saver.lock, saver.conn.cursor() as cur:
+            await cur.execute(
+                "SELECT thread_id, MAX(checkpoint_id) AS latest "
+                "FROM checkpoints GROUP BY thread_id "
+                "ORDER BY latest DESC LIMIT %s",
+                (limit,),
+            )
+            rows = await cur.fetchall()
+            return [row[0] for row in rows]
+
+    raise NotImplementedError(
+        f"thread enumeration not supported for {type(saver).__name__}"
+    )
+
+
+def _state_last_update_time(state: Any) -> float | None:
+    """Parse a ``StateSnapshot.created_at`` ISO-8601 string into epoch seconds.
+
+    LangGraph's ``StateSnapshot.created_at`` is documented as ISO 8601 but
+    the format varies between savers (Z-suffix vs. +00:00 vs. naive). Parse
+    defensively and fall back to ``None`` rather than raising — last-update
+    time is metadata, not a guarantee.
+    """
+    created_at = getattr(state, "created_at", None)
+    if not isinstance(created_at, str):
+        return None
+    try:
+        from datetime import datetime
+
+        return datetime.fromisoformat(created_at.replace("Z", "+00:00")).timestamp()
+    except (ValueError, TypeError):  # pragma: no cover - defensive
+        return None
 
 
 class LanggraphAgent(agent_base.BaseAgent):
@@ -716,9 +838,98 @@ class LanggraphAgent(agent_base.BaseAgent):
             ),
             input=InputDescriptor(mode=input_mode, schema_=input_json_schema),
             output=OutputDescriptor(mode=output_mode, schema_=output_json_schema),
+            history=self.history_capabilities(),
         )
         self._cached_capabilities = result
         return result
+
+    def history_capabilities(self) -> HistoryCapabilities:
+        """Declare LangGraph session-history support.
+
+        Listing and detail are both supported when a checkpointer is wired
+        (memory / sqlite / postgres). With no checkpointer there is no
+        durable thread state, so both flags collapse to ``False``.
+        """
+        has_memory = self._checkpointer is not None
+        return HistoryCapabilities(can_list=has_memory, can_get=has_memory)
+
+    async def list_sessions(
+        self, *, user_id: str | None = None
+    ) -> list[SessionSummary]:
+        """List threads via internal-API peek on the configured checkpointer.
+
+        ``user_id`` is accepted but ignored: LangGraph checkpointers have no
+        user-id concept, so summaries always report ``user_id=None``. Per
+        spec §5, listing is single-user; multi-tenant scoping is deferred
+        until LangGraph adds first-class thread metadata.
+
+        Returns an empty list if no checkpointer is wired or the saver type
+        does not expose enumeration (a warning is logged for the latter).
+        """
+        if not self._checkpointer:
+            return []
+
+        try:
+            thread_ids = await _enumerate_thread_ids(self._checkpointer)
+        except NotImplementedError as exc:
+            logger.warning("Cannot enumerate LangGraph threads: %s", exc)
+            return []
+
+        out: list[SessionSummary] = []
+        for tid in thread_ids:
+            detail = await self.get_session(tid)
+            if detail is None:
+                continue
+            first = next((m for m in detail.messages if m.role == "user"), None)
+            out.append(
+                SessionSummary(
+                    id=tid,
+                    last_update_time=detail.last_update_time,
+                    user_id=None,
+                    thread_id=tid,
+                    preview=(first.content[:120] if first else None),
+                )
+            )
+        return out
+
+    async def get_session(
+        self, session_id: str, *, user_id: str | None = None
+    ) -> SessionDetail | None:
+        """Reconstruct a single thread's text-only message transcript.
+
+        Uses the public ``aget_state`` API on the compiled graph. ``user_id``
+        is accepted for API symmetry but ignored (single-user scoping —
+        see :meth:`list_sessions`). Returns ``None`` when the agent is not
+        initialized, no checkpointer is wired, the thread has no state,
+        or ``aget_state`` raises (e.g. invalid thread id).
+        """
+        if not self._agent_instance or not self._checkpointer:
+            return None
+
+        config: dict[str, Any] = {"configurable": {"thread_id": session_id}}
+        try:
+            state = await self._agent_instance.aget_state(config)
+        except Exception as exc:  # noqa: BLE001 - upstream raises broad errors
+            logger.warning(
+                "aget_state failed for thread %s: %s", session_id, exc
+            )
+            return None
+
+        if state is None:
+            return None
+
+        values = getattr(state, "values", None) or {}
+        msgs = values.get("messages") if isinstance(values, dict) else None
+        if not msgs:
+            return None
+
+        return SessionDetail(
+            id=session_id,
+            last_update_time=_state_last_update_time(state),
+            user_id=None,
+            thread_id=session_id,
+            messages=_lc_messages_to_session(msgs),
+        )
 
     @staticmethod
     def _unwrap_schema_fields(schema_cls: type | None) -> dict[str, Any] | None:
