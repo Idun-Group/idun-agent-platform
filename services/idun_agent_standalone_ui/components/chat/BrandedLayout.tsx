@@ -34,7 +34,7 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
         </div>
         <strong>{theme?.appName ?? "Idun Agent"}</strong>
         <div className="ml-auto">
-          <HeaderActions threadId={threadId} tone="onPrimary" />
+          <HeaderActions threadId={threadId} />
         </div>
       </header>
       <div className="flex-1 flex flex-col gap-3 p-4 overflow-auto">

@@ -1,33 +1,82 @@
 "use client";
 
 import Link from "next/link";
-import { Settings } from "lucide-react";
-import { SessionSwitcher } from "./SessionSwitcher";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import {
+  type RuntimeConfig,
+  getRuntimeConfig,
+} from "@/lib/runtime-config";
+
+type Props = {
+  threadId?: string;
+  onNewSession?: () => void;
+};
+
+const PILL =
+  "rounded-full border border-border bg-card/70 px-3.5 py-1.5 text-[12.5px] font-medium text-muted-foreground transition hover:border-foreground/20 hover:text-foreground";
 
 /**
- * Trailing actions in every chat header — session switcher + a link to the
- * admin panel. The admin link uses /admin/ (with trailing slash) so the
- * static-export router lands on the correct directory route.
+ * Editorial header pills shared by every chat layout. Renders a "New
+ * conversation" pill, a link to the admin panel, and (when password auth is
+ * enabled) a sign-out pill. The admin link is always visible because the
+ * route itself enforces auth — anonymous deployments can still inspect
+ * configuration.
  */
-export function HeaderActions({
-  threadId,
-  tone = "default",
-}: {
-  threadId: string;
-  tone?: "default" | "onPrimary";
-}) {
-  const adminClass =
-    tone === "onPrimary"
-      ? "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs bg-white/15 hover:bg-white/25 text-white"
-      : "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs border border-[var(--color-border)] hover:bg-[var(--color-muted)] text-[var(--color-fg)]/80";
+export function HeaderActions({ onNewSession }: Props) {
+  const router = useRouter();
+  const [config, setConfig] = useState<RuntimeConfig | null>(null);
+
+  // Read runtime config inside an effect so SSR / static export remain
+  // deterministic and we don't dereference window during render.
+  useEffect(() => {
+    setConfig(getRuntimeConfig());
+  }, []);
+
+  const authMode = config?.authMode ?? "none";
+
+  const handleNewSession = () => {
+    if (onNewSession) {
+      onNewSession();
+      return;
+    }
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    router.push(`/?session=${id}`);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Even if the logout request fails we still want to drop the local
+      // session: the cookie may already be gone server-side.
+    }
+    if (typeof window !== "undefined") {
+      window.location.href = "/login/";
+    }
+  };
+
+  // TODO(B7+): expose user email/username via /admin/api/v1/auth/me so we
+  // can render an account chip here. Today the endpoint only returns
+  // `authenticated` + `auth_mode`.
 
   return (
-    <div className="flex items-center gap-3">
-      <SessionSwitcher threadId={threadId} />
-      <Link href="/admin/" className={adminClass} aria-label="Open admin panel">
-        <Settings size={12} />
+    <div className="flex items-center gap-2">
+      <button type="button" onClick={handleNewSession} className={PILL}>
+        New conversation
+      </button>
+      <Link href="/admin/" className={PILL}>
         Admin
       </Link>
+      {authMode === "password" ? (
+        <button type="button" onClick={handleSignOut} className={PILL}>
+          Sign out
+        </button>
+      ) : null}
     </div>
   );
 }
