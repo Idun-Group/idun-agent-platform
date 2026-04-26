@@ -210,6 +210,12 @@ poetry.lock
 .specstory/
 .cursor/rules/claude-mem-context.mdc
 
+# Local agent / tooling state (never commit)
+/.claude/settings.json
+/.claude/scheduled_tasks.lock
+/.claude/worktrees/
+/.cursor/hooks.json
+
 # Remotion video project
 video/
 .guardrails/
