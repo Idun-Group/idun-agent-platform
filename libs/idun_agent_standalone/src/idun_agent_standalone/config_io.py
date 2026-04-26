@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from idun_agent_schema.engine.integrations import IntegrationProvider
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +29,17 @@ from idun_agent_standalone.db.models import (
     PromptRow,
     ThemeRow,
 )
+
+
+def _normalize_provider_name(value: str) -> str:
+    """Coerce a YAML-supplied provider name to canonical (upper-case) form.
+
+    YAML may carry ``"discord"`` or ``"Discord"`` from older docs;
+    ``IntegrationProvider`` is upper-case and ``EngineConfig.integrations``
+    rejects anything else. Unknown values raise ``ValueError`` so YAML
+    bootstrap fails loudly rather than persisting junk.
+    """
+    return IntegrationProvider(value.upper()).value
 
 logger = logging.getLogger(__name__)
 
@@ -132,12 +144,11 @@ async def seed_from_yaml(session: AsyncSession, yaml_path: Path) -> None:
             )
         )
     for i in data.get("integrations") or []:
+        raw_kind = i.get("provider") or i.get("kind") or "unknown"
         session.add(
             IntegrationRow(
                 id=str(uuid.uuid4()),
-                kind=str(
-                    i.get("provider") or i.get("kind") or "unknown"
-                ).lower(),
+                kind=_normalize_provider_name(str(raw_kind)),
                 config=i.get("config") or {
                     k: v
                     for k, v in i.items()
@@ -213,7 +224,7 @@ async def export_db_as_yaml(session: AsyncSession) -> str:
     if integrations:
         out["integrations"] = [
             {
-                "provider": i.kind.upper(),
+                "provider": _normalize_provider_name(i.kind),
                 "enabled": i.enabled,
                 "config": i.config or {},
             }

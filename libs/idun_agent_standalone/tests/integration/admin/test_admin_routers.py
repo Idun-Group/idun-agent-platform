@@ -357,7 +357,9 @@ async def test_integrations_collection_crud(tmp_path, monkeypatch):
         assert r_get.status_code == 200, r_get.text
         body = r_get.json()
         assert body["id"] == iid
-        assert body["kind"] == "discord"
+        # Provider casing is normalized to the canonical schema enum
+        # (P2.2) — see ``IntegrationProvider`` in idun_agent_schema.
+        assert body["kind"] == "DISCORD"
         assert body["enabled"] is True
         assert body["config"] == {"bot_token": "T"}
 

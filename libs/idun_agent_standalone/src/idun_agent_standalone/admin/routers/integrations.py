@@ -6,12 +6,31 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from idun_agent_schema.engine.integrations import IntegrationProvider
 from pydantic import BaseModel
 from sqlalchemy import delete, select
 
 from idun_agent_standalone.admin.deps import require_auth
 from idun_agent_standalone.admin.reload_hook import commit_with_reload
 from idun_agent_standalone.db.models import IntegrationRow
+
+
+def _normalize_kind(value: str) -> str:
+    """Coerce free-form ``kind`` input to the canonical ``IntegrationProvider`` value.
+
+    ``IntegrationProvider`` is a ``StrEnum`` whose values are upper-case
+    (``"DISCORD"``, ``"SLACK"`` …). Operators may type ``"discord"`` or
+    ``"Discord"``; this collapses those to the schema's canonical form so
+    downstream ``EngineConfig.integrations`` validation always succeeds.
+    Raises ``HTTPException`` 400 for unknown providers.
+    """
+    try:
+        return IntegrationProvider(value.upper()).value
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown integration provider: {value!r}",
+        ) from exc
 
 router = APIRouter(
     prefix="/admin/api/v1/integrations",
@@ -34,6 +53,7 @@ class IntegrationCreate(BaseModel):
 
 
 class IntegrationPatch(BaseModel):
+    kind: str | None = None
     config: dict[str, Any] | None = None
     enabled: bool | None = None
 
@@ -67,10 +87,11 @@ async def get_integration(iid: str, request: Request) -> IntegrationRead:
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_integration(body: IntegrationCreate, request: Request):
     sm = request.app.state.sessionmaker
+    normalized_kind = _normalize_kind(body.kind)
     async with sm() as s:
         row = IntegrationRow(
             id=str(uuid.uuid4()),
-            kind=body.kind,
+            kind=normalized_kind,
             config=body.config,
             enabled=body.enabled,
         )
@@ -85,12 +106,15 @@ async def create_integration(body: IntegrationCreate, request: Request):
 @router.patch("/{iid}")
 async def patch_integration(iid: str, body: IntegrationPatch, request: Request):
     sm = request.app.state.sessionmaker
+    normalized_kind = _normalize_kind(body.kind) if body.kind is not None else None
     async with sm() as s:
         row = (
             await s.execute(select(IntegrationRow).where(IntegrationRow.id == iid))
         ).scalar_one_or_none()
         if row is None:
             raise HTTPException(status_code=404, detail="not_found")
+        if normalized_kind is not None:
+            row.kind = normalized_kind
         if body.config is not None:
             row.config = body.config
         if body.enabled is not None:
