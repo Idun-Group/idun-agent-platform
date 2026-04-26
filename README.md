@@ -35,7 +35,7 @@
 
 <p align="center">Idun Agent Platform is an open-source, self-hosted control plane for <b>LangGraph</b> and <b>Google ADK</b> agents. Enroll your agent and get a production-grade service with built-in observability, guardrails, memory persistence, MCP tool governance, prompt management, and SSO with workspace isolation.</p>
 
-> **Why Idun?** Teams building agents face a bad tradeoff: build the platform yourself (slow, expensive) or adopt a SaaS (lock-in, no sovereignty). Idun is the third path: you keep your agent code, your data, and your infrastructure. The platform handles the production layer.
+> **Why Idun?** Teams building agents face a tradeoff: build the platform yourself (slow, expensive) or adopt a SaaS (sovereignty trade-off). Idun is the third path: you keep your agent code, your data, and your infrastructure on the open-source engine you can fork and audit. Your agent code couples to LangGraph or ADK SDKs (those are the adapters today); the platform layer is yours to run.
 
 <p align="center">
   <img src="docs/images/readme/demo.gif" alt="Idun Agent Platform demo" width="100%"/>
@@ -144,7 +144,7 @@ Bidirectional: receive messages, invoke agents, send replies. Webhook verificati
 </table>
 
 > [!NOTE]
-> **SSO and multi-tenancy** — OIDC with Google and Okta, or username/password. Role-based workspaces (owner, admin, member, viewer). Every resource is scoped to a workspace.
+> **SSO and multi-tenancy (Manager tier)** — Google OIDC or username/password for the Manager API. Role-based workspaces (owner, admin, member, viewer). Every Manager resource is scoped to a workspace. The standalone product ships with `none` or `password` admin auth; OIDC there is on the roadmap.
 
 > [!NOTE]
 > **AG-UI streaming** — Every agent gets a standards-based streaming API, compatible with CopilotKit clients. Built-in chat playground for testing.
@@ -215,6 +215,9 @@ flowchart LR
   <img src="old-docs/images/logo/ag-ui.png" alt="AG-UI" style="height:36px; margin:6px; vertical-align:middle;" />
 </p>
 
+> [!NOTE]
+> **Framework support** — LangGraph and Google ADK are first-class today, with full adapters in the engine. LangChain is supported via the LangGraph adapter; broader native LangChain compatibility is on the [roadmap](https://docs.idunplatform.com/roadmap).
+
 ---
 
 ## Idun vs alternatives
@@ -225,17 +228,17 @@ flowchart LR
 | Multi-framework (LangGraph + ADK) | ✅ | LangGraph only | ❌ (observability only) | Manual |
 | Guardrails (PII, toxicity, topic) | ✅ 15+ built-in | ❌ | ❌ | Build yourself |
 | MCP tool governance | ✅ per-agent | ❌ | ❌ | Build yourself |
-| Multi-tenant workspaces + RBAC | ✅ | ❌ | ✅ | Build yourself |
-| SSO (OIDC, Okta, Google) | ✅ | ❌ | ✅ | Build yourself |
+| Multi-tenant workspaces + RBAC | ✅ Manager tier | ❌ | ✅ | Build yourself |
+| SSO (Google OIDC) | ✅ Manager tier | ❌ | ✅ | Build yourself |
 | Observability (Langfuse, Phoenix, LangSmith, GCP) | ✅ multi-provider | ❌ LangSmith only | ✅ LangSmith only | Manual |
 | Memory / checkpointing | ✅ Postgres, SQLite, in-memory | ✅ | ❌ | Build yourself |
 | Prompt management (versioned, Jinja2) | ✅ | ❌ | ✅ Hub | Build yourself |
 | Messaging (WhatsApp, Discord, Slack) | ✅ | ❌ | ❌ | Build yourself |
 | AG-UI / CopilotKit streaming | ✅ | ✅ | ❌ | Manual |
 | Admin UI | ✅ | ✅ | ✅ | ❌ |
-| Vendor lock-in | **None** | High | High | None |
+| Vendor lock-in | Self-hosted; engine is open source. Adapter coupling: agents are written against LangGraph or ADK SDKs. | High | High | None |
 | Open source | ✅ GPLv3 | ❌ | ❌ | — |
-| Maintenance burden | Low | Low | Low | **High** |
+| Operational ownership | You self-host. The platform handles reload, traces, migrations. | Vendor-managed | Vendor-managed | You build and run everything |
 
 > [!NOTE]
 > Idun is not a replacement for LangSmith (observability) or LangGraph Cloud (hosting). It is the layer between your agent code and production that handles governance, security, and operations, regardless of which observability or hosting you choose.

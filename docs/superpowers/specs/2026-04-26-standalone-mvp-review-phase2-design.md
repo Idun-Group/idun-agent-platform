@@ -1,5 +1,7 @@
 # Standalone MVP Review — Phase 2 (Runtime Gaps) Design Spec
 
+**Status:** Shipped — 2026-04-26
+
 **Goal:** Address the 6 "Important Runtime Gaps" from the 2026-04-26 review so the standalone backend behaves correctly in production scenarios.
 
 **Source review:** `docs/superpowers/reviews/2026-04-26-standalone-mvp-ui-redesign-review.md` — §"Important Runtime Gaps".

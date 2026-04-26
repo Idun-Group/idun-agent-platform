@@ -1,8 +1,10 @@
 # Standalone Agent MVP — Design Spec
 
+**Status:** Shipped — 2026-04-26
+
 | Field | Value |
 |---|---|
-| Status | Draft — pending approval |
+| Status | Shipped — 2026-04-26 |
 | Date | 2026-04-24 |
 | Author | Geoffrey Harrazi (h.geoffrey@idun-group.com) |
 | Branch | `feat/standalone-agent-mvp` |

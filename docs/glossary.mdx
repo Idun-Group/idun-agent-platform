@@ -1,0 +1,108 @@
+---
+title: "Glossary"
+description: "Definitions of Idun's products: Engine, Standalone, Manager, and Web UI — and which install path to choose."
+keywords: ["glossary", "engine", "standalone", "manager", "web ui", "install path"]
+---
+
+The word "Idun" covers four distinct products. They share schemas and observability conventions, but each has its own scope, install path, and intended audience. Pick the one that matches what you ship.
+
+## Products
+
+### Engine
+
+Package: `idun-agent-engine`. CLI entry point: `idun`.
+
+A Python SDK and FastAPI runtime that wraps a LangGraph or Google ADK agent into a production endpoint. You point it at a YAML config and a Python module, and it serves your agent over the AG-UI streaming protocol with optional guardrails, observability providers, MCP tool registries, and prompt loading.
+
+Constraints:
+
+- No database, no UI, no admin surface. The engine is a single long-running process.
+- One agent per process.
+- Configuration comes from a YAML file or the Manager API. The engine itself does not persist config changes.
+
+Use this when you have your own deployment story (Kubernetes, your own admin stack, your own observability) and you want the engine to be a thin runtime layer.
+
+### Standalone
+
+Package: `idun-agent-standalone`. CLI entry point: `idun-standalone`.
+
+A single-process, single-tenant product that wraps the engine with an embedded chat UI, an admin REST surface, traces capture, and local DB-backed persistence. One binary you can deploy on a laptop, VM, or Cloud Run.
+
+What it adds on top of the engine:
+
+- A bundled Next.js UI at `/` (chat), `/admin/` (config editing), and `/traces/` (recent run events).
+- Admin REST endpoints under `/admin/api/v1/*` for editing agent, guardrails, MCP servers, prompts, observability, integrations, and theme.
+- A SQLite-backed database by default (Postgres optional) holding admin state and AG-UI trace events.
+- Password authentication (`none` mode for local laptop use, `password` mode for containers). OIDC is deferred to a later release.
+- A reload orchestrator that rebuilds the engine on every admin write and swaps it atomically.
+
+Use this when you ship one agent end-to-end and want chat, admin, and traces in one process without standing up a control plane.
+
+### Manager
+
+Package: `idun-agent-manager` (service, not on PyPI).
+
+A multi-tenant control plane API for managing fleets of agents, workspaces, memberships, and shared resources (guardrails, MCP servers, observability configs, memory configs, integrations, prompts, SSO). Stores everything in PostgreSQL and exposes a REST API at `/api/v1/*`.
+
+What it ships:
+
+- Workspace-scoped CRUD for agents and resources, plus M:N junctions (an agent can attach multiple guardrails, MCP servers, observabilities, integrations).
+- Per-agent materialized `engine_config` JSONB so the engine can fetch its full config in one call.
+- Session cookie auth with two modes: email/password (bcrypt) or Google OIDC.
+- Append-only versioned prompts with agent assignment.
+- Cascade recompute of materialized configs when a shared resource changes.
+
+Pairs with the Web UI. The engine talks to the Manager when started with `--source manager`.
+
+### Web UI
+
+Package: `idun-agent-web` (service, not on PyPI).
+
+A React 19 admin dashboard for the Manager. Provides agent CRUD, the agent detail tabs (overview, config, prompts, logs), resource pages (observability, memory, MCP, guardrails, SSO, integrations), workspace and user management, and a settings panel.
+
+Talks only to the Manager API. Has no runtime relationship with the engine or standalone.
+
+## Install paths
+
+Two ways to get an agent running. Pick one based on what you ship.
+
+### Engine-only
+
+Best when you already have an admin layer, your own observability stack, and your own config delivery pipeline.
+
+```bash
+pip install idun-agent-engine
+idun agent serve --source file --path config.yaml
+```
+
+You write the YAML, you run the process, you handle deployment. No DB, no UI.
+
+### Standalone product
+
+Best when you ship a single agent and want a chat UI, admin panel, and traces in one process.
+
+```bash
+pip install idun-agent-standalone
+idun-standalone init my-agent
+cd my-agent
+cp .env.example .env
+idun-standalone serve
+```
+
+The first boot seeds the local DB from `IDUN_CONFIG_PATH` (the YAML inside the scaffold). After that, the DB is the source of truth and admin edits persist across restarts. Visit `http://127.0.0.1:8001` for the chat UI, `/admin/` to edit config, `/traces/` to inspect AG-UI events.
+
+### Manager + Web UI
+
+A control plane for teams that run more than one agent, or that need workspaces and OIDC. Run the Manager (Postgres-backed FastAPI) and the Web UI together (Docker Compose works). Engines started with `--source manager` fetch their configs from it.
+
+This path is not a single `pip install`. Use the dev `docker-compose.dev.yml` from the repo to spin up both services and Postgres.
+
+## Choosing a path
+
+| You ship... | Use |
+|---|---|
+| One agent, want a chat + admin UI in one process | Standalone |
+| One agent, you have your own admin stack | Engine |
+| Multiple agents, multiple workspaces, OIDC | Manager + Web UI (engines fetch from Manager) |
+
+When in doubt, start with the standalone product. You can move to the Manager + Web UI path later by exporting your config (`idun-standalone export`) and importing it into the Manager.

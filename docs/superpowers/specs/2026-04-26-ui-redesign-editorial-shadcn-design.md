@@ -1,5 +1,7 @@
 # Editorial Chat + shadcn Admin UI Redesign — Design Spec
 
+**Status:** Shipped — 2026-04-26
+
 **Goal:** Redesign the standalone chat UI to a premium editorial aesthetic with collapsible reasoning, and rebuild the admin UI on shadcn/ui primitives — without breaking the runtime-config theme system or the three named chat layouts in the original MVP spec (D5).
 
 **References:**

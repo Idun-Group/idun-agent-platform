@@ -1,5 +1,7 @@
 # Standalone MVP Review — Phase 3 (UI/UX Loose Ends) Design Spec
 
+**Status:** Shipped — 2026-04-26
+
 **Goal:** Address UI/UX gaps and API/product consistency issues from the 2026-04-26 review so the standalone product feels coherent end-to-end.
 
 **Source review:** `docs/superpowers/reviews/2026-04-26-standalone-mvp-ui-redesign-review.md` — §"UI/UX Gaps" + §"API And Product Consistency Gaps".

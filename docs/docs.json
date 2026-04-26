@@ -61,6 +61,11 @@
             "pages": ["index", "quickstart", "templates", "architecture"]
           },
           {
+            "group": "Concepts",
+            "icon": "compass",
+            "pages": ["glossary", "roadmap"]
+          },
+          {
             "group": "Standalone",
             "icon": "box",
             "pages": [

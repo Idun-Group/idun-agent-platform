@@ -44,6 +44,48 @@ make test
 
 Once your changes are complete, submit a pull request to the `main` branch of the original repository. Provide a clear description of the changes and why they are needed.
 
+## Working on idun-agent-standalone
+
+The `idun-agent-standalone` product spans Python (backend) and TypeScript (frontend) plus a wheel-packaged Next.js static export. Common loops:
+
+Backend tests:
+
+```bash
+uv run pytest libs/idun_agent_standalone/tests -q
+```
+
+Frontend tests + build:
+
+```bash
+cd services/idun_agent_standalone_ui
+pnpm install
+pnpm typecheck && pnpm test && pnpm build
+```
+
+End-to-end (Playwright self-boots the standalone server):
+
+```bash
+cd services/idun_agent_standalone_ui
+pnpm test:e2e
+```
+
+Wheel:
+
+```bash
+make build-standalone-ui
+make build-standalone-wheel
+# Smoke-test the wheel in a clean venv:
+bash scripts/wheel-install-smoke.sh
+```
+
+Run a dev standalone against the echo agent:
+
+```bash
+cd services/idun_agent_standalone_ui
+./e2e/boot-standalone.sh
+# Visit http://127.0.0.1:8001
+```
+
 ## Code of Conduct
 
 By contributing to this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).

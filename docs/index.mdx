@@ -4,9 +4,9 @@ description: "Open-source, self-hosted platform to deploy AI agents to productio
 keywords: ["AI agent deployment", "self-hosted", "open source", "LangGraph", "ADK", "guardrails", "observability", "MCP"]
 ---
 
-Idun Agent Platform is an open-source control plane that wraps LangGraph and Google ADK agents into production-ready services. You get deployment, observability, memory, guardrails, and tool governance on your own infrastructure, with no vendor lock-in.
+Idun Agent Platform is an open-source control plane that wraps LangGraph and Google ADK agents into production-ready services. You get deployment, observability, memory, guardrails, and tool governance on your own infrastructure. The engine is open source and self-hosted; your agent code couples to the LangGraph or ADK SDK (those are the adapters today).
 
-The platform has three layers: a Python SDK/engine, a FastAPI management backend, and a React admin UI. Define your agent once, then deploy it with everything it needs through configuration.
+The platform spans four products: an [Engine](/glossary#engine) SDK, a [Standalone](/glossary#standalone) single-process product, a [Manager](/glossary#manager) control plane, and a [Web UI](/glossary#web-ui) for the Manager. Pick an [install path](/glossary#install-paths) based on what you ship.
 
 ## Get started
 
@@ -44,8 +44,8 @@ The platform has three layers: a Python SDK/engine, a FastAPI management backend
 - **Observability** through Langfuse, Arize Phoenix, LangSmith, or Google Cloud Trace. Enable tracing and metrics through configuration.
 - **Memory and checkpointing** with in-memory, SQLite, or PostgreSQL backends. Conversations persist across restarts.
 - **MCP tool governance** to connect MCP servers to your agents and control which tools each agent can access.
-- **SSO and RBAC** with OIDC integration, workspace-level multi-tenancy, and per-agent access control.
-- **Three deployment paths**: Docker Compose for development, CLI for standalone agents, Manager UI for team-wide management.
+- **SSO and RBAC** at the Manager tier: Google OIDC, workspace-level multi-tenancy, and per-agent access control. The Standalone product ships with `none` or `password` admin auth today.
+- **Two install paths**: a single-binary [Standalone](/standalone/overview) product that bundles chat UI + admin + traces, or the [Manager](/manager/overview) + Web UI control plane for fleets.
 
 ## Community
 

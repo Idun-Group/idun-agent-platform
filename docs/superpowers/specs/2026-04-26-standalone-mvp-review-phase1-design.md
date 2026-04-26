@@ -1,5 +1,7 @@
 # Standalone MVP Review — Phase 1 (P0 Unblockers) Design Spec
 
+**Status:** Shipped — 2026-04-26
+
 **Goal:** Address every P0 ship-blocker from the 2026-04-26 review so that `feat/standalone-agent-mvp` can merge to `main` cleanly and the OSS install path (`pip install idun-agent-standalone` → boot → first chat → see traces) works end-to-end.
 
 **Source review:** `docs/superpowers/reviews/2026-04-26-standalone-mvp-ui-redesign-review.md`
