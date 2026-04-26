@@ -136,12 +136,13 @@ async def _bootstrap_if_needed(settings: StandaloneSettings, sm) -> None:
 
 
 async def _bootstrap_admin_user(settings: StandaloneSettings, sm) -> None:
-    """Sync the bcrypt hash from ``IDUN_ADMIN_PASSWORD_HASH`` into ``admin_user``.
+    """Seed ``admin_user`` from ``IDUN_ADMIN_PASSWORD_HASH`` on first boot only.
 
-    Runs on every boot (not just first) so rotating the env var rotates
-    the stored hash. No-op when ``auth_mode != PASSWORD`` (the login
-    route short-circuits in ``none`` mode anyway). Without this the
-    login route always returns 401 because the row never exists.
+    The DB is the source of truth after the row exists — admin password
+    changes via the UI are durable across restarts. Setting
+    ``IDUN_FORCE_ADMIN_PASSWORD_RESET=1`` for one boot re-seeds from the
+    env hash (with a warning log) so operators can recover from a lost
+    UI password. No-op when ``auth_mode != PASSWORD``.
     """
     from sqlalchemy import select
 
@@ -154,18 +155,26 @@ async def _bootstrap_admin_user(settings: StandaloneSettings, sm) -> None:
         return
 
     async with sm() as session:
-        existing = (
-            await session.execute(select(AdminUserRow))
-        ).scalar_one_or_none()
+        existing = (await session.execute(select(AdminUserRow))).scalar_one_or_none()
         if existing is None:
             session.add(
-                AdminUserRow(
-                    id="admin", password_hash=settings.admin_password_hash
-                )
+                AdminUserRow(id="admin", password_hash=settings.admin_password_hash)
             )
-        elif existing.password_hash != settings.admin_password_hash:
+            await session.commit()
+            return
+
+        if settings.force_admin_password_reset:
+            logger.warning(
+                "IDUN_FORCE_ADMIN_PASSWORD_RESET=1 — overwriting the stored "
+                "admin password hash from IDUN_ADMIN_PASSWORD_HASH. Unset the "
+                "variable on the next boot to make the DB authoritative again."
+            )
             existing.password_hash = settings.admin_password_hash
-        await session.commit()
+            await session.commit()
+            return
+
+        # DB row already exists and no force-reset requested: leave alone so
+        # UI-driven password rotations survive a restart.
 
 
 def _make_reload_orchestrator():
@@ -274,9 +283,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 
     saved_ui_dir = os.environ.pop("IDUN_UI_DIR", None)
     try:
-        app = create_engine_app(
-            engine_config=engine_config, reload_auth=require_auth
-        )
+        app = create_engine_app(engine_config=engine_config, reload_auth=require_auth)
     finally:
         if saved_ui_dir is not None:
             os.environ["IDUN_UI_DIR"] = saved_ui_dir
@@ -355,9 +362,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
                     type(agent).__name__,
                 )
             else:
-                logger.warning(
-                    "no agent on app.state — traces will not be captured"
-                )
+                logger.warning("no agent on app.state — traces will not be captured")
             # Catch up any backlog from before this boot, then schedule
             # the hourly job. ``start_retention_scheduler`` returns None
             # when ``traces_retention_days <= 0`` so disabling is a no-op.
@@ -407,9 +412,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
             for r in app.router.routes
             if not (isinstance(r, APIRoute) and r.path == "/")
         ]
-        app.mount(
-            "/", StaticFiles(directory=str(ui_dir), html=True), name="ui"
-        )
+        app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
         logger.info("mounted standalone UI at / from %s", ui_dir)
 
     return app

@@ -67,3 +67,28 @@ def test_validate_for_runtime_rejects_oidc(monkeypatch):
     s = StandaloneSettings()
     with pytest.raises(ValueError, match="reserved for MVP-2"):
         s.validate_for_runtime()
+
+
+def test_session_secret_too_short_raises(monkeypatch):
+    """Password mode requires session_secret >= 32 chars (P2.4)."""
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "password")
+    monkeypatch.setenv(
+        "IDUN_ADMIN_PASSWORD_HASH",
+        "$2b$12$abc.exampleexampleexampleexampleexampleexampleexample",
+    )
+    monkeypatch.setenv("IDUN_SESSION_SECRET", "tooshort")
+    s = StandaloneSettings()
+    with pytest.raises(ValueError, match="32 characters"):
+        s.validate_for_runtime()
+
+
+def test_force_admin_password_reset_defaults_false(monkeypatch):
+    monkeypatch.delenv("IDUN_FORCE_ADMIN_PASSWORD_RESET", raising=False)
+    s = StandaloneSettings()
+    assert s.force_admin_password_reset is False
+
+
+def test_force_admin_password_reset_env_override(monkeypatch):
+    monkeypatch.setenv("IDUN_FORCE_ADMIN_PASSWORD_RESET", "1")
+    s = StandaloneSettings()
+    assert s.force_admin_password_reset is True

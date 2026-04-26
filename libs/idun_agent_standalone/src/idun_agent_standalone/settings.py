@@ -60,6 +60,9 @@ class StandaloneSettings(BaseSettings):
     admin_password_hash: str | None = Field(
         default=None, alias="IDUN_ADMIN_PASSWORD_HASH"
     )
+    force_admin_password_reset: bool = Field(
+        default=False, alias="IDUN_FORCE_ADMIN_PASSWORD_RESET"
+    )
     session_secret: str | None = Field(default=None, alias="IDUN_SESSION_SECRET")
     session_ttl_seconds: int = Field(default=86400, alias="IDUN_SESSION_TTL_SECONDS")
 
@@ -99,4 +102,10 @@ class StandaloneSettings(BaseSettings):
                 raise ValueError(
                     "IDUN_SESSION_SECRET is required when "
                     "IDUN_ADMIN_AUTH_MODE=password"
+                )
+            if len(self.session_secret) < 32:
+                raise ValueError(
+                    "IDUN_SESSION_SECRET must be at least 32 characters when "
+                    "IDUN_ADMIN_AUTH_MODE=password "
+                    f"(got {len(self.session_secret)})."
                 )

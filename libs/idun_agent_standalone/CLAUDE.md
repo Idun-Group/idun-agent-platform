@@ -51,7 +51,12 @@ Two modes, gated by `IDUN_ADMIN_AUTH_MODE`:
 - `none` — open admin (laptop default).
 - `password` — bcrypt hash + session cookie (containerized default).
 
-OIDC is deferred to MVP-2. Sessions use signed cookies with sliding renewal on the configured TTL. Password rotation invalidates outstanding sessions.
+OIDC is deferred to MVP-2. Sessions use signed cookies with sliding renewal on the configured TTL. Password rotation invalidates outstanding sessions. `IDUN_SESSION_SECRET` must be at least 32 characters in `password` mode (enforced at startup).
+
+**Password rotation:** On first boot, the admin row is seeded from
+`IDUN_ADMIN_PASSWORD_HASH`. After that, the DB is the source of truth —
+admin password changes via the UI are durable across restarts. Re-seed
+from env by setting `IDUN_FORCE_ADMIN_PASSWORD_RESET=1` for one boot.
 
 ## Traces
 

@@ -40,9 +40,7 @@ def _echo_yaml() -> dict:
             "type": "LANGGRAPH",
             "config": {
                 "name": "test-echo",
-                "graph_definition": (
-                    "idun_agent_standalone.testing:echo_graph"
-                ),
+                "graph_definition": ("idun_agent_standalone.testing:echo_graph"),
                 "checkpointer": {"type": "memory"},
             },
         }
@@ -66,9 +64,7 @@ def password_env(tmp_path: Path, monkeypatch):
 async def test_login_succeeds_after_bootstrap(password_env):
     """Boot in password mode without a pre-existing admin row, login must work."""
     _, monkeypatch, db_path = password_env
-    monkeypatch.setenv(
-        "IDUN_ADMIN_PASSWORD_HASH", hash_password("hunter2")
-    )
+    monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("hunter2"))
 
     async with _create_schema(f"sqlite+aiosqlite:///{db_path}"):
         settings = StandaloneSettings()
@@ -85,8 +81,8 @@ async def test_login_succeeds_after_bootstrap(password_env):
 
 
 @pytest.mark.asyncio
-async def test_rotating_env_var_rotates_stored_hash(password_env):
-    """Reboot with a new IDUN_ADMIN_PASSWORD_HASH should accept the new password."""
+async def test_force_reset_rotates_stored_hash(password_env):
+    """IDUN_FORCE_ADMIN_PASSWORD_RESET=1 re-seeds the admin row from env."""
     _, monkeypatch, db_path = password_env
     monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("first"))
 
@@ -102,8 +98,10 @@ async def test_rotating_env_var_rotates_stored_hash(password_env):
                 )
                 assert r.status_code == 200
 
-        # Simulate operator rotating the env var and rebooting the process.
+        # Simulate operator rotating the env var AND opting into the
+        # one-shot re-seed.
         monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("second"))
+        monkeypatch.setenv("IDUN_FORCE_ADMIN_PASSWORD_RESET", "1")
         settings = StandaloneSettings()
         app = await create_standalone_app(settings)
         async with app.router.lifespan_context(app):
