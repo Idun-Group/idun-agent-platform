@@ -15,90 +15,78 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 
 const LAYOUTS = ["branded", "minimal", "inspector"] as const;
-const RADII = ["0", "0.25", "0.5", "0.75", "1"] as const;
-const FONTS = ["system", "inter", "geist", "jetbrains-mono"] as const;
+const RADII = ["0", "0.25", "0.5", "0.625", "0.75", "1"] as const;
 const COLOR_KEYS: (keyof ThemeColors)[] = [
-  "primary",
-  "accent",
   "background",
   "foreground",
+  "card",
+  "cardForeground",
+  "popover",
+  "popoverForeground",
+  "primary",
+  "primaryForeground",
+  "secondary",
+  "secondaryForeground",
   "muted",
+  "mutedForeground",
+  "accent",
+  "accentForeground",
+  "destructive",
+  "destructiveForeground",
   "border",
+  "input",
+  "ring",
 ];
 const COLOR_SCHEMES = ["light", "dark", "system"] as const;
 
+const EDITORIAL_LIGHT: ThemeColors = {
+  background: "#f7f6f0",
+  foreground: "#1d1c1a",
+  card: "#ffffff",
+  cardForeground: "#1d1c1a",
+  popover: "#ffffff",
+  popoverForeground: "#1d1c1a",
+  primary: "#1d1c1a",
+  primaryForeground: "#f7f6f0",
+  secondary: "#f0eee2",
+  secondaryForeground: "#1d1c1a",
+  muted: "#f0eee2",
+  mutedForeground: "#6b6a65",
+  accent: "#c96442",
+  accentForeground: "#ffffff",
+  destructive: "#dc2626",
+  destructiveForeground: "#ffffff",
+  border: "#e7e4d7",
+  input: "#e7e4d7",
+  ring: "rgba(201, 100, 66, 0.4)",
+};
+
+const EDITORIAL_DARK: ThemeColors = {
+  background: "#15140f",
+  foreground: "#f5f4ec",
+  card: "#1d1c1a",
+  cardForeground: "#f5f4ec",
+  popover: "#1d1c1a",
+  popoverForeground: "#f5f4ec",
+  primary: "#f5f4ec",
+  primaryForeground: "#15140f",
+  secondary: "#2a2925",
+  secondaryForeground: "#f5f4ec",
+  muted: "#2a2925",
+  mutedForeground: "#a1a097",
+  accent: "#d97757",
+  accentForeground: "#15140f",
+  destructive: "#ef4444",
+  destructiveForeground: "#f5f4ec",
+  border: "#2a2925",
+  input: "#2a2925",
+  ring: "rgba(217, 119, 87, 0.5)",
+};
+
 const PRESETS: Record<string, ThemeConfig["colors"]> = {
-  Default: {
-    light: {
-      primary: "#4f46e5",
-      accent: "#7c3aed",
-      background: "#ffffff",
-      foreground: "#0a0a0a",
-      muted: "#f5f5f5",
-      border: "#e5e7eb",
-    },
-    dark: {
-      primary: "#818cf8",
-      accent: "#a78bfa",
-      background: "#0a0a0a",
-      foreground: "#fafafa",
-      muted: "#1f1f1f",
-      border: "#262626",
-    },
-  },
-  Corporate: {
-    light: {
-      primary: "#0f172a",
-      accent: "#475569",
-      background: "#f8fafc",
-      foreground: "#0f172a",
-      muted: "#e2e8f0",
-      border: "#cbd5e1",
-    },
-    dark: {
-      primary: "#94a3b8",
-      accent: "#64748b",
-      background: "#0f172a",
-      foreground: "#f1f5f9",
-      muted: "#1e293b",
-      border: "#334155",
-    },
-  },
-  Midnight: {
-    light: {
-      primary: "#6366f1",
-      accent: "#a855f7",
-      background: "#ffffff",
-      foreground: "#0a0a0a",
-      muted: "#f5f5f5",
-      border: "#e5e7eb",
-    },
-    dark: {
-      primary: "#818cf8",
-      accent: "#a78bfa",
-      background: "#020617",
-      foreground: "#f8fafc",
-      muted: "#0f172a",
-      border: "#1e293b",
-    },
-  },
-  Warm: {
-    light: {
-      primary: "#f97316",
-      accent: "#ef4444",
-      background: "#fffbeb",
-      foreground: "#1c1917",
-      muted: "#fef3c7",
-      border: "#fcd34d",
-    },
-    dark: {
-      primary: "#fb923c",
-      accent: "#f87171",
-      background: "#1c1917",
-      foreground: "#fef3c7",
-      muted: "#292524",
-      border: "#44403c",
-    },
+  Editorial: {
+    light: EDITORIAL_LIGHT,
+    dark: EDITORIAL_DARK,
   },
 };
 
@@ -108,9 +96,11 @@ const DEFAULT_THEME: ThemeConfig = {
   starterPrompts: [],
   logo: { text: "IA" },
   layout: "branded",
-  colors: PRESETS.Default,
-  radius: "0.5",
-  fontFamily: "system",
+  colors: PRESETS.Editorial,
+  radius: "0.625",
+  fontSans: "",
+  fontSerif: "",
+  fontMono: "",
   defaultColorScheme: "system",
 };
 
@@ -136,7 +126,9 @@ function mergeWithDefaults(input: unknown): ThemeConfig {
       dark: { ...DEFAULT_THEME.colors.dark, ...(colors.dark ?? {}) },
     },
     radius: cfg.radius ?? DEFAULT_THEME.radius,
-    fontFamily: cfg.fontFamily ?? DEFAULT_THEME.fontFamily,
+    fontSans: cfg.fontSans ?? DEFAULT_THEME.fontSans,
+    fontSerif: cfg.fontSerif ?? DEFAULT_THEME.fontSerif,
+    fontMono: cfg.fontMono ?? DEFAULT_THEME.fontMono,
     defaultColorScheme:
       cfg.defaultColorScheme ?? DEFAULT_THEME.defaultColorScheme,
   };
@@ -409,20 +401,42 @@ export default function SettingsPage() {
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-fg)]/70">Font family</label>
-            <select
-              value={draft.fontFamily}
+            <label className="text-xs text-[var(--color-fg)]/70">
+              Font family — sans (override; blank = Geist default)
+            </label>
+            <Input
+              value={draft.fontSans}
+              placeholder="e.g. var(--font-sans)"
               onChange={(e) =>
-                setDraft({ ...draft, fontFamily: e.target.value })
+                setDraft({ ...draft, fontSans: e.target.value })
               }
-              className="h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-sm"
-            >
-              {FONTS.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs text-[var(--color-fg)]/70">
+              Font family — serif (blank = Fraunces default)
+            </label>
+            <Input
+              value={draft.fontSerif}
+              placeholder="e.g. var(--font-serif)"
+              onChange={(e) =>
+                setDraft({ ...draft, fontSerif: e.target.value })
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-[var(--color-fg)]/70">
+              Font family — mono (blank = Geist Mono default)
+            </label>
+            <Input
+              value={draft.fontMono}
+              placeholder="e.g. var(--font-mono)"
+              onChange={(e) =>
+                setDraft({ ...draft, fontMono: e.target.value })
+              }
+            />
           </div>
         </div>
         <div className="space-y-1">
