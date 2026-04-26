@@ -53,15 +53,33 @@ async def list_sessions(
     request: Request,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    search: str | None = Query(
+        None,
+        description=(
+            "Case-insensitive substring filter on session id and title. "
+            "Closes the API consistency gap flagged in the 2026-04-26 "
+            "standalone MVP UI redesign review (P3.3)."
+        ),
+    ),
 ):
     sm = request.app.state.sessionmaker
     async with sm() as s:
-        total = (await s.execute(select(func.count(SessionRow.id)))).scalar_one()
+        stmt = select(SessionRow)
+        count_stmt = select(func.count(SessionRow.id))
+        if search:
+            needle = f"%{search.lower()}%"
+            # ``title`` is nullable — coalesce so the LIKE doesn't drop rows
+            # whose title is NULL when the user searches by id only.
+            search_pred = func.lower(SessionRow.id).like(needle) | func.lower(
+                func.coalesce(SessionRow.title, "")
+            ).like(needle)
+            stmt = stmt.where(search_pred)
+            count_stmt = count_stmt.where(search_pred)
+        total = (await s.execute(count_stmt)).scalar_one()
         rows = (
             (
                 await s.execute(
-                    select(SessionRow)
-                    .order_by(SessionRow.last_event_at.desc())
+                    stmt.order_by(SessionRow.last_event_at.desc())
                     .limit(limit)
                     .offset(offset)
                 )
