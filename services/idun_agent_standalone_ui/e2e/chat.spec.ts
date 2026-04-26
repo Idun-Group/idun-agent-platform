@@ -43,3 +43,29 @@ test("chat happy path — user message renders and the assistant column appears"
   const composer = page.locator('textarea[placeholder^="Message"]');
   await expect(composer).toBeVisible();
 });
+
+test("echo agent response renders in chat", async ({ page }) => {
+  // Regression: LangGraph agents using llm.invoke() emit no
+  // TEXT_MESSAGE_CONTENT deltas — only MESSAGES_SNAPSHOT. Before P1.3 the
+  // chat rendered an empty assistant bubble. This asserts the snapshot
+  // hydration path actually populates the visible reply.
+  await page.goto("/");
+
+  const input = page.locator('textarea[placeholder^="Message"]');
+  await expect(input).toBeVisible({ timeout: 15_000 });
+
+  await input.fill("hello from review");
+  await page.getByRole("button", { name: /send message/i }).click();
+
+  // The user bubble must appear immediately.
+  await expect(page.locator("text=hello from review").first()).toBeVisible({
+    timeout: 5_000,
+  });
+
+  // The bundled echo agent replies with `echo: <message>`. The reply may
+  // arrive only via MESSAGES_SNAPSHOT (no token deltas) — the hook must
+  // hydrate the bubble from the snapshot at RUN_FINISHED.
+  await expect(page.getByText(/echo:\s*hello from review/i)).toBeVisible({
+    timeout: 15_000,
+  });
+});

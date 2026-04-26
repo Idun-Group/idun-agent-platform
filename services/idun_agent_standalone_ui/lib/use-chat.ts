@@ -60,6 +60,14 @@ export function useChat(threadId: string) {
 
       abortRef.current = new AbortController();
 
+      // Track the latest assistant content seen on a MESSAGES_SNAPSHOT so we
+      // can hydrate the chat bubble at RUN_FINISHED for agents that emit no
+      // TEXT_MESSAGE_CONTENT deltas (e.g. LangGraph using llm.invoke()). The
+      // in-band hydration below covers most cases; this is the fallback for
+      // adapters that emit MESSAGES_SNAPSHOT before the assistant message
+      // exists in our state.
+      let latestAssistantSnapshot: string | null = null;
+
       const updateAssistant = (fn: (m: Message) => Message) =>
         setMessages((prev) =>
           prev.map((x) => (x.id === assistantMsg.id ? fn(x) : x)),
@@ -235,11 +243,24 @@ export function useChat(threadId: string) {
               case "RUN_FINISHED":
               case "RunFinished":
                 setStatus("idle");
-                updateAssistant((m) =>
-                  m.role === "assistant"
-                    ? { ...m, streaming: false, currentStep: undefined }
-                    : m,
-                );
+                updateAssistant((m) => {
+                  if (m.role !== "assistant") return m;
+                  // Belt-and-suspenders snapshot hydration: if no streaming
+                  // deltas accumulated text but a MESSAGES_SNAPSHOT carried
+                  // an assistant message, hydrate from the snapshot now.
+                  if (
+                    (!m.text || m.text.trim().length === 0) &&
+                    latestAssistantSnapshot
+                  ) {
+                    return {
+                      ...m,
+                      text: stripThink(latestAssistantSnapshot),
+                      streaming: false,
+                      currentStep: undefined,
+                    };
+                  }
+                  return { ...m, streaming: false, currentStep: undefined };
+                });
                 break;
               case "RUN_ERROR":
               case "RunError":
@@ -275,16 +296,44 @@ export function useChat(threadId: string) {
                 );
                 break;
 
-              // — State / snapshot events (no-op for this UI) -----------
+              // — State / snapshot events --------------------------------
               case "STATE_DELTA":
               case "StateDelta":
               case "STATE_SNAPSHOT":
               case "StateSnapshot":
-              case "MESSAGES_SNAPSHOT":
-              case "MessagesSnapshot":
               case "RAW":
               case "Raw":
                 break;
+              case "MESSAGES_SNAPSHOT":
+              case "MessagesSnapshot": {
+                // LangGraph agents using `llm.invoke()` (the dominant pattern)
+                // emit no TEXT_MESSAGE_CONTENT deltas — the assistant turn
+                // arrives as a single MESSAGES_SNAPSHOT. Hydrate the in-flight
+                // bubble's text from the latest assistant entry, but only
+                // when no streaming deltas have already accumulated (don't
+                // clobber token-streamed content).
+                const snap = (e.messages ?? []) as Array<{
+                  role?: string;
+                  content?: string;
+                }>;
+                const lastAssistant = [...snap]
+                  .reverse()
+                  .find((x) => x.role === "assistant" || x.role === "ai");
+                if (lastAssistant?.content) {
+                  const content = String(lastAssistant.content);
+                  // Stash for the RUN_FINISHED fallback in case the assistant
+                  // message hasn't been appended yet (defensive).
+                  latestAssistantSnapshot = content;
+                  updateAssistant((m) => {
+                    if (m.role !== "assistant") return m;
+                    if (!m.text || m.text.trim().length === 0) {
+                      return { ...m, text: stripThink(content) };
+                    }
+                    return m;
+                  });
+                }
+                break;
+              }
 
               default:
                 // Unhandled event types are intentionally silent — verbose

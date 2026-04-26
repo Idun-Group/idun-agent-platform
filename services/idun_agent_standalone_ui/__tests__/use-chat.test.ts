@@ -183,4 +183,122 @@ describe("useChat", () => {
       expect(assistant.text).toBe("visible");
     }
   });
+
+  it("hydrates assistant text from MESSAGES_SNAPSHOT when streaming deltas are absent", async () => {
+    // LangGraph agents using `llm.invoke()` emit no TEXT_MESSAGE_CONTENT
+    // deltas — the assistant turn arrives only as a MESSAGES_SNAPSHOT.
+    // Without snapshot hydration the chat would render an empty bubble.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      {
+        type: "MESSAGES_SNAPSHOT",
+        messages: [
+          { role: "user", content: "ping" },
+          { role: "assistant", content: "echo: ping" },
+        ],
+      },
+      { type: "RUN_FINISHED" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-snap"));
+    await act(async () => {
+      await result.current.send("ping");
+    });
+
+    const assistant = result.current.messages.find((m) => m.role === "assistant");
+    expect(assistant).toBeDefined();
+    if (assistant && assistant.role === "assistant") {
+      expect(assistant.text).toBe("echo: ping");
+      expect(assistant.streaming).toBe(false);
+    }
+    expect(result.current.status).toBe("idle");
+  });
+
+  it("hydrates assistant text from MESSAGES_SNAPSHOT using role='ai'", async () => {
+    // Some adapters emit role: "ai" instead of role: "assistant" — the hook
+    // should accept either.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      {
+        type: "MessagesSnapshot",
+        messages: [
+          { role: "user", content: "ping" },
+          { role: "ai", content: "ai-echo: ping" },
+        ],
+      },
+      { type: "RunFinished" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-ai"));
+    await act(async () => {
+      await result.current.send("ping");
+    });
+
+    const assistant = result.current.messages.find((m) => m.role === "assistant");
+    if (assistant && assistant.role === "assistant") {
+      expect(assistant.text).toBe("ai-echo: ping");
+    }
+  });
+
+  it("does not overwrite streamed text when MESSAGES_SNAPSHOT also arrives", async () => {
+    // Guards against clobbering: when both TEXT_MESSAGE_CONTENT deltas AND a
+    // MESSAGES_SNAPSHOT arrive, the streamed text wins. The snapshot must
+    // not overwrite tokens the user already saw.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      { type: "TEXT_MESSAGE_CONTENT", delta: "streamed " },
+      { type: "TEXT_MESSAGE_CONTENT", delta: "answer" },
+      {
+        type: "MESSAGES_SNAPSHOT",
+        messages: [
+          { role: "user", content: "ping" },
+          { role: "assistant", content: "something else" },
+        ],
+      },
+      { type: "RUN_FINISHED" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-guard"));
+    await act(async () => {
+      await result.current.send("ping");
+    });
+
+    const assistant = result.current.messages.find((m) => m.role === "assistant");
+    if (assistant && assistant.role === "assistant") {
+      expect(assistant.text).toBe("streamed answer");
+    }
+  });
 });
