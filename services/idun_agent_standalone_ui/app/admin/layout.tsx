@@ -1,14 +1,20 @@
-import type { ReactNode } from "react";
-import { AuthGuard } from "@/components/admin/AuthGuard";
-import { Sidebar } from "@/components/admin/Sidebar";
+"use client";
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+import { AuthGuard } from "@/components/admin/AuthGuard";
+import { AppSidebar } from "@/components/admin/AppSidebar";
+import { Topbar } from "@/components/admin/Topbar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
-      <div className="grid grid-cols-[12rem_1fr] h-screen bg-[var(--color-bg)]">
-        <Sidebar />
-        <main className="overflow-auto">{children}</main>
-      </div>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <Topbar />
+          <main className="flex-1 overflow-y-auto bg-background">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
     </AuthGuard>
   );
 }
