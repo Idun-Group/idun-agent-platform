@@ -58,13 +58,17 @@ async def list_sessions(
     async with sm() as s:
         total = (await s.execute(select(func.count(SessionRow.id)))).scalar_one()
         rows = (
-            await s.execute(
-                select(SessionRow)
-                .order_by(SessionRow.last_event_at.desc())
-                .limit(limit)
-                .offset(offset)
+            (
+                await s.execute(
+                    select(SessionRow)
+                    .order_by(SessionRow.last_event_at.desc())
+                    .limit(limit)
+                    .offset(offset)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return SessionList(
             items=[
                 SessionSummary(
@@ -124,9 +128,28 @@ async def get_session_events(
             ) | func.lower(payload_text).like(needle)
             stmt = stmt.where(search_pred)
             count_stmt = count_stmt.where(search_pred)
+        # Multi-key ordering keeps a session with multiple runs grouped by run
+        # while preserving chronological order between runs. ``sequence`` alone
+        # interleaves runs because it restarts at 0 for each run. ``created_at``
+        # first orders the runs in time; ``run_id`` clusters events from the
+        # same run when timestamps collide; ``sequence`` orders within a run;
+        # ``id`` is a stable tiebreaker. Assumes runs in a session do not
+        # overlap in time (single-tenant agent serves one run at a time);
+        # session-global sequence is deferred per Phase 2 D5.
         rows = (
-            await s.execute(stmt.order_by(TraceEventRow.sequence.asc()).limit(1000))
-        ).scalars().all()
+            (
+                await s.execute(
+                    stmt.order_by(
+                        TraceEventRow.created_at.asc(),
+                        TraceEventRow.run_id.asc(),
+                        TraceEventRow.sequence.asc(),
+                        TraceEventRow.id.asc(),
+                    ).limit(1000)
+                )
+            )
+            .scalars()
+            .all()
+        )
         total = (await s.execute(count_stmt)).scalar_one()
         return EventsResponse(
             events=[
