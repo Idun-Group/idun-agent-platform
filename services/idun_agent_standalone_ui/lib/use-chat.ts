@@ -203,10 +203,10 @@ export function useChat(threadId: string) {
                 updateAssistant((m) => {
                   if (m.role !== "assistant") return m;
                   const idx = m.thinking.length - 1;
-                  // Maintain the legacy `thinking[]` buffer for existing
-                  // consumers (ChatMessage block renderer) and additively
+                  // Maintain the legacy `thinking[]` buffer for any
+                  // remaining block-renderer consumers and additively
                   // populate the new flat `thoughts` slot used by the
-                  // editorial ReasoningPanel.
+                  // editorial ReasoningPanel (rendered via MessageView).
                   const nextThinking =
                     idx < 0
                       ? [delta]

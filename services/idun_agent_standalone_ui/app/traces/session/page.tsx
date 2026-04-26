@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { type TraceEvent, api } from "@/lib/api";
 import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
-import { SessionList } from "@/components/chat/SessionList";
+import { HistorySidebar } from "@/components/chat/HistorySidebar";
 import { BadgeTone } from "@/components/ui/badge-tone";
 import { Button } from "@/components/ui/button";
 
@@ -61,20 +61,15 @@ function SessionDetail() {
   if (!sessionId) return <div className="p-6">No session id.</div>;
 
   return (
-    <div className="grid grid-cols-[220px_1fr_300px] h-full">
-      <aside className="border-r border-[var(--color-border)] bg-[var(--color-muted)]/30 overflow-auto">
-        <div className="px-3 py-3 text-[10px] uppercase tracking-wider text-[var(--color-fg)]/60 sticky top-0 bg-[var(--color-muted)]/30 backdrop-blur">
-          Sessions
-        </div>
-        <div className="px-2">
-          <SessionList
-            activeId={sessionId}
-            limit={50}
-            dense
-            onSelect={(s) => router.push(`/traces/session/?id=${encodeURIComponent(s.id)}`)}
-          />
-        </div>
-      </aside>
+    <div className="grid h-full grid-cols-[300px_1fr_300px]">
+      <HistorySidebar
+        activeId={sessionId}
+        dense
+        onPick={(s) =>
+          router.push(`/traces/session/?id=${encodeURIComponent(s.id)}`)
+        }
+        onNew={() => router.push("/traces/")}
+      />
 
       <div className="flex flex-col overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-border)] text-xs flex-wrap">

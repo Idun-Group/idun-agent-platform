@@ -145,8 +145,8 @@ describe("useChat", () => {
     const assistant = result.current.messages.find((m) => m.role === "assistant");
     if (assistant && assistant.role === "assistant") {
       expect(assistant.thoughts).toBe("I should reason carefully.");
-      // The legacy `thinking[]` block buffer is also populated so existing
-      // consumers (ChatMessage's reasoning block renderer) keep working.
+      // The legacy `thinking[]` block buffer is also populated so any
+      // remaining block-renderer consumers keep working.
       // THINKING_START and THINKING_TEXT_MESSAGE_START each open a buffer,
       // so the trailing buffer holds the joined text.
       expect(assistant.thinking[assistant.thinking.length - 1]).toBe(

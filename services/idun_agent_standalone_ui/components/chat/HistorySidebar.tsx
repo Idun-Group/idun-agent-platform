@@ -42,9 +42,9 @@ function errorMessage(err: unknown): string {
 /**
  * Left rail (300px) listing recent chat sessions.
  *
- * Replaces `SessionList`/`SessionSwitcher` with the editorial chrome:
- * serif "History" header, "+ New" pill, shimmer skeletons during fetch,
- * relative-time badges, terracotta-tinted active row.
+ * Editorial chrome: serif "History" header, "+ New" pill, shimmer
+ * skeletons during fetch, relative-time badges, terracotta-tinted
+ * active row.
  */
 export function HistorySidebar({ activeId, onPick, onNew, dense = false }: Props) {
   const { data, isLoading, isError, error } = useQuery({
