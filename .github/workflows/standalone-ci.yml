@@ -121,12 +121,17 @@ jobs:
         run: scripts/wheel-install-smoke.sh
 
   e2e:
+    name: E2E (Playwright)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: services/idun_agent_standalone_ui
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --no-cache-dir uv
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -135,16 +140,12 @@ jobs:
           node-version: "20"
           cache: "pnpm"
           cache-dependency-path: services/idun_agent_standalone_ui/pnpm-lock.yaml
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install --no-cache-dir uv
       - name: Sync workspace deps
         working-directory: ${{ github.workspace }}
         run: uv sync --all-groups
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
-        env:
-          # The test harness reads these to drive the boot script.
-          IDUN_E2E_PYTHON: ${{ github.workspace }}/.venv/bin/python
+      - name: Install pnpm deps
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run E2E (Playwright webServer boots its own backend)
+        run: pnpm test:e2e
