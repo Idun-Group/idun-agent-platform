@@ -142,16 +142,39 @@ DEFAULT_THEME_MODEL = ThemeConfig(
 DEFAULT_THEME: dict[str, Any] = DEFAULT_THEME_MODEL.model_dump(by_alias=True)
 
 
+def _deep_merge(default: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Recursively merge ``override`` into ``default``: dicts merge, scalars/lists override.
+
+    The previous shallow merge replaced any nested dict wholesale, so an
+    override of ``{"colors": {"light": {"accent": "#ff0000"}}}`` wiped the
+    other ~17 light-mode tokens (and the entire dark-mode scheme).
+    Lists and scalars still override (per spec D6 — operators expect a
+    saved ``starterPrompts`` list to replace, not extend, the default).
+    """
+    out: dict[str, Any] = dict(default)
+    for k, v in override.items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def merge_theme(
+    default: dict[str, Any], override: dict[str, Any] | None
+) -> dict[str, Any]:
+    """Public façade over ``_deep_merge`` so tests don't reach into ``_``-prefixed names."""
+    return _deep_merge(default, override or {})
+
+
 @router.get("/runtime-config.js")
 async def runtime_config_js(request: Request) -> Response:
     sm = request.app.state.sessionmaker
     settings = request.app.state.settings
     async with sm() as s:
         row = (await s.execute(select(ThemeRow))).scalar_one_or_none()
-    theme: dict[str, Any] = {
-        **DEFAULT_THEME,
-        **((row.config or {}) if row else {}),
-    }
+    persisted: dict[str, Any] = (row.config or {}) if row else {}
+    theme: dict[str, Any] = merge_theme(DEFAULT_THEME, persisted)
 
     config: dict[str, Any] = {
         "theme": theme,
