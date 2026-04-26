@@ -1,9 +1,10 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { type SessionSummary } from "@/lib/api";
+import { type AgentSessionSummary, api } from "@/lib/api";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
 import { type ChatEvent, useChat } from "@/lib/use-chat";
 import {
@@ -75,6 +76,16 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
     setTheme(getRuntimeConfig().theme);
   }, []);
 
+  // Capability discovery — non-blocking. Failures fall back to "history is
+  // available" because the listing query itself surfaces its own errors.
+  const { data: caps } = useQuery({
+    queryKey: ["agent-capabilities"],
+    queryFn: () => api.getAgentCapabilities().catch(() => null),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const canListHistory = caps?.history?.canList ?? true;
+
   const [selected, setSelected] = useState<ChatEvent | null>(null);
 
   // Auto-scroll the inspector ring as new events stream in, unless the user
@@ -95,8 +106,10 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     router.push(`/?session=${id}`);
   };
-  const pickSession = (s: SessionSummary) =>
-    router.push(`/?session=${encodeURIComponent(s.id)}`);
+  const pickSession = (s: AgentSessionSummary) => {
+    const routeId = s.threadId ?? s.id;
+    router.push(`/?session=${encodeURIComponent(routeId)}`);
+  };
 
   return (
     <div className="grid h-screen grid-cols-1 bg-background text-foreground md:grid-cols-[260px_1fr] lg:grid-cols-[260px_1fr_320px]">
@@ -106,6 +119,7 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
           onPick={pickSession}
           onNew={newConversation}
           dense
+          canListHistory={canListHistory}
         />
       </div>
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -125,6 +139,7 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
               newConversation();
             }}
             dense
+            canListHistory={canListHistory}
           />
         </SheetContent>
       </Sheet>

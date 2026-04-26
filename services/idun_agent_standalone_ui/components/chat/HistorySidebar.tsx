@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { type SessionSummary, ApiError, api } from "@/lib/api";
+import { type AgentSessionSummary, ApiError, api } from "@/lib/api";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -10,26 +10,39 @@ type Props = {
   /** Currently selected session id; rendered with an active highlight. */
   activeId?: string;
   /** Called when the user picks an existing session row. */
-  onPick: (s: SessionSummary) => void;
+  onPick: (s: AgentSessionSummary) => void;
   /** Called when the user clicks "+ New". */
   onNew: () => void;
   /** Compact density, used by InspectorLayout's left rail. */
   dense?: boolean;
+  /**
+   * When false, the engine adapter's memory backend doesn't expose a
+   * listing API. We replace the conversation list with an inline alert
+   * but keep the rail (and the "+ New" pill) so users can still start a
+   * fresh thread.
+   */
+  canListHistory?: boolean;
 };
 
 /**
- * Format an ISO timestamp as a short relative-time badge:
+ * Format an epoch-seconds timestamp as a short relative-time badge:
  * `just now`, `5m ago`, `3h ago`, `2d ago`, or a locale date for older items.
+ *
+ * Engine ``SessionSummary.lastUpdateTime`` is epoch *seconds* (per the
+ * Pydantic schema), so we multiply by 1000 before subtracting from
+ * ``Date.now()`` (epoch ms).
  */
-function relativeTime(iso: string): string {
-  const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return "";
-  const diff = Date.now() - t;
+function relativeTimeFromSeconds(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) {
+    return "";
+  }
+  const ms = seconds * 1000;
+  const diff = Date.now() - ms;
   if (diff < 60_000) return "just now";
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
   if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`;
-  return new Date(iso).toLocaleDateString();
+  return new Date(ms).toLocaleDateString();
 }
 
 function errorMessage(err: unknown): string {
@@ -46,16 +59,31 @@ function errorMessage(err: unknown): string {
  * Editorial chrome: serif "History" header, "+ New" pill, shadcn
  * Skeleton placeholders during fetch, relative-time badges,
  * terracotta-tinted active row.
+ *
+ * Pulls from the engine-backed ``GET /agent/sessions`` endpoint
+ * (``api.listAgentSessions``). When the active memory backend doesn't
+ * support listing (``canListHistory === false``), the list area shows
+ * an inline alert instead — the rail and "+ New" pill stay reachable
+ * so users can still start fresh threads.
  */
-export function HistorySidebar({ activeId, onPick, onNew, dense = false }: Props) {
+export function HistorySidebar({
+  activeId,
+  onPick,
+  onNew,
+  dense = false,
+  canListHistory = true,
+}: Props) {
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["sessions", "history-sidebar"],
-    queryFn: () => api.listSessions({ limit: 30 }),
+    queryKey: ["agent-sessions", "history-sidebar"],
+    queryFn: () => api.listAgentSessions(),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
+    // When the adapter declares no listing support, skip the network round-trip
+    // entirely. The rail will render the "history not available" alert below.
+    enabled: canListHistory,
   });
 
-  const items = data?.items ?? [];
+  const items = data ?? [];
 
   return (
     <aside className="flex h-screen w-[300px] shrink-0 flex-col border-r border-border bg-card/60">
@@ -73,7 +101,15 @@ export function HistorySidebar({ activeId, onPick, onNew, dense = false }: Props
       </header>
       <div className="hairline mx-5" />
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        {isLoading ? (
+        {!canListHistory ? (
+          <Alert className="mx-1">
+            <AlertTitle>History not available</AlertTitle>
+            <AlertDescription>
+              The active memory backend doesn't expose a listing API. New
+              conversations still work.
+            </AlertDescription>
+          </Alert>
+        ) : isLoading ? (
           <div className="flex flex-col gap-2 px-1">
             <Skeleton className="h-12 w-full rounded-lg" />
             <Skeleton className="h-12 w-full rounded-lg" />
@@ -91,8 +127,13 @@ export function HistorySidebar({ activeId, onPick, onNew, dense = false }: Props
         ) : (
           <ul className="flex flex-col gap-1">
             {items.map((s) => {
-              const active = activeId === s.id;
-              const title = s.title?.trim() || "Untitled conversation";
+              // Routes use the AG-UI thread id; for LangGraph this equals
+              // ``s.id`` (thread_id), for ADK ``threadId`` is set explicitly
+              // and ``s.id`` carries the ADK session_id. Match either so
+              // the active highlight survives both adapter shapes.
+              const routeId = s.threadId ?? s.id;
+              const active = activeId === routeId || activeId === s.id;
+              const title = s.preview?.trim() || "Untitled conversation";
               return (
                 <li key={s.id}>
                   <button
@@ -113,7 +154,7 @@ export function HistorySidebar({ activeId, onPick, onNew, dense = false }: Props
                       {title}
                     </span>
                     <span className="text-[11px] text-muted-foreground">
-                      {relativeTime(s.last_event_at)}
+                      {relativeTimeFromSeconds(s.lastUpdateTime)}
                     </span>
                   </button>
                 </li>

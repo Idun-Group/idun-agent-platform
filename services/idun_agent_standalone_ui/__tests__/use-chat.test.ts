@@ -13,7 +13,7 @@ vi.mock("@/lib/agui", () => {
 });
 
 // Mock the API module so hydration doesn't reach for window.fetch. By default
-// every test sees an empty trace history (matching a fresh thread) — tests
+// every test sees an empty session detail (matching a fresh thread) — tests
 // that exercise hydration override the resolved value explicitly.
 vi.mock("@/lib/api", () => {
   class ApiError extends Error {
@@ -24,10 +24,11 @@ vi.mock("@/lib/api", () => {
   return {
     ApiError,
     api: {
-      getSessionEvents: vi.fn().mockResolvedValue({
-        events: [],
-        truncated: false,
-      }),
+      // SES.5: chat hydration now goes through the engine-backed
+      // /agent/sessions/{id} endpoint. Returning ``null`` defaults to a
+      // fresh-thread experience (no seeded messages) and matches the
+      // catch(() => null) fallback in useChat.
+      getAgentSession: vi.fn().mockResolvedValue(null),
     },
   };
 });
@@ -324,42 +325,37 @@ describe("useChat", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("hydrates messages from MESSAGES_SNAPSHOT on threadId change", async () => {
-    // P3.2: after switching threads, useChat replays persisted trace
-    // events. The pre-pass scans for the latest MESSAGES_SNAPSHOT and
-    // seeds the chat from it (cumulative under LangGraph's add_messages).
+  it("hydrates messages from getAgentSession on threadId change", async () => {
+    // SES.5: after switching threads, useChat fetches the engine-backed
+    // session detail and seeds messages from the reconstructed text-only
+    // history. No event replay involved.
     const { api } = (await import("@/lib/api")) as unknown as {
-      api: { getSessionEvents: ReturnType<typeof vi.fn> };
+      api: { getAgentSession: ReturnType<typeof vi.fn> };
     };
     const { useChat } = await import("@/lib/use-chat");
 
     // Mount fires hydration against "t1" too, then rerender against "t2"
-    // — return the snapshot only for the "t2" call so the assertion
+    // — return the detail only for the "t2" call so the assertion
     // exercises the post-rerender hydration path specifically.
-    api.getSessionEvents.mockImplementation(async (id: string) => {
+    api.getAgentSession.mockImplementation(async (id: string) => {
       if (id === "t2") {
         return {
-          events: [
+          id: "t2",
+          lastUpdateTime: null,
+          userId: null,
+          threadId: "t2",
+          messages: [
+            { id: "u1", role: "user", content: "ping", timestamp: null },
             {
-              id: 1,
-              session_id: "t2",
-              run_id: "r1",
-              sequence: 0,
-              event_type: "MessagesSnapshotEvent",
-              payload: {
-                type: "MESSAGES_SNAPSHOT",
-                messages: [
-                  { id: "u1", role: "user", content: "ping" },
-                  { id: "a1", role: "assistant", content: "echo: ping" },
-                ],
-              },
-              created_at: "2026-04-26T00:00:00Z",
+              id: "a1",
+              role: "assistant",
+              content: "echo: ping",
+              timestamp: null,
             },
           ],
-          truncated: false,
         };
       }
-      return { events: [], truncated: false };
+      return null;
     });
 
     const { result, rerender } = renderHook(

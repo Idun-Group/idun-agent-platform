@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type AGUIEvent, type Message, runAgent } from "@/lib/agui";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type Status = "idle" | "streaming" | "error";
 
@@ -34,23 +34,25 @@ const PLAN_STEPS = new Set(["planner", "analyst"]);
 
 /** Mutable closure used by applyEvent to remember the latest assistant text
  * seen on a MESSAGES_SNAPSHOT — RUN_FINISHED falls back to it when no
- * TEXT_MESSAGE_CONTENT deltas accumulated text. Lifted out of `send()` so
- * the hydration replay can share the same fallback. */
+ * TEXT_MESSAGE_CONTENT deltas accumulated text. Sits in ``send()``'s
+ * closure for the duration of a single live run. */
 type SnapshotRef = { current: string | null };
 
 /**
  * Apply a single AG-UI event to the chat state.
  *
- * Shared by the live SSE stream callback and the hydration replay so the
- * persisted trace events rebuild the same view a live run would. The
- * function is intentionally side-effecty (calls setMessages / setStatus /
- * setError) but pure with respect to its inputs — the caller decides which
- * setters to wire in. ``snapshotRef.current`` is mutated when a
- * MESSAGES_SNAPSHOT carries an assistant message so RUN_FINISHED can
- * hydrate the bubble even if the assistant message hasn't been allocated.
+ * Used exclusively by the live SSE stream callback in ``send()``. Hydration
+ * (post-SES.5) goes through the engine-backed ``GET /agent/sessions/{id}``
+ * endpoint and seeds ``messages`` directly from the response, so this
+ * reducer is no longer driven from a persisted-event replay path.
  *
- * Events arrive in two shapes — both already snake_case for nested fields
- * (engine and traces sink both serialize via Pydantic ``model_dump``) but
+ * The function is intentionally side-effecty (calls setMessages / setStatus
+ * / setError) but pure with respect to its inputs — the caller decides
+ * which setters to wire in. ``snapshotRef.current`` is mutated when a
+ * MESSAGES_SNAPSHOT carries an assistant message so RUN_FINISHED can
+ * hydrate the bubble even if no streaming deltas accumulated text.
+ *
+ * Events arrive over the live SSE stream snake_case for nested fields, but
  * we still tolerate camelCase keys (`toolCallId`, `stepName`) so that any
  * upstream change to ``by_alias=True`` doesn't break the chat surface.
  */
@@ -64,12 +66,8 @@ function applyEvent(
   const t = String(e.type ?? "");
 
   // updateLatestAssistant mutates the trailing assistant message — i.e. the
-  // bubble that's currently streaming or just hydrated. During a live run
-  // ``send()`` allocates one explicitly; during hydration the snapshot pre-
-  // pass seeds the messages list and then events apply against the latest
-  // assistant slot. If no assistant message exists yet (e.g. RUN_STARTED
-  // arrives before any snapshot during hydration), allocate a placeholder
-  // so subsequent text deltas have somewhere to land.
+  // bubble that's currently streaming. ``send()`` allocates one explicitly
+  // before any AG-UI events arrive, so the walk below always finds it.
   const updateLatestAssistant = (fn: (m: Message) => Message) =>
     setMessages((prev) => {
       // Walk from the tail to find the last assistant. Most chats have
@@ -220,12 +218,9 @@ function applyEvent(
     // — Run lifecycle -----------------------------------------
     case "RUN_STARTED":
     case "RunStarted":
-      // Live runs allocate the assistant slot in send() before this fires;
-      // hydration relies on the snapshot pre-pass, so under both code
-      // paths an assistant bubble already exists. We deliberately do NOT
-      // create one here — that would interleave a stray empty bubble with
-      // the snapshot-seeded conversation during hydration of multi-turn
-      // sessions.
+      // Live runs allocate the assistant slot in send() before this fires,
+      // so an assistant bubble always exists by the time RUN_STARTED arrives.
+      // We deliberately do NOT create one here.
       break;
     case "RUN_FINISHED":
     case "RunFinished":
@@ -329,36 +324,6 @@ function applyEvent(
   }
 }
 
-/**
- * Convert a persisted ``TraceEvent`` row into the ``AGUIEvent`` shape that
- * ``applyEvent`` expects. The trace row wraps the actual AG-UI event under
- * ``payload`` and stores the Pydantic class name (``MessagesSnapshotEvent``)
- * under ``event_type`` while the AG-UI ``type`` enum (``MESSAGES_SNAPSHOT``)
- * already lives inside ``payload.type``. Returning ``payload`` directly is
- * sufficient because both the in-flight SSE shape and the persisted shape
- * use the same field names (snake_case via ``model_dump``); the live
- * dispatch already tolerates the camelCase aliases as a defensive measure.
- */
-function normalizeTraceEvent(row: unknown): AGUIEvent {
-  if (typeof row === "object" && row !== null) {
-    const r = row as { payload?: Record<string, unknown>; event_type?: string };
-    if (r.payload && typeof r.payload === "object") {
-      // payload.type is the AG-UI screaming-snake type literal. If the
-      // payload is missing it (older rows / malformed entries), fall back
-      // to event_type which holds the Python class name — applyEvent's
-      // PascalCase aliases handle that shape too.
-      const payload = r.payload as Record<string, unknown>;
-      if (typeof payload.type === "string" && payload.type.length > 0) {
-        return payload as AGUIEvent;
-      }
-      if (typeof r.event_type === "string") {
-        return { ...payload, type: r.event_type } as AGUIEvent;
-      }
-    }
-  }
-  return row as AGUIEvent;
-}
-
 export function useChat(threadId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [events, setEvents] = useState<ChatEvent[]>([]);
@@ -369,7 +334,7 @@ export function useChat(threadId: string) {
   /**
    * Guard against the hydrate-vs-send race: if ``send()`` fires before the
    * hydration request resolves, the live stream's events would be clobbered
-   * when the late getSessionEvents response calls setMessages/setEvents.
+   * when the late getAgentSession response calls setMessages.
    * The ref starts true on every threadId change and is flipped false the
    * moment ``send()`` runs, telling the in-flight hydration to bail out.
    */
@@ -378,6 +343,12 @@ export function useChat(threadId: string) {
   // Reset + hydrate whenever the parent flips threadId. Clicking a row in
   // HistorySidebar pushes ``/?session=<sid>`` and the page-level component
   // re-derives ``threadId`` so this effect is the single switching point.
+  //
+  // SES.5: hydration now uses the engine-backed ``GET /agent/sessions/{id}``
+  // endpoint. The engine returns reconstructed text-only messages directly
+  // (per spec §8 and design D3), so we map ``SessionMessage`` → ``Message``
+  // without replaying any AG-UI event reducer. The live streaming path in
+  // ``send()`` still uses ``applyEvent`` against fresh AG-UI events.
   useEffect(() => {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -390,111 +361,27 @@ export function useChat(threadId: string) {
 
     let cancelled = false;
     (async () => {
-      let res: { events: unknown[]; truncated: boolean } | null = null;
-      try {
-        res = await api.getSessionEvents(threadId);
-      } catch (err) {
-        // 404 / 401 / network — a fresh thread has no events. Stay silent
-        // unless it's an auth error we can't paper over.
-        if (err instanceof ApiError && err.status === 401) return;
-        return;
-      }
-      if (cancelled || !res || !hydratableRef.current) return;
-
-      const rawEvents = (res.events ?? []) as unknown[];
-
-      // Pre-pass: seed the messages list from the latest MESSAGES_SNAPSHOT.
-      // The snapshot is cumulative for LangGraph (StateGraph adds_messages
-      // appends across turns), so the most recent snapshot in the trace
-      // captures the full visible conversation. If the session never emits
-      // a snapshot (e.g. tool-only flows), the messages list stays empty
-      // and the per-event dispatch below rebuilds whatever it can.
-      const seeded: Message[] = [];
-      for (let i = rawEvents.length - 1; i >= 0; i--) {
-        const ev = normalizeTraceEvent(rawEvents[i]);
-        if (
-          ev.type === "MESSAGES_SNAPSHOT" ||
-          ev.type === "MessagesSnapshot" ||
-          ev.type === "MessagesSnapshotEvent"
-        ) {
-          const snap = (ev.messages ?? []) as Array<{
-            id?: string;
-            role?: string;
-            content?: unknown;
-          }>;
-          for (const m of snap) {
-            const role =
-              m.role === "user"
-                ? ("user" as const)
-                : m.role === "assistant" || m.role === "ai"
-                  ? ("assistant" as const)
-                  : null;
-            if (!role) continue;
-            const text = typeof m.content === "string" ? m.content : "";
-            const id =
-              typeof m.id === "string" && m.id.length > 0
-                ? m.id
-                : crypto.randomUUID();
-            seeded.push(
-              role === "user"
-                ? { id, role, text }
-                : {
-                    id,
-                    role,
-                    text,
-                    toolCalls: [],
-                    thinking: [],
-                    streaming: false,
-                  },
-            );
-          }
-          break;
-        }
-      }
+      // 404 = unknown thread (fresh session); 501 = adapter doesn't support
+      // the get-by-id call. Either way the chat starts blank — bail silently.
+      // Auth (401) is handled centrally by ``apiFetch``'s redirect path so we
+      // don't need to special-case it here.
+      const detail = await api.getAgentSession(threadId).catch(() => null);
       if (cancelled || !hydratableRef.current) return;
-      if (seeded.length > 0) setMessages(seeded);
+      if (!detail || detail.messages.length === 0) return;
 
-      // Per-event replay: dispatch tool/thinking/step/state events through
-      // applyEvent so any non-snapshot detail (tool call results, thinking
-      // text) shows up. Text content is intentionally driven by the
-      // snapshot pre-pass to avoid double-applying deltas that already
-      // landed in the snapshot's assistant content.
-      const captured: ChatEvent[] = [];
-      const snapshotRef: SnapshotRef = { current: null };
-      const NON_TEXT_EVENTS = new Set([
-        "TOOL_CALL_START",
-        "TOOL_CALL_ARGS",
-        "TOOL_CALL_END",
-        "THINKING_START",
-        "THINKING_TEXT_MESSAGE_START",
-        "THINKING_TEXT_MESSAGE_CONTENT",
-        "THINKING_TEXT_MESSAGE_END",
-        "THINKING_END",
-        "STEP_STARTED",
-        "STEP_FINISHED",
-      ]);
-      for (const raw of rawEvents) {
-        const ev = normalizeTraceEvent(raw);
-        captured.push({ ...ev, _id: ++eventIdRef.current, _at: Date.now() });
-        if (!hydratableRef.current) return;
-        if (seeded.length > 0 && !NON_TEXT_EVENTS.has(String(ev.type))) {
-          // Already covered by the snapshot pre-pass — skip text + run
-          // lifecycle replays so we don't reset streaming flags or paint
-          // empty text into the seeded bubbles.
-          continue;
-        }
-        applyEvent(setMessages, setStatus, setError, snapshotRef, ev);
-      }
-      if (cancelled || !hydratableRef.current) return;
-      // Final status is always idle after hydration — no live run is in
-      // flight even if the persisted RUN_ERROR hasn't been replayed.
-      setStatus("idle");
-      setError(null);
-      setEvents(
-        captured.length > MAX_EVENTS
-          ? captured.slice(captured.length - MAX_EVENTS)
-          : captured,
+      const seeded: Message[] = detail.messages.map((m) =>
+        m.role === "user"
+          ? { id: m.id, role: "user" as const, text: m.content }
+          : {
+              id: m.id,
+              role: "assistant" as const,
+              text: m.content,
+              toolCalls: [],
+              thinking: [],
+              streaming: false,
+            },
       );
+      setMessages(seeded);
     })();
 
     return () => {

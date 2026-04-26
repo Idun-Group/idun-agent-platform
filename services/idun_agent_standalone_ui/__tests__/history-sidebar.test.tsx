@@ -3,14 +3,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Hoist the mock so vi.mock can reference it before module evaluation.
-const listSessionsMock = vi.hoisted(() => vi.fn());
+const listAgentSessionsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/api", async () => {
   const actual =
     await vi.importActual<typeof import("@/lib/api")>("@/lib/api");
   return {
     ...actual,
-    api: { ...actual.api, listSessions: listSessionsMock },
+    api: { ...actual.api, listAgentSessions: listAgentSessionsMock },
   };
 });
 
@@ -28,7 +28,7 @@ function withClient(ui: React.ReactNode) {
 
 describe("HistorySidebar", () => {
   beforeEach(() => {
-    listSessionsMock.mockReset();
+    listAgentSessionsMock.mockReset();
   });
 
   afterEach(() => {
@@ -37,7 +37,7 @@ describe("HistorySidebar", () => {
 
   it("renders shadcn Skeleton placeholders while loading", () => {
     // Pending promise — query stays in the loading state.
-    listSessionsMock.mockImplementation(() => new Promise(() => {}));
+    listAgentSessionsMock.mockImplementation(() => new Promise(() => {}));
 
     const { container } = render(
       withClient(
@@ -52,7 +52,8 @@ describe("HistorySidebar", () => {
   });
 
   it("renders empty-state copy when no sessions exist", async () => {
-    listSessionsMock.mockResolvedValue({ items: [], total: 0 });
+    // Engine-backed listing returns a bare array (no .items wrapper).
+    listAgentSessionsMock.mockResolvedValue([]);
 
     render(
       withClient(<HistorySidebar onPick={() => {}} onNew={() => {}} />),
@@ -61,5 +62,25 @@ describe("HistorySidebar", () => {
     await waitFor(() => {
       expect(screen.getByText("No conversations yet.")).toBeInTheDocument();
     });
+  });
+
+  it("shows the unavailable hint when canListHistory is false", () => {
+    // SES.5 capability fallback: when /agent/capabilities reports the active
+    // memory backend can't list sessions, the rail keeps the "+ New" pill
+    // but replaces the conversation list with an inline alert. The query is
+    // skipped (enabled: false), so listAgentSessions must NOT be called.
+    render(
+      withClient(
+        <HistorySidebar
+          onPick={() => {}}
+          onNew={() => {}}
+          canListHistory={false}
+        />,
+      ),
+    );
+
+    expect(screen.getByText("History not available")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^\+\s*New$/ })).toBeInTheDocument();
+    expect(listAgentSessionsMock).not.toHaveBeenCalled();
   });
 });

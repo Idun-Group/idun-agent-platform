@@ -1,9 +1,10 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { type SessionSummary } from "@/lib/api";
+import { type AgentSessionSummary, api } from "@/lib/api";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
 import { useChat } from "@/lib/use-chat";
 import {
@@ -46,6 +47,17 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
   }, []);
   const empty = messages.length === 0;
 
+  // Capability discovery — non-blocking. If the request fails (older engine,
+  // network blip), we treat history as available; the listing query will
+  // surface its own error state if the endpoint is missing.
+  const { data: caps } = useQuery({
+    queryKey: ["agent-capabilities"],
+    queryFn: () => api.getAgentCapabilities().catch(() => null),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const canListHistory = caps?.history?.canList ?? true;
+
   const newConversation = () => {
     const id =
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -53,8 +65,13 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     router.push(`/?session=${id}`);
   };
-  const pickSession = (s: SessionSummary) =>
-    router.push(`/?session=${encodeURIComponent(s.id)}`);
+  const pickSession = (s: AgentSessionSummary) => {
+    // Routes are keyed on the AG-UI thread id (LangGraph: same as s.id; ADK:
+    // s.threadId is set explicitly). Fall back to s.id when the adapter
+    // doesn't populate threadId so the click still navigates somewhere.
+    const routeId = s.threadId ?? s.id;
+    router.push(`/?session=${encodeURIComponent(routeId)}`);
+  };
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -63,6 +80,7 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
           activeId={threadId}
           onPick={pickSession}
           onNew={newConversation}
+          canListHistory={canListHistory}
         />
       </div>
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -81,6 +99,7 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
               setDrawerOpen(false);
               newConversation();
             }}
+            canListHistory={canListHistory}
           />
         </SheetContent>
       </Sheet>

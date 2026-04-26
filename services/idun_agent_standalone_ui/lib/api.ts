@@ -132,7 +132,7 @@ export const api = {
   deleteIntegration: (id: string) =>
     apiFetch<void>(`/admin/api/v1/integrations/${id}`, { method: "DELETE" }),
 
-  // traces
+  // traces (admin event inspection — different from engine-backed session history)
   listSessions: (
     params: { limit?: number; offset?: number; search?: string } = {},
   ) => {
@@ -154,6 +154,16 @@ export const api = {
   },
   deleteSession: (id: string) =>
     apiFetch<void>(`/admin/api/v1/traces/sessions/${id}`, { method: "DELETE" }),
+
+  // engine-backed session history (chat hydration & sidebar listing)
+  listAgentSessions: () =>
+    apiFetch<AgentSessionSummary[]>("/agent/sessions"),
+  getAgentSession: (id: string) =>
+    apiFetch<AgentSessionDetail>(
+      `/agent/sessions/${encodeURIComponent(id)}`,
+    ),
+  getAgentCapabilities: () =>
+    apiFetch<AgentCapabilities>("/agent/capabilities"),
 };
 
 // — Types ---------------------------------------------------------------
@@ -207,4 +217,40 @@ export type TraceEvent = {
   event_type: string;
   payload: Record<string, unknown>;
   created_at: string;
+};
+
+// engine-backed session history (camelCase wire shape — engine schemas use
+// alias_generator=to_camel and FastAPI serializes with by_alias=True).
+export type AgentSessionSummary = {
+  id: string;
+  lastUpdateTime: number | null;
+  userId: string | null;
+  threadId: string | null;
+  preview: string | null;
+};
+
+export type AgentSessionMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: number | null;
+};
+
+export type AgentSessionDetail = {
+  id: string;
+  lastUpdateTime: number | null;
+  userId: string | null;
+  threadId: string | null;
+  messages: AgentSessionMessage[];
+};
+
+export type HistoryCapabilities = {
+  canList: boolean;
+  canGet: boolean;
+};
+
+// Subset of the /agent/capabilities response — we only consume the history
+// flags so far. Other fields are passthroughs and can be added on demand.
+export type AgentCapabilities = {
+  history?: HistoryCapabilities | null;
 };
