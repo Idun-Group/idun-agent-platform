@@ -36,12 +36,68 @@ from idun_agent_schema.engine.adk import (
     AdkVertexAiSessionConfig,
 )
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.sessions import (
+    HistoryCapabilities,
+    SessionDetail,
+    SessionMessage,
+    SessionSummary,
+)
 from pydantic import BaseModel
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
 
 logger = logging.getLogger(__name__)
+
+
+def _event_text_parts(event: Any) -> list[str]:
+    """Extract non-empty text fragments from an ADK event's content parts."""
+    content = getattr(event, "content", None)
+    if content is None:
+        return []
+    parts = getattr(content, "parts", None) or []
+    out: list[str] = []
+    for p in parts:
+        text = getattr(p, "text", None)
+        if isinstance(text, str) and text.strip():
+            out.append(text)
+    return out
+
+
+def _first_user_text(session: Any) -> str | None:
+    """First user-authored text in the session, ~120 chars."""
+    for ev in getattr(session, "events", []) or []:
+        if getattr(ev, "author", None) != "user":
+            continue
+        texts = _event_text_parts(ev)
+        if texts:
+            preview = " ".join(texts).strip()
+            return preview[:120]
+    return None
+
+
+def _events_to_messages(events: list[Any]) -> list[SessionMessage]:
+    """Map ADK events to text-only ``SessionMessage`` rows.
+
+    Per the agent-sessions spec §5: drop tool calls, structured outputs,
+    and any event with no text content. Author ``"user"`` maps to
+    role ``"user"``; everything else maps to ``"assistant"``.
+    """
+    msgs: list[SessionMessage] = []
+    for ev in events:
+        texts = _event_text_parts(ev)
+        if not texts:
+            continue
+        role = "user" if getattr(ev, "author", None) == "user" else "assistant"
+        msgs.append(
+            SessionMessage(
+                id=str(getattr(ev, "id", "") or f"msg-{len(msgs)}"),
+                role=role,
+                content="".join(texts),
+                timestamp=getattr(ev, "timestamp", None),
+            )
+        )
+    return msgs
 
 
 class AdkAgent(agent_base.BaseAgent):
@@ -217,7 +273,9 @@ class AdkAgent(agent_base.BaseAgent):
                         if configure_google_adk(name=self._name):
                             logger.info("LangSmith Google ADK integration configured")
                         else:
-                            logger.warning("LangSmith Google ADK integration failed to configure")
+                            logger.warning(
+                                "LangSmith Google ADK integration failed to configure"
+                            )
                     except ImportError:
                         logger.warning(
                             "langsmith[google-adk] not installed, "
@@ -469,9 +527,104 @@ class AdkAgent(agent_base.BaseAgent):
             ),
             input=InputDescriptor(mode=input_mode, schema_=input_json_schema),
             output=OutputDescriptor(mode=output_mode, schema_=output_json_schema),
+            history=self.history_capabilities(),
         )
         self._cached_capabilities = result
         return result
+
+    def history_capabilities(self) -> HistoryCapabilities:
+        """Declare ADK session-history support.
+
+        Both list and get are supported when an ADK ``session_service``
+        is wired (it always is for ADK adapters — defaults to
+        ``InMemorySessionService``).
+        """
+        return HistoryCapabilities(
+            can_list=self._session_service is not None,
+            can_get=self._session_service is not None,
+        )
+
+    async def list_sessions(
+        self, *, user_id: str | None = None
+    ) -> list[SessionSummary]:
+        """List ADK sessions for ``user_id``, newest first.
+
+        ADK's ``list_sessions`` returns lightweight rows without events,
+        so we re-fetch each full session to compute the preview from the
+        first user-authored text event.
+        """
+        if not self._session_service:
+            return []
+        scope_user = user_id or "anonymous"
+        res = await self._session_service.list_sessions(
+            app_name=self._name,
+            user_id=scope_user,
+        )
+        raw_sessions = list(getattr(res, "sessions", []) or [])
+        raw_sessions.sort(
+            key=lambda s: getattr(s, "last_update_time", 0) or 0,
+            reverse=True,
+        )
+
+        out: list[SessionSummary] = []
+        for s in raw_sessions:
+            full = await self._session_service.get_session(
+                app_name=self._name,
+                user_id=getattr(s, "user_id", scope_user),
+                session_id=s.id,
+            )
+            preview = _first_user_text(full) if full is not None else None
+            thread_id: str | None = None
+            state = getattr(full, "state", None) if full else None
+            if isinstance(state, dict):
+                thread_id_value = state.get("_ag_ui_thread_id")
+                if isinstance(thread_id_value, str):
+                    thread_id = thread_id_value
+            out.append(
+                SessionSummary(
+                    id=s.id,
+                    last_update_time=getattr(s, "last_update_time", None),
+                    user_id=getattr(s, "user_id", scope_user),
+                    thread_id=thread_id,
+                    preview=preview,
+                )
+            )
+        return out
+
+    async def get_session(
+        self, session_id: str, *, user_id: str | None = None
+    ) -> SessionDetail | None:
+        """Reconstruct a single ADK session as a text-only message thread.
+
+        Returns ``None`` when the session is not found OR when
+        ``user_id`` is provided and does not match the persisted owner
+        (cross-user 404 guard).
+        """
+        if not self._session_service:
+            return None
+        scope_user = user_id or "anonymous"
+        s = await self._session_service.get_session(
+            app_name=self._name,
+            user_id=scope_user,
+            session_id=session_id,
+        )
+        if s is None:
+            return None
+        if user_id and getattr(s, "user_id", None) and s.user_id != user_id:
+            return None
+        state = getattr(s, "state", None)
+        thread_id: str | None = None
+        if isinstance(state, dict):
+            thread_id_value = state.get("_ag_ui_thread_id")
+            if isinstance(thread_id_value, str):
+                thread_id = thread_id_value
+        return SessionDetail(
+            id=s.id,
+            last_update_time=getattr(s, "last_update_time", None),
+            user_id=getattr(s, "user_id", None),
+            thread_id=thread_id,
+            messages=_events_to_messages(getattr(s, "events", []) or []),
+        )
 
     async def run(self, input_data: RunAgentInput) -> AsyncGenerator[BaseEvent, None]:
         """Canonical AG-UI interaction entry point.
