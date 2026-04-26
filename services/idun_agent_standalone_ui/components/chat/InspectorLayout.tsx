@@ -1,12 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { type SessionSummary } from "@/lib/api";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
 import { type ChatEvent, useChat } from "@/lib/use-chat";
 import { ChatInput } from "./ChatInput";
-import { ChatMessage } from "./ChatMessage";
 import { HeaderActions } from "./HeaderActions";
-import { SessionList } from "./SessionList";
+import { HistorySidebar } from "./HistorySidebar";
+import { MessageView } from "./MessageView";
 
 function formatTime(ms: number): string {
   return new Date(ms).toLocaleTimeString(undefined, { hour12: false });
@@ -25,31 +27,44 @@ function EventRow({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left text-[10px] font-mono px-2 py-1 rounded flex gap-2 hover:bg-[var(--color-muted)] ${
-        active ? "bg-[var(--color-muted)]" : ""
+      className={`flex w-full gap-2 rounded px-2 py-1 text-left font-mono text-[10px] transition hover:bg-muted ${
+        active ? "bg-muted" : ""
       }`}
     >
-      <span className="text-[var(--color-fg)]/40 w-14 flex-shrink-0 truncate">
+      <span className="w-14 shrink-0 truncate text-muted-foreground/70">
         {formatTime(event._at)}
       </span>
-      <span className="text-[var(--color-fg)]/80 truncate">
+      <span className="truncate text-foreground/80">
         {String(event.type ?? "?")}
       </span>
     </button>
   );
 }
 
+/**
+ * Developer-flavored chat layout (D5 in the MVP spec).
+ *
+ * Three-column editorial shell: a 260px `HistorySidebar` (dense) on the left,
+ * a 1fr chat column in the middle reusing `MessageView`/`ChatInput`, and a
+ * 320px right rail that surfaces the raw AG-UI event ring from `useChat`.
+ *
+ * The right panel is the only place in the redesigned chat UI that exposes
+ * the underlying `events` array — auto-scroll keeps the latest event visible
+ * unless the user has clicked into a specific event for inspection. The
+ * detail panel below renders the selected (or most recent) event as JSON.
+ */
 export function InspectorLayout({ threadId }: { threadId: string }) {
-  const { messages, events, status, send, stop } = useChat(threadId);
-  const [selected, setSelected] = useState<ChatEvent | null>(null);
+  const router = useRouter();
+  const { messages, events, send, stop, status } = useChat(threadId);
   const [theme, setTheme] = useState<ThemeConfig | null>(null);
   useEffect(() => {
     setTheme(getRuntimeConfig().theme);
   }, []);
-  const appName = theme?.appName ?? "Idun Agent";
 
-  // When new events stream in, auto-scroll the inspector pane to the bottom
-  // unless the user picked a specific event to inspect.
+  const [selected, setSelected] = useState<ChatEvent | null>(null);
+
+  // Auto-scroll the inspector ring as new events stream in, unless the user
+  // has pinned a specific event for inspection.
   useEffect(() => {
     if (selected) return;
     const el = document.getElementById("inspector-events-list");
@@ -57,44 +72,66 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
   }, [events.length, selected]);
 
   const detail = selected ?? events[events.length - 1] ?? null;
+  const appName = theme?.appName ?? "Idun Agent";
+
+  const newConversation = () => {
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    router.push(`/?session=${id}`);
+  };
+  const pickSession = (s: SessionSummary) =>
+    router.push(`/?session=${encodeURIComponent(s.id)}`);
 
   return (
-    <div className="grid grid-cols-[200px_1fr_280px] h-screen">
-      <aside className="border-r border-[var(--color-border)] p-2 text-sm bg-[var(--color-muted)]/40 overflow-auto">
-        <div className="text-[10px] uppercase tracking-wider text-[var(--color-fg)]/50 mb-2 px-1">
-          Sessions
-        </div>
-        <SessionList activeId={threadId} showNew dense />
-      </aside>
-      <main className="flex flex-col">
-        <div className="flex items-center px-4 py-2 border-b border-[var(--color-border)]">
-          <strong className="text-sm">{appName}</strong>
+    <div className="grid h-screen grid-cols-[260px_1fr_320px] bg-background text-foreground">
+      <HistorySidebar
+        activeId={threadId}
+        onPick={pickSession}
+        onNew={newConversation}
+        dense
+      />
+      <main className="flex flex-col overflow-hidden">
+        <div className="flex items-center border-b border-border px-4 py-2">
+          <strong className="text-sm font-medium">{appName}</strong>
           <div className="ml-auto">
-            <HeaderActions threadId={threadId} />
+            <HeaderActions
+              threadId={threadId}
+              onNewSession={newConversation}
+            />
           </div>
         </div>
-        <div className="flex-1 flex flex-col gap-3 p-4 overflow-auto">
-          {messages.map((m) => (
-            <ChatMessage key={m.id} m={m} />
-          ))}
+        <div className="scroll-fade flex-1 overflow-y-auto">
+          <div className="space-y-4 p-4">
+            {messages.map((m) => (
+              <MessageView key={m.id} m={m} />
+            ))}
+          </div>
         </div>
-        <ChatInput onSend={send} streaming={status === "streaming"} onStop={stop} />
+        <div className="border-t border-border bg-card/40 px-4 py-3">
+          <ChatInput
+            onSend={send}
+            streaming={status === "streaming"}
+            onStop={stop}
+          />
+        </div>
       </main>
-      <aside className="border-l border-[var(--color-border)] flex flex-col bg-[var(--color-muted)]/30">
-        <div className="px-3 py-2 border-b border-[var(--color-border)] text-[10px] uppercase tracking-wider text-[var(--color-fg)]/60 flex items-center gap-2">
+      <aside className="flex flex-col overflow-hidden border-l border-border bg-card/30">
+        <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           <span>Run events</span>
-          <span className="text-[var(--color-fg)]/40">·</span>
-          <span className="text-[var(--color-fg)]/50">
+          <span className="text-muted-foreground/40">·</span>
+          <span className="font-mono normal-case tracking-normal text-muted-foreground/70">
             {events.length}
             {events.length >= 200 ? "+" : ""}
           </span>
         </div>
         <div
           id="inspector-events-list"
-          className="overflow-auto p-2 max-h-[40vh]"
+          className="max-h-[40vh] overflow-auto p-2"
         >
           {events.length === 0 ? (
-            <div className="text-[10px] text-[var(--color-fg)]/40 px-2 py-1">
+            <div className="px-2 py-1 text-[10px] text-muted-foreground/60">
               No events yet. Send a message to see the AG-UI stream.
             </div>
           ) : (
@@ -110,23 +147,23 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
             </div>
           )}
         </div>
-        <div className="border-t border-[var(--color-border)] flex-1 overflow-auto p-3 text-[10px] font-mono">
+        <div className="flex-1 overflow-auto border-t border-border p-3 font-mono text-[10px]">
           {detail ? (
             <>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[var(--color-fg)]/80">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-foreground/80">
                   {String(detail.type ?? "?")}
                 </span>
-                <span className="ml-auto text-[var(--color-fg)]/50">
+                <span className="ml-auto text-muted-foreground/60">
                   {formatTime(detail._at)}
                 </span>
               </div>
-              <pre className="whitespace-pre-wrap text-[var(--color-fg)]/80">
+              <pre className="whitespace-pre-wrap text-foreground/80">
                 {JSON.stringify(detail, null, 2)}
               </pre>
             </>
           ) : (
-            <div className="text-[var(--color-fg)]/40">
+            <div className="text-muted-foreground/50">
               Click an event above to inspect it.
             </div>
           )}

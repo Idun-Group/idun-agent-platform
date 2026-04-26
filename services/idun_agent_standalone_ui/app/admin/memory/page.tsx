@@ -1,51 +1,97 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { stringify as stringifyYaml } from "yaml";
+import { z } from "zod";
+
+import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, api } from "@/lib/api";
-import { SaveToolbar } from "@/components/admin/SaveToolbar";
-import { YamlEditor } from "@/components/admin/YamlEditor";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 
 type MemoryType = "memory" | "sqlite" | "postgres";
+const MEMORY_TYPES: MemoryType[] = ["memory", "sqlite", "postgres"];
 
-type MemoryForm = {
-  type: MemoryType;
-  db_url: string;
+const TAB_LABELS: Record<MemoryType, string> = {
+  memory: "In-memory",
+  sqlite: "SQLite",
+  postgres: "PostgreSQL",
 };
 
-const TYPES: { id: MemoryType; label: string; help: string }[] = [
-  { id: "memory", label: "In-memory", help: "Volatile checkpointer (default)" },
-  { id: "sqlite", label: "SQLite", help: "URL must start with sqlite:///" },
-  { id: "postgres", label: "PostgreSQL", help: "URL must start with postgresql://" },
-];
+const sqliteSchema = z.object({
+  path: z
+    .string()
+    .min(1, "Path is required")
+    .refine((v) => v.startsWith("sqlite:///"), {
+      message: "SQLite URL must start with sqlite:///",
+    }),
+});
 
-function configToForm(config: Record<string, unknown> | undefined): MemoryForm {
-  const type = (config?.type as MemoryType | undefined) ?? "memory";
-  const db_url =
-    typeof config?.db_url === "string" ? (config.db_url as string) : "";
-  return { type, db_url };
+const postgresSchema = z.object({
+  connection_url: z
+    .string()
+    .min(1, "Connection URL is required")
+    .refine(
+      (v) => v.startsWith("postgresql://") || v.startsWith("postgres://"),
+      {
+        message: "Postgres URL must start with postgresql:// or postgres://",
+      },
+    ),
+});
+
+const memorySchema = z.object({});
+
+type SqliteValues = z.infer<typeof sqliteSchema>;
+type PostgresValues = z.infer<typeof postgresSchema>;
+type MemoryValues = z.infer<typeof memorySchema>;
+
+function readType(config: Record<string, unknown> | undefined): MemoryType {
+  const t = typeof config?.type === "string" ? (config.type as string) : "memory";
+  return t === "sqlite" || t === "postgres" ? t : "memory";
 }
 
-function formToConfig(f: MemoryForm): Record<string, unknown> {
-  if (f.type === "memory") return { type: "memory" };
-  return { type: f.type, db_url: f.db_url };
+function readUrl(config: Record<string, unknown> | undefined): string {
+  if (typeof config?.db_url === "string") return config.db_url as string;
+  if (typeof config?.url === "string") return config.url as string;
+  return "";
 }
 
-function validate(f: MemoryForm): string | null {
-  if (f.type === "memory") return null;
-  if (!f.db_url.trim()) return "db_url is required";
-  if (f.type === "sqlite" && !f.db_url.startsWith("sqlite:///"))
-    return "SQLite URL must start with sqlite:///";
-  if (
-    f.type === "postgres" &&
-    !(f.db_url.startsWith("postgresql://") || f.db_url.startsWith("postgres://"))
-  )
-    return "Postgres URL must start with postgresql:// or postgres://";
-  return null;
+function buildMemoryConfig(
+  type: MemoryType,
+  values: SqliteValues | PostgresValues | MemoryValues,
+): Record<string, unknown> {
+  if (type === "memory") return { type: "memory" };
+  if (type === "sqlite") {
+    return { type: "sqlite", db_url: (values as SqliteValues).path };
+  }
+  return {
+    type: "postgres",
+    db_url: (values as PostgresValues).connection_url,
+  };
 }
 
 export default function MemoryPage() {
@@ -54,25 +100,57 @@ export default function MemoryPage() {
     queryKey: ["memory"],
     queryFn: api.getMemory,
   });
-  const [form, setForm] = useState<MemoryForm>({ type: "memory", db_url: "" });
-  const [editYaml, setEditYaml] = useState(false);
 
-  const initialForm = useMemo(
-    () => configToForm(data?.config as Record<string, unknown> | undefined),
+  const initialType = useMemo(
+    () => readType(data?.config as Record<string, unknown> | undefined),
+    [data],
+  );
+  const initialUrl = useMemo(
+    () => readUrl(data?.config as Record<string, unknown> | undefined),
     [data],
   );
 
+  const [activeTab, setActiveTab] = useState<MemoryType>(initialType);
+  const [yamlOpen, setYamlOpen] = useState(false);
+  const [restartRequired, setRestartRequired] = useState(false);
+
   useEffect(() => {
-    if (data) setForm(initialForm);
-  }, [data, initialForm]);
+    setActiveTab(initialType);
+  }, [initialType]);
+
+  const sqliteForm = useForm<SqliteValues>({
+    resolver: zodResolver(sqliteSchema),
+    defaultValues: { path: initialType === "sqlite" ? initialUrl : "" },
+    values: { path: initialType === "sqlite" ? initialUrl : "" },
+  });
+
+  const postgresForm = useForm<PostgresValues>({
+    resolver: zodResolver(postgresSchema),
+    defaultValues: {
+      connection_url: initialType === "postgres" ? initialUrl : "",
+    },
+    values: {
+      connection_url: initialType === "postgres" ? initialUrl : "",
+    },
+  });
+
+  const memoryForm = useForm<MemoryValues>({
+    resolver: zodResolver(memorySchema),
+    defaultValues: {},
+  });
 
   const save = useMutation({
     mutationFn: (next: Record<string, unknown>) =>
       api.putMemory({ config: next }),
     onSuccess: (resp: unknown) => {
       const r = resp as { restart_required?: boolean };
-      if (r?.restart_required) toast.warning("Restart required to apply.");
-      else toast.success("Saved & reloaded");
+      if (r?.restart_required) {
+        setRestartRequired(true);
+        toast.warning("Restart required to apply this change.");
+      } else {
+        setRestartRequired(false);
+        toast.success("Saved & reloaded");
+      }
       qc.invalidateQueries({ queryKey: ["memory"] });
     },
     onError: (e: unknown) => {
@@ -82,100 +160,182 @@ export default function MemoryPage() {
     },
   });
 
-  if (isLoading) return <div className="p-6">Loading…</div>;
+  const handleSubmit = (
+    values: SqliteValues | PostgresValues | MemoryValues,
+  ) => {
+    save.mutate(buildMemoryConfig(activeTab, values));
+  };
 
-  const dirty = JSON.stringify(form) !== JSON.stringify(initialForm);
-  const error = validate(form);
+  const yamlText = useMemo(() => {
+    let values: SqliteValues | PostgresValues | MemoryValues;
+    if (activeTab === "sqlite") values = sqliteForm.getValues();
+    else if (activeTab === "postgres") values = postgresForm.getValues();
+    else values = memoryForm.getValues();
+    return stringifyYaml(buildMemoryConfig(activeTab, values));
+  }, [activeTab, sqliteForm, postgresForm, memoryForm, yamlOpen]);
+
+  const persistFromYaml = async (parsed: unknown) => {
+    const obj = (parsed ?? {}) as Record<string, unknown>;
+    const nextType = readType(obj);
+    const nextUrl = readUrl(obj);
+    setActiveTab(nextType);
+    if (nextType === "sqlite") sqliteForm.reset({ path: nextUrl });
+    else if (nextType === "postgres")
+      postgresForm.reset({ connection_url: nextUrl });
+    save.mutate(obj);
+  };
+
+  if (isLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  }
 
   return (
-    <>
-      <SaveToolbar
-        title="Memory / Checkpointer"
-        dirty={dirty}
-        busy={save.isPending}
-        onRevert={() => setForm(initialForm)}
-        onSave={() => {
-          if (error) {
-            toast.error(error);
-            return;
-          }
-          save.mutate(formToConfig(form));
-        }}
-        extraActions={
-          <Button
-            size="sm"
-            variant="ghost"
-            type="button"
-            onClick={() => setEditYaml((v) => !v)}
+    <div className="flex flex-col gap-6 p-6 max-w-4xl">
+      <header className="space-y-1">
+        <h1 className="font-serif text-2xl font-medium text-foreground">
+          Memory
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Where the agent persists conversational state between turns.
+        </p>
+      </header>
+
+      {restartRequired && (
+        <Alert variant="destructive">
+          <RotateCcw />
+          <AlertTitle>Restart required</AlertTitle>
+          <AlertDescription>
+            Structural change detected — restart required to apply.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Checkpointer</CardTitle>
+          <CardDescription>
+            Pick a backend. SQLite suits a single host; PostgreSQL is required
+            for multi-replica deployments.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs
+            value={activeTab}
+            onValueChange={(t) => setActiveTab(t as MemoryType)}
           >
-            {editYaml ? "Done editing YAML" : "Edit YAML"}
+            <TabsList>
+              {MEMORY_TYPES.map((t) => (
+                <TabsTrigger key={t} value={t}>
+                  {TAB_LABELS[t]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            <TabsContent value="memory" className="mt-4">
+              <Form {...memoryForm}>
+                <form
+                  id="memory-form-memory"
+                  onSubmit={memoryForm.handleSubmit(handleSubmit)}
+                  className="space-y-2"
+                >
+                  <p className="text-sm text-muted-foreground">
+                    Volatile checkpointer — state is lost when the process
+                    restarts. Useful for development.
+                  </p>
+                </form>
+              </Form>
+            </TabsContent>
+
+            <TabsContent value="sqlite" className="mt-4">
+              <Form {...sqliteForm}>
+                <form
+                  id="memory-form-sqlite"
+                  onSubmit={sqliteForm.handleSubmit(handleSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={sqliteForm.control}
+                    name="path"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Database path</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="sqlite:///./checkpoint.db"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          File-backed SQLite URL. Must start with{" "}
+                          <code className="font-mono">sqlite:///</code>.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </form>
+              </Form>
+            </TabsContent>
+
+            <TabsContent value="postgres" className="mt-4">
+              <Form {...postgresForm}>
+                <form
+                  id="memory-form-postgres"
+                  onSubmit={postgresForm.handleSubmit(handleSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={postgresForm.control}
+                    name="connection_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Connection URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="postgresql://user:pass@host:5432/db"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Must start with{" "}
+                          <code className="font-mono">postgresql://</code> or{" "}
+                          <code className="font-mono">postgres://</code>.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+        <CardFooter className="justify-between">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => setYamlOpen(true)}
+          >
+            Edit YAML
           </Button>
-        }
+          <Button
+            type="submit"
+            form={`memory-form-${activeTab}`}
+            disabled={save.isPending}
+          >
+            {save.isPending ? "Saving…" : "Save"}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <EditYamlSheet
+        open={yamlOpen}
+        onOpenChange={setYamlOpen}
+        value={yamlText}
+        onSave={persistFromYaml}
+        title="Edit memory YAML"
+        description="Update the full memory config payload."
       />
-      <div className="p-6 max-w-3xl space-y-4">
-        <Card className="p-4 space-y-3">
-          <div className="text-xs uppercase tracking-wider text-[var(--color-fg)]/60">
-            Storage type
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {TYPES.map((t) => (
-              <button
-                type="button"
-                key={t.id}
-                onClick={() => setForm({ ...form, type: t.id })}
-                className={`px-3 py-1 rounded-md border text-sm ${
-                  form.type === t.id
-                    ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
-                    : "border-[var(--color-border)] text-[var(--color-fg)]/70 hover:bg-[var(--color-muted)]"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="text-xs text-[var(--color-fg)]/60">
-            {TYPES.find((t) => t.id === form.type)?.help}
-          </div>
-        </Card>
-
-        {form.type !== "memory" && (
-          <Card className="p-4 space-y-3">
-            <div className="text-xs uppercase tracking-wider text-[var(--color-fg)]/60">
-              Connection
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-[var(--color-fg)]/70">db_url</label>
-              <Input
-                value={form.db_url}
-                onChange={(e) =>
-                  setForm({ ...form, db_url: e.target.value })
-                }
-                placeholder={
-                  form.type === "sqlite"
-                    ? "sqlite:///./checkpoint.db"
-                    : "postgresql://user:pass@host:5432/db"
-                }
-              />
-              {error && (
-                <div className="text-xs text-red-500 font-mono">{error}</div>
-              )}
-            </div>
-          </Card>
-        )}
-
-        <div>
-          <div className="text-xs uppercase tracking-wider text-[var(--color-fg)]/50 mb-2">
-            {editYaml ? "YAML editor" : "YAML preview"}
-          </div>
-          <YamlEditor
-            value={formToConfig(form)}
-            readOnly={!editYaml}
-            onChange={(v) => {
-              setForm(configToForm(v as Record<string, unknown>));
-            }}
-          />
-        </div>
-      </div>
-    </>
+    </div>
   );
 }

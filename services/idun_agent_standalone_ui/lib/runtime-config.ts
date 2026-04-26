@@ -8,12 +8,25 @@
  */
 
 export type ThemeColors = {
-  primary: string;
-  accent: string;
   background: string;
   foreground: string;
+  card: string;
+  cardForeground: string;
+  popover: string;
+  popoverForeground: string;
+  primary: string;
+  primaryForeground: string;
+  secondary: string;
+  secondaryForeground: string;
   muted: string;
+  mutedForeground: string;
+  accent: string;
+  accentForeground: string;
+  destructive: string;
+  destructiveForeground: string;
   border: string;
+  input: string;
+  ring: string;
 };
 
 export type ThemeConfig = {
@@ -24,7 +37,9 @@ export type ThemeConfig = {
   layout: "branded" | "minimal" | "inspector";
   colors: { light: ThemeColors; dark: ThemeColors };
   radius: string;
-  fontFamily: string;
+  fontSans: string;
+  fontSerif: string;
+  fontMono: string;
   defaultColorScheme: "light" | "dark" | "system";
 };
 
@@ -40,6 +55,50 @@ declare global {
   }
 }
 
+const EDITORIAL_LIGHT: ThemeColors = {
+  background: "#f7f6f0",
+  foreground: "#1d1c1a",
+  card: "#ffffff",
+  cardForeground: "#1d1c1a",
+  popover: "#ffffff",
+  popoverForeground: "#1d1c1a",
+  primary: "#1d1c1a",
+  primaryForeground: "#f7f6f0",
+  secondary: "#f0eee2",
+  secondaryForeground: "#1d1c1a",
+  muted: "#f0eee2",
+  mutedForeground: "#6b6a65",
+  accent: "#c96442",
+  accentForeground: "#ffffff",
+  destructive: "#dc2626",
+  destructiveForeground: "#ffffff",
+  border: "#e7e4d7",
+  input: "#e7e4d7",
+  ring: "rgba(201, 100, 66, 0.4)",
+};
+
+const EDITORIAL_DARK: ThemeColors = {
+  background: "#15140f",
+  foreground: "#f5f4ec",
+  card: "#1d1c1a",
+  cardForeground: "#f5f4ec",
+  popover: "#1d1c1a",
+  popoverForeground: "#f5f4ec",
+  primary: "#f5f4ec",
+  primaryForeground: "#15140f",
+  secondary: "#2a2925",
+  secondaryForeground: "#f5f4ec",
+  muted: "#2a2925",
+  mutedForeground: "#a1a097",
+  accent: "#d97757",
+  accentForeground: "#15140f",
+  destructive: "#ef4444",
+  destructiveForeground: "#f5f4ec",
+  border: "#2a2925",
+  input: "#2a2925",
+  ring: "rgba(217, 119, 87, 0.5)",
+};
+
 const DEFAULT_THEME: ThemeConfig = {
   appName: "Idun Agent",
   greeting: "How can I help?",
@@ -47,25 +106,13 @@ const DEFAULT_THEME: ThemeConfig = {
   logo: { text: "IA" },
   layout: "branded",
   colors: {
-    light: {
-      primary: "#4f46e5",
-      accent: "#7c3aed",
-      background: "#ffffff",
-      foreground: "#0a0a0a",
-      muted: "#f5f5f5",
-      border: "#e5e7eb",
-    },
-    dark: {
-      primary: "#818cf8",
-      accent: "#a78bfa",
-      background: "#0a0a0a",
-      foreground: "#fafafa",
-      muted: "#1f1f1f",
-      border: "#262626",
-    },
+    light: EDITORIAL_LIGHT,
+    dark: EDITORIAL_DARK,
   },
-  radius: "0.5",
-  fontFamily: "system",
+  radius: "0.625",
+  fontSans: "",
+  fontSerif: "",
+  fontMono: "",
   defaultColorScheme: "system",
 };
 

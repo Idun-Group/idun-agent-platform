@@ -1,290 +1,968 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { FileCode, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { type McpRead, api } from "@/lib/api";
-import { YamlEditor } from "@/components/admin/YamlEditor";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import { stringify as stringifyYaml } from "yaml";
+import { z } from "zod";
+
+import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { ApiError, type McpRead, api } from "@/lib/api";
+
+// ── Types ────────────────────────────────────────────────────────────────
 
 const TRANSPORTS = ["stdio", "streamable_http", "sse", "websocket"] as const;
 type Transport = (typeof TRANSPORTS)[number];
 
-type McpForm = {
-  name: string;
-  enabled: boolean;
-  transport: Transport;
-  command: string;
-  args: string;
-  url: string;
-  headers: Record<string, string>;
+const TRANSPORT_LABELS: Record<Transport, string> = {
+  stdio: "stdio",
+  streamable_http: "streamable_http",
+  sse: "sse",
+  websocket: "websocket",
 };
 
-function readForm(initial: McpRead | null): McpForm {
-  const config = (initial?.config ?? {}) as Record<string, unknown>;
-  const transport = (config.transport as Transport | undefined) ?? "stdio";
+/** A row in the local working list. `id` is null for unsaved additions. */
+type ServerRow = {
+  id: string | null;
+  name: string;
+  enabled: boolean;
+  config: Record<string, unknown>;
+  /** Optional status surfaced by the backend ("failed", "connected", …). */
+  status?: string;
+};
+
+// ── Form schema ──────────────────────────────────────────────────────────
+
+const kvRowSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+});
+
+const serverFormSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    enabled: z.boolean(),
+    transport: z.enum(TRANSPORTS),
+    command: z.string(),
+    args: z.string(),
+    url: z.string(),
+    headers: z.array(kvRowSchema),
+    env: z.array(kvRowSchema),
+  })
+  .superRefine((data, ctx) => {
+    if (data.transport === "stdio") {
+      if (!data.command.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["command"],
+          message: "Command is required for stdio transport.",
+        });
+      }
+    } else {
+      if (!data.url.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["url"],
+          message: "URL is required for this transport.",
+        });
+      }
+    }
+  });
+
+type ServerFormValues = z.infer<typeof serverFormSchema>;
+
+// ── Wire ↔ form converters ───────────────────────────────────────────────
+
+function isTransport(value: unknown): value is Transport {
+  return (
+    typeof value === "string" &&
+    (TRANSPORTS as readonly string[]).includes(value)
+  );
+}
+
+function recordToRows(
+  value: unknown,
+): Array<{ key: string; value: string }> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  return Object.entries(value as Record<string, unknown>).map(([k, v]) => ({
+    key: k,
+    value: typeof v === "string" ? v : String(v ?? ""),
+  }));
+}
+
+function rowsToRecord(
+  rows: Array<{ key: string; value: string }>,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const { key, value } of rows) {
+    const k = key.trim();
+    if (!k) continue;
+    out[k] = value;
+  }
+  return out;
+}
+
+function configToFormValues(
+  name: string,
+  enabled: boolean,
+  config: Record<string, unknown>,
+): ServerFormValues {
+  const transport: Transport = isTransport(config.transport)
+    ? config.transport
+    : "stdio";
+  const args = Array.isArray(config.args)
+    ? (config.args as unknown[]).map((a) => String(a)).join("\n")
+    : typeof config.args === "string"
+      ? (config.args as string)
+      : "";
   return {
-    name: initial?.name ?? "",
-    enabled: initial?.enabled ?? true,
+    name,
+    enabled,
     transport,
-    command: String(config.command ?? ""),
-    args: Array.isArray(config.args)
-      ? (config.args as string[]).join(" ")
-      : String(config.args ?? ""),
-    url: String(config.url ?? ""),
-    headers:
-      (config.headers as Record<string, string> | undefined) ?? {},
+    command: typeof config.command === "string" ? (config.command as string) : "",
+    args,
+    url: typeof config.url === "string" ? (config.url as string) : "",
+    headers: recordToRows(config.headers),
+    env: recordToRows(config.env),
   };
 }
 
-function writeForm(f: McpForm): {
-  name: string;
-  config: Record<string, unknown>;
-  enabled: boolean;
-} {
-  const config: Record<string, unknown> = { transport: f.transport };
-  if (f.transport === "stdio") {
-    if (f.command) config.command = f.command;
-    if (f.args.trim())
-      config.args = f.args.split(/\s+/).filter(Boolean);
+/** Build the wire-shape config for one server, preserving every extra key
+ *  from the original payload that the form does not edit. */
+function formValuesToConfig(
+  values: ServerFormValues,
+  baseConfig: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...(baseConfig ?? {}) };
+  next.transport = values.transport;
+  if (values.transport === "stdio") {
+    if (values.command.trim()) next.command = values.command.trim();
+    else delete next.command;
+    const args = values.args
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (args.length > 0) next.args = args;
+    else delete next.args;
+    const env = rowsToRecord(values.env);
+    if (Object.keys(env).length > 0) next.env = env;
+    else delete next.env;
+    // HTTP-only fields are not relevant for stdio.
+    delete next.url;
+    delete next.headers;
   } else {
-    if (f.url) config.url = f.url;
-    if (Object.keys(f.headers).length > 0) config.headers = f.headers;
+    if (values.url.trim()) next.url = values.url.trim();
+    else delete next.url;
+    const headers = rowsToRecord(values.headers);
+    if (Object.keys(headers).length > 0) next.headers = headers;
+    else delete next.headers;
+    // Stdio-only fields are not relevant for HTTP transports.
+    delete next.command;
+    delete next.args;
+    delete next.env;
   }
-  return { name: f.name, config, enabled: f.enabled };
+  return next;
 }
+
+function emptyFormValues(): ServerFormValues {
+  return {
+    name: "",
+    enabled: true,
+    transport: "stdio",
+    command: "",
+    args: "",
+    url: "",
+    headers: [],
+    env: [],
+  };
+}
+
+// ── Diff helpers (working list ↔ server state) ───────────────────────────
+
+function rowsEqual(a: ServerRow, b: ServerRow): boolean {
+  return (
+    a.id === b.id &&
+    a.name === b.name &&
+    a.enabled === b.enabled &&
+    JSON.stringify(a.config) === JSON.stringify(b.config)
+  );
+}
+
+function listsEqual(a: ServerRow[], b: ServerRow[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((row, i) => rowsEqual(row, b[i]));
+}
+
+function serverRowsFromQuery(rows: McpRead[]): ServerRow[] {
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    enabled: r.enabled,
+    config: r.config ?? {},
+    status: (r as McpRead & { status?: string }).status,
+  }));
+}
+
+// ── Status badge ─────────────────────────────────────────────────────────
+
+function StatusBadge({ row }: { row: ServerRow }) {
+  if (row.id === null) {
+    return (
+      <Badge
+        variant="outline"
+        className="border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-400"
+      >
+        new
+      </Badge>
+    );
+  }
+  if (row.status === "failed") {
+    return (
+      <Badge
+        variant="outline"
+        className="border-destructive/30 bg-destructive/10 text-destructive"
+      >
+        failed
+      </Badge>
+    );
+  }
+  if (!row.enabled) {
+    return (
+      <Badge variant="outline" className="border-border bg-muted text-muted-foreground">
+        disabled
+      </Badge>
+    );
+  }
+  if (row.status === "connected") {
+    return (
+      <Badge
+        variant="outline"
+        className="border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+      >
+        connected
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="border-border bg-muted text-muted-foreground">
+      enabled
+    </Badge>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────
 
 export default function McpPage() {
   const qc = useQueryClient();
-  const { data: rows = [] } = useQuery({
+  const { data: rows = [], isLoading } = useQuery({
     queryKey: ["mcp"],
     queryFn: api.listMcp,
   });
-  const [editing, setEditing] = useState<McpRead | null>(null);
-  const [creating, setCreating] = useState(false);
 
-  const create = useMutation({
-    mutationFn: api.createMcp,
-    onSuccess: () => {
-      toast.success("Created");
-      setCreating(false);
-      qc.invalidateQueries({ queryKey: ["mcp"] });
-    },
+  const initialList = useMemo(() => serverRowsFromQuery(rows), [rows]);
+
+  const [working, setWorking] = useState<ServerRow[]>(initialList);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [confirmIdx, setConfirmIdx] = useState<number | null>(null);
+  const [yamlOpen, setYamlOpen] = useState(false);
+  const [restartRequired, setRestartRequired] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Re-sync the working list whenever the query result changes (initial load
+  // or post-save invalidate). Only resets when there are no pending edits to
+  // avoid clobbering local state.
+  useEffect(() => {
+    setWorking((prev) =>
+      listsEqual(prev, initialList) ? prev : initialList,
+    );
+  }, [initialList]);
+
+  const isDirty = useMemo(
+    () => !listsEqual(working, initialList),
+    [working, initialList],
+  );
+
+  const form = useForm<ServerFormValues>({
+    resolver: zodResolver(serverFormSchema),
+    defaultValues: emptyFormValues(),
   });
-  const patch = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<McpRead> }) =>
-      api.patchMcp(id, body),
-    onSuccess: () => {
-      toast.success("Updated");
-      setEditing(null);
+
+  const watchedTransport = form.watch("transport");
+  const watchedHeaders = form.watch("headers");
+  const watchedEnv = form.watch("env");
+
+  function openSheetFor(index: number | null) {
+    setEditingIdx(index);
+    if (index === null) {
+      form.reset(emptyFormValues());
+    } else {
+      const row = working[index];
+      form.reset(configToFormValues(row.name, row.enabled, row.config));
+    }
+    setSheetOpen(true);
+  }
+
+  function closeSheet() {
+    setSheetOpen(false);
+    setEditingIdx(null);
+  }
+
+  function onSheetSave(values: ServerFormValues) {
+    const trimmedName = values.name.trim();
+    if (!trimmedName) {
+      form.setError("name", { message: "Name is required" });
+      return;
+    }
+    // Enforce uniqueness across the local list, ignoring the row being edited.
+    const collision = working.some(
+      (row, idx) => row.name === trimmedName && idx !== editingIdx,
+    );
+    if (collision) {
+      form.setError("name", {
+        message: "Another server already uses this name.",
+      });
+      return;
+    }
+    const baseConfig =
+      editingIdx !== null ? working[editingIdx].config : undefined;
+    const nextConfig = formValuesToConfig(values, baseConfig);
+    setWorking((prev) => {
+      const next = [...prev];
+      const newRow: ServerRow = {
+        id: editingIdx !== null ? prev[editingIdx].id : null,
+        name: trimmedName,
+        enabled: values.enabled,
+        config: nextConfig,
+        status: editingIdx !== null ? prev[editingIdx].status : undefined,
+      };
+      if (editingIdx !== null) next[editingIdx] = newRow;
+      else next.push(newRow);
+      return next;
+    });
+    closeSheet();
+  }
+
+  function confirmDelete() {
+    if (confirmIdx === null) return;
+    setWorking((prev) => prev.filter((_, i) => i !== confirmIdx));
+    setConfirmIdx(null);
+  }
+
+  /** Apply the local working list back to the server using the existing
+   *  per-row CRUD endpoints. Handles structural change (add/delete) by
+   *  surfacing `restart_required` as a destructive Alert. */
+  async function onSaveAll() {
+    setSaving(true);
+    setRestartRequired(false);
+    try {
+      const initialById = new Map(
+        initialList.filter((r) => r.id !== null).map((r) => [r.id as string, r]),
+      );
+      const workingById = new Map(
+        working.filter((r) => r.id !== null).map((r) => [r.id as string, r]),
+      );
+      const tasks: Array<Promise<unknown>> = [];
+      let structuralChange = false;
+
+      // Deletes: rows that exist on the server but not in the working list.
+      for (const [id] of initialById) {
+        if (!workingById.has(id)) {
+          structuralChange = true;
+          tasks.push(api.deleteMcp(id));
+        }
+      }
+      // Creates: rows in the working list with no server id yet.
+      for (const row of working) {
+        if (row.id === null) {
+          structuralChange = true;
+          tasks.push(
+            api.createMcp({
+              name: row.name,
+              config: row.config,
+              enabled: row.enabled,
+            }),
+          );
+        }
+      }
+      // Patches: existing rows whose payload changed.
+      for (const row of working) {
+        if (row.id === null) continue;
+        const original = initialById.get(row.id);
+        if (!original) continue;
+        if (rowsEqual(row, original)) continue;
+        tasks.push(
+          api.patchMcp(row.id, {
+            name: row.name,
+            config: row.config,
+            enabled: row.enabled,
+          }),
+        );
+      }
+
+      await Promise.all(tasks);
+
+      if (structuralChange) setRestartRequired(true);
+      if (structuralChange) {
+        toast.warning("Saved. Restart may be required to apply add/remove.");
+      } else if (tasks.length > 0) {
+        toast.success("Saved & reloaded");
+      } else {
+        toast.message("Nothing to save");
+      }
       qc.invalidateQueries({ queryKey: ["mcp"] });
-    },
-  });
-  const del = useMutation({
-    mutationFn: api.deleteMcp,
-    onSuccess: () => {
-      toast.success("Deleted");
-      qc.invalidateQueries({ queryKey: ["mcp"] });
-    },
-  });
+    } catch (e: unknown) {
+      const detail = e instanceof ApiError ? e.detail : undefined;
+      const message =
+        (detail as { message?: string } | undefined)?.message ??
+        (e instanceof Error ? e.message : "Save failed");
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ── YAML round-trip ────────────────────────────────────────────────────
+  const yamlText = useMemo(() => {
+    return stringifyYaml({
+      servers: working.map((row) => ({
+        name: row.name,
+        enabled: row.enabled,
+        config: row.config,
+      })),
+    });
+    // yamlOpen so the snapshot refreshes each time the sheet opens.
+  }, [working, yamlOpen]);
+
+  async function persistFromYaml(parsed: unknown) {
+    const obj = (parsed ?? {}) as { servers?: unknown };
+    const arr = Array.isArray(obj.servers) ? obj.servers : [];
+    const seenNames = new Set<string>();
+    const next: ServerRow[] = arr.map((entry, i) => {
+      const e = (entry ?? {}) as Record<string, unknown>;
+      const name = typeof e.name === "string" ? (e.name as string) : `server-${i + 1}`;
+      if (seenNames.has(name)) {
+        throw new Error(`Duplicate server name in YAML: "${name}"`);
+      }
+      seenNames.add(name);
+      const enabled = e.enabled === undefined ? true : Boolean(e.enabled);
+      const config =
+        e.config && typeof e.config === "object" && !Array.isArray(e.config)
+          ? (e.config as Record<string, unknown>)
+          : {};
+      // Try to pair each parsed entry with an existing server by name so the
+      // diff at save time turns into a patch instead of delete+create.
+      const matchById = working.find((row) => row.name === name && row.id !== null);
+      return {
+        id: matchById?.id ?? null,
+        name,
+        enabled,
+        config,
+        status: matchById?.status,
+      };
+    });
+    setWorking(next);
+  }
+
+  // ── Helpers for the env / headers editors ──────────────────────────────
+
+  function addKvRow(slot: "headers" | "env") {
+    const current = form.getValues(slot);
+    form.setValue(slot, [...current, { key: "", value: "" }], {
+      shouldDirty: true,
+    });
+  }
+
+  function removeKvRow(slot: "headers" | "env", index: number) {
+    const current = form.getValues(slot);
+    const next = current.filter((_, i) => i !== index);
+    form.setValue(slot, next, { shouldDirty: true });
+  }
+
+  function updateKvRow(
+    slot: "headers" | "env",
+    index: number,
+    field: "key" | "value",
+    value: string,
+  ) {
+    const current = [...form.getValues(slot)];
+    current[index] = { ...current[index], [field]: value };
+    form.setValue(slot, current, { shouldDirty: true });
+  }
+
+  if (isLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  }
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center gap-3">
-        <h2 className="font-semibold text-[var(--color-fg)]">MCP servers</h2>
-        <Button size="sm" onClick={() => setCreating(true)}>
-          + Add MCP
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {rows.map((r) => {
-          const status = (r as McpRead & { status?: string }).status;
-          const transport =
-            (r.config?.transport as string | undefined) ?? "stdio";
-          return (
-            <Card key={r.id} className="p-3 space-y-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-sm">{r.name}</span>
-                <Badge tone="info">{transport}</Badge>
-                <Badge tone={r.enabled ? "success" : "neutral"}>
-                  {r.enabled ? "enabled" : "disabled"}
-                </Badge>
-                {status === "failed" && <Badge tone="danger">failed</Badge>}
-                <div className="ml-auto flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditing(r)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => {
-                      if (confirm(`Delete MCP server "${r.name}"?`))
-                        del.mutate(r.id);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-              <pre className="text-[10px] font-mono text-[var(--color-fg)]/70 overflow-x-auto whitespace-pre-wrap">
-                {JSON.stringify(r.config, null, 2)}
-              </pre>
-            </Card>
-          );
-        })}
-        {rows.length === 0 && !creating && (
-          <Card className="p-6 text-sm text-[var(--color-fg)]/60 col-span-full">
-            No MCP servers configured.
-          </Card>
-        )}
-      </div>
+    <div className="flex flex-col gap-6 p-6 max-w-5xl">
+      <header className="space-y-1">
+        <h1 className="font-serif text-2xl font-medium text-foreground">
+          MCP servers
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Tool servers exposed via the Model Context Protocol.
+        </p>
+      </header>
 
-      {(creating || editing) && (
-        <McpForm
-          initial={editing}
-          onCancel={() => {
-            setEditing(null);
-            setCreating(false);
-          }}
-          onSubmit={(body) => {
-            if (editing) patch.mutate({ id: editing.id, body });
-            else create.mutate(body);
-          }}
-          busy={create.isPending || patch.isPending}
-        />
+      {restartRequired && (
+        <Alert variant="destructive">
+          <RotateCcw />
+          <AlertTitle>Restart required</AlertTitle>
+          <AlertDescription>
+            Structural change detected — restart to apply.
+          </AlertDescription>
+        </Alert>
       )}
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <div className="space-y-1">
+            <CardTitle>Configured servers</CardTitle>
+            <CardDescription>
+              {working.length} server{working.length === 1 ? "" : "s"}
+            </CardDescription>
+          </div>
+          <Button onClick={() => openSheetFor(null)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add server
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {working.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              No MCP servers configured.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Transport</TableHead>
+                  <TableHead>Endpoint</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {working.map((row, i) => {
+                  const transport = isTransport(row.config.transport)
+                    ? row.config.transport
+                    : "stdio";
+                  const endpoint =
+                    transport === "stdio"
+                      ? typeof row.config.command === "string"
+                        ? (row.config.command as string)
+                        : ""
+                      : typeof row.config.url === "string"
+                        ? (row.config.url as string)
+                        : "";
+                  return (
+                    <TableRow key={row.id ?? `new-${i}`}>
+                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {TRANSPORT_LABELS[transport]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs truncate max-w-[300px]">
+                        {endpoint}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge row={row} />
+                      </TableCell>
+                      <TableCell className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openSheetFor(i)}
+                          aria-label={`Edit ${row.name}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setConfirmIdx(i)}
+                          className="text-destructive"
+                          aria-label={`Delete ${row.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+        <CardFooter className="justify-between">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => setYamlOpen(true)}
+          >
+            <FileCode className="mr-2 h-4 w-4" />
+            Edit YAML
+          </Button>
+          <Button onClick={onSaveAll} disabled={!isDirty || saving}>
+            {saving ? "Saving…" : "Save all"}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {/* Server form sheet */}
+      <Sheet
+        open={sheetOpen}
+        onOpenChange={(open) => {
+          if (!open) closeSheet();
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col gap-0 p-0 sm:max-w-xl"
+        >
+          <SheetHeader className="border-b border-border px-6 py-4">
+            <SheetTitle>
+              {editingIdx === null ? "Add MCP server" : "Edit MCP server"}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <Form {...form}>
+              <form
+                id="mcp-server-form"
+                onSubmit={form.handleSubmit(onSheetSave)}
+                className="space-y-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="my-server" />
+                      </FormControl>
+                      <FormDescription>
+                        Unique identifier — used as the connection key.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="enabled"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/30 p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Enabled</FormLabel>
+                        <FormDescription>
+                          Disabled servers stay configured but are skipped at
+                          startup.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="transport"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Transport</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) => field.onChange(v as Transport)}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Pick a transport" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TRANSPORTS.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {TRANSPORT_LABELS[t]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {watchedTransport === "stdio" ? (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="command"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Command</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="npx" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="args"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Arguments</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              rows={4}
+                              placeholder={
+                                "-y\n@modelcontextprotocol/server-filesystem\n./data"
+                              }
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            One argument per line.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <KvFieldset
+                      label="Environment variables"
+                      description="Set on the spawned process."
+                      rows={watchedEnv}
+                      onAdd={() => addKvRow("env")}
+                      onRemove={(i) => removeKvRow("env", i)}
+                      onChange={(i, k, v) => updateKvRow("env", i, k, v)}
+                      keyPlaceholder="VAR_NAME"
+                      valuePlaceholder="value"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URL</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="https://example.com/mcp"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <KvFieldset
+                      label="Headers"
+                      description="Sent on every HTTP request to the server."
+                      rows={watchedHeaders}
+                      onAdd={() => addKvRow("headers")}
+                      onRemove={(i) => removeKvRow("headers", i)}
+                      onChange={(i, k, v) => updateKvRow("headers", i, k, v)}
+                      keyPlaceholder="Authorization"
+                      valuePlaceholder="Bearer …"
+                    />
+                  </>
+                )}
+              </form>
+            </Form>
+          </div>
+          <SheetFooter className="border-t border-border px-6 py-4 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={closeSheet}>
+              Cancel
+            </Button>
+            <Button type="submit" form="mcp-server-form">
+              Save
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Delete confirm */}
+      <AlertDialog
+        open={confirmIdx !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmIdx(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete MCP server?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmIdx !== null && (
+                <>
+                  This removes <strong>{working[confirmIdx]?.name}</strong> from
+                  the configuration. The change applies on Save.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* YAML editor */}
+      <EditYamlSheet
+        open={yamlOpen}
+        onOpenChange={setYamlOpen}
+        value={yamlText}
+        onSave={persistFromYaml}
+        title="Edit MCP servers configuration"
+        description="Update the full list of servers. Save here only updates the local list — apply with Save all."
+      />
     </div>
   );
 }
 
-function McpForm({
-  initial,
-  onCancel,
-  onSubmit,
-  busy,
+// ── Key/value editor ────────────────────────────────────────────────────
+
+function KvFieldset({
+  label,
+  description,
+  rows,
+  onAdd,
+  onRemove,
+  onChange,
+  keyPlaceholder,
+  valuePlaceholder,
 }: {
-  initial: McpRead | null;
-  onCancel: () => void;
-  onSubmit: (body: {
-    name: string;
-    config: Record<string, unknown>;
-    enabled: boolean;
-  }) => void;
-  busy: boolean;
+  label: string;
+  description?: string;
+  rows: Array<{ key: string; value: string }>;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+  onChange: (index: number, field: "key" | "value", value: string) => void;
+  keyPlaceholder?: string;
+  valuePlaceholder?: string;
 }) {
-  const [form, setForm] = useState<McpForm>(readForm(initial));
-
-  const stdio = form.transport === "stdio";
-
   return (
-    <Card className="p-4 space-y-3">
-      <div className="font-medium text-sm">
-        {initial ? "Edit MCP server" : "New MCP server"}
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-xs text-[var(--color-fg)]/70">Name</label>
-          <Input
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
+    <div className="space-y-2">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium leading-none">{label}</p>
+          {description && (
+            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+          )}
         </div>
-        <div className="space-y-1">
-          <label className="text-xs text-[var(--color-fg)]/70">
-            Transport
-          </label>
-          <select
-            value={form.transport}
-            onChange={(e) =>
-              setForm({ ...form, transport: e.target.value as Transport })
-            }
-            className="h-9 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-sm"
-          >
-            {TRANSPORTS.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Button type="button" variant="outline" size="sm" onClick={onAdd}>
+          <Plus className="mr-1 h-3.5 w-3.5" />
+          Add
+        </Button>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={form.enabled}
-          onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-        />
-        Enabled
-      </label>
-      {stdio ? (
-        <>
-          <div className="space-y-1">
-            <label className="text-xs text-[var(--color-fg)]/70">Command</label>
-            <Input
-              value={form.command}
-              onChange={(e) =>
-                setForm({ ...form, command: e.target.value })
-              }
-              placeholder="npx"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-[var(--color-fg)]/70">
-              Args (space-separated)
-            </label>
-            <Input
-              value={form.args}
-              onChange={(e) => setForm({ ...form, args: e.target.value })}
-              placeholder="-y @modelcontextprotocol/server-filesystem ./data"
-            />
-          </div>
-        </>
+      {rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">None.</p>
       ) : (
-        <>
-          <div className="space-y-1">
-            <label className="text-xs text-[var(--color-fg)]/70">URL</label>
-            <Input
-              value={form.url}
-              onChange={(e) => setForm({ ...form, url: e.target.value })}
-              placeholder="https://example.com/mcp"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-[var(--color-fg)]/70">
-              Headers (YAML map)
-            </label>
-            <YamlEditor
-              value={form.headers}
-              rows={4}
-              onChange={(v) =>
-                setForm({
-                  ...form,
-                  headers: (v ?? {}) as Record<string, string>,
-                })
-              }
-            />
-          </div>
-        </>
+        <div className="space-y-2">
+          {rows.map((row, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input
+                value={row.key}
+                onChange={(e) => onChange(i, "key", e.target.value)}
+                placeholder={keyPlaceholder}
+                className="flex-1"
+              />
+              <span className="text-xs text-muted-foreground">=</span>
+              <Input
+                value={row.value}
+                onChange={(e) => onChange(i, "value", e.target.value)}
+                placeholder={valuePlaceholder}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onRemove(i)}
+                aria-label={`Remove ${label} entry ${i + 1}`}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
       )}
-      <div className="flex gap-2 justify-end">
-        <Button size="sm" variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => onSubmit(writeForm(form))}
-          disabled={busy || !form.name.trim()}
-        >
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </div>
-    </Card>
+    </div>
   );
 }

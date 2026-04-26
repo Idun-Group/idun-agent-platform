@@ -28,6 +28,17 @@ export type Message =
       text: string;
       toolCalls: ToolCall[];
       thinking: string[];
+      /** Editorial chat slots — populated by STEP-aware buffering in useChat.
+       * `opener` collects the `acknowledge` step's text deltas, `plan` collects
+       * `planner`/`analyst` deltas, `thoughts` is appended to from
+       * THINKING_TEXT_MESSAGE_CONTENT events. `currentStep` mirrors the active
+       * STEP_STARTED/STEP_FINISHED lifecycle so the ReasoningPanel can show
+       * which slot is live. `streaming` is true while the run is in flight. */
+      opener?: string;
+      plan?: string;
+      thoughts?: string;
+      currentStep?: string;
+      streaming?: boolean;
     };
 
 export type ToolCall = {
@@ -35,6 +46,11 @@ export type ToolCall = {
   name: string;
   args: string;
   result?: string;
+  /** Set when the tool call failed; UI renders the error block (rose). */
+  error?: string;
+  /** True once TOOL_CALL_END (or equivalent) has fired so the UI can flip
+   * the status dot from amber-pulse → emerald. */
+  done?: boolean;
 };
 
 export async function runAgent(opts: RunOptions): Promise<void> {

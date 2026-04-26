@@ -1,14 +1,27 @@
-import type { ReactNode } from "react";
-import { AuthGuard } from "@/components/admin/AuthGuard";
-import { Sidebar } from "@/components/admin/Sidebar";
+"use client";
 
-export default function LogsLayout({ children }: { children: ReactNode }) {
+import { AuthGuard } from "@/components/admin/AuthGuard";
+import { AppSidebar } from "@/components/admin/AppSidebar";
+import { Topbar } from "@/components/admin/Topbar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+export default function LogsLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
-      <div className="grid grid-cols-[12rem_1fr] h-screen bg-[var(--color-bg)]">
-        <Sidebar />
-        <main className="overflow-hidden">{children}</main>
-      </div>
+      {/* AppSidebar items use SidebarMenuButton with `tooltip`, which wraps
+          its trigger in a Radix Tooltip — provide a TooltipProvider here. */}
+      <TooltipProvider delayDuration={0}>
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset>
+            <Topbar />
+            <main className="flex-1 overflow-hidden bg-background">
+              {children}
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
+      </TooltipProvider>
     </AuthGuard>
   );
 }

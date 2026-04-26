@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Textarea } from "@/components/ui/Textarea";
+import { Textarea } from "@/components/ui/textarea";
 
 /**
  * Minimal JSON editor — replaces Monaco for the MVP. Validates the buffer

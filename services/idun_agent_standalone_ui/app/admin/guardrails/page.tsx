@@ -1,210 +1,668 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useFieldArray, useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
+import { stringify as stringifyYaml } from "yaml";
+import { z } from "zod";
+
+import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { ApiError, api } from "@/lib/api";
-import { SaveToolbar } from "@/components/admin/SaveToolbar";
-import { YamlEditor } from "@/components/admin/YamlEditor";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 
-type GuardrailConfigId =
-  | "ban_list"
-  | "bias_check"
-  | "competition_check"
-  | "correct_language"
-  | "detect_pii"
-  | "gibberish_text"
-  | "nsfw_text"
-  | "detect_jailbreak"
-  | "prompt_injection"
-  | "rag_hallucination"
-  | "restrict_to_topic"
-  | "toxic_language"
-  | "code_scanner"
-  | "custom_llm"
-  | "model_armor";
+// ── Guard catalog ────────────────────────────────────────────────────────
+//
+// Mirrors the Idun engine guardrails registry. Adding a new guard here means
+// registering its config_id, label, and default field values; the form then
+// renders the right shadcn primitives based on which keys are present.
 
-type Guard = { config_id: GuardrailConfigId } & Record<string, unknown>;
+const GUARD_IDS = [
+  "ban_list",
+  "detect_pii",
+  "nsfw_text",
+  "toxic_language",
+  "detect_jailbreak",
+  "prompt_injection",
+  "bias_check",
+  "competition_check",
+  "correct_language",
+  "gibberish_text",
+  "rag_hallucination",
+  "restrict_to_topic",
+  "code_scanner",
+  "custom_llm",
+  "model_armor",
+] as const;
 
-type GuardrailsForm = {
-  enabled: boolean;
-  input: Guard[];
-  output: Guard[];
+type GuardId = (typeof GUARD_IDS)[number];
+
+const GUARD_LABELS: Record<GuardId, string> = {
+  ban_list: "Ban List",
+  detect_pii: "Detect PII",
+  nsfw_text: "NSFW Text",
+  toxic_language: "Toxic Language",
+  detect_jailbreak: "Detect Jailbreak",
+  prompt_injection: "Prompt Injection",
+  bias_check: "Bias Check",
+  competition_check: "Competition Check",
+  correct_language: "Correct Language",
+  gibberish_text: "Gibberish Text",
+  rag_hallucination: "RAG Hallucination",
+  restrict_to_topic: "Restrict to Topic",
+  code_scanner: "Code Scanner",
+  custom_llm: "Custom LLM",
+  model_armor: "Model Armor",
 };
 
-const GUARDS: { id: GuardrailConfigId; label: string }[] = [
-  { id: "ban_list", label: "Ban List" },
-  { id: "detect_pii", label: "Detect PII" },
-  { id: "nsfw_text", label: "NSFW Text" },
-  { id: "toxic_language", label: "Toxic Language" },
-  { id: "detect_jailbreak", label: "Detect Jailbreak" },
-  { id: "prompt_injection", label: "Prompt Injection" },
-  { id: "bias_check", label: "Bias Check" },
-  { id: "competition_check", label: "Competition Check" },
-  { id: "correct_language", label: "Correct Language" },
-  { id: "gibberish_text", label: "Gibberish Text" },
-  { id: "rag_hallucination", label: "RAG Hallucination" },
-  { id: "restrict_to_topic", label: "Restrict to Topic" },
-  { id: "code_scanner", label: "Code Scanner" },
-  { id: "custom_llm", label: "Custom LLM" },
-  { id: "model_armor", label: "Model Armor" },
-];
-
-const DEFAULT_GUARD: Record<GuardrailConfigId, Record<string, unknown>> = {
-  ban_list: { banned_words: [], reject_message: "ban!!" },
+// Default field shape for each guard. The form schema is permissive — every
+// guard rides on the same record type, and renderers branch on config_id.
+const GUARD_DEFAULTS: Record<GuardId, GuardFormFields> = {
+  ban_list: { reject_message: "ban!!", banned_words: "" },
   detect_pii: { reject_message: "PII detected" },
   nsfw_text: { reject_message: "NSFW content" },
   toxic_language: { reject_message: "Toxic content" },
   detect_jailbreak: { reject_message: "Jailbreak attempt" },
   prompt_injection: { reject_message: "Prompt injection detected" },
-  bias_check: { threshold: 0.5, reject_message: "Bias detected" },
-  competition_check: { competitors: [], reject_message: "Competitor mentioned" },
+  bias_check: { reject_message: "Bias detected", threshold: 0.5 },
+  competition_check: { reject_message: "Competitor mentioned", competitors: "" },
   correct_language: { reject_message: "Language not allowed" },
   gibberish_text: { reject_message: "Gibberish detected" },
   rag_hallucination: { reject_message: "Hallucination detected" },
-  restrict_to_topic: { valid_topics: [], reject_message: "Off-topic" },
+  restrict_to_topic: { reject_message: "Off-topic", valid_topics: "" },
   code_scanner: { reject_message: "Code detected" },
-  custom_llm: { name: "", model: "Gemini 2.5 flash", prompt: "" },
-  model_armor: { name: "", project_id: "", location: "", template_id: "" },
+  custom_llm: {
+    reject_message: "",
+    name: "",
+    model: "Gemini 2.5 flash",
+    prompt: "",
+  },
+  model_armor: {
+    reject_message: "",
+    name: "",
+    project_id: "",
+    location: "",
+    template_id: "",
+  },
 };
 
-function configToForm(raw: Record<string, unknown> | undefined): GuardrailsForm {
-  const input = Array.isArray(raw?.input) ? (raw?.input as Guard[]) : [];
-  const output = Array.isArray(raw?.output) ? (raw?.output as Guard[]) : [];
+// ── Schema ───────────────────────────────────────────────────────────────
+
+// Form-side fields: arrays are kept as comma-separated strings while the user
+// edits, then split on save. Numbers ride as numbers. Optional text per guard.
+type GuardFormFields = {
+  reject_message?: string;
+  banned_words?: string;
+  competitors?: string;
+  valid_topics?: string;
+  threshold?: number;
+  name?: string;
+  model?: string;
+  prompt?: string;
+  project_id?: string;
+  location?: string;
+  template_id?: string;
+};
+
+const guardFormSchema = z.object({
+  config_id: z.enum(GUARD_IDS),
+  reject_message: z.string().optional(),
+  banned_words: z.string().optional(),
+  competitors: z.string().optional(),
+  valid_topics: z.string().optional(),
+  threshold: z.number().optional(),
+  name: z.string().optional(),
+  model: z.string().optional(),
+  prompt: z.string().optional(),
+  project_id: z.string().optional(),
+  location: z.string().optional(),
+  template_id: z.string().optional(),
+});
+
+type GuardFormValues = z.infer<typeof guardFormSchema>;
+
+const guardrailsFormSchema = z.object({
+  enabled: z.boolean(),
+  input: z.array(guardFormSchema),
+  output: z.array(guardFormSchema),
+});
+
+type GuardrailsFormValues = z.infer<typeof guardrailsFormSchema>;
+
+// ── Wire ↔ form converters ──────────────────────────────────────────────
+
+function isGuardId(value: unknown): value is GuardId {
+  return (
+    typeof value === "string" &&
+    (GUARD_IDS as readonly string[]).includes(value)
+  );
+}
+
+function joinList(value: unknown): string {
+  return Array.isArray(value) ? (value as string[]).join(", ") : "";
+}
+
+function splitList(value: string | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function wireGuardToForm(raw: Record<string, unknown>): GuardFormValues {
+  const id: GuardId = isGuardId(raw.config_id) ? raw.config_id : "ban_list";
+  const base: GuardFormValues = {
+    config_id: id,
+    reject_message:
+      typeof raw.reject_message === "string"
+        ? (raw.reject_message as string)
+        : "",
+  };
+  if (id === "ban_list") base.banned_words = joinList(raw.banned_words);
+  if (id === "competition_check") base.competitors = joinList(raw.competitors);
+  if (id === "restrict_to_topic") base.valid_topics = joinList(raw.valid_topics);
+  if (id === "bias_check") {
+    base.threshold = typeof raw.threshold === "number" ? raw.threshold : 0.5;
+  }
+  if (id === "custom_llm") {
+    base.name = typeof raw.name === "string" ? raw.name : "";
+    base.model =
+      typeof raw.model === "string" ? raw.model : "Gemini 2.5 flash";
+    base.prompt = typeof raw.prompt === "string" ? raw.prompt : "";
+  }
+  if (id === "model_armor") {
+    base.name = typeof raw.name === "string" ? raw.name : "";
+    base.project_id =
+      typeof raw.project_id === "string" ? raw.project_id : "";
+    base.location = typeof raw.location === "string" ? raw.location : "";
+    base.template_id =
+      typeof raw.template_id === "string" ? raw.template_id : "";
+  }
+  return base;
+}
+
+function formGuardToWire(g: GuardFormValues): Record<string, unknown> {
+  const out: Record<string, unknown> = { config_id: g.config_id };
+  if (g.reject_message !== undefined && g.reject_message !== "") {
+    out.reject_message = g.reject_message;
+  }
+  switch (g.config_id) {
+    case "ban_list":
+      out.banned_words = splitList(g.banned_words);
+      break;
+    case "competition_check":
+      out.competitors = splitList(g.competitors);
+      break;
+    case "restrict_to_topic":
+      out.valid_topics = splitList(g.valid_topics);
+      break;
+    case "bias_check":
+      out.threshold = typeof g.threshold === "number" ? g.threshold : 0.5;
+      break;
+    case "custom_llm":
+      out.name = g.name ?? "";
+      out.model = g.model ?? "";
+      out.prompt = g.prompt ?? "";
+      break;
+    case "model_armor":
+      out.name = g.name ?? "";
+      out.project_id = g.project_id ?? "";
+      out.location = g.location ?? "";
+      out.template_id = g.template_id ?? "";
+      break;
+    default:
+      break;
+  }
+  return out;
+}
+
+function wireToForm(raw: unknown, enabled: unknown): GuardrailsFormValues {
+  const obj = (raw ?? {}) as Record<string, unknown>;
+  const inputArr = Array.isArray(obj.input)
+    ? (obj.input as Record<string, unknown>[])
+    : [];
+  const outputArr = Array.isArray(obj.output)
+    ? (obj.output as Record<string, unknown>[])
+    : [];
   return {
-    enabled: raw?.enabled === undefined ? true : Boolean(raw.enabled),
-    input,
-    output,
+    enabled: enabled === undefined ? true : Boolean(enabled),
+    input: inputArr.map(wireGuardToForm),
+    output: outputArr.map(wireGuardToForm),
   };
 }
 
-function formToConfig(f: GuardrailsForm): Record<string, unknown> {
-  return { input: f.input, output: f.output };
+function formToWire(values: GuardrailsFormValues): {
+  config: Record<string, unknown>;
+  enabled: boolean;
+} {
+  return {
+    enabled: values.enabled,
+    config: {
+      input: values.input.map(formGuardToWire),
+      output: values.output.map(formGuardToWire),
+    },
+  };
 }
 
-function GuardCard({
-  guard,
-  onChange,
+// ── Components ───────────────────────────────────────────────────────────
+
+type Slot = "input" | "output";
+
+const SLOT_LABELS: Record<Slot, string> = {
+  input: "Input guards",
+  output: "Output guards",
+};
+
+const SLOT_DESCRIPTIONS: Record<Slot, string> = {
+  input: "Run on each user message before it reaches the agent.",
+  output: "Run on each agent response before it reaches the user.",
+};
+
+function GuardFields({
+  control,
+  slot,
+  index,
+  guardId,
+}: {
+  control: Control<GuardrailsFormValues>;
+  slot: Slot;
+  index: number;
+  guardId: GuardId;
+}) {
+  const path = `${slot}.${index}` as const;
+
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {guardId !== "custom_llm" && guardId !== "model_armor" && (
+        <FormField
+          control={control}
+          name={`${path}.reject_message`}
+          render={({ field }) => (
+            <FormItem className="md:col-span-2">
+              <FormLabel>Reject message</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value ?? ""} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
+      {guardId === "ban_list" && (
+        <FormField
+          control={control}
+          name={`${path}.banned_words`}
+          render={({ field }) => (
+            <FormItem className="md:col-span-2">
+              <FormLabel>Banned words</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="comma, separated, terms"
+                />
+              </FormControl>
+              <FormDescription>
+                Comma-separated; trailing whitespace is trimmed.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
+      {guardId === "competition_check" && (
+        <FormField
+          control={control}
+          name={`${path}.competitors`}
+          render={({ field }) => (
+            <FormItem className="md:col-span-2">
+              <FormLabel>Competitors</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="acme, globex, initech"
+                />
+              </FormControl>
+              <FormDescription>Comma-separated company names.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
+      {guardId === "restrict_to_topic" && (
+        <FormField
+          control={control}
+          name={`${path}.valid_topics`}
+          render={({ field }) => (
+            <FormItem className="md:col-span-2">
+              <FormLabel>Valid topics</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="billing, support, returns"
+                />
+              </FormControl>
+              <FormDescription>
+                Comma-separated topic names the agent is allowed to discuss.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
+      {guardId === "bias_check" && (
+        <FormField
+          control={control}
+          name={`${path}.threshold`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Threshold (0–1)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  step="0.05"
+                  min={0}
+                  max={1}
+                  value={
+                    typeof field.value === "number" ? String(field.value) : ""
+                  }
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    field.onChange(Number.isFinite(next) ? next : 0);
+                  }}
+                />
+              </FormControl>
+              <FormDescription>
+                Reject when the bias score exceeds this value.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
+      {guardId === "custom_llm" && (
+        <>
+          <FormField
+            control={control}
+            name={`${path}.name`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`${path}.model`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Model</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`${path}.prompt`}
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Prompt</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    value={field.value ?? ""}
+                    rows={4}
+                    placeholder="System prompt that judges whether to reject…"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </>
+      )}
+
+      {guardId === "model_armor" && (
+        <>
+          <FormField
+            control={control}
+            name={`${path}.name`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`${path}.project_id`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Project ID</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`${path}.location`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={`${path}.template_id`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Template ID</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+function GuardRow({
+  control,
+  slot,
+  index,
+  guardId,
+  onTypeChange,
   onRemove,
 }: {
-  guard: Guard;
-  onChange: (next: Guard) => void;
+  control: Control<GuardrailsFormValues>;
+  slot: Slot;
+  index: number;
+  guardId: GuardId;
+  onTypeChange: (next: GuardId) => void;
   onRemove: () => void;
 }) {
   return (
-    <Card className="p-3 space-y-2">
-      <div className="flex items-center gap-2">
-        <select
-          value={guard.config_id}
-          onChange={(e) => {
-            const next = e.target.value as GuardrailConfigId;
-            onChange({ config_id: next, ...DEFAULT_GUARD[next] });
-          }}
-          className="h-8 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-xs"
+    <Card className="gap-3 p-4">
+      <div className="flex items-center gap-3">
+        <FormField
+          control={control}
+          name={`${slot}.${index}.config_id`}
+          render={({ field }) => (
+            <FormItem className="flex-1 space-y-1">
+              <FormLabel className="sr-only">Guard type</FormLabel>
+              <Select
+                value={field.value}
+                onValueChange={(next) => onTypeChange(next as GuardId)}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a guard type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {GUARD_IDS.map((id) => (
+                    <SelectItem key={id} value={id}>
+                      {GUARD_LABELS[id]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormItem>
+          )}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+          aria-label={`Remove ${SLOT_LABELS[slot].toLowerCase()} entry ${index + 1}`}
         >
-          {GUARDS.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.label}
-            </option>
-          ))}
-        </select>
-        <Button size="sm" variant="ghost" onClick={onRemove} aria-label="Remove">
-          ×
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-      <div className="space-y-1">
-        <label className="text-xs text-[var(--color-fg)]/60">
-          Reject message
-        </label>
-        <Input
-          value={String(guard.reject_message ?? "")}
-          onChange={(e) => onChange({ ...guard, reject_message: e.target.value })}
-        />
-      </div>
-      {guard.config_id === "ban_list" && (
-        <div className="space-y-1">
-          <label className="text-xs text-[var(--color-fg)]/60">
-            Banned words (comma-separated)
-          </label>
-          <Input
-            value={Array.isArray(guard.banned_words)
-              ? (guard.banned_words as string[]).join(", ")
-              : ""}
-            onChange={(e) =>
-              onChange({
-                ...guard,
-                banned_words: e.target.value
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-              })
-            }
-          />
-        </div>
-      )}
-      {guard.config_id === "competition_check" && (
-        <div className="space-y-1">
-          <label className="text-xs text-[var(--color-fg)]/60">
-            Competitors (comma-separated)
-          </label>
-          <Input
-            value={Array.isArray(guard.competitors)
-              ? (guard.competitors as string[]).join(", ")
-              : ""}
-            onChange={(e) =>
-              onChange({
-                ...guard,
-                competitors: e.target.value
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-              })
-            }
-          />
-        </div>
-      )}
-      {guard.config_id === "restrict_to_topic" && (
-        <div className="space-y-1">
-          <label className="text-xs text-[var(--color-fg)]/60">
-            Valid topics (comma-separated)
-          </label>
-          <Input
-            value={Array.isArray(guard.valid_topics)
-              ? (guard.valid_topics as string[]).join(", ")
-              : ""}
-            onChange={(e) =>
-              onChange({
-                ...guard,
-                valid_topics: e.target.value
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-              })
-            }
-          />
-        </div>
-      )}
-      {guard.config_id === "bias_check" && (
-        <div className="space-y-1">
-          <label className="text-xs text-[var(--color-fg)]/60">
-            Threshold (0–1)
-          </label>
-          <Input
-            type="number"
-            step="0.05"
-            value={String(guard.threshold ?? 0.5)}
-            onChange={(e) =>
-              onChange({ ...guard, threshold: Number(e.target.value) })
-            }
-          />
-        </div>
-      )}
+      <GuardFields
+        control={control}
+        slot={slot}
+        index={index}
+        guardId={guardId}
+      />
     </Card>
   );
 }
+
+function GuardSlotPanel({
+  control,
+  form,
+  slot,
+}: {
+  control: Control<GuardrailsFormValues>;
+  form: ReturnType<typeof useForm<GuardrailsFormValues>>;
+  slot: Slot;
+}) {
+  const { fields, append, remove, update } = useFieldArray({
+    control,
+    name: slot,
+  });
+  // Watch the slot so guard cards re-render when the user changes type.
+  const watched = form.watch(slot);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm text-muted-foreground">{SLOT_DESCRIPTIONS[slot]}</p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            append({
+              config_id: "ban_list",
+              ...GUARD_DEFAULTS.ban_list,
+            })
+          }
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add guard
+        </Button>
+      </div>
+
+      {fields.length === 0 ? (
+        <Card className="p-4 text-sm text-muted-foreground">
+          No {SLOT_LABELS[slot].toLowerCase()} configured.
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {fields.map((field, index) => {
+            const current = watched?.[index];
+            const guardId: GuardId = isGuardId(current?.config_id)
+              ? current.config_id
+              : "ban_list";
+            return (
+              <GuardRow
+                key={field.id}
+                control={control}
+                slot={slot}
+                index={index}
+                guardId={guardId}
+                onTypeChange={(next) => {
+                  update(index, {
+                    config_id: next,
+                    ...GUARD_DEFAULTS[next],
+                  });
+                }}
+                onRemove={() => remove(index)}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────
 
 export default function GuardrailsPage() {
   const qc = useQueryClient();
@@ -212,29 +670,39 @@ export default function GuardrailsPage() {
     queryKey: ["guardrails"],
     queryFn: api.getGuardrails,
   });
-  const [form, setForm] = useState<GuardrailsForm>(configToForm(undefined));
-  const [editYaml, setEditYaml] = useState(false);
 
-  const initialForm = useMemo(
-    () => configToForm(data?.config as Record<string, unknown> | undefined),
+  const initialValues = useMemo(
+    () => wireToForm(data?.config, data?.enabled),
     [data],
   );
 
+  const [activeTab, setActiveTab] = useState<Slot>("input");
+  const [yamlOpen, setYamlOpen] = useState(false);
+  const [restartRequired, setRestartRequired] = useState(false);
+
+  const form = useForm<GuardrailsFormValues>({
+    resolver: zodResolver(guardrailsFormSchema),
+    defaultValues: initialValues,
+    values: initialValues,
+  });
+
+  // Re-sync form when the query result changes (initial load or invalidate).
   useEffect(() => {
-    if (data) {
-      const next = configToForm(data.config as Record<string, unknown> | undefined);
-      next.enabled = data.enabled === undefined ? true : Boolean(data.enabled);
-      setForm(next);
-    }
-  }, [data]);
+    form.reset(initialValues);
+  }, [initialValues, form]);
 
   const save = useMutation({
-    mutationFn: (next: GuardrailsForm) =>
-      api.putGuardrails({ config: formToConfig(next), enabled: next.enabled }),
+    mutationFn: (values: GuardrailsFormValues) =>
+      api.putGuardrails(formToWire(values)),
     onSuccess: (resp: unknown) => {
       const r = resp as { restart_required?: boolean };
-      if (r?.restart_required) toast.warning("Restart required to apply.");
-      else toast.success("Saved & reloaded");
+      if (r?.restart_required) {
+        setRestartRequired(true);
+        toast.warning("Restart required to apply this change.");
+      } else {
+        setRestartRequired(false);
+        toast.success("Saved & reloaded");
+      }
       qc.invalidateQueries({ queryKey: ["guardrails"] });
     },
     onError: (e: unknown) => {
@@ -244,136 +712,157 @@ export default function GuardrailsPage() {
     },
   });
 
-  if (isLoading) return <div className="p-6">Loading…</div>;
-
-  const initialFromData: GuardrailsForm = data
-    ? { ...initialForm, enabled: data.enabled === undefined ? true : Boolean(data.enabled) }
-    : initialForm;
-  const dirty = JSON.stringify(form) !== JSON.stringify(initialFromData);
-
-  const addGuard = (slot: "input" | "output") => {
-    const newGuard: Guard = { config_id: "ban_list", ...DEFAULT_GUARD.ban_list };
-    setForm({ ...form, [slot]: [...form[slot], newGuard] });
+  const handleSubmit = (values: GuardrailsFormValues) => {
+    save.mutate(values);
   };
 
+  const yamlText = useMemo(() => {
+    const values = form.getValues();
+    const wire = formToWire(values);
+    return stringifyYaml({
+      enabled: wire.enabled,
+      ...wire.config,
+    });
+    // yamlOpen is a dependency so the snapshot refreshes each time the sheet opens.
+  }, [form, yamlOpen]);
+
+  const persistFromYaml = async (parsed: unknown) => {
+    const obj = (parsed ?? {}) as Record<string, unknown>;
+    const enabledRaw = obj.enabled;
+    const next = wireToForm(obj, enabledRaw);
+    form.reset(next);
+    save.mutate(next);
+  };
+
+  if (isLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  }
+
   return (
-    <>
-      <SaveToolbar
-        title="Guardrails"
-        dirty={dirty}
-        busy={save.isPending}
-        onRevert={() => setForm(initialFromData)}
-        onSave={() => save.mutate(form)}
-        extraActions={
-          <Button
-            size="sm"
-            variant="ghost"
-            type="button"
-            onClick={() => setEditYaml((v) => !v)}
-          >
-            {editYaml ? "Done editing YAML" : "Edit YAML"}
-          </Button>
-        }
-      />
-      <div className="p-6 max-w-4xl space-y-4">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={form.enabled}
-            onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-          />
-          Guardrails enabled
-        </label>
+    <div className="flex flex-col gap-6 p-6 max-w-4xl">
+      <header className="space-y-1">
+        <h1 className="font-serif text-2xl font-medium text-foreground">
+          Guardrails
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Content safety, PII detection, and topic restrictions for the running
+          agent.
+        </p>
+      </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xs uppercase tracking-wider text-[var(--color-fg)]/60">
-                Input guards
-              </h3>
-              <Button size="sm" variant="ghost" onClick={() => addGuard("input")}>
-                + Add
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {form.input.length === 0 && (
-                <Card className="p-3 text-xs text-[var(--color-fg)]/60">
-                  No input guards.
-                </Card>
-              )}
-              {form.input.map((g, i) => (
-                <GuardCard
-                  key={i}
-                  guard={g}
-                  onChange={(next) => {
-                    const arr = form.input.slice();
-                    arr[i] = next;
-                    setForm({ ...form, input: arr });
-                  }}
-                  onRemove={() =>
-                    setForm({
-                      ...form,
-                      input: form.input.filter((_, j) => j !== i),
-                    })
-                  }
-                />
-              ))}
-            </div>
-          </section>
+      {restartRequired && (
+        <Alert variant="destructive">
+          <RotateCcw />
+          <AlertTitle>Restart required</AlertTitle>
+          <AlertDescription>
+            Structural change detected — restart required to apply.
+          </AlertDescription>
+        </Alert>
+      )}
 
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xs uppercase tracking-wider text-[var(--color-fg)]/60">
-                Output guards
-              </h3>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => addGuard("output")}
+      <Form {...form}>
+        <form
+          id="guardrails-form"
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="space-y-6"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Status</CardTitle>
+              <CardDescription>
+                Globally enable or disable all guardrails. Individual guards
+                still ship to the engine but are bypassed when this is off.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/30 p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Guardrails enabled</FormLabel>
+                      <FormDescription>
+                        When off, no guard runs on any input or output.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Guards</CardTitle>
+              <CardDescription>
+                Add guards on the input or output side. Each guard runs in the
+                order it appears here.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs
+                value={activeTab}
+                onValueChange={(t) => setActiveTab(t as Slot)}
               >
-                + Add
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {form.output.length === 0 && (
-                <Card className="p-3 text-xs text-[var(--color-fg)]/60">
-                  No output guards.
-                </Card>
-              )}
-              {form.output.map((g, i) => (
-                <GuardCard
-                  key={i}
-                  guard={g}
-                  onChange={(next) => {
-                    const arr = form.output.slice();
-                    arr[i] = next;
-                    setForm({ ...form, output: arr });
-                  }}
-                  onRemove={() =>
-                    setForm({
-                      ...form,
-                      output: form.output.filter((_, j) => j !== i),
-                    })
-                  }
-                />
-              ))}
-            </div>
-          </section>
-        </div>
+                <TabsList>
+                  <TabsTrigger value="input">{SLOT_LABELS.input}</TabsTrigger>
+                  <TabsTrigger value="output">
+                    {SLOT_LABELS.output}
+                  </TabsTrigger>
+                </TabsList>
 
-        <div>
-          <div className="text-xs uppercase tracking-wider text-[var(--color-fg)]/50 mb-2">
-            {editYaml ? "YAML editor" : "YAML preview"}
-          </div>
-          <YamlEditor
-            value={formToConfig(form)}
-            readOnly={!editYaml}
-            onChange={(v) =>
-              setForm({ ...form, ...configToForm(v as Record<string, unknown>) })
-            }
-          />
-        </div>
-      </div>
-    </>
+                <TabsContent value="input" className="mt-4">
+                  <GuardSlotPanel
+                    control={form.control}
+                    form={form}
+                    slot="input"
+                  />
+                </TabsContent>
+
+                <TabsContent value="output" className="mt-4">
+                  <GuardSlotPanel
+                    control={form.control}
+                    form={form}
+                    slot="output"
+                  />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+            <CardFooter className="justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setYamlOpen(true)}
+              >
+                Edit YAML
+              </Button>
+              <Button
+                type="submit"
+                form="guardrails-form"
+                disabled={save.isPending}
+              >
+                {save.isPending ? "Saving…" : "Save"}
+              </Button>
+            </CardFooter>
+          </Card>
+        </form>
+      </Form>
+
+      <EditYamlSheet
+        open={yamlOpen}
+        onOpenChange={setYamlOpen}
+        value={yamlText}
+        onSave={persistFromYaml}
+        title="Edit guardrails YAML"
+        description="Update the full guardrails payload."
+      />
+    </div>
   );
 }

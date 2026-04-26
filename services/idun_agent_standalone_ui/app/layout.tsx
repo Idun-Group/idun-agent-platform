@@ -4,19 +4,32 @@ import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/lib/query-client";
 import { ThemeLoader } from "@/lib/theme-loader";
+import { ThemeProvider } from "@/lib/theme-provider";
+import { fontSans, fontSerif, fontMono } from "@/lib/fonts";
 
 export const metadata = { title: "Idun Agent" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable}`}
+    >
       <head>
         <Script src="/runtime-config.js" strategy="beforeInteractive" />
       </head>
-      <body className="min-h-screen antialiased">
-        <ThemeLoader />
-        <QueryProvider>{children}</QueryProvider>
-        <Toaster richColors position="top-right" />
+      <body className="min-h-screen font-sans antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ThemeLoader />
+          <QueryProvider>{children}</QueryProvider>
+          <Toaster richColors position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   );

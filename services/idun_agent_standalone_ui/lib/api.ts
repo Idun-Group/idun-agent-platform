@@ -144,10 +144,14 @@ export const api = {
       `/admin/api/v1/traces/sessions?${qp.toString()}`,
     );
   },
-  getSessionEvents: (id: string) =>
-    apiFetch<{ events: TraceEvent[]; truncated: boolean }>(
-      `/admin/api/v1/traces/sessions/${id}/events`,
-    ),
+  getSessionEvents: (id: string, params: { search?: string } = {}) => {
+    const qp = new URLSearchParams();
+    if (params.search) qp.set("search", params.search);
+    const qs = qp.toString();
+    return apiFetch<{ events: TraceEvent[]; truncated: boolean }>(
+      `/admin/api/v1/traces/sessions/${id}/events${qs ? `?${qs}` : ""}`,
+    );
+  },
   patchSession: (id: string, body: { title: string | null }) =>
     apiFetch<SessionSummary>(`/admin/api/v1/traces/sessions/${id}`, {
       method: "PATCH",
