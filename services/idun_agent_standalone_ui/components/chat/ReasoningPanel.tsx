@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronDown } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ToolCall } from "@/lib/agui";
@@ -90,6 +90,7 @@ export function ReasoningPanel({
   streaming,
 }: Props) {
   const [open, setOpen] = useState<boolean>(streaming === true);
+  const panelId = useId();
 
   // Auto-collapse when streaming flips off. We only force-close on the
   // streaming → not-streaming transition; a follow-up user click can
@@ -118,6 +119,8 @@ export function ReasoningPanel({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={panelId}
         className="group flex w-full items-center gap-2.5 rounded-lg border border-border bg-card/60 px-3 py-2 text-left transition hover:bg-card"
       >
         {streaming ? (
@@ -147,7 +150,10 @@ export function ReasoningPanel({
       </button>
 
       {open && (
-        <div className="mt-3 space-y-4 border-l-2 border-border pl-4">
+        <div
+          id={panelId}
+          className="mt-3 space-y-4 border-l-2 border-border pl-4"
+        >
           {thoughts && (
             <Section title="Thoughts">
               <div className="prose-chat text-[13.5px] italic text-muted-foreground">

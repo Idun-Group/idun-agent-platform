@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { ToolCall } from "@/lib/agui";
@@ -38,6 +38,7 @@ type Props = {
  */
 export function ToolCallRow({ n, call }: Props) {
   const [open, setOpen] = useState(false);
+  const bodyId = useId();
   const parsed = parseArgs(call.name, call.args || "");
 
   const status = call.error ? "error" : call.done ? "ok" : "running";
@@ -53,6 +54,8 @@ export function ToolCallRow({ n, call }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={bodyId}
         className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left hover:bg-canvas"
       >
         <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
@@ -67,7 +70,7 @@ export function ToolCallRow({ n, call }: Props) {
         </span>
       </button>
       {open && (
-        <div className="border-t border-border">
+        <div id={bodyId} className="border-t border-border">
           {parsed.code !== undefined ? (
             parsed.code ? (
               <SyntaxHighlighter

@@ -52,6 +52,17 @@ describe("ReasoningPanel", () => {
     fireEvent.click(header);
     expect(screen.queryByText("Actions")).not.toBeInTheDocument();
   });
+
+  it("toggle has aria-expanded reflecting state", () => {
+    const { container } = render(
+      <ReasoningPanel plan="P" toolCalls={[]} streaming={false} />,
+    );
+    const button = container.querySelector("button");
+    expect(button).toBeTruthy();
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(button as HTMLButtonElement);
+    expect(button).toHaveAttribute("aria-expanded", "true");
+  });
 });
 
 describe("ToolCallRow", () => {
@@ -82,5 +93,21 @@ describe("ToolCallRow", () => {
     const pre = container.querySelector("pre");
     expect(pre?.textContent).toContain("import os");
     expect(pre?.textContent).toContain("print('hello world')");
+  });
+
+  it("toggle has aria-expanded reflecting state", () => {
+    const call: ToolCall = {
+      id: "x",
+      name: "list_datasets",
+      args: "",
+      done: true,
+      result: "ok",
+    };
+    const { container } = render(<ToolCallRow n={1} call={call} />);
+    const button = container.querySelector("button");
+    expect(button).toBeTruthy();
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(button as HTMLButtonElement);
+    expect(button).toHaveAttribute("aria-expanded", "true");
   });
 });
