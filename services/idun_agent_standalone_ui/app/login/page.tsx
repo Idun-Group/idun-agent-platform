@@ -7,6 +7,7 @@ import { ApiError, api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,11 +15,11 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   return (
-    <div className="grid place-items-center min-h-screen p-6 bg-[var(--color-bg)]">
+    <div className="grid place-items-center min-h-screen bg-background p-6">
       <Card className="w-full max-w-sm p-6 space-y-4">
         <div>
-          <h1 className="text-xl font-semibold text-[var(--color-fg)]">Sign in</h1>
-          <p className="text-xs text-[var(--color-fg)]/60 mt-1">
+          <h1 className="text-xl font-semibold text-foreground">Sign in</h1>
+          <p className="text-xs text-muted-foreground mt-1">
             Enter the admin password configured for this deployment.
           </p>
         </div>
@@ -41,9 +42,9 @@ export default function LoginPage() {
           }}
         >
           <div className="space-y-1">
-            <label className="text-xs text-[var(--color-fg)]/70" htmlFor="pw">
+            <Label className="text-xs text-muted-foreground" htmlFor="pw">
               Admin password
-            </label>
+            </Label>
             <Input
               id="pw"
               type="password"
