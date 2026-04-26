@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from idun_agent_schema.engine import EngineConfig
+from idun_agent_schema.engine.integrations import IntegrationProvider
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +22,7 @@ from idun_agent_standalone.db.models import (
     McpServerRow,
     MemoryRow,
     ObservabilityRow,
+    PromptRow,
 )
 
 _FRAMEWORK_TYPE_MAP = {
@@ -40,6 +42,18 @@ def _normalize_framework(value: str) -> str:
     return _FRAMEWORK_TYPE_MAP.get(value.lower(), value.upper())
 
 
+def _normalize_provider(name: str | IntegrationProvider) -> str:
+    """Return the canonical (upper-case) ``IntegrationProvider`` value.
+
+    Defensive: integration rows persisted before this normalization existed
+    may store mixed/lower-case strings. ``IntegrationProvider`` is a
+    ``StrEnum`` so a valid lower-case value upper-cases cleanly.
+    """
+    if isinstance(name, IntegrationProvider):
+        return name.value
+    return IntegrationProvider(name.upper()).value
+
+
 async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     """Materialize an ``EngineConfig`` from the singleton + collection rows."""
     agent = (await session.execute(select(AgentRow))).scalar_one()
@@ -57,6 +71,13 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     integration_rows = (
         await session.execute(
             select(IntegrationRow).where(IntegrationRow.enabled.is_(True))
+        )
+    ).scalars().all()
+    prompt_rows = (
+        await session.execute(
+            select(PromptRow).order_by(
+                PromptRow.prompt_key, PromptRow.version.desc()
+            )
         )
     ).scalars().all()
 
@@ -84,8 +105,29 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
         ]
     if integration_rows:
         data["integrations"] = [
-            {"provider": r.kind, "enabled": r.enabled, "config": r.config or {}}
+            {
+                "provider": _normalize_provider(r.kind),
+                "enabled": r.enabled,
+                "config": r.config or {},
+            }
             for r in integration_rows
+        ]
+    if prompt_rows:
+        # Pick the highest-versioned row per ``prompt_key`` — prompts are
+        # append-only, so the engine should always run with the latest.
+        latest_by_key: dict[str, PromptRow] = {}
+        for r in prompt_rows:
+            existing = latest_by_key.get(r.prompt_key)
+            if existing is None or r.version > existing.version:
+                latest_by_key[r.prompt_key] = r
+        data["prompts"] = [
+            {
+                "prompt_id": r.prompt_key,
+                "version": r.version,
+                "content": r.content,
+                "tags": r.tags or [],
+            }
+            for r in latest_by_key.values()
         ]
 
     return EngineConfig.model_validate(data)
