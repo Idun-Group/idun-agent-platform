@@ -46,6 +46,11 @@ export type ToolCall = {
   name: string;
   args: string;
   result?: string;
+  /** Set when the tool call failed; UI renders the error block (rose). */
+  error?: string;
+  /** True once TOOL_CALL_END (or equivalent) has fired so the UI can flip
+   * the status dot from amber-pulse → emerald. */
+  done?: boolean;
 };
 
 export async function runAgent(opts: RunOptions): Promise<void> {

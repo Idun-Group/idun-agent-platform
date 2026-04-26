@@ -174,7 +174,11 @@ export function useChat(threadId: string) {
                         toolCalls: m.toolCalls.map((tc) =>
                           tc.id ===
                           String(e.toolCallId ?? e.tool_call_id ?? "")
-                            ? { ...tc, result: JSON.stringify(e.result ?? null) }
+                            ? {
+                                ...tc,
+                                result: JSON.stringify(e.result ?? null),
+                                done: true,
+                              }
                             : tc,
                         ),
                       }
