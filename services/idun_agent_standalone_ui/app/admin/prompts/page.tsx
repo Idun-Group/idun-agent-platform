@@ -5,10 +5,10 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { YamlEditor } from "@/components/admin/YamlEditor";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import { BadgeTone } from "@/components/ui/badge-tone";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export default function PromptsPage() {
   const qc = useQueryClient();
@@ -72,7 +72,7 @@ export default function PromptsPage() {
         <Card key={g.key} className="p-4 space-y-2">
           <div className="flex items-center gap-2">
             <span className="font-medium font-mono text-sm">{g.key}</span>
-            <Badge tone="info">{g.versions.length} versions</Badge>
+            <BadgeTone tone="info">{g.versions.length} versions</BadgeTone>
           </div>
           <div className="grid gap-2">
             {g.versions.map((v) => (
@@ -80,7 +80,7 @@ export default function PromptsPage() {
                 key={v.id}
                 className="border border-[var(--color-border)] rounded p-2 flex items-start gap-3"
               >
-                <Badge tone="neutral">v{v.version}</Badge>
+                <BadgeTone tone="neutral">v{v.version}</BadgeTone>
                 <pre className="flex-1 text-xs whitespace-pre-wrap font-mono text-[var(--color-fg)]/80">
                   {v.content}
                 </pre>
@@ -131,9 +131,9 @@ export default function PromptsPage() {
             <div className="flex flex-wrap gap-1 text-xs">
               <span className="text-[var(--color-fg)]/60">Variables:</span>
               {variables.map((v) => (
-                <Badge key={v} tone="info">
+                <BadgeTone key={v} tone="info">
                   {`{{${v}}}`}
-                </Badge>
+                </BadgeTone>
               ))}
             </div>
           )}

@@ -5,10 +5,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { type McpRead, api } from "@/lib/api";
 import { YamlEditor } from "@/components/admin/YamlEditor";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import { BadgeTone } from "@/components/ui/badge-tone";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 const TRANSPORTS = ["stdio", "streamable_http", "sse", "websocket"] as const;
 type Transport = (typeof TRANSPORTS)[number];
@@ -108,11 +108,11 @@ export default function McpPage() {
             <Card key={r.id} className="p-3 space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-sm">{r.name}</span>
-                <Badge tone="info">{transport}</Badge>
-                <Badge tone={r.enabled ? "success" : "neutral"}>
+                <BadgeTone tone="info">{transport}</BadgeTone>
+                <BadgeTone tone={r.enabled ? "success" : "neutral"}>
                   {r.enabled ? "enabled" : "disabled"}
-                </Badge>
-                {status === "failed" && <Badge tone="danger">failed</Badge>}
+                </BadgeTone>
+                {status === "failed" && <BadgeTone tone="danger">failed</BadgeTone>}
                 <div className="ml-auto flex gap-2">
                   <Button
                     size="sm"
@@ -123,7 +123,7 @@ export default function McpPage() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="danger"
+                    variant="destructive"
                     onClick={() => {
                       if (confirm(`Delete MCP server "${r.name}"?`))
                         del.mutate(r.id);

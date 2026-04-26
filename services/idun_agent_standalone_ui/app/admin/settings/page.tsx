@@ -9,10 +9,10 @@ import {
   type ThemeConfig,
   getRuntimeConfig,
 } from "@/lib/runtime-config";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import { BadgeTone } from "@/components/ui/badge-tone";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 const LAYOUTS = ["branded", "minimal", "inspector"] as const;
 const RADII = ["0", "0.25", "0.5", "0.625", "0.75", "1"] as const;
@@ -202,7 +202,7 @@ export default function SettingsPage() {
     <div className="p-6 max-w-3xl space-y-6">
       <div className="flex items-center gap-3">
         <h2 className="font-semibold">Settings</h2>
-        <Badge tone="info">Theme + branding</Badge>
+        <BadgeTone tone="info">Theme + branding</BadgeTone>
       </div>
 
       <Card className="p-4 space-y-3">

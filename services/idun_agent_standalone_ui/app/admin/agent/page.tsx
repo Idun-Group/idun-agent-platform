@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { type AgentRead, ApiError, api } from "@/lib/api";
 import { SaveToolbar } from "@/components/admin/SaveToolbar";
 import { YamlEditor } from "@/components/admin/YamlEditor";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const FRAMEWORKS = ["langgraph", "adk", "haystack"] as const;
 

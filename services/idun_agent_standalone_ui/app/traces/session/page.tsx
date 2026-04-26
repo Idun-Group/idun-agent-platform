@@ -7,8 +7,8 @@ import { Suspense, useMemo, useState } from "react";
 import { type TraceEvent, api } from "@/lib/api";
 import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
 import { SessionList } from "@/components/chat/SessionList";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { BadgeTone } from "@/components/ui/badge-tone";
+import { Button } from "@/components/ui/button";
 
 const FILTERS = ["All", "Messages", "Tools", "Thinking", "Errors"] as const;
 
@@ -162,7 +162,7 @@ function SessionDetail() {
                   className="border border-[var(--color-border)] rounded-md p-3 bg-[var(--color-bg)]"
                 >
                   <div className="flex items-center gap-2 text-xs mb-2">
-                    <Badge tone="info">Run</Badge>
+                    <BadgeTone tone="info">Run</BadgeTone>
                     <span className="font-mono text-[var(--color-fg)]/60">
                       {runId.slice(0, 8)}
                     </span>
@@ -193,9 +193,9 @@ function SessionDetail() {
                 </div>
               ))}
               {data?.truncated && (
-                <Badge tone="warning">
+                <BadgeTone tone="warning">
                   Truncated — showing first 1000 events.
-                </Badge>
+                </BadgeTone>
               )}
             </div>
           )}

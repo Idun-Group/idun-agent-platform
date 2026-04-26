@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { type Singleton } from "@/lib/api";
 import { SaveToolbar } from "@/components/admin/SaveToolbar";
 import { YamlEditor } from "@/components/admin/YamlEditor";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 type Props<T> = {
   title: string;

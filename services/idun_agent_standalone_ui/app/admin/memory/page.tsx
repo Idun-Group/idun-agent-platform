@@ -6,9 +6,9 @@ import { toast } from "sonner";
 import { ApiError, api } from "@/lib/api";
 import { SaveToolbar } from "@/components/admin/SaveToolbar";
 import { YamlEditor } from "@/components/admin/YamlEditor";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 type MemoryType = "memory" | "sqlite" | "postgres";
 

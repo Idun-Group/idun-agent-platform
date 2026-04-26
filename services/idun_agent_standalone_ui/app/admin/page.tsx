@@ -1,7 +1,7 @@
 "use client";
 
 import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/ui/card";
 
 const KPIS = [
   { label: "Runs", value: "1,284", delta: "▲ 12%" },

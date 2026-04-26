@@ -6,7 +6,7 @@ import { ArrowLeft, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { getRuntimeConfig } from "@/lib/runtime-config";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const GROUPS: { label: string; items: { href: string; label: string }[] }[] = [

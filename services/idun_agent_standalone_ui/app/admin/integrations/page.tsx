@@ -6,9 +6,9 @@ import { toast } from "sonner";
 import { type IntegrationRead, api } from "@/lib/api";
 import { JsonEditor } from "@/components/admin/JsonEditor";
 import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { BadgeTone } from "@/components/ui/badge-tone";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 const KINDS = ["whatsapp", "discord"] as const;
 
@@ -54,10 +54,10 @@ export default function IntegrationsPage() {
         {rows.map((r) => (
           <Card key={r.id} className="p-3 space-y-2">
             <div className="flex items-center gap-2">
-              <Badge tone="info">{r.kind}</Badge>
-              <Badge tone={r.enabled ? "success" : "neutral"}>
+              <BadgeTone tone="info">{r.kind}</BadgeTone>
+              <BadgeTone tone={r.enabled ? "success" : "neutral"}>
                 {r.enabled ? "enabled" : "disabled"}
-              </Badge>
+              </BadgeTone>
               <div className="ml-auto flex gap-2 items-center">
                 <span
                   title="Test webhook is part of MVP-2 (engine has no test_connection yet)."
@@ -77,7 +77,7 @@ export default function IntegrationsPage() {
                 </Button>
                 <Button
                   size="sm"
-                  variant="danger"
+                  variant="destructive"
                   onClick={() => {
                     if (confirm(`Delete ${r.kind} integration?`)) del.mutate(r.id);
                   }}

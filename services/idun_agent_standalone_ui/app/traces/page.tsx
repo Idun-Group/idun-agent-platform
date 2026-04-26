@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { type SessionSummary, api } from "@/lib/api";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 function formatDuration(s: SessionSummary): string {
   const start = new Date(s.created_at).getTime();
