@@ -17,6 +17,20 @@ export type ChatEvent = AGUIEvent & {
   _at: number;
 };
 
+/** Strip <think>...</think> blocks from streamed text. Mirrors the helper used
+ * in the reference customer-service-adk web app: closed blocks are removed,
+ * an unterminated trailing block is dropped, and any leading blank lines left
+ * behind are trimmed so the visible buffer doesn't start with whitespace. */
+function stripThink(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/g, "")
+    .replace(/^<think>[\s\S]*$/, "")
+    .replace(/^\s*\n+/, "");
+}
+
+/** Step names that route TEXT_MESSAGE_CONTENT into the `plan` buffer. */
+const PLAN_STEPS = new Set(["planner", "analyst"]);
+
 export function useChat(threadId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [events, setEvents] = useState<ChatEvent[]>([]);
@@ -35,6 +49,10 @@ export function useChat(threadId: string) {
         text: "",
         toolCalls: [],
         thinking: [],
+        opener: "",
+        plan: "",
+        thoughts: "",
+        streaming: true,
       };
       setMessages((m) => [...m, userMsg, assistantMsg]);
       setStatus("streaming");
@@ -83,13 +101,27 @@ export function useChat(threadId: string) {
                 // consumers can split on START boundaries when the UX needs it.
                 break;
               case "TEXT_MESSAGE_CONTENT":
-              case "TextMessageContent":
-                updateAssistant((m) =>
-                  m.role === "assistant"
-                    ? { ...m, text: m.text + ((e.delta as string) ?? "") }
-                    : m,
-                );
+              case "TextMessageContent": {
+                const delta = (e.delta as string) ?? "";
+                updateAssistant((m) => {
+                  if (m.role !== "assistant") return m;
+                  const step = m.currentStep;
+                  if (step === "acknowledge") {
+                    return {
+                      ...m,
+                      opener: stripThink((m.opener ?? "") + delta),
+                    };
+                  }
+                  if (step && PLAN_STEPS.has(step)) {
+                    return {
+                      ...m,
+                      plan: stripThink((m.plan ?? "") + delta),
+                    };
+                  }
+                  return { ...m, text: stripThink(m.text + delta) };
+                });
                 break;
+              }
               case "TEXT_MESSAGE_END":
               case "TextMessageEnd":
                 // Close the current text segment. With the single-bubble model
@@ -162,20 +194,27 @@ export function useChat(threadId: string) {
                 );
                 break;
               case "THINKING_TEXT_MESSAGE_CONTENT":
-              case "ThinkingTextMessageContent":
+              case "ThinkingTextMessageContent": {
+                const delta = String(e.delta ?? "");
                 updateAssistant((m) => {
                   if (m.role !== "assistant") return m;
                   const idx = m.thinking.length - 1;
-                  if (idx < 0)
-                    return {
-                      ...m,
-                      thinking: [String(e.delta ?? "")],
-                    };
-                  const next = m.thinking.slice();
-                  next[idx] = next[idx] + String(e.delta ?? "");
-                  return { ...m, thinking: next };
+                  // Maintain the legacy `thinking[]` buffer for existing
+                  // consumers (ChatMessage block renderer) and additively
+                  // populate the new flat `thoughts` slot used by the
+                  // editorial ReasoningPanel.
+                  const nextThinking =
+                    idx < 0
+                      ? [delta]
+                      : m.thinking.map((b, i) => (i === idx ? b + delta : b));
+                  return {
+                    ...m,
+                    thinking: nextThinking,
+                    thoughts: (m.thoughts ?? "") + delta,
+                  };
                 });
                 break;
+              }
               case "THINKING_TEXT_MESSAGE_END":
               case "ThinkingTextMessageEnd":
               case "THINKING_END":
@@ -192,18 +231,47 @@ export function useChat(threadId: string) {
               case "RUN_FINISHED":
               case "RunFinished":
                 setStatus("idle");
+                updateAssistant((m) =>
+                  m.role === "assistant"
+                    ? { ...m, streaming: false, currentStep: undefined }
+                    : m,
+                );
                 break;
               case "RUN_ERROR":
               case "RunError":
                 setStatus("error");
                 setError(String(e.message ?? "run error"));
+                updateAssistant((m) =>
+                  m.role === "assistant"
+                    ? { ...m, streaming: false, currentStep: undefined }
+                    : m,
+                );
                 break;
 
-              // — Step / state events (no-op for this UI) ---------------
+              // — Step lifecycle ----------------------------------------
+              // STEP_STARTED sets the active step name on the assistant
+              // message so subsequent TEXT_MESSAGE_CONTENT deltas land in
+              // the right buffer (opener / plan / text). STEP_FINISHED
+              // clears it; if a new STEP_STARTED arrives it will overwrite
+              // before any further text deltas land.
               case "STEP_STARTED":
-              case "StepStarted":
+              case "StepStarted": {
+                const stepName = String(e.stepName ?? e.step_name ?? "");
+                updateAssistant((m) =>
+                  m.role === "assistant"
+                    ? { ...m, currentStep: stepName || m.currentStep }
+                    : m,
+                );
+                break;
+              }
               case "STEP_FINISHED":
               case "StepFinished":
+                updateAssistant((m) =>
+                  m.role === "assistant" ? { ...m, currentStep: undefined } : m,
+                );
+                break;
+
+              // — State / snapshot events (no-op for this UI) -----------
               case "STATE_DELTA":
               case "StateDelta":
               case "STATE_SNAPSHOT":
@@ -229,6 +297,16 @@ export function useChat(threadId: string) {
         } else {
           setStatus("idle");
         }
+      } finally {
+        // Whatever the run's outcome, the assistant message is no longer
+        // streaming. RUN_FINISHED/RUN_ERROR will already have cleared this
+        // for well-behaved streams; this guards against transport errors
+        // that bypass the protocol's terminal events.
+        updateAssistant((m) =>
+          m.role === "assistant" && m.streaming
+            ? { ...m, streaming: false, currentStep: undefined }
+            : m,
+        );
       }
     },
     [threadId],
