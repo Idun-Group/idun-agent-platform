@@ -204,11 +204,16 @@ def _make_reload_orchestrator():
             cleanup=cleanup_agent,
             configure=configure_app,
         )
-        request.app.state.current_engine_config = new_cfg
 
         if outcome.kind == "restart_required":
+            # Structural change: DB persists the new config (committed by
+            # commit_with_reload on 202) so a restart picks it up, but the
+            # in-memory live config still points at the previous graph.
             return JSONResponse(status_code=202, content={"restart_required": True})
         if outcome.kind == "init_failed":
+            # Engine init failed; commit_with_reload rolls the DB back.
+            # The live agent is either the recovered previous config or
+            # nothing — either way, current_engine_config must NOT advance.
             return JSONResponse(
                 status_code=500,
                 content={
@@ -218,6 +223,8 @@ def _make_reload_orchestrator():
                 },
             )
 
+        # Successful hot reload: the engine is now running new_cfg.
+        request.app.state.current_engine_config = new_cfg
         return None
 
     return _trigger
