@@ -152,11 +152,6 @@ export const api = {
       `/admin/api/v1/traces/sessions/${id}/events${qs ? `?${qs}` : ""}`,
     );
   },
-  patchSession: (id: string, body: { title: string | null }) =>
-    apiFetch<SessionSummary>(`/admin/api/v1/traces/sessions/${id}`, {
-      method: "PATCH",
-      body: j(body),
-    }),
   deleteSession: (id: string) =>
     apiFetch<void>(`/admin/api/v1/traces/sessions/${id}`, { method: "DELETE" }),
 };
