@@ -98,6 +98,28 @@ jobs:
           docker stop standalone-smoke >/dev/null || true
           exit 1
 
+  wheel-install-smoke:
+    name: Wheel install smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --no-cache-dir uv
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: services/idun_agent_standalone_ui/pnpm-lock.yaml
+      - name: Install pnpm deps
+        run: cd services/idun_agent_standalone_ui && pnpm install --frozen-lockfile
+      - name: Run smoke
+        run: scripts/wheel-install-smoke.sh
+
   e2e:
     runs-on: ubuntu-latest
     defaults:

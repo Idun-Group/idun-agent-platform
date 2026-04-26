@@ -2,27 +2,27 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from importlib import resources
 
 from alembic import command
 from alembic.config import Config
 
 
-def _alembic_config() -> Config:
-    """Locate ``alembic.ini`` relative to the installed package.
+def _alembic_ini_path() -> str:
+    """Resolve packaged ``alembic.ini`` in both editable and wheel installs."""
+    return str(resources.files("idun_agent_standalone") / "alembic.ini")
 
-    The ``alembic.ini`` ships at the package root next to ``src/``; the
-    migrations directory is inside ``src/idun_agent_standalone/db/migrations``.
-    Both paths are resolved from this module so the helper works whether the
-    package is installed editable or from a wheel.
+
+def _alembic_config() -> Config:
+    """Build an Alembic ``Config`` pointing at the packaged ``alembic.ini``.
+
+    The ini file ships inside the package at
+    ``idun_agent_standalone/alembic.ini`` and uses ``%(here)s/db/migrations``
+    so the script location resolves correctly regardless of install layout
+    (editable checkout, installed wheel, or running ``alembic`` from the
+    package directory).
     """
-    pkg_root = Path(__file__).resolve().parents[3]
-    ini_path = pkg_root / "alembic.ini"
-    cfg = Config(str(ini_path))
-    cfg.set_main_option(
-        "script_location", str(Path(__file__).parent / "migrations")
-    )
-    return cfg
+    return Config(_alembic_ini_path())
 
 
 def upgrade_head() -> None:

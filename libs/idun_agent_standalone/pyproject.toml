@@ -33,13 +33,16 @@ dependencies = [
 idun-standalone = "idun_agent_standalone.cli:main"
 
 [tool.hatch.build.targets.sdist]
-include = ["src/idun_agent_standalone", "alembic.ini"]
+include = ["src/idun_agent_standalone"]
 
 [tool.hatch.build.targets.wheel]
-include = ["src/idun_agent_standalone", "alembic.ini"]
+include = ["src/idun_agent_standalone"]
 
 [tool.hatch.build.targets.wheel.sources]
 "src/idun_agent_standalone" = "idun_agent_standalone"
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/idun_agent_standalone/alembic.ini" = "idun_agent_standalone/alembic.ini"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
