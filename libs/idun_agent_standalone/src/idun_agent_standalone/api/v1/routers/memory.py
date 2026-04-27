@@ -5,15 +5,12 @@ the URL because there is only one row per install. Absence of the
 row means the agent uses the default in-memory backend at assembly
 time. ``PATCH`` upserts the row, ``DELETE`` removes it.
 
-``PATCH`` reassembles the engine config in the same DB session after
-staging the write. A framework mismatch (for example LangGraph paired
-with a SessionService memory) fails validation, the staged write is
-rolled back, and the response returns 422 with structured
-``field_errors``.
-
-The reload field on the mutation envelope is a placeholder until the
-reload service lands. Successful writes return ``restart_required``,
-noops return ``reloaded``.
+Both mutating handlers run under the Phase 3 reload pipeline. Round 2
+(assembled config validation) catches framework/memory mismatches and
+rolls the staged write back with a 422 + structured ``field_errors``.
+On success, round 3 hot-reloads the engine via the injected reload
+callable; framework switches and other structural changes commit the
+DB and return ``restart_required`` instead of invoking reload.
 """
 
 from __future__ import annotations
@@ -34,18 +31,12 @@ from idun_agent_schema.standalone import (
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from idun_agent_standalone.api.v1.deps import SessionDep
-from idun_agent_standalone.api.v1.errors import (
-    AdminAPIError,
-    field_errors_from_validation_error,
-)
+from idun_agent_standalone.api.v1.deps import ReloadCallableDep, SessionDep
+from idun_agent_standalone.api.v1.errors import AdminAPIError
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
-from idun_agent_standalone.services.engine_config import (
-    AgentNotConfiguredError,
-    AssemblyError,
-    assemble_engine_config,
-)
+from idun_agent_standalone.services import reload as reload_service
+from idun_agent_standalone.services.reload import commit_with_reload
 
 router = APIRouter(prefix="/admin/api/v1/memory", tags=["admin", "memory"])
 
@@ -53,19 +44,9 @@ logger = get_logger(__name__)
 
 _SINGLETON_ID = "singleton"
 
-_SAVED_RELOAD = StandaloneReloadResult(
-    status=StandaloneReloadStatus.RESTART_REQUIRED,
-    message="Saved. Restart required to apply.",
-)
-
 _NOOP_RELOAD = StandaloneReloadResult(
     status=StandaloneReloadStatus.RELOADED,
     message="No changes.",
-)
-
-_DELETE_RELOAD = StandaloneReloadResult(
-    status=StandaloneReloadStatus.RESTART_REQUIRED,
-    message="Removed. Restart required to apply.",
 )
 
 
@@ -111,13 +92,15 @@ async def get_memory(session: SessionDep) -> StandaloneMemoryRead:
 
 @router.patch("", response_model=StandaloneMutationResponse[StandaloneMemoryRead])
 async def patch_memory(
-    body: StandaloneMemoryPatch, session: SessionDep
+    body: StandaloneMemoryPatch,
+    session: SessionDep,
+    reload_callable: ReloadCallableDep,
 ) -> StandaloneMutationResponse[StandaloneMemoryRead]:
     """Upsert the singleton memory row.
 
     First write requires both ``agentFramework`` and ``memory``.
     Updates apply only the fields explicitly present in the body.
-    The engine config is reassembled before commit and a
+    The reload pipeline reassembles + validates the engine config; a
     framework/memory mismatch rolls back with a 422.
     """
     fields = body.model_fields_set
@@ -164,54 +147,21 @@ async def patch_memory(
         if "memory" in fields and body.memory is not None:
             row.memory_config = body.memory.model_dump(exclude_none=True)
 
-    await session.flush()
-
-    try:
-        await assemble_engine_config(session)
-    except AgentNotConfiguredError as exc:
-        await session.rollback()
-        logger.info("admin.memory.patch rejected, no agent configured")
-        raise AdminAPIError(
-            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
-            error=StandaloneAdminError(
-                code=StandaloneErrorCode.VALIDATION_FAILED,
-                message=(
-                    "Agent must be configured before memory can be set. "
-                    "Run setup with a YAML config first."
-                ),
-            ),
-        ) from exc
-    except AssemblyError as exc:
-        framework = row.agent_framework
-        await session.rollback()
-        logger.info(
-            "admin.memory.patch rejected, assembled config invalid framework=%s",
-            framework,
+    async with reload_service._reload_mutex:
+        await session.flush()
+        result = await commit_with_reload(
+            session, reload_callable=reload_callable
         )
-        field_errors = (
-            field_errors_from_validation_error(exc.validation_error)
-            if exc.validation_error is not None
-            else None
-        )
-        raise AdminAPIError(
-            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
-            error=StandaloneAdminError(
-                code=StandaloneErrorCode.VALIDATION_FAILED,
-                message=str(exc),
-                field_errors=field_errors,
-            ),
-        ) from exc
-
-    await session.commit()
-    await session.refresh(row)
+        await session.refresh(row)
 
     logger.info(
-        "admin.memory.patch creating=%s framework=%s",
+        "admin.memory.patch creating=%s framework=%s status=%s",
         creating,
         row.agent_framework,
+        result.status.value,
     )
 
-    return StandaloneMutationResponse(data=_to_read(row), reload=_SAVED_RELOAD)
+    return StandaloneMutationResponse(data=_to_read(row), reload=result)
 
 
 @router.delete(
@@ -220,12 +170,14 @@ async def patch_memory(
 )
 async def delete_memory(
     session: SessionDep,
+    reload_callable: ReloadCallableDep,
 ) -> StandaloneMutationResponse[StandaloneSingletonDeleteResult]:
     """Remove the singleton memory row.
 
     After delete, the engine assembly falls back to the default
-    in-memory backend. Reassembly is not required because the default
-    backend always validates against the agent's framework.
+    in-memory backend. The reload pipeline reassembles + validates
+    that fallback so a misconfigured agent row surfaces as a 422
+    rather than leaving the engine in a half-deleted state.
     """
     row = await _load_row(session)
     if row is None:
@@ -238,11 +190,21 @@ async def delete_memory(
         )
 
     framework = row.agent_framework
-    await session.delete(row)
-    await session.commit()
-    logger.info("admin.memory.delete done framework=%s", framework)
+
+    async with reload_service._reload_mutex:
+        await session.delete(row)
+        await session.flush()
+        result = await commit_with_reload(
+            session, reload_callable=reload_callable
+        )
+
+    logger.info(
+        "admin.memory.delete framework=%s status=%s",
+        framework,
+        result.status.value,
+    )
 
     return StandaloneMutationResponse(
         data=StandaloneSingletonDeleteResult(),
-        reload=_DELETE_RELOAD,
+        reload=result,
     )
