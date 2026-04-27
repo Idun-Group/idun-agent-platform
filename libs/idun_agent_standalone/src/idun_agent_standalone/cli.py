@@ -8,9 +8,10 @@ once before the first ``serve``. ``--config PATH`` overrides
 ``IDUN_CONFIG_PATH``.
 
 ``serve`` runs the FastAPI app under uvicorn. The engine routes and
-the admin REST surface live on the same FastAPI instance and share
-the same event loop. Settings come from env so the same command line
-works in dev, laptop, and Cloud Run without flag wrangling.
+the admin REST surface live on the same FastAPI instance. Boot reads
+the DB once in a temp asyncio loop, then hands off to ``uvicorn.run``
+which owns its own loop. Settings come from env so the same command
+line works in dev, laptop, and Cloud Run without flag wrangling.
 """
 
 from __future__ import annotations
@@ -48,27 +49,14 @@ def setup_cmd(config_path_override: str | None) -> None:
 def serve_cmd() -> None:
     """Run the standalone server (engine routes plus admin REST)."""
     setup_logging()
-    asyncio.run(_serve())
-
-
-async def _serve() -> None:
     from idun_agent_standalone.app import create_standalone_app
 
     logger = get_logger(__name__)
     settings = StandaloneSettings()
     logger.info("serve host=%s port=%s", settings.host, settings.port)
 
-    app = await create_standalone_app(settings)
-
-    server = uvicorn.Server(
-        uvicorn.Config(
-            app,
-            host=settings.host,
-            port=settings.port,
-            log_config=None,
-        )
-    )
-    await server.serve()
+    app = asyncio.run(create_standalone_app(settings))
+    uvicorn.run(app, host=settings.host, port=settings.port)
 
 
 async def _setup(config_path_override: str | None) -> None:

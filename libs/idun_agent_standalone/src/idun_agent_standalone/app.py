@@ -1,19 +1,21 @@
 """FastAPI app composition for the standalone runtime.
 
-One async factory, ``create_standalone_app``, builds the engine FastAPI
-app and layers the admin REST surface plus the bundled UI onto the
-same instance. The DB read needed to assemble the engine config runs
-in the same event loop that uvicorn will use to serve requests, so
-async resources (the SQLAlchemy engine, the LLM SDK's httpx pool) all
-live in one loop.
+``create_standalone_app`` is an async factory that opens the DB,
+assembles the engine config, builds the engine FastAPI app, layers
+the admin REST surface plus the bundled UI, and wraps the engine's
+lifespan so the DB engine is disposed at shutdown.
 
-When assembly fails (no agent row, corrupted base config) the engine
-layer is skipped and only the admin surface comes up so the operator
-can still inspect and fix the install through the admin API.
+The DB engine is created during boot and kept alive on ``app.state``.
+SQLAlchemy AsyncEngine is loop agnostic, so the same engine works
+across the boot loop and uvicorn's loop. Callers run this via
+``asyncio.run(create_standalone_app(settings))`` then hand the
+returned app to ``uvicorn.run`` synchronously.
 """
 
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -41,13 +43,7 @@ logger = get_logger(__name__)
 
 
 def _resolve_ui_dir(settings: StandaloneSettings) -> Path | None:
-    """Return a UI directory iff it actually contains a built SPA.
-
-    Honors ``IDUN_UI_DIR`` first, then falls back to the bundled
-    ``static/`` directory shipped with the wheel. Presence of
-    ``index.html`` is the signal so an empty ``static/`` placeholder
-    does not register a catch all.
-    """
+    """Return a UI directory iff it actually contains a built SPA."""
     if settings.ui_dir is not None:
         candidate = Path(settings.ui_dir)
         if candidate.is_dir() and (candidate / "index.html").is_file():
@@ -61,17 +57,12 @@ def _resolve_ui_dir(settings: StandaloneSettings) -> Path | None:
 async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     """Build the standalone FastAPI app.
 
-    Reads the standalone DB to assemble the engine config, builds the
-    engine app on top of that config, then attaches admin handlers,
-    admin routers, the runtime config bootstrap, and the bundled UI.
-    The DB engine and sessionmaker stay on ``app.state`` for admin
-    routers to use across the rest of the process lifetime.
+    Reads the DB to assemble the engine config, builds the engine app,
+    attaches admin handlers/routers, and wraps the engine lifespan so
+    the DB engine is disposed at shutdown. The DB engine is kept alive
+    on ``app.state`` and survives the boot loop closing.
     """
-    logger.info(
-        "boot start db_url=%s auth_mode=%s",
-        settings.database_url,
-        settings.auth_mode.value,
-    )
+    logger.info("boot start auth_mode=%s", settings.auth_mode.value)
 
     db_engine = create_db_engine(settings.database_url)
     sessionmaker = create_sessionmaker(db_engine)
@@ -98,6 +89,21 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.state.db_engine = db_engine
     app.state.sessionmaker = sessionmaker
 
+    original_lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def standalone_lifespan(app: FastAPI):
+        try:
+            async with original_lifespan(app):
+                # Let queued tasks from engine startup run before the
+                # first request. Without this /agent/run stalls.
+                await asyncio.sleep(0)
+                yield
+        finally:
+            await db_engine.dispose()
+
+    app.router.lifespan_context = standalone_lifespan
+
     register_admin_exception_handlers(app)
     app.include_router(auth_router)
     app.include_router(agent_router)
@@ -109,7 +115,11 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         app.router.routes = [
             r
             for r in app.router.routes
-            if not (isinstance(r, APIRoute) and r.path == "/")
+            if not (
+                isinstance(r, APIRoute)
+                and r.path == "/"
+                and "GET" in r.methods
+            )
         ]
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
         logger.info("boot ui mounted from=%s", ui_dir)
