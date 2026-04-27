@@ -218,49 +218,72 @@ Patterns to copy:
 
 Why: explicit-null rejection at the Pydantic layer keeps the router free of `if body.name is None: ...` boilerplate. Read models projecting from ORM rows avoid hand-written `to_dict()`-style converters.
 
-### 4.3 Collection resource schemas — FORWARD
+### 4.3 Collection resource schemas — ESTABLISHED
 
-For Phase 5 collection resources (`mcp_servers`, `observability`, `integrations`, `prompts`, `guardrails`), the schema skeleton is:
+Five collection resources land in Phase 2. Each follows the same Read/Create/Patch pattern and is anchored to the manager-shape config it wraps.
+
+| Module | Read class line | Wraps | Conversion at assembly |
+| --- | --- | --- | --- |
+| `guardrails.py` | `26` | `ManagerGuardrailConfig` | `convert_guardrail()` reused from manager |
+| `mcp_servers.py` | `23` | `MCPServer` (engine) | none |
+| `observability.py` | `21` | `ObservabilityConfig` (V2 engine) | none |
+| `integrations.py` | `23` | `IntegrationConfig` (engine) | inner `enabled` overwritten at assembly to match standalone row |
+| `prompts.py` | `24` | `ManagedPromptCreate/Read/Patch` (manager) | content-vs-tags split (PATCH only `tags`; content patches POST a new version) |
+
+Reference snippet — the standard collection shape (mcp_servers as the cleanest example), at `libs/idun_agent_schema/src/idun_agent_schema/standalone/mcp_servers.py`:
 
 ```python
-# FORWARD — skeleton derived from spec; refine in Phase 2 / Phase 5
-class Standalone<Resource>Read(_CamelModel):
+class StandaloneMCPServerRead(_CamelModel):
+    """GET response and the data payload of POST/PATCH/DELETE responses."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
     slug: str
     name: str
     enabled: bool
-    # position: Literal["input", "output"]   # guardrails only
-    # sort_order: int                         # guardrails only
-    <inner_field>: <ManagerShape>             # see Stored shape rule below
+    mcp_server: MCPServer
     created_at: datetime
     updated_at: datetime
 
 
-class Standalone<Resource>Create(_CamelModel):
+class StandaloneMCPServerCreate(_CamelModel):
+    """Body for POST /admin/api/v1/mcp-servers."""
+
     name: str
     enabled: bool = True
-    <inner_field>: <ManagerShape>
+    mcp_server: MCPServer
 
 
-class Standalone<Resource>Patch(_CamelModel):
+class StandaloneMCPServerPatch(_CamelModel):
+    """Body for PATCH /admin/api/v1/mcp-servers/{id}."""
+
     name: str | None = None
     enabled: bool | None = None
-    <inner_field>: <ManagerShape> | None = None  # full nested replace; see §6.3
+    mcp_server: MCPServer | None = None
+
+    @model_validator(mode="after")
+    def _no_null_name(self) -> Self:
+        if "name" in self.model_fields_set and self.name is None:
+            raise ValueError("name cannot be null")
+        return self
 ```
 
-Stored shape per resource (cite the manager Pydantic model, not the engine model — see §14):
+Patterns to copy in Phase 5+ collection routers:
 
-| Resource | `<inner_field>` | `<ManagerShape>` | Source module |
-| --- | --- | --- | --- |
-| MCP servers | `mcp_server` | `MCPServer` | `idun_agent_schema.engine.mcp_server` (manager uses engine shape directly) |
-| Observability | `observability` | `ObservabilityConfig` | `idun_agent_schema.engine.observability_v2` (manager uses engine shape directly) |
-| Integrations | `integration` | `IntegrationConfig` | `idun_agent_schema.engine.integrations` (manager uses engine shape directly) |
-| Guardrails | `guardrail` | `ManagerGuardrailConfig` | `idun_agent_schema.manager.guardrail_configs` (manager wraps; converted at assembly via `convert_guardrail`) |
-| Prompts | versioned (`prompt_id`, `version`, `content`, `tags`) | `ManagedPromptCreate/Read/Patch` | `idun_agent_schema.manager.managed_prompt` (append-only versioning) |
+- Read variants set `model_config = ConfigDict(from_attributes=True)` so they project from SQLAlchemy rows directly via `Model.model_validate(row)`.
+- Create variants default `enabled=True`.
+- Patch variants reject explicit-null on `name` via `_no_null_name` (mirrors agent.py:57-61). Prompts uses `_no_null_tags` instead because the null-vs-empty-list ambiguity on `tags` warrants explicit disambiguation.
+- Inner config field (`mcp_server`, `observability`, `integration`, `guardrail`) accepts the wrapped shape unchanged on input; outbound wire format follows the wrapped shape's own aliasing rules.
 
-Why: spec §"Stored shape rule" requires manager-shape JSON in the DB. Three of the five collections share the engine shape with the manager (no conversion needed at assembly). Two require a converter that already exists in the manager and is reused.
+Special case — guardrails fold M:N junction columns:
+
+- `position: Literal["input", "output"]` and `sort_order: int` (with `Field(ge=0)`) live on the row, not in a junction table.
+
+Special case — prompts skip slug + enabled:
+
+- `prompts.py` has neither `slug` nor `enabled`.
+- `StandalonePromptPatch` declares only `tags`. Posting a new version is the way to change content; the schema makes that explicit by not declaring a `content` field on Patch (Pydantic silently drops unknown keys).
 
 ---
 
@@ -858,6 +881,8 @@ boot
        → on failure: state = error; admin API still serves so the operator can fix the config
 ```
 
+The cold-start state values are defined as the `StandaloneRuntimeStatusKind` enum at `libs/idun_agent_schema/src/idun_agent_schema/standalone/runtime_status.py:28`. The full runtime status payload that surfaces the state at `GET /admin/api/v1/runtime/status` is `StandaloneRuntimeStatus` in the same module.
+
 Invariant: the admin API and `/health` MUST come up even when the engine fails to start.
 
 `GET /admin/api/v1/agent` when `state == not_configured` returns 404 (`code = not_found`) so the UI can render an onboarding prompt. Phase 1's `_load_agent` already does this (cite at `api/v1/routers/agent.py:51-68`).
@@ -982,6 +1007,20 @@ ESTABLISHED references for the singleton variants:
 
 - `standalone_agent` mirrors `managed_agents` minus `workspace_id` / `memory_id` / `sso_id`. See `infrastructure/db/models/agent.py:19-46`.
 - `standalone_memory` mirrors `managed_memories` minus `workspace_id`, with PK fixed to `"singleton"`. See `infrastructure/db/models/memory.py:14-32`.
+
+### 14.4 ESTABLISHED references — Phase 2 collections
+
+Each collection schema in `idun_agent_schema/standalone/` wraps a manager-shape config. The wrapping is direct (no field renaming, no nested transformation); only the standalone row-level fields (`id`, `slug`, `name`, `enabled`, plus per-resource specials) sit alongside the inner config.
+
+| Standalone schema | File:line | Wraps | Source path |
+| --- | --- | --- | --- |
+| `StandaloneGuardrailRead/Create/Patch` | `guardrails.py:26` | `ManagerGuardrailConfig` | `idun_agent_schema/manager/guardrail_configs.py` |
+| `StandaloneMCPServerRead/Create/Patch` | `mcp_servers.py:23` | `MCPServer` | `idun_agent_schema/engine/mcp_server.py` |
+| `StandaloneObservabilityRead/Create/Patch` | `observability.py:21` | `ObservabilityConfig` (V2) | `idun_agent_schema/engine/observability_v2.py` |
+| `StandaloneIntegrationRead/Create/Patch` | `integrations.py:23` | `IntegrationConfig` | `idun_agent_schema/engine/integrations` |
+| `StandalonePromptRead/Create/Patch` | `prompts.py:24` | (mirrors) `ManagedPromptCreate/Read/Patch` | `idun_agent_schema/manager/managed_prompt.py` |
+
+Phase 4 ORM modules apply the §14.3 audit checklist to the corresponding `StandaloneXRow` SQLAlchemy declarations; the wrapping shape lands here at the schema layer.
 
 ---
 
