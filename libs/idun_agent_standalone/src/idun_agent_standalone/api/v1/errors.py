@@ -153,9 +153,15 @@ async def admin_unhandled_exception_handler(
 
 
 def register_admin_exception_handlers(app: FastAPI) -> None:
-    """Wire the admin envelope handlers on the given FastAPI app."""
+    """Wire the admin envelope handlers on the given FastAPI app.
+
+    The ``Exception`` handler is intentionally not registered. A global
+    catch all interferes with the engine's streaming ``/agent/run`` route
+    because Starlette tries to render an envelope after headers have
+    already been sent, which hangs the connection. Unhandled errors on
+    admin routes fall through to FastAPI's default 500.
+    """
     app.add_exception_handler(AdminAPIError, admin_api_error_handler)
     app.add_exception_handler(
         RequestValidationError, admin_request_validation_handler
     )
-    app.add_exception_handler(Exception, admin_unhandled_exception_handler)

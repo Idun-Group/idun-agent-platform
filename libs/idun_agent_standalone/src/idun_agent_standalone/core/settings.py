@@ -32,3 +32,4 @@ class StandaloneSettings(BaseSettings):
         alias="DATABASE_URL",
     )
     auth_mode: AuthMode = Field(default=AuthMode.NONE, alias="IDUN_ADMIN_AUTH_MODE")
+    ui_dir: Path | None = Field(default=None, alias="IDUN_UI_DIR")

@@ -1,117 +1,103 @@
-"""Command-line entry point for idun-agent-standalone.
+"""Command line entry point for ``idun-standalone``.
 
-Subcommands implemented in Phase 1: ``hash-password``. Other subcommands
-(``serve``, ``export``, ``import``, ``db migrate``, ``init``) are wired here
-but raise ``NotImplementedError`` until later phases provide their runtime
-helpers. The CLI surface itself is stable from this point on.
+Two commands.
+
+``setup`` creates the standalone DB schema and seeds the agent and
+memory rows from a YAML config if the DB is empty. Operator invoked
+once before the first ``serve``. ``--config PATH`` overrides
+``IDUN_CONFIG_PATH``.
+
+``serve`` runs the FastAPI app under uvicorn. The engine routes and
+the admin REST surface live on the same FastAPI instance and share
+the same event loop. Settings come from env so the same command line
+works in dev, laptop, and Cloud Run without flag wrangling.
 """
 
 from __future__ import annotations
 
-import bcrypt
+import asyncio
+from pathlib import Path
+
 import click
+import uvicorn
+
+from idun_agent_standalone.core.logging import get_logger, setup_logging
+from idun_agent_standalone.core.settings import StandaloneSettings
 
 
 @click.group()
 def main() -> None:
-    """Idun Agent Standalone — self-sufficient single-agent deployment."""
+    """Idun Agent Standalone CLI."""
+
+
+@main.command("setup")
+@click.option(
+    "--config",
+    "config_path_override",
+    type=click.Path(),
+    default=None,
+    help="Path to YAML config. Overrides IDUN_CONFIG_PATH.",
+)
+def setup_cmd(config_path_override: str | None) -> None:
+    """Create DB schema and seed from YAML if the DB is empty."""
+    setup_logging()
+    asyncio.run(_setup(config_path_override))
 
 
 @main.command("serve")
-@click.option("--config", "config_path", type=click.Path(), default=None)
-@click.option("--host", default=None)
-@click.option("--port", default=None, type=int)
-@click.option("--auth-mode", default=None, type=click.Choice(["none", "password", "oidc"]))
-@click.option("--ui-dir", default=None, type=click.Path())
-@click.option("--database-url", default=None)
-def serve(
-    config_path: str | None,
-    host: str | None,
-    port: int | None,
-    auth_mode: str | None,
-    ui_dir: str | None,
-    database_url: str | None,
-) -> None:
-    """Run the standalone server."""
-    from idun_agent_standalone.runtime import run_server
+def serve_cmd() -> None:
+    """Run the standalone server (engine routes plus admin REST)."""
+    setup_logging()
+    asyncio.run(_serve())
 
-    run_server(
-        config_path=config_path,
-        host=host,
-        port=port,
-        auth_mode=auth_mode,
-        ui_dir=ui_dir,
-        database_url=database_url,
+
+async def _serve() -> None:
+    from idun_agent_standalone.app import create_standalone_app
+
+    logger = get_logger(__name__)
+    settings = StandaloneSettings()
+    logger.info("serve host=%s port=%s", settings.host, settings.port)
+
+    app = await create_standalone_app(settings)
+
+    server = uvicorn.Server(
+        uvicorn.Config(
+            app,
+            host=settings.host,
+            port=settings.port,
+            log_config=None,
+        )
+    )
+    await server.serve()
+
+
+async def _setup(config_path_override: str | None) -> None:
+    from idun_agent_standalone.infrastructure.db.session import (
+        create_db_engine,
+        create_sessionmaker,
+    )
+    from idun_agent_standalone.infrastructure.scripts.seed import (
+        create_tables,
+        seed_from_yaml_if_empty,
     )
 
-
-@main.command("hash-password")
-@click.option("--password", prompt=True, hide_input=True, confirmation_prompt=False)
-def hash_password(password: str) -> None:
-    """Print a bcrypt hash for IDUN_ADMIN_PASSWORD_HASH."""
-    h = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-    click.echo(h.decode("utf-8"))
-
-
-@main.command("export")
-def export_cmd() -> None:
-    """Dump current DB state as YAML to stdout."""
-    import sys
-
-    from idun_agent_standalone.runtime import export_to_yaml_sync
-
-    sys.stdout.write(export_to_yaml_sync())
-
-
-@main.command("import")
-@click.argument("file", type=click.Path(exists=True))
-def import_cmd(file: str) -> None:
-    """Load a YAML file into the DB (replaces current state)."""
-    from idun_agent_standalone.runtime import import_from_yaml_sync
-
-    import_from_yaml_sync(file)
-    click.echo("Imported.")
-
-
-@main.group("db")
-def db_group() -> None:
-    """Database administration."""
-
-
-@db_group.command("migrate")
-def db_migrate() -> None:
-    """Run Alembic migrations to the latest head."""
-    from idun_agent_standalone.db.migrate import upgrade_head
-
-    upgrade_head()
-    click.echo("DB migrated.")
-
-
-@main.command("init")
-@click.argument("name", required=False)
-@click.option(
-    "--target",
-    "target",
-    type=click.Path(),
-    default=None,
-    help="Directory to scaffold into (defaults to ./<name>).",
-)
-@click.option(
-    "--force",
-    is_flag=True,
-    default=False,
-    help="Overwrite an existing non-empty directory.",
-)
-def init_cmd(name: str | None, target: str | None, force: bool) -> None:
-    """Scaffold a new agent project directory."""
-    from pathlib import Path
-
-    from idun_agent_standalone.scaffold import scaffold_project
-
-    project_name = name or "my-agent"
-    target_dir = Path(target) if target else None
-    scaffolded = scaffold_project(project_name, target_dir, force=force)
-    click.echo(
-        f"Scaffolded {scaffolded}. Next: "
-        f"cd {scaffolded.name} && cp .env.example .env && idun-standalone serve"
+    logger = get_logger(__name__)
+    settings = StandaloneSettings()
+    config_path = (
+        Path(config_path_override) if config_path_override else settings.config_path
     )
+    logger.info(
+        "setup start db_url=%s config_path=%s",
+        settings.database_url,
+        config_path,
+    )
+
+    db_engine = create_db_engine(settings.database_url)
+    sessionmaker = create_sessionmaker(db_engine)
+    try:
+        await create_tables(db_engine)
+        await seed_from_yaml_if_empty(sessionmaker, config_path)
+    finally:
+        await db_engine.dispose()
+
+    logger.info("setup complete")
