@@ -62,7 +62,7 @@ make lint
 Expected: exit 0. If non-empty output: STOP — lint debt should have been autofixed in `chore(rework-phase1)` commit `d3369bbc` or equivalent.
 
 ```bash
-uv run mypy \
+uv run mypy --follow-imports=silent \
   libs/idun_agent_schema/src/idun_agent_schema/standalone \
   libs/idun_agent_standalone/src/idun_agent_standalone/api \
   libs/idun_agent_standalone/src/idun_agent_standalone/core \
@@ -776,7 +776,7 @@ If it fails: fix the lint errors. If they're in legacy-tree files, that's a pre-
 
 Run:
 ```bash
-uv run mypy \
+uv run mypy --follow-imports=silent \
   libs/idun_agent_schema/src/idun_agent_schema/standalone \
   libs/idun_agent_standalone/src/idun_agent_standalone/api \
   libs/idun_agent_standalone/src/idun_agent_standalone/core \
