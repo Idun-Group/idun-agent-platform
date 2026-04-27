@@ -8,11 +8,11 @@ wires four things.
 typed admin error. The handler renders the body as
 ``{"error": StandaloneAdminError}``.
 
-``admin_request_validation_handler`` translates round one body
-validation failures (Pydantic) into the same envelope, so the UI sees
-one error shape across all three validation rounds. Non admin paths
-fall through to a default 422 shape so engine routes keep their own
-contract.
+``admin_request_validation_handler`` translates Pydantic body
+validation failures into the same envelope so the UI sees one error
+shape from body validation and from cross resource assembly checks
+alike. Non admin paths fall through to a default 422 shape so engine
+routes keep their own contract.
 
 ``admin_unhandled_exception_handler`` catches anything else that
 bubbles out of an admin route (DB errors, corrupted row decode, etc.)
@@ -20,8 +20,9 @@ and renders it as ``internal_error`` so admin clients always see the
 same envelope. Non admin paths fall through to a generic 500.
 
 ``field_errors_from_validation_error`` is the helper routers use when
-they catch a Pydantic ``ValidationError`` raised by round two assembly,
-so they can attach structured ``field_errors`` to a 422 response.
+they catch a Pydantic ``ValidationError`` raised during cross resource
+config assembly, so they can attach structured ``field_errors`` to a
+422 response.
 """
 
 from __future__ import annotations
@@ -94,7 +95,7 @@ async def admin_api_error_handler(
 async def admin_request_validation_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    """Render round one body validation failures in the admin envelope.
+    """Render Pydantic body validation failures in the admin envelope.
 
     Only applies to admin paths. Non admin paths fall through to a
     minimal default 422 shape so the engine's own routes keep their
@@ -153,15 +154,9 @@ async def admin_unhandled_exception_handler(
 
 
 def register_admin_exception_handlers(app: FastAPI) -> None:
-    """Wire the admin envelope handlers on the given FastAPI app.
-
-    The ``Exception`` handler is intentionally not registered. A global
-    catch all interferes with the engine's streaming ``/agent/run`` route
-    because Starlette tries to render an envelope after headers have
-    already been sent, which hangs the connection. Unhandled errors on
-    admin routes fall through to FastAPI's default 500.
-    """
+    """Wire the admin envelope handlers on the given FastAPI app."""
     app.add_exception_handler(AdminAPIError, admin_api_error_handler)
     app.add_exception_handler(
         RequestValidationError, admin_request_validation_handler
     )
+    app.add_exception_handler(Exception, admin_unhandled_exception_handler)

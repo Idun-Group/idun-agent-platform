@@ -8,6 +8,7 @@ from .common import (  # noqa: F401
     StandaloneDeleteResult,
     StandaloneMutationResponse,
     StandaloneResourceIdentity,
+    StandaloneSingletonDeleteResult,
 )
 from .errors import (  # noqa: F401
     StandaloneAdminError,

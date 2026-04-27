@@ -24,6 +24,16 @@ class StandaloneDeleteResult(_CamelModel):
     deleted: Literal[True] = True
 
 
+class StandaloneSingletonDeleteResult(_CamelModel):
+    """Body of a DELETE response for a singleton resource.
+
+    Singleton resources (memory, future ones) are addressed by route
+    instead of by id, so the response carries only the deletion flag.
+    """
+
+    deleted: Literal[True] = True
+
+
 T = TypeVar("T")
 
 

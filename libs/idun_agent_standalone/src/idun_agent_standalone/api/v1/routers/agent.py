@@ -37,9 +37,14 @@ router = APIRouter(prefix="/admin/api/v1/agent", tags=["admin", "agent"])
 
 logger = get_logger(__name__)
 
-_PLACEHOLDER_RELOAD = StandaloneReloadResult(
+_SAVED_RELOAD = StandaloneReloadResult(
     status=StandaloneReloadStatus.RESTART_REQUIRED,
     message="Saved. Restart required to apply.",
+)
+
+_NOOP_RELOAD = StandaloneReloadResult(
+    status=StandaloneReloadStatus.RELOADED,
+    message="No changes.",
 )
 
 
@@ -83,24 +88,19 @@ async def patch_agent(
     still returns the current row with the placeholder reload result.
     """
     fields = body.model_fields_set
-    logger.debug("admin.agent.patch start fields=%s", sorted(fields))
-
     row = await _load_agent(session)
 
     if not fields:
-        logger.info("admin.agent.patch noop id=%s", row.id)
+        logger.debug("admin.agent.patch noop id=%s", row.id)
         return StandaloneMutationResponse(
             data=StandaloneAgentRead.model_validate(row),
-            reload=_PLACEHOLDER_RELOAD,
+            reload=_NOOP_RELOAD,
         )
 
     for field in fields:
         setattr(row, field, getattr(body, field))
-    logger.debug("admin.agent.patch staged id=%s fields=%s", row.id, sorted(fields))
 
     await session.commit()
-    logger.debug("admin.agent.patch committed id=%s", row.id)
-
     await session.refresh(row)
 
     logger.info(
@@ -112,5 +112,5 @@ async def patch_agent(
 
     return StandaloneMutationResponse(
         data=StandaloneAgentRead.model_validate(row),
-        reload=_PLACEHOLDER_RELOAD,
+        reload=_SAVED_RELOAD,
     )
