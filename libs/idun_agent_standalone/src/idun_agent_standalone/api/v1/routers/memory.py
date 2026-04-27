@@ -122,9 +122,9 @@ async def patch_memory(
     """
     fields = body.model_fields_set
     row = await _load_row(session)
-    creating = row is None
 
-    if creating:
+    if row is None:
+        creating = True
         missing: list[str] = []
         if "agent_framework" not in fields or body.agent_framework is None:
             missing.append("agentFramework")
@@ -153,6 +153,7 @@ async def patch_memory(
         )
         session.add(row)
     else:
+        creating = False
         if not fields:
             logger.debug("admin.memory.patch noop")
             return StandaloneMutationResponse(
