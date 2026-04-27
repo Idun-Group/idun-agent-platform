@@ -106,6 +106,7 @@ The audit verifies these ten classes of pattern. Drift in any of them is a patte
 8. **Singleton route shape.** Singleton resources (agent, memory) use no-`{id}` routes (`/admin/api/v1/agent`, `/admin/api/v1/memory`). DB row PK is fixed (e.g. `"singleton"` for memory; UUID held for cross-system identity but not used in URLs). No slug-based lookup for singletons.
 9. **Schema namespace usage.** Routers import their request/response shapes from `idun_agent_schema.standalone.*`, not from inline definitions or local stub modules.
 10. **Forbidden patterns.** Cross-cuts the above: no `from app.*` imports, no 202 for restart_required, no deep-merge PATCH, no association tables, no `workspace_id` columns, no engine-shape JSON in DB columns.
+11. **Type safety in new-tree files.** Mypy errors in any new-tree file (`idun_agent_schema/standalone/`, `idun_agent_standalone/{api,core,services,infrastructure}/`) are pattern-breakers because they indicate real bugs (e.g. None-handling on singleton rows would crash cold-start) and would copy-paste forward into Phase 5 collection routers. Pre-existing mypy errors elsewhere (engine, manager, legacy tree) are NOT in this class — they are deferred to their own owning area.
 
 Drift CLASSED AS DEFERRED (will land in a later phase, not fixed in Phase 1):
 
