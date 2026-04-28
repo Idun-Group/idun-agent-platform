@@ -366,20 +366,44 @@ def _iter_idun_config_paths(root: Path, *, max_depth: int):
                 yield path
 
 
+_CONFIDENCE_ORDER = {"HIGH": 2, "MEDIUM": 1}
+
+
+def _dedup(detections: list[DetectedAgent]) -> list[DetectedAgent]:
+    """Collapse entries sharing ``(file_path, variable_name)`` to the highest-confidence one.
+
+    Insertion order is preserved for the surviving entry. Ties on
+    confidence keep the first occurrence (i.e. the order
+    ``_detect_in_idun_config`` → ``_detect_in_langgraph_json`` →
+    ``_detect_in_source`` in ``scan_folder`` defines preference).
+    """
+    by_key: dict[tuple[str, str], DetectedAgent] = {}
+    for d in detections:
+        key = (d.file_path, d.variable_name)
+        existing = by_key.get(key)
+        if existing is None:
+            by_key[key] = d
+            continue
+        if _CONFIDENCE_ORDER[d.confidence] > _CONFIDENCE_ORDER[existing.confidence]:
+            by_key[key] = d
+    return list(by_key.values())
+
+
 async def scan_folder(root: Path) -> ScanResult:
     """Walk ``root`` and return a ``ScanResult``."""
     started = time.monotonic()
     has_python_files = False
-    detected: list[DetectedAgent] = []
+    raw: list[DetectedAgent] = []
 
     config_detections, has_idun_config = _detect_in_idun_config(root)
-    detected.extend(config_detections)
-    detected.extend(_detect_in_langgraph_json(root))
+    raw.extend(config_detections)
+    raw.extend(_detect_in_langgraph_json(root))
 
     for rel, abs_path in _walk(root):
         has_python_files = True
-        detected.extend(_detect_in_source(rel, abs_path))
+        raw.extend(_detect_in_source(rel, abs_path))
 
+    detected = _dedup(raw)
     duration_ms = int((time.monotonic() - started) * 1000)
     return ScanResult(
         root=str(root),

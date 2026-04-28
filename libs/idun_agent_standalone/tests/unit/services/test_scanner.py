@@ -318,3 +318,59 @@ async def test_idun_config_unsupported_type_skipped(tmp_path: Path) -> None:
     result = await scan_folder(tmp_path)
     assert result.has_idun_config is False
     assert result.detected == []
+
+
+async def test_dedup_config_over_source(tmp_path: Path) -> None:
+    """Config (HIGH) and source (MEDIUM) on same file:var → 1 entry, HIGH wins."""
+    (tmp_path / "agent.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(int).compile()\n"
+    )
+    (tmp_path / "config.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "agent": {
+                    "type": "LANGGRAPH",
+                    "config": {
+                        "name": "From config",
+                        "graph_definition": "./agent.py:graph",
+                    },
+                }
+            }
+        )
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.confidence == "HIGH"
+    assert d.source == "config"
+    assert d.inferred_name == "From config"
+
+
+async def test_dedup_langgraph_json_over_source(tmp_path: Path) -> None:
+    (tmp_path / "agent.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(int).compile()\n"
+    )
+    (tmp_path / "langgraph.json").write_text(
+        json.dumps({"graphs": {"helpdesk": "./agent.py:graph"}})
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.source == "langgraph_json"
+    assert d.inferred_name == "helpdesk"
+
+
+async def test_distinct_files_not_deduped(tmp_path: Path) -> None:
+    """Two genuinely different agents both surface."""
+    (tmp_path / "alpha.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(int).compile()\n"
+    )
+    (tmp_path / "beta.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(int).compile()\n"
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 2
