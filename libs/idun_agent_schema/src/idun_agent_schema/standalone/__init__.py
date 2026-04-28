@@ -49,7 +49,6 @@ from .memory import (  # noqa: F401
     StandaloneMemoryRead,
 )
 from .observability import (  # noqa: F401
-    StandaloneObservabilityCreate,
     StandaloneObservabilityPatch,
     StandaloneObservabilityRead,
 )
