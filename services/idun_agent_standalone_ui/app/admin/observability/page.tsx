@@ -84,23 +84,11 @@ function configToValues(
   enabled: boolean,
   config: Record<string, unknown>,
 ): ProviderValues {
-  // Map across provider naming variants so existing payloads round-trip.
-  const publicKey =
-    typeof config.public_key === "string"
-      ? (config.public_key as string)
-      : typeof config.api_key === "string"
-        ? (config.api_key as string)
-        : "";
-  const secretKey =
-    typeof config.secret_key === "string" ? (config.secret_key as string) : "";
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  const publicKey = str(config.publicKey) || str(config.apiKey);
+  const secretKey = str(config.secretKey);
   const host =
-    typeof config.host === "string"
-      ? (config.host as string)
-      : typeof config.endpoint === "string"
-        ? (config.endpoint as string)
-        : typeof config.collector_endpoint === "string"
-          ? (config.collector_endpoint as string)
-          : "";
+    str(config.host) || str(config.endpoint) || str(config.collectorEndpoint);
   return { enabled, public_key: publicKey, secret_key: secretKey, host };
 }
 
@@ -136,7 +124,7 @@ export default function ObservabilityPage() {
     queryFn: api.getObservability,
   });
 
-  const initial = useMemo(() => readObs(data?.config), [data]);
+  const initial = useMemo(() => readObs(data?.observability), [data]);
   const [activeProvider, setActiveProvider] = useState<Provider>(
     initial.provider,
   );
@@ -159,22 +147,25 @@ export default function ObservabilityPage() {
   });
 
   const save = useMutation({
-    mutationFn: (next: Record<string, unknown>) =>
-      api.putObservability({ config: next }),
-    onSuccess: (resp: unknown) => {
-      const r = resp as { restart_required?: boolean };
-      if (r?.restart_required) {
+    mutationFn: (next: ObsConfig) =>
+      api.patchObservability({ observability: next }),
+    onSuccess: (resp) => {
+      if (resp.reload.status === "restart_required") {
         setRestartRequired(true);
-        toast.warning("Restart required to apply this change.");
+        toast.warning(resp.reload.message);
+      } else if (resp.reload.status === "reload_failed") {
+        setRestartRequired(false);
+        toast.error(resp.reload.error ?? resp.reload.message);
       } else {
         setRestartRequired(false);
-        toast.success("Saved & reloaded");
+        toast.success(resp.reload.message);
       }
       qc.invalidateQueries({ queryKey: ["observability"] });
     },
-    onError: (e: unknown) => {
+    onError: (e) => {
       const detail = e instanceof ApiError ? e.detail : undefined;
-      const message = (detail as { message?: string } | undefined)?.message;
+      const message = (detail as { error?: { message?: string } } | undefined)?.error
+        ?.message;
       toast.error(message ?? "Save failed");
     },
   });
