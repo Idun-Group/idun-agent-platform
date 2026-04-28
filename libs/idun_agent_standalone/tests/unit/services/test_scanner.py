@@ -56,3 +56,95 @@ async def test_depth_limit_4(tmp_path: Path) -> None:
     # Depth ≤ 4 means up to 4 path components below the root, so
     # ``a/b/c/d/shallow.py`` is in (4 components) and ``e/deep.py`` is out.
     assert result.has_python_files is True  # shallow.py was visited
+
+
+async def test_detect_minimal_langgraph(tmp_path: Path) -> None:
+    (tmp_path / "agent.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(int).compile()\n"
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.framework == "LANGGRAPH"
+    assert d.file_path == "agent.py"
+    assert d.variable_name == "graph"
+    assert d.confidence == "MEDIUM"
+    assert d.source == "source"
+
+
+async def test_detect_uncompiled_langgraph(tmp_path: Path) -> None:
+    """A bare StateGraph(...) assignment counts."""
+    (tmp_path / "agent.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(int)\n"
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "graph"
+
+
+async def test_detect_compiled_via_intermediate(tmp_path: Path) -> None:
+    """g = StateGraph(...); graph = g.compile() → 1 detection on the compiled binding."""
+    (tmp_path / "agent.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "g = StateGraph(int)\n"
+        "graph = g.compile()\n"
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "graph"
+
+
+async def test_no_false_positive_on_unrelated_compile(tmp_path: Path) -> None:
+    """``something.compile()`` with no traceable StateGraph receiver is ignored."""
+    (tmp_path / "noise.py").write_text(
+        "import re\n"
+        "pat = re.compile(r'x')\n"
+    )
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_detect_minimal_adk(tmp_path: Path) -> None:
+    (tmp_path / "agent.py").write_text(
+        "from google.adk.agents import Agent\n"
+        "root_agent = Agent(name='x')\n"
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.framework == "ADK"
+    assert d.variable_name == "root_agent"
+    assert d.source == "source"
+
+
+async def test_detect_adk_subclasses(tmp_path: Path) -> None:
+    """LlmAgent / SequentialAgent / ParallelAgent / LoopAgent all count."""
+    src = (
+        "from google.adk.agents import LlmAgent, SequentialAgent\n"
+        "from google.adk.agents import ParallelAgent, LoopAgent\n"
+        "a = LlmAgent(name='a')\n"
+        "b = SequentialAgent(name='b')\n"
+        "c = ParallelAgent(name='c')\n"
+        "d = LoopAgent(name='d')\n"
+    )
+    (tmp_path / "agents.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    names = {d.variable_name for d in result.detected}
+    assert names == {"a", "b", "c", "d"}
+
+
+async def test_skip_unparseable_source(tmp_path: Path) -> None:
+    """A SyntaxError in one file does not crash the scan."""
+    (tmp_path / "broken.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(int  # missing paren\n"
+    )
+    (tmp_path / "good.py").write_text(
+        "from langgraph.graph import StateGraph\n"
+        "graph = StateGraph(int).compile()\n"
+    )
+    result = await scan_folder(tmp_path)
+    files = {d.file_path for d in result.detected}
+    assert files == {"good.py"}

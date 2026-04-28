@@ -12,7 +12,9 @@ stdlib + pydantic + pyyaml. The five-state wizard classification is
 
 from __future__ import annotations
 
+import ast
 import os
+import re
 import time
 from pathlib import Path
 
@@ -38,6 +40,16 @@ _SKIP_DIRS = frozenset(
 _MAX_DEPTH = 4
 _MAX_FILE_BYTES = 1_000_000  # 1 MB
 
+_LANGGRAPH_IMPORT_RE = re.compile(
+    r"(?m)^\s*(from\s+langgraph[\s.]|import\s+langgraph)"
+)
+_ADK_IMPORT_RE = re.compile(
+    r"(?m)^\s*(from\s+google\.adk|import\s+google\.adk)"
+)
+_ADK_AGENT_CLASSES = frozenset(
+    {"Agent", "LlmAgent", "SequentialAgent", "ParallelAgent", "LoopAgent"}
+)
+
 
 def _is_skipped(name: str) -> bool:
     return name in _SKIP_DIRS or name.startswith(".")
@@ -53,8 +65,7 @@ def _walk(root: Path):
         rel = os.path.relpath(dirpath, root_str)
         depth = 0 if rel == "." else len(Path(rel).parts)
         if depth >= _MAX_DEPTH:
-            dirnames[:] = []  # do not descend further
-        # Prune skipped subdirs in-place so os.walk does not enter them.
+            dirnames[:] = []
         dirnames[:] = [d for d in dirnames if not _is_skipped(d)]
         for filename in filenames:
             if not filename.endswith(".py"):
@@ -70,19 +81,175 @@ def _walk(root: Path):
             yield posix_rel, abs_path
 
 
-async def scan_folder(root: Path) -> ScanResult:
-    """Walk ``root`` and return a ``ScanResult``.
+def _is_call_to(node: ast.AST, names: frozenset[str]) -> bool:
+    """True if ``node`` is a Call whose callable is a Name in ``names``."""
+    if not isinstance(node, ast.Call):
+        return False
+    func = node.func
+    if isinstance(func, ast.Name):
+        return func.id in names
+    return False
 
-    Async for caller ergonomics — the parent spec wraps this in a 5s
-    ``asyncio.wait_for`` budget at the API layer. The function itself
-    is CPU-bound and does not need true async IO.
-    """
+
+def _is_state_graph_call(node: ast.AST) -> bool:
+    return _is_call_to(node, frozenset({"StateGraph"}))
+
+
+def _is_adk_agent_call(node: ast.AST) -> bool:
+    return _is_call_to(node, _ADK_AGENT_CLASSES)
+
+
+def _module_compile_target(node: ast.AST, state_graph_bindings: set[str]) -> bool:
+    """True if ``node`` is ``<expr>.compile(...)`` where receiver is a known StateGraph."""
+    if not isinstance(node, ast.Call):
+        return False
+    func = node.func
+    if not isinstance(func, ast.Attribute) or func.attr != "compile":
+        return False
+    recv = func.value
+    return (isinstance(recv, ast.Name) and recv.id in state_graph_bindings) or (
+        isinstance(recv, ast.Call) and _is_state_graph_call(recv)
+    )
+
+
+def _detect_in_source(rel_path: str, abs_path: Path) -> list[DetectedAgent]:
+    """Return all source-detected agents from a single ``.py`` file."""
+    try:
+        text = abs_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+
+    has_lg = bool(_LANGGRAPH_IMPORT_RE.search(text))
+    has_adk = bool(_ADK_IMPORT_RE.search(text))
+    if not (has_lg or has_adk):
+        return []
+
+    try:
+        module = ast.parse(text)
+    except SyntaxError:
+        logger.debug("scanner: skip %s, syntax error", rel_path)
+        return []
+
+    found: list[DetectedAgent] = []
+    state_graph_bindings: set[str] = set()
+    compiled_from_binding: set[str] = set()
+
+    # First pass: collect StateGraph bindings so we can resolve `.compile()`.
+    for stmt in module.body:
+        targets = _assign_targets(stmt)
+        if not targets:
+            continue
+        rhs = _assign_rhs(stmt)
+        if rhs is None:
+            continue
+        if has_lg and _is_state_graph_call(rhs):
+            for name in targets:
+                state_graph_bindings.add(name)
+
+    # Second pass: emit detections.
+    for stmt in module.body:
+        targets = _assign_targets(stmt)
+        if not targets:
+            continue
+        rhs = _assign_rhs(stmt)
+        if rhs is None:
+            continue
+        target_name = targets[0]
+
+        if has_lg and _module_compile_target(rhs, state_graph_bindings):
+            # The compiled binding shadows the intermediate StateGraph
+            # binding (we only emit one detection per file/var).
+            compiled_from_binding.update(
+                _receiver_name(rhs)
+            )  # type: ignore[arg-type]
+            found.append(
+                DetectedAgent(
+                    framework="LANGGRAPH",
+                    file_path=rel_path,
+                    variable_name=target_name,
+                    inferred_name="",  # filled by inference cascade later
+                    confidence="MEDIUM",
+                    source="source",
+                )
+            )
+            continue
+
+        if has_lg and _is_state_graph_call(rhs):
+            found.append(
+                DetectedAgent(
+                    framework="LANGGRAPH",
+                    file_path=rel_path,
+                    variable_name=target_name,
+                    inferred_name="",
+                    confidence="MEDIUM",
+                    source="source",
+                )
+            )
+            continue
+
+        if has_adk and _is_adk_agent_call(rhs):
+            found.append(
+                DetectedAgent(
+                    framework="ADK",
+                    file_path=rel_path,
+                    variable_name=target_name,
+                    inferred_name="",
+                    confidence="MEDIUM",
+                    source="source",
+                )
+            )
+
+    # Drop the intermediate StateGraph binding when a compiled form
+    # also exists in the same file pointing at it.
+    if compiled_from_binding:
+        found = [
+            d
+            for d in found
+            if not (
+                d.framework == "LANGGRAPH" and d.variable_name in compiled_from_binding
+            )
+        ]
+    return found
+
+
+def _assign_targets(stmt: ast.AST) -> list[str]:
+    """Return the list of single-Name LHS targets for an Assign / AnnAssign."""
+    if isinstance(stmt, ast.Assign):
+        out: list[str] = []
+        for tgt in stmt.targets:
+            if isinstance(tgt, ast.Name):
+                out.append(tgt.id)
+        return out
+    if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+        return [stmt.target.id]
+    return []
+
+
+def _assign_rhs(stmt: ast.AST) -> ast.AST | None:
+    if isinstance(stmt, ast.Assign):
+        return stmt.value
+    if isinstance(stmt, ast.AnnAssign):
+        return stmt.value
+    return None
+
+
+def _receiver_name(call: ast.Call) -> set[str]:
+    """If call is `<Name>.compile(...)`, return {Name.id}; else empty."""
+    func = call.func
+    if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+        return {func.value.id}
+    return set()
+
+
+async def scan_folder(root: Path) -> ScanResult:
+    """Walk ``root`` and return a ``ScanResult``."""
     started = time.monotonic()
     has_python_files = False
     detected: list[DetectedAgent] = []
 
-    for _rel, _abs in _walk(root):
+    for rel, abs_path in _walk(root):
         has_python_files = True
+        detected.extend(_detect_in_source(rel, abs_path))
 
     duration_ms = int((time.monotonic() - started) * 1000)
     return ScanResult(
