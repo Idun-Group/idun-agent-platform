@@ -8,12 +8,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from idun_agent_engine.core.config_builder import ConfigBuilder
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
-from idun_agent_engine.core.config_builder import ConfigBuilder
 from idun_agent_standalone.core.logging import get_logger
-from idun_agent_standalone.infrastructure.db import models  # noqa: F401  registers models on Base
+from idun_agent_standalone.infrastructure.db import (
+    models,  # noqa: F401  registers models on Base
+)
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
 from idun_agent_standalone.infrastructure.db.session import Base

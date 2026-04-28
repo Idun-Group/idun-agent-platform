@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from idun_agent_schema.engine import EngineConfig
+from idun_agent_schema.engine.agent_framework import AgentFramework
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from idun_agent_schema.engine import EngineConfig
-from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow

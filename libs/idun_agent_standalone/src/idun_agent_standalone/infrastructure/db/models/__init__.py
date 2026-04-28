@@ -6,3 +6,4 @@ Importing this module registers every model on ``Base.metadata`` so
 
 from .agent import StandaloneAgentRow  # noqa: F401
 from .memory import StandaloneMemoryRow  # noqa: F401
+from .runtime_state import StandaloneRuntimeStateRow  # noqa: F401
