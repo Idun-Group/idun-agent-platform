@@ -13,6 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
+from idun_agent_standalone.infrastructure.db.models.observability import (
+    StandaloneObservabilityRow,
+)
 
 logger = get_logger(__name__)
 
@@ -56,6 +59,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     """
     agent = await _load_agent(session)
     memory = await _load_memory(session)
+    observability = await _load_observability(session)
 
     base_config = _parse_base_config(agent)
     framework = base_config.agent.type
@@ -64,6 +68,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
 
     base_dict = base_config.model_dump(exclude_none=True)
     _layer_memory(base_dict, framework, memory_payload)
+    _layer_observability(base_dict, agent.name, observability)
 
     return _validate_assembled(base_dict, agent.name, framework)
 
@@ -83,6 +88,14 @@ async def _load_agent(session: AsyncSession) -> StandaloneAgentRow:
 async def _load_memory(session: AsyncSession) -> StandaloneMemoryRow | None:
     return (
         await session.execute(select(StandaloneMemoryRow))
+    ).scalar_one_or_none()
+
+
+async def _load_observability(
+    session: AsyncSession,
+) -> StandaloneObservabilityRow | None:
+    return (
+        await session.execute(select(StandaloneObservabilityRow))
     ).scalar_one_or_none()
 
 
@@ -147,6 +160,31 @@ def _layer_memory(
     else:
         agent_inner["checkpointer"] = memory_payload
         agent_inner.pop("session_service", None)
+
+
+def _layer_observability(
+    base_dict: dict[str, Any],
+    agent_name: str,
+    observability: StandaloneObservabilityRow | None,
+) -> None:
+    """Layer the singleton observability provider onto the engine config.
+
+    Standalone stores one provider per install; the engine expects a
+    list. Wrap in a one element list. Absent row means the engine runs
+    without telemetry.
+    """
+    if observability is None:
+        logger.info("assemble: no observability provider agent=%s", agent_name)
+        return
+    base_dict["observability"] = [observability.observability_config]
+    provider = observability.observability_config.get("provider", "unknown")
+    enabled = observability.observability_config.get("enabled", True)
+    logger.info(
+        "assemble: observability agent=%s provider=%s enabled=%s",
+        agent_name,
+        provider,
+        enabled,
+    )
 
 
 def _validate_assembled(

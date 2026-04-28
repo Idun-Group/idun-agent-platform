@@ -36,7 +36,7 @@ from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgent
 from idun_agent_standalone.services import reload as reload_service
 from idun_agent_standalone.services.reload import commit_with_reload
 
-router = APIRouter(prefix="/admin/api/v1/agent", tags=["admin", "agent"])
+router = APIRouter(prefix="/admin/api/v1/agent", tags=["admin"])
 
 logger = get_logger(__name__)
 
