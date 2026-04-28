@@ -4,14 +4,21 @@ from __future__ import annotations
 
 from typing import Any
 
+import os
+
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
+from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2
+from idun_agent_schema.manager.guardrail_configs import convert_guardrail
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.models.guardrail import (
+    StandaloneGuardrailRow,
+)
 from idun_agent_standalone.infrastructure.db.models.mcp_server import (
     StandaloneMCPServerRow,
 )
@@ -64,6 +71,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     memory = await _load_memory(session)
     observability = await _load_observability(session)
     mcp_servers = await _load_mcp_servers(session)
+    guardrails = await _load_guardrails(session)
 
     base_config = _parse_base_config(agent)
     framework = base_config.agent.type
@@ -74,6 +82,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     _layer_memory(base_dict, framework, memory_payload)
     _layer_observability(base_dict, agent.name, observability)
     _layer_mcp_servers(base_dict, agent.name, mcp_servers)
+    _layer_guardrails(base_dict, agent.name, guardrails)
 
     return _validate_assembled(base_dict, agent.name, framework)
 
@@ -112,6 +121,24 @@ async def _load_mcp_servers(
             await session.execute(
                 select(StandaloneMCPServerRow).order_by(
                     StandaloneMCPServerRow.created_at
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+async def _load_guardrails(
+    session: AsyncSession,
+) -> list[StandaloneGuardrailRow]:
+    return list(
+        (
+            await session.execute(
+                select(StandaloneGuardrailRow).order_by(
+                    StandaloneGuardrailRow.position,
+                    StandaloneGuardrailRow.sort_order,
+                    StandaloneGuardrailRow.created_at,
                 )
             )
         )
@@ -228,6 +255,76 @@ def _layer_mcp_servers(
         "assemble: mcp servers agent=%s count=%d",
         agent_name,
         len(enabled),
+    )
+
+
+def _layer_guardrails(
+    base_dict: dict[str, Any],
+    agent_name: str,
+    guardrails: list[StandaloneGuardrailRow],
+) -> None:
+    """Layer enabled guardrails onto the engine config.
+
+    Disabled rows are skipped so an operator can pause a guard without
+    deleting it. Within each position bucket the rows are already
+    ordered by ``sort_order`` thanks to the load query. The manager
+    shape is converted to engine shape via ``convert_guardrail`` and
+    then parsed into ``GuardrailsV2`` so any malformed conversion
+    output surfaces here as an ``AssemblyError`` rather than later in
+    the engine. The ``GUARDRAILS_API_KEY`` env var is written by the
+    guardrail router from the request body before assembly runs, so
+    we do not pre check it here.
+    """
+    enabled = [row for row in guardrails if row.enabled]
+    if not enabled:
+        logger.info("assemble: no guardrails agent=%s", agent_name)
+        return
+
+    if not os.environ.get("GUARDRAILS_API_KEY"):
+        for row in enabled:
+            api_key = row.guardrail_config.get("api_key")
+            if api_key:
+                os.environ["GUARDRAILS_API_KEY"] = api_key
+                logger.info(
+                    "assemble: GUARDRAILS_API_KEY restored from row id=%s", row.id
+                )
+                break
+
+    grouped: dict[str, list[dict[str, Any]]] = {"input": [], "output": []}
+    for row in enabled:
+        config = {
+            k: v for k, v in row.guardrail_config.items() if k != "api_key"
+        }
+        grouped[row.position].append(config)
+
+    try:
+        converted = convert_guardrail(grouped)
+    except Exception as exc:
+        logger.exception(
+            "assemble: guardrail conversion failed agent=%s", agent_name
+        )
+        raise AssemblyError(
+            f"Guardrail conversion failed (agent={agent_name}): {exc}"
+        ) from exc
+
+    try:
+        parsed = GuardrailsV2.model_validate(converted)
+    except ValidationError as exc:
+        logger.error(
+            "assemble: converted guardrails invalid agent=%s", agent_name
+        )
+        raise AssemblyError(
+            f"Converted guardrails do not match GuardrailsV2 "
+            f"(agent={agent_name}). Inspect the stored guardrail rows.",
+            validation_error=exc,
+        ) from exc
+
+    base_dict["guardrails"] = parsed.model_dump(exclude_none=True)
+    logger.info(
+        "assemble: guardrails agent=%s input=%d output=%d",
+        agent_name,
+        len(parsed.input),
+        len(parsed.output),
     )
 
 

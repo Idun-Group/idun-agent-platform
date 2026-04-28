@@ -24,6 +24,9 @@ from idun_agent_engine import create_app as create_engine_app
 from idun_agent_standalone.api.v1.errors import register_admin_exception_handlers
 from idun_agent_standalone.api.v1.routers.agent import router as agent_router
 from idun_agent_standalone.api.v1.routers.auth import router as auth_router
+from idun_agent_standalone.api.v1.routers.guardrails import (
+    router as guardrails_router,
+)
 from idun_agent_standalone.api.v1.routers.mcp_servers import (
     router as mcp_servers_router,
 )
@@ -113,6 +116,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.include_router(memory_router)
     app.include_router(observability_router)
     app.include_router(mcp_servers_router)
+    app.include_router(guardrails_router)
     app.include_router(runtime_config_router)
 
     ui_dir = _resolve_ui_dir(settings)
