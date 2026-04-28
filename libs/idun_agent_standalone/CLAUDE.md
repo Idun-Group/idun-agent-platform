@@ -57,10 +57,25 @@ Empty legacy directories (`admin/`, `auth/`, `theme/`, `traces/`) remain only as
 
 Two modes, gated by `IDUN_ADMIN_AUTH_MODE`:
 
-- `none` — open admin (laptop default). The `require_auth` dependency is a pass-through.
-- `password` — fails closed with `503` until the real password+session implementation lands. The dependency stub is in place so router-level wiring won't change when auth ships; only the dependency body becomes meaningful.
+- `none` — open admin (laptop default). `require_auth` is a pass-through.
+- `password` — bcrypt-hashed admin password + signed session cookie. Strict-minimum scope: login / logout / change-password / me, no rate-limit, no CSRF token, no sliding renewal, no rotation invalidation of outstanding sessions.
 
-`/admin/api/v1/auth/me` is a stub: in `none` mode it returns `{authenticated: True, auth_mode: "none"}` so the bundled UI can render without a login wall.
+Required env vars in password mode:
+
+- `IDUN_SESSION_SECRET` — at least 32 characters; signs the `idun_session` cookie. Startup fails fast with `SettingsValidationError` when shorter.
+- `IDUN_ADMIN_PASSWORD_HASH` — bcrypt hash, only consulted at first boot to seed the admin row. Generate with `idun-standalone hash-password` and export. Once the row exists, the env var is ignored.
+- `IDUN_SESSION_TTL_HOURS` — defaults to 24, range `[1, 720]`.
+
+Endpoints (`/admin/api/v1/auth/`):
+
+- `GET /me` — `{authenticated, authMode}`. In `none` mode always authenticated. In `password` mode reflects the cookie/session lookup.
+- `POST /login` — `{password}` body; sets the signed `idun_session` cookie on success. Bad password and missing admin row both return `401` `auth_required` (anti-enumeration).
+- `POST /logout` — drops the session row, clears the cookie. Idempotent.
+- `POST /change-password` — gated by `require_auth`. `{currentPassword, newPassword}` body. New password must be at least 8 characters. Outstanding sessions are NOT invalidated by design; tightening that rule is a one-line `DELETE FROM standalone_session` away.
+
+Cookie shape: `HttpOnly`, `SameSite=Lax`, `Secure` flipped on automatically when `request.url.scheme == https` or `X-Forwarded-Proto: https` (so localhost dev and TLS-terminating proxies both work without an extra knob).
+
+Tables: `standalone_admin_user` (singleton, fixed PK `"singleton"`), `standalone_session` (one row per active session, TTL on `expires_at`). Both land in alembic revision `a1c0d2e3f4b5_admin_user_and_session`.
 
 `api/v1/deps.py:reload_disabled` is wired as `reload_auth=` on `create_engine_app`. Engine `POST /reload` returns `403` — admin reloads must go through `/admin/api/v1/*`, which run under the rebuild-and-validate pipeline.
 
@@ -91,11 +106,11 @@ These were present in the pre-rework standalone but have **no router or service 
 
 | Feature | Pre-rework location | Status |
 | --- | --- | --- |
-| Real password auth (login, logout, change-password, sessions, sliding renewal, rotation) | `auth/` | Stub: `require_auth` returns 503 in `password` mode |
+| Real password auth (login, logout, change-password, /me) | `auth/` | **Implemented** in strict-minimum scope; see "Auth" above. Sliding renewal, rotation invalidation, rate-limit, CSRF token still deferred. |
 | `/admin/api/v1/theme` (theme model + admin route) | `theme/` | The runtime-config bootstrap (`runtime_config.py`) still exposes a default theme to the SPA, but there is no admin route to mutate it |
 | Traces (AG-UI run-event observer, batched writer to `trace_event`, hourly retention purge via APScheduler) | `traces/` | Backend dropped; `trace_event` table is not materialized by the baseline migration. UI pages under `/traces` will 404 against the API |
 | `idun-standalone init <name>` scaffold command | `scaffold.py` | Removed; bootstrap a new project by writing a `config.yaml` directly and running `idun-standalone setup` |
-| `idun-standalone hash-password` | `cli.py` | Removed pending password auth |
+| `idun-standalone hash-password` | `cli.py` | **Restored** — generates a bcrypt hash for `IDUN_ADMIN_PASSWORD_HASH`. |
 | `idun-standalone export` | `config_io.py` | Removed; YAML export comes back with the materialized-config endpoints (deferred) |
 | `runtime.py` (live agent handle, observer registration after each reload) | top-level | Removed with traces |
 

@@ -42,7 +42,7 @@ from idun_agent_standalone.api.v1.routers.prompts import (
     router as prompts_router,
 )
 from idun_agent_standalone.core.logging import get_logger
-from idun_agent_standalone.core.settings import StandaloneSettings
+from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
 from idun_agent_standalone.infrastructure.db.session import (
     create_db_engine,
     create_sessionmaker,
@@ -91,6 +91,12 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 
     db_engine = create_db_engine(settings.database_url)
     sessionmaker = create_sessionmaker(db_engine)
+
+    if settings.auth_mode == AuthMode.PASSWORD:
+        from idun_agent_standalone.services.auth import ensure_admin_seeded
+
+        async with sessionmaker() as session:
+            await ensure_admin_seeded(session, settings)
 
     async with sessionmaker() as session:
         try:
