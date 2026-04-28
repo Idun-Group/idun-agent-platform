@@ -58,6 +58,10 @@ from .observability import (  # noqa: F401
     StandaloneObservabilityPatch,
     StandaloneObservabilityRead,
 )
+from .onboarding import (  # noqa: F401
+    DetectedAgent,
+    ScanResult,
+)
 from .prompts import (  # noqa: F401
     StandalonePromptCreate,
     StandalonePromptPatch,
