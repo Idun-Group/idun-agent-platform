@@ -13,6 +13,7 @@ stdlib + pydantic + pyyaml. The five-state wizard classification is
 from __future__ import annotations
 
 import ast
+import json
 import os
 import re
 import time
@@ -243,11 +244,53 @@ def _receiver_name(call: ast.AST) -> set[str]:
     return set()
 
 
+def _detect_in_langgraph_json(root: Path) -> list[DetectedAgent]:
+    """Parse ``<root>/langgraph.json`` and emit one detection per graphs entry."""
+    path = root / "langgraph.json"
+    if not path.is_file():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, json.JSONDecodeError):
+        logger.debug("scanner: skip langgraph.json, parse error")
+        return []
+    if not isinstance(data, dict):
+        return []
+    graphs = data.get("graphs")
+    if not isinstance(graphs, dict):
+        return []
+
+    out: list[DetectedAgent] = []
+    for key, value in graphs.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            continue
+        if ":" not in value:
+            continue
+        file_part, _, variable = value.partition(":")
+        # Strip leading "./" so the wire shape stays normalized.
+        rel = file_part.removeprefix("./").lstrip("/")
+        if not rel or not variable:
+            continue
+        out.append(
+            DetectedAgent(
+                framework="LANGGRAPH",
+                file_path=rel,
+                variable_name=variable,
+                inferred_name=key,  # langgraph.json key wins inference rule 2
+                confidence="HIGH",
+                source="langgraph_json",
+            )
+        )
+    return out
+
+
 async def scan_folder(root: Path) -> ScanResult:
     """Walk ``root`` and return a ``ScanResult``."""
     started = time.monotonic()
     has_python_files = False
     detected: list[DetectedAgent] = []
+
+    detected.extend(_detect_in_langgraph_json(root))
 
     for rel, abs_path in _walk(root):
         has_python_files = True

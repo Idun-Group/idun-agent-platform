@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from idun_agent_standalone.services.scanner import scan_folder
@@ -148,3 +149,58 @@ async def test_skip_unparseable_source(tmp_path: Path) -> None:
     result = await scan_folder(tmp_path)
     files = {d.file_path for d in result.detected}
     assert files == {"good.py"}
+
+
+async def test_langgraph_json_single_graph(tmp_path: Path) -> None:
+    (tmp_path / "langgraph.json").write_text(
+        json.dumps(
+            {
+                "dependencies": ["./agent.py"],
+                "graphs": {"helpdesk": "./agent.py:graph"},
+            }
+        )
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.framework == "LANGGRAPH"
+    assert d.file_path == "agent.py"
+    assert d.variable_name == "graph"
+    assert d.confidence == "HIGH"
+    assert d.source == "langgraph_json"
+    # has_idun_config is *not* set by langgraph.json
+    assert result.has_idun_config is False
+
+
+async def test_langgraph_json_multiple_graphs(tmp_path: Path) -> None:
+    (tmp_path / "langgraph.json").write_text(
+        json.dumps(
+            {
+                "graphs": {
+                    "alpha": "./a.py:graph",
+                    "beta": "./b.py:graph",
+                },
+            }
+        )
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 2
+    assert {d.variable_name for d in result.detected} == {"graph"}
+    assert {d.file_path for d in result.detected} == {"a.py", "b.py"}
+
+
+async def test_langgraph_json_malformed_skipped(tmp_path: Path) -> None:
+    (tmp_path / "langgraph.json").write_text("{not valid json")
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_langgraph_json_only_at_root(tmp_path: Path) -> None:
+    """langgraph.json deeper than depth 0 is not consulted."""
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    (sub / "langgraph.json").write_text(
+        json.dumps({"graphs": {"x": "./agent.py:graph"}})
+    )
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
