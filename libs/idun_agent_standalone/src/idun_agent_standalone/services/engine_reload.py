@@ -20,6 +20,7 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from idun_agent_engine.server.lifespan import cleanup_agent, configure_app
 from idun_agent_schema.engine.engine import EngineConfig
 
@@ -50,9 +51,28 @@ def build_engine_reload_callable(
                 logger.exception(
                     "engine_reload.cleanup_failed continuing to configure"
                 )
+            _prune_integration_routes(engine_app)
             await configure_app(engine_app, config)
         except Exception as exc:
             logger.exception("engine_reload.configure_failed")
             raise ReloadInitFailed(str(exc)) from exc
 
     return _reload
+
+
+# TODO(#527): drop once the engine grows ``teardown_integrations`` and
+# calls it from ``configure_app``. Until then, the engine never removes
+# integration routes added by ``setup_integrations``, so deleted or
+# disabled integrations leave dead handlers behind.
+def _prune_integration_routes(app: FastAPI) -> None:
+    """Strip engine integration routes by prefix before reconfigure."""
+    routes = app.router.routes
+    before = len(routes)
+    app.router.routes = [
+        r
+        for r in routes
+        if not (isinstance(r, APIRoute) and r.path.startswith("/integrations/"))
+    ]
+    removed = before - len(app.router.routes)
+    if removed:
+        logger.info("engine_reload.pruned_integration_routes count=%d", removed)

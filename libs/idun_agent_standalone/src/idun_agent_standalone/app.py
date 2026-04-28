@@ -17,14 +17,29 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.routing import APIRoute
+from fastapi.routing import APIRoute, Mount
 from fastapi.staticfiles import StaticFiles
 from idun_agent_engine import create_app as create_engine_app
 
 from idun_agent_standalone.api.v1.errors import register_admin_exception_handlers
 from idun_agent_standalone.api.v1.routers.agent import router as agent_router
 from idun_agent_standalone.api.v1.routers.auth import router as auth_router
+from idun_agent_standalone.api.v1.routers.guardrails import (
+    router as guardrails_router,
+)
+from idun_agent_standalone.api.v1.routers.integrations import (
+    router as integrations_router,
+)
+from idun_agent_standalone.api.v1.routers.mcp_servers import (
+    router as mcp_servers_router,
+)
 from idun_agent_standalone.api.v1.routers.memory import router as memory_router
+from idun_agent_standalone.api.v1.routers.observability import (
+    router as observability_router,
+)
+from idun_agent_standalone.api.v1.routers.prompts import (
+    router as prompts_router,
+)
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.core.settings import StandaloneSettings
 from idun_agent_standalone.infrastructure.db.session import (
@@ -105,6 +120,11 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.include_router(auth_router)
     app.include_router(agent_router)
     app.include_router(memory_router)
+    app.include_router(observability_router)
+    app.include_router(mcp_servers_router)
+    app.include_router(guardrails_router)
+    app.include_router(prompts_router)
+    app.include_router(integrations_router)
     app.include_router(runtime_config_router)
 
     ui_dir = _resolve_ui_dir(settings)
@@ -116,8 +136,26 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         ]
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
         logger.info("boot ui mounted from=%s", ui_dir)
+
+        if not hasattr(app.state, "post_configure_callbacks"):
+            app.state.post_configure_callbacks = []
+        app.state.post_configure_callbacks.append(_keep_ui_mount_last)
     else:
         logger.info("boot ui not mounted, no built SPA found")
 
     logger.info("boot complete")
     return app
+
+
+async def _keep_ui_mount_last(app: FastAPI) -> None:
+    """Re-pin the SPA mount last so engine reload routes stay reachable."""
+    routes = app.router.routes
+    ui_mount = next(
+        (r for r in routes if isinstance(r, Mount) and r.name == "ui"),
+        None,
+    )
+    if ui_mount is None:
+        return
+    routes.remove(ui_mount)
+    routes.append(ui_mount)
+    logger.info("post_configure ui mount re-pinned last route_count=%d", len(routes))

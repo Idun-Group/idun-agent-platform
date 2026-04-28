@@ -13,7 +13,7 @@ from fastapi import APIRouter, Request
 
 from idun_agent_standalone.core.logging import get_logger
 
-router = APIRouter(prefix="/admin/api/v1/auth", tags=["admin", "auth"])
+router = APIRouter(prefix="/admin/api/v1/auth", tags=["admin"])
 
 logger = get_logger(__name__)
 

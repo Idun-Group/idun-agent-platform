@@ -38,7 +38,7 @@ from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemo
 from idun_agent_standalone.services import reload as reload_service
 from idun_agent_standalone.services.reload import commit_with_reload
 
-router = APIRouter(prefix="/admin/api/v1/memory", tags=["admin", "memory"])
+router = APIRouter(prefix="/admin/api/v1/memory", tags=["admin"])
 
 logger = get_logger(__name__)
 
