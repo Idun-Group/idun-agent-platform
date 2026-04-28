@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, type AgentFramework, api } from "@/lib/api";
 
 type MemoryType = "memory" | "sqlite" | "postgres";
 const MEMORY_TYPES: MemoryType[] = ["memory", "sqlite", "postgres"];
@@ -101,14 +101,9 @@ export default function MemoryPage() {
     queryFn: api.getMemory,
   });
 
-  const initialType = useMemo(
-    () => readType(data?.config as Record<string, unknown> | undefined),
-    [data],
-  );
-  const initialUrl = useMemo(
-    () => readUrl(data?.config as Record<string, unknown> | undefined),
-    [data],
-  );
+  const initialType = useMemo(() => readType(data?.memory), [data]);
+  const initialUrl = useMemo(() => readUrl(data?.memory), [data]);
+  const framework: AgentFramework = data?.agentFramework ?? "LANGGRAPH";
 
   const [activeTab, setActiveTab] = useState<MemoryType>(initialType);
   const [yamlOpen, setYamlOpen] = useState(false);
@@ -141,21 +136,24 @@ export default function MemoryPage() {
 
   const save = useMutation({
     mutationFn: (next: Record<string, unknown>) =>
-      api.putMemory({ config: next }),
-    onSuccess: (resp: unknown) => {
-      const r = resp as { restart_required?: boolean };
-      if (r?.restart_required) {
+      api.patchMemory({ agentFramework: framework, memory: next }),
+    onSuccess: (resp) => {
+      if (resp.reload.status === "restart_required") {
         setRestartRequired(true);
-        toast.warning("Restart required to apply this change.");
+        toast.warning(resp.reload.message);
+      } else if (resp.reload.status === "reload_failed") {
+        setRestartRequired(false);
+        toast.error(resp.reload.error ?? resp.reload.message);
       } else {
         setRestartRequired(false);
-        toast.success("Saved & reloaded");
+        toast.success(resp.reload.message);
       }
       qc.invalidateQueries({ queryKey: ["memory"] });
     },
-    onError: (e: unknown) => {
+    onError: (e) => {
       const detail = e instanceof ApiError ? e.detail : undefined;
-      const message = (detail as { message?: string } | undefined)?.message;
+      const message = (detail as { error?: { message?: string } } | undefined)?.error
+        ?.message;
       toast.error(message ?? "Save failed");
     },
   });
