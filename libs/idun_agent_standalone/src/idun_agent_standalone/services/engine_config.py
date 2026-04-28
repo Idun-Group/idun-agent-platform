@@ -26,6 +26,7 @@ from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemo
 from idun_agent_standalone.infrastructure.db.models.observability import (
     StandaloneObservabilityRow,
 )
+from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
 
 logger = get_logger(__name__)
 
@@ -72,6 +73,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     observability = await _load_observability(session)
     mcp_servers = await _load_mcp_servers(session)
     guardrails = await _load_guardrails(session)
+    prompts = await _load_prompts(session)
 
     base_config = _parse_base_config(agent)
     framework = base_config.agent.type
@@ -83,6 +85,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     _layer_observability(base_dict, agent.name, observability)
     _layer_mcp_servers(base_dict, agent.name, mcp_servers)
     _layer_guardrails(base_dict, agent.name, guardrails)
+    _layer_prompts(base_dict, agent.name, prompts)
 
     return _validate_assembled(base_dict, agent.name, framework)
 
@@ -139,6 +142,23 @@ async def _load_guardrails(
                     StandaloneGuardrailRow.position,
                     StandaloneGuardrailRow.sort_order,
                     StandaloneGuardrailRow.created_at,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+async def _load_prompts(
+    session: AsyncSession,
+) -> list[StandalonePromptRow]:
+    return list(
+        (
+            await session.execute(
+                select(StandalonePromptRow).order_by(
+                    StandalonePromptRow.prompt_id,
+                    StandalonePromptRow.version,
                 )
             )
         )
@@ -325,6 +345,45 @@ def _layer_guardrails(
         agent_name,
         len(parsed.input),
         len(parsed.output),
+    )
+
+
+def _layer_prompts(
+    base_dict: dict[str, Any],
+    agent_name: str,
+    prompts: list[StandalonePromptRow],
+) -> None:
+    """Layer the latest version of each prompt onto the engine config.
+
+    The DB stores the full version history (append only). The engine
+    only needs the active prompt per logical id, so we collapse to the
+    latest version per ``prompt_id`` here. Empty after collapse leaves
+    the field absent.
+    """
+    if not prompts:
+        logger.info("assemble: no prompts agent=%s", agent_name)
+        return
+
+    latest: dict[str, StandalonePromptRow] = {}
+    for row in prompts:
+        current = latest.get(row.prompt_id)
+        if current is None or row.version > current.version:
+            latest[row.prompt_id] = row
+
+    base_dict["prompts"] = [
+        {
+            "prompt_id": row.prompt_id,
+            "version": row.version,
+            "content": row.content,
+            "tags": list(row.tags),
+        }
+        for row in latest.values()
+    ]
+    logger.info(
+        "assemble: prompts agent=%s ids=%d total_versions=%d",
+        agent_name,
+        len(latest),
+        len(prompts),
     )
 
 
