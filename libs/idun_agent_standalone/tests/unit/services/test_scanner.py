@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import yaml
 from idun_agent_standalone.services.scanner import scan_folder
 
 
@@ -29,8 +30,7 @@ async def test_skip_list_ignores_dot_venv(tmp_path: Path) -> None:
     venv = tmp_path / ".venv" / "lib"
     venv.mkdir(parents=True)
     (venv / "trap.py").write_text(
-        "from langgraph.graph import StateGraph\n"
-        "graph = StateGraph(int).compile()\n"
+        "from langgraph.graph import StateGraph\n" "graph = StateGraph(int).compile()\n"
     )
     result = await scan_folder(tmp_path)
     assert result.detected == []
@@ -61,8 +61,7 @@ async def test_depth_limit_4(tmp_path: Path) -> None:
 
 async def test_detect_minimal_langgraph(tmp_path: Path) -> None:
     (tmp_path / "agent.py").write_text(
-        "from langgraph.graph import StateGraph\n"
-        "graph = StateGraph(int).compile()\n"
+        "from langgraph.graph import StateGraph\n" "graph = StateGraph(int).compile()\n"
     )
     result = await scan_folder(tmp_path)
     assert len(result.detected) == 1
@@ -77,8 +76,7 @@ async def test_detect_minimal_langgraph(tmp_path: Path) -> None:
 async def test_detect_uncompiled_langgraph(tmp_path: Path) -> None:
     """A bare StateGraph(...) assignment counts."""
     (tmp_path / "agent.py").write_text(
-        "from langgraph.graph import StateGraph\n"
-        "graph = StateGraph(int)\n"
+        "from langgraph.graph import StateGraph\n" "graph = StateGraph(int)\n"
     )
     result = await scan_folder(tmp_path)
     assert len(result.detected) == 1
@@ -99,18 +97,14 @@ async def test_detect_compiled_via_intermediate(tmp_path: Path) -> None:
 
 async def test_no_false_positive_on_unrelated_compile(tmp_path: Path) -> None:
     """``something.compile()`` with no traceable StateGraph receiver is ignored."""
-    (tmp_path / "noise.py").write_text(
-        "import re\n"
-        "pat = re.compile(r'x')\n"
-    )
+    (tmp_path / "noise.py").write_text("import re\n" "pat = re.compile(r'x')\n")
     result = await scan_folder(tmp_path)
     assert result.detected == []
 
 
 async def test_detect_minimal_adk(tmp_path: Path) -> None:
     (tmp_path / "agent.py").write_text(
-        "from google.adk.agents import Agent\n"
-        "root_agent = Agent(name='x')\n"
+        "from google.adk.agents import Agent\n" "root_agent = Agent(name='x')\n"
     )
     result = await scan_folder(tmp_path)
     assert len(result.detected) == 1
@@ -143,8 +137,7 @@ async def test_skip_unparseable_source(tmp_path: Path) -> None:
         "graph = StateGraph(int  # missing paren\n"
     )
     (tmp_path / "good.py").write_text(
-        "from langgraph.graph import StateGraph\n"
-        "graph = StateGraph(int).compile()\n"
+        "from langgraph.graph import StateGraph\n" "graph = StateGraph(int).compile()\n"
     )
     result = await scan_folder(tmp_path)
     files = {d.file_path for d in result.detected}
@@ -203,4 +196,125 @@ async def test_langgraph_json_only_at_root(tmp_path: Path) -> None:
         json.dumps({"graphs": {"x": "./agent.py:graph"}})
     )
     result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_idun_config_langgraph(tmp_path: Path) -> None:
+    (tmp_path / "config.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "agent": {
+                    "type": "LANGGRAPH",
+                    "config": {
+                        "name": "Helpdesk",
+                        "graph_definition": "./agent.py:graph",
+                    },
+                }
+            }
+        )
+    )
+    result = await scan_folder(tmp_path)
+    assert result.has_idun_config is True
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.framework == "LANGGRAPH"
+    assert d.file_path == "agent.py"
+    assert d.variable_name == "graph"
+    assert d.confidence == "HIGH"
+    assert d.source == "config"
+
+
+async def test_idun_config_adk(tmp_path: Path) -> None:
+    (tmp_path / "config.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "agent": {
+                    "type": "ADK",
+                    "config": {
+                        "name": "Helpdesk",
+                        "agent": "./agent.py:root_agent",
+                    },
+                }
+            }
+        )
+    )
+    result = await scan_folder(tmp_path)
+    assert result.has_idun_config is True
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.framework == "ADK"
+    assert d.variable_name == "root_agent"
+
+
+async def test_idun_config_yml_extension(tmp_path: Path) -> None:
+    (tmp_path / "config.yml").write_text(
+        yaml.safe_dump(
+            {
+                "agent": {
+                    "type": "LANGGRAPH",
+                    "config": {"graph_definition": "./agent.py:graph"},
+                }
+            }
+        )
+    )
+    result = await scan_folder(tmp_path)
+    assert result.has_idun_config is True
+    assert len(result.detected) == 1
+
+
+async def test_idun_config_at_depth_2(tmp_path: Path) -> None:
+    nested = tmp_path / "sub" / "deeper"
+    nested.mkdir(parents=True)
+    (nested / "config.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "agent": {
+                    "type": "LANGGRAPH",
+                    "config": {"graph_definition": "./agent.py:graph"},
+                }
+            }
+        )
+    )
+    result = await scan_folder(tmp_path)
+    assert result.has_idun_config is True
+
+
+async def test_idun_config_at_depth_3_ignored(tmp_path: Path) -> None:
+    """Idun config at depth > 2 is not consulted."""
+    nested = tmp_path / "a" / "b" / "c"
+    nested.mkdir(parents=True)
+    (nested / "config.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "agent": {
+                    "type": "LANGGRAPH",
+                    "config": {"graph_definition": "./agent.py:graph"},
+                }
+            }
+        )
+    )
+    result = await scan_folder(tmp_path)
+    assert result.has_idun_config is False
+
+
+async def test_idun_config_malformed_skipped(tmp_path: Path) -> None:
+    (tmp_path / "config.yaml").write_text("not: valid: yaml: at: all:")
+    result = await scan_folder(tmp_path)
+    assert result.has_idun_config is False
+    assert result.detected == []
+
+
+async def test_idun_config_unsupported_type_skipped(tmp_path: Path) -> None:
+    (tmp_path / "config.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "agent": {
+                    "type": "HAYSTACK",
+                    "config": {"component_definition": "./pipe.py:pipe"},
+                }
+            }
+        )
+    )
+    result = await scan_folder(tmp_path)
+    assert result.has_idun_config is False
     assert result.detected == []

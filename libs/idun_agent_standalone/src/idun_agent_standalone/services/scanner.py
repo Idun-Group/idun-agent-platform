@@ -19,6 +19,7 @@ import re
 import time
 from pathlib import Path
 
+import yaml
 from idun_agent_schema.standalone import DetectedAgent, ScanResult
 
 from idun_agent_standalone.core.logging import get_logger
@@ -41,12 +42,8 @@ _SKIP_DIRS = frozenset(
 _MAX_DEPTH = 4
 _MAX_FILE_BYTES = 1_000_000  # 1 MB
 
-_LANGGRAPH_IMPORT_RE = re.compile(
-    r"(?m)^\s*(from\s+langgraph[\s.]|import\s+langgraph)"
-)
-_ADK_IMPORT_RE = re.compile(
-    r"(?m)^\s*(from\s+google\.adk|import\s+google\.adk)"
-)
+_LANGGRAPH_IMPORT_RE = re.compile(r"(?m)^\s*(from\s+langgraph[\s.]|import\s+langgraph)")
+_ADK_IMPORT_RE = re.compile(r"(?m)^\s*(from\s+google\.adk|import\s+google\.adk)")
 _ADK_AGENT_CLASSES = frozenset(
     {"Agent", "LlmAgent", "SequentialAgent", "ParallelAgent", "LoopAgent"}
 )
@@ -284,12 +281,88 @@ def _detect_in_langgraph_json(root: Path) -> list[DetectedAgent]:
     return out
 
 
+def _detect_in_idun_config(
+    root: Path,
+) -> tuple[list[DetectedAgent], bool]:
+    """Walk depth 0–2 for ``config.yaml`` / ``config.yml``.
+
+    Returns the detections plus a boolean ``has_idun_config`` that the
+    caller folds into the ``ScanResult``.
+    """
+    detections: list[DetectedAgent] = []
+    has_idun_config = False
+
+    for path in _iter_idun_config_paths(root, max_depth=2):
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, yaml.YAMLError):
+            logger.debug("scanner: skip %s, yaml error", path)
+            continue
+        if not isinstance(data, dict):
+            continue
+        agent = data.get("agent")
+        if not isinstance(agent, dict):
+            continue
+        agent_type = agent.get("type")
+        if agent_type not in ("LANGGRAPH", "ADK"):
+            continue
+        config = agent.get("config")
+        if not isinstance(config, dict):
+            continue
+
+        target = (
+            config.get("graph_definition")
+            if agent_type == "LANGGRAPH"
+            else config.get("agent")
+        )
+        if not isinstance(target, str) or ":" not in target:
+            continue
+        file_part, _, variable = target.partition(":")
+        rel = file_part.removeprefix("./").lstrip("/")
+        if not rel or not variable:
+            continue
+
+        has_idun_config = True
+        inferred = config.get("name")
+        if not isinstance(inferred, str) or not inferred:
+            inferred = ""  # filled by inference cascade
+        detections.append(
+            DetectedAgent(
+                framework=agent_type,
+                file_path=rel,
+                variable_name=variable,
+                inferred_name=inferred,
+                confidence="HIGH",
+                source="config",
+            )
+        )
+    return detections, has_idun_config
+
+
+def _iter_idun_config_paths(root: Path, *, max_depth: int):
+    """Yield candidate ``config.yaml`` / ``config.yml`` paths up to depth 2."""
+    for dirpath, dirnames, filenames in os.walk(str(root), followlinks=False):
+        rel = os.path.relpath(dirpath, str(root))
+        depth = 0 if rel == "." else len(Path(rel).parts)
+        if depth > max_depth:
+            dirnames[:] = []
+            continue
+        if depth == max_depth:
+            dirnames[:] = []
+        dirnames[:] = [d for d in dirnames if not _is_skipped(d)]
+        for filename in filenames:
+            if filename in ("config.yaml", "config.yml"):
+                yield Path(dirpath) / filename
+
+
 async def scan_folder(root: Path) -> ScanResult:
     """Walk ``root`` and return a ``ScanResult``."""
     started = time.monotonic()
     has_python_files = False
     detected: list[DetectedAgent] = []
 
+    config_detections, has_idun_config = _detect_in_idun_config(root)
+    detected.extend(config_detections)
     detected.extend(_detect_in_langgraph_json(root))
 
     for rel, abs_path in _walk(root):
@@ -301,6 +374,6 @@ async def scan_folder(root: Path) -> ScanResult:
         root=str(root),
         detected=detected,
         has_python_files=has_python_files,
-        has_idun_config=False,
+        has_idun_config=has_idun_config,
         scan_duration_ms=duration_ms,
     )
