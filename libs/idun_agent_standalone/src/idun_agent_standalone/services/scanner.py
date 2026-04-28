@@ -154,50 +154,50 @@ def _detect_in_source(rel_path: str, abs_path: Path) -> list[DetectedAgent]:
         rhs = _assign_rhs(stmt)
         if rhs is None:
             continue
-        target_name = targets[0]
 
         if has_lg and _module_compile_target(rhs, state_graph_bindings):
             # The compiled binding shadows the intermediate StateGraph
             # binding (we only emit one detection per file/var).
-            compiled_from_binding.update(
-                _receiver_name(rhs)
-            )  # type: ignore[arg-type]
-            found.append(
-                DetectedAgent(
-                    framework="LANGGRAPH",
-                    file_path=rel_path,
-                    variable_name=target_name,
-                    inferred_name="",  # filled by inference cascade later
-                    confidence="MEDIUM",
-                    source="source",
+            compiled_from_binding.update(_receiver_name(rhs))
+            for target_name in targets:
+                found.append(
+                    DetectedAgent(
+                        framework="LANGGRAPH",
+                        file_path=rel_path,
+                        variable_name=target_name,
+                        inferred_name="",  # filled by inference cascade later
+                        confidence="MEDIUM",
+                        source="source",
+                    )
                 )
-            )
             continue
 
         if has_lg and _is_state_graph_call(rhs):
-            found.append(
-                DetectedAgent(
-                    framework="LANGGRAPH",
-                    file_path=rel_path,
-                    variable_name=target_name,
-                    inferred_name="",
-                    confidence="MEDIUM",
-                    source="source",
+            for target_name in targets:
+                found.append(
+                    DetectedAgent(
+                        framework="LANGGRAPH",
+                        file_path=rel_path,
+                        variable_name=target_name,
+                        inferred_name="",
+                        confidence="MEDIUM",
+                        source="source",
+                    )
                 )
-            )
             continue
 
         if has_adk and _is_adk_agent_call(rhs):
-            found.append(
-                DetectedAgent(
-                    framework="ADK",
-                    file_path=rel_path,
-                    variable_name=target_name,
-                    inferred_name="",
-                    confidence="MEDIUM",
-                    source="source",
+            for target_name in targets:
+                found.append(
+                    DetectedAgent(
+                        framework="ADK",
+                        file_path=rel_path,
+                        variable_name=target_name,
+                        inferred_name="",
+                        confidence="MEDIUM",
+                        source="source",
+                    )
                 )
-            )
 
     # Drop the intermediate StateGraph binding when a compiled form
     # also exists in the same file pointing at it.
@@ -233,8 +233,10 @@ def _assign_rhs(stmt: ast.AST) -> ast.AST | None:
     return None
 
 
-def _receiver_name(call: ast.Call) -> set[str]:
+def _receiver_name(call: ast.AST) -> set[str]:
     """If call is `<Name>.compile(...)`, return {Name.id}; else empty."""
+    if not isinstance(call, ast.Call):
+        return set()
     func = call.func
     if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
         return {func.value.id}
