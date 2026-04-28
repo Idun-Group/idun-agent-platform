@@ -51,14 +51,27 @@ def setup_cmd(config_path_override: str | None) -> None:
 def serve_cmd() -> None:
     """Run the standalone server (engine routes plus admin REST)."""
     setup_logging()
+    asyncio.run(_serve(StandaloneSettings()))
+
+
+async def _serve(settings: StandaloneSettings) -> None:
+    """Build the app and serve it inside a single event loop.
+
+    Calling ``asyncio.run`` to build the app and then ``uvicorn.run``
+    creates two distinct loops; async resources (the SQLAlchemy engine,
+    the LLM SDK's httpx pool, ``asyncio.Lock`` instances) bind to the
+    first loop, then crash when the request path runs on the second.
+    Building under ``uvicorn.Server.serve`` keeps everything on one loop.
+    """
     from idun_agent_standalone.app import create_standalone_app
 
     logger = get_logger(__name__)
-    settings = StandaloneSettings()
     logger.info("serve host=%s port=%s", settings.host, settings.port)
 
-    app = asyncio.run(create_standalone_app(settings))
-    uvicorn.run(app, host=settings.host, port=settings.port)
+    app = await create_standalone_app(settings)
+    config = uvicorn.Config(app, host=settings.host, port=settings.port)
+    server = uvicorn.Server(config)
+    await server.serve()
 
 
 async def _setup(config_path_override: str | None) -> None:

@@ -16,11 +16,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.routing import APIRoute, Mount
 from fastapi.staticfiles import StaticFiles
 from idun_agent_engine import create_app as create_engine_app
 
+from idun_agent_standalone.api.v1.deps import reload_disabled, require_auth
 from idun_agent_standalone.api.v1.errors import register_admin_exception_handlers
 from idun_agent_standalone.api.v1.routers.agent import router as agent_router
 from idun_agent_standalone.api.v1.routers.auth import router as auth_router
@@ -99,7 +100,10 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
             engine_config = None
 
     if engine_config is not None:
-        app = create_engine_app(engine_config=engine_config)
+        app = create_engine_app(
+            engine_config=engine_config,
+            reload_auth=reload_disabled,
+        )
         logger.info(
             "boot engine app built framework=%s",
             engine_config.agent.type.value,
@@ -117,14 +121,15 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.state.reload_callable = build_engine_reload_callable(app)
 
     register_admin_exception_handlers(app)
+    admin_auth = [Depends(require_auth)]
     app.include_router(auth_router)
-    app.include_router(agent_router)
-    app.include_router(memory_router)
-    app.include_router(observability_router)
-    app.include_router(mcp_servers_router)
-    app.include_router(guardrails_router)
-    app.include_router(prompts_router)
-    app.include_router(integrations_router)
+    app.include_router(agent_router, dependencies=admin_auth)
+    app.include_router(memory_router, dependencies=admin_auth)
+    app.include_router(observability_router, dependencies=admin_auth)
+    app.include_router(mcp_servers_router, dependencies=admin_auth)
+    app.include_router(guardrails_router, dependencies=admin_auth)
+    app.include_router(prompts_router, dependencies=admin_auth)
+    app.include_router(integrations_router, dependencies=admin_auth)
     app.include_router(runtime_config_router)
 
     ui_dir = _resolve_ui_dir(settings)
