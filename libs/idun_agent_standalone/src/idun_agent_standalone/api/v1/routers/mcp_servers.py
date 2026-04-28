@@ -20,6 +20,7 @@ from fastapi import APIRouter
 from fastapi import status as http_status
 from idun_agent_schema.standalone import (
     StandaloneAdminError,
+    StandaloneConnectionCheck,
     StandaloneDeleteResult,
     StandaloneErrorCode,
     StandaloneFieldError,
@@ -40,6 +41,7 @@ from idun_agent_standalone.infrastructure.db.models.mcp_server import (
     StandaloneMCPServerRow,
 )
 from idun_agent_standalone.services import reload as reload_service
+from idun_agent_standalone.services.connection_checks import check_mcp_server
 from idun_agent_standalone.services.reload import commit_with_reload
 from idun_agent_standalone.services.slugs import (
     SlugConflictError,
@@ -264,3 +266,25 @@ async def delete_mcp_server(
         data=StandaloneDeleteResult(id=UUID(row_id)),
         reload=result,
     )
+
+
+@router.post("/{mcp_id}/tools", response_model=StandaloneConnectionCheck)
+async def list_mcp_server_tools(
+    mcp_id: UUID, session: SessionDep
+) -> StandaloneConnectionCheck:
+    """Discover tools exposed by a single MCP server.
+
+    Doubles as a connection check — if the server cannot be reached or
+    cannot speak MCP, ``ok=False`` carries the upstream error in the
+    response body. ``details.tools`` carries the discovered tool names
+    on success.
+    """
+    row = await _load_by_id(session, mcp_id)
+    result = await check_mcp_server(row.mcp_server_config)
+    logger.info(
+        "admin.mcp_servers.tools id=%s ok=%s tool_count=%s",
+        row.id,
+        result.ok,
+        (result.details or {}).get("toolCount"),
+    )
+    return result
