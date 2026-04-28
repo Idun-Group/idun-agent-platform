@@ -173,7 +173,9 @@ Subagents copying this pattern: `from ._base import _CamelModel` and inherit. Do
 
 ### 4.2 Singleton resource schemas — ESTABLISHED
 
-Singleton resources (agent, memory) follow the Read/Patch pattern. There is no Create model — the row is seeded from YAML at first boot. Read models opt into `from_attributes=True` so they project from SQLAlchemy rows directly via `Model.model_validate(row)`.
+Singleton resources (agent, memory, observability) follow the Read/Patch pattern. There is no Create model — the row is either seeded from YAML at first boot (agent) or upserted via PATCH (memory, observability). Read models opt into `from_attributes=True` so they project from SQLAlchemy rows directly via `Model.model_validate(row)`.
+
+Observability was originally drafted as a collection in §4.3 (mirroring manager); Phase 4 collapsed it to a singleton because standalone has one active provider per install — see spec §"Observability". The Read/Patch shape lives in `idun_agent_schema/standalone/observability.py`.
 
 Reference snippet at `libs/idun_agent_schema/src/idun_agent_schema/standalone/agent.py:27-61`:
 
@@ -220,13 +222,12 @@ Why: explicit-null rejection at the Pydantic layer keeps the router free of `if 
 
 ### 4.3 Collection resource schemas — ESTABLISHED
 
-Five collection resources land in Phase 2. Each follows the same Read/Create/Patch pattern and is anchored to the manager-shape config it wraps.
+Four collection resources land in Phase 2. Each follows the same Read/Create/Patch pattern and is anchored to the manager-shape config it wraps. Observability was originally drafted as a collection here; Phase 4 collapsed it to a singleton (see §4.2 and spec §"Observability") because standalone scopes the install to a single active provider.
 
 | Module | Read class line | Wraps | Conversion at assembly |
 | --- | --- | --- | --- |
 | `guardrails.py` | `26` | `ManagerGuardrailConfig` | `convert_guardrail()` reused from manager |
 | `mcp_servers.py` | `23` | `MCPServer` (engine) | none |
-| `observability.py` | `21` | `ObservabilityConfig` (V2 engine) | none |
 | `integrations.py` | `23` | `IntegrationConfig` (engine) | inner `enabled` overwritten at assembly to match standalone row |
 | `prompts.py` | `24` | `ManagedPromptCreate/Read/Patch` (manager) | content-vs-tags split (PATCH only `tags`; content patches POST a new version) |
 
@@ -274,7 +275,7 @@ Patterns to copy in Phase 5+ collection routers:
 - Read variants set `model_config = ConfigDict(from_attributes=True)` so they project from SQLAlchemy rows directly via `Model.model_validate(row)`.
 - Create variants default `enabled=True`.
 - Patch variants reject explicit-null on `name` via `_no_null_name` (mirrors agent.py:57-61). Prompts uses `_no_null_tags` instead because the null-vs-empty-list ambiguity on `tags` warrants explicit disambiguation.
-- Inner config field (`mcp_server`, `observability`, `integration`, `guardrail`) accepts the wrapped shape unchanged on input; outbound wire format follows the wrapped shape's own aliasing rules.
+- Inner config field (`mcp_server`, `integration`, `guardrail`) accepts the wrapped shape unchanged on input; outbound wire format follows the wrapped shape's own aliasing rules. Observability follows the same convention but lives under §4.2 as a singleton.
 
 Special case — guardrails fold M:N junction columns:
 
@@ -645,7 +646,7 @@ Three connection-check endpoints are MVP scope (spec §"Connection checks"):
 
 ```text
 POST /admin/api/v1/memory/check-connection
-POST /admin/api/v1/observability/{id}/check-connection
+POST /admin/api/v1/observability/check-connection         # singleton — no {id}
 POST /admin/api/v1/mcp-servers/{id}/tools
 ```
 
@@ -1010,13 +1011,13 @@ Verbatim from spec §"Manager schema mirror rule":
 | `managed_agents` | `standalone_agent` | drop `workspace_id`, `memory_id` FK (memory is singleton on the agent), `sso_id` FK (SSO out of scope) |
 | `managed_memories` | `standalone_memory` | drop `workspace_id`; singleton in standalone |
 | `managed_mcp_servers` | `standalone_mcp_server` | drop `workspace_id`; add `enabled bool` |
-| `managed_observabilities` | `standalone_observability` | drop `workspace_id`; add `enabled bool` |
+| `managed_observabilities` | `standalone_observability` | drop `workspace_id`; **singleton in standalone** (id fixed to `"singleton"`, no `enabled`/`name`/`slug`) — see spec §"Observability" |
 | `managed_integrations` | `standalone_integration` | drop `workspace_id`; add `enabled bool` |
 | `managed_guardrails` | `standalone_guardrail` | drop `workspace_id`; add `enabled bool`, `position`, `sort_order` (folded from junction) |
 | `managed_prompts` | `standalone_prompt` | drop `workspace_id`; uniqueness becomes `(prompt_id, version)` |
 | `agent_guardrails` (junction) | folded | `position` and `sort_order` move onto `standalone_guardrail` |
 | `agent_mcp_servers` (junction) | folded | replaced by `standalone_mcp_server.enabled` |
-| `agent_observabilities` (junction) | folded | replaced by `standalone_observability.enabled` |
+| `agent_observabilities` (junction) | excluded | observability is singleton in standalone |
 | `agent_integrations` (junction) | folded | replaced by `standalone_integration.enabled` |
 | `agent_prompt_assignments` (junction) | excluded | one agent in standalone; every prompt applies |
 | `workspaces`, `users`, `memberships`, `invitations`, `managed_ssos`, `settings` | excluded | not a multi-tenant control plane |
@@ -1057,9 +1058,10 @@ Each collection schema in `idun_agent_schema/standalone/` wraps a manager-shape 
 | --- | --- | --- | --- |
 | `StandaloneGuardrailRead/Create/Patch` | `guardrails.py:26` | `ManagerGuardrailConfig` | `idun_agent_schema/manager/guardrail_configs.py` |
 | `StandaloneMCPServerRead/Create/Patch` | `mcp_servers.py:23` | `MCPServer` | `idun_agent_schema/engine/mcp_server.py` |
-| `StandaloneObservabilityRead/Create/Patch` | `observability.py:21` | `ObservabilityConfig` (V2) | `idun_agent_schema/engine/observability_v2.py` |
 | `StandaloneIntegrationRead/Create/Patch` | `integrations.py:23` | `IntegrationConfig` | `idun_agent_schema/engine/integrations` |
 | `StandalonePromptRead/Create/Patch` | `prompts.py:24` | (mirrors) `ManagedPromptCreate/Read/Patch` | `idun_agent_schema/manager/managed_prompt.py` |
+
+Observability landed as a singleton during Phase 4 implementation — see §"Singleton schemas" / §"Singleton ORM" for its `Read/Patch`-only shape (no `Create`, upsert via PATCH). The deviation from manager's collection layout is locked in spec §"Observability".
 
 Phase 4 ORM modules apply the §14.3 audit checklist to the corresponding `StandaloneXRow` SQLAlchemy declarations; the wrapping shape lands here at the schema layer.
 
