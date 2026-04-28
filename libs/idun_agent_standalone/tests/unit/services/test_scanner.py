@@ -452,7 +452,7 @@ async def test_inferred_name_strips_underscore_agent_suffix(tmp_path: Path) -> N
 
 
 async def test_inferred_name_fallback(tmp_path: Path) -> None:
-    """Filename ``agent.py`` with no parent context → titlecased filename, not fallback."""
+    """Filename ``agent.py`` strips to empty → ``My Agent`` fallback."""
     (tmp_path / "agent.py").write_text(
         "from langgraph.graph import StateGraph\n" "graph = StateGraph(int).compile()\n"
     )
@@ -490,3 +490,61 @@ async def test_inferred_name_config_name_wins(tmp_path: Path) -> None:
     )
     result = await scan_folder(tmp_path)
     assert result.detected[0].inferred_name == "From Config"
+
+
+async def test_ipynb_files_ignored(tmp_path: Path) -> None:
+    """Notebook files are never parsed."""
+    (tmp_path / "agent.ipynb").write_text(
+        '{ "cells": [{ "source": ["from langgraph.graph import StateGraph\\n",'
+        ' "graph = StateGraph(int).compile()\\n"] }] }'
+    )
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+    assert result.has_python_files is False
+
+
+async def test_oversized_py_skipped(tmp_path: Path) -> None:
+    """Files > 1 MB are skipped (binary heuristic)."""
+    (tmp_path / "huge.py").write_text("# pad\n" * 200_000)  # ~1.4 MB
+    result = await scan_folder(tmp_path)
+    assert result.has_python_files is False  # huge.py was skipped
+    assert result.detected == []
+
+
+async def test_scan_duration_populated(tmp_path: Path) -> None:
+    (tmp_path / "agent.py").write_text(
+        "from langgraph.graph import StateGraph\n" "graph = StateGraph(int).compile()\n"
+    )
+    result = await scan_folder(tmp_path)
+    assert result.scan_duration_ms >= 0
+
+
+async def test_full_state_2_shape(tmp_path: Path) -> None:
+    """End-to-end: state-2 (one supported agent) feeds the wizard correctly."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "support-bot"\n')
+    (tmp_path / "agent.py").write_text(
+        "from langgraph.graph import StateGraph\n" "graph = StateGraph(int).compile()\n"
+    )
+    result = await scan_folder(tmp_path)
+    assert result.has_python_files is True
+    assert result.has_idun_config is False
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.framework == "LANGGRAPH"
+    assert d.inferred_name == "Support Bot"
+    assert d.confidence == "MEDIUM"
+    assert d.source == "source"
+
+
+async def test_full_state_3_shape(tmp_path: Path) -> None:
+    """End-to-end: state-3 (multiple agents) returns a list the wizard can show."""
+    (tmp_path / "alpha.py").write_text(
+        "from langgraph.graph import StateGraph\n" "graph = StateGraph(int).compile()\n"
+    )
+    (tmp_path / "beta.py").write_text(
+        "from google.adk.agents import Agent\n" "root_agent = Agent(name='b')\n"
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 2
+    frameworks = {d.framework for d in result.detected}
+    assert frameworks == {"LANGGRAPH", "ADK"}
