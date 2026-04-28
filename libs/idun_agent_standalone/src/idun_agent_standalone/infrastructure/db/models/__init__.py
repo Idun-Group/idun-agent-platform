@@ -6,6 +6,7 @@ Importing this module registers every model on ``Base.metadata`` so
 
 from .agent import StandaloneAgentRow  # noqa: F401
 from .guardrail import StandaloneGuardrailRow  # noqa: F401
+from .install_meta import StandaloneInstallMetaRow  # noqa: F401
 from .integration import StandaloneIntegrationRow  # noqa: F401
 from .mcp_server import StandaloneMCPServerRow  # noqa: F401
 from .memory import StandaloneMemoryRow  # noqa: F401
