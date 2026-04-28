@@ -374,3 +374,35 @@ async def test_distinct_files_not_deduped(tmp_path: Path) -> None:
     )
     result = await scan_folder(tmp_path)
     assert len(result.detected) == 2
+
+
+async def test_dedup_config_beats_langgraph_json_on_tie(tmp_path: Path) -> None:
+    """HIGH-vs-HIGH tiebreaker: first-seen (config.yaml) wins over langgraph.json.
+
+    Both detection paths emit a HIGH-confidence entry for the same
+    ``(file_path, variable_name)`` pair. ``scan_folder`` runs config
+    detection first, so the config entry is in the dedup map before
+    the langgraph.json entry; with the strict ``>`` comparison in
+    ``_dedup`` the config entry survives.
+    """
+    (tmp_path / "config.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "agent": {
+                    "type": "LANGGRAPH",
+                    "config": {
+                        "name": "From config",
+                        "graph_definition": "./agent.py:graph",
+                    },
+                }
+            }
+        )
+    )
+    (tmp_path / "langgraph.json").write_text(
+        json.dumps({"graphs": {"helpdesk": "./agent.py:graph"}})
+    )
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.source == "config"
+    assert d.inferred_name == "From config"
