@@ -40,9 +40,21 @@ export * from "./types";
 const ADMIN = "/admin/api/v1";
 
 export const api = {
-  // auth (only /me is implemented on the rework backend today)
+  // auth (strict-minimum password mode)
   me: () =>
     apiFetch<{ authenticated: boolean; authMode: string }>(`${ADMIN}/auth/me`),
+  login: (password: string) =>
+    apiFetch<{ ok: boolean }>(`${ADMIN}/auth/login`, {
+      method: "POST",
+      body: j({ password }),
+    }),
+  logout: () =>
+    apiFetch<{ ok: boolean }>(`${ADMIN}/auth/logout`, { method: "POST" }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiFetch<{ ok: boolean }>(`${ADMIN}/auth/change-password`, {
+      method: "POST",
+      body: j({ currentPassword, newPassword }),
+    }),
 
   // agent (singleton)
   getAgent: () => apiFetch<AgentRead>(`${ADMIN}/agent`),

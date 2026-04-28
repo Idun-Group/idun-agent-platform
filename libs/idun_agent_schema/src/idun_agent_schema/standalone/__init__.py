@@ -4,6 +4,12 @@ from .agent import (  # noqa: F401
     StandaloneAgentPatch,
     StandaloneAgentRead,
 )
+from .auth import (  # noqa: F401
+    StandaloneAuthChangePasswordBody,
+    StandaloneAuthLoginBody,
+    StandaloneAuthMe,
+    StandaloneAuthMutationResult,
+)
 from .common import (  # noqa: F401
     StandaloneDeleteResult,
     StandaloneMutationResponse,

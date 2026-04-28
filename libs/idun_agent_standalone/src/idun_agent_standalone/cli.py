@@ -30,6 +30,22 @@ def main() -> None:
     """Idun Agent Standalone CLI."""
 
 
+@main.command("hash-password")
+@click.option(
+    "--password",
+    "password",
+    prompt=True,
+    hide_input=True,
+    confirmation_prompt=True,
+    help="Plaintext password to hash. Prompted if omitted.",
+)
+def hash_password_cmd(password: str) -> None:
+    """Print a bcrypt hash suitable for IDUN_ADMIN_PASSWORD_HASH."""
+    from idun_agent_standalone.core.security import hash_password
+
+    click.echo(hash_password(password))
+
+
 @main.command("setup")
 @click.option(
     "--config",
