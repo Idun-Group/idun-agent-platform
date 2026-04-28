@@ -19,6 +19,9 @@ from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgent
 from idun_agent_standalone.infrastructure.db.models.guardrail import (
     StandaloneGuardrailRow,
 )
+from idun_agent_standalone.infrastructure.db.models.integration import (
+    StandaloneIntegrationRow,
+)
 from idun_agent_standalone.infrastructure.db.models.mcp_server import (
     StandaloneMCPServerRow,
 )
@@ -74,6 +77,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     mcp_servers = await _load_mcp_servers(session)
     guardrails = await _load_guardrails(session)
     prompts = await _load_prompts(session)
+    integrations = await _load_integrations(session)
 
     base_config = _parse_base_config(agent)
     framework = base_config.agent.type
@@ -86,6 +90,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     _layer_mcp_servers(base_dict, agent.name, mcp_servers)
     _layer_guardrails(base_dict, agent.name, guardrails)
     _layer_prompts(base_dict, agent.name, prompts)
+    _layer_integrations(base_dict, agent.name, integrations)
 
     return _validate_assembled(base_dict, agent.name, framework)
 
@@ -142,6 +147,22 @@ async def _load_guardrails(
                     StandaloneGuardrailRow.position,
                     StandaloneGuardrailRow.sort_order,
                     StandaloneGuardrailRow.created_at,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+async def _load_integrations(
+    session: AsyncSession,
+) -> list[StandaloneIntegrationRow]:
+    return list(
+        (
+            await session.execute(
+                select(StandaloneIntegrationRow).order_by(
+                    StandaloneIntegrationRow.created_at
                 )
             )
         )
@@ -384,6 +405,36 @@ def _layer_prompts(
         agent_name,
         len(latest),
         len(prompts),
+    )
+
+
+def _layer_integrations(
+    base_dict: dict[str, Any],
+    agent_name: str,
+    integrations: list[StandaloneIntegrationRow],
+) -> None:
+    """Layer enabled integrations onto the engine config.
+
+    Disabled rows are skipped at assembly time. The inner
+    ``IntegrationConfig.enabled`` flag is overwritten to true so the
+    row level toggle is the single source of truth and a misaligned
+    inner flag never silently disables a row that is enabled at the
+    admin layer.
+    """
+    enabled = [row for row in integrations if row.enabled]
+    if not enabled:
+        logger.info("assemble: no integrations agent=%s", agent_name)
+        return
+    payloads: list[dict[str, Any]] = []
+    for row in enabled:
+        config = dict(row.integration_config)
+        config["enabled"] = True
+        payloads.append(config)
+    base_dict["integrations"] = payloads
+    logger.info(
+        "assemble: integrations agent=%s count=%d",
+        agent_name,
+        len(payloads),
     )
 
 
