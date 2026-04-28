@@ -12,6 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.models.mcp_server import (
+    StandaloneMCPServerRow,
+)
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
 from idun_agent_standalone.infrastructure.db.models.observability import (
     StandaloneObservabilityRow,
@@ -60,6 +63,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     agent = await _load_agent(session)
     memory = await _load_memory(session)
     observability = await _load_observability(session)
+    mcp_servers = await _load_mcp_servers(session)
 
     base_config = _parse_base_config(agent)
     framework = base_config.agent.type
@@ -69,6 +73,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     base_dict = base_config.model_dump(exclude_none=True)
     _layer_memory(base_dict, framework, memory_payload)
     _layer_observability(base_dict, agent.name, observability)
+    _layer_mcp_servers(base_dict, agent.name, mcp_servers)
 
     return _validate_assembled(base_dict, agent.name, framework)
 
@@ -97,6 +102,22 @@ async def _load_observability(
     return (
         await session.execute(select(StandaloneObservabilityRow))
     ).scalar_one_or_none()
+
+
+async def _load_mcp_servers(
+    session: AsyncSession,
+) -> list[StandaloneMCPServerRow]:
+    return list(
+        (
+            await session.execute(
+                select(StandaloneMCPServerRow).order_by(
+                    StandaloneMCPServerRow.created_at
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
 
 
 def _parse_base_config(agent: StandaloneAgentRow) -> EngineConfig:
@@ -184,6 +205,29 @@ def _layer_observability(
         agent_name,
         provider,
         enabled,
+    )
+
+
+def _layer_mcp_servers(
+    base_dict: dict[str, Any],
+    agent_name: str,
+    mcp_servers: list[StandaloneMCPServerRow],
+) -> None:
+    """Layer enabled MCP server rows onto the engine config.
+
+    Disabled rows are skipped at assembly time so the engine never
+    tries to spawn or connect to a server the operator has paused.
+    Empty after the filter leaves the field absent.
+    """
+    enabled = [row for row in mcp_servers if row.enabled]
+    if not enabled:
+        logger.info("assemble: no mcp servers agent=%s", agent_name)
+        return
+    base_dict["mcp_servers"] = [row.mcp_server_config for row in enabled]
+    logger.info(
+        "assemble: mcp servers agent=%s count=%d",
+        agent_name,
+        len(enabled),
     )
 
 
