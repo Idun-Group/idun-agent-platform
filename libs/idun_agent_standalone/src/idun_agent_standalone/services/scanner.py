@@ -322,6 +322,10 @@ def _detect_in_idun_config(
         if not rel or not variable:
             continue
 
+        # Flips ONLY after the full chain validates (type, config dict,
+        # parseable target, non-empty rel + variable). Moving this above
+        # the empty-rel check would flip the flag on a partially-valid
+        # config and confuse the wizard's state classification.
         has_idun_config = True
         inferred = config.get("name")
         if not isinstance(inferred, str) or not inferred:
@@ -347,12 +351,19 @@ def _iter_idun_config_paths(root: Path, *, max_depth: int):
         if depth > max_depth:
             dirnames[:] = []
             continue
-        if depth == max_depth:
+        if depth >= max_depth:
             dirnames[:] = []
-        dirnames[:] = [d for d in dirnames if not _is_skipped(d)]
+        else:
+            dirnames[:] = [d for d in dirnames if not _is_skipped(d)]
         for filename in filenames:
             if filename in ("config.yaml", "config.yml"):
-                yield Path(dirpath) / filename
+                path = Path(dirpath) / filename
+                try:
+                    if path.stat().st_size > _MAX_FILE_BYTES:
+                        continue
+                except OSError:
+                    continue
+                yield path
 
 
 async def scan_folder(root: Path) -> ScanResult:
