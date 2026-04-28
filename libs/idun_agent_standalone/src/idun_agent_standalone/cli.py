@@ -41,6 +41,9 @@ def main() -> None:
 def setup_cmd(config_path_override: str | None) -> None:
     """Create DB schema and seed from YAML if the DB is empty."""
     setup_logging()
+    from idun_agent_standalone.db.migrate import upgrade_head
+
+    upgrade_head()
     asyncio.run(_setup(config_path_override))
 
 
@@ -64,7 +67,6 @@ async def _setup(config_path_override: str | None) -> None:
         create_sessionmaker,
     )
     from idun_agent_standalone.infrastructure.scripts.seed import (
-        create_tables,
         seed_from_yaml_if_empty,
     )
 
@@ -82,7 +84,6 @@ async def _setup(config_path_override: str | None) -> None:
     db_engine = create_db_engine(settings.database_url)
     sessionmaker = create_sessionmaker(db_engine)
     try:
-        await create_tables(db_engine)
         await seed_from_yaml_if_empty(sessionmaker, config_path)
     finally:
         await db_engine.dispose()
