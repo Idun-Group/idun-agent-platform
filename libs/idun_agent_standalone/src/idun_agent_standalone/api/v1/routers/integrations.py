@@ -100,12 +100,16 @@ async def list_integrations(
 ) -> list[StandaloneIntegrationRead]:
     """Return all configured integration rows ordered by created_at."""
     rows = (
-        await session.execute(
-            select(StandaloneIntegrationRow).order_by(
-                StandaloneIntegrationRow.created_at
+        (
+            await session.execute(
+                select(StandaloneIntegrationRow).order_by(
+                    StandaloneIntegrationRow.created_at
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [_to_read(row) for row in rows]
 
 
@@ -133,9 +137,7 @@ async def create_integration(
                 code=StandaloneErrorCode.VALIDATION_FAILED,
                 message="Cannot derive a slug from the provided name.",
                 field_errors=[
-                    StandaloneFieldError(
-                        field="name", message=str(exc), code="invalid"
-                    )
+                    StandaloneFieldError(field="name", message=str(exc), code="invalid")
                 ],
             ),
         ) from exc

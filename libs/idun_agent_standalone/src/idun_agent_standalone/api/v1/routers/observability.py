@@ -120,9 +120,7 @@ async def patch_observability(
     else:
         if not fields:
             logger.debug("admin.observability.patch noop")
-            return StandaloneMutationResponse(
-                data=_to_read(row), reload=_NOOP_RELOAD
-            )
+            return StandaloneMutationResponse(data=_to_read(row), reload=_NOOP_RELOAD)
         if "observability" in fields and body.observability is not None:
             row.observability_config = body.observability.model_dump(exclude_none=True)
 

@@ -78,9 +78,7 @@ def _to_read(row: StandaloneMCPServerRow) -> StandaloneMCPServerRead:
     )
 
 
-async def _load_by_id(
-    session: AsyncSession, mcp_id: UUID
-) -> StandaloneMCPServerRow:
+async def _load_by_id(session: AsyncSession, mcp_id: UUID) -> StandaloneMCPServerRow:
     row = (
         await session.execute(
             select(StandaloneMCPServerRow).where(
@@ -105,12 +103,16 @@ async def list_mcp_servers(
 ) -> list[StandaloneMCPServerRead]:
     """Return all configured MCP server rows ordered by created_at."""
     rows = (
-        await session.execute(
-            select(StandaloneMCPServerRow).order_by(
-                StandaloneMCPServerRow.created_at
+        (
+            await session.execute(
+                select(StandaloneMCPServerRow).order_by(
+                    StandaloneMCPServerRow.created_at
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [_to_read(row) for row in rows]
 
 
@@ -138,9 +140,7 @@ async def create_mcp_server(
                 code=StandaloneErrorCode.VALIDATION_FAILED,
                 message="Cannot derive a slug from the provided name.",
                 field_errors=[
-                    StandaloneFieldError(
-                        field="name", message=str(exc), code="invalid"
-                    )
+                    StandaloneFieldError(field="name", message=str(exc), code="invalid")
                 ],
             ),
         ) from exc
@@ -184,9 +184,7 @@ async def create_mcp_server(
 
 
 @router.get("/{mcp_id}", response_model=StandaloneMCPServerRead)
-async def get_mcp_server(
-    mcp_id: UUID, session: SessionDep
-) -> StandaloneMCPServerRead:
+async def get_mcp_server(mcp_id: UUID, session: SessionDep) -> StandaloneMCPServerRead:
     """Return a single MCP server row or 404."""
     row = await _load_by_id(session, mcp_id)
     return _to_read(row)

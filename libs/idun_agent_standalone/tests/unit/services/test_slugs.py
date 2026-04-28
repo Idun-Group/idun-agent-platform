@@ -63,6 +63,7 @@ def test_normalize_leading_trailing_whitespace() -> None:
 # ensure_unique_slug tests
 # We need a small ORM model to test against.
 
+
 class _FakeRow(Base):
     __tablename__ = "_fake_slug_test"
     id: str = Column(String(36), primary_key=True)  # type: ignore[assignment]
@@ -71,9 +72,7 @@ class _FakeRow(Base):
 
 @pytest.mark.asyncio
 async def test_ensure_unique_no_collision(async_session) -> None:
-    result = await ensure_unique_slug(
-        async_session, _FakeRow, _FakeRow.slug, "fresh"
-    )
+    result = await ensure_unique_slug(async_session, _FakeRow, _FakeRow.slug, "fresh")
     assert result == "fresh"
 
 

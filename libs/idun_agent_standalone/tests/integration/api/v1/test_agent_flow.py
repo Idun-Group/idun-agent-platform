@@ -176,8 +176,6 @@ async def test_malformed_body_returns_422(admin_app, async_session) -> None:
     transport = ASGITransport(app=admin_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Send name=null (forbidden by _no_null_name validator)
-        response = await client.patch(
-            "/admin/api/v1/agent", json={"name": None}
-        )
+        response = await client.patch("/admin/api/v1/agent", json={"name": None})
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation_failed"
