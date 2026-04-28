@@ -36,9 +36,6 @@ from idun_agent_standalone.services.engine_config import (
     AssemblyError,
     assemble_engine_config,
 )
-from idun_agent_standalone.services.engine_reload import (
-    build_engine_reload_callable,
-)
 
 logger = get_logger(__name__)
 
@@ -83,9 +80,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         try:
             engine_config = await assemble_engine_config(session)
         except AssemblyError as exc:
-            logger.warning(
-                "boot engine layer skipped, admin only mode reason=%s", exc
-            )
+            logger.warning("boot engine layer skipped, admin only mode reason=%s", exc)
             engine_config = None
 
     if engine_config is not None:
@@ -100,11 +95,10 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.state.settings = settings
     app.state.db_engine = db_engine
     app.state.sessionmaker = sessionmaker
-    # Phase 3 reload callable: rebuilds the engine on the same FastAPI
-    # app instance via the engine's lifespan hooks. Admin routers pull
-    # this from app.state via ``ReloadCallableDep``. Available even in
-    # admin-only mode so that a future PATCH that finally produces a
-    # valid config can boot the engine layer without a process restart.
+    from idun_agent_standalone.services.engine_reload import (
+        build_engine_reload_callable,
+    )
+
     app.state.reload_callable = build_engine_reload_callable(app)
 
     register_admin_exception_handlers(app)

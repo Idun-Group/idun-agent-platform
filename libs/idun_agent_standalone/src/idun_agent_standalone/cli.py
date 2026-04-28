@@ -48,27 +48,14 @@ def setup_cmd(config_path_override: str | None) -> None:
 def serve_cmd() -> None:
     """Run the standalone server (engine routes plus admin REST)."""
     setup_logging()
-    asyncio.run(_serve())
-
-
-async def _serve() -> None:
     from idun_agent_standalone.app import create_standalone_app
 
     logger = get_logger(__name__)
     settings = StandaloneSettings()
     logger.info("serve host=%s port=%s", settings.host, settings.port)
 
-    app = await create_standalone_app(settings)
-
-    server = uvicorn.Server(
-        uvicorn.Config(
-            app,
-            host=settings.host,
-            port=settings.port,
-            log_config=None,
-        )
-    )
-    await server.serve()
+    app = asyncio.run(create_standalone_app(settings))
+    uvicorn.run(app, host=settings.host, port=settings.port)
 
 
 async def _setup(config_path_override: str | None) -> None:
