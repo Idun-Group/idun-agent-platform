@@ -572,7 +572,7 @@ return StandaloneMutationResponse(
 
 Why: DELETE on an enabled resource changes the assembled `EngineConfig`, so it goes through the same reload path as POST/PATCH. The spec locks one envelope across all mutations.
 
-### 6.5 Slug rules — FORWARD
+### 6.5 Slug rules — ESTABLISHED
 
 Slugs are auto-generated from `name` on POST. Routes use `{id}` for canonical lookup; an optional `/by-slug/{slug}` lookup is a Phase-5+ convenience.
 
@@ -596,18 +596,46 @@ Lifecycle constraints (locked):
 - Direct slug PATCH that conflicts returns 409 (`code = conflict`). No auto-suffix on operator-supplied slugs.
 - POST collision auto-suffixes: `github-tools` → `github-tools-2` → `github-tools-3`.
 
-Skeleton:
+Reference snippet — Phase 3 service. `normalize_slug` at `libs/idun_agent_standalone/src/idun_agent_standalone/services/slugs.py:31` and `ensure_unique_slug` at the same file `:58`:
 
 ```python
-# FORWARD — refine in Phase 5; helper lives in services/slugs.py (Phase 3)
-from idun_agent_standalone.services.slugs import normalize_slug, ensure_unique_slug
-
-slug = ensure_unique_slug(
-    session,
-    Standalone<Resource>Row,
-    candidate=normalize_slug(body.name),
+from idun_agent_standalone.services.slugs import (
+    SlugConflictError,
+    SlugNormalizationError,
+    ensure_unique_slug,
+    normalize_slug,
 )
+
+# Phase 5 router POST flow
+candidate = normalize_slug(body.name)
+slug = await ensure_unique_slug(
+    session,
+    StandaloneMCPServerRow,           # the ORM class
+    StandaloneMCPServerRow.slug,      # the slug column on that ORM
+    candidate,
+)
+row = StandaloneMCPServerRow(name=body.name, slug=slug, ...)
+
+# PATCH-of-slug flow (collision check only — no auto-suffix on operator-supplied slugs)
+# FORWARD — Phase 5 collection routers will refine
+if existing.slug != body.slug:
+    if await ensure_unique_slug(
+        session,
+        StandaloneMCPServerRow,
+        StandaloneMCPServerRow.slug,
+        body.slug,
+    ) != body.slug:
+        raise AdminAPIError(
+            status_code=409,
+            error=StandaloneAdminError(
+                code=StandaloneErrorCode.CONFLICT,
+                message=f"Slug {body.slug!r} is already in use.",
+            ),
+        )
+    existing.slug = body.slug
 ```
+
+`SlugNormalizationError` (subclass of `ValueError`) and `SlugConflictError` are defined alongside the helpers; routers map them to 422 `validation_failed` and 409 `conflict` respectively (see §9).
 
 Singletons (`agent`, `memory`) do not have meaningful slugs because they are not addressed by id. Their rows may carry a slug field for future cross-system identity, but the admin API never uses it for lookup.
 
@@ -681,29 +709,9 @@ Locked from spec §"API response posture":
 - HTTP 500 for round-3 reload init failure (DB rolls back).
 - HTTP 429 for rate-limited login.
 
-### 7.4 Stub-reload constants — TRANSIENT
-
-Phase 1 routers use stub reload constants because the reload mutex + 3-round pipeline (§8, §10) lands in Phase 3. Reference at `libs/idun_agent_standalone/src/idun_agent_standalone/api/v1/routers/agent.py:40-48`:
-
-```python
-_SAVED_RELOAD = StandaloneReloadResult(
-    status=StandaloneReloadStatus.RESTART_REQUIRED,
-    message="Saved. Restart required to apply.",
-)
-
-_NOOP_RELOAD = StandaloneReloadResult(
-    status=StandaloneReloadStatus.RELOADED,
-    message="No changes.",
-)
-```
-
-A `_DELETE_RELOAD` constant exists in `routers/memory.py` for the DELETE path. Same pattern.
-
-These are NOT pattern-breakers. Phase 5+ collection routers may copy the stub pattern. Phase 3 retrofits all routers to use the real `commit_with_reload` service.
-
 ---
 
-## 8. Validation rounds — FORWARD
+## 8. Validation rounds — ESTABLISHED
 
 Three explicit validation rounds wrap each mutation. Each has a fixed HTTP code and error code so the UI can branch reliably (verbatim from spec §"Validation rounds"):
 
@@ -713,46 +721,40 @@ Three explicit validation rounds wrap each mutation. Each has a fixed HTTP code 
 | 2 | Assembled `EngineConfig` (post-merge of staged DB state) | 422 | `validation_failed` | Catches cross-resource invalid combos (e.g. `LANGGRAPH + SessionServiceConfig`). |
 | 3 | Engine reload init | 500 | `reload_failed` | DB rolls back; previous engine remains active. |
 
-Skeleton (Phase 3 will land the real implementation in `services/reload.py`):
+Reference flow — `commit_with_reload` at `libs/idun_agent_standalone/src/idun_agent_standalone/services/reload.py:134` is the canonical orchestrator. Round-2 validation is `validate_assembled_config` at `libs/idun_agent_standalone/src/idun_agent_standalone/services/validation.py:39`:
 
 ```python
-# FORWARD — refine in Phase 3
-async with reload_mutex:
-    # Round 1 happens before the handler runs (FastAPI body validation).
-    # Stage DB mutation in a transaction
-    # Round 2: assemble EngineConfig and validate
-    try:
-        assembled = await assemble_engine_config(session)
-        EngineConfig.model_validate(assembled.model_dump())
-    except ValidationError as exc:
-        await session.rollback()
-        raise AdminAPIError(
-            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
-            error=StandaloneAdminError(
-                code=StandaloneErrorCode.VALIDATION_FAILED,
-                message="Assembled config failed validation.",
-                field_errors=field_errors_from_validation_error(exc),
-            ),
-        )
-    # Round 3: try runtime reload
-    try:
-        outcome = await reload_runtime(assembled)
-    except ReloadInitFailed as exc:
-        await session.rollback()
-        raise AdminAPIError(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            error=StandaloneAdminError(
-                code=StandaloneErrorCode.RELOAD_FAILED,
-                message="Engine reload failed; config not saved.",
-                details={"recovered": True},
-            ),
-        ) from exc
-    # On success: commit
-    await session.commit()
-    return StandaloneMutationResponse(data=..., reload=outcome)
+from idun_agent_standalone.services import reload as reload_service
+from idun_agent_standalone.services.reload import (
+    ReloadInitFailed,
+    commit_with_reload,
+)
+
+# Inside the router handler, after staging DB writes via session.add / setattr.
+# `reload_callable` is FastAPI-injected via `ReloadCallableDep` (see api/v1/deps.py).
+async with reload_service._reload_mutex:
+    # Stage DB mutation
+    setattr(row, field, value)
+    await session.flush()
+    # Round 1 already ran (FastAPI Pydantic body validation, 422 on failure).
+    # commit_with_reload internally:
+    #   - assembles EngineConfig from staged session state
+    #   - runs Round 2: validate_assembled_config → 422 on failure (rollback)
+    #   - runs Round 3: engine reload init → 500 on failure (rollback)
+    #   - commits the session on success
+    #   - records outcome to standalone_runtime_state
+    reload_result = await commit_with_reload(
+        session,
+        reload_callable=reload_callable,
+    )
+    await session.refresh(row)
+
+return StandaloneMutationResponse(data=..., reload=reload_result)
 ```
 
-`reload_mutex`, `assemble_engine_config`, `reload_runtime`, `ReloadInitFailed`, the real `_SAVED_RELOAD` outcome are all Phase 3.
+The `reload_callable` parameter is supplied by FastAPI dependency injection — routers declare a `ReloadCallableDep` parameter (added in `libs/idun_agent_standalone/src/idun_agent_standalone/api/v1/deps.py`) which resolves to the engine's reload coroutine. `commit_with_reload` does NOT acquire the mutex itself; the caller must wrap the entire stage-flush-commit sequence in `async with reload_service._reload_mutex:` (see §10).
+
+Round-2 raises `RoundTwoValidationFailed` carrying a Pydantic `ValidationError`; the router error mapper translates it to 422 with `field_errors`. Round-3 raises `ReloadInitFailed`; the mapper translates it to 500 with `code = reload_failed`. In both error paths `commit_with_reload` rolls back the session before re-raising.
 
 ---
 
@@ -828,25 +830,47 @@ raise AdminAPIError(
 
 ---
 
-## 10. Reload mutex — FORWARD
+## 10. Reload mutex — ESTABLISHED
 
-Single in-process `asyncio.Lock` held around the entire 3-round pipeline.
+Single in-process `asyncio.Lock` held by the **router** around the entire 3-round pipeline. The pipeline orchestrator (`commit_with_reload`) does NOT acquire the mutex — the caller must.
 
-Skeleton (Phase 3 lands the real implementation):
+Reference at `libs/idun_agent_standalone/src/idun_agent_standalone/services/reload.py:64`:
 
 ```python
-# FORWARD — refine in Phase 3
-# libs/idun_agent_standalone/src/idun_agent_standalone/services/reload.py
 import asyncio
 
 _reload_mutex = asyncio.Lock()
 
 
-async def commit_with_reload(...) -> StandaloneReloadResult:
-    async with _reload_mutex:
-        # Round 2 + Round 3 + commit/rollback (see §8)
-        ...
+async def commit_with_reload(
+    session: AsyncSession,
+    *,
+    reload_callable: Callable[[EngineConfig], Awaitable[None]],
+    now: Callable[[], datetime] = _default_now,
+) -> StandaloneReloadResult:
+    """Run the 3-round pipeline.
+
+    Caller must:
+      - acquire _reload_mutex via `async with _reload_mutex:`
+      - stage DB mutation (e.g. add/modify ORM rows)
+      - call session.flush()
+    """
+    ...
 ```
+
+Routers reach the mutex via the module-attribute path:
+
+```python
+from idun_agent_standalone.services import reload as reload_service
+from idun_agent_standalone.services.reload import commit_with_reload
+
+async with reload_service._reload_mutex:
+    await session.flush()
+    result = await commit_with_reload(session, reload_callable=reload_callable)
+    await session.refresh(row)
+```
+
+Module-attribute access (`reload_service._reload_mutex`) instead of direct import lets test fixtures swap a fresh `asyncio.Lock` per pytest-asyncio event loop. In production (single event loop) this is irrelevant.
 
 Single-replica assumption: spec §"Save/reload posture" locks standalone as single-replica. Multi-replica deployment requires a DB-backed advisory lock; that work is out of scope until enrollment lands.
 
@@ -883,23 +907,40 @@ boot
 
 The cold-start state values are defined as the `StandaloneRuntimeStatusKind` enum at `libs/idun_agent_schema/src/idun_agent_schema/standalone/runtime_status.py:28`. The full runtime status payload that surfaces the state at `GET /admin/api/v1/runtime/status` is `StandaloneRuntimeStatus` in the same module.
 
+Storage layer — ESTABLISHED. Phase 3 lands the persistence side: the singleton ORM `StandaloneRuntimeStateRow` at `libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/db/models/runtime_state.py:19` holds `last_applied_config_hash`, `last_reload_status`, `last_reload_error`, and `last_reload_at`. The service-layer accessor `get` at `libs/idun_agent_standalone/src/idun_agent_standalone/services/runtime_state.py:29` reads the row (returning `None` on a fresh DB), and `record_reload_outcome` writes it transactionally inside `commit_with_reload`. The boot-path state machine that derives `StandaloneRuntimeStatusKind` from agent presence + engine state + last reload outcome remains FORWARD; Phase 6 lands `GET /admin/api/v1/runtime/status` and the cold-start dispatch logic.
+
 Invariant: the admin API and `/health` MUST come up even when the engine fails to start.
 
 `GET /admin/api/v1/agent` when `state == not_configured` returns 404 (`code = not_found`) so the UI can render an onboarding prompt. Phase 1's `_load_agent` already does this (cite at `api/v1/routers/agent.py:51-68`).
 
 ---
 
-## 12. Config hash — FORWARD
+## 12. Config hash — ESTABLISHED
 
 ```text
 config_hash = sha256(canonical_json(materialized EngineConfig))
 ```
 
-Canonicalization: **JCS / RFC 8785** (sort keys, no whitespace, UTF-8, escape rules per spec). Implementation hint: `rfc8785` PyPI package; lock the choice in Phase 6.
+Canonicalization: **JCS / RFC 8785** (sort keys, no whitespace, UTF-8, escape rules per spec). Implementation: `rfc8785` PyPI package, locked in Phase 3.
 
-Storage: `standalone_runtime_state.last_applied_config_hash`. Surfaced in `GET /runtime/status`.
+Reference at `libs/idun_agent_standalone/src/idun_agent_standalone/services/config_hash.py:21`:
 
-The hash is recomputed on every successful reload and compared to the previous hash. Hash equality may be used to skip redundant reloads — but that is a Phase 6+ optimization, not part of MVP.
+```python
+import rfc8785
+from hashlib import sha256
+from idun_agent_schema.engine.engine import EngineConfig
+
+
+def compute_config_hash(engine_config: EngineConfig) -> str:
+    """Return a 64-character hex sha256 of the JCS-canonical JSON of the config."""
+    payload = engine_config.model_dump(mode="json")
+    canonical = rfc8785.dumps(payload)
+    return sha256(canonical).hexdigest()
+```
+
+Storage: `standalone_runtime_state.last_applied_config_hash` (see §11 for the ORM ref). Phase 3 hashes the **structural slice** of the assembled config (the parts whose change forces a hot reload vs `restart_required`) and stores it after each successful reload — `_is_structural_change` at `services/reload.py:115` consumes it for change detection. Phase 6 will additionally hash the full materialized `EngineConfig` and surface it at `GET /admin/api/v1/runtime/status`.
+
+The hash is recomputed on every successful reload and compared to the previous stored value. Hash equality lets `commit_with_reload` short-circuit redundant reloads when the structural slice is unchanged.
 
 ---
 
