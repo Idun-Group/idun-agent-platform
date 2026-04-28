@@ -446,6 +446,7 @@ def _infer_name(detected: DetectedAgent, root: Path) -> str:
     if stripped:
         return _humanize(stripped)
 
+    # Rule 6: stripped stem was empty (e.g. ``agent.py``) — user-visible fallback.
     return "My Agent"
 
 
