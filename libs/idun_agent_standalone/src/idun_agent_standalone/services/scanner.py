@@ -17,6 +17,7 @@ import json
 import os
 import re
 import time
+import tomllib
 from pathlib import Path
 
 import yaml
@@ -389,6 +390,65 @@ def _dedup(detections: list[DetectedAgent]) -> list[DetectedAgent]:
     return list(by_key.values())
 
 
+_TRAILING_AGENT_RE = re.compile(r"_?agent$", re.IGNORECASE)
+
+
+def _humanize(token: str) -> str:
+    """Return a Title-Cased label from a slug-ish token (``my-bot`` → ``My Bot``)."""
+    parts = re.split(r"[-_\s]+", token.strip())
+    return " ".join(p.capitalize() for p in parts if p)
+
+
+def _read_pyproject_name(root: Path) -> str | None:
+    path = root / "pyproject.toml"
+    if not path.is_file():
+        return None
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    project = data.get("project")
+    if isinstance(project, dict):
+        name = project.get("name")
+        if isinstance(name, str) and name:
+            return name
+    return None
+
+
+def _infer_name(detected: DetectedAgent, root: Path) -> str:
+    """Apply the 6-rule cascade to compute the human-friendly name.
+
+    Rules 1 and 2 — config.name and langgraph.json key — are already
+    populated by the detection paths; this function only fills the
+    blanks for source-detected entries (and overrides empty values
+    that slipped through from config without a name).
+    """
+    if detected.inferred_name:
+        return detected.inferred_name
+
+    pyproject_name = _read_pyproject_name(root)
+    if pyproject_name:
+        return _humanize(pyproject_name)
+
+    file_path = Path(detected.file_path)
+    parent = file_path.parent
+    # Rule 4: parent dir, skipping ``src``
+    if parent.parts and parent.parts != (".",):
+        candidate = parent.parts[-1]
+        if candidate == "src" and len(parent.parts) >= 2:
+            candidate = parent.parts[-2]
+        if candidate and candidate != "src":
+            return _humanize(candidate)
+
+    # Rule 5: filename without extension, strip ``_agent`` / ``agent``
+    stem = file_path.stem
+    stripped = _TRAILING_AGENT_RE.sub("", stem)
+    if stripped:
+        return _humanize(stripped)
+
+    return "My Agent"
+
+
 async def scan_folder(root: Path) -> ScanResult:
     """Walk ``root`` and return a ``ScanResult``."""
     started = time.monotonic()
@@ -403,7 +463,11 @@ async def scan_folder(root: Path) -> ScanResult:
         has_python_files = True
         raw.extend(_detect_in_source(rel, abs_path))
 
-    detected = _dedup(raw)
+    deduped = _dedup(raw)
+    detected = [
+        d.model_copy(update={"inferred_name": _infer_name(d, root)}) for d in deduped
+    ]
+
     duration_ms = int((time.monotonic() - started) * 1000)
     return ScanResult(
         root=str(root),
