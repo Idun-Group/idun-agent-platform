@@ -48,9 +48,7 @@ def build_engine_reload_callable(
             except Exception:
                 # Teardown errors are noisy but not fatal — the engine
                 # logs them, we proceed to reconfigure regardless.
-                logger.exception(
-                    "engine_reload.cleanup_failed continuing to configure"
-                )
+                logger.exception("engine_reload.cleanup_failed continuing to configure")
             _prune_integration_routes(engine_app)
             await configure_app(engine_app, config)
         except Exception as exc:

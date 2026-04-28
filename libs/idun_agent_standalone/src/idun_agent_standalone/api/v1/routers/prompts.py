@@ -97,13 +97,17 @@ async def list_prompts(
 ) -> list[StandalonePromptRead]:
     """Return all prompt versions ordered by prompt id then version."""
     rows = (
-        await session.execute(
-            select(StandalonePromptRow).order_by(
-                StandalonePromptRow.prompt_id,
-                StandalonePromptRow.version.desc(),
+        (
+            await session.execute(
+                select(StandalonePromptRow).order_by(
+                    StandalonePromptRow.prompt_id,
+                    StandalonePromptRow.version.desc(),
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [_to_read(row) for row in rows]
 
 
@@ -148,9 +152,7 @@ async def create_prompt(
 
 
 @router.get("/{prompt_row_id}", response_model=StandalonePromptRead)
-async def get_prompt(
-    prompt_row_id: UUID, session: SessionDep
-) -> StandalonePromptRead:
+async def get_prompt(prompt_row_id: UUID, session: SessionDep) -> StandalonePromptRead:
     """Return a single prompt version row or 404."""
     row = await _load_by_id(session, prompt_row_id)
     return _to_read(row)

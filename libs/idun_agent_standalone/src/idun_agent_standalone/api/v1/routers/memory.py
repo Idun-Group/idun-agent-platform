@@ -67,9 +67,7 @@ def _to_read(row: StandaloneMemoryRow) -> StandaloneMemoryRead:
 
 
 async def _load_row(session: AsyncSession) -> StandaloneMemoryRow | None:
-    return (
-        await session.execute(select(StandaloneMemoryRow))
-    ).scalar_one_or_none()
+    return (await session.execute(select(StandaloneMemoryRow))).scalar_one_or_none()
 
 
 @router.get("", response_model=StandaloneMemoryRead)
@@ -81,9 +79,7 @@ async def get_memory(session: SessionDep) -> StandaloneMemoryRead:
             status_code=http_status.HTTP_404_NOT_FOUND,
             error=StandaloneAdminError(
                 code=StandaloneErrorCode.NOT_FOUND,
-                message=(
-                    "No memory configured. Default in-memory is used at runtime."
-                ),
+                message=("No memory configured. Default in-memory is used at runtime."),
             ),
         )
     logger.info("admin.memory.get framework=%s", row.agent_framework)
@@ -139,9 +135,7 @@ async def patch_memory(
         creating = False
         if not fields:
             logger.debug("admin.memory.patch noop")
-            return StandaloneMutationResponse(
-                data=_to_read(row), reload=_NOOP_RELOAD
-            )
+            return StandaloneMutationResponse(data=_to_read(row), reload=_NOOP_RELOAD)
         if "agent_framework" in fields and body.agent_framework is not None:
             row.agent_framework = body.agent_framework.value
         if "memory" in fields and body.memory is not None:
@@ -149,9 +143,7 @@ async def patch_memory(
 
     async with reload_service._reload_mutex:
         await session.flush()
-        result = await commit_with_reload(
-            session, reload_callable=reload_callable
-        )
+        result = await commit_with_reload(session, reload_callable=reload_callable)
         await session.refresh(row)
 
     logger.info(
@@ -194,9 +186,7 @@ async def delete_memory(
     async with reload_service._reload_mutex:
         await session.delete(row)
         await session.flush()
-        result = await commit_with_reload(
-            session, reload_callable=reload_callable
-        )
+        result = await commit_with_reload(session, reload_callable=reload_callable)
 
     logger.info(
         "admin.memory.delete framework=%s status=%s",
