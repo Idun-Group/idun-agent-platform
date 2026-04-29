@@ -179,3 +179,19 @@ def test_init_call_order_no_browser(ordered_dependencies: list[str]) -> None:
         "_setup",
         "_serve",
     ]
+
+
+def test_init_browser_url_maps_wildcard_host_to_localhost(
+    stub_dependencies: dict[str, list], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When IDUN_HOST=0.0.0.0 (Cloud Run / bind-all), the browser URL
+    must use 127.0.0.1 — browsers can't navigate to wildcard bind
+    addresses. The server still binds wherever IDUN_HOST says."""
+    monkeypatch.setenv("IDUN_HOST", "0.0.0.0")
+    runner = CliRunner()
+    result = runner.invoke(main, ["init"])
+    assert result.exit_code == 0, result.output
+
+    url = stub_dependencies["webbrowser.open"][0]
+    assert url.startswith("http://127.0.0.1:")
+    assert "0.0.0.0" not in url

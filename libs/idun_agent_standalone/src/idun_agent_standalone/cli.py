@@ -117,7 +117,13 @@ def init_cmd(port_override: int | None, no_browser: bool) -> None:
     # after would require threading. Modern browsers retry connection-refused
     # for several seconds, giving uvicorn a window to come up.
     if not no_browser:
-        webbrowser.open(f"http://{settings.host}:{settings.port}/")
+        # Wildcard bind addresses (0.0.0.0 / ::) are server-side; browsers
+        # can't navigate to them reliably. Map to localhost for the URL
+        # only — the server still binds wherever IDUN_HOST says.
+        browser_host = (
+            "127.0.0.1" if settings.host in ("0.0.0.0", "::", "") else settings.host
+        )
+        webbrowser.open(f"http://{browser_host}:{settings.port}/")
 
     asyncio.run(_serve(settings))
 
