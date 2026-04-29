@@ -14,6 +14,16 @@ import { TOUR_STEPS } from "./tour-steps";
 const COMPLETED_KEY = "idun.tour.completed";
 
 /**
+ * rAF-poll cap for waiting on a tour step's anchor element to mount.
+ * Long enough to cover slow chat-root / admin-layout mounts (the chat
+ * root gates WelcomeHero on agentReady; the admin layout has its own
+ * loading window). Short enough that a genuinely missing anchor surfaces
+ * via the existing onPopoverRender recovery within 2s rather than
+ * hanging silently.
+ */
+const ANCHOR_POLL_CAP_MS = 2_000;
+
+/**
  * Normalize a pathname for trailing-slash-insensitive comparison. The
  * Next.js standalone UI builds with `trailingSlash: true` so `usePathname`
  * yields e.g. `/admin/agent/` while `TOUR_STEPS[i].route` is declared as
@@ -59,6 +69,16 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const driverRef = useRef<Driver | null>(null);
   const pathnameRef = useRef(pathname);
   const [pendingStepIndex, setPendingStepIndex] = useState<number | null>(null);
+
+  // Cleanup tail shared between the last-step Done branch in onNextClick
+  // (which calls destroy() itself) and the onDestroyed callback (which
+  // fires from Driver.js's X/Esc/overlay paths). Future additions —
+  // analytics, focus restoration — land in one place.
+  const markTourCompleteAndTearDown = () => {
+    safeMarkCompleted();
+    driverRef.current = null;
+    setPendingStepIndex(null);
+  };
 
   // Keep a ref to the latest pathname so onNextClick callbacks (created
   // once at driver instantiation time) can read the current route without
@@ -112,10 +132,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
           // call `opts.driver.destroy()` from inside this callback.
           // Mark completion + tear down state ourselves so the end-state
           // matches the onDestroyed flow regardless.
-          safeMarkCompleted();
+          markTourCompleteAndTearDown();
           opts.driver.destroy();
-          driverRef.current = null;
-          setPendingStepIndex(null);
           return;
         }
         if (
@@ -144,9 +162,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
         // overlay click). The last-step Done path sets these in the
         // onNextClick override directly because onDestroyed is not
         // dispatched when destroy() is called from within onNextClick.
-        safeMarkCompleted();
-        driverRef.current = null;
-        setPendingStepIndex(null);
+        markTourCompleteAndTearDown();
       },
     });
     driverRef.current = driverInstance;
@@ -169,7 +185,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
         if (driverRef.current !== driverInstance) return; // destroyed/replaced
         if (
           (typeof document !== "undefined" && document.querySelector(step0.element!)) ||
-          Date.now() - startedAt > 2_000
+          Date.now() - startedAt > ANCHOR_POLL_CAP_MS
         ) {
           driverInstance.drive(0);
           return;
@@ -204,7 +220,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
       const anchorReady =
         !step.element ||
         (typeof document !== "undefined" && document.querySelector(step.element));
-      if (anchorReady || Date.now() - startedAt > 2_000) {
+      if (anchorReady || Date.now() - startedAt > ANCHOR_POLL_CAP_MS) {
         driverInstance.drive(pendingStepIndex);
         setPendingStepIndex(null);
         return;
