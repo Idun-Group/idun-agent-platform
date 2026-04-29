@@ -34,7 +34,10 @@ export function WizardError({
           <AlertDescription className="space-y-2">
             <p>{message}</p>
             {isReloadFailed && (
-              <p>Edit your `agent.py` to fix the issue, then click Retry.</p>
+              <p>
+                Edit your <code>agent.py</code> to fix the issue, then click
+                Retry.
+              </p>
             )}
           </AlertDescription>
         </Alert>

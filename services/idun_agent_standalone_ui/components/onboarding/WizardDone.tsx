@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,14 +21,18 @@ interface WizardDoneProps {
   onGoToChat: () => void;
 }
 
-function envReminder(framework: Framework, mode: Mode): string {
+function envReminder(framework: Framework, mode: Mode): ReactNode {
   if (mode === "detection") {
     return "Make sure your agent's environment variables are set before chatting.";
   }
-  if (framework === "LANGGRAPH") {
-    return "Set `OPENAI_API_KEY` in your environment before chatting. Copy `.env.example` to `.env` and fill it in, then restart `idun-standalone`.";
-  }
-  return "Set `GOOGLE_API_KEY` in your environment before chatting. Copy `.env.example` to `.env` and fill it in, then restart `idun-standalone`.";
+  const envVar = framework === "LANGGRAPH" ? "OPENAI_API_KEY" : "GOOGLE_API_KEY";
+  return (
+    <>
+      Set <code>{envVar}</code> in your environment before chatting. Copy{" "}
+      <code>.env.example</code> to <code>.env</code> and fill it in, then
+      restart <code>idun-standalone</code>.
+    </>
+  );
 }
 
 export function WizardDone({
