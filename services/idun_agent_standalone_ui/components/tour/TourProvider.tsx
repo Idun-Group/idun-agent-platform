@@ -1,5 +1,6 @@
 "use client";
 
+import "driver.js/dist/driver.css";
 import {
   type ReactNode,
   useEffect,
