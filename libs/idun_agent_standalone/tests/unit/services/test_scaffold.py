@@ -109,7 +109,9 @@ def test_mid_write_failure_cleans_up_partial_files(
     real_write_text = Path.write_text
     call_count = {"n": 0}
 
-    def flaky_write_text(self: Path, content: str, *args: object, **kwargs: object) -> int:
+    def flaky_write_text(
+        self: Path, content: str, *args: object, **kwargs: object
+    ) -> int:
         call_count["n"] += 1
         # Fail on the 3rd file written (any in-progress write triggers cleanup).
         if call_count["n"] == 3:
@@ -124,9 +126,9 @@ def test_mid_write_failure_cleans_up_partial_files(
     # Cleanup must remove all final files we successfully renamed AND any
     # in-flight `.idun-tmp` file from the failed write. Directory must be
     # restored to its pre-call state (empty in this fixture).
-    assert list(tmp_path.iterdir()) == [], (
-        f"unexpected leftover files: {[p.name for p in tmp_path.iterdir()]}"
-    )
+    assert (
+        list(tmp_path.iterdir()) == []
+    ), f"unexpected leftover files: {[p.name for p in tmp_path.iterdir()]}"
 
 
 def test_mid_write_failure_cleans_up_orphan_tmp(
@@ -135,7 +137,9 @@ def test_mid_write_failure_cleans_up_orphan_tmp(
     """An OSError during write_text leaves no orphan .idun-tmp file behind."""
     real_write_text = Path.write_text
 
-    def fail_first_write(self: Path, content: str, *args: object, **kwargs: object) -> int:
+    def fail_first_write(
+        self: Path, content: str, *args: object, **kwargs: object
+    ) -> int:
         # Fail on the very first write_text call — no files renamed yet,
         # but the tmp file may have been created and partially written.
         # The contract says: zero leftover files in tmp_path.
@@ -151,9 +155,9 @@ def test_mid_write_failure_cleans_up_orphan_tmp(
         scaffold.create_starter_project(tmp_path, framework="LANGGRAPH")
 
     # No final files, no `.idun-tmp` orphans.
-    assert list(tmp_path.iterdir()) == [], (
-        f"unexpected leftover files: {[p.name for p in tmp_path.iterdir()]}"
-    )
+    assert (
+        list(tmp_path.iterdir()) == []
+    ), f"unexpected leftover files: {[p.name for p in tmp_path.iterdir()]}"
 
 
 def test_returned_paths_resolve_inside_root(tmp_path: Path) -> None:
