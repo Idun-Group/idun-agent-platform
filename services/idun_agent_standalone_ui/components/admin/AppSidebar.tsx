@@ -124,7 +124,9 @@ export function AppSidebar() {
       <SidebarContent>
         {NAV.map((group) => (
           <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupLabel data-tour={group.label === "Agent" ? "sidebar-agent-group" : undefined}>
+              {group.label}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
@@ -133,6 +135,13 @@ export function AppSidebar() {
                       asChild
                       isActive={isActive(pathname, item.href)}
                       tooltip={item.label}
+                      data-tour={
+                        item.href === "/admin/agent/"
+                          ? "sidebar-agent-config"
+                          : item.href === "/admin/observability/"
+                          ? "sidebar-observability"
+                          : undefined
+                      }
                     >
                       <Link href={item.href}>
                         <item.icon className="h-4 w-4" />
