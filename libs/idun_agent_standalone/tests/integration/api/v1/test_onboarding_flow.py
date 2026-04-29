@@ -47,9 +47,7 @@ async def admin_app(async_session, stub_reload_callable, tmp_path):
 
 
 def _seed_langgraph_file(root: Path, *, var: str = "graph") -> None:
-    (root / "agent.py").write_text(
-        textwrap.dedent(
-            f"""
+    (root / "agent.py").write_text(textwrap.dedent(f"""
             from langgraph.graph import StateGraph
             from typing import TypedDict
 
@@ -57,21 +55,15 @@ def _seed_langgraph_file(root: Path, *, var: str = "graph") -> None:
                 m: str
 
             {var} = StateGraph(State).compile()
-            """
-        ).lstrip()
-    )
+            """).lstrip())
 
 
 def _seed_adk_file(root: Path) -> None:
-    (root / "main_adk.py").write_text(
-        textwrap.dedent(
-            """
+    (root / "main_adk.py").write_text(textwrap.dedent("""
             from google.adk.agents import Agent
 
             agent = Agent(name="x", model="gemini-2.5-flash")
-            """
-        ).lstrip()
-    )
+            """).lstrip())
 
 
 async def _seed_existing_agent(async_session) -> StandaloneAgentRow:
@@ -258,3 +250,119 @@ async def test_create_from_detection_stale_pick_409(admin_app, tmp_path) -> None
     assert body["error"]["code"] == "conflict"
     # Message should help the user: it mentions the filename they sent.
     assert "agent.py" in body["error"]["message"]
+
+
+# ---- /create-starter -------------------------------------------------------
+
+
+async def test_create_starter_langgraph_happy_path(
+    admin_app, tmp_path, stub_reload_callable
+) -> None:
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/admin/api/v1/onboarding/create-starter",
+            json={"framework": "LANGGRAPH"},
+        )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["data"]["name"] == "Starter Agent"
+    assert body["reload"]["status"] == "reloaded"
+
+    expected = {
+        "agent.py",
+        "requirements.txt",
+        ".env.example",
+        "README.md",
+        ".gitignore",
+    }
+    assert {p.name for p in tmp_path.iterdir()} >= expected
+
+
+async def test_create_starter_adk_happy_path(admin_app, tmp_path) -> None:
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/admin/api/v1/onboarding/create-starter",
+            json={"framework": "ADK", "name": "My Bot"},
+        )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["data"]["name"] == "My Bot"
+    assert body["data"]["baseEngineConfig"]["agent"]["type"] == "ADK"
+    assert "GOOGLE_API_KEY" in (tmp_path / ".env.example").read_text()
+
+
+async def test_create_starter_scaffold_conflict_409_zero_writes(
+    admin_app, tmp_path
+) -> None:
+    (tmp_path / "agent.py").write_text("# pre-existing\n")
+    pre_state = {p.name: p.read_text() for p in tmp_path.iterdir()}
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/admin/api/v1/onboarding/create-starter",
+            json={"framework": "LANGGRAPH"},
+        )
+    assert response.status_code == 409
+    body = response.json()
+    assert body["error"]["code"] == "conflict"
+    assert "Scaffold target exists" in body["error"]["message"]
+    # Pre-existing file untouched, no new files.
+    post_state = {p.name: p.read_text() for p in tmp_path.iterdir()}
+    assert post_state == pre_state
+
+
+async def test_create_starter_already_configured_409_zero_writes(
+    admin_app, async_session, tmp_path
+) -> None:
+    await _seed_existing_agent(async_session)
+    pre_files = list(tmp_path.iterdir())
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/admin/api/v1/onboarding/create-starter",
+            json={"framework": "LANGGRAPH"},
+        )
+    assert response.status_code == 409
+    body = response.json()
+    assert body["error"]["code"] == "conflict"
+    assert "Agent already configured" in body["error"]["message"]
+    # Confirm scaffold did not run — directory unchanged.
+    assert list(tmp_path.iterdir()) == pre_files
+
+
+async def test_create_starter_reload_failure_keeps_files(
+    admin_app, tmp_path, stub_reload_callable
+) -> None:
+    """Reload failure surfaces in envelope; scaffolded files persist.
+
+    The reload pipeline rolls back the DB on a ``ReloadInitFailed`` and
+    re-raises as ``AdminAPIError(500, code=reload_failed)`` (see
+    ``services/reload.py``). The scaffolded files live on disk
+    independently of the DB, so they remain — recovery per spec §5.3
+    is to edit ``agent.py`` and re-run the wizard once the row is gone
+    (or PATCH /agent if the row stayed for a different failure mode).
+    """
+    from idun_agent_standalone.services.reload import ReloadInitFailed
+
+    # AsyncMock side_effect: any call to the stub raises this.
+    stub_reload_callable.side_effect = ReloadInitFailed("simulated")
+
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/admin/api/v1/onboarding/create-starter",
+            json={"framework": "LANGGRAPH"},
+        )
+    assert response.status_code == 500
+    assert response.json()["error"]["code"] == "reload_failed"
+
+    expected = {
+        "agent.py",
+        "requirements.txt",
+        ".env.example",
+        "README.md",
+        ".gitignore",
+    }
+    assert {p.name for p in tmp_path.iterdir()} >= expected

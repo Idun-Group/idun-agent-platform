@@ -70,9 +70,7 @@ async def scan(request: Request, session: SessionDep) -> ScanResponse:
     agent_row_exists = row is not None
 
     scan_result = await scanner.scan_folder(_scan_root(request))
-    state = onboarding.classify_state(
-        scan_result, agent_row_exists=agent_row_exists
-    )
+    state = onboarding.classify_state(scan_result, agent_row_exists=agent_row_exists)
 
     current_agent: StandaloneAgentRead | None = (
         StandaloneAgentRead.model_validate(row) if row is not None else None
