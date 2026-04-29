@@ -15,13 +15,38 @@ Task 6 alongside the corresponding HTTP integration tests.
 from __future__ import annotations
 
 import re
+from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any, Literal
 
+from fastapi import status as http_status
+from idun_agent_schema.engine.engine import EngineConfig
 from idun_agent_schema.standalone import (
+    CreateFromDetectionBody,
+    CreateStarterBody,
     DetectedAgent,
     OnboardingState,
     ScanResult,
+    StandaloneAdminError,
+    StandaloneAgentRead,
+    StandaloneErrorCode,
+    StandaloneMutationResponse,
 )
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from idun_agent_standalone.api.v1.errors import AdminAPIError
+from idun_agent_standalone.core.logging import get_logger
+from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.services import reload as reload_service
+from idun_agent_standalone.services import scaffold, scanner
+from idun_agent_standalone.services.reload import commit_with_reload
+
+logger = get_logger(__name__)
+
+ReloadCallable = Callable[[EngineConfig], Awaitable[None]]
+
+_STARTER_DEFAULT_NAME = "Starter Agent"
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 
@@ -113,3 +138,130 @@ def engine_config_dict_for_starter(
         "server": {"api": {"port": 8000}},
         "agent": agent_block,
     }
+
+
+async def _agent_row(session: AsyncSession) -> StandaloneAgentRow | None:
+    """Return the singleton agent row, or None if absent."""
+    return (await session.execute(select(StandaloneAgentRow))).scalar_one_or_none()
+
+
+def _conflict(message: str) -> AdminAPIError:
+    """Build a 409 admin error envelope."""
+    return AdminAPIError(
+        status_code=http_status.HTTP_409_CONFLICT,
+        error=StandaloneAdminError(
+            code=StandaloneErrorCode.CONFLICT,
+            message=message,
+        ),
+    )
+
+
+async def materialize_from_detection(
+    session: AsyncSession,
+    body: CreateFromDetectionBody,
+    *,
+    scan_root: Path,
+    reload_callable: ReloadCallable,
+) -> StandaloneMutationResponse[StandaloneAgentRead]:
+    """Materialize a detection picked by the wizard.
+
+    Re-scans inside the handler so the detection's ``inferred_name`` and
+    confidence come from the authoritative server-side scan, not from
+    anything the client could tamper with. The triple
+    ``(framework, file_path, variable_name)`` is the lookup key. If the
+    file moved between the original scan and this call, returns 409 so
+    the wizard can re-scan.
+    """
+    if await _agent_row(session) is not None:
+        raise _conflict("Agent already configured.")
+
+    scan_result = await scanner.scan_folder(scan_root)
+    match: DetectedAgent | None = None
+    for detection in scan_result.detected:
+        if (
+            detection.framework == body.framework
+            and detection.file_path == body.file_path
+            and detection.variable_name == body.variable_name
+        ):
+            match = detection
+            break
+    if match is None:
+        raise _conflict(
+            f"Detection not found: {body.framework} "
+            f"{body.file_path}:{body.variable_name}. "
+            "The project may have changed — re-run the scan."
+        )
+
+    config_dict = engine_config_dict_from_detection(match)
+    row = StandaloneAgentRow(
+        name=match.inferred_name,
+        base_engine_config=config_dict,
+    )
+
+    async with reload_service._reload_mutex:
+        session.add(row)
+        await session.flush()
+        result = await commit_with_reload(session, reload_callable=reload_callable)
+        await session.refresh(row)
+
+    logger.info(
+        "admin.onboarding.create_from_detection framework=%s name=%s status=%s",
+        match.framework,
+        match.inferred_name,
+        result.status.value,
+    )
+    return StandaloneMutationResponse(
+        data=StandaloneAgentRead.model_validate(row),
+        reload=result,
+    )
+
+
+async def materialize_starter(
+    session: AsyncSession,
+    body: CreateStarterBody,
+    *,
+    scaffold_root: Path,
+    reload_callable: ReloadCallable,
+) -> StandaloneMutationResponse[StandaloneAgentRead]:
+    """Scaffold a starter project + insert the singleton agent row.
+
+    On any pre-check failure (existing agent, scaffold conflict) nothing
+    is written to disk and no row is inserted. After a successful
+    scaffold + row insert, reload failures leave both the files and the
+    row in place; the user's recovery path is to edit ``agent.py`` and
+    re-trigger reload via ``PATCH /agent``.
+    """
+    if await _agent_row(session) is not None:
+        raise _conflict("Agent already configured.")
+
+    name = body.name or _STARTER_DEFAULT_NAME
+
+    try:
+        written = scaffold.create_starter_project(
+            scaffold_root, framework=body.framework
+        )
+    except scaffold.ScaffoldConflictError as exc:
+        names = ", ".join(p.name for p in exc.paths)
+        raise _conflict(
+            f"Scaffold target exists: {names}. Move or delete and retry."
+        ) from exc
+
+    config_dict = engine_config_dict_for_starter(framework=body.framework, name=name)
+    row = StandaloneAgentRow(name=name, base_engine_config=config_dict)
+
+    async with reload_service._reload_mutex:
+        session.add(row)
+        await session.flush()
+        result = await commit_with_reload(session, reload_callable=reload_callable)
+        await session.refresh(row)
+
+    logger.info(
+        "admin.onboarding.create_starter framework=%s files=%d status=%s",
+        body.framework,
+        len(written),
+        result.status.value,
+    )
+    return StandaloneMutationResponse(
+        data=StandaloneAgentRead.model_validate(row),
+        reload=result,
+    )
