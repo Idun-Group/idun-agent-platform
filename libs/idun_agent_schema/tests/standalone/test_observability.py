@@ -3,13 +3,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from uuid import uuid4
-
-import pytest
-from pydantic import ValidationError
 
 from idun_agent_schema.standalone import (
-    StandaloneObservabilityCreate,
     StandaloneObservabilityPatch,
     StandaloneObservabilityRead,
 )
@@ -28,14 +23,8 @@ def _sample_observability() -> dict:
 
 
 def test_observability_read_round_trip() -> None:
-    rid = uuid4()
     payload = {
-        "id": str(rid),
-        "slug": "langfuse",
-        "name": "Langfuse",
-        "enabled": True,
         "observability": _sample_observability(),
-        "createdAt": datetime.now(UTC).isoformat(),
         "updatedAt": datetime.now(UTC).isoformat(),
     }
     parsed = StandaloneObservabilityRead.model_validate(payload)
@@ -43,15 +32,26 @@ def test_observability_read_round_trip() -> None:
     reparsed = StandaloneObservabilityRead.model_validate(dumped)
     assert reparsed == parsed
     assert "observability" in dumped
+    assert "updatedAt" in dumped
 
 
-def test_observability_create_default_enabled_true() -> None:
-    payload = {"name": "Langfuse", "observability": _sample_observability()}
-    parsed = StandaloneObservabilityCreate.model_validate(payload)
-    assert parsed.enabled is True
+def test_observability_read_snake_case_inbound() -> None:
+    payload = {
+        "observability": _sample_observability(),
+        "updated_at": datetime.now(UTC).isoformat(),
+    }
+    parsed = StandaloneObservabilityRead.model_validate(payload)
+    assert parsed.observability.provider.value == "LANGFUSE"
 
 
-def test_observability_patch_explicit_null_name_rejects() -> None:
-    with pytest.raises(ValidationError) as exc_info:
-        StandaloneObservabilityPatch.model_validate({"name": None})
-    assert "name cannot be null" in str(exc_info.value)
+def test_observability_patch_accepts_partial() -> None:
+    patch = StandaloneObservabilityPatch.model_validate(
+        {"observability": _sample_observability()}
+    )
+    assert patch.observability is not None
+    assert patch.observability.provider.value == "LANGFUSE"
+
+
+def test_observability_patch_accepts_empty() -> None:
+    patch = StandaloneObservabilityPatch.model_validate({})
+    assert patch.observability is None
