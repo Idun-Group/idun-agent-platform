@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Framework, ScanResponse } from "@/lib/api";
+import type { DetectedAgent, Framework, ScanResponse } from "@/lib/api";
 import { WizardScanning } from "@/components/onboarding/WizardScanning";
 import { WizardEmpty } from "@/components/onboarding/WizardEmpty";
 import { WizardNoSupported } from "@/components/onboarding/WizardNoSupported";
+import { WizardOneDetected } from "@/components/onboarding/WizardOneDetected";
+import { WizardManyDetected } from "@/components/onboarding/WizardManyDetected";
 
 const SCAN_QUERY_KEY = ["onboarding-scan"] as const;
 
@@ -64,6 +66,10 @@ export default function OnboardingPage() {
     const onPickFramework = (framework: Framework) => {
       setStep({ kind: "starter-confirm", framework, name: "" });
     };
+    const onPickDetection = (_detection: DetectedAgent) => {
+      // Materialize lands in CT8 (advances to "materializing" step).
+      // For now, this is a no-op placeholder.
+    };
     if (step.data.state === "EMPTY") {
       return <WizardEmpty onContinue={onPickFramework} onRescan={onRescan} />;
     }
@@ -72,12 +78,24 @@ export default function OnboardingPage() {
         <WizardNoSupported onContinue={onPickFramework} onRescan={onRescan} />
       );
     }
-    // ONE_DETECTED / MANY_DETECTED land in CT7.
-    return (
-      <div className="text-sm text-muted-foreground">
-        State: {step.data.state} (screen lands in CT7)
-      </div>
-    );
+    if (step.data.state === "ONE_DETECTED") {
+      return (
+        <WizardOneDetected
+          detection={step.data.scanResult.detected[0]}
+          onConfirm={onPickDetection}
+          onRescan={onRescan}
+        />
+      );
+    }
+    if (step.data.state === "MANY_DETECTED") {
+      return (
+        <WizardManyDetected
+          detections={step.data.scanResult.detected}
+          onConfirm={onPickDetection}
+          onRescan={onRescan}
+        />
+      );
+    }
   }
 
   // starter-confirm screen lands in CT8.
