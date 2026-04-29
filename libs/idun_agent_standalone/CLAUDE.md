@@ -43,6 +43,7 @@ Empty legacy directories (`admin/`, `auth/`, `theme/`, `traces/`) remain only as
 
 ## Key entry points
 
+- `idun-standalone init` — first-run launcher. Runs migrations + seed + opens the browser at `http://<host>:<port>/` + boots uvicorn. Idempotent. `--port` flag (or `IDUN_PORT` env), `--no-browser` flag for Cloud Run / headless. The browser handles the wizard-or-chat conditional via the chat root's `getAgent` 200/404 redirect.
 - `idun-standalone setup` — runs Alembic migrations and seeds the DB from `IDUN_CONFIG_PATH` if empty.
 - `idun-standalone serve` — runs `create_standalone_app(settings)` under uvicorn in the same event loop.
 - `create_standalone_app(settings: StandaloneSettings) -> FastAPI` — public async factory used by tests and embedders.
@@ -109,7 +110,7 @@ These were present in the pre-rework standalone but have **no router or service 
 | Real password auth (login, logout, change-password, /me) | `auth/` | **Implemented** in strict-minimum scope; see "Auth" above. Sliding renewal, rotation invalidation, rate-limit, CSRF token still deferred. |
 | `/admin/api/v1/theme` (theme model + admin route) | `theme/` | The runtime-config bootstrap (`runtime_config.py`) still exposes a default theme to the SPA, but there is no admin route to mutate it |
 | Traces (AG-UI run-event observer, batched writer to `trace_event`, hourly retention purge via APScheduler) | `traces/` | Backend dropped; `trace_event` table is not materialized by the baseline migration. UI pages under `/traces` will 404 against the API |
-| `idun-standalone init <name>` scaffold command | `scaffold.py` | Removed; bootstrap a new project by writing a `config.yaml` directly and running `idun-standalone setup` |
+| `idun-standalone init <name>` scaffold command | `scaffold.py` | **Restored** — see "Key entry points" above. Now a thin launcher (migrations + seed + browser + serve), not the legacy multi-file scaffolder. |
 | `idun-standalone hash-password` | `cli.py` | **Restored** — generates a bcrypt hash for `IDUN_ADMIN_PASSWORD_HASH`. |
 | `idun-standalone export` | `config_io.py` | Removed; YAML export comes back with the materialized-config endpoints (deferred) |
 | `runtime.py` (live agent handle, observer registration after each reload) | top-level | Removed with traces |
