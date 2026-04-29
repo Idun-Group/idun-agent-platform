@@ -1,6 +1,11 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { driver, type Driver } from "driver.js";
 import { TOUR_STEPS } from "./tour-steps";
@@ -39,6 +44,15 @@ export function TourProvider({ children }: { children: ReactNode }) {
   // round-trip (the ref resets on remount/refresh).
   const tourStartedRef = useRef(false);
   const driverRef = useRef<Driver | null>(null);
+  const pathnameRef = useRef(pathname);
+  const [pendingStepIndex, setPendingStepIndex] = useState<number | null>(null);
+
+  // Keep a ref to the latest pathname so onNextClick callbacks (created
+  // once at driver instantiation time) can read the current route without
+  // capturing a stale value.
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   useEffect(() => {
     if (searchParams.get("tour") !== "start") return;
@@ -75,14 +89,43 @@ export function TourProvider({ children }: { children: ReactNode }) {
           description: step.popover.description,
         },
       })),
+      onNextClick: (_element, _step, opts) => {
+        const idx = opts.state.activeIndex ?? 0;
+        const next = TOUR_STEPS[idx + 1];
+        if (!next) {
+          opts.driver.moveNext();
+          return;
+        }
+        if (next.route && next.route !== pathnameRef.current) {
+          setPendingStepIndex(idx + 1);
+          router.push(next.route);
+          return;
+        }
+        opts.driver.moveNext();
+      },
       onDestroyed: () => {
         safeMarkCompleted();
         driverRef.current = null;
+        setPendingStepIndex(null);
       },
     });
     driverRef.current = driverInstance;
     driverInstance.drive(0);
   }, [searchParams, pathname, router]);
+
+  // Bridge router navigation → driver.drive() once the new route's DOM
+  // is available. rAF gives the new route one frame to commit before we
+  // ask Driver.js to anchor on it.
+  useEffect(() => {
+    if (pendingStepIndex === null) return;
+    const expectedRoute = TOUR_STEPS[pendingStepIndex]?.route;
+    if (expectedRoute !== pathname) return;
+    const handle = requestAnimationFrame(() => {
+      driverRef.current?.drive(pendingStepIndex);
+      setPendingStepIndex(null);
+    });
+    return () => cancelAnimationFrame(handle);
+  }, [pathname, pendingStepIndex]);
 
   return <>{children}</>;
 }

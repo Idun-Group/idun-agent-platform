@@ -31,6 +31,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { TourProvider } from "@/components/tour/TourProvider";
+import { TOUR_STEPS } from "@/components/tour/tour-steps";
 
 beforeEach(() => {
   driverMock.drive.mockReset();
@@ -169,5 +170,71 @@ describe("TourProvider — completion / dismiss", () => {
     expect(config.onDestroyed).toBeTypeOf("function");
     config.onDestroyed!();
     expect(localStorage.getItem("idun.tour.completed")).toBe("true");
+  });
+});
+
+describe("TourProvider — cross-route advance", () => {
+  beforeEach(() => {
+    navigationMocks.searchParams = new URLSearchParams("tour=start");
+    navigationMocks.pathname = "/";
+  });
+
+  it("on Next from step 0 (route /) to step 1 (route /admin/agent), pushes the new route and does NOT call moveNext yet", () => {
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    // Driver.js onNextClick signature: (element, step, opts).
+    // We pass the index via state.activeIndex on opts in the real call;
+    // tests pass the activeIndex explicitly so behavior is deterministic.
+    config.onNextClick!(undefined, TOUR_STEPS[0], {
+      driver: driverMock,
+      state: { activeIndex: 0 },
+    });
+    expect(navigationMocks.push).toHaveBeenCalledWith("/admin/agent");
+    expect(driverMock.moveNext).not.toHaveBeenCalled();
+  });
+
+  it("on Next from step 1 (route /admin/agent) to step 2 (same route), calls moveNext directly", () => {
+    navigationMocks.pathname = "/admin/agent";
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    // Init pushes to "/" when bootstrap pathname !== "/"; clear so we
+    // can assert that onNextClick alone does NOT push.
+    navigationMocks.push.mockClear();
+    config.onNextClick!(undefined, TOUR_STEPS[1], {
+      driver: driverMock,
+      state: { activeIndex: 1 },
+    });
+    expect(driverMock.moveNext).toHaveBeenCalled();
+    expect(navigationMocks.push).not.toHaveBeenCalled();
+  });
+
+  it("on Next from step 3 (route /admin/agent) to step 4 (no route, modal), calls moveNext directly", () => {
+    navigationMocks.pathname = "/admin/agent";
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    config.onNextClick!(undefined, TOUR_STEPS[3], {
+      driver: driverMock,
+      state: { activeIndex: 3 },
+    });
+    expect(driverMock.moveNext).toHaveBeenCalled();
+  });
+
+  it("after route push, when pathname matches the pending step's route, drives that step", async () => {
+    const { rerender } = render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    // Click Next: push /admin/agent, set pendingStepIndex = 1.
+    config.onNextClick!(undefined, TOUR_STEPS[0], {
+      driver: driverMock,
+      state: { activeIndex: 0 },
+    });
+    driverMock.drive.mockClear();
+    // Simulate route settle.
+    navigationMocks.pathname = "/admin/agent";
+    rerender(<TourProvider>x</TourProvider>);
+    // Allow rAF to fire.
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => resolve(undefined)),
+    );
+    expect(driverMock.drive).toHaveBeenCalledWith(1);
   });
 });
