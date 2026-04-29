@@ -118,3 +118,24 @@ def test_engine_config_passes_engine_validation_adk() -> None:
 
     detection = _det(framework="ADK", name="Foo")
     EngineConfig.model_validate(onboarding.engine_config_dict_from_detection(detection))
+
+
+def test_slugify_is_a_fixed_point_of_engine_adk_validator() -> None:
+    """If the engine's app_name derivation rule changes, this fails — forcing a re-sync.
+
+    The engine's ``AdkAgentConfig._default_app_name_from_name`` validator runs the
+    same lower-then-replace transform on ``name`` to derive ``app_name``. We slugify
+    up-front so revalidation is idempotent: ``_slugify(x)`` must round-trip through
+    the engine's rule unchanged.
+    """
+    from idun_agent_schema.engine.adk import AdkAgentConfig
+
+    raw_inputs = ["My Agent", "café", "agent_42", "!!!", "", "HelloWorld", "日本"]
+    for raw in raw_inputs:
+        slug = onboarding._slugify(raw)
+        adk = AdkAgentConfig(name=slug, agent="x.py:y")
+        assert adk.app_name == slug, (
+            f"Engine rule drift: _slugify({raw!r}) -> {slug!r} but engine "
+            f"derived app_name={adk.app_name!r}. Re-sync standalone _slugify "
+            f"with engine adk.py:_default_app_name_from_name."
+        )
