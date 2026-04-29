@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.agent.observers import RunContext
+from idun_agent_engine.identity import current_user_id
 from idun_agent_engine.server.auth import get_verified_user
 from idun_agent_engine.server.dependencies import (
     get_agent,
@@ -149,7 +150,7 @@ async def run(
     input_data: RunAgentInput,
     request: Request,
     agent: Annotated[BaseAgent, Depends(get_agent)],
-    _user: Annotated[dict | None, Depends(get_verified_user)],
+    user: Annotated[dict | None, Depends(get_verified_user)],
 ):
     """Canonical AG-UI interaction endpoint.
 
@@ -157,7 +158,11 @@ async def run(
     """
     last_msg = input_data.messages[-1] if input_data.messages else None
     last_content = str(last_msg.content)[:120] if last_msg else "<empty>"
-    logger.info(f"Run — thread_id={input_data.thread_id}, message={last_content}")
+    resolved_user_id = _resolve_user_id(user) or current_user_id.get()
+    logger.info(
+        f"Run — thread_id={input_data.thread_id}, "
+        f"user_id={resolved_user_id}, message={last_content}"
+    )
 
     guardrails = getattr(request.app.state, "guardrails", [])
     if guardrails:
@@ -169,6 +174,9 @@ async def run(
     encoder = EventEncoder(accept=accept_header or "")
 
     async def event_generator():
+        # Bind for the streaming task so adapter user_id_extractors and
+        # session-listing fallbacks see the same value.
+        token = current_user_id.set(resolved_user_id)
         try:
             async for event in agent.run(input_data):
                 # Registry isolates per-observer exceptions, so dispatch cannot
@@ -213,6 +221,11 @@ async def run(
                 yield encoder.encode(error_event)
             except Exception:
                 yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
+        finally:
+            current_user_id.reset(token)
+            logger.debug(
+                f"Run — reset user_id token thread_id={input_data.thread_id}"
+            )
 
     return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
 

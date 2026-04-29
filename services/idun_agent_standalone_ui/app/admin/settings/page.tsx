@@ -1051,7 +1051,7 @@ function PasswordForm() {
 
   const change = useMutation({
     mutationFn: (values: PasswordValues) =>
-      api.changePassword({ current: values.current, next: values.next }),
+      api.changePassword(values.current, values.next),
     onSuccess: () => {
       form.reset({ current: "", next: "", confirm: "" });
       toast.success("Password changed. You'll be signed out shortly.");

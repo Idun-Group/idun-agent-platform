@@ -49,9 +49,7 @@ def normalize_slug(name: str) -> str:
     stripped = collapsed.strip("-")
     truncated = stripped[:_MAX_SLUG_LEN]
     if not truncated:
-        raise SlugNormalizationError(
-            f"Cannot derive a slug from name {name!r}"
-        )
+        raise SlugNormalizationError(f"Cannot derive a slug from name {name!r}")
     return truncated
 
 

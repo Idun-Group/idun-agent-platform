@@ -20,6 +20,7 @@ from fastapi import APIRouter
 from fastapi import status as http_status
 from idun_agent_schema.standalone import (
     StandaloneAdminError,
+    StandaloneConnectionCheck,
     StandaloneDeleteResult,
     StandaloneErrorCode,
     StandaloneFieldError,
@@ -40,6 +41,7 @@ from idun_agent_standalone.infrastructure.db.models.mcp_server import (
     StandaloneMCPServerRow,
 )
 from idun_agent_standalone.services import reload as reload_service
+from idun_agent_standalone.services.connection_checks import check_mcp_server
 from idun_agent_standalone.services.reload import commit_with_reload
 from idun_agent_standalone.services.slugs import (
     SlugConflictError,
@@ -78,9 +80,7 @@ def _to_read(row: StandaloneMCPServerRow) -> StandaloneMCPServerRead:
     )
 
 
-async def _load_by_id(
-    session: AsyncSession, mcp_id: UUID
-) -> StandaloneMCPServerRow:
+async def _load_by_id(session: AsyncSession, mcp_id: UUID) -> StandaloneMCPServerRow:
     row = (
         await session.execute(
             select(StandaloneMCPServerRow).where(
@@ -105,12 +105,16 @@ async def list_mcp_servers(
 ) -> list[StandaloneMCPServerRead]:
     """Return all configured MCP server rows ordered by created_at."""
     rows = (
-        await session.execute(
-            select(StandaloneMCPServerRow).order_by(
-                StandaloneMCPServerRow.created_at
+        (
+            await session.execute(
+                select(StandaloneMCPServerRow).order_by(
+                    StandaloneMCPServerRow.created_at
+                )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [_to_read(row) for row in rows]
 
 
@@ -138,9 +142,7 @@ async def create_mcp_server(
                 code=StandaloneErrorCode.VALIDATION_FAILED,
                 message="Cannot derive a slug from the provided name.",
                 field_errors=[
-                    StandaloneFieldError(
-                        field="name", message=str(exc), code="invalid"
-                    )
+                    StandaloneFieldError(field="name", message=str(exc), code="invalid")
                 ],
             ),
         ) from exc
@@ -184,9 +186,7 @@ async def create_mcp_server(
 
 
 @router.get("/{mcp_id}", response_model=StandaloneMCPServerRead)
-async def get_mcp_server(
-    mcp_id: UUID, session: SessionDep
-) -> StandaloneMCPServerRead:
+async def get_mcp_server(mcp_id: UUID, session: SessionDep) -> StandaloneMCPServerRead:
     """Return a single MCP server row or 404."""
     row = await _load_by_id(session, mcp_id)
     return _to_read(row)
@@ -266,3 +266,25 @@ async def delete_mcp_server(
         data=StandaloneDeleteResult(id=UUID(row_id)),
         reload=result,
     )
+
+
+@router.post("/{mcp_id}/tools", response_model=StandaloneConnectionCheck)
+async def list_mcp_server_tools(
+    mcp_id: UUID, session: SessionDep
+) -> StandaloneConnectionCheck:
+    """Discover tools exposed by a single MCP server.
+
+    Doubles as a connection check — if the server cannot be reached or
+    cannot speak MCP, ``ok=False`` carries the upstream error in the
+    response body. ``details.tools`` carries the discovered tool names
+    on success.
+    """
+    row = await _load_by_id(session, mcp_id)
+    result = await check_mcp_server(row.mcp_server_config)
+    logger.info(
+        "admin.mcp_servers.tools id=%s ok=%s tool_count=%s",
+        row.id,
+        result.ok,
+        (result.details or {}).get("toolCount"),
+    )
+    return result

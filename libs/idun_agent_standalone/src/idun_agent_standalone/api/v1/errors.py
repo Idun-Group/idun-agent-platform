@@ -79,9 +79,7 @@ def _render(error: StandaloneAdminError, status_code: int) -> JSONResponse:
     )
 
 
-async def admin_api_error_handler(
-    request: Request, exc: AdminAPIError
-) -> JSONResponse:
+async def admin_api_error_handler(request: Request, exc: AdminAPIError) -> JSONResponse:
     """Render ``AdminAPIError`` as the standalone admin envelope."""
     logger.info(
         "admin.error path=%s status=%s code=%s",

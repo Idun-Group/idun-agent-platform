@@ -165,9 +165,7 @@ async def commit_with_reload(
             if exc.validation_error is not None
             else []
         )
-        logger.info(
-            "reload.round2_failed field_count=%s", len(field_errors)
-        )
+        logger.info("reload.round2_failed field_count=%s", len(field_errors))
         raise AdminAPIError(
             status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
             error=StandaloneAdminError(
@@ -181,9 +179,7 @@ async def commit_with_reload(
         validate_assembled_config(assembled)
     except RoundTwoValidationFailed as exc:
         await session.rollback()
-        logger.info(
-            "reload.round2_failed field_count=%s", len(exc.field_errors)
-        )
+        logger.info("reload.round2_failed field_count=%s", len(exc.field_errors))
         raise AdminAPIError(
             status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
             error=StandaloneAdminError(

@@ -19,6 +19,7 @@ from fastapi import APIRouter
 from fastapi import status as http_status
 from idun_agent_schema.standalone import (
     StandaloneAdminError,
+    StandaloneConnectionCheck,
     StandaloneErrorCode,
     StandaloneFieldError,
     StandaloneMemoryPatch,
@@ -36,6 +37,7 @@ from idun_agent_standalone.api.v1.errors import AdminAPIError
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
 from idun_agent_standalone.services import reload as reload_service
+from idun_agent_standalone.services.connection_checks import check_memory
 from idun_agent_standalone.services.reload import commit_with_reload
 
 router = APIRouter(prefix="/admin/api/v1/memory", tags=["admin"])
@@ -67,9 +69,7 @@ def _to_read(row: StandaloneMemoryRow) -> StandaloneMemoryRead:
 
 
 async def _load_row(session: AsyncSession) -> StandaloneMemoryRow | None:
-    return (
-        await session.execute(select(StandaloneMemoryRow))
-    ).scalar_one_or_none()
+    return (await session.execute(select(StandaloneMemoryRow))).scalar_one_or_none()
 
 
 @router.get("", response_model=StandaloneMemoryRead)
@@ -81,9 +81,7 @@ async def get_memory(session: SessionDep) -> StandaloneMemoryRead:
             status_code=http_status.HTTP_404_NOT_FOUND,
             error=StandaloneAdminError(
                 code=StandaloneErrorCode.NOT_FOUND,
-                message=(
-                    "No memory configured. Default in-memory is used at runtime."
-                ),
+                message=("No memory configured. Default in-memory is used at runtime."),
             ),
         )
     logger.info("admin.memory.get framework=%s", row.agent_framework)
@@ -139,9 +137,7 @@ async def patch_memory(
         creating = False
         if not fields:
             logger.debug("admin.memory.patch noop")
-            return StandaloneMutationResponse(
-                data=_to_read(row), reload=_NOOP_RELOAD
-            )
+            return StandaloneMutationResponse(data=_to_read(row), reload=_NOOP_RELOAD)
         if "agent_framework" in fields and body.agent_framework is not None:
             row.agent_framework = body.agent_framework.value
         if "memory" in fields and body.memory is not None:
@@ -149,9 +145,7 @@ async def patch_memory(
 
     async with reload_service._reload_mutex:
         await session.flush()
-        result = await commit_with_reload(
-            session, reload_callable=reload_callable
-        )
+        result = await commit_with_reload(session, reload_callable=reload_callable)
         await session.refresh(row)
 
     logger.info(
@@ -194,9 +188,7 @@ async def delete_memory(
     async with reload_service._reload_mutex:
         await session.delete(row)
         await session.flush()
-        result = await commit_with_reload(
-            session, reload_callable=reload_callable
-        )
+        result = await commit_with_reload(session, reload_callable=reload_callable)
 
     logger.info(
         "admin.memory.delete framework=%s status=%s",
@@ -208,3 +200,29 @@ async def delete_memory(
         data=StandaloneSingletonDeleteResult(),
         reload=result,
     )
+
+
+@router.post("/check-connection", response_model=StandaloneConnectionCheck)
+async def check_memory_connection(session: SessionDep) -> StandaloneConnectionCheck:
+    """Probe the configured memory backend.
+
+    Returns 404 if no memory row exists; otherwise calls the probe
+    against the stored config. The probe never raises — failures land
+    in the response body as ``ok=False``.
+    """
+    row = await _load_row(session)
+    if row is None:
+        raise AdminAPIError(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            error=StandaloneAdminError(
+                code=StandaloneErrorCode.NOT_FOUND,
+                message="No memory configured to check.",
+            ),
+        )
+    result = await check_memory(row.agent_framework, row.memory_config)
+    logger.info(
+        "admin.memory.check framework=%s ok=%s",
+        row.agent_framework,
+        result.ok,
+    )
+    return result

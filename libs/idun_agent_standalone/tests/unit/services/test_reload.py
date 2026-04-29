@@ -148,9 +148,7 @@ async def test_structural_change_returns_restart_required(
     assert first.status == StandaloneReloadStatus.RELOADED
 
     # Mutate graph_definition (structural)
-    agent = (
-        await async_session.execute(select(StandaloneAgentRow))
-    ).scalar_one()
+    agent = (await async_session.execute(select(StandaloneAgentRow))).scalar_one()
     agent.base_engine_config = {
         "server": {"api": {"port": 8000}},
         "agent": {
@@ -187,9 +185,7 @@ async def test_first_reload_is_not_structural(
 
 
 @pytest.mark.asyncio
-async def test_reload_callable_dependency_injected(
-    async_session, frozen_now
-) -> None:
+async def test_reload_callable_dependency_injected(async_session, frozen_now) -> None:
     """The reload callable can be replaced; tests don't need a real engine."""
     await _seed_agent(async_session)
     custom_calls = []
@@ -207,9 +203,7 @@ async def test_reload_callable_dependency_injected(
 
 
 @pytest.mark.asyncio
-async def test_now_dependency_injected(
-    async_session, stub_reload_callable
-) -> None:
+async def test_now_dependency_injected(async_session, stub_reload_callable) -> None:
     fixed = datetime(2027, 1, 1, tzinfo=UTC)
     await _seed_agent(async_session)
     await commit_with_reload(
@@ -220,9 +214,7 @@ async def test_now_dependency_injected(
     state = await runtime_state.get(async_session)
     assert state is not None
     # SQLite drops tzinfo on DateTime columns, so compare naive components.
-    assert state.last_reloaded_at.replace(tzinfo=None) == fixed.replace(
-        tzinfo=None
-    )
+    assert state.last_reloaded_at.replace(tzinfo=None) == fixed.replace(tzinfo=None)
 
 
 @pytest.mark.asyncio
@@ -266,9 +258,7 @@ async def test_hash_propagated_to_runtime_state_on_success(
 
 
 @pytest.mark.asyncio
-async def test_hash_not_propagated_on_failure(
-    async_session, frozen_now
-) -> None:
+async def test_hash_not_propagated_on_failure(async_session, frozen_now) -> None:
     await _seed_agent(async_session)
     failing_reload = AsyncMock(side_effect=ReloadInitFailed("engine boom"))
     with pytest.raises(AdminAPIError):

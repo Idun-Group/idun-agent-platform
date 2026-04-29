@@ -17,6 +17,7 @@ from fastapi import APIRouter
 from fastapi import status as http_status
 from idun_agent_schema.standalone import (
     StandaloneAdminError,
+    StandaloneConnectionCheck,
     StandaloneErrorCode,
     StandaloneMutationResponse,
     StandaloneObservabilityPatch,
@@ -35,6 +36,7 @@ from idun_agent_standalone.infrastructure.db.models.observability import (
     StandaloneObservabilityRow,
 )
 from idun_agent_standalone.services import reload as reload_service
+from idun_agent_standalone.services.connection_checks import check_observability
 from idun_agent_standalone.services.reload import commit_with_reload
 
 router = APIRouter(prefix="/admin/api/v1/observability", tags=["admin"])
@@ -120,9 +122,7 @@ async def patch_observability(
     else:
         if not fields:
             logger.debug("admin.observability.patch noop")
-            return StandaloneMutationResponse(
-                data=_to_read(row), reload=_NOOP_RELOAD
-            )
+            return StandaloneMutationResponse(data=_to_read(row), reload=_NOOP_RELOAD)
         if "observability" in fields and body.observability is not None:
             row.observability_config = body.observability.model_dump(exclude_none=True)
 
@@ -170,3 +170,26 @@ async def delete_observability(
         data=StandaloneSingletonDeleteResult(),
         reload=result,
     )
+
+
+@router.post("/check-connection", response_model=StandaloneConnectionCheck)
+async def check_observability_connection(
+    session: SessionDep,
+) -> StandaloneConnectionCheck:
+    """Probe the configured observability provider.
+
+    Returns 404 if no provider is configured. The probe never raises —
+    failures land in the response body as ``ok=False``.
+    """
+    row = await _load_row(session)
+    if row is None:
+        raise AdminAPIError(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            error=StandaloneAdminError(
+                code=StandaloneErrorCode.NOT_FOUND,
+                message="No observability provider configured to check.",
+            ),
+        )
+    result = await check_observability(row.observability_config)
+    logger.info("admin.observability.check ok=%s", result.ok)
+    return result

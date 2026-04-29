@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import os
+from typing import Any
 
 from idun_agent_schema.engine import EngineConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
@@ -96,9 +95,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
 
 
 async def _load_agent(session: AsyncSession) -> StandaloneAgentRow:
-    agent = (
-        await session.execute(select(StandaloneAgentRow))
-    ).scalar_one_or_none()
+    agent = (await session.execute(select(StandaloneAgentRow))).scalar_one_or_none()
     if agent is None:
         raise AgentNotConfiguredError(
             "Standalone agent is not configured. Seed via IDUN_CONFIG_PATH "
@@ -108,9 +105,7 @@ async def _load_agent(session: AsyncSession) -> StandaloneAgentRow:
 
 
 async def _load_memory(session: AsyncSession) -> StandaloneMemoryRow | None:
-    return (
-        await session.execute(select(StandaloneMemoryRow))
-    ).scalar_one_or_none()
+    return (await session.execute(select(StandaloneMemoryRow))).scalar_one_or_none()
 
 
 async def _load_observability(
@@ -192,9 +187,7 @@ def _parse_base_config(agent: StandaloneAgentRow) -> EngineConfig:
     try:
         return EngineConfig.model_validate(agent.base_engine_config)
     except ValidationError as exc:
-        logger.error(
-            "assemble: base_engine_config invalid agent=%s", agent.name
-        )
+        logger.error("assemble: base_engine_config invalid agent=%s", agent.name)
         raise AssemblyError(
             f"Agent base_engine_config is corrupted (agent={agent.name}). "
             "Fix the agent row or restore from a known good config.",
@@ -333,17 +326,13 @@ def _layer_guardrails(
 
     grouped: dict[str, list[dict[str, Any]]] = {"input": [], "output": []}
     for row in enabled:
-        config = {
-            k: v for k, v in row.guardrail_config.items() if k != "api_key"
-        }
+        config = {k: v for k, v in row.guardrail_config.items() if k != "api_key"}
         grouped[row.position].append(config)
 
     try:
         converted = convert_guardrail(grouped)
     except Exception as exc:
-        logger.exception(
-            "assemble: guardrail conversion failed agent=%s", agent_name
-        )
+        logger.exception("assemble: guardrail conversion failed agent=%s", agent_name)
         raise AssemblyError(
             f"Guardrail conversion failed (agent={agent_name}): {exc}"
         ) from exc
@@ -351,9 +340,7 @@ def _layer_guardrails(
     try:
         parsed = GuardrailsV2.model_validate(converted)
     except ValidationError as exc:
-        logger.error(
-            "assemble: converted guardrails invalid agent=%s", agent_name
-        )
+        logger.error("assemble: converted guardrails invalid agent=%s", agent_name)
         raise AssemblyError(
             f"Converted guardrails do not match GuardrailsV2 "
             f"(agent={agent_name}). Inspect the stored guardrail rows.",

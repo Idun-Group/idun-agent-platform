@@ -27,7 +27,9 @@ class StandalonePromptRow(Base):
 
     __tablename__ = "standalone_prompt"
     __table_args__ = (
-        UniqueConstraint("prompt_id", "version", name="uq_standalone_prompt_id_version"),
+        UniqueConstraint(
+            "prompt_id", "version", name="uq_standalone_prompt_id_version"
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)

@@ -23,15 +23,29 @@ PostConfigureCallback = Callable[[FastAPI], Awaitable[None]]
 
 
 def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
-    """Adds the position of the guardrails (input/output) and returns the lift of updated guardrails."""
+    """Build guard instances; one failure does not drop the rest."""
     from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
 
     if not guardrails_obj:
         return []
 
-    return [GHGuard(guard, position="input") for guard in guardrails_obj.input] + [
-        GHGuard(guard, position="output") for guard in guardrails_obj.output
-    ]
+    guards: list[BaseGuardrail] = []
+    for position, configs in (
+        ("input", guardrails_obj.input),
+        ("output", guardrails_obj.output),
+    ):
+        for guard in configs:
+            config_id = getattr(guard, "config_id", "<unknown>")
+            try:
+                guards.append(GHGuard(guard, position=position))
+                logger.info("Guardrail '%s' (%s) initialized", config_id, position)
+            except (Exception, SystemExit):
+                logger.exception(
+                    "Guardrail '%s' (%s) init failed; skipping",
+                    config_id,
+                    position,
+                )
+    return guards
 
 
 async def cleanup_agent(app: FastAPI):

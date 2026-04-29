@@ -20,9 +20,7 @@ from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemo
 logger = get_logger(__name__)
 
 
-async def seed_from_yaml_if_empty(
-    sm: async_sessionmaker, config_path: Path
-) -> None:
+async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> None:
     """Seed the agent (and optional memory) row if the DB has no agent."""
     async with sm() as session:
         existing = (

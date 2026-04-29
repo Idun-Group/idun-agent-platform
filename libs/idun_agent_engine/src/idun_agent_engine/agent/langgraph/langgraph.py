@@ -109,29 +109,36 @@ def _lc_messages_to_session(messages: list[Any]) -> list[SessionMessage]:
     return out
 
 
-async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
-    """Best-effort thread enumeration from a LangGraph checkpointer.
+def _row_thread_id(row: Any) -> str | None:
+    """Pull ``thread_id`` from a checkpoint row regardless of row factory.
 
-    Inspects internal storage / table layout per saver type. The public
-    ``BaseCheckpointSaver`` interface has no list-threads primitive
-    (verified via context7); this helper is the documented "internal-API
-    peek" from the agent-sessions spec §5. Stable on
-    ``langgraph-checkpoint`` 0.5–1.x where ``PRIMARY KEY (thread_id,
-    checkpoint_ns, checkpoint_id)`` is fixed.
-
-    Raises ``NotImplementedError`` for custom user-supplied checkpointers
-    so callers can degrade to an empty list with a warning instead of
-    silently returning misleading data.
+    psycopg's ``AsyncPostgresSaver`` uses ``dict_row``; aiosqlite returns
+    tuples. Try column-name access first, fall back to integer index.
     """
-    # InMemorySaver — public attribute ``storage`` is a dict keyed by
-    # ``thread_id`` (verified on installed langgraph-checkpoint 1.x).
+    try:
+        return row["thread_id"]
+    except (KeyError, TypeError, IndexError):
+        pass
+    try:
+        return row[0]
+    except (KeyError, IndexError, TypeError):
+        return None
+
+
+async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
+    """Recent thread ids from a LangGraph checkpointer.
+
+    ``BaseCheckpointSaver`` has no public list-threads primitive
+    (``alist`` returns checkpoint tuples, not distinct threads). Falls
+    back to a ``GROUP BY thread_id`` against the saver's own
+    ``checkpoints`` table for the savers we ship.
+    """
     if isinstance(saver, InMemorySaver):
         storage = getattr(saver, "storage", None)
         if isinstance(storage, dict):
             return list(storage.keys())[:limit]
         return []
 
-    # AsyncSqliteSaver — query the underlying ``aiosqlite`` connection.
     if isinstance(saver, AsyncSqliteSaver):
         await saver.setup()
         async with saver.lock, saver.conn.cursor() as cur:
@@ -142,9 +149,8 @@ async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
                 (limit,),
             )
             rows = await cur.fetchall()
-            return [row[0] for row in rows]
+            return [tid for r in rows if (tid := _row_thread_id(r))]
 
-    # AsyncPostgresSaver — psycopg async cursor via the saver's lock.
     if isinstance(saver, AsyncPostgresSaver):
         async with saver.lock, saver.conn.cursor() as cur:
             await cur.execute(
@@ -154,7 +160,7 @@ async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
                 (limit,),
             )
             rows = await cur.fetchall()
-            return [row[0] for row in rows]
+            return [tid for r in rows if (tid := _row_thread_id(r))]
 
     raise NotImplementedError(
         f"thread enumeration not supported for {type(saver).__name__}"
@@ -910,9 +916,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         try:
             state = await self._agent_instance.aget_state(config)
         except Exception as exc:  # noqa: BLE001 - upstream raises broad errors
-            logger.warning(
-                "aget_state failed for thread %s: %s", session_id, exc
-            )
+            logger.warning("aget_state failed for thread %s: %s", session_id, exc)
             return None
 
         if state is None:

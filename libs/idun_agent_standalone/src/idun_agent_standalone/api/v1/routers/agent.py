@@ -100,9 +100,7 @@ async def patch_agent(
         for field in fields:
             setattr(row, field, getattr(body, field))
         await session.flush()
-        result = await commit_with_reload(
-            session, reload_callable=reload_callable
-        )
+        result = await commit_with_reload(session, reload_callable=reload_callable)
         await session.refresh(row)
 
     logger.info(

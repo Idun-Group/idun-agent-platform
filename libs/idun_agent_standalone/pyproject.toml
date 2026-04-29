@@ -28,6 +28,7 @@ dependencies = [
     "pyyaml>=6.0",
     "apscheduler>=3.10",
     "rfc8785>=0.1",
+    "sentencepiece>=0.2.1",
 ]
 
 [project.scripts]
