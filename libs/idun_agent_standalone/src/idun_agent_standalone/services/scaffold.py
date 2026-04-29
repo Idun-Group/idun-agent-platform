@@ -70,7 +70,7 @@ from google.adk.agents import Agent
 
 agent = Agent(
     name="starter",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="A minimal starter agent.",
     instruction="You are a helpful assistant. Respond concisely.",
 )
@@ -79,7 +79,7 @@ agent = Agent(
 
 _ADK_REQUIREMENTS: Final[str] = """\
 idun-agent-standalone
-google-adk>=0.1.0
+google-adk>=1.19.0,<2.0.0
 """
 
 
@@ -93,7 +93,7 @@ Quick start:
 
 1. Copy `.env.example` to `.env` and fill in your API key.
 2. `pip install -r requirements.txt`
-3. `idun standalone`
+3. `idun-standalone`
 
 Edit `agent.py` to customize the agent.
 """
