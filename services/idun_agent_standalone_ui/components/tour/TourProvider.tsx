@@ -2,6 +2,27 @@
 
 import { type ReactNode, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { driver, type Driver } from "driver.js";
+import { TOUR_STEPS } from "./tour-steps";
+
+const COMPLETED_KEY = "idun.tour.completed";
+
+function safeReadCompleted(): boolean {
+  try {
+    return localStorage.getItem(COMPLETED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function safeWriteCompleted(value: boolean): void {
+  try {
+    if (value) localStorage.setItem(COMPLETED_KEY, "true");
+    else localStorage.removeItem(COMPLETED_KEY);
+  } catch {
+    // Private browsing / quota — proceed silently.
+  }
+}
 
 /**
  * Mounted in app/layout.tsx — owns the in-memory state of the guided
@@ -15,7 +36,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  // Consume on first arrival; resize/replay requires a fresh ?tour=start
+  // round-trip (the ref resets on remount/refresh).
   const tourStartedRef = useRef(false);
+  const driverRef = useRef<Driver | null>(null);
 
   useEffect(() => {
     if (searchParams.get("tour") !== "start") return;
@@ -29,16 +53,32 @@ export function TourProvider({ children }: { children: ReactNode }) {
     if (!isDesktop) {
       // Tour is desktop-only. Mark completed so a future desktop session
       // landing here doesn't surprise the user with a tour.
-      try {
-        localStorage.setItem("idun.tour.completed", "true");
-      } catch {
-        // Private browsing / quota — proceed silently.
-      }
+      safeWriteCompleted(true);
       router.replace(pathname);
       return;
     }
 
-    // Desktop trigger lands in Task 5.
+    // Desktop path: clear the flag (per Q5 A — `?tour=start` always re-fires
+    // even after prior completion), strip the URL param, ensure we're on
+    // the chat root before showing step 0, instantiate driver, drive(0).
+    safeWriteCompleted(false);
+    router.replace(pathname);
+    if (pathname !== "/") {
+      router.push("/");
+    }
+
+    const driverInstance = driver({
+      showProgress: true,
+      steps: TOUR_STEPS.map((step) => ({
+        element: step.element,
+        popover: {
+          title: step.popover.title,
+          description: step.popover.description,
+        },
+      })),
+    });
+    driverRef.current = driverInstance;
+    driverInstance.drive(0);
   }, [searchParams, pathname, router]);
 
   return <>{children}</>;

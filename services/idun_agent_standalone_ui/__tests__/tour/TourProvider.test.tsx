@@ -113,3 +113,46 @@ describe("TourProvider — mobile skip", () => {
     expect(navigationMocks.replace).toHaveBeenCalledWith("/");
   });
 });
+
+describe("TourProvider — desktop trigger", () => {
+  beforeEach(() => {
+    navigationMocks.searchParams = new URLSearchParams("tour=start");
+    navigationMocks.pathname = "/";
+  });
+
+  it("instantiates driver.js and calls drive(0) on desktop trigger", () => {
+    render(<TourProvider>x</TourProvider>);
+    expect(driverFactory).toHaveBeenCalledTimes(1);
+    expect(driverMock.drive).toHaveBeenCalledWith(0);
+  });
+
+  it("clears localStorage idun.tour.completed on trigger", () => {
+    localStorage.setItem("idun.tour.completed", "true");
+    render(<TourProvider>x</TourProvider>);
+    expect(localStorage.getItem("idun.tour.completed")).toBeNull();
+  });
+
+  it("strips ?tour=start from the URL via router.replace", () => {
+    render(<TourProvider>x</TourProvider>);
+    expect(navigationMocks.replace).toHaveBeenCalledWith("/");
+  });
+
+  it("pushes to / when triggered on a non-/ route", () => {
+    navigationMocks.pathname = "/admin/agent";
+    render(<TourProvider>x</TourProvider>);
+    expect(navigationMocks.push).toHaveBeenCalledWith("/");
+  });
+
+  it("does not push to / when already on /", () => {
+    navigationMocks.pathname = "/";
+    render(<TourProvider>x</TourProvider>);
+    expect(navigationMocks.push).not.toHaveBeenCalled();
+  });
+
+  it("passes TOUR_STEPS to the driver factory config", () => {
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    expect(config.steps).toHaveLength(5);
+    expect(config.steps[0].element).toBe('[data-tour="chat-composer"]');
+  });
+});
