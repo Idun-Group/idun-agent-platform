@@ -39,7 +39,7 @@ const FRAMEWORKS: Framework[] = ["langgraph", "adk"];
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string(),
-  graphDefinition: z.string().min(1, "Graph definition is required"),
+  definition: z.string().min(1, "Definition is required"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -59,16 +59,22 @@ function readFramework(data: AgentRead | undefined): Framework {
   return t === "ADK" ? "adk" : "langgraph";
 }
 
-function readGraphDefinition(data: AgentRead | undefined): string {
+function definitionKey(framework: Framework): "graph_definition" | "agent" {
+  return framework === "adk" ? "agent" : "graph_definition";
+}
+
+function readDefinition(data: AgentRead | undefined): string {
+  const framework = readFramework(data);
   const cfg = readAgentSlice(data).config ?? {};
-  const v = cfg["graph_definition"];
+  const v = cfg[definitionKey(framework)];
   return typeof v === "string" ? v : "";
 }
 
 function buildBaseEngineConfig(
   base: Record<string, unknown> | undefined,
   framework: Framework,
-  graphDefinition: string,
+  definition: string,
+  name: string,
 ): Record<string, unknown> {
   const next: Record<string, unknown> = { ...(base ?? {}) };
   const agent = ((next.agent as Record<string, unknown> | undefined) ?? {}) as Record<
@@ -79,10 +85,20 @@ function buildBaseEngineConfig(
     string,
     unknown
   >;
+  const innerKey = definitionKey(framework);
+  const nextConfig: Record<string, unknown> = { ...config, [innerKey]: definition };
+  // ADK derives app_name from the agent name when missing.
+  if (framework === "adk" && !nextConfig.app_name) {
+    nextConfig.app_name = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "agent";
+  }
+  // Drop the other framework's key so we don't leave dead config.
+  delete nextConfig[
+    framework === "adk" ? "graph_definition" : "agent"
+  ];
   next.agent = {
     ...agent,
     type: framework === "adk" ? "ADK" : "LANGGRAPH",
-    config: { ...config, graph_definition: graphDefinition },
+    config: nextConfig,
   };
   return next;
 }
@@ -107,7 +123,7 @@ export default function AgentPage() {
     () => ({
       name: data?.name ?? "",
       description: data?.description ?? "",
-      graphDefinition: readGraphDefinition(data),
+      definition: readDefinition(data),
     }),
     [data],
   );
@@ -126,7 +142,8 @@ export default function AgentPage() {
         baseEngineConfig: buildBaseEngineConfig(
           data?.baseEngineConfig,
           values.framework,
-          values.graphDefinition,
+          values.definition,
+          values.name,
         ),
       }),
     onSuccess: (resp) => {
@@ -163,7 +180,8 @@ export default function AgentPage() {
       baseEngineConfig: buildBaseEngineConfig(
         data.baseEngineConfig,
         activeTab,
-        v.graphDefinition,
+        v.definition,
+        v.name,
       ),
     });
   }, [data, activeTab, form, yamlOpen]);
@@ -179,21 +197,22 @@ export default function AgentPage() {
       | { type?: string; config?: Record<string, unknown> }
       | undefined;
     const framework: Framework = agentSlice?.type === "ADK" ? "adk" : "langgraph";
-    const graphDefinition =
-      typeof agentSlice?.config?.["graph_definition"] === "string"
-        ? (agentSlice.config["graph_definition"] as string)
+    const innerKey = framework === "adk" ? "agent" : "graph_definition";
+    const definition =
+      typeof agentSlice?.config?.[innerKey] === "string"
+        ? (agentSlice.config[innerKey] as string)
         : "";
 
     form.reset({
       name: obj.name ?? "",
       description: obj.description ?? "",
-      graphDefinition,
+      definition,
     });
     setActiveTab(framework);
     save.mutate({
       name: obj.name ?? "",
       description: obj.description ?? "",
-      graphDefinition,
+      definition,
       framework,
     });
   };
@@ -278,17 +297,19 @@ export default function AgentPage() {
                   />
                   <FormField
                     control={form.control}
-                    name="graphDefinition"
+                    name="definition"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Graph definition</FormLabel>
+                        <FormLabel>
+                          {activeTab === "adk" ? "Agent definition" : "Graph definition"}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             placeholder={
-                              activeTab === "langgraph"
-                                ? "./agent.py:graph"
-                                : "./agent.py:agent"
+                              activeTab === "adk"
+                                ? "./agent/agent.py:root_agent"
+                                : "./agent.py:graph"
                             }
                           />
                         </FormControl>
