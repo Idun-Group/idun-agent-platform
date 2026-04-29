@@ -178,7 +178,7 @@ export default function OnboardingPage() {
         agent={step.agent}
         framework={step.framework}
         mode={step.mode}
-        onGoToChat={() => router.push("/")}
+        onGoToChat={() => router.push("/?tour=start")}
       />
     );
   }
