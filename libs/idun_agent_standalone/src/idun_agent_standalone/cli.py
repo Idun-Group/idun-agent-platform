@@ -22,9 +22,28 @@ from pathlib import Path
 
 import click
 import uvicorn
+from dotenv import load_dotenv
 
 from idun_agent_standalone.core.logging import get_logger, setup_logging
 from idun_agent_standalone.core.settings import StandaloneSettings
+
+
+def _load_project_env() -> None:
+    """Load a ``.env`` file from the current working directory if present.
+
+    The wizard's Done screen and the scaffolder's ``.env.example`` both
+    tell users to drop their LLM credentials in a project-local ``.env``
+    and re-run the CLI. Without this load step that promise breaks —
+    ``StandaloneSettings`` is configured ``env_file=None`` and the
+    engine's agent code reads ``os.environ.get(...)`` directly. Override
+    is False so an explicit shell export still wins over the file.
+
+    ``load_dotenv()`` with no args walks up from the calling file's
+    directory, which lands somewhere inside the installed package.
+    Pass cwd explicitly so the search anchors on the user's project
+    folder instead.
+    """
+    load_dotenv(Path.cwd() / ".env", override=False)
 
 
 @click.group()
@@ -59,6 +78,7 @@ def hash_password_cmd(password: str) -> None:
 def setup_cmd(config_path_override: str | None) -> None:
     """Create DB schema and seed from YAML if the DB is empty."""
     setup_logging()
+    _load_project_env()
     from idun_agent_standalone.db.migrate import upgrade_head
 
     upgrade_head()
@@ -69,6 +89,7 @@ def setup_cmd(config_path_override: str | None) -> None:
 def serve_cmd() -> None:
     """Run the standalone server (engine routes plus admin REST)."""
     setup_logging()
+    _load_project_env()
     asyncio.run(_serve(StandaloneSettings()))
 
 
@@ -100,6 +121,9 @@ def init_cmd(port_override: int | None, no_browser: bool) -> None:
     re-launches the server.
     """
     setup_logging()
+    # Load `.env` BEFORE constructing settings so IDUN_HOST / IDUN_PORT /
+    # DATABASE_URL declared in the file are honored by StandaloneSettings.
+    _load_project_env()
 
     # Resolve port: --port flag > IDUN_PORT env > default 8000.
     if port_override is not None:

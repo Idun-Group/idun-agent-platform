@@ -9,6 +9,9 @@ server.
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 import pytest
 from click.testing import CliRunner
 from idun_agent_standalone import cli as cli_module
@@ -195,3 +198,34 @@ def test_init_browser_url_maps_wildcard_host_to_localhost(
     url = stub_dependencies["webbrowser.open"][0]
     assert url.startswith("http://127.0.0.1:")
     assert "0.0.0.0" not in url
+
+
+def test_init_loads_env_from_cwd_dotenv(
+    stub_dependencies: dict[str, list], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A `.env` in the project folder must be loaded into os.environ
+    before settings/migrations/seed/serve. The wizard's Done screen
+    explicitly tells users to drop OPENAI_API_KEY there and re-run; the
+    CLI honors that contract."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        Path(".env").write_text("OPENAI_API_KEY=sk-test-from-dotenv\n")
+        result = runner.invoke(main, ["init"])
+    assert result.exit_code == 0, result.output
+    assert os.environ.get("OPENAI_API_KEY") == "sk-test-from-dotenv"
+
+
+def test_init_dotenv_does_not_override_existing_env(
+    stub_dependencies: dict[str, list], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Explicit shell exports must beat values declared in `.env`.
+    `load_dotenv(override=False)` is the contract; protect it with a
+    test so a future refactor doesn't silently flip the precedence."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-from-shell")
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        Path(".env").write_text("OPENAI_API_KEY=sk-from-dotenv\n")
+        result = runner.invoke(main, ["init"])
+    assert result.exit_code == 0, result.output
+    assert os.environ.get("OPENAI_API_KEY") == "sk-from-shell"
