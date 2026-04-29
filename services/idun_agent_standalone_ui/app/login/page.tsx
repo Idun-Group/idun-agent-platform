@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ApiError, api } from "@/lib/api";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
+  const params = useSearchParams();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -30,12 +31,14 @@ export default function LoginPage() {
             setBusy(true);
             try {
               await api.login(password);
-              router.replace("/admin/");
+              const next = params?.get("next") ?? "/";
+              router.replace(next);
             } catch (err) {
               const status = err instanceof ApiError ? err.status : 0;
               toast.error(
                 status === 401 ? "Invalid credentials" : "Sign-in failed",
               );
+              setPassword("");
             } finally {
               setBusy(false);
             }
