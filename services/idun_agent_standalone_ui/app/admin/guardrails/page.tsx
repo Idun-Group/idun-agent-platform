@@ -114,7 +114,11 @@ const GUARD_DEFAULTS: Record<GuardId, GuardFormFields> = {
     reject_message: "Language not allowed",
     expected_languages: "",
   },
-  restrict_to_topic: { reject_message: "Off-topic", topics: "" },
+  restrict_to_topic: {
+    reject_message: "Off-topic",
+    valid_topics: "",
+    invalid_topics: "",
+  },
 };
 
 type GuardFormFields = {
@@ -123,7 +127,8 @@ type GuardFormFields = {
   pii_entities?: string;
   competitors?: string;
   expected_languages?: string;
-  topics?: string;
+  valid_topics?: string;
+  invalid_topics?: string;
   threshold?: number;
 };
 
@@ -135,7 +140,8 @@ const guardFormSchema = z.object({
   pii_entities: z.string().optional(),
   competitors: z.string().optional(),
   expected_languages: z.string().optional(),
-  topics: z.string().optional(),
+  valid_topics: z.string().optional(),
+  invalid_topics: z.string().optional(),
   threshold: z.number().optional(),
 });
 
@@ -207,7 +213,8 @@ function wireGuardToForm(raw: Record<string, unknown>): GuardFormValues {
       base.expected_languages = joinList(raw.expected_languages);
       break;
     case "restrict_to_topic":
-      base.topics = joinList(raw.topics);
+      base.valid_topics = joinList(raw.valid_topics ?? raw.topics);
+      base.invalid_topics = joinList(raw.invalid_topics);
       break;
   }
   return base;
@@ -237,7 +244,8 @@ function formGuardToWire(g: GuardFormValues): Record<string, unknown> {
       out.expected_languages = splitList(g.expected_languages);
       break;
     case "restrict_to_topic":
-      out.topics = splitList(g.topics);
+      out.valid_topics = splitList(g.valid_topics);
+      out.invalid_topics = splitList(g.invalid_topics);
       break;
   }
   return out;
@@ -447,26 +455,49 @@ function GuardFields({
       )}
 
       {guardId === "restrict_to_topic" && (
-        <FormField
-          control={control}
-          name="guard.topics"
-          render={({ field }) => (
-            <FormItem className="md:col-span-2">
-              <FormLabel>Topics</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="billing, support, returns"
-                />
-              </FormControl>
-              <FormDescription>
-                Comma-separated topic names the agent is allowed to discuss.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <>
+          <FormField
+            control={control}
+            name="guard.valid_topics"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Valid topics</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="billing, support, returns"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Comma-separated. Topics the agent IS allowed to discuss.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="guard.invalid_topics"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Invalid topics</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="competitor names, internal pricing"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Comma-separated. Topics the agent must refuse. At least one of
+                  the two lists is required.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </>
       )}
 
       {isThreshold && (
@@ -942,7 +973,14 @@ export default function GuardrailsPage() {
                             "guard.expected_languages",
                             d.expected_languages ?? "",
                           );
-                          form.setValue("guard.topics", d.topics ?? "");
+                          form.setValue(
+                            "guard.valid_topics",
+                            d.valid_topics ?? "",
+                          );
+                          form.setValue(
+                            "guard.invalid_topics",
+                            d.invalid_topics ?? "",
+                          );
                           form.setValue("guard.threshold", d.threshold);
                         }}
                       >
