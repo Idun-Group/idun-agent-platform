@@ -75,6 +75,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
           description: step.popover.description,
         },
       })),
+      onDestroyed: () => {
+        safeMarkCompleted();
+        driverRef.current = null;
+      },
     });
     driverRef.current = driverInstance;
     driverInstance.drive(0);

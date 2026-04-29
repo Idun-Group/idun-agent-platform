@@ -156,3 +156,18 @@ describe("TourProvider — desktop trigger", () => {
     expect(config.steps[0].element).toBe('[data-tour="chat-composer"]');
   });
 });
+
+describe("TourProvider — completion / dismiss", () => {
+  beforeEach(() => {
+    navigationMocks.searchParams = new URLSearchParams("tour=start");
+    navigationMocks.pathname = "/";
+  });
+
+  it("sets idun.tour.completed to 'true' when onDestroyed fires", () => {
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    expect(config.onDestroyed).toBeTypeOf("function");
+    config.onDestroyed!();
+    expect(localStorage.getItem("idun.tour.completed")).toBe("true");
+  });
+});
