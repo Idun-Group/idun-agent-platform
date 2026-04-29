@@ -163,3 +163,92 @@ async def test_scan_state_already_configured_returns_current_agent(
     assert body["currentAgent"]["name"] == "Existing"
     # tmp_path has no Python files so the (now-unconditional) walk reports empty.
     assert body["scanResult"]["detected"] == []
+
+
+# ---- /create-from-detection ------------------------------------------------
+
+
+async def test_create_from_detection_langgraph_happy_path(
+    admin_app, async_session, tmp_path, stub_reload_callable
+) -> None:
+    _seed_langgraph_file(tmp_path)
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/admin/api/v1/onboarding/create-from-detection",
+            json={
+                "framework": "LANGGRAPH",
+                "filePath": "agent.py",
+                "variableName": "graph",
+            },
+        )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["data"]["baseEngineConfig"]["agent"]["type"] == "LANGGRAPH"
+    assert (
+        body["data"]["baseEngineConfig"]["agent"]["config"]["graph_definition"]
+        == "agent.py:graph"
+    )
+    assert body["reload"]["status"] == "reloaded"
+    assert stub_reload_callable.call_count == 1
+
+
+async def test_create_from_detection_adk_happy_path(
+    admin_app, tmp_path, stub_reload_callable
+) -> None:
+    _seed_adk_file(tmp_path)
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/admin/api/v1/onboarding/create-from-detection",
+            json={
+                "framework": "ADK",
+                "filePath": "main_adk.py",
+                "variableName": "agent",
+            },
+        )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["data"]["baseEngineConfig"]["agent"]["type"] == "ADK"
+    assert (
+        body["data"]["baseEngineConfig"]["agent"]["config"]["agent"]
+        == "main_adk.py:agent"
+    )
+
+
+async def test_create_from_detection_already_configured_409(
+    admin_app, async_session, tmp_path
+) -> None:
+    await _seed_existing_agent(async_session)
+    _seed_langgraph_file(tmp_path)
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/admin/api/v1/onboarding/create-from-detection",
+            json={
+                "framework": "LANGGRAPH",
+                "filePath": "agent.py",
+                "variableName": "graph",
+            },
+        )
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "conflict"
+
+
+async def test_create_from_detection_stale_pick_409(admin_app, tmp_path) -> None:
+    """File deleted between scan and click → re-scan returns no match → 409."""
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/admin/api/v1/onboarding/create-from-detection",
+            json={
+                "framework": "LANGGRAPH",
+                "filePath": "agent.py",
+                "variableName": "graph",
+            },
+        )
+    assert response.status_code == 409
+    body = response.json()
+    assert body["error"]["code"] == "conflict"
+    # Message should help the user: it mentions the filename they sent.
+    assert "agent.py" in body["error"]["message"]
