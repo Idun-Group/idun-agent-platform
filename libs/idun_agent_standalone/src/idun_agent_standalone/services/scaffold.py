@@ -148,13 +148,17 @@ def create_starter_project(
         raise ScaffoldConflictError(conflicts)
 
     written: list[Path] = []
+    current_tmp: Path | None = None
     try:
         for path, content in files.items():
-            tmp = path.with_suffix(path.suffix + ".idun-tmp")
-            tmp.write_text(content)
-            tmp.replace(path)
+            current_tmp = path.with_suffix(path.suffix + ".idun-tmp")
+            current_tmp.write_text(content)
+            current_tmp.replace(path)
+            current_tmp = None
             written.append(path)
     except Exception:
+        if current_tmp is not None:
+            current_tmp.unlink(missing_ok=True)
         for p in written:
             p.unlink(missing_ok=True)
         raise
