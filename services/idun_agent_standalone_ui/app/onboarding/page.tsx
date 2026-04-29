@@ -76,6 +76,21 @@ export default function OnboardingPage() {
     return "Something went wrong";
   }
 
+  function handleMutationError(err: unknown) {
+    // TODO(CT9): split 409 (re-scan) vs other errors (Error screen with retry).
+    // For now both paths converge: toast the message, invalidate the scan,
+    // and bounce back to the scanning loader.
+    if (err instanceof ApiError && err.status === 409) {
+      toast.error(extractMessage(err));
+      queryClient.invalidateQueries({ queryKey: SCAN_QUERY_KEY });
+      setStep({ kind: "scanning" });
+      return;
+    }
+    toast.error(extractMessage(err));
+    queryClient.invalidateQueries({ queryKey: SCAN_QUERY_KEY });
+    setStep({ kind: "scanning" });
+  }
+
   const detectionMutation = useMutation({
     mutationFn: (body: CreateFromDetectionBody) => api.createFromDetection(body),
     onSuccess: () => {
@@ -93,19 +108,6 @@ export default function OnboardingPage() {
     },
     onError: (err) => handleMutationError(err),
   });
-
-  function handleMutationError(err: unknown) {
-    if (err instanceof ApiError && err.status === 409) {
-      toast.error(extractMessage(err));
-      queryClient.invalidateQueries({ queryKey: SCAN_QUERY_KEY });
-      setStep({ kind: "scanning" });
-      return;
-    }
-    // Error screen lands in CT9. For now toast and bounce back to scan.
-    toast.error(extractMessage(err));
-    queryClient.invalidateQueries({ queryKey: SCAN_QUERY_KEY });
-    setStep({ kind: "scanning" });
-  }
 
   if (error) {
     return (
