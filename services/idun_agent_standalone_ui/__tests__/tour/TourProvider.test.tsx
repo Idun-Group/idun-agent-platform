@@ -27,9 +27,7 @@ vi.mock("next/navigation", () => ({
     push: navigationMocks.push,
   }),
   usePathname: () => navigationMocks.pathname,
-  useSearchParams: () => ({
-    get: (key: string) => navigationMocks.searchParams.get(key),
-  }),
+  useSearchParams: () => navigationMocks.searchParams,
 }));
 
 import { TourProvider } from "@/components/tour/TourProvider";
@@ -82,5 +80,36 @@ describe("TourProvider — no trigger", () => {
       </TourProvider>,
     );
     expect(getByText("visible-child")).toBeInTheDocument();
+  });
+});
+
+describe("TourProvider — mobile skip", () => {
+  beforeEach(() => {
+    navigationMocks.searchParams = new URLSearchParams("tour=start");
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: false,
+        media: "(min-width: 768px)",
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    );
+  });
+
+  it("sets idun.tour.completed when triggered below md viewport", () => {
+    render(<TourProvider>x</TourProvider>);
+    expect(localStorage.getItem("idun.tour.completed")).toBe("true");
+  });
+
+  it("does NOT instantiate driver.js when triggered below md viewport", () => {
+    render(<TourProvider>x</TourProvider>);
+    expect(driverFactory).not.toHaveBeenCalled();
+  });
+
+  it("strips ?tour=start from the URL when triggered below md viewport", () => {
+    navigationMocks.pathname = "/";
+    render(<TourProvider>x</TourProvider>);
+    expect(navigationMocks.replace).toHaveBeenCalledWith("/");
   });
 });

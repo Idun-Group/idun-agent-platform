@@ -21,8 +21,24 @@ export function TourProvider({ children }: { children: ReactNode }) {
     if (searchParams.get("tour") !== "start") return;
     if (tourStartedRef.current) return;
     tourStartedRef.current = true;
-    // Trigger logic lands in Tasks 4-7. For now: idempotent no-op so the
-    // provider can be mounted without firing anything.
+
+    const isDesktop =
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 768px)").matches;
+
+    if (!isDesktop) {
+      // Tour is desktop-only. Mark completed so a future desktop session
+      // landing here doesn't surprise the user with a tour.
+      try {
+        localStorage.setItem("idun.tour.completed", "true");
+      } catch {
+        // Private browsing / quota — proceed silently.
+      }
+      router.replace(pathname);
+      return;
+    }
+
+    // Desktop trigger lands in Task 5.
   }, [searchParams, pathname, router]);
 
   return <>{children}</>;
