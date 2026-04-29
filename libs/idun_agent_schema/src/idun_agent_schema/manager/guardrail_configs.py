@@ -220,7 +220,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                     "config_id": "restrict_to_topic",
                     "api_key": api_key,
                     "reject_message": "Off-topic content detected",
-                    "guard_url": "hub://guardrails/restrict_to_topic",
+                    "guard_url": "hub://tryolabs/restricttotopic",
                     "topics": guardrail["topics"],
                 })
 
