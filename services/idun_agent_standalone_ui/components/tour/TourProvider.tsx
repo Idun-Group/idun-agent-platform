@@ -7,18 +7,17 @@ import { TOUR_STEPS } from "./tour-steps";
 
 const COMPLETED_KEY = "idun.tour.completed";
 
-function safeReadCompleted(): boolean {
+function safeMarkCompleted(): void {
   try {
-    return localStorage.getItem(COMPLETED_KEY) === "true";
+    localStorage.setItem(COMPLETED_KEY, "true");
   } catch {
-    return false;
+    // Private browsing / quota — proceed silently.
   }
 }
 
-function safeWriteCompleted(value: boolean): void {
+function safeClearCompleted(): void {
   try {
-    if (value) localStorage.setItem(COMPLETED_KEY, "true");
-    else localStorage.removeItem(COMPLETED_KEY);
+    localStorage.removeItem(COMPLETED_KEY);
   } catch {
     // Private browsing / quota — proceed silently.
   }
@@ -53,7 +52,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     if (!isDesktop) {
       // Tour is desktop-only. Mark completed so a future desktop session
       // landing here doesn't surprise the user with a tour.
-      safeWriteCompleted(true);
+      safeMarkCompleted();
       router.replace(pathname);
       return;
     }
@@ -61,7 +60,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     // Desktop path: clear the flag (per Q5 A — `?tour=start` always re-fires
     // even after prior completion), strip the URL param, ensure we're on
     // the chat root before showing step 0, instantiate driver, drive(0).
-    safeWriteCompleted(false);
+    safeClearCompleted();
     router.replace(pathname);
     if (pathname !== "/") {
       router.push("/");
