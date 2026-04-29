@@ -250,14 +250,24 @@ async def get_graph(
 
 @agent_router.get("/config")
 async def get_config(request: Request):
-    """Get the current agent configuration."""
-    if not hasattr(request.app.state, "engine_config"):
-        logger.error("Engine config not available on app state")
+    """Get the current agent configuration.
+
+    Returns 503 ``agent_not_ready`` when the engine booted unconfigured
+    and ``configure_app`` hasn't run yet (no agent → no config to expose).
+    """
+    engine_config = getattr(request.app.state, "engine_config", None)
+    if engine_config is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not available"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error": {
+                    "code": "agent_not_ready",
+                    "message": "Agent has not been configured yet.",
+                }
+            },
         )
 
-    config = request.app.state.engine_config.agent
+    config = engine_config.agent
     logger.debug(
         f"Returning config for agent '{config.config.name}' (type={config.type})"
     )

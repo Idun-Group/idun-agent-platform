@@ -92,17 +92,38 @@ def create_app(
 
     Returns:
         FastAPI: A configured FastAPI application ready to serve your agent.
-    """
-    # Resolve configuration from various sources using ConfigBuilder's umbrella function
-    validated_config = ConfigBuilder.resolve_config(
-        config_path=config_path, config_dict=config_dict, engine_config=engine_config
-    )
 
-    # Resolve input model for /invoke endpoint
-    try:
-        input_model = ConfigBuilder.resolve_input_model(validated_config)
-    except Exception as e:
-        raise ValueError(f"Failed to resolve input model: {e}") from e
+    Notes:
+        When all four config sources are absent (``config_path``,
+        ``config_dict``, ``engine_config``, and the default
+        ``./config.yaml`` is also missing), the app boots in
+        **unconfigured** mode: routes are registered but ``/agent/*``
+        returns 503 ``agent_not_ready`` until an embedder calls
+        ``configure_app(app, config)`` — typically via ``POST /reload``
+        or a custom reload pipeline. ``/health`` and the base routes
+        work normally. This shape lets embedders (e.g. the standalone
+        package) boot before they know the agent config — for instance,
+        when the wizard hasn't materialized an agent yet.
+    """
+    # Resolve configuration from various sources. Tolerate the
+    # "no config available anywhere" case so embedders can boot
+    # unconfigured and provide the config later. We only swallow the
+    # implicit-no-config error: explicit bad paths/dicts still raise.
+    validated_config: EngineConfig | None
+    if engine_config is None and config_path is None and config_dict is None:
+        try:
+            validated_config = ConfigBuilder.resolve_config()
+        except (FileNotFoundError, ValueError) as exc:
+            logger.info(
+                "create_app booting unconfigured (no config provided): %s", exc
+            )
+            validated_config = None
+    else:
+        validated_config = ConfigBuilder.resolve_config(
+            config_path=config_path,
+            config_dict=config_dict,
+            engine_config=engine_config,
+        )
 
     # Create the FastAPI application
     app = FastAPI(
@@ -139,7 +160,9 @@ def create_app(
 
         return response
 
-    # Store configuration in app state for lifespan to use
+    # Store configuration in app state for lifespan to use. May be
+    # ``None`` in unconfigured boot — lifespan and dependencies handle
+    # that case (see ``server/lifespan.py`` and ``server/dependencies.py``).
     app.state.engine_config = validated_config
 
     # Store the optional /reload auth dependency on app state so the
@@ -148,37 +171,53 @@ def create_app(
     # well-defined regardless of how the app is constructed.
     app.state.reload_auth = reload_auth
 
-    # Include the routers
+    # Include the agent + base routers unconditionally. ``get_agent``
+    # gates ``/agent/*`` on ``app.state.agent``, so handlers return 503
+    # ``agent_not_ready`` until ``configure_app`` runs. ``/health``,
+    # ``/reload`` and the engine info endpoint stay reachable.
     app.include_router(agent_router, prefix="/agent", tags=["Agent"])
     app.include_router(base_router, tags=["Base"])
 
-    # TODO: DEPRECATED — register_invoke_route uses ChatRequest only now.
-    # Remove when /agent/invoke shim is fully removed.
-    register_invoke_route(app, input_model)
+    # Config-dependent setup. Skipped when booting unconfigured — these
+    # surfaces (the deprecated /agent/invoke shim, third-party
+    # integration webhooks) require knowing the agent type and the
+    # configured integrations up front. Embedders that need them must
+    # boot with a config; reload-only re-registration is tracked by
+    # TODO(#527) for integrations and the deprecation track for /invoke.
+    if validated_config is not None:
+        # Resolve input model for the deprecated /agent/invoke endpoint.
+        try:
+            input_model = ConfigBuilder.resolve_input_model(validated_config)
+        except Exception as e:
+            raise ValueError(f"Failed to resolve input model: {e}") from e
 
-    # Register integration routers based on config
-    if validated_config.integrations:
-        from idun_agent_schema.engine.integrations import IntegrationProvider
+        # TODO: DEPRECATED — register_invoke_route uses ChatRequest only now.
+        # Remove when /agent/invoke shim is fully removed.
+        register_invoke_route(app, input_model)
 
-        from ..integrations.discord.handler import router as discord_router
-        from ..integrations.whatsapp.handler import router as whatsapp_router
+        # Register integration routers based on config
+        if validated_config.integrations:
+            from idun_agent_schema.engine.integrations import IntegrationProvider
 
-        for integration in validated_config.integrations:
-            match integration.provider:
-                case IntegrationProvider.WHATSAPP if integration.enabled:
-                    app.include_router(
-                        whatsapp_router,
-                        prefix="/integrations/whatsapp",
-                        tags=["WhatsApp"],
-                    )
-                case IntegrationProvider.DISCORD if integration.enabled:
-                    app.include_router(
-                        discord_router,
-                        prefix="/integrations/discord",
-                        tags=["Discord"],
-                    )
-                case _:
-                    pass
+            from ..integrations.discord.handler import router as discord_router
+            from ..integrations.whatsapp.handler import router as whatsapp_router
+
+            for integration in validated_config.integrations:
+                match integration.provider:
+                    case IntegrationProvider.WHATSAPP if integration.enabled:
+                        app.include_router(
+                            whatsapp_router,
+                            prefix="/integrations/whatsapp",
+                            tags=["WhatsApp"],
+                        )
+                    case IntegrationProvider.DISCORD if integration.enabled:
+                        app.include_router(
+                            discord_router,
+                            prefix="/integrations/discord",
+                            tags=["Discord"],
+                        )
+                    case _:
+                        pass
 
     # Mount the static UI last so explicit routes (everything above) win.
     # When no UI dir is configured, fall back to the JSON info payload at /.

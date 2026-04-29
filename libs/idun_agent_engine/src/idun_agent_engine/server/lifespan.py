@@ -196,10 +196,20 @@ async def lifespan(app: FastAPI):
 
     # Load config and initialize agent on startup
     logger.info("🚀 Server starting up...")
-    if not app.state.engine_config:
-        raise ValueError("Error: No Engine configuration found.")
-
-    await configure_app(app, app.state.engine_config)
+    if app.state.engine_config is not None:
+        await configure_app(app, app.state.engine_config)
+    else:
+        # Unconfigured boot: agent state stays empty until an embedder
+        # calls ``configure_app`` explicitly (typically via the standalone
+        # reload pipeline once a wizard materializes the agent). Set the
+        # markers downstream readers expect so ``getattr(...)`` short
+        # -circuits cleanly.
+        app.state.agent = None
+        if not hasattr(app.state, "post_configure_callbacks"):
+            app.state.post_configure_callbacks = []
+        logger.info(
+            "⏸️  Engine started unconfigured — /agent/* will 503 until configure_app runs"
+        )
 
     try:
         telemetry = get_telemetry()
