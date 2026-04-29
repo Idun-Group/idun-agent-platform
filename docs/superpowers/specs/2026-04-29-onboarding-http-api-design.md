@@ -78,8 +78,8 @@ Flow:
 3. Find the detection where `(framework, file_path, variable_name)` matches the body exactly.
 4. **If no match → `409 detection_not_found`** with `{ filePath, variableName }` echoed back. (TOCTOU: file changed between scan and click.)
 5. Build `EngineConfig` from the **server's** `DetectedAgent` (not the body):
-   - LangGraph: `agent.type = "langgraph"`, `agent.config.graph_path = "{file_path}:{variable_name}"`
-   - ADK: `agent.type = "adk"`, `agent.config.agent_path = "{file_path}:{variable_name}"`
+   - LangGraph: `agent.type = "LANGGRAPH"`, `agent.config.graph_definition = "{file_path}:{variable_name}"`, `agent.config.name = inferred_name`
+   - ADK: `agent.type = "ADK"`, `agent.config.agent = "{file_path}:{variable_name}"`, `agent.config.name = inferred_name`
    - `memory`: omitted (engine default in-memory checkpoint)
    - `observability`: omitted
 6. Insert `StandaloneAgentRow(id="singleton", name=detection.inferred_name, base_engine_config=...)`.
@@ -98,8 +98,8 @@ Flow:
 1. **Pre-check:** if `StandaloneAgentRow` exists → `409 agent_already_configured` (zero files written).
 2. Call `scaffold.create_starter_project(root=Path.cwd(), framework=body.framework)`. Scaffolder atomically writes 5 files (`agent.py`, `requirements.txt`, `.env.example`, `README.md`, `.gitignore`) or raises `ScaffoldConflictError` (zero files written). Router translates the exception to `409 scaffold_conflict` with `{ paths: [...] }`.
 3. Build `EngineConfig`:
-   - LangGraph: `agent.config.graph_path = "agent.py:graph"`
-   - ADK: `agent.config.agent_path = "agent.py:agent"`
+   - LangGraph: `agent.config.graph_definition = "agent.py:graph"`, `agent.config.name` = sanitized form of `body.name` or `"starter"`
+   - ADK: `agent.config.agent = "agent.py:agent"`, `agent.config.name` = sanitized form of `body.name` or `"starter"`
 4. Insert row with `name = body.name or "Starter Agent"`.
 5. Trigger reload.
 6. Return envelope.
