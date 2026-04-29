@@ -13,16 +13,17 @@ export default function OnboardingPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: SCAN_QUERY_KEY,
     queryFn: () => api.scan(),
-    retry: false,
   });
 
+  const redirecting = data?.state === "ALREADY_CONFIGURED";
+
   useEffect(() => {
-    if (data?.state === "ALREADY_CONFIGURED") {
+    if (redirecting) {
       router.replace("/");
     }
-  }, [data, router]);
+  }, [redirecting, router]);
 
-  if (isLoading || data?.state === "ALREADY_CONFIGURED") {
+  if (isLoading || redirecting) {
     return <WizardScanning />;
   }
 
