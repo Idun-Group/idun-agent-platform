@@ -29,10 +29,15 @@ _SLUG_RE = re.compile(r"[^a-z0-9]+")
 def _slugify(name: str) -> str:
     """Return a slug suitable for ``agent.config.name``.
 
-    The engine's ADK validator derives ``app_name`` from ``name`` by
-    lower-casing and replacing non-alphanumerics with ``_``, so we run
-    the same transformation up-front to keep the value stable across
-    re-validations and avoid surprising round-trip differences.
+    Mirrors the engine's ADK validator (``AdkAgentConfig._default_app_name_from_name``)
+    so that ``_slugify(x)`` is a fixed point of the engine rule and revalidation is
+    idempotent.
+
+    Non-ASCII characters are stripped (e.g. ``"café"`` → ``"caf"``), matching the
+    engine validator's ASCII-only ``[^a-z0-9]+`` pattern. This is a deliberate
+    non-fold — do NOT add NFKD normalization here, or the standalone slug will
+    diverge from what the engine derives at validation time.
+
     Falls back to ``"agent"`` when the input slugifies to empty.
     """
     slug = _SLUG_RE.sub("_", name.lower()).strip("_")
