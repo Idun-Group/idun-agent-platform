@@ -108,17 +108,27 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
             logger.warning("boot engine layer skipped, admin only mode reason=%s", exc)
             engine_config = None
 
+    # Always boot through the engine factory. When ``engine_config`` is
+    # ``None`` (no agent in DB yet — first-run wizard hasn't materialized),
+    # the engine boots in unconfigured mode: routes are registered but
+    # ``/agent/*`` returns 503 ``agent_not_ready``. The wizard's
+    # materialize step calls the reload pipeline which runs
+    # ``configure_app`` and brings the same routes online — no process
+    # restart required.
+    app = create_engine_app(
+        engine_config=engine_config,
+        reload_auth=reload_disabled,
+    )
     if engine_config is not None:
-        app = create_engine_app(
-            engine_config=engine_config,
-            reload_auth=reload_disabled,
-        )
         logger.info(
             "boot engine app built framework=%s",
             engine_config.agent.type.value,
         )
     else:
-        app = FastAPI(title="Idun Agent Standalone (admin only)")
+        logger.info(
+            "boot engine app started unconfigured "
+            "(no agent yet — wizard will materialize)"
+        )
 
     app.state.settings = settings
     app.state.db_engine = db_engine
