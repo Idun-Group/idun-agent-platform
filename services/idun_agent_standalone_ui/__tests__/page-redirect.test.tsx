@@ -65,8 +65,26 @@ describe("Home (chat root)", () => {
       new ApiError(500, null),
     );
     render(<Home />);
-    // Wait one tick to make sure no redirect happens.
-    await new Promise((r) => setTimeout(r, 10));
+    // Wait until the probe was invoked, then assert no redirect happened.
+    await waitFor(() =>
+      expect(api.getAgent as ReturnType<typeof vi.fn>).toHaveBeenCalled(),
+    );
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("does not redirect if unmounted before getAgent resolves", async () => {
+    let resolveIt!: () => void;
+    (api.getAgent as ReturnType<typeof vi.fn>).mockReturnValueOnce(
+      new Promise<never>((_resolve, reject) => {
+        // Reject (matches the 404 path) only after we've unmounted.
+        resolveIt = () => reject(new ApiError(404, null));
+      }),
+    );
+    const { unmount } = render(<Home />);
+    unmount();
+    resolveIt();
+    // Yield one microtask so any leaked then/catch would have a chance to fire.
+    await new Promise((r) => setTimeout(r, 0));
     expect(replace).not.toHaveBeenCalled();
   });
 });
