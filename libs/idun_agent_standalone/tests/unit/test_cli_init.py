@@ -121,3 +121,61 @@ def test_init_no_browser_flag_suppresses_launch(
     assert len(stub_dependencies["upgrade_head"]) == 1
     assert len(stub_dependencies["_setup"]) == 1
     assert len(stub_dependencies["_serve"]) == 1
+
+
+@pytest.fixture
+def ordered_dependencies(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Like `stub_dependencies` but records call ORDER in a flat list.
+
+    Use to assert that migrations + setup run BEFORE the browser and
+    BEFORE serve, and that serve is the last step.
+    """
+    order: list[str] = []
+
+    def fake_upgrade_head() -> None:
+        order.append("upgrade_head")
+
+    async def fake_setup(config_path_override: str | None) -> None:
+        order.append("_setup")
+
+    async def fake_serve(settings: object) -> None:
+        order.append("_serve")
+
+    def fake_browser_open(url: str) -> bool:
+        order.append("webbrowser.open")
+        return True
+
+    monkeypatch.setattr(
+        "idun_agent_standalone.db.migrate.upgrade_head", fake_upgrade_head
+    )
+    monkeypatch.setattr(cli_module, "_setup", fake_setup)
+    monkeypatch.setattr(cli_module, "_serve", fake_serve)
+    monkeypatch.setattr(cli_module.webbrowser, "open", fake_browser_open)
+    monkeypatch.delenv("IDUN_PORT", raising=False)
+
+    return order
+
+
+def test_init_call_order_default(ordered_dependencies: list[str]) -> None:
+    """Migrations → setup → browser → serve."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["init"])
+    assert result.exit_code == 0, result.output
+    assert ordered_dependencies == [
+        "upgrade_head",
+        "_setup",
+        "webbrowser.open",
+        "_serve",
+    ]
+
+
+def test_init_call_order_no_browser(ordered_dependencies: list[str]) -> None:
+    """With --no-browser: migrations → setup → serve. (no webbrowser.open)"""
+    runner = CliRunner()
+    result = runner.invoke(main, ["init", "--no-browser"])
+    assert result.exit_code == 0, result.output
+    assert ordered_dependencies == [
+        "upgrade_head",
+        "_setup",
+        "_serve",
+    ]
