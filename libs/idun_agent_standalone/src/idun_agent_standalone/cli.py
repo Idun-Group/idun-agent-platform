@@ -16,6 +16,8 @@ works in dev, laptop, and Cloud Run without flag wrangling.
 from __future__ import annotations
 
 import asyncio
+import os
+import webbrowser
 from pathlib import Path
 
 import click
@@ -68,6 +70,56 @@ def serve_cmd() -> None:
     """Run the standalone server (engine routes plus admin REST)."""
     setup_logging()
     asyncio.run(_serve(StandaloneSettings()))
+
+
+@main.command("init")
+@click.option(
+    "--port",
+    "port_override",
+    type=int,
+    default=None,
+    help="Port to bind. Overrides IDUN_PORT (default 8000).",
+)
+@click.option(
+    "--no-browser",
+    "no_browser",
+    is_flag=True,
+    default=False,
+    help="Don't open the browser automatically. Useful for Cloud Run + headless.",
+)
+def init_cmd(port_override: int | None, no_browser: bool) -> None:
+    """Initialize Idun in the current folder and launch chat + admin.
+
+    Runs DB migrations, seeds from ``config.yaml`` if present, opens the
+    browser at ``http://<host>:<port>/``, then boots the standalone
+    server. The browser handles the wizard-or-chat conditional: if an
+    agent is configured the chat root renders, otherwise the wizard at
+    ``/onboarding`` takes over.
+
+    Idempotent: re-running on an already-initialized folder is safe and
+    re-launches the server.
+    """
+    setup_logging()
+
+    # Resolve port: --port flag > IDUN_PORT env > default 8000.
+    if port_override is not None:
+        os.environ["IDUN_PORT"] = str(port_override)
+
+    settings = StandaloneSettings()
+
+    # Migrations + seed (both no-op when already at head / DB has rows).
+    from idun_agent_standalone.db.migrate import upgrade_head
+
+    upgrade_head()
+    asyncio.run(_setup(config_path_override=None))
+
+    # Open the browser BEFORE serve. _serve blocks the main thread; opening
+    # after would require threading. Modern browsers retry connection-refused
+    # for several seconds, giving uvicorn a window to come up.
+    if not no_browser:
+        webbrowser.open(f"http://{settings.host}:{settings.port}/")
+
+    asyncio.run(_serve(settings))
 
 
 async def _serve(settings: StandaloneSettings) -> None:
