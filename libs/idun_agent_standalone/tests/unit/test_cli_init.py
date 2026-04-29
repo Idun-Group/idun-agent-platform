@@ -92,11 +92,11 @@ def test_init_default_flow_opens_browser_then_serves(
     assert url.endswith("/")
 
 
-def test_init_port_flag_sets_idun_port_env(
-    stub_dependencies: dict[str, list], monkeypatch: pytest.MonkeyPatch
+def test_init_port_flag_propagates_to_url(
+    stub_dependencies: dict[str, list],
 ) -> None:
-    """`--port 9000` must set IDUN_PORT before settings are constructed
-    so the override propagates to uvicorn."""
+    """`--port 9000` must propagate so the resolved settings (and the
+    browser-launch URL) carry the override."""
     runner = CliRunner()
     result = runner.invoke(main, ["init", "--port", "9000"])
     assert result.exit_code == 0, result.output
