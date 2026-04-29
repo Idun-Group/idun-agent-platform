@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TOUR_STEPS } from "@/components/tour/tour-steps";
+import { DEPLOYMENT_DOCS_URL, TOUR_STEPS } from "@/components/tour/tour-steps";
 
 describe("TOUR_STEPS", () => {
   it("has exactly 5 steps", () => {
@@ -50,6 +50,18 @@ describe("TOUR_STEPS", () => {
     expect(TOUR_STEPS[4].route).toBeUndefined();
     expect(TOUR_STEPS[4].popover.title).toBe("Deployment");
     expect(TOUR_STEPS[4].popover.description).toContain("Docker or Cloud Run");
+  });
+
+  it("step 4 description embeds the deployment docs link with target=_blank", () => {
+    expect(TOUR_STEPS[4].popover.description).toContain(
+      `href="${DEPLOYMENT_DOCS_URL}"`,
+    );
+    expect(TOUR_STEPS[4].popover.description).toContain(
+      'target="_blank"',
+    );
+    expect(TOUR_STEPS[4].popover.description).toContain(
+      'rel="noopener noreferrer"',
+    );
   });
 
   it("every step has non-empty title and description", () => {

@@ -146,6 +146,23 @@ export function TourProvider({ children }: { children: ReactNode }) {
         }
         opts.driver.moveNext();
       },
+      onPrevClick: (_element, _step, opts) => {
+        const idx = opts.state.activeIndex ?? 0;
+        if (idx === 0) {
+          opts.driver.movePrevious();
+          return;
+        }
+        const prev = TOUR_STEPS[idx - 1];
+        if (
+          prev?.route &&
+          normalizeRoute(prev.route) !== normalizeRoute(pathnameRef.current)
+        ) {
+          setPendingStepIndex(idx - 1);
+          router.push(prev.route);
+          return;
+        }
+        opts.driver.movePrevious();
+      },
       onPopoverRender: (_popover, opts) => {
         const idx = opts.state.activeIndex ?? 0;
         const step = TOUR_STEPS[idx];

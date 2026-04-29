@@ -322,3 +322,60 @@ describe("TourProvider — anchor missing recovery", () => {
     expect(driverMock.moveNext).not.toHaveBeenCalled();
   });
 });
+
+describe("TourProvider — cross-route Prev", () => {
+  beforeEach(() => {
+    navigationMocks.searchParams = new URLSearchParams("tour=start");
+    navigationMocks.pathname = "/admin/agent";
+    // Plant chat-composer anchor for the desktop-trigger drive(0)
+    // anchor-poll. The test runs the trigger from /admin/agent so the
+    // initial drive(0) needs the / anchor present in JSDOM.
+    const anchor = document.createElement("div");
+    anchor.setAttribute("data-tour", "chat-composer");
+    document.body.appendChild(anchor);
+  });
+
+  it("on Prev from step 1 (route /admin/agent) to step 0 (route /), pushes the new route and does NOT call movePrevious yet", () => {
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    expect(config.onPrevClick).toBeTypeOf("function");
+    // Init pushes to "/" since pathname starts at /admin/agent; clear so
+    // we can isolate the Prev-driven push.
+    navigationMocks.push.mockClear();
+    act(() => {
+      config.onPrevClick!(undefined, TOUR_STEPS[1], {
+        driver: driverMock,
+        state: { activeIndex: 1 },
+      });
+    });
+    expect(navigationMocks.push).toHaveBeenCalledWith("/");
+    expect(driverMock.movePrevious).not.toHaveBeenCalled();
+  });
+
+  it("on Prev from step 2 (route /admin/agent) to step 1 (same route), calls movePrevious directly", () => {
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    navigationMocks.push.mockClear();
+    act(() => {
+      config.onPrevClick!(undefined, TOUR_STEPS[2], {
+        driver: driverMock,
+        state: { activeIndex: 2 },
+      });
+    });
+    expect(driverMock.movePrevious).toHaveBeenCalled();
+    expect(navigationMocks.push).not.toHaveBeenCalled();
+  });
+
+  it("on Prev from step 0, calls movePrevious (Driver.js no-ops at first step)", () => {
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    act(() => {
+      config.onPrevClick!(undefined, TOUR_STEPS[0], {
+        driver: driverMock,
+        state: { activeIndex: 0 },
+      });
+    });
+    expect(driverMock.movePrevious).toHaveBeenCalled();
+    expect(navigationMocks.push).not.toHaveBeenCalledWith("/admin/agent");
+  });
+});

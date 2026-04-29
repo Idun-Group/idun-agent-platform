@@ -75,7 +75,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     popover: {
       title: "Deployment",
       description:
-        "This same standalone agent can be packaged for Docker or Cloud Run when you are ready to deploy.",
+        'This same standalone agent can be packaged for Docker or Cloud Run when you are ready to deploy. <a href="https://docs.idunplatform.com/deployment/overview" target="_blank" rel="noopener noreferrer">Read deployment guide →</a>',
     },
   },
 ] as const;
