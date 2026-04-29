@@ -38,6 +38,9 @@ from idun_agent_standalone.api.v1.routers.memory import router as memory_router
 from idun_agent_standalone.api.v1.routers.observability import (
     router as observability_router,
 )
+from idun_agent_standalone.api.v1.routers.onboarding import (
+    router as onboarding_router,
+)
 from idun_agent_standalone.api.v1.routers.prompts import (
     router as prompts_router,
 )
@@ -136,6 +139,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.include_router(guardrails_router, dependencies=admin_auth)
     app.include_router(prompts_router, dependencies=admin_auth)
     app.include_router(integrations_router, dependencies=admin_auth)
+    app.include_router(onboarding_router, dependencies=admin_auth)
     app.include_router(runtime_config_router)
 
     ui_dir = _resolve_ui_dir(settings)
