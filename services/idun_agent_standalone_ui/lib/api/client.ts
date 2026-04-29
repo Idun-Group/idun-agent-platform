@@ -2,7 +2,9 @@
  * Low level fetch wrapper.
  *
  * - Sends the session cookie on every request.
- * - Redirects to /login/ once on 401.
+ * - Redirects to /login/?next=<encoded path> once on 401 so the user
+ *   lands back on their original page after authenticating. Skips the
+ *   `?next=` round-trip when the request already came from /login.
  * - Throws ApiError on non-2xx so TanStack Query surfaces the failure.
  */
 
@@ -25,9 +27,14 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
   if (res.status === 401 && typeof window !== "undefined" && !redirected) {
     redirected = true;
-    const nextPath = window.location.pathname + window.location.search;
-    const next = encodeURIComponent(nextPath);
-    window.location.href = `/login/?next=${next}`;
+    const onLogin = window.location.pathname.startsWith("/login");
+    if (onLogin) {
+      window.location.href = "/login/";
+    } else {
+      const nextPath = window.location.pathname + window.location.search;
+      const next = encodeURIComponent(nextPath);
+      window.location.href = `/login/?next=${next}`;
+    }
     throw new ApiError(401, null);
   }
   if (!res.ok) {

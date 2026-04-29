@@ -67,4 +67,36 @@ describe("apiFetch 401 redirect", () => {
       "/login/?next=%2Fadmin%2Fagent%3Ffoo%3Dbar",
     );
   });
+
+  it("redirects only once even on repeated 401s", async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 401 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 401 }));
+    await expect(apiFetch("/admin/api/v1/agent")).rejects.toThrow();
+    const firstHref = window.location.href;
+    expect(firstHref).toBe("/login/?next=%2Fonboarding");
+
+    // Mutate the href to detect whether a second 401 writes it again.
+    (window.location as { href: string }).href = "SENTINEL";
+    await expect(apiFetch("/admin/api/v1/agent")).rejects.toThrow();
+    expect(window.location.href).toBe("SENTINEL");
+  });
+
+  it("when already on /login, redirects to plain /login/ (no ?next= self-loop)", async () => {
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      writable: true,
+      value: {
+        ...originalLocation,
+        pathname: "/login",
+        search: "",
+        href: "",
+      },
+    });
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({}), { status: 401 }),
+    );
+    await expect(apiFetch("/admin/api/v1/agent")).rejects.toThrow();
+    expect(window.location.href).toBe("/login/");
+  });
 });
