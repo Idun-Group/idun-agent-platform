@@ -60,6 +60,12 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  // Some tests plant anchor stubs (data-tour="…") on document.body so
+  // the provider's anchor-presence checks resolve synchronously. Wipe
+  // them between tests so anchor-missing scenarios stay deterministic.
+  document.body
+    .querySelectorAll("[data-tour]")
+    .forEach((el) => el.remove());
 });
 
 describe("TourProvider — no trigger", () => {
@@ -119,6 +125,13 @@ describe("TourProvider — desktop trigger", () => {
   beforeEach(() => {
     navigationMocks.searchParams = new URLSearchParams("tour=start");
     navigationMocks.pathname = "/";
+    // Step 0 anchors on [data-tour="chat-composer"]. The provider gates
+    // drive(0) on the anchor's presence (so the wizard handoff doesn't
+    // race the chat composer mount in production); in JSDOM we plant
+    // the anchor up-front so drive(0) fires synchronously.
+    const anchor = document.createElement("div");
+    anchor.setAttribute("data-tour", "chat-composer");
+    document.body.appendChild(anchor);
   });
 
   it("instantiates driver.js and calls drive(0) on desktop trigger", () => {
@@ -226,6 +239,13 @@ describe("TourProvider — cross-route advance", () => {
   });
 
   it("after route push, when pathname matches the pending step's route, drives that step", async () => {
+    // Step 1's anchor must exist before drive(1) — the bridge effect
+    // gates on the anchor's presence to avoid racing the new route's
+    // mount in production. Plant the anchor up-front so the rAF poll
+    // resolves on the first frame.
+    const anchor = document.createElement("div");
+    anchor.setAttribute("data-tour", "sidebar-agent-config");
+    document.body.appendChild(anchor);
     const { rerender } = render(<TourProvider>x</TourProvider>);
     const config = driverFactory.mock.calls[0][0];
     // Click Next: push /admin/agent, set pendingStepIndex = 1.

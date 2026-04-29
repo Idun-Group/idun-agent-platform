@@ -13,6 +13,18 @@ import { TOUR_STEPS } from "./tour-steps";
 
 const COMPLETED_KEY = "idun.tour.completed";
 
+/**
+ * Normalize a pathname for trailing-slash-insensitive comparison. The
+ * Next.js standalone UI builds with `trailingSlash: true` so `usePathname`
+ * yields e.g. `/admin/agent/` while `TOUR_STEPS[i].route` is declared as
+ * `/admin/agent`. Without normalization the cross-route bridge would
+ * never match and the tour would freeze on step 0.
+ */
+function normalizeRoute(route: string): string {
+  if (route === "/") return route;
+  return route.replace(/\/+$/, "");
+}
+
 function safeMarkCompleted(): void {
   try {
     localStorage.setItem(COMPLETED_KEY, "true");
@@ -94,10 +106,22 @@ export function TourProvider({ children }: { children: ReactNode }) {
         const idx = opts.state.activeIndex ?? 0;
         const next = TOUR_STEPS[idx + 1];
         if (!next) {
-          opts.driver.moveNext();
+          // Last step's "Done" button. Registering an `onNextClick`
+          // override suppresses Driver.js's default move/destroy chain,
+          // which means `onDestroyed` does not fire reliably when we
+          // call `opts.driver.destroy()` from inside this callback.
+          // Mark completion + tear down state ourselves so the end-state
+          // matches the onDestroyed flow regardless.
+          safeMarkCompleted();
+          opts.driver.destroy();
+          driverRef.current = null;
+          setPendingStepIndex(null);
           return;
         }
-        if (next.route && next.route !== pathnameRef.current) {
+        if (
+          next.route &&
+          normalizeRoute(next.route) !== normalizeRoute(pathnameRef.current)
+        ) {
           setPendingStepIndex(idx + 1);
           router.push(next.route);
           return;
@@ -116,27 +140,82 @@ export function TourProvider({ children }: { children: ReactNode }) {
         opts.driver.moveNext();
       },
       onDestroyed: () => {
+        // Fires when the user dismisses the tour mid-way (X button, Esc,
+        // overlay click). The last-step Done path sets these in the
+        // onNextClick override directly because onDestroyed is not
+        // dispatched when destroy() is called from within onNextClick.
         safeMarkCompleted();
         driverRef.current = null;
         setPendingStepIndex(null);
       },
     });
     driverRef.current = driverInstance;
-    driverInstance.drive(0);
+    // Wait for step 0's anchor to mount before drive(0). The chat root
+    // gates WelcomeHero / ChatInput on `agentReady`, so the wizard
+    // handoff (and any first-load `?tour=start`) can race the composer
+    // mount — drive(0) would then fire against an empty document and
+    // the anchor-missing recovery would cascade through every step. We
+    // poll on rAF for up to ~2s, then fall back to drive(0) so a
+    // genuinely missing anchor still surfaces via the existing recovery
+    // path rather than hanging silently.
+    const step0 = TOUR_STEPS[0];
+    if (!step0?.element) {
+      driverInstance.drive(0);
+    } else if (typeof document !== "undefined" && document.querySelector(step0.element)) {
+      driverInstance.drive(0);
+    } else {
+      const startedAt = Date.now();
+      const tryDrive = () => {
+        if (driverRef.current !== driverInstance) return; // destroyed/replaced
+        if (
+          (typeof document !== "undefined" && document.querySelector(step0.element!)) ||
+          Date.now() - startedAt > 2_000
+        ) {
+          driverInstance.drive(0);
+          return;
+        }
+        requestAnimationFrame(tryDrive);
+      };
+      requestAnimationFrame(tryDrive);
+    }
   }, [searchParams, pathname, router]);
 
   // Bridge router navigation → driver.drive() once the new route's DOM
-  // is available. rAF gives the new route one frame to commit before we
-  // ask Driver.js to anchor on it.
+  // is available. We rAF-poll up to ~2s for the next step's anchor so
+  // cross-route navigations don't race a sub-tree mount (e.g. the admin
+  // layout's own loading window). When the anchor exists or the safety
+  // cap elapses, drive() fires; the existing onPopoverRender recovery
+  // handles the cap-elapsed case.
   useEffect(() => {
     if (pendingStepIndex === null) return;
-    const expectedRoute = TOUR_STEPS[pendingStepIndex]?.route;
-    if (expectedRoute !== pathname) return;
-    const handle = requestAnimationFrame(() => {
-      driverRef.current?.drive(pendingStepIndex);
-      setPendingStepIndex(null);
-    });
-    return () => cancelAnimationFrame(handle);
+    const step = TOUR_STEPS[pendingStepIndex];
+    if (!step?.route) return;
+    if (normalizeRoute(step.route) !== normalizeRoute(pathname)) return;
+    let handle: number | null = null;
+    let cancelled = false;
+    const startedAt = Date.now();
+    const tryDrive = () => {
+      if (cancelled) return;
+      const driverInstance = driverRef.current;
+      if (!driverInstance) {
+        setPendingStepIndex(null);
+        return;
+      }
+      const anchorReady =
+        !step.element ||
+        (typeof document !== "undefined" && document.querySelector(step.element));
+      if (anchorReady || Date.now() - startedAt > 2_000) {
+        driverInstance.drive(pendingStepIndex);
+        setPendingStepIndex(null);
+        return;
+      }
+      handle = requestAnimationFrame(tryDrive);
+    };
+    handle = requestAnimationFrame(tryDrive);
+    return () => {
+      cancelled = true;
+      if (handle !== null) cancelAnimationFrame(handle);
+    };
   }, [pathname, pendingStepIndex]);
 
   return <>{children}</>;
