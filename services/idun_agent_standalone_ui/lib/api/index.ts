@@ -13,6 +13,8 @@ import type {
   AgentRead,
   AgentSessionDetail,
   AgentSessionSummary,
+  CreateFromDetectionBody,
+  CreateStarterBody,
   DeleteResult,
   GuardrailCreate,
   GuardrailPatch,
@@ -31,6 +33,7 @@ import type {
   PromptCreate,
   PromptPatch,
   PromptRead,
+  ScanResponse,
   SingletonDeleteResult,
 } from "./types";
 
@@ -171,4 +174,20 @@ export const api = {
     apiFetch<AgentSessionDetail>(`/agent/sessions/${encodeURIComponent(id)}`),
   getAgentCapabilities: () =>
     apiFetch<AgentCapabilities>("/agent/capabilities"),
+
+  // onboarding wizard
+  scan: () =>
+    apiFetch<ScanResponse>(`${ADMIN}/onboarding/scan`, {
+      method: "POST",
+    }),
+  createFromDetection: (body: CreateFromDetectionBody) =>
+    apiFetch<MutationResponse<AgentRead>>(
+      `${ADMIN}/onboarding/create-from-detection`,
+      { method: "POST", body: j(body) },
+    ),
+  createStarter: (body: CreateStarterBody) =>
+    apiFetch<MutationResponse<AgentRead>>(`${ADMIN}/onboarding/create-starter`, {
+      method: "POST",
+      body: j(body),
+    }),
 };

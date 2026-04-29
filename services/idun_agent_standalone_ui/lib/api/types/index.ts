@@ -7,3 +7,4 @@ export * from "./guardrails";
 export * from "./prompts";
 export * from "./integrations";
 export * from "./sessions";
+export * from "./onboarding";
