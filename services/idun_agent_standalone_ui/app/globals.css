@@ -184,8 +184,7 @@ body::before {
   color: var(--muted-foreground);
 }
 
-.driver-popover-next-btn,
-.driver-popover-done-btn {
+.driver-popover-next-btn {
   background: var(--primary);
   color: var(--primary-foreground);
   border: 1px solid var(--primary);
