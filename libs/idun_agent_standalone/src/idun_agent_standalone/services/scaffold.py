@@ -63,6 +63,29 @@ langchain-openai>=0.2.0
 _LANGGRAPH_ENV_EXAMPLE: Final[str] = "OPENAI_API_KEY=\n"
 
 
+_ADK_AGENT_PY: Final[str] = '''\
+"""Minimal Google ADK hello-world agent."""
+
+from google.adk.agents import Agent
+
+agent = Agent(
+    name="starter",
+    model="gemini-2.0-flash",
+    description="A minimal starter agent.",
+    instruction="You are a helpful assistant. Respond concisely.",
+)
+'''
+
+
+_ADK_REQUIREMENTS: Final[str] = """\
+idun-agent-standalone
+google-adk>=0.1.0
+"""
+
+
+_ADK_ENV_EXAMPLE: Final[str] = "GOOGLE_API_KEY=\n"
+
+
 _README: Final[str] = """\
 # My Idun Agent
 
@@ -93,9 +116,12 @@ def _build_file_map(
         agent_py = _LANGGRAPH_AGENT_PY
         requirements = _LANGGRAPH_REQUIREMENTS
         env_example = _LANGGRAPH_ENV_EXAMPLE
-    else:
-        # ADK templates land in Task 3.
-        raise NotImplementedError(f"Framework not yet supported: {framework}")
+    elif framework == "ADK":
+        agent_py = _ADK_AGENT_PY
+        requirements = _ADK_REQUIREMENTS
+        env_example = _ADK_ENV_EXAMPLE
+    else:  # pragma: no cover — Literal exhausts at type-check time
+        raise ValueError(f"Unknown framework: {framework}")
     return {
         root / "agent.py": agent_py,
         root / "requirements.txt": requirements,

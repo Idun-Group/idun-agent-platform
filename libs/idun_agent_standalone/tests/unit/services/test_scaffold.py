@@ -50,3 +50,35 @@ def test_gitignore_covers_env_and_caches(tmp_path: Path) -> None:
     contents = (tmp_path / ".gitignore").read_text()
     for entry in (".env", "__pycache__/", ".venv/"):
         assert entry in contents
+
+
+def test_create_starter_adk_writes_five_files(tmp_path: Path) -> None:
+    written = scaffold.create_starter_project(tmp_path, framework="ADK")
+    assert {p.name for p in written} == {
+        "agent.py",
+        "requirements.txt",
+        ".env.example",
+        "README.md",
+        ".gitignore",
+    }
+
+
+def test_adk_agent_py_is_syntactically_valid(tmp_path: Path) -> None:
+    scaffold.create_starter_project(tmp_path, framework="ADK")
+    source = (tmp_path / "agent.py").read_text()
+    ast.parse(source)
+    # The scanner expects an `agent` variable bound to an ADK Agent.
+    assert "agent = " in source
+    assert "Agent(" in source
+
+
+def test_adk_requirements_lists_idun_and_adk(tmp_path: Path) -> None:
+    scaffold.create_starter_project(tmp_path, framework="ADK")
+    contents = (tmp_path / "requirements.txt").read_text()
+    assert "idun-agent-standalone" in contents
+    assert "google-adk" in contents
+
+
+def test_adk_env_example_carries_google_key(tmp_path: Path) -> None:
+    scaffold.create_starter_project(tmp_path, framework="ADK")
+    assert "GOOGLE_API_KEY" in (tmp_path / ".env.example").read_text()
