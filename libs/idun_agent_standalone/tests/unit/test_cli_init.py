@@ -90,3 +90,34 @@ def test_init_default_flow_opens_browser_then_serves(
     url = stub_dependencies["webbrowser.open"][0]
     assert url.startswith("http://")
     assert url.endswith("/")
+
+
+def test_init_port_flag_sets_idun_port_env(
+    stub_dependencies: dict[str, list], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`--port 9000` must set IDUN_PORT before settings are constructed
+    so the override propagates to uvicorn."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["init", "--port", "9000"])
+    assert result.exit_code == 0, result.output
+
+    # The browser-open URL is the only observable side-effect that
+    # carries the resolved port; assert against it.
+    url = stub_dependencies["webbrowser.open"][0]
+    assert ":9000/" in url
+
+
+def test_init_no_browser_flag_suppresses_launch(
+    stub_dependencies: dict[str, list],
+) -> None:
+    """`--no-browser` must skip the webbrowser.open call but still run
+    the rest of the flow."""
+    runner = CliRunner()
+    result = runner.invoke(main, ["init", "--no-browser"])
+    assert result.exit_code == 0, result.output
+
+    assert stub_dependencies["webbrowser.open"] == []
+    # The other three side-effects must still fire.
+    assert len(stub_dependencies["upgrade_head"]) == 1
+    assert len(stub_dependencies["_setup"]) == 1
+    assert len(stub_dependencies["_serve"]) == 1
