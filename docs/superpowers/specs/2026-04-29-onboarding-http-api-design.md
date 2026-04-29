@@ -60,7 +60,7 @@ All endpoints sit under `/admin/api/v1/onboarding/`. All require auth via the ex
 **Body:** none. **Response:** `ScanResponse`.
 
 Flow:
-1. Read `StandaloneAgentRow` (singleton, `id = "singleton"`).
+1. Read `StandaloneAgentRow` (singleton — at most one row, app-level invariant; see §10).
 2. If row exists → return `{ state: "ALREADY_CONFIGURED", scanResult: <empty>, currentAgent: <row> }`. Skip scanner invocation.
 3. Otherwise call `scanner.scan_folder(Path.cwd())`.
 4. Classify per the table in §4.
@@ -82,7 +82,7 @@ Flow:
    - ADK: `agent.type = "ADK"`, `agent.config.agent = "{file_path}:{variable_name}"`, `agent.config.name = inferred_name`
    - `memory`: omitted (engine default in-memory checkpoint)
    - `observability`: omitted
-6. Insert `StandaloneAgentRow(id="singleton", name=detection.inferred_name, base_engine_config=...)`.
+6. Insert `StandaloneAgentRow(name=detection.inferred_name, base_engine_config=...)` (id defaults to a fresh UUID; see §10).
 7. Trigger reload via existing `reload_orchestrator`.
 8. Return `MutationResponse { data: AgentRead, reload: { status, ... } }`.
 
@@ -323,9 +323,20 @@ def classify_state(scan_result: ScanResult, agent_row_exists: bool) -> Onboardin
 
 ## 10. Concurrency + idempotency
 
-- `StandaloneAgentRow` has `id = "singleton"` as PRIMARY KEY. Two concurrent inserts: second one gets `IntegrityError`, translated to `409 agent_already_configured`. No application-level locking required.
-- `/scan` is read-only — safe to call concurrently.
-- `/create-starter` scaffolder is not safe under concurrent calls in the same CWD: two workers could both pass the conflict check, then both try to `rename` to the same path. Mitigation: `StandaloneAgentRow` insert serializes via the DB constraint, so even if file writes interleave, only one materialize succeeds. The losing call sees `IntegrityError` → 409 → cleanup runs (loser's files removed). Acceptable for MVP given uvicorn's default single-process posture for standalone.
+`StandaloneAgentRow` is a singleton **by app-level invariant**, not a DB constraint. The row uses a UUID primary key (`String(36)`, default `_new_uuid`) — the same shape as every other admin row in the schema — so the database does not, on its own, prevent two rows from existing. The "first-agent-only" semantic is enforced by the materialize coroutines.
+
+Two-stage check in each materialize coroutine (`materialize_from_detection`, `materialize_starter`):
+
+1. **Outer pre-check** (cheap, before scan / scaffold): if a row already exists, raise `409 agent_already_configured` immediately. Avoids running the scanner or writing 5 files for a doomed request.
+2. **Inner re-check** (correctness, inside `services.reload._reload_mutex`): repeat the row lookup just before `session.add(row)`. The mutex is a process-wide `asyncio.Lock` that already serializes admin mutations through `commit_with_reload`; the re-check closes the TOCTOU window between the outer check and the insert.
+
+Concurrency posture per endpoint:
+
+- `/scan` is read-only — safe to call concurrently. Reads the agent row, runs the scanner (no DB write), classifies state. No mutex.
+- `/create-from-detection` and `/create-starter` serialize through `_reload_mutex`. Two concurrent calls: one wins, the other gets `409 agent_already_configured` from the inner re-check.
+- `/create-starter` scaffolder runs **before** the mutex (so disk IO doesn't span the lock). Two concurrent calls may both pass the outer pre-check and both write 5 files; the loser's files persist on disk because rolling back disk state from inside a mutex re-check is gnarly. Recovery: operator can move/delete the loser's files and re-run the wizard, or use `PATCH /agent` to redirect the existing agent at the new files. Acceptable for MVP given uvicorn's default single-process posture for standalone.
+
+**Why no DB constraint:** adding `id = "singleton"` as a fixed PK would diverge `StandaloneAgentRow` from every sibling resource (memory, observability, mcp_servers, etc., all UUID-keyed). The mutex pattern is shared with the rest of the admin surface, and the singleton invariant is enforced at exactly the layer that owns the lifecycle (the materialize coroutines), so the DB layer doesn't need to know anything about it.
 
 ## 11. Auth + reload
 
