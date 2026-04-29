@@ -250,3 +250,55 @@ describe("TourProvider — cross-route advance", () => {
     expect(driverMock.drive).toHaveBeenCalledWith(1);
   });
 });
+
+describe("TourProvider — anchor missing recovery", () => {
+  beforeEach(() => {
+    navigationMocks.searchParams = new URLSearchParams("tour=start");
+    navigationMocks.pathname = "/";
+  });
+
+  it("on missing anchor, calls moveNext and console.warn", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    expect(config.onPopoverRender).toBeTypeOf("function");
+    // Step 1 anchors on [data-tour="sidebar-agent-config"], which doesn't
+    // exist in this jsdom render.
+    config.onPopoverRender!(document.createElement("div"), {
+      config: { steps: TOUR_STEPS as never },
+      state: { activeIndex: 1 },
+      driver: driverMock,
+    });
+    expect(driverMock.moveNext).toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("anchor not found"),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("on present anchor, does NOT call moveNext", () => {
+    const anchor = document.createElement("div");
+    anchor.setAttribute("data-tour", "sidebar-agent-config");
+    document.body.appendChild(anchor);
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    config.onPopoverRender!(document.createElement("div"), {
+      config: { steps: TOUR_STEPS as never },
+      state: { activeIndex: 1 },
+      driver: driverMock,
+    });
+    expect(driverMock.moveNext).not.toHaveBeenCalled();
+    document.body.removeChild(anchor);
+  });
+
+  it("on modal-only step (no element), does NOT call moveNext even when no anchor matches", () => {
+    render(<TourProvider>x</TourProvider>);
+    const config = driverFactory.mock.calls[0][0];
+    config.onPopoverRender!(document.createElement("div"), {
+      config: { steps: TOUR_STEPS as never },
+      state: { activeIndex: 4 }, // step 4 is the modal-only Deployment step
+      driver: driverMock,
+    });
+    expect(driverMock.moveNext).not.toHaveBeenCalled();
+  });
+});

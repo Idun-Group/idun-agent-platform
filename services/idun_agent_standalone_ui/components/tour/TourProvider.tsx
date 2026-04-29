@@ -103,6 +103,17 @@ export function TourProvider({ children }: { children: ReactNode }) {
         }
         opts.driver.moveNext();
       },
+      onPopoverRender: (_popover, opts) => {
+        const idx = opts.state.activeIndex ?? 0;
+        const step = TOUR_STEPS[idx];
+        if (!step?.element) return; // modal-only step, nothing to anchor
+        const found = document.querySelector(step.element);
+        if (found) return;
+        console.warn(
+          `Tour: anchor not found for step ${idx} (${step.element}), advancing`,
+        );
+        opts.driver.moveNext();
+      },
       onDestroyed: () => {
         safeMarkCompleted();
         driverRef.current = null;
