@@ -25,7 +25,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
   if (res.status === 401 && typeof window !== "undefined" && !redirected) {
     redirected = true;
-    window.location.href = "/login/";
+    const nextPath = window.location.pathname + window.location.search;
+    const next = encodeURIComponent(nextPath);
+    window.location.href = `/login/?next=${next}`;
     throw new ApiError(401, null);
   }
   if (!res.ok) {
