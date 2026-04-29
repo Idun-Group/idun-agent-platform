@@ -232,7 +232,13 @@ async def test_create_from_detection_already_configured_409(
             },
         )
     assert response.status_code == 409
-    assert response.json()["error"]["code"] == "conflict"
+    body = response.json()
+    assert body["error"]["code"] == "conflict"
+    # The agent-row pre-check fires BEFORE the scan, so even with a
+    # detectable file on disk we get the "already configured" branch —
+    # not the "detection not found" branch. Recovery hint per Task 6 fix.
+    assert "Agent already configured" in body["error"]["message"]
+    assert "PATCH" in body["error"]["message"]
 
 
 async def test_create_from_detection_stale_pick_409(admin_app, tmp_path) -> None:
