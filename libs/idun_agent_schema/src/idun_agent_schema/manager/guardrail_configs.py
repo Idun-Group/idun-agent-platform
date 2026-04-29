@@ -80,7 +80,12 @@ class SimpleRestrictToTopicConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.RESTRICT_TO_TOPIC] = GuardrailConfigId.RESTRICT_TO_TOPIC
     api_key: str = ""
     reject_message: str = ""
-    topics: list[str] = Field(description="List of allowed topics")
+    valid_topics: list[str] = Field(
+        default_factory=list, description="Topics the agent is allowed to discuss"
+    )
+    invalid_topics: list[str] = Field(
+        default_factory=list, description="Topics the agent must refuse"
+    )
 
 
 ManagerGuardrailConfig = Union[
@@ -221,7 +226,8 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                     "api_key": api_key,
                     "reject_message": "Off-topic content detected",
                     "guard_url": "hub://tryolabs/restricttotopic",
-                    "topics": guardrail["topics"],
+                    "valid_topics": guardrail.get("valid_topics", []),
+                    "invalid_topics": guardrail.get("invalid_topics", []),
                 })
 
             else:
