@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type AGUIEvent, type Message, runAgent } from "@/lib/agui";
+import {
+  type AGUIEvent,
+  GuardrailRejectedError,
+  type Message,
+  runAgent,
+} from "@/lib/agui";
 import { api } from "@/lib/api";
 
 type Status = "idle" | "streaming" | "error";
@@ -442,7 +447,17 @@ export function useChat(threadId: string) {
         });
       } catch (e: unknown) {
         const name = (e as { name?: string }).name;
-        if (name !== "AbortError") {
+        if (e instanceof GuardrailRejectedError) {
+          setStatus("idle");
+          setError(null);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.role === "assistant" && m.id === assistantMsg.id
+                ? { ...m, text: e.reason, streaming: false }
+                : m,
+            ),
+          );
+        } else if (name !== "AbortError") {
           setStatus("error");
           setError((e as Error).message ?? "stream failed");
         } else {
