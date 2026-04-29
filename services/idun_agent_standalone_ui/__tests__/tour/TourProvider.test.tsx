@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, act } from "@testing-library/react";
 
 const driverMock = vi.hoisted(() => ({
   drive: vi.fn(),
@@ -185,9 +185,11 @@ describe("TourProvider — cross-route advance", () => {
     // Driver.js onNextClick signature: (element, step, opts).
     // We pass the index via state.activeIndex on opts in the real call;
     // tests pass the activeIndex explicitly so behavior is deterministic.
-    config.onNextClick!(undefined, TOUR_STEPS[0], {
-      driver: driverMock,
-      state: { activeIndex: 0 },
+    act(() => {
+      config.onNextClick!(undefined, TOUR_STEPS[0], {
+        driver: driverMock,
+        state: { activeIndex: 0 },
+      });
     });
     expect(navigationMocks.push).toHaveBeenCalledWith("/admin/agent");
     expect(driverMock.moveNext).not.toHaveBeenCalled();
@@ -200,9 +202,11 @@ describe("TourProvider — cross-route advance", () => {
     // Init pushes to "/" when bootstrap pathname !== "/"; clear so we
     // can assert that onNextClick alone does NOT push.
     navigationMocks.push.mockClear();
-    config.onNextClick!(undefined, TOUR_STEPS[1], {
-      driver: driverMock,
-      state: { activeIndex: 1 },
+    act(() => {
+      config.onNextClick!(undefined, TOUR_STEPS[1], {
+        driver: driverMock,
+        state: { activeIndex: 1 },
+      });
     });
     expect(driverMock.moveNext).toHaveBeenCalled();
     expect(navigationMocks.push).not.toHaveBeenCalled();
@@ -212,9 +216,11 @@ describe("TourProvider — cross-route advance", () => {
     navigationMocks.pathname = "/admin/agent";
     render(<TourProvider>x</TourProvider>);
     const config = driverFactory.mock.calls[0][0];
-    config.onNextClick!(undefined, TOUR_STEPS[3], {
-      driver: driverMock,
-      state: { activeIndex: 3 },
+    act(() => {
+      config.onNextClick!(undefined, TOUR_STEPS[3], {
+        driver: driverMock,
+        state: { activeIndex: 3 },
+      });
     });
     expect(driverMock.moveNext).toHaveBeenCalled();
   });
@@ -223,18 +229,24 @@ describe("TourProvider — cross-route advance", () => {
     const { rerender } = render(<TourProvider>x</TourProvider>);
     const config = driverFactory.mock.calls[0][0];
     // Click Next: push /admin/agent, set pendingStepIndex = 1.
-    config.onNextClick!(undefined, TOUR_STEPS[0], {
-      driver: driverMock,
-      state: { activeIndex: 0 },
+    act(() => {
+      config.onNextClick!(undefined, TOUR_STEPS[0], {
+        driver: driverMock,
+        state: { activeIndex: 0 },
+      });
     });
     driverMock.drive.mockClear();
     // Simulate route settle.
     navigationMocks.pathname = "/admin/agent";
-    rerender(<TourProvider>x</TourProvider>);
+    act(() => {
+      rerender(<TourProvider>x</TourProvider>);
+    });
     // Allow rAF to fire.
-    await new Promise((resolve) =>
-      requestAnimationFrame(() => resolve(undefined)),
-    );
+    await act(async () => {
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => resolve(undefined)),
+      );
+    });
     expect(driverMock.drive).toHaveBeenCalledWith(1);
   });
 });
