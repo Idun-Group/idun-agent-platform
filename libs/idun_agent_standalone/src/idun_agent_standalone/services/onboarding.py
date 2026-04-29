@@ -235,9 +235,11 @@ async def materialize_starter(
 
     On any pre-check failure (existing agent, scaffold conflict) nothing
     is written to disk and no row is inserted. After a successful
-    scaffold + row insert, reload failures leave both the files and the
-    row in place; the user's recovery path is to edit ``agent.py`` and
-    re-trigger reload via ``PATCH /agent``.
+    scaffold + row insert, a reload failure rolls back the DB row but
+    leaves the scaffolded files on disk (per spec §5.3 — disk state is
+    independent of DB rollback). Recovery: edit ``agent.py`` and
+    re-trigger the wizard, which will re-create the row pointing at
+    the existing files.
     """
     if await _agent_row(session) is not None:
         raise _conflict(
