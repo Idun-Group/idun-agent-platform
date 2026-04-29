@@ -33,65 +33,133 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, type AgentFramework, api } from "@/lib/api";
 
-type MemoryType = "memory" | "sqlite" | "postgres";
-const MEMORY_TYPES: MemoryType[] = ["memory", "sqlite", "postgres"];
+const LG_TYPES = ["memory", "sqlite", "postgres"] as const;
+const ADK_TYPES = ["in_memory", "vertex_ai", "database"] as const;
+type MemoryType = (typeof LG_TYPES)[number] | (typeof ADK_TYPES)[number];
 
 const TAB_LABELS: Record<MemoryType, string> = {
   memory: "In-memory",
   sqlite: "SQLite",
   postgres: "PostgreSQL",
+  in_memory: "In-memory",
+  vertex_ai: "Vertex AI",
+  database: "Database",
 };
 
-const sqliteSchema = z.object({
-  path: z
-    .string()
-    .min(1, "Path is required")
-    .refine((v) => v.startsWith("sqlite:///"), {
-      message: "SQLite URL must start with sqlite:///",
-    }),
-});
+const formSchema = z
+  .object({
+    type: z.enum([...LG_TYPES, ...ADK_TYPES] as [MemoryType, ...MemoryType[]]),
+    db_url: z.string().optional().default(""),
+    project_id: z.string().optional().default(""),
+    location: z.string().optional().default(""),
+    reasoning_engine_app_name: z.string().optional().default(""),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "sqlite") {
+      if (!data.db_url?.startsWith("sqlite:///")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["db_url"],
+          message: "SQLite URL must start with sqlite:///",
+        });
+      }
+    }
+    if (data.type === "postgres") {
+      if (
+        !(
+          data.db_url?.startsWith("postgresql://") ||
+          data.db_url?.startsWith("postgres://")
+        )
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["db_url"],
+          message: "Postgres URL must start with postgresql:// or postgres://",
+        });
+      }
+    }
+    if (data.type === "database") {
+      if (!data.db_url?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["db_url"],
+          message: "Database URL is required",
+        });
+      }
+    }
+    if (data.type === "vertex_ai") {
+      if (!data.project_id?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["project_id"],
+          message: "Project ID is required",
+        });
+      }
+      if (!data.location?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["location"],
+          message: "Location is required",
+        });
+      }
+      if (!data.reasoning_engine_app_name?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["reasoning_engine_app_name"],
+          message: "Reasoning engine app name is required",
+        });
+      }
+    }
+  });
 
-const postgresSchema = z.object({
-  connection_url: z
-    .string()
-    .min(1, "Connection URL is required")
-    .refine(
-      (v) => v.startsWith("postgresql://") || v.startsWith("postgres://"),
-      {
-        message: "Postgres URL must start with postgresql:// or postgres://",
-      },
-    ),
-});
+type FormValues = z.infer<typeof formSchema>;
 
-const memorySchema = z.object({});
-
-type SqliteValues = z.infer<typeof sqliteSchema>;
-type PostgresValues = z.infer<typeof postgresSchema>;
-type MemoryValues = z.infer<typeof memorySchema>;
-
-function readType(config: Record<string, unknown> | undefined): MemoryType {
-  const t = typeof config?.type === "string" ? (config.type as string) : "memory";
-  return t === "sqlite" || t === "postgres" ? t : "memory";
+function defaultType(framework: AgentFramework): MemoryType {
+  return framework === "ADK" ? "in_memory" : "memory";
 }
 
-function readUrl(config: Record<string, unknown> | undefined): string {
-  if (typeof config?.db_url === "string") return config.db_url as string;
-  if (typeof config?.url === "string") return config.url as string;
-  return "";
+function isValidType(framework: AgentFramework, t: unknown): t is MemoryType {
+  const set: readonly string[] =
+    framework === "ADK" ? ADK_TYPES : LG_TYPES;
+  return typeof t === "string" && set.includes(t);
 }
 
-function buildMemoryConfig(
-  type: MemoryType,
-  values: SqliteValues | PostgresValues | MemoryValues,
-): Record<string, unknown> {
-  if (type === "memory") return { type: "memory" };
-  if (type === "sqlite") {
-    return { type: "sqlite", db_url: (values as SqliteValues).path };
-  }
+function configToValues(
+  framework: AgentFramework,
+  config: Record<string, unknown> | undefined,
+): FormValues {
+  const cfg = config ?? {};
+  const rawType = cfg.type;
+  const type: MemoryType = isValidType(framework, rawType)
+    ? (rawType as MemoryType)
+    : defaultType(framework);
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
   return {
-    type: "postgres",
-    db_url: (values as PostgresValues).connection_url,
+    type,
+    db_url: str(cfg.db_url) || str(cfg.url),
+    project_id: str(cfg.project_id),
+    location: str(cfg.location),
+    reasoning_engine_app_name: str(cfg.reasoning_engine_app_name),
   };
+}
+
+function valuesToConfig(values: FormValues): Record<string, unknown> {
+  switch (values.type) {
+    case "memory":
+    case "in_memory":
+      return { type: values.type };
+    case "sqlite":
+    case "postgres":
+    case "database":
+      return { type: values.type, db_url: values.db_url };
+    case "vertex_ai":
+      return {
+        type: "vertex_ai",
+        project_id: values.project_id,
+        location: values.location,
+        reasoning_engine_app_name: values.reasoning_engine_app_name,
+      };
+  }
 }
 
 export default function MemoryPage() {
@@ -101,37 +169,26 @@ export default function MemoryPage() {
     queryFn: api.getMemory,
   });
 
-  const initialType = useMemo(() => readType(data?.memory), [data]);
-  const initialUrl = useMemo(() => readUrl(data?.memory), [data]);
   const framework: AgentFramework = data?.agentFramework ?? "LANGGRAPH";
+  const types = framework === "ADK" ? ADK_TYPES : LG_TYPES;
 
-  const [activeTab, setActiveTab] = useState<MemoryType>(initialType);
+  const initialValues = useMemo(
+    () => configToValues(framework, data?.memory),
+    [framework, data],
+  );
+
+  const [activeTab, setActiveTab] = useState<MemoryType>(initialValues.type);
   const [yamlOpen, setYamlOpen] = useState(false);
   const [restartRequired, setRestartRequired] = useState(false);
 
   useEffect(() => {
-    setActiveTab(initialType);
-  }, [initialType]);
+    setActiveTab(initialValues.type);
+  }, [initialValues.type]);
 
-  const sqliteForm = useForm<SqliteValues>({
-    resolver: zodResolver(sqliteSchema),
-    defaultValues: { path: initialType === "sqlite" ? initialUrl : "" },
-    values: { path: initialType === "sqlite" ? initialUrl : "" },
-  });
-
-  const postgresForm = useForm<PostgresValues>({
-    resolver: zodResolver(postgresSchema),
-    defaultValues: {
-      connection_url: initialType === "postgres" ? initialUrl : "",
-    },
-    values: {
-      connection_url: initialType === "postgres" ? initialUrl : "",
-    },
-  });
-
-  const memoryForm = useForm<MemoryValues>({
-    resolver: zodResolver(memorySchema),
-    defaultValues: {},
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: initialValues,
+    values: initialValues,
   });
 
   const save = useMutation({
@@ -152,35 +209,27 @@ export default function MemoryPage() {
     },
     onError: (e) => {
       const detail = e instanceof ApiError ? e.detail : undefined;
-      const message = (detail as { error?: { message?: string } } | undefined)?.error
-        ?.message;
+      const message = (detail as { error?: { message?: string } } | undefined)
+        ?.error?.message;
       toast.error(message ?? "Save failed");
     },
   });
 
-  const handleSubmit = (
-    values: SqliteValues | PostgresValues | MemoryValues,
-  ) => {
-    save.mutate(buildMemoryConfig(activeTab, values));
+  const onSheetSave = (values: FormValues) => {
+    save.mutate(valuesToConfig({ ...values, type: activeTab }));
   };
 
   const yamlText = useMemo(() => {
-    let values: SqliteValues | PostgresValues | MemoryValues;
-    if (activeTab === "sqlite") values = sqliteForm.getValues();
-    else if (activeTab === "postgres") values = postgresForm.getValues();
-    else values = memoryForm.getValues();
-    return stringifyYaml(buildMemoryConfig(activeTab, values));
-  }, [activeTab, sqliteForm, postgresForm, memoryForm, yamlOpen]);
+    const v = form.getValues();
+    return stringifyYaml(valuesToConfig({ ...v, type: activeTab }));
+  }, [activeTab, form, yamlOpen]);
 
   const persistFromYaml = async (parsed: unknown) => {
     const obj = (parsed ?? {}) as Record<string, unknown>;
-    const nextType = readType(obj);
-    const nextUrl = readUrl(obj);
-    setActiveTab(nextType);
-    if (nextType === "sqlite") sqliteForm.reset({ path: nextUrl });
-    else if (nextType === "postgres")
-      postgresForm.reset({ connection_url: nextUrl });
-    save.mutate(obj);
+    const next = configToValues(framework, obj);
+    setActiveTab(next.type);
+    form.reset(next);
+    save.mutate(valuesToConfig(next));
   };
 
   if (isLoading) {
@@ -195,6 +244,7 @@ export default function MemoryPage() {
         </h1>
         <p className="text-sm text-muted-foreground">
           Where the agent persists conversational state between turns.
+          Backends are scoped to the active framework ({framework}).
         </p>
       </header>
 
@@ -210,10 +260,11 @@ export default function MemoryPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Checkpointer</CardTitle>
+          <CardTitle>Backend</CardTitle>
           <CardDescription>
-            Pick a backend. SQLite suits a single host; PostgreSQL is required
-            for multi-replica deployments.
+            {framework === "ADK"
+              ? "ADK session service. Vertex AI is required for multi-replica deployments."
+              : "LangGraph checkpointer. PostgreSQL is required for multi-replica deployments."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -222,44 +273,37 @@ export default function MemoryPage() {
             onValueChange={(t) => setActiveTab(t as MemoryType)}
           >
             <TabsList>
-              {MEMORY_TYPES.map((t) => (
+              {types.map((t) => (
                 <TabsTrigger key={t} value={t}>
                   {TAB_LABELS[t]}
                 </TabsTrigger>
               ))}
             </TabsList>
 
-            <TabsContent value="memory" className="mt-4">
-              <Form {...memoryForm}>
-                <form
-                  id="memory-form-memory"
-                  onSubmit={memoryForm.handleSubmit(handleSubmit)}
-                  className="space-y-2"
-                >
+            <Form {...form}>
+              <form
+                id="memory-form"
+                onSubmit={form.handleSubmit(onSheetSave)}
+                className="mt-4 space-y-4"
+              >
+                {(activeTab === "memory" || activeTab === "in_memory") && (
                   <p className="text-sm text-muted-foreground">
-                    Volatile checkpointer — state is lost when the process
-                    restarts. Useful for development.
+                    Volatile backend — state is lost when the process restarts.
+                    Useful for development.
                   </p>
-                </form>
-              </Form>
-            </TabsContent>
+                )}
 
-            <TabsContent value="sqlite" className="mt-4">
-              <Form {...sqliteForm}>
-                <form
-                  id="memory-form-sqlite"
-                  onSubmit={sqliteForm.handleSubmit(handleSubmit)}
-                  className="space-y-4"
-                >
+                {activeTab === "sqlite" && (
                   <FormField
-                    control={sqliteForm.control}
-                    name="path"
+                    control={form.control}
+                    name="db_url"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Database path</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
+                            value={field.value ?? ""}
                             placeholder="sqlite:///./checkpoint.db"
                           />
                         </FormControl>
@@ -271,26 +315,19 @@ export default function MemoryPage() {
                       </FormItem>
                     )}
                   />
-                </form>
-              </Form>
-            </TabsContent>
+                )}
 
-            <TabsContent value="postgres" className="mt-4">
-              <Form {...postgresForm}>
-                <form
-                  id="memory-form-postgres"
-                  onSubmit={postgresForm.handleSubmit(handleSubmit)}
-                  className="space-y-4"
-                >
+                {activeTab === "postgres" && (
                   <FormField
-                    control={postgresForm.control}
-                    name="connection_url"
+                    control={form.control}
+                    name="db_url"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Connection URL</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
+                            value={field.value ?? ""}
                             placeholder="postgresql://user:pass@host:5432/db"
                           />
                         </FormControl>
@@ -303,9 +340,90 @@ export default function MemoryPage() {
                       </FormItem>
                     )}
                   />
-                </form>
-              </Form>
-            </TabsContent>
+                )}
+
+                {activeTab === "database" && (
+                  <FormField
+                    control={form.control}
+                    name="db_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Database URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value ?? ""}
+                            placeholder="postgresql+psycopg://user:pass@host:5432/db"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Backend rewrites <code className="font-mono">postgresql://</code>{" "}
+                          to <code className="font-mono">postgresql+psycopg://</code>{" "}
+                          automatically.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {activeTab === "vertex_ai" && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="project_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Project ID</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ""}
+                              placeholder="my-gcp-project"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ""}
+                              placeholder="us-central1"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="reasoning_engine_app_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Reasoning engine app name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ""}
+                              placeholder="reasoning-engine-id-or-name"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+              </form>
+            </Form>
           </Tabs>
         </CardContent>
         <CardFooter className="justify-between">
@@ -317,8 +435,7 @@ export default function MemoryPage() {
             Edit YAML
           </Button>
           <Button
-            type="submit"
-            form={`memory-form-${activeTab}`}
+            onClick={form.handleSubmit(onSheetSave)}
             disabled={save.isPending}
           >
             {save.isPending ? "Saving…" : "Save"}

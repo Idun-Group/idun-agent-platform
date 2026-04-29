@@ -12,6 +12,13 @@ export type AGUIEvent = {
   [key: string]: unknown;
 };
 
+export class GuardrailRejectedError extends Error {
+  constructor(public reason: string) {
+    super(reason);
+    this.name = "GuardrailRejectedError";
+  }
+}
+
 export type RunOptions = {
   threadId: string;
   runId: string;
@@ -72,6 +79,11 @@ export async function runAgent(opts: RunOptions): Promise<void> {
     }),
     signal: opts.signal,
   });
+  if (res.status === 429) {
+    const body = await res.json().catch(() => null);
+    const detail = (body as { detail?: string } | null)?.detail;
+    throw new GuardrailRejectedError(detail ?? "Blocked by a guardrail.");
+  }
   if (!res.ok || !res.body) {
     throw new Error(`agent run failed: ${res.status}`);
   }
