@@ -26,7 +26,6 @@ from idun_agent_schema.standalone import (
     CreateFromDetectionBody,
     CreateStarterBody,
     ScanResponse,
-    ScanResult,
     StandaloneAgentRead,
     StandaloneMutationResponse,
 )
@@ -60,29 +59,30 @@ def _scan_root(request: Request) -> Path:
 async def scan(request: Request, session: SessionDep) -> ScanResponse:
     """Classify the project and return the scanner result.
 
-    When an agent row already exists the scanner walk is skipped — the
-    UI shouldn't be calling ``/scan`` in that state, and surfacing the
-    existing agent helps direct-curl callers.
+    Always runs the scanner so the response carries truthful
+    ``has_python_files`` / ``has_idun_config`` / ``detected`` values
+    even when an agent row already exists — useful for direct-curl
+    callers inspecting state. When the row exists, ``current_agent``
+    is populated so the UI can short-circuit to chat without a
+    follow-up ``GET /agent`` call.
     """
     row = (await session.execute(select(StandaloneAgentRow))).scalar_one_or_none()
     agent_row_exists = row is not None
-    current_agent: StandaloneAgentRead | None = None
 
-    if agent_row_exists:
-        scan_result = ScanResult(
-            root=str(_scan_root(request)),
-            detected=[],
-            has_python_files=False,
-            has_idun_config=False,
-            scan_duration_ms=0,
-        )
-        current_agent = StandaloneAgentRead.model_validate(row)
-    else:
-        scan_result = await scanner.scan_folder(_scan_root(request))
-
+    scan_result = await scanner.scan_folder(_scan_root(request))
     state = onboarding.classify_state(
         scan_result, agent_row_exists=agent_row_exists
     )
+
+    current_agent: StandaloneAgentRead | None = (
+        StandaloneAgentRead.model_validate(row) if row is not None else None
+    )
+
+    # Coupling invariant: current_agent is populated iff state is
+    # ALREADY_CONFIGURED. Tripping this means classify_state and the
+    # row-presence branch have diverged.
+    assert current_agent is None or state == "ALREADY_CONFIGURED"
+
     logger.info(
         "admin.onboarding.scan state=%s detections=%d duration_ms=%d",
         state,
