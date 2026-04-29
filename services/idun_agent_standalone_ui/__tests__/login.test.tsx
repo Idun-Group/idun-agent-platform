@@ -73,4 +73,30 @@ describe("LoginPage", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     expect(replace).not.toHaveBeenCalled();
   });
+
+  it("rejects unsafe ?next= values and falls back to /", async () => {
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams("next=https://evil.com"),
+    );
+    (api.login as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ ok: true });
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText(/admin password/i), {
+      target: { value: "hunter2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+  });
+
+  it("rejects protocol-relative ?next= values", async () => {
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams("next=//evil.com/path"),
+    );
+    (api.login as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ ok: true });
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText(/admin password/i), {
+      target: { value: "hunter2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+  });
 });

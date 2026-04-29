@@ -82,7 +82,7 @@ describe("apiFetch 401 redirect", () => {
     expect(window.location.href).toBe("SENTINEL");
   });
 
-  it("when already on /login, redirects to plain /login/ (no ?next= self-loop)", async () => {
+  it("when already on /login, does NOT redirect (login page owns its UX)", async () => {
     Object.defineProperty(window, "location", {
       configurable: true,
       writable: true,
@@ -90,13 +90,14 @@ describe("apiFetch 401 redirect", () => {
         ...originalLocation,
         pathname: "/login",
         search: "",
-        href: "",
+        href: "SENTINEL_NO_REDIRECT",
       },
     });
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({}), { status: 401 }),
     );
     await expect(apiFetch("/admin/api/v1/agent")).rejects.toThrow();
-    expect(window.location.href).toBe("/login/");
+    // href is unchanged — apiFetch did not redirect.
+    expect(window.location.href).toBe("SENTINEL_NO_REDIRECT");
   });
 });

@@ -26,15 +26,16 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     ...init,
   });
   if (res.status === 401 && typeof window !== "undefined" && !redirected) {
-    redirected = true;
-    const onLogin = window.location.pathname.startsWith("/login");
-    if (onLogin) {
-      window.location.href = "/login/";
-    } else {
-      const nextPath = window.location.pathname + window.location.search;
-      const next = encodeURIComponent(nextPath);
-      window.location.href = `/login/?next=${next}`;
+    // When the request was made FROM /login, skip the redirect entirely so
+    // the login page's own catch block can render the error (toast + clear
+    // field). A hard navigation back to /login would clobber that UX.
+    if (window.location.pathname.startsWith("/login")) {
+      throw new ApiError(401, null);
     }
+    redirected = true;
+    const nextPath = window.location.pathname + window.location.search;
+    const next = encodeURIComponent(nextPath);
+    window.location.href = `/login/?next=${next}`;
     throw new ApiError(401, null);
   }
   if (!res.ok) {
