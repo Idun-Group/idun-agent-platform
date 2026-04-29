@@ -173,7 +173,9 @@ async def materialize_from_detection(
     the wizard can re-scan.
     """
     if await _agent_row(session) is not None:
-        raise _conflict("Agent already configured.")
+        raise _conflict(
+            "Agent already configured. Use PATCH /admin/api/v1/agent to update it."
+        )
 
     scan_result = await scanner.scan_folder(scan_root)
     match: DetectedAgent | None = None
@@ -199,6 +201,12 @@ async def materialize_from_detection(
     )
 
     async with reload_service._reload_mutex:
+        # Re-check inside the mutex to close the TOCTOU window between the
+        # initial pre-check and the row insert.
+        if await _agent_row(session) is not None:
+            raise _conflict(
+                "Agent already configured. Use PATCH /admin/api/v1/agent to update it."
+            )
         session.add(row)
         await session.flush()
         result = await commit_with_reload(session, reload_callable=reload_callable)
@@ -232,7 +240,9 @@ async def materialize_starter(
     re-trigger reload via ``PATCH /agent``.
     """
     if await _agent_row(session) is not None:
-        raise _conflict("Agent already configured.")
+        raise _conflict(
+            "Agent already configured. Use PATCH /admin/api/v1/agent to update it."
+        )
 
     name = body.name or _STARTER_DEFAULT_NAME
 
@@ -250,6 +260,13 @@ async def materialize_starter(
     row = StandaloneAgentRow(name=name, base_engine_config=config_dict)
 
     async with reload_service._reload_mutex:
+        # Re-check inside the mutex to close the TOCTOU window. If a concurrent
+        # request already inserted the row, the scaffolded files stay on disk —
+        # the user can move them or DELETE the agent and re-run the wizard.
+        if await _agent_row(session) is not None:
+            raise _conflict(
+                "Agent already configured. Use PATCH /admin/api/v1/agent to update it."
+            )
         session.add(row)
         await session.flush()
         result = await commit_with_reload(session, reload_callable=reload_callable)
