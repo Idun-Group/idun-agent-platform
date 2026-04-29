@@ -46,6 +46,7 @@ from pydantic import BaseModel
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
+from idun_agent_engine.identity import current_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -301,11 +302,15 @@ class AdkAgent(agent_base.BaseAgent):
 
         # Initialize CopilotKit/AG-UI Agent Wrapper
         # TODO: Pass session and memory services when supported by AG-UI ADK adapter if needed
+        # Pin user_id via extractor instead of letting ADK fall back to
+        # f"thread_user_{thread_id}" (which makes listing impossible and
+        # lets a thread_id alone resolve a session across users).
         self._copilotkit_agent_instance = ADKAGUIAgent(
             adk_agent=agent,
             session_service=self._session_service,
             memory_service=self._memory_service,
             app_name=self._name,
+            user_id_extractor=lambda _input: current_user_id.get(),
         )
 
         self._infos["status"] = "Initialized"
@@ -555,7 +560,7 @@ class AdkAgent(agent_base.BaseAgent):
         """
         if not self._session_service:
             return []
-        scope_user = user_id or "anonymous"
+        scope_user = user_id or current_user_id.get()
         res = await self._session_service.list_sessions(
             app_name=self._name,
             user_id=scope_user,
@@ -573,20 +578,19 @@ class AdkAgent(agent_base.BaseAgent):
                 user_id=getattr(s, "user_id", scope_user),
                 session_id=s.id,
             )
-            preview = _first_user_text(full) if full is not None else None
-            thread_id: str | None = None
-            state = getattr(full, "state", None) if full else None
-            if isinstance(state, dict):
-                thread_id_value = state.get("_ag_ui_thread_id")
-                if isinstance(thread_id_value, str):
-                    thread_id = thread_id_value
+            if full is None:
+                continue
+            state = getattr(full, "state", None)
+            thread_id_value = state.get("_ag_ui_thread_id") if isinstance(state, dict) else None
+            if not isinstance(thread_id_value, str):
+                continue
             out.append(
                 SessionSummary(
-                    id=s.id,
+                    id=thread_id_value,
                     last_update_time=getattr(s, "last_update_time", None),
                     user_id=getattr(s, "user_id", scope_user),
-                    thread_id=thread_id,
-                    preview=preview,
+                    thread_id=thread_id_value,
+                    preview=_first_user_text(full),
                 )
             )
         return out
@@ -596,34 +600,42 @@ class AdkAgent(agent_base.BaseAgent):
     ) -> SessionDetail | None:
         """Reconstruct a single ADK session as a text-only message thread.
 
-        Returns ``None`` when the session is not found OR when
-        ``user_id`` is provided and does not match the persisted owner
-        (cross-user 404 guard).
+        ``session_id`` is the AG-UI thread_id (what the UI routes by).
+        ADK's own session_id is auto-generated and stored separately;
+        we resolve thread_id to it via the ``_ag_ui_thread_id`` key in
+        session state.
         """
         if not self._session_service:
             return None
-        scope_user = user_id or "anonymous"
-        s = await self._session_service.get_session(
+        scope_user = user_id or current_user_id.get()
+        listing = await self._session_service.list_sessions(
             app_name=self._name,
             user_id=scope_user,
-            session_id=session_id,
         )
-        if s is None:
+        match = next(
+            (
+                row
+                for row in getattr(listing, "sessions", []) or []
+                if isinstance(getattr(row, "state", None), dict)
+                and row.state.get("_ag_ui_thread_id") == session_id
+            ),
+            None,
+        )
+        if match is None:
             return None
-        if user_id and getattr(s, "user_id", None) and s.user_id != user_id:
+        full = await self._session_service.get_session(
+            app_name=self._name,
+            user_id=getattr(match, "user_id", scope_user),
+            session_id=match.id,
+        )
+        if full is None:
             return None
-        state = getattr(s, "state", None)
-        thread_id: str | None = None
-        if isinstance(state, dict):
-            thread_id_value = state.get("_ag_ui_thread_id")
-            if isinstance(thread_id_value, str):
-                thread_id = thread_id_value
         return SessionDetail(
-            id=s.id,
-            last_update_time=getattr(s, "last_update_time", None),
-            user_id=getattr(s, "user_id", None),
-            thread_id=thread_id,
-            messages=_events_to_messages(getattr(s, "events", []) or []),
+            id=session_id,
+            last_update_time=getattr(full, "last_update_time", None),
+            user_id=getattr(full, "user_id", None),
+            thread_id=session_id,
+            messages=_events_to_messages(getattr(full, "events", []) or []),
         )
 
     async def run(self, input_data: RunAgentInput) -> AsyncGenerator[BaseEvent, None]:
