@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { ApiError, api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
+function isSafeNext(next: string): boolean {
+  // Only same-origin paths. Reject `https://evil.com`, `//evil.com`,
+  // `http://`, etc. — open redirect guard.
+  return next.startsWith("/") && !next.startsWith("//");
+}
+
+function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const [password, setPassword] = useState("");
@@ -31,7 +37,8 @@ export default function LoginPage() {
             setBusy(true);
             try {
               await api.login(password);
-              const next = params?.get("next") ?? "/";
+              const raw = params?.get("next") ?? "/";
+              const next = isSafeNext(raw) ? raw : "/";
               router.replace(next);
             } catch (err) {
               const status = err instanceof ApiError ? err.status : 0;
@@ -62,5 +69,13 @@ export default function LoginPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
