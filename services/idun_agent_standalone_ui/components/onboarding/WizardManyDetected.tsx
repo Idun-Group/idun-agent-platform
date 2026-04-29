@@ -33,18 +33,20 @@ export function WizardManyDetected({
   onConfirm,
   onRescan,
 }: WizardManyDetectedProps) {
-  const sorted = useMemo(
-    () =>
-      [...detections].sort((a, b) => {
-        const c = CONFIDENCE_RANK[a.confidence] - CONFIDENCE_RANK[b.confidence];
-        if (c !== 0) return c;
-        const f = FRAMEWORK_RANK[a.framework] - FRAMEWORK_RANK[b.framework];
-        if (f !== 0) return f;
-        return a.inferredName.localeCompare(b.inferredName);
-      }),
-    [detections],
-  );
-  const [selectedIndex, setSelectedIndex] = useState<string>("");
+  const { sorted, byKey } = useMemo(() => {
+    const sorted = [...detections].sort((a, b) => {
+      const c = CONFIDENCE_RANK[a.confidence] - CONFIDENCE_RANK[b.confidence];
+      if (c !== 0) return c;
+      const f = FRAMEWORK_RANK[a.framework] - FRAMEWORK_RANK[b.framework];
+      if (f !== 0) return f;
+      return a.inferredName.localeCompare(b.inferredName);
+    });
+    const byKey = new Map<string, DetectedAgent>(
+      sorted.map((d) => [`${d.filePath}:${d.variableName}`, d]),
+    );
+    return { sorted, byKey };
+  }, [detections]);
+  const [selectedKey, setSelectedKey] = useState<string>("");
 
   return (
     <Card className="w-full max-w-lg">
@@ -57,21 +59,24 @@ export function WizardManyDetected({
       </CardHeader>
       <CardContent className="space-y-6">
         <RadioGroup
-          value={selectedIndex}
-          onValueChange={setSelectedIndex}
+          value={selectedKey}
+          onValueChange={setSelectedKey}
           className="space-y-3"
         >
-          {sorted.map((d, i) => (
-            <div
-              key={`${d.filePath}:${d.variableName}`}
-              className="flex items-start space-x-3 rounded-md border border-border p-4"
-            >
-              <RadioGroupItem value={String(i)} id={`det-${i}`} />
-              <Label htmlFor={`det-${i}`} className="flex-1 cursor-pointer">
-                <DetectionRow detection={d} />
-              </Label>
-            </div>
-          ))}
+          {sorted.map((d) => {
+            const key = `${d.filePath}:${d.variableName}`;
+            return (
+              <div
+                key={key}
+                className="flex items-start space-x-3 rounded-md border border-border p-4"
+              >
+                <RadioGroupItem value={key} id={`det-${key}`} />
+                <Label htmlFor={`det-${key}`} className="flex-1 cursor-pointer">
+                  <DetectionRow detection={d} />
+                </Label>
+              </div>
+            );
+          })}
         </RadioGroup>
         <div className="flex items-center justify-between">
           <button
@@ -83,12 +88,12 @@ export function WizardManyDetected({
           </button>
           <Button
             onClick={() => {
-              const idx = parseInt(selectedIndex, 10);
-              if (!Number.isNaN(idx) && sorted[idx]) {
-                onConfirm(sorted[idx]);
+              const detection = byKey.get(selectedKey);
+              if (detection) {
+                onConfirm(detection);
               }
             }}
-            disabled={selectedIndex === ""}
+            disabled={selectedKey === ""}
           >
             Use selected agent
           </Button>
