@@ -45,7 +45,9 @@ describe("WizardManyDetected", () => {
     );
     const rows = screen.getAllByRole("radio");
     // First row should be the LANGGRAPH HIGH detection ("A Agent").
-    expect(rows[0]).toHaveAttribute("value", "0");
+    // First row's radio value is the unique "filePath:variableName" key of
+    // the LANGGRAPH HIGH detection (sorted to the top).
+    expect(rows[0]).toHaveAttribute("value", "agent.py:graph");
     const aAgentText = screen.getByText("A Agent");
     const bAgentText = screen.getByText("B Agent");
     // A Agent should appear before B Agent in the document order.
