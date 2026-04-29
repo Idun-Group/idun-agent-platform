@@ -36,9 +36,11 @@ function ChatHome() {
         if (err instanceof ApiError && err.status === 404) {
           router.replace("/onboarding");
         } else {
-          // Non-404 errors don't block chat from rendering — let the chat
-          // layouts surface their own loading/error state on the next API
-          // call. Treat as "ready" so the user sees something.
+          // Non-404 errors don't block chat from rendering. 401 is already
+          // handled by apiFetch (hard-redirects to /login/?next=…); other
+          // errors (network, 5xx) fall through and the chat layouts surface
+          // them on the next API call. Doubles as a flash-of-default-layout
+          // guard until the runtime-config layout effect resolves.
           setAgentReady(true);
         }
       });
