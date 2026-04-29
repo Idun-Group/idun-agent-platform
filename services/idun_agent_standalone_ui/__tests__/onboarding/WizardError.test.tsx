@@ -26,9 +26,14 @@ describe("WizardError", () => {
         onBack={vi.fn()}
       />,
     );
-    expect(
-      screen.getByText(/edit your `?agent\.py`? to fix the issue/i),
-    ).toBeInTheDocument();
+    // The hint may render with `agent.py` wrapped in a `<code>` element, so
+    // assert against the surrounding paragraph's text content.
+    const hintParagraph = screen.getByText(
+      (_, node) =>
+        node?.tagName.toLowerCase() === "p" &&
+        Boolean(node.textContent?.match(/edit your.*agent\.py/i)),
+    );
+    expect(hintParagraph).toBeInTheDocument();
   });
 
   it("does not show the recovery hint for other codes", () => {
@@ -41,7 +46,11 @@ describe("WizardError", () => {
       />,
     );
     expect(
-      screen.queryByText(/edit your `?agent\.py`?/i),
+      screen.queryByText(
+        (_, node) =>
+          node?.tagName.toLowerCase() === "p" &&
+          Boolean(node.textContent?.match(/edit your.*agent\.py/i)),
+      ),
     ).not.toBeInTheDocument();
   });
 

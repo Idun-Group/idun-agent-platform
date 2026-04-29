@@ -46,11 +46,10 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<WizardStep>({ kind: "scanning" });
   const redirecting = data?.state === "ALREADY_CONFIGURED";
 
-  // Tracks the framework / mode of the most recent materialize call so the
-  // Done screen can render the right env-var reminder. Refs avoid extra
-  // renders during the materialize → done transition.
+  // Tracks the framework of the most recent materialize call so the Done
+  // screen can render the right env-var reminder. A ref avoids extra renders
+  // during the materialize → done transition.
   const lastFrameworkRef = useRef<Framework>("LANGGRAPH");
-  const lastModeRef = useRef<Mode>("starter");
 
   useEffect(() => {
     if (isLoading) {
@@ -204,7 +203,6 @@ export default function OnboardingPage() {
         framework={step.framework}
         onConfirm={(body) => {
           lastFrameworkRef.current = body.framework;
-          lastModeRef.current = "starter";
           setStep({ kind: "materializing" });
           starterMutation.mutate(body);
         }}
@@ -222,7 +220,6 @@ export default function OnboardingPage() {
     };
     const onPickDetection = (detection: DetectedAgent) => {
       lastFrameworkRef.current = detection.framework;
-      lastModeRef.current = "detection";
       setStep({ kind: "materializing" });
       detectionMutation.mutate({
         framework: detection.framework,
