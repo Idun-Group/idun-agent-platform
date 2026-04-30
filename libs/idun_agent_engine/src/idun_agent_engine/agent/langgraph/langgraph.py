@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from ag_ui.core import BaseEvent
     from ag_ui.core.types import RunAgentInput
     from idun_agent_schema.engine.capabilities import AgentCapabilities
+    from idun_agent_schema.engine.graph import AgentGraph
 
 import aiosqlite
 from ag_ui.core import events as ag_events
@@ -848,6 +849,90 @@ class LanggraphAgent(agent_base.BaseAgent):
         )
         self._cached_capabilities = result
         return result
+
+    def get_graph_ir(self) -> AgentGraph:
+        """Return a framework-agnostic graph IR populated from the compiled graph."""
+        from idun_agent_schema.engine.agent_framework import AgentFramework
+        from idun_agent_schema.engine.graph import (
+            AgentGraph,
+            AgentGraphEdge,
+            AgentGraphMetadata,
+            AgentKind,
+            AgentNode,
+            EdgeKind,
+        )
+        from langgraph.graph.state import CompiledStateGraph
+
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph graph introspection requires a CompiledStateGraph"
+            )
+
+        lg_graph = self._agent_instance.get_graph()
+        nodes: list[AgentNode] = []
+        edges: list[AgentGraphEdge] = []
+
+        for node_id, _ in lg_graph.nodes.items():
+            is_root = node_id == "__start__"
+            nodes.append(
+                AgentNode(
+                    id=f"node:{node_id}",
+                    name=node_id,
+                    agent_kind=AgentKind.CUSTOM,
+                    is_root=is_root,
+                )
+            )
+
+        for lg_edge in lg_graph.edges:
+            # Public attrs: source, target. `conditional` and `data` are documented;
+            # if a future LangGraph version renames them, fall back gracefully.
+            condition: str | None = None
+            try:
+                if getattr(lg_edge, "conditional", False):
+                    data = getattr(lg_edge, "data", None)
+                    condition = str(data) if data is not None else None
+            except Exception:
+                condition = None
+            label = getattr(lg_edge, "data", None)
+            edges.append(
+                AgentGraphEdge(
+                    source=f"node:{lg_edge.source}",
+                    target=f"node:{lg_edge.target}",
+                    kind=EdgeKind.GRAPH_EDGE,
+                    condition=condition,
+                    label=str(label) if label is not None and not condition else None,
+                )
+            )
+
+        return AgentGraph(
+            metadata=AgentGraphMetadata(
+                framework=AgentFramework.LANGGRAPH,
+                agent_name=self.name,
+                root_id="node:__start__",
+            ),
+            nodes=nodes,
+            edges=edges,
+        )
+
+    def draw_mermaid(self) -> str:
+        """Delegate to LangGraph's native draw_mermaid for polish/parity."""
+        from langgraph.graph.state import CompiledStateGraph
+
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph mermaid rendering requires a CompiledStateGraph"
+            )
+        return self._agent_instance.get_graph().draw_mermaid()
+
+    def draw_ascii(self) -> str:
+        """Delegate to LangGraph's native draw_ascii (grandalf-backed)."""
+        from langgraph.graph.state import CompiledStateGraph
+
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph ascii rendering requires a CompiledStateGraph"
+            )
+        return self._agent_instance.get_graph().draw_ascii()
 
     def history_capabilities(self) -> HistoryCapabilities:
         """Declare LangGraph session-history support.
