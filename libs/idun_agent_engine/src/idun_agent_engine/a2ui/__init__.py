@@ -10,5 +10,6 @@ the design rationale.
 """
 
 from idun_agent_engine.a2ui.envelope import BASIC_CATALOG_V09
+from idun_agent_engine.a2ui.helpers import emit_surface, update_components
 
-__all__ = ["BASIC_CATALOG_V09"]
+__all__ = ["BASIC_CATALOG_V09", "emit_surface", "update_components"]
