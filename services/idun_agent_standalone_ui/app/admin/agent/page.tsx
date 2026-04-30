@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -32,6 +33,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, type AgentRead, api } from "@/lib/api";
+
+const AgentGraph = dynamic(
+  () => import("@/components/graph/AgentGraph").then((m) => m.AgentGraph),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[480px] animate-pulse rounded-md bg-muted" />
+    ),
+  },
+);
 
 type Framework = "langgraph" | "adk";
 const FRAMEWORKS: Framework[] = ["langgraph", "adk"];
@@ -108,6 +119,15 @@ export default function AgentPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["agent"],
     queryFn: api.getAgent,
+  });
+
+  const graphQuery = useQuery({
+    queryKey: ["admin-agent-graph"],
+    queryFn: () => api.getAgentGraph(),
+    retry: (failureCount, err) => {
+      if (err instanceof ApiError && err.status === 404) return false;
+      return failureCount < 2;
+    },
   });
 
   const initialFramework = useMemo(() => readFramework(data), [data]);
@@ -337,6 +357,38 @@ export default function AgentPage() {
             {save.isPending ? "Saving…" : "Save"}
           </Button>
         </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Agent graph</CardTitle>
+          <CardDescription>
+            A visual map of this agent&apos;s sub-agents and tools.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {graphQuery.isLoading && (
+            <div className="h-[480px] animate-pulse rounded-md bg-muted" />
+          )}
+          {graphQuery.isError &&
+            graphQuery.error instanceof ApiError &&
+            graphQuery.error.status === 404 && (
+              <p className="text-sm text-muted-foreground">
+                Graph view isn&apos;t available for this agent type yet.
+              </p>
+            )}
+          {graphQuery.isError &&
+            !(
+              graphQuery.error instanceof ApiError &&
+              graphQuery.error.status === 404
+            ) && (
+              <Alert>
+                <AlertTitle>Graph unavailable</AlertTitle>
+                <AlertDescription>Try reloading the page.</AlertDescription>
+              </Alert>
+            )}
+          {graphQuery.data && <AgentGraph graph={graphQuery.data} height={480} />}
+        </CardContent>
       </Card>
 
       <EditYamlSheet
