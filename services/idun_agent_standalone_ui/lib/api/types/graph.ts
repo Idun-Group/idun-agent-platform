@@ -22,7 +22,12 @@ export type EdgeKind =
   | "tool_attach"
   | "graph_edge";
 
-export interface AgentNode {
+// `extends Record<string, unknown>` satisfies @xyflow/react v12's
+// `Node<TData extends Record<string, unknown>>` / `Edge<TData ...>`
+// generic constraint when these types are used as ReactFlow payloads.
+// Doesn't change the wire shape — Pydantic emits the same JSON.
+
+export interface AgentNode extends Record<string, unknown> {
   kind: "agent";
   id: string;
   name: string;
@@ -33,7 +38,7 @@ export interface AgentNode {
   loop_max_iterations: number | null;
 }
 
-export interface ToolNode {
+export interface ToolNode extends Record<string, unknown> {
   kind: "tool";
   id: string;
   name: string;
@@ -44,7 +49,7 @@ export interface ToolNode {
 
 export type AgentGraphNode = AgentNode | ToolNode;
 
-export interface AgentGraphEdge {
+export interface AgentGraphEdge extends Record<string, unknown> {
   source: string;
   target: string;
   kind: EdgeKind;

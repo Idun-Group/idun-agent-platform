@@ -871,7 +871,14 @@ class LanggraphAgent(agent_base.BaseAgent):
         nodes: list[AgentNode] = []
         edges: list[AgentGraphEdge] = []
 
+        # Skip `__end__` so it doesn't render as a "ghost" Custom agent card.
+        # Keep `__start__` — it marks the entry point (is_root=True).
+        # Edges into `__end__` are also dropped to avoid dangling references.
+        skip_nodes = {"__end__"}
+
         for node_id in lg_graph.nodes:
+            if node_id in skip_nodes:
+                continue
             is_root = node_id == "__start__"
             nodes.append(
                 AgentNode(
@@ -883,6 +890,8 @@ class LanggraphAgent(agent_base.BaseAgent):
             )
 
         for lg_edge in lg_graph.edges:
+            if lg_edge.source in skip_nodes or lg_edge.target in skip_nodes:
+                continue
             # Public attrs: source, target. `conditional` and `data` are documented;
             # if a future LangGraph version renames them, fall back gracefully.
             data = getattr(lg_edge, "data", None)
