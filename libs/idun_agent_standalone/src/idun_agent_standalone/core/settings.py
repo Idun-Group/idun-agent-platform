@@ -6,7 +6,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Self
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _MIN_SESSION_SECRET_LEN = 32
@@ -45,6 +45,11 @@ class StandaloneSettings(BaseSettings):
         default=24, ge=1, le=720, alias="IDUN_SESSION_TTL_HOURS"
     )
     ui_dir: Path | None = Field(default=None, alias="IDUN_UI_DIR")
+
+    @field_validator("admin_password_hash", "session_secret", mode="before")
+    @classmethod
+    def _strip_secret(cls, v: str) -> str:
+        return v.rstrip("\n\r")
 
     @model_validator(mode="after")
     def _validate_password_mode(self) -> Self:

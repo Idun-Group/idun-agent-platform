@@ -16,13 +16,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute, Mount
 from fastapi.staticfiles import StaticFiles
 from idun_agent_engine import create_app as create_engine_app
 
 from idun_agent_standalone.api.v1.deps import reload_disabled, require_auth
 from idun_agent_standalone.api.v1.errors import register_admin_exception_handlers
+from idun_agent_standalone.core.security import SESSION_COOKIE_NAME
+from idun_agent_standalone.services import auth as auth_service
 from idun_agent_standalone.api.v1.routers.agent import router as agent_router
 from idun_agent_standalone.api.v1.routers.auth import router as auth_router
 from idun_agent_standalone.api.v1.routers.guardrails import (
@@ -54,6 +57,62 @@ from idun_agent_standalone.services.engine_config import (
 )
 
 logger = get_logger(__name__)
+
+
+_PUBLIC_PATHS = frozenset({
+    "/",
+    "/health",
+    "/runtime-config.js",
+    "/agent/run",
+    "/agent/stream",
+    "/agent/copilotkit/stream",
+    "/agent/invoke",
+    "/agent/capabilities",
+})
+
+
+def _is_public_runtime_path(path: str) -> bool:
+    if path in _PUBLIC_PATHS:
+        return True
+    # /admin/api/v1/auth/ has to win before the broader /admin/api/ deny
+    # below, otherwise login itself becomes unreachable.
+    if path.startswith("/admin/api/v1/auth/"):
+        return True
+    if path.startswith("/admin/api/"):
+        return False
+    if (
+        path.startswith("/admin")
+        or path.startswith("/login")
+        or path.startswith("/_next/")
+    ):
+        return True
+    if path.startswith("/agent/") or path.startswith("/_engine/"):
+        return False
+    if path == "/reload":
+        return False
+    return True
+
+
+def _install_engine_runtime_gate(app: FastAPI) -> None:
+    # TODO(#544): drop once the engine ships first-class password auth.
+    @app.middleware("http")
+    async def gate_engine_runtime(request: Request, call_next):
+        settings: StandaloneSettings = request.app.state.settings
+        if settings.auth_mode != AuthMode.PASSWORD:
+            return await call_next(request)
+        if _is_public_runtime_path(request.url.path):
+            return await call_next(request)
+        cookie = request.cookies.get(SESSION_COOKIE_NAME)
+        sessionmaker = request.app.state.sessionmaker
+        async with sessionmaker() as session:
+            ok = await auth_service.validate_session(
+                session, signed_cookie=cookie, settings=settings
+            )
+        if not ok:
+            return JSONResponse(
+                {"detail": "Authentication required."}, status_code=401
+            )
+        return await call_next(request)
 
 
 def _resolve_ui_dir(settings: StandaloneSettings) -> Path | None:
@@ -126,6 +185,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 
     app.state.reload_callable = build_engine_reload_callable(app)
 
+    _install_engine_runtime_gate(app)
     register_admin_exception_handlers(app)
     admin_auth = [Depends(require_auth)]
     app.include_router(auth_router)
