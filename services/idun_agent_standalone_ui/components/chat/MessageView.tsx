@@ -5,6 +5,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Message } from "@/lib/agui";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
+import { A2UISurfaceErrorBoundary } from "./a2ui/A2UISurfaceErrorBoundary";
+import { A2UISurfaceWrapper } from "./a2ui/A2UISurfaceWrapper";
 import { ReasoningPanel } from "./ReasoningPanel";
 
 type Props = {
@@ -101,6 +103,13 @@ export function MessageView({ m }: Props) {
             )}
           </div>
         )}
+
+        {m.role === "assistant" &&
+          m.a2uiSurfaces?.map((surface) => (
+            <A2UISurfaceErrorBoundary key={surface.surfaceId}>
+              <A2UISurfaceWrapper surface={surface} />
+            </A2UISurfaceErrorBoundary>
+          ))}
       </div>
     </div>
   );
