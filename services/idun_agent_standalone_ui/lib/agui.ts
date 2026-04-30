@@ -27,6 +27,39 @@ export type RunOptions = {
   onEvent: (event: AGUIEvent) => void;
 };
 
+// ===== A2UI v0.9 (WS2) =====
+
+/** A2UI v0.9 envelope message. Discriminated by which key is present
+ *  (createSurface, updateComponents, updateDataModel). We don't model
+ *  the inner shape — the renderer (@a2ui/react/v0_9) handles it. */
+export type IdunA2UIMessage = {
+  version: "v0.9";
+  createSurface?: { surfaceId: string; catalogId: string };
+  updateComponents?: { surfaceId: string; components: unknown[] };
+  updateDataModel?: { surfaceId: string; data: unknown };
+};
+
+/** Payload of a ``CUSTOM idun.a2ui.messages`` event. The engine
+ *  emits one of these per ``emit_surface``/``update_components`` call
+ *  on the agent side. */
+export type IdunA2UIEvent = {
+  a2uiVersion: "v0.9";
+  surfaceId: string;
+  fallbackText?: string;
+  messages: IdunA2UIMessage[];
+  metadata?: Record<string, unknown>;
+};
+
+/** Per-surface state on a Message — accumulated A2UI envelope messages
+ *  in arrival order. The MessageProcessor in A2UISurfaceWrapper
+ *  consumes these to derive the rendered view. */
+export type A2UISurfaceState = {
+  surfaceId: string;
+  catalogId: string;
+  messages: IdunA2UIMessage[];
+  fallbackText?: string;
+};
+
 export type Message =
   | { id: string; role: "user"; text: string }
   | {
@@ -46,6 +79,7 @@ export type Message =
       thoughts?: string;
       currentStep?: string;
       streaming?: boolean;
+      a2uiSurfaces?: A2UISurfaceState[];
     };
 
 export type ToolCall = {
