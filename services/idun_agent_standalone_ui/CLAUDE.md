@@ -56,6 +56,8 @@ Hand-rolled SSE reader in `lib/agui.ts` — no `@ag-ui/client` dependency. Strea
 
 The chat reducer (`lib/use-chat.ts`) handles both `THINKING_*` and `REASONING_*` event families so the UI works against engines on either side of the `ag-ui-langgraph` 0.0.35 protocol rename.
 
+CUSTOM events with name `idun.a2ui.messages` are routed through the chat reducer into `Message.a2uiSurfaces`. `MessageView.tsx` renders one `<A2UISurfaceWrapper>` per surface, each wrapped in an `<A2UISurfaceErrorBoundary>`. Renderer is `@a2ui/react@^0.9.1` (subpath `/v0_9`); processor is per-message-per-surface and lives as long as the assistant message. Surface goes below the markdown text body. Render errors are silently absorbed (text stays visible, `console.error` for devs). Catalog: A2UI Basic v0.9. Styles auto-inject at runtime via `injectBasicCatalogStyles` inside the renderer — no explicit CSS import is needed at the app root (v0.9's `index.css` is not declared in the package's `exports` field, so importing it directly fails).
+
 ## Build
 
 ```bash

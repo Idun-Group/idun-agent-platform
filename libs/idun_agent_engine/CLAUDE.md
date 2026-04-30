@@ -22,6 +22,9 @@ idun_agent_engine/
 │   ├── config_builder  # Central hub: loads YAML/dict/API, builds EngineConfig, initializes agents
 │   ├── app_factory     # create_app() → FastAPI application
 │   └── server_runner   # run_server() → uvicorn wrapper
+├── a2ui/               # A2UI v0.9 emission helpers (WS2)
+│   ├── envelope        # Pure-function envelope builders
+│   └── helpers         # emit_surface, update_components — wrap adispatch_custom_event
 ├── agent/              # Framework adapters (all implement BaseAgent ABC)
 │   ├── base            # BaseAgent protocol: initialize(), invoke(), stream(), copilotkit_agent_instance
 │   ├── langgraph/      # Primary adapter. Full streaming (AG-UI events). Expects uncompiled StateGraph.
@@ -75,6 +78,12 @@ from idun_agent_engine import (
     run_server_from_builder,  # ConfigBuilder → app → uvicorn
     ConfigBuilder,       # Fluent builder + static helpers for config loading/agent init
     BaseAgent,           # ABC for agent adapters
+)
+
+from idun_agent_engine.a2ui import (
+    emit_surface,        # render an A2UI surface from a LangGraph node
+    update_components,   # update components on an existing surface
+    BASIC_CATALOG_V09,   # default catalog URI
 )
 ```
 
@@ -301,6 +310,34 @@ idun init
 - `langchain-mcp-adapters` — MCP client
 - `guardrails-ai` — Guardrails hub
 - `langfuse`, `arize-phoenix`, `opentelemetry-*`, `google-cloud-*` — Observability
+
+## A2UI
+
+LangGraph agents can render rich UI in any A2UI-capable client (e.g., Idun standalone UI) by calling `emit_surface` from inside a graph node:
+
+```python
+from idun_agent_engine.a2ui import emit_surface
+from langchain_core.runnables import RunnableConfig
+
+async def my_node(state, config: RunnableConfig):
+    await emit_surface(
+        config=config,
+        surface_id="search_results",
+        components=[
+            {"id": "root", "component": "Card", "children": [...]},
+        ],
+        fallback_text="3 results found",
+    )
+    return {...}
+```
+
+The helper dispatches an AG-UI `CustomEvent` with name `idun.a2ui.messages` carrying an A2UI v0.9 envelope. Catalog defaults to A2UI Basic v0.9 (`https://a2ui.org/specification/v0_9/basic_catalog.json`); override with `catalog_id=`.
+
+**Important:** The graph node parameter MUST be annotated as `RunnableConfig` (not `Any`) — LangGraph only injects the active runnable config when the type annotation matches. Without the right annotation, `config` will be missing and the helper call will fail.
+
+Read-only — actions land in WS3.
+
+Spec: `docs/superpowers/specs/2026-04-30-ws2-a2ui-mvp1-design.md`.
 
 ## Development
 
