@@ -60,3 +60,48 @@ class TestEmitSurface:
             await emit_surface(config=config, surface_id="s", components=[])
         _, kwargs = mock.call_args
         assert kwargs.get("config") is config
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestUpdateComponents:
+    async def test_dispatches_with_correct_event_name(self) -> None:
+        from idun_agent_engine.a2ui import update_components
+
+        mock = AsyncMock()
+        with patch(
+            "idun_agent_engine.a2ui.helpers.adispatch_custom_event", mock
+        ):
+            await update_components(
+                config={"configurable": {}},
+                surface_id="s",
+                components=[],
+            )
+
+        args, kwargs = mock.call_args
+        assert args[0] == "idun.a2ui.messages"
+
+    async def test_envelope_has_no_create_surface(self) -> None:
+        from idun_agent_engine.a2ui import update_components
+
+        mock = AsyncMock()
+        with patch(
+            "idun_agent_engine.a2ui.helpers.adispatch_custom_event", mock
+        ):
+            await update_components(
+                config={"configurable": {}},
+                surface_id="s",
+                components=[
+                    {"id": "row-1", "component": "Text", "text": "row 1"}
+                ],
+            )
+
+        args, _ = mock.call_args
+        envelope = args[1]
+        assert all(
+            "createSurface" not in msg for msg in envelope["messages"]
+        )
+        assert "fallbackText" not in envelope
+        assert envelope["messages"][0]["updateComponents"]["components"] == [
+            {"id": "row-1", "component": "Text", "text": "row 1"}
+        ]
