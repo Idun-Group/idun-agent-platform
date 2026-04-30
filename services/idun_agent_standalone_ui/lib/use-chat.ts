@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type AGUIEvent,
   GuardrailRejectedError,
+  type IdunA2UIEvent,
   type Message,
   runAgent,
 } from "@/lib/agui";
@@ -331,6 +332,62 @@ function applyEvent(
           return m;
         });
       }
+      break;
+    }
+
+    // — A2UI surface envelopes (WS2) -------------------------
+    // Engine emits ``CUSTOM`` events with ``name: "idun.a2ui.messages"``
+    // carrying an A2UI v0.9 envelope. Each event is keyed by ``surfaceId``;
+    // first sighting allocates an A2UISurfaceState (deriving catalogId from
+    // a createSurface message if present, else falling back to the basic
+    // catalog default), follow-ups append messages to the existing entry.
+    case "CUSTOM":
+    case "CustomEvent": {
+      const name = String(e.name ?? "");
+      if (name !== "idun.a2ui.messages") break;
+
+      const value = e.value as IdunA2UIEvent | undefined;
+      if (!value || !Array.isArray(value.messages) || !value.surfaceId) {
+        break;
+      }
+
+      updateLatestAssistant((m) => {
+        if (m.role !== "assistant") return m;
+
+        const surfaces = m.a2uiSurfaces ?? [];
+        const idx = surfaces.findIndex(
+          (s) => s.surfaceId === value.surfaceId,
+        );
+
+        if (idx === -1) {
+          // First time we see this surface — derive catalogId from
+          // createSurface if present, else default.
+          const createMsg = value.messages.find((msg) => msg.createSurface);
+          const catalogId =
+            createMsg?.createSurface?.catalogId ??
+            "https://a2ui.org/specification/v0_9/basic_catalog.json";
+          return {
+            ...m,
+            a2uiSurfaces: [
+              ...surfaces,
+              {
+                surfaceId: value.surfaceId,
+                catalogId,
+                messages: value.messages,
+                fallbackText: value.fallbackText,
+              },
+            ],
+          };
+        }
+
+        const next = [...surfaces];
+        next[idx] = {
+          ...next[idx],
+          messages: [...next[idx].messages, ...value.messages],
+          fallbackText: value.fallbackText ?? next[idx].fallbackText,
+        };
+        return { ...m, a2uiSurfaces: next };
+      });
       break;
     }
 
