@@ -236,13 +236,13 @@ async def get_graph_ir(
     try:
         return agent.get_graph_ir()
     except NotImplementedError as e:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
         logger.exception("Graph IR extraction failed")
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Graph introspection failed",
-        )
+        ) from e
 
 
 @agent_router.get("/graph/mermaid")
@@ -254,13 +254,13 @@ async def get_graph_mermaid(
     try:
         return {"mermaid": agent.draw_mermaid()}
     except NotImplementedError as e:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
         logger.exception("Mermaid rendering failed")
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Mermaid rendering failed",
-        )
+        ) from e
 
 
 @agent_router.get("/graph/ascii")
@@ -272,13 +272,13 @@ async def get_graph_ascii(
     try:
         return {"ascii": agent.draw_ascii()}
     except NotImplementedError as e:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
         logger.exception("ASCII rendering failed")
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="ASCII rendering failed",
-        )
+        ) from e
 
 
 @agent_router.get("/config")

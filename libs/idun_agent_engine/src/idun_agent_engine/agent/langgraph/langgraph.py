@@ -937,6 +937,10 @@ class LanggraphAgent(agent_base.BaseAgent):
         try:
             return self._agent_instance.get_graph().draw_ascii()
         except ImportError:
+            logger.warning(
+                "grandalf not installed; using framework-agnostic ASCII renderer "
+                "for LangGraph agent"
+            )
             from idun_agent_engine.server.graph.ascii import render_ascii
 
             return render_ascii(self.get_graph_ir())
