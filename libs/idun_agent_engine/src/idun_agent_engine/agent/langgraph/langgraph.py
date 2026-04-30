@@ -925,12 +925,21 @@ class LanggraphAgent(agent_base.BaseAgent):
         return self._agent_instance.get_graph().draw_mermaid()
 
     def draw_ascii(self) -> str:
-        """Delegate to LangGraph's native draw_ascii (grandalf-backed)."""
+        """Render ASCII art.
+
+        Delegates to LangGraph's native grandalf-backed renderer when grandalf
+        is installed; falls back to the framework-agnostic IR renderer otherwise.
+        """
         if not isinstance(self._agent_instance, CompiledStateGraph):
             raise NotImplementedError(
                 "LangGraph ascii rendering requires a CompiledStateGraph"
             )
-        return self._agent_instance.get_graph().draw_ascii()
+        try:
+            return self._agent_instance.get_graph().draw_ascii()
+        except ImportError:
+            from idun_agent_engine.server.graph.ascii import render_ascii
+
+            return render_ascii(self.get_graph_ir())
 
     def history_capabilities(self) -> HistoryCapabilities:
         """Declare LangGraph session-history support.
