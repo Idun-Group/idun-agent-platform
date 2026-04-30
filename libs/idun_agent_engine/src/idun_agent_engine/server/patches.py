@@ -16,27 +16,37 @@ HOW TO VERIFY REMOVAL IS SAFE
 PATCHES
 -------
 1. ``apply_handle_single_event_patch``
-   Combines two fixes into a single ``_handle_single_event`` monkey-patch:
+   Combines two fixes into a single ``_handle_single_event`` monkey-patch.
+   Re-evaluated against ag-ui-langgraph 0.0.35 — see findings inline below.
 
    a) **OnToolEnd — list / raw tool outputs**
-      - Upstream bug: ``_handle_single_event`` assumes ``event["data"]["output"]``
-        on ``OnToolEnd`` is always a single ``ToolMessage``. When the tool node
-        returns a **list** (e.g. from MCP tools), accessing ``.tool_call_id``
-        on the list raises ``AttributeError``.
-      - Error: ``AttributeError: 'list' object has no attribute 'tool_call_id'``
+      - Original upstream bug: ``_handle_single_event`` assumed
+        ``event["data"]["output"]`` on ``OnToolEnd`` was always a single
+        ``ToolMessage``. When the tool node returned a **list** (e.g. from
+        MCP tools), accessing ``.tool_call_id`` on the list raised
+        ``AttributeError: 'list' object has no attribute 'tool_call_id'``.
+      - Status on 0.0.35: the *crash* is gone. Upstream now does
+        ``isinstance(tool_call_output, ToolMessage)``; non-ToolMessage
+        non-Command outputs are logged and silently skipped (see
+        ``ag_ui_langgraph/agent.py`` lines 1231-1236 on 0.0.35).
+      - Why this patch is still needed: silent-skip means MCP tools that
+        return a *list of ToolMessages* never emit ``TOOL_CALL_RESULT``
+        events to the client. The Idun patch iterates the list and emits
+        per-ToolMessage events. Raw str/dict outputs (Case 4) likewise
+        recover ``tool_call_id`` from event metadata so the result still
+        reaches the client.
       - Upstream issue: https://github.com/ag-ui-protocol/ag-ui/issues/1072
       - Upstream PRs: https://github.com/ag-ui-protocol/ag-ui/pull/1073
                        https://github.com/ag-ui-protocol/ag-ui/pull/1164
-      - Fix: when ``tool_call_output`` is a list, iterate over its ToolMessage
-        items. When it is a raw str/dict, resolve ``tool_call_id`` from event
-        metadata.
 
    b) **OnChatModelStream — Gemini finish_reason drops content**
-      - Upstream bug: the very first line of the ``OnChatModelStream`` handler
-        does ``if chunk.response_metadata.get('finish_reason'): return``.
+      - Upstream bug: the ``OnChatModelStream`` branch still does
+        ``if response_metadata.get('finish_reason'): return`` unconditionally
+        (see ``ag_ui_langgraph/agent.py`` lines 911-912 on 0.0.35).
         Gemini models (e.g. gemini-2.5-flash) send the **entire response +
         finish_reason in a single chunk**. The early return discards the
         content, so no ``TEXT_MESSAGE_START/CONTENT/END`` events are emitted.
+      - Status on 0.0.35: not fixed.
       - Symptom: the agent's text response only appears in RAW events and
         MESSAGES_SNAPSHOT, never as proper TEXT_MESSAGE_* events.
       - Upstream issue: not yet filed (ag-ui assumes OpenAI-style streaming
@@ -80,16 +90,23 @@ _ORIGINAL_HANDLE_SINGLE_EVENT = None
 def apply_handle_single_event_patch() -> None:  # noqa: C901
     """Monkey-patch ``LangGraphAgent._handle_single_event``.
 
-    Fixes two upstream bugs in a single patch:
-      (a) OnToolEnd crashes on list / raw tool outputs  (ag-ui#1072)
-      (b) OnChatModelStream drops Gemini content chunks (finish_reason bug)
+    Fixes two upstream issues in a single patch:
+      (a) OnToolEnd silently drops list-shaped / raw tool outputs (was a
+          crash on ag-ui-langgraph <=0.0.33; on 0.0.35 it's a silent skip,
+          which is functionally just as bad for MCP tool results).
+      (b) OnChatModelStream drops Gemini content chunks (finish_reason bug
+          is still present unconditionally on 0.0.35).
+
+    Re-verified against ag-ui-langgraph 0.0.35 (see file-level docstring).
 
     WHEN TO REMOVE
     --------------
-    - (a): when ag-ui merges a fix for https://github.com/ag-ui-protocol/ag-ui/issues/1072
-    - (b): when ag-ui fixes the finish_reason early-return for non-OpenAI models
-    Once BOTH are fixed upstream, delete this entire function and its call in
-    ``apply_all()``.
+    - (a): when ag-ui handles list/raw outputs by iterating and emitting
+      per-ToolMessage events (rather than the current silent-skip).
+    - (b): when ag-ui fixes the finish_reason early-return for non-OpenAI
+      models (e.g. checks for content/tool calls before returning).
+    Once BOTH are fixed upstream, delete this entire function and its call
+    in ``apply_all()``.
     """
     global _ORIGINAL_HANDLE_SINGLE_EVENT
 
@@ -142,8 +159,9 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
         # FIX (b): OnChatModelStream — Gemini finish_reason + content
         # -----------------------------------------------------------------
         # WHY: Gemini sends the full response AND finish_reason in a single
-        #      chunk. The original handler does:
-        #          if chunk.response_metadata.get('finish_reason'): return
+        #      chunk. Upstream 0.0.35 still does (at agent.py:911-912):
+        #          if response_metadata.get('finish_reason', None):
+        #              return
         #      which silently drops the content. No TEXT_MESSAGE_* events
         #      are ever emitted.
         #
@@ -194,10 +212,13 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
         # =================================================================
         # FIX (a): OnToolEnd — handle all output shapes
         # -----------------------------------------------------------------
-        # WHY: The original handler assumes tool_call_output is always a
-        #      single ToolMessage and accesses .tool_call_id directly.
-        #      MCP tools (via langchain-mcp-adapters) return a **list** of
-        #      ToolMessages, and some tools return raw str/dict. Both crash.
+        # WHY: Upstream 0.0.35 only handles single-ToolMessage and
+        #      Command outputs. Anything else (list, raw str/dict) is
+        #      logged-and-skipped at agent.py:1231-1236, which means the
+        #      tool result never reaches the client. MCP tools (via
+        #      langchain-mcp-adapters) return a **list** of ToolMessages,
+        #      so MCP tool results disappear without this patch.
+        #      (On <=0.0.33 the same paths crashed with AttributeError.)
         #
         # HOW: We check the output type and handle each shape:
         #      Case 1 — Command: extract ToolMessages from .update
@@ -206,8 +227,9 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
         #      Case 4 — raw str/dict/other: resolve tool_call_id from
         #               event metadata as fallback
         #
-        # REMOVE WHEN: ag-ui merges a fix for
-        #   https://github.com/ag-ui-protocol/ag-ui/issues/1072
+        # REMOVE WHEN: ag-ui handles list/raw outputs by emitting per-
+        #   ToolMessage events instead of silently skipping
+        #   (https://github.com/ag-ui-protocol/ag-ui/issues/1072).
         # =================================================================
         tool_call_output = event["data"]["output"]
 
