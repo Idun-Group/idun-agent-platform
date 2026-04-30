@@ -2,7 +2,7 @@
 
 ## What This Is
 
-`idun_agent_engine` is a Python SDK that wraps agent frameworks (LangGraph, Google ADK, Haystack) into production-ready FastAPI services. Users define their agent and configuration, and the engine handles serving, streaming (AG-UI protocol via CopilotKit), memory, Langgraph checkpointing, observability, guardrails, and MCP tool management.
+`idun_agent_engine` is a Python SDK that wraps agent frameworks (LangGraph, Google ADK, Haystack) into production-ready FastAPI services. Users define their agent and configuration, and the engine handles serving, streaming (AG-UI protocol via `ag-ui-langgraph` and `ag-ui-adk`), memory, Langgraph checkpointing, observability, guardrails, and MCP tool management.
 
 Published to PyPI as `idun-agent-engine`. CLI entry point: `idun`.
 
@@ -196,10 +196,10 @@ All adapters implement `BaseAgent` (generic ABC parameterized by config type).
 
 All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) and `run()` (canonical AG-UI interaction, delegates to framework AG-UI wrapper).
 
-| Adapter | Config Model | Graph Loading | Streaming | CopilotKit |
+| Adapter | Config Model | Graph Loading | Streaming | AG-UI Wrapper |
 |---|---|---|---|---|
-| **LanggraphAgent** | `LangGraphAgentConfig` | `graph_definition` → dynamic import → accepts `StateGraph` (preferred) or `CompiledStateGraph` (extracts `.builder`, recompiles with engine checkpointer/store, logs warning) | Full AG-UI event stream via `astream_events` | `LangGraphAGUIAgent` |
-| **AdkAgent** | `AdkAgentConfig` | `agent` field → dynamic import | Not implemented | `ADKAGUIAgent` |
+| **LanggraphAgent** | `LangGraphAgentConfig` | `graph_definition` → dynamic import → accepts `StateGraph` (preferred) or `CompiledStateGraph` (extracts `.builder`, recompiles with engine checkpointer/store, logs warning) | Full AG-UI event stream via `astream_events` | `ag_ui_langgraph.LangGraphAgent` |
+| **AdkAgent** | `AdkAgentConfig` | `agent` field → dynamic import | Not implemented | `ag_ui_adk.ADKAgent` |
 | **HaystackAgent** | `HaystackAgentConfig` | `component_definition` → dynamic import → `Pipeline` or `Agent` | Not implemented | Not supported |
 
 ### LangGraph: Key Details
@@ -297,7 +297,7 @@ idun init
 
 - `idun_agent_schema` — Shared Pydantic models (local editable dep)
 - `langgraph`, `google-adk`, `haystack-ai` — Agent frameworks
-- `copilotkit`, `ag-ui-core`, `ag-ui-encoder`, `ag-ui-adk` — AG-UI streaming protocol
+- `ag-ui-protocol`, `ag-ui-langgraph`, `ag-ui-adk` — AG-UI streaming protocol. LangGraph and ADK adapters use the base classes from these packages directly; `copilotkit` is no longer a runtime dependency (dropped in WS1 Task 8 after the LangGraph wrapper swap in Task 7).
 - `langchain-mcp-adapters` — MCP client
 - `guardrails-ai` — Guardrails hub
 - `langfuse`, `arize-phoenix`, `opentelemetry-*`, `google-cloud-*` — Observability

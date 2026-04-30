@@ -54,6 +54,8 @@ Once all pages compile, flip `ignoreBuildErrors` back to `false`.
 
 Hand-rolled SSE reader in `lib/agui.ts` — no `@ag-ui/client` dependency. Streams events from `/agent/run`, dispatches them into the chat store, and reconnects on transient failures. Keeps the bundle small.
 
+The chat reducer (`lib/use-chat.ts`) handles both `THINKING_*` and `REASONING_*` event families so the UI works against engines on either side of the `ag-ui-langgraph` 0.0.35 protocol rename.
+
 ## Build
 
 ```bash
