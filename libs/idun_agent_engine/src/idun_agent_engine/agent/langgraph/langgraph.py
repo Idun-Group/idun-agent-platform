@@ -861,7 +861,6 @@ class LanggraphAgent(agent_base.BaseAgent):
             AgentNode,
             EdgeKind,
         )
-        from langgraph.graph.state import CompiledStateGraph
 
         if not isinstance(self._agent_instance, CompiledStateGraph):
             raise NotImplementedError(
@@ -872,7 +871,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         nodes: list[AgentNode] = []
         edges: list[AgentGraphEdge] = []
 
-        for node_id, _ in lg_graph.nodes.items():
+        for node_id in lg_graph.nodes:
             is_root = node_id == "__start__"
             nodes.append(
                 AgentNode(
@@ -886,21 +885,24 @@ class LanggraphAgent(agent_base.BaseAgent):
         for lg_edge in lg_graph.edges:
             # Public attrs: source, target. `conditional` and `data` are documented;
             # if a future LangGraph version renames them, fall back gracefully.
+            data = getattr(lg_edge, "data", None)
             condition: str | None = None
             try:
-                if getattr(lg_edge, "conditional", False):
-                    data = getattr(lg_edge, "data", None)
-                    condition = str(data) if data is not None else None
+                if getattr(lg_edge, "conditional", False) and data is not None:
+                    condition = str(data)
             except Exception:
+                logger.debug(
+                    "Failed to inspect LangGraph edge condition", exc_info=True
+                )
                 condition = None
-            label = getattr(lg_edge, "data", None)
+            label = str(data) if data is not None and not condition else None
             edges.append(
                 AgentGraphEdge(
                     source=f"node:{lg_edge.source}",
                     target=f"node:{lg_edge.target}",
                     kind=EdgeKind.GRAPH_EDGE,
                     condition=condition,
-                    label=str(label) if label is not None and not condition else None,
+                    label=label,
                 )
             )
 
@@ -916,8 +918,6 @@ class LanggraphAgent(agent_base.BaseAgent):
 
     def draw_mermaid(self) -> str:
         """Delegate to LangGraph's native draw_mermaid for polish/parity."""
-        from langgraph.graph.state import CompiledStateGraph
-
         if not isinstance(self._agent_instance, CompiledStateGraph):
             raise NotImplementedError(
                 "LangGraph mermaid rendering requires a CompiledStateGraph"
@@ -926,8 +926,6 @@ class LanggraphAgent(agent_base.BaseAgent):
 
     def draw_ascii(self) -> str:
         """Delegate to LangGraph's native draw_ascii (grandalf-backed)."""
-        from langgraph.graph.state import CompiledStateGraph
-
         if not isinstance(self._agent_instance, CompiledStateGraph):
             raise NotImplementedError(
                 "LangGraph ascii rendering requires a CompiledStateGraph"
