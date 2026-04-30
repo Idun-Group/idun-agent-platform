@@ -161,6 +161,7 @@ def create_app(
         from idun_agent_schema.engine.integrations import IntegrationProvider
 
         from ..integrations.discord.handler import router as discord_router
+        from ..integrations.teams.handler import router as teams_router
         from ..integrations.whatsapp.handler import router as whatsapp_router
 
         for integration in validated_config.integrations:
@@ -176,6 +177,12 @@ def create_app(
                         discord_router,
                         prefix="/integrations/discord",
                         tags=["Discord"],
+                    )
+                case IntegrationProvider.TEAMS if integration.enabled:
+                    app.include_router(
+                        teams_router,
+                        prefix="/integrations/teams",
+                        tags=["Teams"],
                     )
                 case _:
                     pass
