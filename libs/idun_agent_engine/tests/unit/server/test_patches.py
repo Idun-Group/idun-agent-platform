@@ -72,9 +72,9 @@ def _make_patched_agent_stub() -> Any:
     agent = SimpleNamespace()
     agent.active_run = {
         "id": "run-id-1",
+        # has_function_streaming=False forces start/args/end + result emission
+        # (rather than result-only), which is what the patch is asserting.
         "has_function_streaming": False,
-        "model_made_tool_call": True,
-        "state_reliable": False,
     }
     # Identity dispatch so we can inspect the events emitted directly.
     agent._dispatch_event = lambda evt: evt
@@ -123,6 +123,15 @@ async def test_on_tool_end_list_output_emits_per_tool_message_events():
     assert len(result_events) == 2
     assert {e.tool_call_id for e in result_events} == {"tc-1", "tc-2"}
 
+    # Regression-proof against a result-only emission: with
+    # has_function_streaming=False the patch must also emit the
+    # TOOL_CALL_START / TOOL_CALL_END pair per ToolMessage.
+    start_events = [e for e in events if e.type == EventType.TOOL_CALL_START]
+    end_events = [e for e in events if e.type == EventType.TOOL_CALL_END]
+    assert len(start_events) == 2
+    assert len(end_events) == 2
+    assert {e.tool_call_id for e in start_events} == {"tc-1", "tc-2"}
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio
@@ -156,6 +165,18 @@ async def test_on_tool_end_raw_dict_output_resolves_tool_call_id_from_metadata()
     ]
     assert len(result_events) == 1
     assert result_events[0].tool_call_id == "tc-from-meta"
+
+    # Regression-proof against a result-only emission: with
+    # has_function_streaming=False the patch must also emit the
+    # TOOL_CALL_START / TOOL_CALL_END pair around the single result.
+    start_events = [
+        e for e in events if getattr(e, "type", None) == EventType.TOOL_CALL_START
+    ]
+    end_events = [
+        e for e in events if getattr(e, "type", None) == EventType.TOOL_CALL_END
+    ]
+    assert len(start_events) == 1
+    assert len(end_events) == 1
 
 
 @pytest.mark.unit
