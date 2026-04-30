@@ -38,23 +38,6 @@ def test_apply_handle_single_event_patch_is_idempotent():
     )
 
 
-@pytest.mark.unit
-def test_apply_prepare_stream_patch_is_idempotent():
-    """Applying the prepare_stream patch twice must not wrap the wrapper."""
-    from ag_ui_langgraph.agent import LangGraphAgent
-
-    from idun_agent_engine.server import patches
-    from idun_agent_engine.server.patches import apply_prepare_stream_patch
-
-    apply_prepare_stream_patch()
-    original_after_first = patches._ORIGINAL_PREPARE_STREAM
-
-    apply_prepare_stream_patch()
-
-    assert patches._ORIGINAL_PREPARE_STREAM is original_after_first
-    assert patches._ORIGINAL_PREPARE_STREAM is not LangGraphAgent.prepare_stream
-
-
 # ---------------------------------------------------------------------------
 # Behavioral tests for _handle_single_event patch
 # ---------------------------------------------------------------------------

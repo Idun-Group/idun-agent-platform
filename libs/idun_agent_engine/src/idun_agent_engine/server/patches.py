@@ -10,8 +10,6 @@ HOW TO VERIFY REMOVAL IS SAFE
 3. Trigger a tool call and confirm the stream completes without errors.
 4. For the Gemini patch: send a simple chat message and confirm TEXT_MESSAGE_*
    events appear in the stream (not just RAW events).
-5. For the prepare_stream patch: send 2+ messages in the same thread and confirm
-   the second message streams without ``ValueError: Message ID not found``.
 
 PATCHES
 -------
@@ -56,20 +54,16 @@ PATCHES
         temporarily strip ``finish_reason`` from response_metadata before
         delegating to the original handler, then restore it.
 
-2. ``apply_prepare_stream_patch``
-   Fixes false-positive "regenerate" detection in ``prepare_stream``.
-
-   - Upstream bug: ``prepare_stream`` decides a request is a "regenerate"
-     (time-travel) whenever the checkpoint has more messages than the client
-     sent. It then looks up the client's last message ID in the checkpoint
-     history. When IDs don't match (client sends only new messages, or uses
-     ephemeral IDs like ``"preview"``), ``get_checkpoint_before_message``
-     raises ``ValueError("Message ID not found in history")``.
-   - Error: ``ValueError: Message ID not found in history``
-   - Symptom: the 2nd+ message in a thread crashes the stream with a 500.
-   - Based on: ag-ui-langgraph v0.0.25
-   - Fix: wrap the ``prepare_regenerate_stream`` call in a try/except. On
-     ``ValueError``, fall through to the normal (non-regenerate) stream path.
+REMOVED PATCHES
+---------------
+- ``apply_prepare_stream_patch`` (removed 2026-04-30 with bump to
+  ag-ui-langgraph 0.0.35). Upstream ``prepare_stream`` now computes
+  ``is_continuation`` from the intersection of incoming non-ToolMessage IDs
+  with checkpoint IDs and additionally guards the
+  ``prepare_regenerate_stream`` call behind ``last_user_id in checkpoint_ids``
+  (see ``ag_ui_langgraph/agent.py`` lines 460-492 on 0.0.35), so the
+  false-positive ``ValueError("Message ID not found in history")`` the patch
+  defended against can no longer fire from this path.
 """
 
 from __future__ import annotations
@@ -376,210 +370,6 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
 
 
 # ---------------------------------------------------------------------------
-# Patch 2 — prepare_stream: false-positive regenerate detection
-# ---------------------------------------------------------------------------
-
-_ORIGINAL_PREPARE_STREAM = None
-
-
-def apply_prepare_stream_patch() -> None:  # noqa: C901
-    """Monkey-patch ``LangGraphAgent.prepare_stream``.
-
-    Fixes false-positive "regenerate" detection that crashes multi-turn
-    conversations with ``ValueError: Message ID not found in history``.
-
-    The upstream ``prepare_stream`` compares checkpoint message count to
-    the client's non-system message count.  When the checkpoint has more
-    (which happens on the 2nd+ message because it includes AI responses),
-    it enters the regenerate path and tries to find the client's message
-    ID in the checkpoint history.  If the IDs don't match (client sends
-    only new messages, or uses ephemeral IDs), the lookup raises.
-
-    The fix wraps the ``prepare_regenerate_stream`` call in a try/except.
-    On ``ValueError`` the method falls through to the normal stream path.
-
-    WHEN TO REMOVE
-    --------------
-    When ag-ui-langgraph handles message-ID mismatches gracefully in
-    ``prepare_stream`` or ``get_checkpoint_before_message``.
-    Based on ag-ui-langgraph v0.0.25.
-    """
-    global _ORIGINAL_PREPARE_STREAM
-
-    if _ORIGINAL_PREPARE_STREAM is not None:
-        return
-
-    try:
-        from ag_ui_langgraph.agent import LangGraphAgent
-    except ImportError:
-        logger.debug("ag_ui_langgraph not installed — skipping prepare_stream patch")
-        return
-
-    _ORIGINAL_PREPARE_STREAM = LangGraphAgent.prepare_stream
-
-    async def _patched_prepare_stream(self, input, agent_state, config):
-        """Patched ``prepare_stream`` — catches false-positive regenerate.
-
-        Identical to the original except the ``prepare_regenerate_stream``
-        call is wrapped in try/except ValueError.  When the message ID is
-        not found in checkpoint history the method falls through to the
-        normal (non-regenerate) stream path instead of crashing.
-        """
-        from ag_ui.core import (
-            CustomEvent,
-            EventType,
-            RunFinishedEvent,
-            RunStartedEvent,
-        )
-        from ag_ui_langgraph.agent import dump_json_safe
-        from ag_ui_langgraph.types import LangGraphEventTypes
-        from ag_ui_langgraph.utils import (
-            agui_messages_to_langchain,
-            get_stream_payload_input,
-        )
-        from langchain_core.messages import HumanMessage, SystemMessage
-        from langgraph.types import Command
-
-        state_input = input.state or {}
-        messages = input.messages or []
-        forwarded_props = input.forwarded_props or {}
-        thread_id = input.thread_id
-
-        state_input["messages"] = agent_state.values.get("messages", [])
-        self.active_run["current_graph_state"] = agent_state.values.copy()
-        langchain_messages = agui_messages_to_langchain(messages)
-        state = self.langgraph_default_merge_state(
-            state_input, langchain_messages, input
-        )
-        self.active_run["current_graph_state"].update(state)
-        config["configurable"]["thread_id"] = thread_id
-        interrupts = (
-            agent_state.tasks[0].interrupts
-            if agent_state.tasks and len(agent_state.tasks) > 0
-            else []
-        )
-        has_active_interrupts = len(interrupts) > 0
-        resume_input = forwarded_props.get("command", {}).get("resume", None)
-
-        self.active_run["schema_keys"] = self.get_schema_keys(config)
-
-        non_system_messages = [
-            msg for msg in langchain_messages if not isinstance(msg, SystemMessage)
-        ]
-        if len(agent_state.values.get("messages", [])) > len(non_system_messages):
-            last_user_message = None
-            for i in range(len(langchain_messages) - 1, -1, -1):
-                if isinstance(langchain_messages[i], HumanMessage):
-                    last_user_message = langchain_messages[i]
-                    break
-
-            if last_user_message:
-                # ---- BEGIN IDUN FIX ----
-                # Wrap in try/except: when the client's message ID doesn't
-                # exist in the checkpoint history this is NOT a real
-                # regenerate request — fall through to the normal path.
-                try:
-                    result = await self.prepare_regenerate_stream(
-                        input=input,
-                        message_checkpoint=last_user_message,
-                        config=config,
-                    )
-                    if result is not None:
-                        return result
-                except ValueError:
-                    logger.warning(
-                        "[idun patch] Message ID %s not found in checkpoint "
-                        "history — treating as new message (not regenerate)",
-                        last_user_message.id,
-                    )
-                # ---- END IDUN FIX ----
-
-        events_to_dispatch = []
-        if has_active_interrupts and not resume_input:
-            events_to_dispatch.append(
-                RunStartedEvent(
-                    type=EventType.RUN_STARTED,
-                    thread_id=thread_id,
-                    run_id=self.active_run["id"],
-                )
-            )
-
-            for interrupt in interrupts:
-                events_to_dispatch.append(
-                    CustomEvent(
-                        type=EventType.CUSTOM,
-                        name=LangGraphEventTypes.OnInterrupt.value,
-                        value=dump_json_safe(interrupt.value),
-                        raw_event=interrupt,
-                    )
-                )
-
-            events_to_dispatch.append(
-                RunFinishedEvent(
-                    type=EventType.RUN_FINISHED,
-                    thread_id=thread_id,
-                    run_id=self.active_run["id"],
-                )
-            )
-            return {
-                "stream": None,
-                "state": None,
-                "config": None,
-                "events_to_dispatch": events_to_dispatch,
-            }
-
-        if self.active_run["mode"] == "continue":
-            await self.graph.aupdate_state(
-                config, state, as_node=self.active_run.get("node_name")
-            )
-
-        if resume_input:
-            if isinstance(resume_input, str):
-                try:
-                    resume_input = json.loads(resume_input)
-                except json.JSONDecodeError:
-                    pass
-            stream_input = Command(resume=resume_input)
-        else:
-            payload_input = get_stream_payload_input(
-                mode=self.active_run["mode"],
-                state=state,
-                schema_keys=self.active_run["schema_keys"],
-            )
-            stream_input = (
-                {**forwarded_props, **payload_input} if payload_input else None
-            )
-
-        subgraphs_stream_enabled = (
-            input.forwarded_props.get("stream_subgraphs")
-            if input.forwarded_props
-            else False
-        )
-
-        kwargs = self.get_stream_kwargs(
-            input=stream_input,
-            config=config,
-            subgraphs=bool(subgraphs_stream_enabled),
-            version="v2",
-        )
-
-        stream = self.graph.astream_events(**kwargs)
-
-        return {
-            "stream": stream,
-            "state": state,
-            "config": config,
-        }
-
-    LangGraphAgent.prepare_stream = _patched_prepare_stream
-
-    logger.info(
-        "[idun patch] applied prepare_stream patch: "
-        "false-positive regenerate detection (Message ID not found)"
-    )
-
-
-# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -592,7 +382,5 @@ def apply_all() -> None:
     2. Remove its call below.
     3. Test with an MCP-tool agent via /agent/copilotkit/stream.
     4. Test with a Gemini agent — confirm TEXT_MESSAGE_* events appear.
-    5. Test multi-turn conversations — confirm 2nd+ messages stream OK.
     """
     apply_handle_single_event_patch()
-    apply_prepare_stream_patch()
