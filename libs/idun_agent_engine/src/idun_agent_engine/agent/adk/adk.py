@@ -101,6 +101,21 @@ def _events_to_messages(events: list[Any]) -> list[SessionMessage]:
     return msgs
 
 
+def _describe_mcp_params(params: object) -> str | None:
+    """Best-effort label for an MCPToolset connection params object."""
+    if params is None:
+        return None
+    cmd = getattr(params, "command", None)
+    args = getattr(params, "args", None)
+    if cmd is not None:
+        joined = " ".join(args or [])
+        return f"stdio: {cmd} {joined}".strip()
+    url = getattr(params, "url", None)
+    if url is not None:
+        return f"http: {url}"
+    return type(params).__name__
+
+
 class AdkAgent(agent_base.BaseAgent):
     """ADK agent adapter implementing the BaseAgent protocol."""
 
@@ -412,20 +427,6 @@ class AdkAgent(agent_base.BaseAgent):
             memory_service=self._memory_service,
         )
 
-    def _describe_mcp_params(self, params: object) -> str | None:
-        """Best-effort label for an MCPToolset connection params object."""
-        if params is None:
-            return None
-        cmd = getattr(params, "command", None)
-        args = getattr(params, "args", None)
-        if cmd is not None:
-            joined = " ".join(args or [])
-            return f"stdio: {cmd} {joined}".strip()
-        url = getattr(params, "url", None)
-        if url is not None:
-            return f"http: {url}"
-        return type(params).__name__
-
     def _extract_text_from_event(self, event: Event) -> str | None:
         if not event.content or not event.content.parts:
             return None
@@ -604,7 +605,7 @@ class AdkAgent(agent_base.BaseAgent):
                     if cls is not None and isinstance(tool, cls):
                         return (
                             ToolKind.MCP,
-                            self._describe_mcp_params(
+                            _describe_mcp_params(
                                 getattr(tool, "connection_params", None)
                             ),
                         )
