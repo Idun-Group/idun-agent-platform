@@ -61,7 +61,13 @@ import {
   api,
 } from "@/lib/api";
 
-const PROVIDERS = ["SLACK", "WHATSAPP", "DISCORD", "GOOGLE_CHAT"] as const;
+const PROVIDERS = [
+  "SLACK",
+  "WHATSAPP",
+  "DISCORD",
+  "GOOGLE_CHAT",
+  "TEAMS",
+] as const;
 type Provider = (typeof PROVIDERS)[number];
 
 const PROVIDER_META: Record<Provider, { label: string; summary: string }> = {
@@ -80,6 +86,10 @@ const PROVIDER_META: Record<Provider, { label: string; summary: string }> = {
   GOOGLE_CHAT: {
     label: "Google Chat",
     summary: "Bridge Google Chat spaces with the agent.",
+  },
+  TEAMS: {
+    label: "Microsoft Teams",
+    summary: "Connect a Bot Framework app to relay Teams messages.",
   },
 };
 
@@ -119,6 +129,10 @@ const formSchema = z.object({
   service_account_credentials_json: z.string().optional().default(""),
   project_number: z.string().optional().default(""),
   local_mode: z.boolean().optional().default(false),
+  // Teams
+  app_id: z.string().optional().default(""),
+  app_password: z.string().optional().default(""),
+  app_tenant_id: z.string().optional().default(""),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -144,6 +158,9 @@ function emptyForm(): FormValues {
     service_account_credentials_json: "",
     project_number: "",
     local_mode: false,
+    app_id: "",
+    app_password: "",
+    app_tenant_id: "",
   };
 }
 
@@ -181,6 +198,12 @@ function configToValues(
         str(config.projectNumber) || str(config.project_number);
       base.local_mode = bool(config.localMode ?? config.local_mode, false);
       break;
+    case "TEAMS":
+      base.app_id = str(config.appId) || str(config.app_id);
+      base.app_password = str(config.appPassword) || str(config.app_password);
+      base.app_tenant_id =
+        str(config.appTenantId) || str(config.app_tenant_id);
+      break;
   }
   return base;
 }
@@ -211,6 +234,12 @@ function valuesToConfig(values: FormValues): Record<string, unknown> {
         service_account_credentials_json: values.service_account_credentials_json,
         project_number: values.project_number,
         local_mode: values.local_mode,
+      };
+    case "TEAMS":
+      return {
+        app_id: values.app_id,
+        app_password: values.app_password,
+        app_tenant_id: values.app_tenant_id,
       };
   }
 }
@@ -293,6 +322,30 @@ function ProviderFields({
           control={control}
           name="guild_id"
           label="Guild ID (optional)"
+        />
+      </>
+    );
+  }
+  if (provider === "TEAMS") {
+    return (
+      <>
+        <TextField
+          control={control}
+          name="app_id"
+          label="App ID"
+          placeholder="Microsoft App ID (Azure AD client ID)"
+        />
+        <SecretField
+          control={control}
+          name="app_password"
+          label="App password"
+          placeholder="Client secret value"
+        />
+        <TextField
+          control={control}
+          name="app_tenant_id"
+          label="App tenant ID"
+          placeholder="Azure AD tenant ID"
         />
       </>
     );
