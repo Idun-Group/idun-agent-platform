@@ -179,11 +179,17 @@ function applyEvent(
       );
       break;
 
-    // — Thinking lifecycle ------------------------------------
+    // — Thinking / Reasoning lifecycle ------------------------
+    // ag-ui-langgraph 0.0.35+ emits REASONING_* events; older
+    // engines emit THINKING_*. Keep both for back-compat.
     case "THINKING_START":
     case "ThinkingStart":
+    case "REASONING_START":
+    case "ReasoningStart":
     case "THINKING_TEXT_MESSAGE_START":
     case "ThinkingTextMessageStart":
+    case "REASONING_TEXT_MESSAGE_START":
+    case "ReasoningTextMessageStart":
       updateLatestAssistant((m) =>
         m.role === "assistant"
           ? { ...m, thinking: [...m.thinking, ""] }
@@ -191,7 +197,9 @@ function applyEvent(
       );
       break;
     case "THINKING_TEXT_MESSAGE_CONTENT":
-    case "ThinkingTextMessageContent": {
+    case "ThinkingTextMessageContent":
+    case "REASONING_TEXT_MESSAGE_CONTENT":
+    case "ReasoningTextMessageContent": {
       const delta = String(e.delta ?? "");
       updateLatestAssistant((m) => {
         if (m.role !== "assistant") return m;
@@ -214,8 +222,12 @@ function applyEvent(
     }
     case "THINKING_TEXT_MESSAGE_END":
     case "ThinkingTextMessageEnd":
+    case "REASONING_TEXT_MESSAGE_END":
+    case "ReasoningTextMessageEnd":
     case "THINKING_END":
     case "ThinkingEnd":
+    case "REASONING_END":
+    case "ReasoningEnd":
       // Close the current thinking buffer; the contents are already
       // committed to state.
       break;

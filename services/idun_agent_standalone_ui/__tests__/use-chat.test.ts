@@ -176,6 +176,51 @@ describe("useChat", () => {
     }
   });
 
+  it("appends REASONING_TEXT_MESSAGE_CONTENT deltas to thoughts", async () => {
+    // ag-ui-langgraph 0.0.35+ renamed the protocol's reasoning-event family
+    // from THINKING_* to REASONING_*. The hook must accept both so the chat
+    // surface keeps working with old engines that still emit THINKING_* and
+    // new engines that emit REASONING_*.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      { type: "REASONING_START" },
+      { type: "REASONING_TEXT_MESSAGE_START" },
+      { type: "REASONING_TEXT_MESSAGE_CONTENT", delta: "I should " },
+      { type: "REASONING_TEXT_MESSAGE_CONTENT", delta: "reason carefully." },
+      { type: "REASONING_TEXT_MESSAGE_END" },
+      { type: "REASONING_END" },
+      { type: "RUN_FINISHED" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-reasoning"));
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    const assistant = result.current.messages.find((m) => m.role === "assistant");
+    if (assistant && assistant.role === "assistant") {
+      expect(assistant.thoughts).toBe("I should reason carefully.");
+      // The legacy `thinking[]` block buffer is also populated so any
+      // remaining block-renderer consumers keep working.
+      // REASONING_START and REASONING_TEXT_MESSAGE_START each open a buffer,
+      // so the trailing buffer holds the joined text.
+      expect(assistant.thinking[assistant.thinking.length - 1]).toBe(
+        "I should reason carefully.",
+      );
+    }
+  });
+
   it("strips <think>...</think> blocks from buffered text", async () => {
     const { runAgent } = await import("@/lib/agui");
     const { useChat } = await import("@/lib/use-chat");
