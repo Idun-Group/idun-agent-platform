@@ -21,6 +21,7 @@ interface MockState {
   createStarter?: () => { status: number; body: unknown };
   createFromDetection?: () => { status: number; body: unknown };
   login?: () => { status: number; body: unknown };
+  graph?: () => { status: number; body: unknown };
 }
 
 async function setupMocks(page: Page, state: MockState) {
@@ -90,6 +91,17 @@ async function setupMocks(page: Page, state: MockState) {
       });
     });
   }
+
+  if (state.graph) {
+    await page.route("**/agent/graph", async (route: Route) => {
+      const r = state.graph!();
+      await route.fulfill({
+        status: r.status,
+        contentType: "application/json",
+        body: JSON.stringify(r.body),
+      });
+    });
+  }
 }
 
 const EMPTY_SCAN = {
@@ -141,12 +153,36 @@ const STARTER_AGENT_RESPONSE = {
   reload: { status: "reloaded", message: "Reloaded." },
 };
 
+const GRAPH_RESPONSE = {
+  format_version: "1",
+  metadata: {
+    framework: "LANGGRAPH",
+    agent_name: "Starter Agent",
+    root_id: "agent:root",
+    warnings: [],
+  },
+  nodes: [
+    {
+      kind: "agent",
+      id: "agent:root",
+      name: "Starter Agent",
+      agent_kind: "llm",
+      is_root: true,
+      description: null,
+      model: null,
+      loop_max_iterations: null,
+    },
+  ],
+  edges: [],
+};
+
 test("EMPTY → user picks LangGraph → confirms → done shows OPENAI_API_KEY", async ({
   page,
 }) => {
   await setupMocks(page, {
     scan: () => EMPTY_SCAN,
     createStarter: () => ({ status: 200, body: STARTER_AGENT_RESPONSE }),
+    graph: () => ({ status: 200, body: GRAPH_RESPONSE }),
   });
   await page.goto("/onboarding");
   await expect(page.getByText(/let's create your first idun agent/i)).toBeVisible();
@@ -156,6 +192,11 @@ test("EMPTY → user picks LangGraph → confirms → done shows OPENAI_API_KEY"
   await page.getByRole("button", { name: /create starter/i }).click();
   await expect(page.getByText(/Starter Agent is ready/i)).toBeVisible();
   await expect(page.getByText("OPENAI_API_KEY")).toBeVisible();
+  // Graph card visible with at least one agent node rendered by ReactFlow
+  await expect(page.getByText("Your agent", { exact: true })).toBeVisible();
+  await expect(page.locator(".react-flow__node").first()).toBeVisible({
+    timeout: 10_000,
+  });
 });
 
 test("ONE_DETECTED → user clicks Use → done shows generic env reminder", async ({
@@ -170,6 +211,7 @@ test("ONE_DETECTED → user clicks Use → done shows generic env reminder", asy
         data: { ...STARTER_AGENT_RESPONSE.data, name: "My Agent" },
       },
     }),
+    graph: () => ({ status: 200, body: GRAPH_RESPONSE }),
   });
   await page.goto("/onboarding");
   await expect(page.getByText(/found your agent/i)).toBeVisible();
@@ -178,6 +220,11 @@ test("ONE_DETECTED → user clicks Use → done shows generic env reminder", asy
   await expect(
     page.getByText(/make sure your agent's environment variables are set/i),
   ).toBeVisible();
+  // Graph card visible with at least one agent node rendered by ReactFlow
+  await expect(page.getByText("Your agent", { exact: true })).toBeVisible();
+  await expect(page.locator(".react-flow__node").first()).toBeVisible({
+    timeout: 10_000,
+  });
 });
 
 test("MANY_DETECTED → user picks the second → confirms → done", async ({
@@ -207,12 +254,18 @@ test("MANY_DETECTED → user picks the second → confirms → done", async ({
         data: { ...STARTER_AGENT_RESPONSE.data, name: "B Agent" },
       },
     }),
+    graph: () => ({ status: 200, body: GRAPH_RESPONSE }),
   });
   await page.goto("/onboarding");
   await expect(page.getByText(/pick your agent/i)).toBeVisible();
   await page.getByLabel(/B Agent/).click();
   await page.getByRole("button", { name: /use selected/i }).click();
   await expect(page.getByText(/B Agent is ready/i)).toBeVisible();
+  // Graph card visible with at least one agent node rendered by ReactFlow
+  await expect(page.getByText("Your agent", { exact: true })).toBeVisible();
+  await expect(page.locator(".react-flow__node").first()).toBeVisible({
+    timeout: 10_000,
+  });
 });
 
 test("ALREADY_CONFIGURED → wizard auto-redirects to /", async ({ page }) => {
@@ -250,6 +303,7 @@ test("Reload failure → error screen shows diagnostic + Retry → second attemp
       }
       return { status: 200, body: STARTER_AGENT_RESPONSE };
     },
+    graph: () => ({ status: 200, body: GRAPH_RESPONSE }),
   });
   await page.goto("/onboarding");
   await page.getByLabel(/langgraph/i).click();
@@ -261,6 +315,11 @@ test("Reload failure → error screen shows diagnostic + Retry → second attemp
   await expect(page.locator("p", { hasText: /edit your.*agent\.py/i })).toBeVisible();
   await page.getByRole("button", { name: /retry/i }).click();
   await expect(page.getByText(/Starter Agent is ready/i)).toBeVisible();
+  // Graph card visible with at least one agent node rendered by ReactFlow
+  await expect(page.getByText("Your agent", { exact: true })).toBeVisible();
+  await expect(page.locator(".react-flow__node").first()).toBeVisible({
+    timeout: 10_000,
+  });
 });
 
 test("Re-scan: EMPTY → user clicks Re-scan → backend returns ONE_DETECTED → screen flips", async ({
