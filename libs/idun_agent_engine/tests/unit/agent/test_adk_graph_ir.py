@@ -96,3 +96,33 @@ async def test_adk_loop_agent_max_iterations() -> None:
     root = next(n for n in ir.nodes if isinstance(n, AgentNode) and n.is_root)
     assert root.loop_max_iterations == 5
     assert any(e.kind == EdgeKind.LOOP_STEP for e in ir.edges)
+
+
+@pytest.mark.asyncio
+async def test_adk_nested_root_with_sequential_subagent() -> None:
+    config = ConfigBuilder.from_dict(_adk_config("mock_nested_root")).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(config)
+    ir = agent.get_graph_ir()
+
+    agent_nodes = [n for n in ir.nodes if isinstance(n, AgentNode)]
+    # nested_root + inner_seq + inner_a + inner_b
+    assert len(agent_nodes) == 4
+    # Root → SequentialAgent uses PARENT_CHILD (root is LLM, not workflow)
+    parent_edges = [e for e in ir.edges if e.kind == EdgeKind.PARENT_CHILD]
+    assert len(parent_edges) == 1
+    # Inner_seq → its 2 children use SEQUENTIAL_STEP
+    seq_edges = [e for e in ir.edges if e.kind == EdgeKind.SEQUENTIAL_STEP]
+    assert len(seq_edges) == 2
+
+
+@pytest.mark.asyncio
+async def test_adk_custom_baseagent_subclass_emits_warning() -> None:
+    config = ConfigBuilder.from_dict(_adk_config("mock_custom_root")).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(config)
+    ir = agent.get_graph_ir()
+
+    root = next(n for n in ir.nodes if isinstance(n, AgentNode) and n.is_root)
+    from idun_agent_schema.engine.graph import AgentKind
+
+    assert root.agent_kind == AgentKind.CUSTOM
+    assert any("custom_root" in w for w in ir.metadata.warnings)

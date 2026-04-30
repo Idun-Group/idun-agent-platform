@@ -81,3 +81,28 @@ mock_loop_agent = LoopAgent(
     sub_agents=[mock_loop_step],
     max_iterations=5,
 )
+
+# Nested: root LlmAgent with a SequentialAgent sub-agent + native tool
+mock_nested_inner_a = LlmAgent(
+    name="inner_a", model="gemini-2.5-flash", instruction="ia"
+)
+mock_nested_inner_b = LlmAgent(
+    name="inner_b", model="gemini-2.5-flash", instruction="ib"
+)
+mock_nested_seq = SequentialAgent(
+    name="inner_seq",
+    sub_agents=[mock_nested_inner_a, mock_nested_inner_b],
+)
+mock_nested_root = LlmAgent(
+    name="nested_root",
+    model="gemini-2.5-flash",
+    instruction="root",
+    tools=[_native_func],
+    sub_agents=[mock_nested_seq],
+)
+
+# Custom subclass — reuse MockADKAgent already defined above.
+mock_custom_root = MockADKAgent(
+    name="custom_root",
+    description="Custom subclass for graph IR test",
+)
