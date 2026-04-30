@@ -7,7 +7,7 @@ from typing import Annotated, Any
 from ag_ui.core.types import RunAgentInput
 from ag_ui.encoder import EventEncoder
 from ag_ui_adk import ADKAgent as ADKAGUIAgent
-from copilotkit import LangGraphAGUIAgent
+from ag_ui_langgraph import LangGraphAgent
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
@@ -308,7 +308,7 @@ async def copilotkit_stream(
     input_data: RunAgentInput,
     request: Request,
     copilotkit_agent: Annotated[
-        LangGraphAGUIAgent | ADKAGUIAgent, Depends(get_copilotkit_agent)
+        LangGraphAgent | ADKAGUIAgent, Depends(get_copilotkit_agent)
     ],
     _user: Annotated[dict | None, Depends(get_verified_user)],
 ):
@@ -330,7 +330,7 @@ async def copilotkit_stream(
         _run_guardrails(
             guardrails, text=str(input_data.messages[-1].content), position="input"
         )
-    if isinstance(copilotkit_agent, LangGraphAGUIAgent):
+    if isinstance(copilotkit_agent, LangGraphAgent):
         try:
             # Get the accept header from the request
             accept_header = request.headers.get("accept")

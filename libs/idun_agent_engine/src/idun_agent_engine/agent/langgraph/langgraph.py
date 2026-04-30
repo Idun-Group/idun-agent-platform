@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 import aiosqlite
 from ag_ui.core import events as ag_events
 from ag_ui.core import types as ag_types
-from copilotkit import LangGraphAGUIAgent
+from ag_ui_langgraph import LangGraphAgent
 from idun_agent_schema.engine.langgraph import (
     InMemoryCheckpointConfig,
     LangGraphAgentConfig,
@@ -197,7 +197,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         self._input_schema: Any = None
         self._output_schema: Any = None
         self._agent_instance: Any = None
-        self._copilotkit_agent_instance: LangGraphAGUIAgent | None = None
+        self._copilotkit_agent_instance: LangGraphAgent | None = None
         self._checkpointer: Any = None
         self._store: Any = None
         self._connection: Any = None
@@ -254,7 +254,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         return self._agent_instance
 
     @property
-    def copilotkit_agent_instance(self) -> LangGraphAGUIAgent:
+    def copilotkit_agent_instance(self) -> LangGraphAgent:
         """Return the CopilotKit agent instance.
 
         Raises:
@@ -381,7 +381,7 @@ class LanggraphAgent(agent_base.BaseAgent):
 
             self._agent_instance = graph_builder.compile(**compile_kwargs)
 
-        self._copilotkit_agent_instance = LangGraphAGUIAgent(
+        self._copilotkit_agent_instance = LangGraphAgent(
             name=self._name,
             description="Agent description",  # TODO: add agent description
             graph=self._agent_instance,
