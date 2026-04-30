@@ -65,3 +65,34 @@ async def test_adk_llm_with_native_tool() -> None:
     # one tool_attach edge exists
     attach_edges = [e for e in ir.edges if e.kind == EdgeKind.TOOL_ATTACH]
     assert len(attach_edges) == 1
+
+
+@pytest.mark.asyncio
+async def test_adk_sequential_agent() -> None:
+    config = ConfigBuilder.from_dict(_adk_config("mock_sequential_agent")).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(config)
+    ir = agent.get_graph_ir()
+    seq_edges = sorted(
+        [e for e in ir.edges if e.kind == EdgeKind.SEQUENTIAL_STEP],
+        key=lambda e: e.order or 0,
+    )
+    assert [e.order for e in seq_edges] == [0, 1, 2]
+
+
+@pytest.mark.asyncio
+async def test_adk_parallel_agent() -> None:
+    config = ConfigBuilder.from_dict(_adk_config("mock_parallel_agent")).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(config)
+    ir = agent.get_graph_ir()
+    par_edges = [e for e in ir.edges if e.kind == EdgeKind.PARALLEL_BRANCH]
+    assert len(par_edges) == 2
+
+
+@pytest.mark.asyncio
+async def test_adk_loop_agent_max_iterations() -> None:
+    config = ConfigBuilder.from_dict(_adk_config("mock_loop_agent")).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(config)
+    ir = agent.get_graph_ir()
+    root = next(n for n in ir.nodes if isinstance(n, AgentNode) and n.is_root)
+    assert root.loop_max_iterations == 5
+    assert any(e.kind == EdgeKind.LOOP_STEP for e in ir.edges)

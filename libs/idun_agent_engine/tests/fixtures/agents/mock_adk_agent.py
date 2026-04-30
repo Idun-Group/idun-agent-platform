@@ -1,4 +1,10 @@
-from google.adk.agents import BaseAgent, LlmAgent
+from google.adk.agents import (
+    BaseAgent,
+    LlmAgent,
+    LoopAgent,
+    ParallelAgent,
+    SequentialAgent,
+)
 from google.adk.events import Event
 from google.genai.types import Content, Part
 from pydantic import BaseModel
@@ -49,4 +55,29 @@ mock_llm_with_native_tool = LlmAgent(
     model="gemini-2.5-flash",
     instruction="You are a test agent.",
     tools=[_native_func],
+)
+
+# -----------------------------------------------------------------------------
+# Workflow agent fixtures — sequential, parallel, loop
+# -----------------------------------------------------------------------------
+
+mock_seq_step_a = LlmAgent(name="seq_a", model="gemini-2.5-flash", instruction="A")
+mock_seq_step_b = LlmAgent(name="seq_b", model="gemini-2.5-flash", instruction="B")
+mock_seq_step_c = LlmAgent(name="seq_c", model="gemini-2.5-flash", instruction="C")
+mock_sequential_agent = SequentialAgent(
+    name="seq_root",
+    sub_agents=[mock_seq_step_a, mock_seq_step_b, mock_seq_step_c],
+)
+
+mock_par_a = LlmAgent(name="par_a", model="gemini-2.5-flash", instruction="A")
+mock_par_b = LlmAgent(name="par_b", model="gemini-2.5-flash", instruction="B")
+mock_parallel_agent = ParallelAgent(
+    name="par_root", sub_agents=[mock_par_a, mock_par_b]
+)
+
+mock_loop_step = LlmAgent(name="loop_step", model="gemini-2.5-flash", instruction="L")
+mock_loop_agent = LoopAgent(
+    name="loop_root",
+    sub_agents=[mock_loop_step],
+    max_iterations=5,
 )

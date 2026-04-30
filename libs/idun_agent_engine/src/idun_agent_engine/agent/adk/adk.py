@@ -667,13 +667,20 @@ class AdkAgent(agent_base.BaseAgent):
                     )
                 )
 
-            # Sub-agents — Task 7 will add edge-kind dispatch.
-            # For Task 6 we use PARENT_CHILD for all sub-agent edges.
-            for sub in getattr(agent, "sub_agents", None) or []:
+            # Sub-agents — edge kind picked from the parent's agent_kind.
+            for i, sub in enumerate(getattr(agent, "sub_agents", None) or []):
                 child_id = _walk(sub, is_root=False)
+                edge_kind = {
+                    AgentKind.SEQUENTIAL: EdgeKind.SEQUENTIAL_STEP,
+                    AgentKind.PARALLEL: EdgeKind.PARALLEL_BRANCH,
+                    AgentKind.LOOP: EdgeKind.LOOP_STEP,
+                }.get(kind, EdgeKind.PARENT_CHILD)
                 edges.append(
                     AgentGraphEdge(
-                        source=agent_id, target=child_id, kind=EdgeKind.PARENT_CHILD
+                        source=agent_id,
+                        target=child_id,
+                        kind=edge_kind,
+                        order=i if edge_kind == EdgeKind.SEQUENTIAL_STEP else None,
                     )
                 )
             return agent_id
