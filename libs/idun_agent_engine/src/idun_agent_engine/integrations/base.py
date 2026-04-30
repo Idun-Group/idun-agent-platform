@@ -47,6 +47,10 @@ def _create_integration(config: IntegrationConfig) -> BaseIntegration:
             from .google_chat.integration import GoogleChatIntegration
 
             return GoogleChatIntegration(config)
+        case IntegrationProvider.TEAMS:
+            from .teams.integration import TeamsIntegration
+
+            return TeamsIntegration(config)
         case _:
             raise ValueError(f"Unsupported integration provider: {config.provider}")
 
