@@ -57,9 +57,7 @@ class ToolNode(BaseModel):
     mcp_server_name: str | None = None
 
 
-AgentGraphNode = Annotated[
-    AgentNode | ToolNode, Field(discriminator="kind")
-]
+AgentGraphNode = Annotated[AgentNode | ToolNode, Field(discriminator="kind")]
 
 
 class AgentGraphEdge(BaseModel):

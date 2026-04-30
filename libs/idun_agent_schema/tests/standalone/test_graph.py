@@ -1,5 +1,7 @@
 """Tests for the graph IR Pydantic models."""
 
+from __future__ import annotations
+
 import pytest
 from pydantic import ValidationError
 
@@ -40,19 +42,23 @@ def _sample_graph() -> AgentGraph:
             ),
         ],
         edges=[
-            AgentGraphEdge(source="agent:root", target="tool:search@root", kind=EdgeKind.TOOL_ATTACH),
+            AgentGraphEdge(
+                source="agent:root",
+                target="tool:search@root",
+                kind=EdgeKind.TOOL_ATTACH,
+            ),
         ],
     )
 
 
-def test_agent_graph_round_trips_through_json():
+def test_agent_graph_round_trips_through_json() -> None:
     graph = _sample_graph()
     raw = graph.model_dump_json()
     parsed = AgentGraph.model_validate_json(raw)
     assert parsed == graph
 
 
-def test_node_discriminator_parses_both_variants():
+def test_node_discriminator_parses_both_variants() -> None:
     payload = {
         "format_version": "1",
         "metadata": {
@@ -62,7 +68,13 @@ def test_node_discriminator_parses_both_variants():
             "warnings": [],
         },
         "nodes": [
-            {"kind": "agent", "id": "agent:root", "name": "root", "agent_kind": "llm", "is_root": True},
+            {
+                "kind": "agent",
+                "id": "agent:root",
+                "name": "root",
+                "agent_kind": "llm",
+                "is_root": True,
+            },
             {"kind": "tool", "id": "tool:t@root", "name": "t", "tool_kind": "native"},
         ],
         "edges": [
@@ -74,23 +86,30 @@ def test_node_discriminator_parses_both_variants():
     assert isinstance(parsed.nodes[1], ToolNode)
 
 
-def test_format_version_rejects_unknown():
+def test_format_version_rejects_unknown() -> None:
     payload = {
         "format_version": "2",
         "metadata": {
-            "framework": "ADK", "agent_name": "n", "root_id": "agent:r", "warnings": [],
+            "framework": "ADK",
+            "agent_name": "n",
+            "root_id": "agent:r",
+            "warnings": [],
         },
-        "nodes": [], "edges": [],
+        "nodes": [],
+        "edges": [],
     }
     with pytest.raises(ValidationError):
         AgentGraph.model_validate(payload)
 
 
-def test_format_version_defaults_to_1():
+def test_format_version_defaults_to_1() -> None:
     g = AgentGraph(
         metadata=AgentGraphMetadata(
-            framework=AgentFramework.LANGGRAPH, agent_name="n", root_id="r",
+            framework=AgentFramework.LANGGRAPH,
+            agent_name="n",
+            root_id="r",
         ),
-        nodes=[], edges=[],
+        nodes=[],
+        edges=[],
     )
     assert g.format_version == "1"
