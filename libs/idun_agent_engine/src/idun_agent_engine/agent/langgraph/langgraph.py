@@ -255,14 +255,18 @@ class LanggraphAgent(agent_base.BaseAgent):
 
     @property
     def copilotkit_agent_instance(self) -> LangGraphAgent:
-        """Return the CopilotKit agent instance.
+        """Return the AG-UI LangGraph wrapper.
+
+        Property name is retained for back-compat with the BaseAgent
+        protocol; the underlying class is ``ag_ui_langgraph.LangGraphAgent``
+        as of WS1 Task 7 (was ``copilotkit.LangGraphAGUIAgent`` before).
 
         Raises:
-            RuntimeError: If the CopilotKit agent is not yet initialized.
+            RuntimeError: If the wrapper is not yet initialized.
         """
         if self._copilotkit_agent_instance is None:
             raise RuntimeError(
-                "CopilotKit agent not initialized. Call initialize() first."
+                "AG-UI LangGraph wrapper not initialized. Call initialize() first."
             )
         return self._copilotkit_agent_instance
 
