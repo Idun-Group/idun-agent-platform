@@ -1,0 +1,16 @@
+# WS2 A2UI smoke-test config.
+#
+# Points the engine at the deterministic agent in agent.py. No LLM,
+# no observability, no guardrails — just enough to render a surface.
+
+server:
+  api:
+    port: 8001
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "A2UI Smoke Test"
+    graph_definition: "./agent.py:graph"
+    checkpointer:
+      type: "memory"
