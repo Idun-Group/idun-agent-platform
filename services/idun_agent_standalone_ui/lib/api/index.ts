@@ -13,6 +13,7 @@ import type {
   AgentRead,
   AgentSessionDetail,
   AgentSessionSummary,
+  ConnectionCheckResult,
   DeleteResult,
   GuardrailCreate,
   GuardrailPatch,
@@ -75,6 +76,10 @@ export const api = {
     apiFetch<MutationResponse<SingletonDeleteResult>>(`${ADMIN}/memory`, {
       method: "DELETE",
     }),
+  checkMemoryConnection: () =>
+    apiFetch<ConnectionCheckResult>(`${ADMIN}/memory/check-connection`, {
+      method: "POST",
+    }),
 
   // observability (singleton)
   getObservability: () =>
@@ -88,6 +93,11 @@ export const api = {
     apiFetch<MutationResponse<SingletonDeleteResult>>(
       `${ADMIN}/observability`,
       { method: "DELETE" },
+    ),
+  checkObservabilityConnection: () =>
+    apiFetch<ConnectionCheckResult>(
+      `${ADMIN}/observability/check-connection`,
+      { method: "POST" },
     ),
 
   // mcp servers (collection)

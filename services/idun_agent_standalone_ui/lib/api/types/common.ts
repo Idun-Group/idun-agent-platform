@@ -34,3 +34,9 @@ export type AdminErrorBody = {
     fieldErrors?: FieldError[] | null;
   };
 };
+
+export type ConnectionCheckResult = {
+  ok: boolean;
+  details: Record<string, unknown> | null;
+  error: string | null;
+};

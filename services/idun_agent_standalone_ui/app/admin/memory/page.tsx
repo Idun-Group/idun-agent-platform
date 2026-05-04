@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RotateCcw } from "lucide-react";
+import { CheckCircle2, RotateCcw, ShieldCheck, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import {
 } from "@/components/admin/provider-icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -216,6 +217,15 @@ export default function MemoryPage() {
   const [activeTab, setActiveTab] = useState<MemoryType>(initialValues.type);
   const [yamlOpen, setYamlOpen] = useState(false);
   const [restartRequired, setRestartRequired] = useState(false);
+  const [verifyFeedback, setVerifyFeedback] = useState<"ok" | "fail" | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!verifyFeedback) return;
+    const t = setTimeout(() => setVerifyFeedback(null), 3000);
+    return () => clearTimeout(t);
+  }, [verifyFeedback]);
 
   useEffect(() => {
     setActiveTab(initialValues.type);
@@ -248,6 +258,26 @@ export default function MemoryPage() {
       const message = (detail as { error?: { message?: string } } | undefined)
         ?.error?.message;
       toast.error(message ?? "Save failed");
+    },
+  });
+
+  const verify = useMutation({
+    mutationFn: api.checkMemoryConnection,
+    onSuccess: (result) => {
+      if (result.ok) {
+        setVerifyFeedback("ok");
+      } else {
+        setVerifyFeedback("fail");
+        toast.error(result.error ?? "Connection failed.");
+      }
+    },
+    onError: (e) => {
+      const detail = e instanceof ApiError ? e.detail : undefined;
+      const message =
+        (detail as { error?: { message?: string } } | undefined)?.error
+          ?.message ?? (e instanceof Error ? e.message : "Verify failed");
+      setVerifyFeedback("fail");
+      toast.error(message);
     },
   });
 
@@ -456,7 +486,7 @@ export default function MemoryPage() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="justify-between">
+        <CardFooter className="justify-between gap-2">
           <Button
             variant="outline"
             type="button"
@@ -464,12 +494,43 @@ export default function MemoryPage() {
           >
             Edit YAML
           </Button>
-          <Button
-            onClick={form.handleSubmit(onSheetSave)}
-            disabled={save.isPending}
-          >
-            {save.isPending ? "Saving…" : "Save"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => verify.mutate()}
+              disabled={verify.isPending || !data}
+              title={!data ? "Save first" : "Probe the configured backend"}
+              className={cn(
+                "transition-colors",
+                verifyFeedback === "ok" &&
+                  "border-emerald-500/60 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15 hover:text-emerald-700 dark:text-emerald-300",
+                verifyFeedback === "fail" &&
+                  "border-destructive/60 bg-destructive/15 text-destructive hover:bg-destructive/15 hover:text-destructive",
+              )}
+            >
+              {verifyFeedback === "ok" ? (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              ) : verifyFeedback === "fail" ? (
+                <XCircle className="mr-2 h-4 w-4" />
+              ) : (
+                <ShieldCheck className="mr-2 h-4 w-4" />
+              )}
+              {verify.isPending
+                ? "Verifying…"
+                : verifyFeedback === "ok"
+                  ? "Verified"
+                  : verifyFeedback === "fail"
+                    ? "Failed"
+                    : "Verify"}
+            </Button>
+            <Button
+              onClick={form.handleSubmit(onSheetSave)}
+              disabled={save.isPending}
+            >
+              {save.isPending ? "Saving…" : "Save"}
+            </Button>
+          </div>
         </CardFooter>
       </Card>
 
