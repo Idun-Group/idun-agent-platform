@@ -94,6 +94,7 @@ const providerSchema = z.object({
   host: z.string().optional().default(""),
   public_key: z.string().optional().default(""),
   secret_key: z.string().optional().default(""),
+  run_name: z.string().optional().default(""),
   // LangSmith fields
   api_key: z.string().optional().default(""),
   endpoint: z.string().optional().default(""),
@@ -140,6 +141,7 @@ function emptyValues(): ProviderValues {
     host: "",
     public_key: "",
     secret_key: "",
+    run_name: "",
     api_key: "",
     endpoint: "",
     project_name: "",
@@ -171,6 +173,7 @@ function configToValues(
     base.host = str(config.host);
     base.public_key = str(config.publicKey) || str(config.public_key);
     base.secret_key = str(config.secretKey) || str(config.secret_key);
+    base.run_name = str(config.runName) || str(config.run_name);
   } else if (provider === "PHOENIX") {
     base.host =
       str(config.collectorEndpoint) || str(config.collector_endpoint);
@@ -214,6 +217,7 @@ function valuesToConfig(
       host: values.host,
       public_key: values.public_key,
       secret_key: values.secret_key,
+      ...(values.run_name ? { run_name: values.run_name } : {}),
     };
   }
   if (provider === "PHOENIX") {
@@ -409,61 +413,361 @@ export default function ObservabilityPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="host"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Host</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder={
-                          activeProvider === "LANGFUSE"
-                            ? "https://cloud.langfuse.com"
-                            : activeProvider === "PHOENIX"
-                              ? "https://collector.phoenix.com"
-                              : ""
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="public_key"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {activeProvider === "LANGSMITH" ? "API key" : "Public key"}
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {activeProvider !== "LANGSMITH" && (
-                <FormField
-                  control={form.control}
-                  name="secret_key"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Secret key</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="password"
-                          autoComplete="off"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
+              {activeProvider === "LANGFUSE" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="host"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Host</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="https://cloud.langfuse.com"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="public_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Public key</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="pk-lf-..." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="secret_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Secret key</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            autoComplete="off"
+                            placeholder="sk-lf-..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="run_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Run name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="my-agent-run" />
+                        </FormControl>
+                        <FormDescription>
+                          Optional. Display label for traces in Langfuse.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {activeProvider === "PHOENIX" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="host"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Collector endpoint</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="https://collector.phoenix.com"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          OTLP HTTP endpoint of your Phoenix collector.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="project_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="prod-agent" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {activeProvider === "LANGSMITH" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="api_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>API key</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            autoComplete="off"
+                            placeholder="ls-..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="endpoint"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Endpoint</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="https://api.smith.langchain.com"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Only set when self-hosting LangSmith.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="project_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="prod-chatbot-v1" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {activeProvider === "GCP_LOGGING" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="project_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GCP project ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="my-gcp-project" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="region"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Region</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="us-central1" />
+                        </FormControl>
+                        <FormDescription>Optional.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="log_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Log name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="application-log" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="resource_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Resource type</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="global, gce_instance, cloud_run_revision"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="severity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Severity</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="INFO" />
+                        </FormControl>
+                        <FormDescription>
+                          Minimum level to record. INFO, WARNING, ERROR, CRITICAL.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {activeProvider === "GCP_TRACE" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="project_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GCP project ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="my-gcp-project" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="region"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Region</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="us-central1" />
+                        </FormControl>
+                        <FormDescription>Optional.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="trace_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Trace name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="my-agent" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="sampling_rate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sampling rate</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.05"
+                            min={0}
+                            max={1}
+                            value={
+                              typeof field.value === "number"
+                                ? String(field.value)
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const next = Number(e.target.value);
+                              field.onChange(Number.isFinite(next) ? next : 0);
+                            }}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          0.0 to 1.0. 1.0 traces every request.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="flush_interval"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Flush interval (seconds)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={
+                              typeof field.value === "number"
+                                ? String(field.value)
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const next = Number(e.target.value);
+                              field.onChange(Number.isFinite(next) ? next : 0);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="ignore_urls"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ignore URLs</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="/health, /metrics"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Comma-separated URL paths to exclude from tracing.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
               )}
             </form>
           </Form>
