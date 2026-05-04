@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { MemoryStick } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -86,12 +87,46 @@ export function PostgresIcon(p: IconProps) {
   );
 }
 
-export function SqliteIcon(p: IconProps) {
-  return <RemoteBrandTile domain="sqlite.org" alt="SQLite" {...p} />;
+export function SqliteIcon({ size = 40, className }: IconProps) {
+  const padding = 6;
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-foreground/10 overflow-hidden",
+        className,
+      )}
+      style={{ width: size, height: size }}
+    >
+      <img
+        src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/sqlite/sqlite-original.svg"
+        alt="SQLite"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        style={{ width: size - padding * 2, height: size - padding * 2 }}
+        draggable={false}
+      />
+    </div>
+  );
 }
 
-export function MemoryChipIcon(p: IconProps) {
-  return <RemoteBrandTile domain="python.org" alt="In-memory" {...p} />;
+export function MemoryChipIcon({ size = 40, className }: IconProps) {
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-lg ring-1 ring-foreground/10",
+        "bg-gradient-to-br from-violet-500/20 to-fuchsia-500/15",
+        className,
+      )}
+      style={{ width: size, height: size }}
+    >
+      <MemoryStick
+        className="text-violet-300"
+        size={Math.round(size * 0.55)}
+        strokeWidth={1.8}
+      />
+    </div>
+  );
 }
 
 export function LangfuseIcon(p: IconProps) {
