@@ -2,12 +2,21 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Plus, Settings, Trash2 } from "lucide-react";
+import { Plus, Settings, Trash2 } from "lucide-react";
+import * as React from "react";
 import { useEffect, useState } from "react";
 import { useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { ProviderPicker } from "@/components/admin/ProviderPicker";
+import {
+  DiscordIcon,
+  GoogleChatIcon,
+  MicrosoftTeamsIcon,
+  SlackIcon,
+  WhatsAppIcon,
+} from "@/components/admin/provider-icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,13 +47,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -92,6 +94,28 @@ const PROVIDER_META: Record<Provider, { label: string; summary: string }> = {
     summary: "Connect a Bot Framework app to relay Teams messages.",
   },
 };
+
+function providerIcon(p: Provider, size = 40): React.ReactNode {
+  switch (p) {
+    case "SLACK":
+      return <SlackIcon size={size} />;
+    case "WHATSAPP":
+      return <WhatsAppIcon size={size} />;
+    case "DISCORD":
+      return <DiscordIcon size={size} />;
+    case "GOOGLE_CHAT":
+      return <GoogleChatIcon size={size} />;
+    case "TEAMS":
+      return <MicrosoftTeamsIcon size={size} />;
+  }
+}
+
+const PROVIDER_PICKER_OPTIONS = PROVIDERS.map((p) => ({
+  id: p,
+  label: PROVIDER_META[p].label,
+  description: PROVIDER_META[p].summary,
+  icon: providerIcon(p, 44),
+}));
 
 function isProvider(v: unknown): v is Provider {
   return typeof v === "string" && (PROVIDERS as readonly string[]).includes(v);
@@ -672,24 +696,16 @@ export default function IntegrationsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Provider</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(v) => field.onChange(v as Provider)}
-                        disabled={editingId !== "new"}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Pick a channel" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PROVIDERS.map((p) => (
-                            <SelectItem key={p} value={p}>
-                              {PROVIDER_META[p].label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <fieldset disabled={editingId !== "new"} className="contents">
+                          <ProviderPicker
+                            value={field.value}
+                            onChange={(v) => field.onChange(v as Provider)}
+                            options={PROVIDER_PICKER_OPTIONS}
+                            columns={2}
+                          />
+                        </fieldset>
+                      </FormControl>
                       <FormDescription>
                         Provider cannot change after creation.
                       </FormDescription>
@@ -794,9 +810,7 @@ function IntegrationCard({
     <Card className="flex flex-col">
       <CardHeader className="flex-row items-start justify-between space-y-0 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted shrink-0">
-            <MessageSquare className="h-5 w-5 text-muted-foreground" />
-          </div>
+          {providerIcon(provider, 40)}
           <div className="min-w-0">
             <CardTitle className="text-base truncate">
               {integration.name}
