@@ -85,21 +85,32 @@ class TestGetLangchainToolsResolution:
         registry._client.get_tools.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_skips_disabled_active_registry(self, monkeypatch):
-        """When active registry has no servers (disabled), fall through."""
+    async def test_disabled_active_registry_returns_empty(self, monkeypatch, caplog):
+        """When active registry has no servers (disabled), it is the definitive
+        answer — return [] and skip env/API fallbacks."""
         registry = MCPClientRegistry()  # no configs → disabled
         set_active_registry(registry)
 
         monkeypatch.setenv("IDUN_CONFIG_PATH", "/fake/path.yaml")
+        monkeypatch.setenv("IDUN_AGENT_API_KEY", "should-not-be-used")
+        monkeypatch.setenv("IDUN_MANAGER_HOST", "http://should-not-be-used")
 
         with patch(
             "idun_agent_engine.mcp.helpers.get_langchain_tools_from_file",
             new_callable=AsyncMock,
-            return_value=["from-env"],
-        ) as mock_file:
-            result = await get_langchain_tools()
-            mock_file.assert_called_once_with("/fake/path.yaml")
-            assert result == ["from-env"]
+        ) as mock_file, patch(
+            "idun_agent_engine.mcp.helpers.get_langchain_tools_from_api",
+            new_callable=AsyncMock,
+        ) as mock_api:
+            with caplog.at_level("INFO", logger="idun_agent_engine.mcp.helpers"):
+                result = await get_langchain_tools()
+
+            assert result == []
+            mock_file.assert_not_called()
+            mock_api.assert_not_called()
+            assert any(
+                "no usable servers" in rec.message for rec in caplog.records
+            ), "expected info log when disabled registry returns empty"
 
     @pytest.mark.asyncio
     async def test_falls_back_to_env_var(self, monkeypatch):
@@ -203,20 +214,30 @@ class TestGetAdkToolsResolution:
             result = get_adk_tools()
             assert result == expected_toolsets
 
-    def test_skips_disabled_active_registry(self, monkeypatch):
-        """When active registry has no servers (disabled), fall through."""
+    def test_disabled_active_registry_returns_empty(self, monkeypatch, caplog):
+        """When active registry has no servers (disabled), it is the definitive
+        answer — return [] and skip env/API fallbacks."""
         registry = MCPClientRegistry()  # disabled
         set_active_registry(registry)
 
         monkeypatch.setenv("IDUN_CONFIG_PATH", "/fake/path.yaml")
+        monkeypatch.setenv("IDUN_AGENT_API_KEY", "should-not-be-used")
+        monkeypatch.setenv("IDUN_MANAGER_HOST", "http://should-not-be-used")
 
         with patch(
             "idun_agent_engine.mcp.helpers.get_adk_tools_from_file",
-            return_value=["from-env"],
-        ) as mock_file:
-            result = get_adk_tools()
-            mock_file.assert_called_once_with("/fake/path.yaml")
-            assert result == ["from-env"]
+        ) as mock_file, patch(
+            "idun_agent_engine.mcp.helpers.get_adk_tools_from_api",
+        ) as mock_api:
+            with caplog.at_level("INFO", logger="idun_agent_engine.mcp.helpers"):
+                result = get_adk_tools()
+
+            assert result == []
+            mock_file.assert_not_called()
+            mock_api.assert_not_called()
+            assert any(
+                "no usable servers" in rec.message for rec in caplog.records
+            ), "expected info log when disabled registry returns empty"
 
     def test_falls_back_to_env_var(self, monkeypatch):
         """No active registry, no config_path → uses IDUN_CONFIG_PATH."""
@@ -275,3 +296,32 @@ class TestGetAdkToolsResolution:
         with patch.object(registry, "get_adk_toolsets", return_value=[]):
             result = get_adk_tools()
             assert result == []
+
+
+# ---------------------------------------------------------------------------
+# API fetch timeout (defense against indefinite hangs)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestFetchConfigFromApiTimeout:
+    def test_passes_timeout_to_requests_get(self, monkeypatch):
+        """_fetch_config_from_api must bound the request so it never hangs forever."""
+        from idun_agent_engine.mcp import helpers
+        from idun_agent_engine.mcp.helpers import _fetch_config_from_api
+
+        monkeypatch.setenv("IDUN_AGENT_API_KEY", "k")
+        monkeypatch.setenv("IDUN_MANAGER_HOST", "http://example.invalid")
+
+        fake_response = MagicMock()
+        fake_response.text = "engine_config: {}"
+        fake_response.raise_for_status = MagicMock()
+
+        with patch.object(helpers.requests, "get", return_value=fake_response) as get:
+            _fetch_config_from_api()
+
+        get.assert_called_once()
+        assert "timeout" in get.call_args.kwargs, (
+            "requests.get must be called with a timeout to prevent indefinite hangs"
+        )
+        assert get.call_args.kwargs["timeout"] == helpers._API_FETCH_TIMEOUT_SECONDS
