@@ -7,18 +7,26 @@ from idun_agent_standalone.app import _resolve_ui_dir
 from idun_agent_standalone.core.settings import StandaloneSettings
 
 
-async def test_admin_only_title_when_no_agent_row(standalone):
-    assert standalone.title == "Idun Agent Standalone (admin only)"
+async def test_unconfigured_boot_uses_engine_app_title(standalone):
+    """No-agent boot now goes through ``create_engine_app`` so the wizard
+    can materialize without a process restart. The engine factory sets
+    its own title — there is no separate "admin only" app any more.
+    """
+    assert standalone.title == "Idun Agent Engine Server"
 
 
-async def test_engine_routes_not_mounted_in_admin_only_mode(standalone):
+async def test_agent_routes_return_503_when_unconfigured(standalone):
+    """``/agent/*`` is registered unconditionally; ``get_agent`` gates
+    on ``app.state.agent`` and returns 503 ``agent_not_ready`` until
+    ``configure_app`` runs (i.e. the wizard materializes an agent).
+    """
     transport = ASGITransport(app=standalone)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/agent/capabilities")
-    assert response.status_code in (404, 405)
+    assert response.status_code == 503
 
 
-async def test_admin_api_reachable_in_admin_only_mode(standalone):
+async def test_admin_api_reachable_when_unconfigured(standalone):
     transport = ASGITransport(app=standalone)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/admin/api/v1/auth/me")

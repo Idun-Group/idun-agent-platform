@@ -6,7 +6,8 @@ unit + integration tests. Existing legacy tests are unaffected.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Callable
+import asyncio
+from collections.abc import AsyncIterator, Callable, Iterator
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
@@ -15,11 +16,33 @@ from idun_agent_standalone.infrastructure.db import (
     models,  # noqa: F401  registers ORMs on Base
 )
 from idun_agent_standalone.infrastructure.db.session import Base
+from idun_agent_standalone.services import reload as reload_module
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+
+
+@pytest.fixture(autouse=True)
+def _reset_reload_mutex() -> Iterator[None]:
+    """Replace ``_reload_mutex`` with a fresh ``asyncio.Lock`` per test.
+
+    The reload pipeline uses a module-level ``asyncio.Lock`` that binds
+    to the first event loop that awaits it. Because pytest-asyncio
+    creates a fresh event loop per test (function-scoped), a lock left
+    over from a prior test is bound to a dead loop and refuses to
+    acquire on the new one (``RuntimeError: ... is bound to a different
+    event loop``). In production there is exactly one event loop for the
+    process lifetime, so the module-level singleton is correct there —
+    this hook only matters for the test harness.
+    """
+    original = reload_module._reload_mutex
+    reload_module._reload_mutex = asyncio.Lock()
+    try:
+        yield
+    finally:
+        reload_module._reload_mutex = original
 
 
 @pytest.fixture
