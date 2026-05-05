@@ -1,0 +1,27 @@
+meta {
+  name: agent/run message copy
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:8008/agent/run
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+}
+
+body:json {
+  {
+    "threadId": "thread-02",
+    "runId": "run-002",
+    "state": {},
+    "messages": [{"id":"msg-004","role":"user","content":"OUtput me the full conversation we had"}],
+    "tools": [],
+    "context": [],
+    "forwardedProps": {}
+  }
+}

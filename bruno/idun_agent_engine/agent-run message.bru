@@ -1,0 +1,27 @@
+meta {
+  name: agent/run message
+  type: http
+  seq: 7
+}
+
+post {
+  url: http://localhost:8008/agent/run
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+}
+
+body:json {
+  {
+    "threadId": "thread-02",
+    "runId": "run-002",
+    "state": {},
+    "messages": [{"id":"msg-002","role":"user","content":"Tell me about idunplatform.com"}],
+    "tools": [],
+    "context": [],
+    "forwardedProps": {}
+  }
+}

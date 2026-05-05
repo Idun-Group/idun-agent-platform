@@ -1,0 +1,5 @@
+agent:
+  type: LANGGRAPH
+  config:
+    name: "Gemini Chat Agent"
+    graph_definition: "./agent.py:graph"
