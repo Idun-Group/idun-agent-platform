@@ -15,7 +15,7 @@ class SessionSummary(BaseModel):
 
     id: str = Field(
         ...,
-        description="Session id (thread_id for LangGraph, session_id for ADK).",
+        description="AG-UI thread id used for routing.",
     )
     last_update_time: float | None = Field(default=None, description="Epoch seconds.")
     user_id: str | None = Field(default=None)

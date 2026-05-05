@@ -56,21 +56,43 @@ async def _adk_agent_with_seeded_sessions(
     - ``s1`` for ``u1``: user "Hello" → assistant "Hi there!" → empty tool event
     - ``s2`` for ``u1``: user "Second one" (newer than s1)
     - ``s3`` for ``u2``: user "Other user"
+
+    Each session's ``state`` carries ``_ag_ui_thread_id`` matching its
+    ADK session id. In production ``ADKAGUIAgent`` seeds this key on
+    every session it creates; the adapter's ``list_sessions`` /
+    ``get_session`` use it as the canonical id (mirroring LangGraph
+    where thread_id == session_id natively). The same-string convention
+    keeps the rest of the test assertions readable.
     """
     svc = InMemorySessionService()
 
-    s1 = await svc.create_session(app_name=app_name, user_id="u1", session_id="s1")
+    s1 = await svc.create_session(
+        app_name=app_name,
+        user_id="u1",
+        session_id="s1",
+        state={"_ag_ui_thread_id": "s1"},
+    )
     await svc.append_event(s1, _make_user_event("Hello"))
     await svc.append_event(s1, _make_assistant_event("Hi there!"))
     await svc.append_event(s1, _make_tool_event())
 
     # Sleep briefly so s2's last_update_time is strictly after s1's.
     await asyncio.sleep(0.05)
-    s2 = await svc.create_session(app_name=app_name, user_id="u1", session_id="s2")
+    s2 = await svc.create_session(
+        app_name=app_name,
+        user_id="u1",
+        session_id="s2",
+        state={"_ag_ui_thread_id": "s2"},
+    )
     await svc.append_event(s2, _make_user_event("Second one"))
 
     await asyncio.sleep(0.05)
-    s3 = await svc.create_session(app_name=app_name, user_id="u2", session_id="s3")
+    s3 = await svc.create_session(
+        app_name=app_name,
+        user_id="u2",
+        session_id="s3",
+        state={"_ag_ui_thread_id": "s3"},
+    )
     await svc.append_event(s3, _make_user_event("Other user"))
 
     agent = AdkAgent()
@@ -117,9 +139,10 @@ async def test_adk_list_sessions_returns_sorted_with_preview() -> None:
     assert by_id["s1"].preview == "Hello"
     assert by_id["s2"].preview == "Second one"
 
-    # No _ag_ui_thread_id was set on session.state — thread_id stays None.
-    assert by_id["s1"].thread_id is None
-    assert by_id["s2"].thread_id is None
+    # Fixture seeds _ag_ui_thread_id matching the ADK session id, mirroring
+    # the production ADKAGUIAgent flow.
+    assert by_id["s1"].thread_id == "s1"
+    assert by_id["s2"].thread_id == "s2"
 
 
 @pytest.mark.asyncio
@@ -170,12 +193,17 @@ async def test_adk_get_session_reconstructs_text_messages() -> None:
 
 @pytest.mark.asyncio
 async def test_adk_get_session_propagates_thread_id_from_state() -> None:
-    """``state['_ag_ui_thread_id']`` flows through to ``SessionDetail.thread_id``."""
+    """``state['_ag_ui_thread_id']`` flows through to ``SessionDetail.thread_id``.
+
+    Routes call ``agent.get_session(<id from listing>, ...)``. Since
+    ``list_sessions`` returns the AG-UI thread_id as the canonical id,
+    the lookup arg is the thread_id — NOT ADK's internal session_id.
+    """
     svc = InMemorySessionService()
     await svc.create_session(
         app_name="test-adk",
         user_id="u1",
-        session_id="threaded",
+        session_id="threaded",  # ADK's internal id, opaque to the route layer
         state={"_ag_ui_thread_id": "thread-abc"},
     )
 
@@ -183,7 +211,7 @@ async def test_adk_get_session_propagates_thread_id_from_state() -> None:
     agent._session_service = svc
     agent._name = "test-adk"
 
-    detail = await agent.get_session("threaded", user_id="u1")
+    detail = await agent.get_session("thread-abc", user_id="u1")
     assert detail is not None
     assert detail.thread_id == "thread-abc"
 

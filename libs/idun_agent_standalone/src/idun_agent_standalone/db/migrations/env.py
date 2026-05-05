@@ -12,8 +12,10 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from idun_agent_standalone.db import models  # noqa: F401  (register models)
-from idun_agent_standalone.db.base import Base
+from idun_agent_standalone.infrastructure.db import (
+    models,  # noqa: F401  (register models on Base.metadata)
+)
+from idun_agent_standalone.infrastructure.db.session import Base
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 

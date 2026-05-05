@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from ag_ui.core import BaseEvent
     from ag_ui.core.types import RunAgentInput
     from idun_agent_schema.engine.capabilities import AgentCapabilities
+    from idun_agent_schema.engine.graph import AgentGraph
 
 import aiosqlite
 from ag_ui.core import events as ag_events
@@ -109,29 +110,36 @@ def _lc_messages_to_session(messages: list[Any]) -> list[SessionMessage]:
     return out
 
 
-async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
-    """Best-effort thread enumeration from a LangGraph checkpointer.
+def _row_thread_id(row: Any) -> str | None:
+    """Pull ``thread_id`` from a checkpoint row regardless of row factory.
 
-    Inspects internal storage / table layout per saver type. The public
-    ``BaseCheckpointSaver`` interface has no list-threads primitive
-    (verified via context7); this helper is the documented "internal-API
-    peek" from the agent-sessions spec §5. Stable on
-    ``langgraph-checkpoint`` 0.5–1.x where ``PRIMARY KEY (thread_id,
-    checkpoint_ns, checkpoint_id)`` is fixed.
-
-    Raises ``NotImplementedError`` for custom user-supplied checkpointers
-    so callers can degrade to an empty list with a warning instead of
-    silently returning misleading data.
+    psycopg's ``AsyncPostgresSaver`` uses ``dict_row``; aiosqlite returns
+    tuples. Try column-name access first, fall back to integer index.
     """
-    # InMemorySaver — public attribute ``storage`` is a dict keyed by
-    # ``thread_id`` (verified on installed langgraph-checkpoint 1.x).
+    try:
+        return row["thread_id"]
+    except (KeyError, TypeError, IndexError):
+        pass
+    try:
+        return row[0]
+    except (KeyError, IndexError, TypeError):
+        return None
+
+
+async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
+    """Recent thread ids from a LangGraph checkpointer.
+
+    ``BaseCheckpointSaver`` has no public list-threads primitive
+    (``alist`` returns checkpoint tuples, not distinct threads). Falls
+    back to a ``GROUP BY thread_id`` against the saver's own
+    ``checkpoints`` table for the savers we ship.
+    """
     if isinstance(saver, InMemorySaver):
         storage = getattr(saver, "storage", None)
         if isinstance(storage, dict):
             return list(storage.keys())[:limit]
         return []
 
-    # AsyncSqliteSaver — query the underlying ``aiosqlite`` connection.
     if isinstance(saver, AsyncSqliteSaver):
         await saver.setup()
         async with saver.lock, saver.conn.cursor() as cur:
@@ -142,9 +150,8 @@ async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
                 (limit,),
             )
             rows = await cur.fetchall()
-            return [row[0] for row in rows]
+            return [tid for r in rows if (tid := _row_thread_id(r))]
 
-    # AsyncPostgresSaver — psycopg async cursor via the saver's lock.
     if isinstance(saver, AsyncPostgresSaver):
         async with saver.lock, saver.conn.cursor() as cur:
             await cur.execute(
@@ -154,7 +161,7 @@ async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
                 (limit,),
             )
             rows = await cur.fetchall()
-            return [row[0] for row in rows]
+            return [tid for r in rows if (tid := _row_thread_id(r))]
 
     raise NotImplementedError(
         f"thread enumeration not supported for {type(saver).__name__}"
@@ -843,6 +850,110 @@ class LanggraphAgent(agent_base.BaseAgent):
         self._cached_capabilities = result
         return result
 
+    def get_graph_ir(self) -> AgentGraph:
+        """Return a framework-agnostic graph IR populated from the compiled graph."""
+        from idun_agent_schema.engine.agent_framework import AgentFramework
+        from idun_agent_schema.engine.graph import (
+            AgentGraph,
+            AgentGraphEdge,
+            AgentGraphMetadata,
+            AgentKind,
+            AgentNode,
+            EdgeKind,
+        )
+
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph graph introspection requires a CompiledStateGraph"
+            )
+
+        lg_graph = self._agent_instance.get_graph()
+        nodes: list[AgentNode] = []
+        edges: list[AgentGraphEdge] = []
+
+        # Skip `__end__` so it doesn't render as a "ghost" Custom agent card.
+        # Keep `__start__` — it marks the entry point (is_root=True).
+        # Edges into `__end__` are also dropped to avoid dangling references.
+        skip_nodes = {"__end__"}
+
+        for node_id in lg_graph.nodes:
+            if node_id in skip_nodes:
+                continue
+            is_root = node_id == "__start__"
+            nodes.append(
+                AgentNode(
+                    id=f"node:{node_id}",
+                    name=node_id,
+                    agent_kind=AgentKind.CUSTOM,
+                    is_root=is_root,
+                )
+            )
+
+        for lg_edge in lg_graph.edges:
+            if lg_edge.source in skip_nodes or lg_edge.target in skip_nodes:
+                continue
+            # Public attrs: source, target. `conditional` and `data` are documented;
+            # if a future LangGraph version renames them, fall back gracefully.
+            data = getattr(lg_edge, "data", None)
+            condition: str | None = None
+            try:
+                if getattr(lg_edge, "conditional", False) and data is not None:
+                    condition = str(data)
+            except Exception:
+                logger.debug(
+                    "Failed to inspect LangGraph edge condition", exc_info=True
+                )
+                condition = None
+            label = str(data) if data is not None and not condition else None
+            edges.append(
+                AgentGraphEdge(
+                    source=f"node:{lg_edge.source}",
+                    target=f"node:{lg_edge.target}",
+                    kind=EdgeKind.GRAPH_EDGE,
+                    condition=condition,
+                    label=label,
+                )
+            )
+
+        return AgentGraph(
+            metadata=AgentGraphMetadata(
+                framework=AgentFramework.LANGGRAPH,
+                agent_name=self.name,
+                root_id="node:__start__",
+            ),
+            nodes=nodes,
+            edges=edges,
+        )
+
+    def draw_mermaid(self) -> str:
+        """Delegate to LangGraph's native draw_mermaid for polish/parity."""
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph mermaid rendering requires a CompiledStateGraph"
+            )
+        return self._agent_instance.get_graph().draw_mermaid()
+
+    def draw_ascii(self) -> str:
+        """Render ASCII art.
+
+        Delegates to LangGraph's native grandalf-backed renderer when grandalf
+        is installed; falls back to the framework-agnostic IR renderer otherwise.
+        """
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph ascii rendering requires a CompiledStateGraph"
+            )
+        try:
+            return self._agent_instance.get_graph().draw_ascii()
+        except ImportError:
+            logger.warning(
+                "grandalf not installed; using framework-agnostic ASCII renderer "
+                "for LangGraph agent"
+            )
+            from idun_agent_engine.server.graph.ascii import render_ascii
+
+            return render_ascii(self.get_graph_ir())
+
     def history_capabilities(self) -> HistoryCapabilities:
         """Declare LangGraph session-history support.
 
@@ -910,9 +1021,7 @@ class LanggraphAgent(agent_base.BaseAgent):
         try:
             state = await self._agent_instance.aget_state(config)
         except Exception as exc:  # noqa: BLE001 - upstream raises broad errors
-            logger.warning(
-                "aget_state failed for thread %s: %s", session_id, exc
-            )
+            logger.warning("aget_state failed for thread %s: %s", session_id, exc)
             return None
 
         if state is None:

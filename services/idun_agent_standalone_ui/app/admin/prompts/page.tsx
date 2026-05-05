@@ -2,8 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -102,12 +102,12 @@ function extractVariables(body: string): string[] {
 function latestPerKey(rows: PromptRead[]): PromptRow[] {
   const m = new Map<string, PromptRead>();
   for (const r of rows) {
-    const cur = m.get(r.prompt_key);
-    if (!cur || r.version > cur.version) m.set(r.prompt_key, r);
+    const cur = m.get(r.promptId);
+    if (!cur || r.version > cur.version) m.set(r.promptId, r);
   }
   return Array.from(m.values()).map((r) => ({
     id: r.id,
-    prompt_key: r.prompt_key,
+    prompt_key: r.promptId,
     content: r.content,
     tags: r.tags,
     version: r.version,
@@ -138,11 +138,23 @@ export default function PromptsPage() {
 
   const initialList = useMemo(() => latestPerKey(rows), [rows]);
 
+  const versionsByKey = useMemo(() => {
+    const m = new Map<string, PromptRead[]>();
+    for (const r of rows) {
+      const arr = m.get(r.promptId) ?? [];
+      arr.push(r);
+      m.set(r.promptId, arr);
+    }
+    for (const arr of m.values()) arr.sort((a, b) => b.version - a.version);
+    return m;
+  }, [rows]);
+
   const [working, setWorking] = useState<PromptRow[]>(initialList);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [confirmIdx, setConfirmIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   // Re-sync the working list whenever the query result changes (initial load
   // or post-save invalidate). Only resets when there are no pending edits to
@@ -193,31 +205,29 @@ export default function PromptsPage() {
       form.setError("name", { message: "Name is required" });
       return;
     }
-    // Enforce uniqueness across the local list, ignoring the row being edited.
-    const collision = working.some(
-      (row, idx) => row.prompt_key === trimmedName && idx !== editingIdx,
-    );
-    if (collision) {
-      form.setError("name", {
-        message: "Another prompt already uses this name.",
-      });
-      return;
-    }
     const tags = values.tags
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
     setWorking((prev) => {
       const next = [...prev];
-      const newRow: PromptRow = {
-        id: editingIdx !== null ? prev[editingIdx].id : null,
-        prompt_key: trimmedName,
-        content: values.body,
-        tags,
-        version: editingIdx !== null ? prev[editingIdx].version : undefined,
-      };
-      if (editingIdx !== null) next[editingIdx] = newRow;
-      else next.push(newRow);
+      const targetIdx =
+        editingIdx ?? prev.findIndex((r) => r.prompt_key === trimmedName);
+      if (targetIdx >= 0 && targetIdx < prev.length) {
+        next[targetIdx] = {
+          ...prev[targetIdx],
+          prompt_key: trimmedName,
+          content: values.body,
+          tags,
+        };
+      } else {
+        next.push({
+          id: null,
+          prompt_key: trimmedName,
+          content: values.body,
+          tags,
+        });
+      }
       return next;
     });
     closeSheet();
@@ -255,7 +265,7 @@ export default function PromptsPage() {
         if (row.id === null) {
           tasks.push(
             api.createPrompt({
-              prompt_key: row.prompt_key,
+              promptId: row.prompt_key,
               content: row.content,
               tags: row.tags,
             }),
@@ -270,7 +280,7 @@ export default function PromptsPage() {
         if (rowsEqual(row, original)) continue;
         tasks.push(
           api.createPrompt({
-            prompt_key: row.prompt_key,
+            promptId: row.prompt_key,
             content: row.content,
             tags: row.tags,
           }),
@@ -333,6 +343,7 @@ export default function PromptsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-8" />
                   <TableHead>Name</TableHead>
                   <TableHead>Variables</TableHead>
                   <TableHead>Version</TableHead>
@@ -342,60 +353,145 @@ export default function PromptsPage() {
               <TableBody>
                 {working.map((row, i) => {
                   const vars = extractVariables(row.content);
+                  const allVersions = versionsByKey.get(row.prompt_key) ?? [];
+                  const olderVersions = allVersions.filter(
+                    (v) => v.version !== row.version,
+                  );
+                  const isExpanded = expanded.has(row.prompt_key);
+                  const canExpand = olderVersions.length > 0;
                   return (
-                    <TableRow key={row.id ?? `new-${i}`}>
-                      <TableCell className="font-medium font-mono text-xs">
-                        {row.prompt_key}
-                      </TableCell>
-                      <TableCell>
-                        {vars.length === 0 ? (
-                          <span className="text-xs text-muted-foreground italic">
-                            None
-                          </span>
-                        ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {vars.map((v) => (
-                              <Badge key={v} variant="outline">
-                                {v}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {row.id === null ? (
-                          <Badge
-                            variant="outline"
-                            className="border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                    <Fragment key={row.id ?? `new-${i}`}>
+                      <TableRow>
+                        <TableCell>
+                          {canExpand ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() =>
+                                setExpanded((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(row.prompt_key))
+                                    next.delete(row.prompt_key);
+                                  else next.add(row.prompt_key);
+                                  return next;
+                                })
+                              }
+                              aria-label={
+                                isExpanded
+                                  ? `Collapse ${row.prompt_key} history`
+                                  : `Expand ${row.prompt_key} history`
+                              }
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="font-medium font-mono text-xs">
+                          {row.prompt_key}
+                        </TableCell>
+                        <TableCell>
+                          {vars.length === 0 ? (
+                            <span className="text-xs text-muted-foreground italic">
+                              None
+                            </span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {vars.map((v) => (
+                                <Badge key={v} variant="outline">
+                                  {v}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {row.id === null ? (
+                            <Badge
+                              variant="outline"
+                              className="border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                            >
+                              new
+                            </Badge>
+                          ) : row.version !== undefined ? (
+                            <Badge variant="outline">v{row.version}</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openSheetFor(i)}
+                            aria-label={`Edit ${row.prompt_key}`}
                           >
-                            new
-                          </Badge>
-                        ) : row.version !== undefined ? (
-                          <Badge variant="outline">v{row.version}</Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground" />
-                        )}
-                      </TableCell>
-                      <TableCell className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openSheetFor(i)}
-                          aria-label={`Edit ${row.prompt_key}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setConfirmIdx(i)}
-                          className="text-destructive"
-                          aria-label={`Delete ${row.prompt_key}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setConfirmIdx(i)}
+                            className="text-destructive"
+                            aria-label={`Delete ${row.prompt_key}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded &&
+                        olderVersions.map((v) => {
+                          const oldVars = extractVariables(v.content);
+                          return (
+                            <Fragment key={v.id}>
+                              <TableRow className="bg-muted/30 text-muted-foreground border-b-0">
+                                <TableCell />
+                                <TableCell className="pl-8 font-mono text-xs italic">
+                                  {v.promptId}
+                                </TableCell>
+                                <TableCell>
+                                  {oldVars.length === 0 ? (
+                                    <span className="text-xs italic">None</span>
+                                  ) : (
+                                    <div className="flex flex-wrap gap-1">
+                                      {oldVars.map((vn) => (
+                                        <Badge
+                                          key={vn}
+                                          variant="outline"
+                                          className="opacity-70"
+                                        >
+                                          {vn}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant="outline"
+                                    className="opacity-70"
+                                  >
+                                    v{v.version}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell />
+                              </TableRow>
+                              <TableRow className="bg-muted/30 text-muted-foreground">
+                                <TableCell />
+                                <TableCell colSpan={4} className="pl-8 pb-3">
+                                  <pre className="whitespace-pre-wrap rounded border border-border bg-background/60 p-2 font-mono text-xs">
+                                    {v.content}
+                                  </pre>
+                                </TableCell>
+                              </TableRow>
+                            </Fragment>
+                          );
+                        })}
+                    </Fragment>
                   );
                 })}
               </TableBody>
@@ -521,9 +617,7 @@ export default function PromptsPage() {
             <Button variant="ghost" onClick={closeSheet}>
               Cancel
             </Button>
-            <Button type="submit" form="prompt-form">
-              Save
-            </Button>
+            <Button onClick={form.handleSubmit(onSheetSave)}>Save</Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>

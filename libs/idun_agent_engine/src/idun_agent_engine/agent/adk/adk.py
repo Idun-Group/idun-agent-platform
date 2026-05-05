@@ -46,6 +46,7 @@ from pydantic import BaseModel
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
+from idun_agent_engine.identity import current_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,21 @@ def _events_to_messages(events: list[Any]) -> list[SessionMessage]:
             )
         )
     return msgs
+
+
+def _describe_mcp_params(params: object) -> str | None:
+    """Best-effort label for an MCPToolset connection params object."""
+    if params is None:
+        return None
+    cmd = getattr(params, "command", None)
+    args = getattr(params, "args", None)
+    if cmd is not None:
+        joined = " ".join(args or [])
+        return f"stdio: {cmd} {joined}".strip()
+    url = getattr(params, "url", None)
+    if url is not None:
+        return f"http: {url}"
+    return type(params).__name__
 
 
 class AdkAgent(agent_base.BaseAgent):
@@ -301,11 +317,15 @@ class AdkAgent(agent_base.BaseAgent):
 
         # Initialize CopilotKit/AG-UI Agent Wrapper
         # TODO: Pass session and memory services when supported by AG-UI ADK adapter if needed
+        # Pin user_id via extractor instead of letting ADK fall back to
+        # f"thread_user_{thread_id}" (which makes listing impossible and
+        # lets a thread_id alone resolve a session across users).
         self._copilotkit_agent_instance = ADKAGUIAgent(
             adk_agent=agent,
             session_service=self._session_service,
             memory_service=self._memory_service,
             app_name=self._name,
+            user_id_extractor=lambda _input: current_user_id.get(),
         )
 
         self._infos["status"] = "Initialized"
@@ -532,6 +552,151 @@ class AdkAgent(agent_base.BaseAgent):
         self._cached_capabilities = result
         return result
 
+    def get_graph_ir(self):
+        from google.adk.agents import (
+            LlmAgent,
+            LoopAgent,
+            ParallelAgent,
+            SequentialAgent,
+        )
+        from idun_agent_schema.engine.agent_framework import AgentFramework
+        from idun_agent_schema.engine.graph import (
+            AgentGraph,
+            AgentGraphEdge,
+            AgentGraphMetadata,
+            AgentGraphNode,
+            AgentKind,
+            AgentNode,
+            EdgeKind,
+            ToolKind,
+            ToolNode,
+        )
+
+        if self._agent_instance is None:
+            raise RuntimeError("Agent not initialized. Call initialize() first.")
+
+        root_agent = self._agent_instance.root_agent
+        nodes: list[AgentGraphNode] = []
+        edges: list[AgentGraphEdge] = []
+        warnings: list[str] = []
+
+        def _agent_kind(a: object) -> AgentKind:
+            if isinstance(a, SequentialAgent):
+                return AgentKind.SEQUENTIAL
+            if isinstance(a, ParallelAgent):
+                return AgentKind.PARALLEL
+            if isinstance(a, LoopAgent):
+                return AgentKind.LOOP
+            if isinstance(a, LlmAgent):
+                return AgentKind.LLM
+            return AgentKind.CUSTOM
+
+        def _classify_tool(tool: object) -> tuple[ToolKind, str | None]:
+            # Try MCP toolset detection — both old and new import paths.
+            for mod_path in (
+                "google.adk.tools.mcp_tool.mcp_toolset",
+                "google.adk.tools",
+            ):
+                try:
+                    module = __import__(mod_path, fromlist=["MCPToolset", "McpToolset"])
+                    cls = getattr(module, "MCPToolset", None) or getattr(
+                        module, "McpToolset", None
+                    )
+                    if cls is not None and isinstance(tool, cls):
+                        return (
+                            ToolKind.MCP,
+                            _describe_mcp_params(
+                                getattr(tool, "connection_params", None)
+                            ),
+                        )
+                except Exception:
+                    continue
+            # Built-in detection: anything in google.adk.tools.* not matched as MCP.
+            # User functions live in their own module.
+            module_name = getattr(tool, "__module__", "") or ""
+            if module_name.startswith("google.adk.tools"):
+                return (ToolKind.BUILT_IN, None)
+            return (ToolKind.NATIVE, None)
+
+        def _walk(agent: object, is_root: bool = False) -> str:
+            agent_id = f"agent:{agent.name}"
+            kind = _agent_kind(agent)
+            nodes.append(
+                AgentNode(
+                    id=agent_id,
+                    name=agent.name,
+                    agent_kind=kind,
+                    is_root=is_root,
+                    description=getattr(agent, "description", None),
+                    model=(
+                        getattr(agent, "model", None) if kind == AgentKind.LLM else None
+                    ),
+                    loop_max_iterations=(
+                        getattr(agent, "max_iterations", None)
+                        if kind == AgentKind.LOOP
+                        else None
+                    ),
+                )
+            )
+            if kind == AgentKind.CUSTOM:
+                warnings.append(
+                    f"Agent '{agent.name}' is a custom BaseAgent subclass; "
+                    f"introspected best-effort"
+                )
+
+            for tool in getattr(agent, "tools", None) or []:
+                tool_name = (
+                    getattr(tool, "name", None)
+                    or getattr(tool, "__name__", None)
+                    or repr(tool)[:40]
+                )
+                tool_id = f"tool:{tool_name}@{agent.name}"
+                tool_kind, server_desc = _classify_tool(tool)
+                nodes.append(
+                    ToolNode(
+                        id=tool_id,
+                        name=tool_name,
+                        tool_kind=tool_kind,
+                        description=getattr(tool, "description", None),
+                        mcp_server_name=server_desc,
+                    )
+                )
+                edges.append(
+                    AgentGraphEdge(
+                        source=agent_id, target=tool_id, kind=EdgeKind.TOOL_ATTACH
+                    )
+                )
+
+            # Sub-agents — edge kind picked from the parent's agent_kind.
+            for i, sub in enumerate(getattr(agent, "sub_agents", None) or []):
+                child_id = _walk(sub, is_root=False)
+                edge_kind = {
+                    AgentKind.SEQUENTIAL: EdgeKind.SEQUENTIAL_STEP,
+                    AgentKind.PARALLEL: EdgeKind.PARALLEL_BRANCH,
+                    AgentKind.LOOP: EdgeKind.LOOP_STEP,
+                }.get(kind, EdgeKind.PARENT_CHILD)
+                edges.append(
+                    AgentGraphEdge(
+                        source=agent_id,
+                        target=child_id,
+                        kind=edge_kind,
+                        order=i if edge_kind == EdgeKind.SEQUENTIAL_STEP else None,
+                    )
+                )
+            return agent_id
+
+        root_id = _walk(root_agent, is_root=True)
+        return AgentGraph(
+            metadata=AgentGraphMetadata(
+                framework=AgentFramework.ADK,
+                agent_name=self.name,
+                root_id=root_id,
+                warnings=warnings,
+            ),
+            nodes=nodes,
+            edges=edges,
+        )
+
     def history_capabilities(self) -> HistoryCapabilities:
         """Declare ADK session-history support.
 
@@ -555,7 +720,7 @@ class AdkAgent(agent_base.BaseAgent):
         """
         if not self._session_service:
             return []
-        scope_user = user_id or "anonymous"
+        scope_user = user_id or current_user_id.get()
         res = await self._session_service.list_sessions(
             app_name=self._name,
             user_id=scope_user,
@@ -573,20 +738,21 @@ class AdkAgent(agent_base.BaseAgent):
                 user_id=getattr(s, "user_id", scope_user),
                 session_id=s.id,
             )
-            preview = _first_user_text(full) if full is not None else None
-            thread_id: str | None = None
-            state = getattr(full, "state", None) if full else None
-            if isinstance(state, dict):
-                thread_id_value = state.get("_ag_ui_thread_id")
-                if isinstance(thread_id_value, str):
-                    thread_id = thread_id_value
+            if full is None:
+                continue
+            state = getattr(full, "state", None)
+            thread_id_value = (
+                state.get("_ag_ui_thread_id") if isinstance(state, dict) else None
+            )
+            if not isinstance(thread_id_value, str):
+                continue
             out.append(
                 SessionSummary(
-                    id=s.id,
+                    id=thread_id_value,
                     last_update_time=getattr(s, "last_update_time", None),
                     user_id=getattr(s, "user_id", scope_user),
-                    thread_id=thread_id,
-                    preview=preview,
+                    thread_id=thread_id_value,
+                    preview=_first_user_text(full),
                 )
             )
         return out
@@ -596,34 +762,42 @@ class AdkAgent(agent_base.BaseAgent):
     ) -> SessionDetail | None:
         """Reconstruct a single ADK session as a text-only message thread.
 
-        Returns ``None`` when the session is not found OR when
-        ``user_id`` is provided and does not match the persisted owner
-        (cross-user 404 guard).
+        ``session_id`` is the AG-UI thread_id (what the UI routes by).
+        ADK's own session_id is auto-generated and stored separately;
+        we resolve thread_id to it via the ``_ag_ui_thread_id`` key in
+        session state.
         """
         if not self._session_service:
             return None
-        scope_user = user_id or "anonymous"
-        s = await self._session_service.get_session(
+        scope_user = user_id or current_user_id.get()
+        listing = await self._session_service.list_sessions(
             app_name=self._name,
             user_id=scope_user,
-            session_id=session_id,
         )
-        if s is None:
+        match = next(
+            (
+                row
+                for row in getattr(listing, "sessions", []) or []
+                if isinstance(getattr(row, "state", None), dict)
+                and row.state.get("_ag_ui_thread_id") == session_id
+            ),
+            None,
+        )
+        if match is None:
             return None
-        if user_id and getattr(s, "user_id", None) and s.user_id != user_id:
+        full = await self._session_service.get_session(
+            app_name=self._name,
+            user_id=getattr(match, "user_id", scope_user),
+            session_id=match.id,
+        )
+        if full is None:
             return None
-        state = getattr(s, "state", None)
-        thread_id: str | None = None
-        if isinstance(state, dict):
-            thread_id_value = state.get("_ag_ui_thread_id")
-            if isinstance(thread_id_value, str):
-                thread_id = thread_id_value
         return SessionDetail(
-            id=s.id,
-            last_update_time=getattr(s, "last_update_time", None),
-            user_id=getattr(s, "user_id", None),
-            thread_id=thread_id,
-            messages=_events_to_messages(getattr(s, "events", []) or []),
+            id=session_id,
+            last_update_time=getattr(full, "last_update_time", None),
+            user_id=getattr(full, "user_id", None),
+            thread_id=session_id,
+            messages=_events_to_messages(getattr(full, "events", []) or []),
         )
 
     async def run(self, input_data: RunAgentInput) -> AsyncGenerator[BaseEvent, None]:

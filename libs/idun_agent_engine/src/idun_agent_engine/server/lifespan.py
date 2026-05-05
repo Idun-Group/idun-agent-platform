@@ -23,15 +23,29 @@ PostConfigureCallback = Callable[[FastAPI], Awaitable[None]]
 
 
 def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
-    """Adds the position of the guardrails (input/output) and returns the lift of updated guardrails."""
+    """Build guard instances; one failure does not drop the rest."""
     from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
 
     if not guardrails_obj:
         return []
 
-    return [GHGuard(guard, position="input") for guard in guardrails_obj.input] + [
-        GHGuard(guard, position="output") for guard in guardrails_obj.output
-    ]
+    guards: list[BaseGuardrail] = []
+    for position, configs in (
+        ("input", guardrails_obj.input),
+        ("output", guardrails_obj.output),
+    ):
+        for guard in configs:
+            config_id = getattr(guard, "config_id", "<unknown>")
+            try:
+                guards.append(GHGuard(guard, position=position))
+                logger.info("Guardrail '%s' (%s) initialized", config_id, position)
+            except (Exception, SystemExit):
+                logger.exception(
+                    "Guardrail '%s' (%s) init failed; skipping",
+                    config_id,
+                    position,
+                )
+    return guards
 
 
 async def cleanup_agent(app: FastAPI):
@@ -44,6 +58,45 @@ async def cleanup_agent(app: FastAPI):
             result = close_fn()
             if inspect.isawaitable(result):
                 await result
+
+    integrations = getattr(app.state, "integrations", [])
+    if integrations:
+        logger.info("Shutting down %d integration(s)", len(integrations))
+        for integration in integrations:
+            try:
+                await integration.shutdown()
+                logger.info("Integration %s shut down", type(integration).__name__)
+            except Exception:
+                logger.exception("integration shutdown failed during reload")
+        app.state.integrations = []
+
+    tracked = getattr(app.state, "integration_routes", [])
+    if tracked:
+        logger.info(
+            "cleanup_agent: removing %d integration route(s) paths=%s",
+            len(tracked),
+            [getattr(r, "path", "<unknown>") for r in tracked],
+        )
+        removed = 0
+        for route in tracked:
+            try:
+                app.router.routes.remove(route)
+                removed += 1
+                logger.debug(
+                    "cleanup_agent: removed integration route path=%s",
+                    getattr(route, "path", "<unknown>"),
+                )
+            except ValueError:
+                logger.warning(
+                    "cleanup_agent: tracked integration route already absent path=%s",
+                    getattr(route, "path", "<unknown>"),
+                )
+        logger.info(
+            "cleanup_agent: integration route removal complete removed=%d remaining_routes=%d",
+            removed,
+            len(app.router.routes),
+        )
+    app.state.integration_routes = []
 
 
 async def configure_app(app: FastAPI, engine_config):
@@ -182,10 +235,20 @@ async def lifespan(app: FastAPI):
 
     # Load config and initialize agent on startup
     logger.info("🚀 Server starting up...")
-    if not app.state.engine_config:
-        raise ValueError("Error: No Engine configuration found.")
-
-    await configure_app(app, app.state.engine_config)
+    if app.state.engine_config is not None:
+        await configure_app(app, app.state.engine_config)
+    else:
+        # Unconfigured boot: agent state stays empty until an embedder
+        # calls ``configure_app`` explicitly (typically via the standalone
+        # reload pipeline once a wizard materializes the agent). Set the
+        # markers downstream readers expect so ``getattr(...)`` short
+        # -circuits cleanly.
+        app.state.agent = None
+        if not hasattr(app.state, "post_configure_callbacks"):
+            app.state.post_configure_callbacks = []
+        logger.info(
+            "⏸️  Engine started unconfigured — /agent/* will 503 until configure_app runs"
+        )
 
     try:
         telemetry = get_telemetry()

@@ -12,12 +12,14 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
 from idun_agent_schema.engine.capabilities import AgentCapabilities
+from idun_agent_schema.engine.graph import AgentGraph
 from idun_agent_schema.engine.guardrails import Guardrail
 from idun_agent_schema.engine.sessions import SessionDetail, SessionSummary
 from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
 from idun_agent_engine.agent.observers import RunContext
+from idun_agent_engine.identity import current_user_id
 from idun_agent_engine.server.auth import get_verified_user
 from idun_agent_engine.server.dependencies import (
     get_agent,
@@ -57,9 +59,7 @@ def _guardrail_input_from(input_data: RunAgentInput) -> str | None:
     return None
 
 
-def _run_guardrails(
-    guardrails: list[Guardrail], text: str, position: str
-) -> None:
+def _run_guardrails(guardrails: list[Guardrail], text: str, position: str) -> None:
     """Validate text against guardrails matching the given position."""
     for guard in guardrails:
         if guard.position != position:  # type: ignore[attr-defined]
@@ -149,7 +149,7 @@ async def run(
     input_data: RunAgentInput,
     request: Request,
     agent: Annotated[BaseAgent, Depends(get_agent)],
-    _user: Annotated[dict | None, Depends(get_verified_user)],
+    user: Annotated[dict | None, Depends(get_verified_user)],
 ):
     """Canonical AG-UI interaction endpoint.
 
@@ -157,7 +157,11 @@ async def run(
     """
     last_msg = input_data.messages[-1] if input_data.messages else None
     last_content = str(last_msg.content)[:120] if last_msg else "<empty>"
-    logger.info(f"Run — thread_id={input_data.thread_id}, message={last_content}")
+    resolved_user_id = _resolve_user_id(user) or current_user_id.get()
+    logger.info(
+        f"Run — thread_id={input_data.thread_id}, "
+        f"user_id={resolved_user_id}, message={last_content}"
+    )
 
     guardrails = getattr(request.app.state, "guardrails", [])
     if guardrails:
@@ -169,6 +173,9 @@ async def run(
     encoder = EventEncoder(accept=accept_header or "")
 
     async def event_generator():
+        # Bind for the streaming task so adapter user_id_extractors and
+        # session-listing fallbacks see the same value.
+        token = current_user_id.set(resolved_user_id)
         try:
             async for event in agent.run(input_data):
                 # Registry isolates per-observer exceptions, so dispatch cannot
@@ -213,38 +220,87 @@ async def run(
                 yield encoder.encode(error_event)
             except Exception:
                 yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
+        finally:
+            current_user_id.reset(token)
+            logger.debug(f"Run — reset user_id token thread_id={input_data.thread_id}")
 
     return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
 
 
-@agent_router.get("/graph")
-async def get_graph(
+@agent_router.get("/graph", response_model=AgentGraph)
+async def get_graph_ir(
     agent: Annotated[BaseAgent, Depends(get_agent)],
     _user: Annotated[dict | None, Depends(get_verified_user)],
-):
-    """Return the Mermaid diagram of the compiled LangGraph agent."""
-    from langgraph.graph.state import CompiledStateGraph
-
-    instance = getattr(agent, "_agent_instance", None)
-    if not isinstance(instance, CompiledStateGraph):
+) -> AgentGraph:
+    """Framework-agnostic JSON IR — primary contract for UI rendering."""
+    try:
+        return agent.get_graph_ir()
+    except NotImplementedError as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("Graph IR extraction failed")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Graph visualization is only available for LangGraph agents",
-        )
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Graph introspection failed",
+        ) from e
 
-    return {"graph": instance.get_graph().draw_mermaid()}
+
+@agent_router.get("/graph/mermaid")
+async def get_graph_mermaid(
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
+) -> dict[str, str]:
+    """Mermaid source string."""
+    try:
+        return {"mermaid": agent.draw_mermaid()}
+    except NotImplementedError as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("Mermaid rendering failed")
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Mermaid rendering failed",
+        ) from e
+
+
+@agent_router.get("/graph/ascii")
+async def get_graph_ascii(
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
+) -> dict[str, str]:
+    """ASCII art rendering."""
+    try:
+        return {"ascii": agent.draw_ascii()}
+    except NotImplementedError as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("ASCII rendering failed")
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="ASCII rendering failed",
+        ) from e
 
 
 @agent_router.get("/config")
 async def get_config(request: Request):
-    """Get the current agent configuration."""
-    if not hasattr(request.app.state, "engine_config"):
-        logger.error("Engine config not available on app state")
+    """Get the current agent configuration.
+
+    Returns 503 ``agent_not_ready`` when the engine booted unconfigured
+    and ``configure_app`` hasn't run yet (no agent → no config to expose).
+    """
+    engine_config = getattr(request.app.state, "engine_config", None)
+    if engine_config is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not available"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error": {
+                    "code": "agent_not_ready",
+                    "message": "Agent has not been configured yet.",
+                }
+            },
         )
 
-    config = request.app.state.engine_config.agent
+    config = engine_config.agent
     logger.debug(
         f"Returning config for agent '{config.config.name}' (type={config.type})"
     )
@@ -412,9 +468,7 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         """Invoke the agent with a message and get a response."""
         guardrails = getattr(request.app.state, "guardrails", [])
         if guardrails:
-            _run_guardrails(
-                guardrails, text=input_data.query, position="input"
-            )
+            _run_guardrails(guardrails, text=input_data.query, position="input")
 
         try:
             query = input_data.query[:120]

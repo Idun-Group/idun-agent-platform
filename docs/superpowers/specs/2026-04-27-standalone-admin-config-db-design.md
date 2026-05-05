@@ -135,13 +135,13 @@ Mirror table:
 | `managed_agents` | `standalone_agent` | drop `workspace_id`, `memory_id` FK (memory is singleton on the agent), `sso_id` FK (SSO out of scope) |
 | `managed_memories` | `standalone_memory` | drop `workspace_id`; singleton in standalone |
 | `managed_mcp_servers` | `standalone_mcp_server` | drop `workspace_id`; add `enabled bool` |
-| `managed_observabilities` | `standalone_observability` | drop `workspace_id`; add `enabled bool` |
+| `managed_observabilities` | `standalone_observability` | drop `workspace_id`; **singleton in standalone** (id fixed to `"singleton"`, no `enabled`, no `name`/`slug`); see §"Observability" |
 | `managed_integrations` | `standalone_integration` | drop `workspace_id`; add `enabled bool` |
 | `managed_guardrails` | `standalone_guardrail` | drop `workspace_id`; add `enabled bool`, `position`, `sort_order` (folded from junction) |
 | `managed_prompts` | `standalone_prompt` | drop `workspace_id`; uniqueness becomes `(prompt_id, version)` |
 | `agent_guardrails` (junction) | folded | `position` and `sort_order` move onto `standalone_guardrail` |
 | `agent_mcp_servers` (junction) | folded | replaced by `standalone_mcp_server.enabled` |
-| `agent_observabilities` (junction) | folded | replaced by `standalone_observability.enabled` |
+| `agent_observabilities` (junction) | excluded | observability is a singleton in standalone; the row is the active provider |
 | `agent_integrations` (junction) | folded | replaced by `standalone_integration.enabled` |
 | `agent_prompt_assignments` (junction) | excluded | one agent in standalone; every prompt applies |
 | `workspaces`, `users`, `memberships`, `invitations`, `managed_ssos`, `settings` | excluded | not a multi-tenant control plane |
@@ -640,19 +640,17 @@ enabled standalone_mcp_server rows
 
 Locked:
 
-- Standalone observability matches manager exactly: `name` + `observability`.
-- Inner config is `ObservabilityConfig` V2.
+- Standalone observability is a **singleton**, one provider per install.
+- Inner config is `ObservabilityConfig` V2 — same shape as manager.
+
+Deviation from manager: manager allows multiple observability rows per agent through `managed_observabilities` plus the `agent_observabilities` junction. Standalone has one agent and a single active provider, so the junction is excluded and the row is identified by a fixed `"singleton"` id (no slug, no name, no enabled flag). Absence of the row means no observability is configured.
 
 Conceptual model:
 
 ```text
 StandaloneObservability
-  id: UUID
-  slug: string | null
-  name: string
-  enabled: bool
+  id: "singleton"
   observability: ObservabilityConfig
-  created_at: datetime
   updated_at: datetime
 ```
 
@@ -662,18 +660,21 @@ Schema source:
 
 Rules:
 
-- Observability providers are a collection.
-- Providers may be disabled.
-- Disabled providers are not included in `EngineConfig`.
+- Exactly zero or one observability row at any time.
+- Absence of the row = engine runs without an observability provider.
 - Validation comes from `ObservabilityConfig`.
+- API addressed without `{id}` (consistent with other singletons; see §"Singleton vs collection blocks").
 
 Assembly:
 
 ```text
-enabled standalone_observability rows
-  -> list[ObservabilityConfig]
+standalone_observability row (if present)
+  -> ObservabilityConfig
+  -> [ObservabilityConfig]              # one-element list
   -> EngineConfig.observability
 ```
+
+The one-element list at assembly preserves the engine's existing `EngineConfig.observability: list[ObservabilityConfig]` shape; the standalone runtime materializes the singleton into that list rather than reshaping the engine config.
 
 ### Integrations
 
@@ -1018,6 +1019,7 @@ Locked classification:
 ```text
 agent
 memory
+observability
 runtime_state
 install_meta
 admin_auth
@@ -1031,12 +1033,13 @@ Rules:
 - API addressed without `{id}` (e.g. `GET /admin/api/v1/memory`, `PATCH /admin/api/v1/agent`)
 - DB rows may carry a UUID for future cross-system identity, but the URL never uses it
 
+`observability` was originally classified as a collection (mirroring manager). Standalone scopes the install to one agent and one active provider, so the table folds to a singleton. See §"Observability" for the assembly rule that wraps the row into the engine's existing list shape.
+
 ### Collection blocks
 
 ```text
 guardrails
 mcp_servers
-observability
 integrations
 prompts
 trace_sessions
@@ -1122,20 +1125,18 @@ POST   /admin/api/v1/mcp-servers/{id}/tools         # MVP: discover tools; doubl
 
 PATCH semantics: the inner `mcp_server` config is replaced wholesale, not deep-merged. Clients send the full `MCPServer` object with any unchanged fields preserved. This keeps client logic simple and avoids merge surprises.
 
-### Observability
+### Observability (singleton)
 
-Manager route name: `observability`.
+Manager route name: `observability`. Standalone deviates to no-`{id}` routes; see §"Singleton vs collection blocks" for why.
 
 ```text
 GET    /admin/api/v1/observability
-POST   /admin/api/v1/observability
-GET    /admin/api/v1/observability/{id}
-PATCH  /admin/api/v1/observability/{id}
-DELETE /admin/api/v1/observability/{id}
-POST   /admin/api/v1/observability/{id}/check-connection   # MVP connection check
+PATCH  /admin/api/v1/observability
+DELETE /admin/api/v1/observability
+POST   /admin/api/v1/observability/check-connection        # MVP connection check
 ```
 
-PATCH semantics: shallow replace of the inner `observability` config, same rule as MCP servers.
+`PATCH /observability` is upsert: if no row exists, create it; otherwise update. First write requires the `observability` field; subsequent PATCHes can be partial. PATCH semantics for the inner `observability` config are shallow replace, same rule as MCP servers.
 
 ### Integrations
 

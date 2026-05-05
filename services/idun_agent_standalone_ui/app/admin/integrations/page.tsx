@@ -2,14 +2,21 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Plus, Settings, Trash2 } from "lucide-react";
+import { Plus, Settings, Trash2 } from "lucide-react";
+import * as React from "react";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { JsonEditor } from "@/components/admin/JsonEditor";
-import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
+import { ProviderPicker } from "@/components/admin/ProviderPicker";
+import {
+  DiscordIcon,
+  GoogleChatIcon,
+  MicrosoftTeamsIcon,
+  SlackIcon,
+  WhatsAppIcon,
+} from "@/components/admin/provider-icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,13 +46,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -54,46 +55,446 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { ApiError, type IntegrationRead, api } from "@/lib/api";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  ApiError,
+  type IntegrationRead,
+  type MutationResponse,
+  api,
+} from "@/lib/api";
 
-// ── Catalog ──────────────────────────────────────────────────────────────
+const PROVIDERS = [
+  "SLACK",
+  "WHATSAPP",
+  "DISCORD",
+  "GOOGLE_CHAT",
+  "TEAMS",
+] as const;
+type Provider = (typeof PROVIDERS)[number];
 
-const KINDS = ["whatsapp", "discord"] as const;
-type Kind = (typeof KINDS)[number];
-
-const KIND_META: Record<
-  Kind,
-  { label: string; summary: string }
-> = {
-  whatsapp: {
+const PROVIDER_META: Record<Provider, { label: string; summary: string }> = {
+  SLACK: {
+    label: "Slack",
+    summary: "Receive and send messages from a Slack workspace.",
+  },
+  WHATSAPP: {
     label: "WhatsApp",
     summary: "Receive and send messages from a WhatsApp Business number.",
   },
-  discord: {
+  DISCORD: {
     label: "Discord",
     summary: "Connect a Discord bot to relay messages with the agent.",
   },
+  GOOGLE_CHAT: {
+    label: "Google Chat",
+    summary: "Bridge Google Chat spaces with the agent.",
+  },
+  TEAMS: {
+    label: "Microsoft Teams",
+    summary: "Connect a Bot Framework app to relay Teams messages.",
+  },
 };
 
-function isKnownKind(value: string): value is Kind {
-  return (KINDS as readonly string[]).includes(value);
+function providerIcon(p: Provider, size = 40): React.ReactNode {
+  switch (p) {
+    case "SLACK":
+      return <SlackIcon size={size} />;
+    case "WHATSAPP":
+      return <WhatsAppIcon size={size} />;
+    case "DISCORD":
+      return <DiscordIcon size={size} />;
+    case "GOOGLE_CHAT":
+      return <GoogleChatIcon size={size} />;
+    case "TEAMS":
+      return <MicrosoftTeamsIcon size={size} />;
+  }
 }
 
-// ── Form schema ──────────────────────────────────────────────────────────
+const PROVIDER_PICKER_OPTIONS = PROVIDERS.map((p) => ({
+  id: p,
+  label: PROVIDER_META[p].label,
+  description: PROVIDER_META[p].summary,
+  icon: providerIcon(p, 44),
+}));
 
-const integrationFormSchema = z.object({
-  kind: z.enum(KINDS),
+function isProvider(v: unknown): v is Provider {
+  return typeof v === "string" && (PROVIDERS as readonly string[]).includes(v);
+}
+
+function readProvider(row: IntegrationRead): Provider {
+  const p = (row.integration as { provider?: unknown } | undefined)?.provider;
+  return isProvider(p) ? p : "SLACK";
+}
+
+function readConfig(row: IntegrationRead): Record<string, unknown> {
+  const c = (row.integration as { config?: unknown } | undefined)?.config;
+  return c && typeof c === "object" && !Array.isArray(c)
+    ? (c as Record<string, unknown>)
+    : {};
+}
+
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  provider: z.enum(PROVIDERS),
   enabled: z.boolean(),
-  config: z.record(z.unknown()),
+  // Slack
+  bot_token: z.string().optional().default(""),
+  signing_secret: z.string().optional().default(""),
+  // WhatsApp
+  access_token: z.string().optional().default(""),
+  phone_number_id: z.string().optional().default(""),
+  verify_token: z.string().optional().default(""),
+  api_version: z.string().optional().default("v21.0"),
+  // Discord (bot_token reused)
+  application_id: z.string().optional().default(""),
+  public_key: z.string().optional().default(""),
+  guild_id: z.string().optional().default(""),
+  // Google Chat
+  service_account_credentials_json: z.string().optional().default(""),
+  project_number: z.string().optional().default(""),
+  local_mode: z.boolean().optional().default(false),
+  // Teams
+  app_id: z.string().optional().default(""),
+  app_password: z.string().optional().default(""),
+  app_tenant_id: z.string().optional().default(""),
 });
 
-type IntegrationFormValues = z.infer<typeof integrationFormSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
-function emptyFormValues(): IntegrationFormValues {
-  return { kind: "whatsapp", enabled: false, config: {} };
+const str = (v: unknown) => (typeof v === "string" ? v : "");
+const bool = (v: unknown, fallback = false) =>
+  typeof v === "boolean" ? v : fallback;
+
+function emptyForm(): FormValues {
+  return {
+    name: "",
+    provider: "SLACK",
+    enabled: true,
+    bot_token: "",
+    signing_secret: "",
+    access_token: "",
+    phone_number_id: "",
+    verify_token: "",
+    api_version: "v21.0",
+    application_id: "",
+    public_key: "",
+    guild_id: "",
+    service_account_credentials_json: "",
+    project_number: "",
+    local_mode: false,
+    app_id: "",
+    app_password: "",
+    app_tenant_id: "",
+  };
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────
+function configToValues(
+  provider: Provider,
+  config: Record<string, unknown>,
+): FormValues {
+  const base = emptyForm();
+  base.provider = provider;
+  switch (provider) {
+    case "SLACK":
+      base.bot_token = str(config.botToken) || str(config.bot_token);
+      base.signing_secret = str(config.signingSecret) || str(config.signing_secret);
+      break;
+    case "WHATSAPP":
+      base.access_token = str(config.accessToken) || str(config.access_token);
+      base.phone_number_id =
+        str(config.phoneNumberId) || str(config.phone_number_id);
+      base.verify_token = str(config.verifyToken) || str(config.verify_token);
+      base.api_version =
+        str(config.apiVersion) || str(config.api_version) || "v21.0";
+      break;
+    case "DISCORD":
+      base.bot_token = str(config.botToken) || str(config.bot_token);
+      base.application_id =
+        str(config.applicationId) || str(config.application_id);
+      base.public_key = str(config.publicKey) || str(config.public_key);
+      base.guild_id = str(config.guildId) || str(config.guild_id);
+      break;
+    case "GOOGLE_CHAT":
+      base.service_account_credentials_json =
+        str(config.serviceAccountCredentialsJson) ||
+        str(config.service_account_credentials_json);
+      base.project_number =
+        str(config.projectNumber) || str(config.project_number);
+      base.local_mode = bool(config.localMode ?? config.local_mode, false);
+      break;
+    case "TEAMS":
+      base.app_id = str(config.appId) || str(config.app_id);
+      base.app_password = str(config.appPassword) || str(config.app_password);
+      base.app_tenant_id =
+        str(config.appTenantId) || str(config.app_tenant_id);
+      break;
+  }
+  return base;
+}
+
+function valuesToConfig(values: FormValues): Record<string, unknown> {
+  switch (values.provider) {
+    case "SLACK":
+      return {
+        bot_token: values.bot_token,
+        signing_secret: values.signing_secret,
+      };
+    case "WHATSAPP":
+      return {
+        access_token: values.access_token,
+        phone_number_id: values.phone_number_id,
+        verify_token: values.verify_token,
+        api_version: values.api_version || "v21.0",
+      };
+    case "DISCORD":
+      return {
+        bot_token: values.bot_token,
+        application_id: values.application_id,
+        public_key: values.public_key,
+        ...(values.guild_id ? { guild_id: values.guild_id } : {}),
+      };
+    case "GOOGLE_CHAT":
+      return {
+        service_account_credentials_json: values.service_account_credentials_json,
+        project_number: values.project_number,
+        local_mode: values.local_mode,
+      };
+    case "TEAMS":
+      return {
+        app_id: values.app_id,
+        app_password: values.app_password,
+        app_tenant_id: values.app_tenant_id,
+      };
+  }
+}
+
+function applyMutationToast(resp: MutationResponse<unknown>): void {
+  if (resp.reload.status === "restart_required") toast.warning(resp.reload.message);
+  else if (resp.reload.status === "reload_failed")
+    toast.error(resp.reload.error ?? resp.reload.message);
+  else toast.success(resp.reload.message);
+}
+
+function formatError(e: unknown, fallback: string): string {
+  const detail = e instanceof ApiError ? e.detail : undefined;
+  return (
+    (detail as { error?: { message?: string } } | undefined)?.error?.message ??
+    (e instanceof Error ? e.message : fallback)
+  );
+}
+
+function ProviderFields({
+  control,
+  provider,
+}: {
+  control: Control<FormValues>;
+  provider: Provider;
+}) {
+  if (provider === "SLACK") {
+    return (
+      <>
+        <SecretField control={control} name="bot_token" label="Bot token" placeholder="xoxb-..." />
+        <SecretField
+          control={control}
+          name="signing_secret"
+          label="Signing secret"
+          placeholder="HMAC verification secret"
+        />
+      </>
+    );
+  }
+  if (provider === "WHATSAPP") {
+    return (
+      <>
+        <SecretField
+          control={control}
+          name="access_token"
+          label="Access token"
+          placeholder="Meta Graph API permanent token"
+        />
+        <TextField
+          control={control}
+          name="phone_number_id"
+          label="Phone number ID"
+        />
+        <SecretField
+          control={control}
+          name="verify_token"
+          label="Verify token"
+          placeholder="Used during webhook handshake"
+        />
+        <TextField
+          control={control}
+          name="api_version"
+          label="API version"
+          placeholder="v21.0"
+        />
+      </>
+    );
+  }
+  if (provider === "DISCORD") {
+    return (
+      <>
+        <SecretField control={control} name="bot_token" label="Bot token" />
+        <TextField
+          control={control}
+          name="application_id"
+          label="Application ID"
+        />
+        <TextField control={control} name="public_key" label="Public key" />
+        <TextField
+          control={control}
+          name="guild_id"
+          label="Guild ID (optional)"
+        />
+      </>
+    );
+  }
+  if (provider === "TEAMS") {
+    return (
+      <>
+        <TextField
+          control={control}
+          name="app_id"
+          label="App ID"
+          placeholder="Microsoft App ID (Azure AD client ID)"
+        />
+        <SecretField
+          control={control}
+          name="app_password"
+          label="App password"
+          placeholder="Client secret value"
+        />
+        <TextField
+          control={control}
+          name="app_tenant_id"
+          label="App tenant ID"
+          placeholder="Azure AD tenant ID"
+        />
+      </>
+    );
+  }
+  return (
+    <>
+      <FormField
+        control={control}
+        name="service_account_credentials_json"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Service account credentials JSON</FormLabel>
+            <FormControl>
+              <Textarea
+                {...field}
+                value={field.value ?? ""}
+                rows={8}
+                spellCheck={false}
+                className="font-mono text-xs"
+                placeholder='{"type": "service_account", ...}'
+              />
+            </FormControl>
+            <FormDescription>
+              Pasted full JSON for the service account that calls the Chat API.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <TextField
+        control={control}
+        name="project_number"
+        label="GCP project number"
+      />
+      <FormField
+        control={control}
+        name="local_mode"
+        render={({ field }) => (
+          <FormItem className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/30 p-3">
+            <div className="space-y-0.5">
+              <FormLabel>Local mode</FormLabel>
+              <FormDescription>
+                Skip JWT verification when running against a local emulator.
+              </FormDescription>
+            </div>
+            <FormControl>
+              <Switch
+                checked={Boolean(field.value)}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+    </>
+  );
+}
+
+function TextField({
+  control,
+  name,
+  label,
+  placeholder,
+}: {
+  control: Control<FormValues>;
+  name: keyof FormValues;
+  label: string;
+  placeholder?: string;
+}) {
+  return (
+    <FormField
+      control={control}
+      // @ts-expect-error name is a known string key; RHF's narrow typing isn't worth fighting here
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              value={typeof field.value === "string" ? field.value : ""}
+              placeholder={placeholder}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function SecretField({
+  control,
+  name,
+  label,
+  placeholder,
+}: {
+  control: Control<FormValues>;
+  name: keyof FormValues;
+  label: string;
+  placeholder?: string;
+}) {
+  return (
+    <FormField
+      control={control}
+      // @ts-expect-error name is a known string key; RHF's narrow typing isn't worth fighting here
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              value={typeof field.value === "string" ? field.value : ""}
+              type="password"
+              autoComplete="off"
+              placeholder={placeholder}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
 
 export default function IntegrationsPage() {
   const qc = useQueryClient();
@@ -103,67 +504,71 @@ export default function IntegrationsPage() {
   });
 
   const [sheetOpen, setSheetOpen] = useState(false);
-  /** id of the integration being edited; "new" for create; null when closed. */
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const form = useForm<IntegrationFormValues>({
-    resolver: zodResolver(integrationFormSchema),
-    defaultValues: emptyFormValues(),
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: emptyForm(),
   });
+
+  const watchedProvider = form.watch("provider");
 
   const create = useMutation({
     mutationFn: api.createIntegration,
-    onSuccess: () => {
-      toast.success("Integration created");
+    onSuccess: (resp) => {
+      applyMutationToast(resp);
       qc.invalidateQueries({ queryKey: ["integrations"] });
       closeSheet();
     },
-    onError: (e: unknown) => toast.error(formatError(e, "Create failed")),
+    onError: (e) => toast.error(formatError(e, "Create failed")),
   });
 
   const patch = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<IntegrationRead> }) =>
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof api.patchIntegration>[1] }) =>
       api.patchIntegration(id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["integrations"] }),
-    onError: (e: unknown) => toast.error(formatError(e, "Update failed")),
+    onSuccess: (resp) => {
+      applyMutationToast(resp);
+      qc.invalidateQueries({ queryKey: ["integrations"] });
+    },
+    onError: (e) => toast.error(formatError(e, "Update failed")),
   });
 
   const patchFromSheet = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<IntegrationRead> }) =>
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof api.patchIntegration>[1] }) =>
       api.patchIntegration(id, body),
-    onSuccess: () => {
-      toast.success("Saved");
+    onSuccess: (resp) => {
+      applyMutationToast(resp);
       qc.invalidateQueries({ queryKey: ["integrations"] });
       closeSheet();
     },
-    onError: (e: unknown) => toast.error(formatError(e, "Save failed")),
+    onError: (e) => toast.error(formatError(e, "Save failed")),
   });
 
   const del = useMutation({
     mutationFn: api.deleteIntegration,
-    onSuccess: () => {
-      toast.success("Deleted");
+    onSuccess: (resp) => {
+      applyMutationToast(resp);
       qc.invalidateQueries({ queryKey: ["integrations"] });
       setConfirmId(null);
     },
-    onError: (e: unknown) => toast.error(formatError(e, "Delete failed")),
+    onError: (e) => toast.error(formatError(e, "Delete failed")),
   });
 
   function openSheetForExisting(row: IntegrationRead) {
     setEditingId(row.id);
-    const kind: Kind = isKnownKind(row.kind) ? row.kind : "whatsapp";
-    form.reset({
-      kind,
-      enabled: row.enabled,
-      config: row.config ?? {},
-    });
+    const provider = readProvider(row);
+    const config = readConfig(row);
+    const next = configToValues(provider, config);
+    next.name = row.name;
+    next.enabled = row.enabled;
+    form.reset(next);
     setSheetOpen(true);
   }
 
   function openSheetForNew() {
     setEditingId("new");
-    form.reset(emptyFormValues());
+    form.reset(emptyForm());
     setSheetOpen(true);
   }
 
@@ -172,33 +577,31 @@ export default function IntegrationsPage() {
     setEditingId(null);
   }
 
-  function onSheetSave(values: IntegrationFormValues) {
+  function onSheetSave(values: FormValues) {
+    const integration = {
+      provider: values.provider,
+      enabled: true,
+      config: valuesToConfig(values),
+    };
     if (editingId === "new") {
       create.mutate({
-        kind: values.kind,
-        config: values.config,
+        name: values.name,
         enabled: values.enabled,
+        integration,
       });
     } else if (editingId) {
       patchFromSheet.mutate({
         id: editingId,
-        body: {
-          kind: values.kind,
-          config: values.config,
-          enabled: values.enabled,
-        },
+        body: { name: values.name, enabled: values.enabled, integration },
       });
     }
   }
 
-  // Reset the form whenever the editing target changes (defensive — handled
-  // by openSheetFor* but useful when the sheet rerenders).
   useEffect(() => {
-    if (!sheetOpen) form.reset(emptyFormValues());
+    if (!sheetOpen) form.reset(emptyForm());
   }, [sheetOpen, form]);
 
-  const sheetBusy =
-    create.isPending || patchFromSheet.isPending;
+  const sheetBusy = create.isPending || patchFromSheet.isPending;
   const confirmRow =
     confirmId !== null ? rows.find((r) => r.id === confirmId) : undefined;
 
@@ -248,7 +651,6 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Configure sheet */}
       <Sheet
         open={sheetOpen}
         onOpenChange={(open) => {
@@ -261,9 +663,7 @@ export default function IntegrationsPage() {
         >
           <SheetHeader className="border-b border-border px-6 py-4">
             <SheetTitle>
-              {editingId === "new"
-                ? "Add integration"
-                : "Configure integration"}
+              {editingId === "new" ? "Add integration" : "Configure integration"}
             </SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -275,30 +675,39 @@ export default function IntegrationsPage() {
               >
                 <FormField
                   control={form.control}
-                  name="kind"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Kind</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(v) => field.onChange(v as Kind)}
-                        disabled={editingId !== "new"}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Pick a channel" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {KINDS.map((k) => (
-                            <SelectItem key={k} value={k}>
-                              {KIND_META[k].label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="my-slack" />
+                      </FormControl>
                       <FormDescription>
-                        Channel kind cannot change after creation.
+                        Display name. The slug is derived from this.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="provider"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Provider</FormLabel>
+                      <FormControl>
+                        <fieldset disabled={editingId !== "new"} className="contents">
+                          <ProviderPicker
+                            value={field.value}
+                            onChange={(v) => field.onChange(v as Provider)}
+                            options={PROVIDER_PICKER_OPTIONS}
+                            columns={2}
+                          />
+                        </fieldset>
+                      </FormControl>
+                      <FormDescription>
+                        Provider cannot change after creation.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -327,27 +736,9 @@ export default function IntegrationsPage() {
                   )}
                 />
 
-                <FormField
+                <ProviderFields
                   control={form.control}
-                  name="config"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Configuration (JSON)</FormLabel>
-                      <FormControl>
-                        <JsonEditor
-                          value={field.value}
-                          onChange={(v) =>
-                            field.onChange(v as Record<string, unknown>)
-                          }
-                          rows={14}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Channel-specific credentials and routing options.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  provider={watchedProvider}
                 />
               </form>
             </Form>
@@ -356,14 +747,16 @@ export default function IntegrationsPage() {
             <Button variant="ghost" onClick={closeSheet} disabled={sheetBusy}>
               Cancel
             </Button>
-            <Button type="submit" form="integration-form" disabled={sheetBusy}>
+            <Button
+              onClick={form.handleSubmit(onSheetSave)}
+              disabled={sheetBusy}
+            >
               {sheetBusy ? "Saving…" : "Save"}
             </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
 
-      {/* Delete confirm */}
       <AlertDialog
         open={confirmId !== null}
         onOpenChange={(open) => {
@@ -376,12 +769,7 @@ export default function IntegrationsPage() {
             <AlertDialogDescription>
               {confirmRow && (
                 <>
-                  This removes the{" "}
-                  <strong>
-                    {isKnownKind(confirmRow.kind)
-                      ? KIND_META[confirmRow.kind].label
-                      : confirmRow.kind}
-                  </strong>{" "}
+                  This removes the <strong>{confirmRow.name}</strong>{" "}
                   integration. This cannot be undone.
                 </>
               )}
@@ -403,8 +791,6 @@ export default function IntegrationsPage() {
   );
 }
 
-// ── Card ─────────────────────────────────────────────────────────────────
-
 function IntegrationCard({
   integration,
   onConfigure,
@@ -418,33 +804,29 @@ function IntegrationCard({
   onDelete: () => void;
   togglePending: boolean;
 }) {
-  const known = isKnownKind(integration.kind);
-  const meta = known ? KIND_META[integration.kind as Kind] : null;
+  const provider = readProvider(integration);
+  const meta = PROVIDER_META[provider];
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex-row items-start justify-between space-y-0 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted shrink-0">
-            <MessageSquare className="h-5 w-5 text-muted-foreground" />
-          </div>
+          {providerIcon(provider, 40)}
           <div className="min-w-0">
             <CardTitle className="text-base truncate">
-              {meta?.label ?? integration.kind}
+              {integration.name}
             </CardTitle>
-            <CardDescription className="text-xs">
-              {integration.kind}
-            </CardDescription>
+            <CardDescription className="text-xs">{meta.label}</CardDescription>
           </div>
         </div>
         <Switch
           checked={integration.enabled}
           onCheckedChange={onToggle}
           disabled={togglePending}
-          aria-label={`${integration.enabled ? "Disable" : "Enable"} ${integration.kind}`}
+          aria-label={`${integration.enabled ? "Disable" : "Enable"} ${integration.name}`}
         />
       </CardHeader>
       <CardContent className="flex-1 space-y-3 text-sm text-muted-foreground">
-        <p>{meta?.summary ?? "Custom channel integration."}</p>
+        <p>{meta.summary}</p>
         <div className="flex flex-wrap items-center gap-2">
           <Badge
             variant="outline"
@@ -456,8 +838,6 @@ function IntegrationCard({
           >
             {integration.enabled ? "enabled" : "disabled"}
           </Badge>
-          {/* Test webhook is part of MVP-2 (engine has no test_connection yet). */}
-          <ComingSoonBadge variant="preview" />
         </div>
       </CardContent>
       <CardFooter className="justify-between gap-2">
@@ -470,21 +850,11 @@ function IntegrationCard({
           size="icon"
           onClick={onDelete}
           className="text-destructive"
-          aria-label={`Delete ${integration.kind} integration`}
+          aria-label={`Delete ${integration.name}`}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
       </CardFooter>
     </Card>
-  );
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────
-
-function formatError(e: unknown, fallback: string): string {
-  const detail = e instanceof ApiError ? e.detail : undefined;
-  return (
-    (detail as { message?: string } | undefined)?.message ??
-    (e instanceof Error ? e.message : fallback)
   );
 }

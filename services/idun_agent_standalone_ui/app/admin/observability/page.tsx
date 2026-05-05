@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RotateCcw } from "lucide-react";
+import { CheckCircle2, RotateCcw, ShieldCheck, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -10,6 +10,15 @@ import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
+import { ProviderPicker } from "@/components/admin/ProviderPicker";
+import { cn } from "@/lib/utils";
+import {
+  GcpLoggingIcon,
+  GcpTraceIcon,
+  LangfuseIcon,
+  LangSmithIcon,
+  PhoenixIcon,
+} from "@/components/admin/provider-icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +40,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, api } from "@/lib/api";
 
 type Provider =
@@ -41,21 +49,69 @@ type Provider =
   | "GCP_LOGGING"
   | "GCP_TRACE";
 
-const PROVIDERS: { id: Provider; label: string }[] = [
-  { id: "LANGFUSE", label: "Langfuse" },
-  { id: "PHOENIX", label: "Phoenix" },
-  { id: "LANGSMITH", label: "LangSmith" },
-  { id: "GCP_LOGGING", label: "GCP Logging" },
-  { id: "GCP_TRACE", label: "GCP Trace" },
+const PROVIDERS: {
+  id: Provider;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+}[] = [
+  {
+    id: "LANGFUSE",
+    label: "Langfuse",
+    description: "Open-source LLM observability. Hosted or self-hosted.",
+    icon: <LangfuseIcon size={44} />,
+  },
+  {
+    id: "PHOENIX",
+    label: "Phoenix",
+    description: "Arize Phoenix. OTLP collector with rich tracing UI.",
+    icon: <PhoenixIcon size={44} />,
+  },
+  {
+    id: "LANGSMITH",
+    label: "LangSmith",
+    description: "LangChain's hosted tracing and evaluation suite.",
+    icon: <LangSmithIcon size={44} />,
+  },
+  {
+    id: "GCP_LOGGING",
+    label: "GCP Logging",
+    description: "Forward structured logs to Google Cloud Logging.",
+    icon: <GcpLoggingIcon size={44} />,
+  },
+  {
+    id: "GCP_TRACE",
+    label: "GCP Trace",
+    description: "Send spans to Google Cloud Trace.",
+    icon: <GcpTraceIcon size={44} />,
+  },
 ];
 
 const PROVIDER_IDS = PROVIDERS.map((p) => p.id) as [Provider, ...Provider[]];
 
 const providerSchema = z.object({
   enabled: z.boolean(),
-  public_key: z.string(),
-  secret_key: z.string(),
-  host: z.string(),
+  // Langfuse + Phoenix fields
+  host: z.string().optional().default(""),
+  public_key: z.string().optional().default(""),
+  secret_key: z.string().optional().default(""),
+  run_name: z.string().optional().default(""),
+  // LangSmith fields
+  api_key: z.string().optional().default(""),
+  endpoint: z.string().optional().default(""),
+  project_name: z.string().optional().default(""),
+  // GCP shared
+  project_id: z.string().optional().default(""),
+  region: z.string().optional().default(""),
+  // GCP Logging
+  log_name: z.string().optional().default(""),
+  resource_type: z.string().optional().default(""),
+  severity: z.string().optional().default("INFO"),
+  // GCP Trace
+  trace_name: z.string().optional().default(""),
+  sampling_rate: z.number().min(0).max(1).optional().default(1.0),
+  flush_interval: z.number().int().min(0).optional().default(5),
+  ignore_urls: z.string().optional().default(""),
 });
 
 type ProviderValues = z.infer<typeof providerSchema>;
@@ -80,53 +136,122 @@ function readObs(raw: unknown): ObsConfig {
   return { provider, enabled, config };
 }
 
+function emptyValues(): ProviderValues {
+  return {
+    enabled: true,
+    host: "",
+    public_key: "",
+    secret_key: "",
+    run_name: "",
+    api_key: "",
+    endpoint: "",
+    project_name: "",
+    project_id: "",
+    region: "",
+    log_name: "",
+    resource_type: "",
+    severity: "INFO",
+    trace_name: "",
+    sampling_rate: 1.0,
+    flush_interval: 5,
+    ignore_urls: "",
+  };
+}
+
 function configToValues(
+  provider: Provider,
   enabled: boolean,
   config: Record<string, unknown>,
 ): ProviderValues {
-  // Map across provider naming variants so existing payloads round-trip.
-  const publicKey =
-    typeof config.public_key === "string"
-      ? (config.public_key as string)
-      : typeof config.api_key === "string"
-        ? (config.api_key as string)
-        : "";
-  const secretKey =
-    typeof config.secret_key === "string" ? (config.secret_key as string) : "";
-  const host =
-    typeof config.host === "string"
-      ? (config.host as string)
-      : typeof config.endpoint === "string"
-        ? (config.endpoint as string)
-        : typeof config.collector_endpoint === "string"
-          ? (config.collector_endpoint as string)
-          : "";
-  return { enabled, public_key: publicKey, secret_key: secretKey, host };
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  const num = (v: unknown, fallback: number) =>
+    typeof v === "number" && Number.isFinite(v) ? v : fallback;
+
+  const base = emptyValues();
+  base.enabled = enabled;
+
+  if (provider === "LANGFUSE") {
+    base.host = str(config.host);
+    base.public_key = str(config.publicKey) || str(config.public_key);
+    base.secret_key = str(config.secretKey) || str(config.secret_key);
+    base.run_name = str(config.runName) || str(config.run_name);
+  } else if (provider === "PHOENIX") {
+    base.host =
+      str(config.collectorEndpoint) || str(config.collector_endpoint);
+    base.project_name = str(config.projectName) || str(config.project_name);
+  } else if (provider === "LANGSMITH") {
+    base.api_key = str(config.apiKey) || str(config.api_key);
+    base.endpoint = str(config.endpoint);
+    base.project_name = str(config.projectName) || str(config.project_name);
+  } else if (provider === "GCP_LOGGING") {
+    base.project_id =
+      str(config.gcpProjectId) || str(config.projectId) || str(config.project_id);
+    base.region = str(config.region);
+    base.log_name = str(config.logName) || str(config.log_name);
+    base.resource_type =
+      str(config.resourceType) || str(config.resource_type);
+    base.severity = str(config.severity) || "INFO";
+  } else if (provider === "GCP_TRACE") {
+    base.project_id =
+      str(config.gcpProjectId) || str(config.projectId) || str(config.project_id);
+    base.region = str(config.region);
+    base.trace_name = str(config.traceName) || str(config.trace_name);
+    base.sampling_rate = num(
+      (config.samplingRate ?? config.sampling_rate) as unknown,
+      1.0,
+    );
+    base.flush_interval = num(
+      (config.flushInterval ?? config.flush_interval) as unknown,
+      5,
+    );
+    base.ignore_urls = str(config.ignoreUrls) || str(config.ignore_urls);
+  }
+  return base;
 }
 
 function valuesToConfig(
   provider: Provider,
   values: ProviderValues,
-  base: Record<string, unknown>,
 ): Record<string, unknown> {
-  const out: Record<string, unknown> = { ...base };
-  // LangSmith historically used `api_key`/`endpoint`; keep that shape.
-  if (provider === "LANGSMITH") {
-    out.api_key = values.public_key;
-    out.endpoint = values.host;
-    delete out.public_key;
-    delete out.host;
-  } else if (provider === "PHOENIX") {
-    out.collector_endpoint = values.host;
-    delete out.host;
-    out.public_key = values.public_key;
-    out.secret_key = values.secret_key;
-  } else {
-    out.host = values.host;
-    out.public_key = values.public_key;
-    out.secret_key = values.secret_key;
+  if (provider === "LANGFUSE") {
+    return {
+      host: values.host,
+      public_key: values.public_key,
+      secret_key: values.secret_key,
+      ...(values.run_name ? { run_name: values.run_name } : {}),
+    };
   }
-  return out;
+  if (provider === "PHOENIX") {
+    return {
+      collector_endpoint: values.host,
+      ...(values.project_name ? { project_name: values.project_name } : {}),
+    };
+  }
+  if (provider === "LANGSMITH") {
+    return {
+      api_key: values.api_key,
+      endpoint: values.endpoint,
+      ...(values.project_name ? { project_name: values.project_name } : {}),
+    };
+  }
+  if (provider === "GCP_LOGGING") {
+    return {
+      project_id: values.project_id,
+      region: values.region,
+      log_name: values.log_name,
+      resource_type: values.resource_type,
+      severity: values.severity || "INFO",
+    };
+  }
+  // GCP_TRACE
+  return {
+    project_id: values.project_id,
+    region: values.region,
+    trace_name: values.trace_name,
+    sampling_rate: values.sampling_rate,
+    flush_interval: values.flush_interval,
+    ...(values.ignore_urls ? { ignore_urls: values.ignore_urls } : {}),
+  };
 }
 
 export default function ObservabilityPage() {
@@ -136,19 +261,28 @@ export default function ObservabilityPage() {
     queryFn: api.getObservability,
   });
 
-  const initial = useMemo(() => readObs(data?.config), [data]);
+  const initial = useMemo(() => readObs(data?.observability), [data]);
   const [activeProvider, setActiveProvider] = useState<Provider>(
     initial.provider,
   );
   const [yamlOpen, setYamlOpen] = useState(false);
   const [restartRequired, setRestartRequired] = useState(false);
+  const [verifyFeedback, setVerifyFeedback] = useState<"ok" | "fail" | null>(
+    null,
+  );
 
   useEffect(() => {
     setActiveProvider(initial.provider);
   }, [initial.provider]);
 
+  useEffect(() => {
+    if (!verifyFeedback) return;
+    const t = setTimeout(() => setVerifyFeedback(null), 3000);
+    return () => clearTimeout(t);
+  }, [verifyFeedback]);
+
   const initialValues = useMemo(
-    () => configToValues(initial.enabled, initial.config),
+    () => configToValues(initial.provider, initial.enabled, initial.config),
     [initial],
   );
 
@@ -159,35 +293,54 @@ export default function ObservabilityPage() {
   });
 
   const save = useMutation({
-    mutationFn: (next: Record<string, unknown>) =>
-      api.putObservability({ config: next }),
-    onSuccess: (resp: unknown) => {
-      const r = resp as { restart_required?: boolean };
-      if (r?.restart_required) {
+    mutationFn: (next: ObsConfig) =>
+      api.patchObservability({ observability: next }),
+    onSuccess: (resp) => {
+      if (resp.reload.status === "restart_required") {
         setRestartRequired(true);
-        toast.warning("Restart required to apply this change.");
+        toast.warning(resp.reload.message);
+      } else if (resp.reload.status === "reload_failed") {
+        setRestartRequired(false);
+        toast.error(resp.reload.error ?? resp.reload.message);
       } else {
         setRestartRequired(false);
-        toast.success("Saved & reloaded");
+        toast.success(resp.reload.message);
       }
       qc.invalidateQueries({ queryKey: ["observability"] });
     },
-    onError: (e: unknown) => {
+    onError: (e) => {
       const detail = e instanceof ApiError ? e.detail : undefined;
-      const message = (detail as { message?: string } | undefined)?.message;
+      const message = (detail as { error?: { message?: string } } | undefined)?.error
+        ?.message;
       toast.error(message ?? "Save failed");
     },
   });
 
+  const verify = useMutation({
+    mutationFn: api.checkObservabilityConnection,
+    onSuccess: (result) => {
+      if (result.ok) {
+        setVerifyFeedback("ok");
+      } else {
+        setVerifyFeedback("fail");
+        toast.error(result.error ?? "Connection failed.");
+      }
+    },
+    onError: (e) => {
+      const detail = e instanceof ApiError ? e.detail : undefined;
+      const message =
+        (detail as { error?: { message?: string } } | undefined)?.error
+          ?.message ?? (e instanceof Error ? e.message : "Verify failed");
+      setVerifyFeedback("fail");
+      toast.error(message);
+    },
+  });
+
   const handleSubmit = (values: ProviderValues) => {
-    // Keep any provider-specific extras the backend already had.
-    const base =
-      activeProvider === initial.provider ? { ...initial.config } : {};
-    const config = valuesToConfig(activeProvider, values, base);
     save.mutate({
       provider: activeProvider,
       enabled: values.enabled,
-      config,
+      config: valuesToConfig(activeProvider, values),
     });
   };
 
@@ -196,25 +349,25 @@ export default function ObservabilityPage() {
     if (next === initial.provider) {
       form.reset(initialValues);
     } else {
-      form.reset({ enabled: true, public_key: "", secret_key: "", host: "" });
+      const cleared = emptyValues();
+      cleared.enabled = true;
+      form.reset(cleared);
     }
   };
 
   const yamlText = useMemo(() => {
     const values = form.getValues();
-    const base =
-      activeProvider === initial.provider ? { ...initial.config } : {};
     return stringifyYaml({
       provider: activeProvider,
       enabled: values.enabled,
-      config: valuesToConfig(activeProvider, values, base),
+      config: valuesToConfig(activeProvider, values),
     });
-  }, [activeProvider, form, initial, yamlOpen]);
+  }, [activeProvider, form, yamlOpen]);
 
   const persistFromYaml = async (parsed: unknown) => {
     const next = readObs(parsed);
     setActiveProvider(next.provider);
-    form.reset(configToValues(next.enabled, next.config));
+    form.reset(configToValues(next.provider, next.enabled, next.config));
     save.mutate({
       provider: next.provider,
       enabled: next.enabled,
@@ -256,110 +409,400 @@ export default function ObservabilityPage() {
             the active exporter on save.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs
+        <CardContent className="space-y-6">
+          <ProviderPicker
             value={activeProvider}
-            onValueChange={(t) => handleProviderChange(t as Provider)}
-          >
-            <TabsList>
-              {PROVIDERS.map((p) => (
-                <TabsTrigger key={p.id} value={p.id}>
-                  {p.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            onChange={(t) => handleProviderChange(t as Provider)}
+            options={PROVIDERS}
+            columns={3}
+          />
 
-            {PROVIDERS.map((p) => (
-              <TabsContent key={p.id} value={p.id} className="mt-4">
-                <Form {...form}>
-                  <form
-                    id={`obs-form-${p.id}`}
-                    onSubmit={form.handleSubmit(handleSubmit)}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={form.control}
-                      name="enabled"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/30 p-3">
-                          <div className="space-y-0.5">
-                            <FormLabel>Enabled</FormLabel>
-                            <FormDescription>
-                              Toggle to start or stop exporting traces.
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="host"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Host</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder={
-                                p.id === "LANGFUSE"
-                                  ? "https://cloud.langfuse.com"
-                                  : p.id === "PHOENIX"
-                                    ? "https://collector.phoenix.com"
-                                    : ""
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="public_key"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {p.id === "LANGSMITH" ? "API key" : "Public key"}
-                          </FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    {p.id !== "LANGSMITH" && (
-                      <FormField
-                        control={form.control}
-                        name="secret_key"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Secret key</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                type="password"
-                                autoComplete="off"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+          <Form {...form}>
+            <form
+              id={`obs-form-${activeProvider}`}
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/30 p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Enabled</FormLabel>
+                      <FormDescription>
+                        Toggle to start or stop exporting traces.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {activeProvider === "LANGFUSE" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="host"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Host</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="https://cloud.langfuse.com"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </form>
-                </Form>
-              </TabsContent>
-            ))}
-          </Tabs>
+                  />
+                  <FormField
+                    control={form.control}
+                    name="public_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Public key</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="pk-lf-..." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="secret_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Secret key</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            autoComplete="off"
+                            placeholder="sk-lf-..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="run_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Run name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="my-agent-run" />
+                        </FormControl>
+                        <FormDescription>
+                          Optional. Display label for traces in Langfuse.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {activeProvider === "PHOENIX" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="host"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Collector endpoint</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="https://collector.phoenix.com"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          OTLP HTTP endpoint of your Phoenix collector.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="project_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="prod-agent" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {activeProvider === "LANGSMITH" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="api_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>API key</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            autoComplete="off"
+                            placeholder="ls-..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="endpoint"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Endpoint</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="https://api.smith.langchain.com"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Only set when self-hosting LangSmith.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="project_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="prod-chatbot-v1" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {activeProvider === "GCP_LOGGING" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="project_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GCP project ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="my-gcp-project" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="region"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Region</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="us-central1" />
+                        </FormControl>
+                        <FormDescription>Optional.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="log_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Log name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="application-log" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="resource_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Resource type</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="global, gce_instance, cloud_run_revision"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="severity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Severity</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="INFO" />
+                        </FormControl>
+                        <FormDescription>
+                          Minimum level to record. INFO, WARNING, ERROR, CRITICAL.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {activeProvider === "GCP_TRACE" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="project_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GCP project ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="my-gcp-project" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="region"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Region</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="us-central1" />
+                        </FormControl>
+                        <FormDescription>Optional.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="trace_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Trace name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="my-agent" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="sampling_rate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sampling rate</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.05"
+                            min={0}
+                            max={1}
+                            value={
+                              typeof field.value === "number"
+                                ? String(field.value)
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const next = Number(e.target.value);
+                              field.onChange(Number.isFinite(next) ? next : 0);
+                            }}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          0.0 to 1.0. 1.0 traces every request.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="flush_interval"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Flush interval (seconds)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={
+                              typeof field.value === "number"
+                                ? String(field.value)
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const next = Number(e.target.value);
+                              field.onChange(Number.isFinite(next) ? next : 0);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="ignore_urls"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ignore URLs</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="/health, /metrics"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Comma-separated URL paths to exclude from tracing.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+            </form>
+          </Form>
         </CardContent>
-        <CardFooter className="justify-between">
+        <CardFooter className="justify-between gap-2">
           <Button
             variant="outline"
             type="button"
@@ -367,13 +810,44 @@ export default function ObservabilityPage() {
           >
             Edit YAML
           </Button>
-          <Button
-            type="submit"
-            form={`obs-form-${activeProvider}`}
-            disabled={save.isPending}
-          >
-            {save.isPending ? "Saving…" : "Save"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => verify.mutate()}
+              disabled={verify.isPending || !data}
+              title={!data ? "Save first" : "Probe the configured provider"}
+              className={cn(
+                "transition-colors",
+                verifyFeedback === "ok" &&
+                  "border-emerald-500/60 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15 hover:text-emerald-700 dark:text-emerald-300",
+                verifyFeedback === "fail" &&
+                  "border-destructive/60 bg-destructive/15 text-destructive hover:bg-destructive/15 hover:text-destructive",
+              )}
+            >
+              {verifyFeedback === "ok" ? (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              ) : verifyFeedback === "fail" ? (
+                <XCircle className="mr-2 h-4 w-4" />
+              ) : (
+                <ShieldCheck className="mr-2 h-4 w-4" />
+              )}
+              {verify.isPending
+                ? "Verifying…"
+                : verifyFeedback === "ok"
+                  ? "Verified"
+                  : verifyFeedback === "fail"
+                    ? "Failed"
+                    : "Verify"}
+            </Button>
+            <Button
+              type="submit"
+              form={`obs-form-${activeProvider}`}
+              disabled={save.isPending}
+            >
+              {save.isPending ? "Saving…" : "Save"}
+            </Button>
+          </div>
         </CardFooter>
       </Card>
 

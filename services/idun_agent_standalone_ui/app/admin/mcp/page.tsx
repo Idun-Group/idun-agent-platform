@@ -2,7 +2,18 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileCode, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileCode,
+  Loader2,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Wrench,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -31,6 +42,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -65,7 +84,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError, type McpRead, api } from "@/lib/api";
+import { ApiError, type ConnectionCheckResult, type McpRead, api } from "@/lib/api";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -85,8 +104,6 @@ type ServerRow = {
   name: string;
   enabled: boolean;
   config: Record<string, unknown>;
-  /** Optional status surfaced by the backend ("failed", "connected", …). */
-  status?: string;
 };
 
 // ── Form schema ──────────────────────────────────────────────────────────
@@ -101,15 +118,15 @@ const serverFormSchema = z
     name: z.string().min(1, "Name is required"),
     enabled: z.boolean(),
     transport: z.enum(TRANSPORTS),
-    command: z.string(),
-    args: z.string(),
-    url: z.string(),
-    headers: z.array(kvRowSchema),
-    env: z.array(kvRowSchema),
+    command: z.string().optional().default(""),
+    args: z.string().optional().default(""),
+    url: z.string().optional().default(""),
+    headers: z.array(kvRowSchema).optional().default([]),
+    env: z.array(kvRowSchema).optional().default([]),
   })
   .superRefine((data, ctx) => {
     if (data.transport === "stdio") {
-      if (!data.command.trim()) {
+      if (!(data.command ?? "").trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["command"],
@@ -117,7 +134,7 @@ const serverFormSchema = z
         });
       }
     } else {
-      if (!data.url.trim()) {
+      if (!(data.url ?? "").trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["url"],
@@ -256,8 +273,7 @@ function serverRowsFromQuery(rows: McpRead[]): ServerRow[] {
     id: r.id,
     name: r.name,
     enabled: r.enabled,
-    config: r.config ?? {},
-    status: (r as McpRead & { status?: string }).status,
+    config: r.mcpServer ?? {},
   }));
 }
 
@@ -274,30 +290,10 @@ function StatusBadge({ row }: { row: ServerRow }) {
       </Badge>
     );
   }
-  if (row.status === "failed") {
-    return (
-      <Badge
-        variant="outline"
-        className="border-destructive/30 bg-destructive/10 text-destructive"
-      >
-        failed
-      </Badge>
-    );
-  }
   if (!row.enabled) {
     return (
       <Badge variant="outline" className="border-border bg-muted text-muted-foreground">
         disabled
-      </Badge>
-    );
-  }
-  if (row.status === "connected") {
-    return (
-      <Badge
-        variant="outline"
-        className="border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-      >
-        connected
       </Badge>
     );
   }
@@ -326,6 +322,14 @@ export default function McpPage() {
   const [yamlOpen, setYamlOpen] = useState(false);
   const [restartRequired, setRestartRequired] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [discoverFor, setDiscoverFor] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const discoverTools = useMutation({
+    mutationFn: (id: string) => api.discoverMcpTools(id),
+  });
 
   // Re-sync the working list whenever the query result changes (initial load
   // or post-save invalidate). Only resets when there are no pending edits to
@@ -392,7 +396,6 @@ export default function McpPage() {
         name: trimmedName,
         enabled: values.enabled,
         config: nextConfig,
-        status: editingIdx !== null ? prev[editingIdx].status : undefined,
       };
       if (editingIdx !== null) next[editingIdx] = newRow;
       else next.push(newRow);
@@ -407,9 +410,9 @@ export default function McpPage() {
     setConfirmIdx(null);
   }
 
-  /** Apply the local working list back to the server using the existing
-   *  per-row CRUD endpoints. Handles structural change (add/delete) by
-   *  surfacing `restart_required` as a destructive Alert. */
+  /** Apply the local working list back to the server using per-row CRUD.
+   *  Each mutation returns its own reload result; if any reports
+   *  ``restart_required`` we surface that. */
   async function onSaveAll() {
     setSaving(true);
     setRestartRequired(false);
@@ -420,59 +423,56 @@ export default function McpPage() {
       const workingById = new Map(
         working.filter((r) => r.id !== null).map((r) => [r.id as string, r]),
       );
-      const tasks: Array<Promise<unknown>> = [];
-      let structuralChange = false;
+      const tasks: Array<
+        Promise<{ reload: { status: string; message: string; error: string | null } }>
+      > = [];
 
-      // Deletes: rows that exist on the server but not in the working list.
       for (const [id] of initialById) {
-        if (!workingById.has(id)) {
-          structuralChange = true;
-          tasks.push(api.deleteMcp(id));
-        }
+        if (!workingById.has(id)) tasks.push(api.deleteMcp(id));
       }
-      // Creates: rows in the working list with no server id yet.
       for (const row of working) {
         if (row.id === null) {
-          structuralChange = true;
           tasks.push(
             api.createMcp({
               name: row.name,
-              config: row.config,
+              mcpServer: { ...row.config, name: row.name },
               enabled: row.enabled,
             }),
           );
         }
       }
-      // Patches: existing rows whose payload changed.
       for (const row of working) {
         if (row.id === null) continue;
         const original = initialById.get(row.id);
-        if (!original) continue;
-        if (rowsEqual(row, original)) continue;
+        if (!original || rowsEqual(row, original)) continue;
         tasks.push(
           api.patchMcp(row.id, {
             name: row.name,
-            config: row.config,
+            mcpServer: { ...row.config, name: row.name },
             enabled: row.enabled,
           }),
         );
       }
 
-      await Promise.all(tasks);
+      const results = await Promise.all(tasks);
+      const restart = results.some((r) => r.reload.status === "restart_required");
+      const failed = results.find((r) => r.reload.status === "reload_failed");
 
-      if (structuralChange) setRestartRequired(true);
-      if (structuralChange) {
-        toast.warning("Saved. Restart may be required to apply add/remove.");
+      if (failed) {
+        toast.error(failed.reload.error ?? failed.reload.message);
+      } else if (restart) {
+        setRestartRequired(true);
+        toast.warning("Saved. Restart required to apply.");
       } else if (tasks.length > 0) {
-        toast.success("Saved & reloaded");
+        toast.success("Saved and reloaded.");
       } else {
         toast.message("Nothing to save");
       }
       qc.invalidateQueries({ queryKey: ["mcp"] });
-    } catch (e: unknown) {
+    } catch (e) {
       const detail = e instanceof ApiError ? e.detail : undefined;
       const message =
-        (detail as { message?: string } | undefined)?.message ??
+        (detail as { error?: { message?: string } } | undefined)?.error?.message ??
         (e instanceof Error ? e.message : "Save failed");
       toast.error(message);
     } finally {
@@ -516,7 +516,6 @@ export default function McpPage() {
         name,
         enabled,
         config,
-        status: matchById?.status,
       };
     });
     setWorking(next);
@@ -630,6 +629,26 @@ export default function McpPage() {
                         <StatusBadge row={row} />
                       </TableCell>
                       <TableCell className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (row.id !== null) {
+                              setDiscoverFor({ id: row.id, name: row.name });
+                              discoverTools.reset();
+                              discoverTools.mutate(row.id);
+                            }
+                          }}
+                          disabled={row.id === null}
+                          aria-label={`Discover tools on ${row.name}`}
+                          title={
+                            row.id === null
+                              ? "Save the server first"
+                              : "Discover tools"
+                          }
+                        >
+                          <Wrench className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -845,9 +864,7 @@ export default function McpPage() {
             <Button variant="ghost" onClick={closeSheet}>
               Cancel
             </Button>
-            <Button type="submit" form="mcp-server-form">
-              Save
-            </Button>
+            <Button onClick={form.handleSubmit(onSheetSave)}>Save</Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
@@ -892,6 +909,145 @@ export default function McpPage() {
         title="Edit MCP servers configuration"
         description="Update the full list of servers. Save here only updates the local list — apply with Save all."
       />
+
+      {/* Tool discovery */}
+      <Dialog
+        open={discoverFor !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDiscoverFor(null);
+            discoverTools.reset();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {discoverFor ? `Tools — ${discoverFor.name}` : "Tools"}
+            </DialogTitle>
+            <DialogDescription>
+              Probes the server and lists its tools. Doubles as a connection
+              check.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DiscoverResult
+            isPending={discoverTools.isPending}
+            isError={discoverTools.isError}
+            error={discoverTools.error}
+            data={discoverTools.data}
+          />
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => discoverFor && discoverTools.mutate(discoverFor.id)}
+              disabled={discoverTools.isPending || discoverFor === null}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+            <Button
+              onClick={() => {
+                setDiscoverFor(null);
+                discoverTools.reset();
+              }}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function extractTools(details: Record<string, unknown> | null): string[] {
+  if (!details) return [];
+  const raw = (details as { tools?: unknown }).tools;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((t) => {
+      if (typeof t === "string") return t;
+      if (t && typeof t === "object" && "name" in t) {
+        const name = (t as { name?: unknown }).name;
+        return typeof name === "string" ? name : null;
+      }
+      return null;
+    })
+    .filter((t): t is string => t !== null);
+}
+
+function DiscoverResult({
+  isPending,
+  isError,
+  error,
+  data,
+}: {
+  isPending: boolean;
+  isError: boolean;
+  error: unknown;
+  data: ConnectionCheckResult | undefined;
+}) {
+  if (isPending) {
+    return (
+      <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Probing server…
+      </div>
+    );
+  }
+  if (isError) {
+    const message =
+      error instanceof ApiError
+        ? ((error.detail as { error?: { message?: string } } | undefined)?.error
+            ?.message ?? `Request failed (${error.status}).`)
+        : error instanceof Error
+          ? error.message
+          : "Request failed.";
+    return (
+      <Alert variant="destructive">
+        <AlertCircle />
+        <AlertTitle>Could not reach the server</AlertTitle>
+        <AlertDescription>{message}</AlertDescription>
+      </Alert>
+    );
+  }
+  if (!data) return null;
+  if (!data.ok) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle />
+        <AlertTitle>Connection failed</AlertTitle>
+        <AlertDescription>
+          {data.error ?? "The server did not respond to a tool listing."}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  const tools = extractTools(data.details);
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+        <CheckCircle2 className="h-4 w-4" />
+        Connected — {tools.length} tool{tools.length === 1 ? "" : "s"} discovered.
+      </div>
+      {tools.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          The server reports no tools.
+        </p>
+      ) : (
+        <ul className="max-h-64 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/30 p-2 text-sm">
+          {tools.map((name) => (
+            <li
+              key={name}
+              className="rounded px-2 py-1 font-mono text-xs text-foreground"
+            >
+              {name}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

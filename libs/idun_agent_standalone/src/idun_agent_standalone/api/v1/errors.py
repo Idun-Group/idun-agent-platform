@@ -79,9 +79,7 @@ def _render(error: StandaloneAdminError, status_code: int) -> JSONResponse:
     )
 
 
-async def admin_api_error_handler(
-    request: Request, exc: AdminAPIError
-) -> JSONResponse:
+async def admin_api_error_handler(request: Request, exc: AdminAPIError) -> JSONResponse:
     """Render ``AdminAPIError`` as the standalone admin envelope."""
     logger.info(
         "admin.error path=%s status=%s code=%s",
@@ -155,8 +153,18 @@ async def admin_unhandled_exception_handler(
 
 def register_admin_exception_handlers(app: FastAPI) -> None:
     """Wire the admin envelope handlers on the given FastAPI app."""
-    app.add_exception_handler(AdminAPIError, admin_api_error_handler)
+    # FastAPI's add_exception_handler stub types its handler argument as
+    # Callable[[Request, Exception], ...]. Our handlers are deliberately
+    # narrow to AdminAPIError / RequestValidationError because FastAPI
+    # dispatches by exception class at runtime, so the wider stub type
+    # is not enforceable on the call site. Suppress the arg-type warning
+    # for the narrow handlers and let the runtime guarantee stand.
     app.add_exception_handler(
-        RequestValidationError, admin_request_validation_handler
+        AdminAPIError,
+        admin_api_error_handler,  # type: ignore[arg-type]
+    )
+    app.add_exception_handler(
+        RequestValidationError,
+        admin_request_validation_handler,  # type: ignore[arg-type]
     )
     app.add_exception_handler(Exception, admin_unhandled_exception_handler)

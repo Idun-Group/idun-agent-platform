@@ -214,6 +214,7 @@ poetry.lock
 /.claude/settings.json
 /.claude/scheduled_tasks.lock
 /.claude/worktrees/
+/.claude/smoke-test/
 /.cursor/hooks.json
 
 # Remotion video project
