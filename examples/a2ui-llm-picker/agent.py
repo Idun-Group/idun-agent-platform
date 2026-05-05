@@ -248,14 +248,33 @@ async def acknowledge(state: State, config: RunnableConfig) -> State:
 
 
 def _route_entry(state: State) -> str:
-    raise NotImplementedError("_route_entry: implemented in Task 18")
+    """Route to acknowledge() iff the turn carries a non-ask_again action.
+
+    no idun                                  -> propose (initial / no action)
+    idun.a2uiClientMessage missing           -> propose
+    action.name == 'ask_again'               -> propose (re-suggest options)
+    action.name == 'pick_destination'        -> acknowledge
+    anything else                            -> acknowledge (fall-through)
+    """
+    state_dict = state if isinstance(state, dict) else dict(state)
+    idun = state_dict.get("idun")
+    if not (isinstance(idun, dict) and "a2uiClientMessage" in idun):
+        return "propose"
+    msg = idun["a2uiClientMessage"]
+    name = (
+        (msg.get("action") or {}).get("name")
+        if isinstance(msg, dict) else None
+    )
+    return "propose" if name == "ask_again" else "acknowledge"
 
 
 builder = StateGraph(State)
 builder.add_node("propose", propose)
 builder.add_node("acknowledge", acknowledge)
-# set_conditional_entry_point wired in Task 18 once _route_entry exists.
-builder.set_entry_point("propose")
+builder.set_conditional_entry_point(
+    _route_entry,
+    {"propose": "propose", "acknowledge": "acknowledge"},
+)
 builder.add_edge("propose", END)
 builder.add_edge("acknowledge", END)
 graph = builder.compile()
