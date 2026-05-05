@@ -3,14 +3,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
+import {
+  AgentGraphLazy,
+  type AgentGraphHandle,
+} from "@/components/graph/AgentGraphLazy";
+import { ExportMenu } from "@/components/graph/ExportMenu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,16 +37,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, type AgentRead, api } from "@/lib/api";
-
-const AgentGraph = dynamic(
-  () => import("@/components/graph/AgentGraph").then((m) => m.AgentGraph),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[480px] animate-pulse rounded-md bg-muted" />
-    ),
-  },
-);
 
 type Framework = "langgraph" | "adk";
 const FRAMEWORKS: Framework[] = ["langgraph", "adk"];
@@ -129,6 +123,8 @@ export default function AgentPage() {
       return failureCount < 2;
     },
   });
+
+  const graphRef = useRef<AgentGraphHandle | null>(null);
 
   const initialFramework = useMemo(() => readFramework(data), [data]);
   const [activeTab, setActiveTab] = useState<Framework>(initialFramework);
@@ -360,11 +356,20 @@ export default function AgentPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Agent graph</CardTitle>
-          <CardDescription>
-            A visual map of this agent&apos;s sub-agents and tools.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+          <div className="space-y-1.5">
+            <CardTitle>Agent graph</CardTitle>
+            <CardDescription>
+              A visual map of this agent&apos;s sub-agents and tools.
+            </CardDescription>
+          </div>
+          <ExportMenu
+            graphRef={graphRef}
+            agentName={data?.name ?? "agent"}
+            disabled={
+              graphQuery.isLoading || graphQuery.isError || !graphQuery.data
+            }
+          />
         </CardHeader>
         <CardContent>
           {graphQuery.isLoading && (
@@ -387,7 +392,9 @@ export default function AgentPage() {
                 <AlertDescription>Try reloading the page.</AlertDescription>
               </Alert>
             )}
-          {graphQuery.data && <AgentGraph graph={graphQuery.data} height={480} />}
+          {graphQuery.data && (
+            <AgentGraphLazy ref={graphRef} graph={graphQuery.data} height={480} />
+          )}
         </CardContent>
       </Card>
 
