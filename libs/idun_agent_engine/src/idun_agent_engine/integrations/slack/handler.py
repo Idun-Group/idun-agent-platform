@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Request, Response
@@ -38,7 +39,22 @@ async def _handle_message(
 
 @router.post("/webhook")
 async def slack_webhook(request: Request) -> Response:
-    """Receive and handle a Slack event."""
+    """Receive and handle a Slack event.
+
+    Slack expects a 2xx response within three seconds; agent runs are
+    routinely slower than that. Acknowledge the event immediately and
+    process the agent run in a background task that posts the reply
+    via ``chat.postMessage``.
+    """
+    retry_num = request.headers.get("X-Slack-Retry-Num")
+    if retry_num:
+        logger.info(
+            "Skipping Slack retry attempt num=%s reason=%s",
+            retry_num,
+            request.headers.get("X-Slack-Retry-Reason"),
+        )
+        return Response(status_code=200)
+
     body = await request.body()
     body_str = body.decode("utf-8")
 
@@ -68,11 +84,14 @@ async def slack_webhook(request: Request) -> Response:
 
     event = payload.event
 
-    if event.type != "message" or event.bot_id:
-        logger.warning(
-            "Skipping non-user message event (type=%s, bot_id=%s)",
+    if event.type != "message" or event.bot_id or event.subtype or event.app_id:
+        logger.info(
+            "Skipping non-user message event "
+            "(type=%s, bot_id=%s, subtype=%s, app_id=%s)",
             event.type,
             event.bot_id,
+            event.subtype,
+            event.app_id,
         )
         return Response(status_code=200)
 
@@ -82,6 +101,8 @@ async def slack_webhook(request: Request) -> Response:
         logger.error("Slack webhook received but agent or client not initialized")
         return Response(status_code=503, content="Slack integration not ready")
 
-    await _handle_message(event.user, event.channel, event.text, agent, client)
+    asyncio.create_task(
+        _handle_message(event.user, event.channel, event.text, agent, client)
+    )
 
     return Response(status_code=200)
