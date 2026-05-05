@@ -9,12 +9,26 @@ the agent is deterministic.
 After sending any message in the chat:
 
 - A short text summary in the assistant bubble (the markdown body)
-- Below it, an A2UI **Basic Catalog showcase** rendered inside a
-  Card: typography (h1–h5, body, caption), layout (Column, Row,
-  Divider), inputs (TextField, CheckBox, Slider, DateTimeInput,
-  ChoicePicker), visuals (Image, Icon), a Button, and a Tabs
-  component. Inputs are interactive — they round-trip user edits
-  via the surface dataModel.
+- An A2UI **Basic Catalog showcase** rendered inside a Card: typography
+  (h1–h5, body, caption), layout (Column, Row, Divider), inputs
+  (TextField, CheckBox, Slider, DateTimeInput, ChoicePicker), visuals
+  (Image, Icon), a Button labelled "Submit", a branching menu (Option A
+  / B / C), and a Tabs component. Inputs are interactive and round-trip
+  user edits via the surface dataModel.
+
+After clicking **Submit** (action `submit_form`):
+
+- A Confirmation Card showing the dataModel values you entered, plus a
+  **Reset** button (action `reset`) that re-emits the original showcase.
+
+After clicking **Option A / B / C** in the branching menu:
+
+- A small per-option Card naming the action and the source-component id,
+  read off the typed `A2UIContext` returned by `read_a2ui_context`.
+
+Only the latest assistant message's surfaces are interactive; older
+showcases in chat history render but their buttons are disabled
+(visual: dimmed, no click cursor).
 
 ## Files
 
