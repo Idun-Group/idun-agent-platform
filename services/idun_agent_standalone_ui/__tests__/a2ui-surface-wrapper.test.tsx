@@ -17,11 +17,19 @@ vi.mock("@a2ui/web_core/v0_9", () => ({
   })),
 }));
 
-vi.mock("@a2ui/react/v0_9", () => ({
-  A2uiSurface: ({ surface }: { surface: { id: string } | null }) => (
-    <div data-testid="a2ui-surface" data-surface-id={surface?.id} />
-  ),
-  basicCatalog: { id: "basic" },
+vi.mock("@a2ui/react/v0_9", async () => {
+  const React = await import("react");
+  return {
+    A2uiSurface: ({ surface }: { surface: { id: string } | null }) => (
+      <div data-testid="a2ui-surface" data-surface-id={surface?.id} />
+    ),
+    basicCatalog: { id: "basic" },
+    MarkdownContext: React.createContext<unknown>(undefined),
+  };
+});
+
+vi.mock("@a2ui/markdown-it", () => ({
+  renderMarkdown: vi.fn(async (text: string) => `<p>${text}</p>`),
 }));
 
 describe("A2UISurfaceWrapper", () => {

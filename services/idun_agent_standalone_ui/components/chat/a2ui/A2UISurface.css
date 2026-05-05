@@ -1,0 +1,118 @@
+/* Scoped resets so Tailwind preflight doesn't strip default styling
+ * off form controls and buttons rendered inside an A2UI surface.
+ * Everything here targets descendants of .a2ui-surface only.
+ *
+ * @a2ui/react v0.9's Basic Catalog injects component CSS via
+ * useBasicCatalogStyles, but the component-internal class names are
+ * CSS-module hashes while the JSX uses literal class strings — so
+ * variant/control styles bleed through inconsistently. This file
+ * fills that gap with predictable element-level defaults. */
+
+/* Text inputs (TextField, DateTimeInput) ------------------------ */
+.a2ui-surface input[type="text"],
+.a2ui-surface input[type="email"],
+.a2ui-surface input[type="number"],
+.a2ui-surface input[type="search"],
+.a2ui-surface input[type="tel"],
+.a2ui-surface input[type="url"],
+.a2ui-surface input[type="date"],
+.a2ui-surface input[type="time"],
+.a2ui-surface input[type="datetime-local"],
+.a2ui-surface input[type="month"],
+.a2ui-surface input[type="week"],
+.a2ui-surface select,
+.a2ui-surface textarea {
+  display: block;
+  width: 100%;
+  background: var(--background, #ffffff);
+  color: var(--foreground, #1d1c1a);
+  border: 1px solid var(--border, #e7e4d7);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.a2ui-surface input:focus,
+.a2ui-surface select:focus,
+.a2ui-surface textarea:focus {
+  border-color: var(--accent, #8c52ff);
+  box-shadow: 0 0 0 2px var(--ring, rgba(140, 82, 255, 0.4));
+}
+
+/* Checkbox + radio --------------------------------------------- */
+.a2ui-surface input[type="checkbox"],
+.a2ui-surface input[type="radio"] {
+  appearance: auto;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--accent, #8c52ff);
+}
+
+/* ChoicePicker labels — ensure the radio + label get spacing */
+.a2ui-surface label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-right: 0.875rem;
+  cursor: pointer;
+}
+
+/* Wrap label rows so multiple choices flow */
+.a2ui-surface [role="radiogroup"],
+.a2ui-surface fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.875rem;
+  border: none;
+  padding: 0;
+  margin: 0.25rem 0;
+}
+
+/* Buttons ------------------------------------------------------ */
+.a2ui-surface button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  background: var(--primary, #1d1c1a);
+  color: var(--primary-foreground, #f7f6f0);
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.05s;
+}
+
+.a2ui-surface button:hover {
+  filter: brightness(1.1);
+}
+
+.a2ui-surface button:active {
+  transform: translateY(1px);
+}
+
+.a2ui-surface button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Icon — load Material Symbols outlined via CSS ---------------- */
+@import url("https://fonts.googleapis.com/icon?family=Material+Icons");
+.a2ui-surface .material-icons,
+.a2ui-surface [class*="icon"] {
+  font-family: "Material Icons", system-ui, sans-serif;
+}
+
+/* Surface container minor padding ------------------------------ */
+.a2ui-surface {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}

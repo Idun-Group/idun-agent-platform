@@ -1,9 +1,16 @@
 "use client";
 
+import "./A2UISurface.css";
+
 import { useEffect, useMemo, useRef, useState } from "react";
+import { renderMarkdown } from "@a2ui/markdown-it";
 import { MessageProcessor } from "@a2ui/web_core/v0_9";
 import type { A2uiMessage, SurfaceModel } from "@a2ui/web_core/v0_9";
-import { A2uiSurface, basicCatalog } from "@a2ui/react/v0_9";
+import {
+  A2uiSurface,
+  MarkdownContext,
+  basicCatalog,
+} from "@a2ui/react/v0_9";
 import type { ReactComponentImplementation } from "@a2ui/react/v0_9";
 
 import type { A2UISurfaceState } from "@/lib/agui";
@@ -58,5 +65,30 @@ export function A2UISurfaceWrapper({ surface }: Props) {
   }, [processor, surface.messages]);
 
   if (!model) return null;
-  return <A2uiSurface surface={model} />;
+  // Tailwind preflight resets heading sizes; reapply them inside the
+  // A2UI surface so Text variants ("h1"-"h5") and markdown headings
+  // render with visible hierarchy. Scoped to descendants of this
+  // wrapper, no global override.
+  return (
+    <div
+      className={[
+        "a2ui-surface",
+        "[&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:my-2",
+        "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:my-2",
+        "[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:my-1.5",
+        "[&_h4]:text-base [&_h4]:font-semibold [&_h4]:my-1.5",
+        "[&_h5]:text-sm [&_h5]:font-semibold [&_h5]:my-1",
+        "[&_p]:my-1",
+        "[&_strong]:font-semibold",
+        "[&_em]:italic",
+        "[&_ul]:list-disc [&_ul]:ml-5",
+        "[&_ol]:list-decimal [&_ol]:ml-5",
+        "[&_a]:underline [&_a]:text-foreground",
+      ].join(" ")}
+    >
+      <MarkdownContext.Provider value={renderMarkdown}>
+        <A2uiSurface surface={model} />
+      </MarkdownContext.Provider>
+    </div>
+  );
 }
