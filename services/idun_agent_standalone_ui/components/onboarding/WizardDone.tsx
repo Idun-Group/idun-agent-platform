@@ -2,8 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
+import { useRef } from "react";
 import type { ReactNode } from "react";
 
+import type { AgentGraphHandle } from "@/components/graph/AgentGraph";
+import { ExportMenu } from "@/components/graph/ExportMenu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,6 +58,7 @@ export function WizardDone({
   mode,
   onGoToChat,
 }: WizardDoneProps) {
+  const graphRef = useRef<AgentGraphHandle | null>(null);
   const graphQuery = useQuery({
     queryKey: ["agent-graph"],
     queryFn: () => api.getAgentGraph(),
@@ -88,8 +92,15 @@ export function WizardDone({
       </Card>
 
       <Card className="w-full">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-base">Your agent</CardTitle>
+          <ExportMenu
+            graphRef={graphRef}
+            agentName={agent.name}
+            disabled={
+              graphQuery.isLoading || graphQuery.isError || !graphQuery.data
+            }
+          />
         </CardHeader>
         <CardContent>
           {graphQuery.isLoading && (
@@ -112,7 +123,9 @@ export function WizardDone({
                 <AlertDescription>Try reloading the page.</AlertDescription>
               </Alert>
             )}
-          {graphQuery.data && <AgentGraph graph={graphQuery.data} />}
+          {graphQuery.data && (
+            <AgentGraph ref={graphRef} graph={graphQuery.data} />
+          )}
         </CardContent>
       </Card>
     </div>
