@@ -132,6 +132,7 @@ def _detect_in_source(rel_path: str, abs_path: Path) -> list[DetectedAgent]:
     found: list[DetectedAgent] = []
     state_graph_bindings: set[str] = set()
     compiled_from_binding: set[str] = set()
+    lg_builder_funcs: set[str] = set()
 
     # First pass: collect StateGraph bindings so we can resolve `.compile()`.
     for stmt in module.body:
@@ -144,6 +145,17 @@ def _detect_in_source(rel_path: str, abs_path: Path) -> list[DetectedAgent]:
         if has_lg and _is_state_graph_call(rhs):
             for name in targets:
                 state_graph_bindings.add(name)
+
+    # Pre-pass: collect same-module functions that return a LangGraph
+    # (compiled or bare). This lets us resolve ``graph = _build()``
+    # against ``def _build(): ...; return builder.compile()`` — the
+    # canonical idiom most LangGraph examples use (see issue #555).
+    if has_lg:
+        for stmt in module.body:
+            if isinstance(
+                stmt, (ast.FunctionDef, ast.AsyncFunctionDef)
+            ) and _function_returns_langgraph(stmt):
+                lg_builder_funcs.add(stmt.name)
 
     # Second pass: emit detections.
     for stmt in module.body:
@@ -172,6 +184,20 @@ def _detect_in_source(rel_path: str, abs_path: Path) -> list[DetectedAgent]:
             continue
 
         if has_lg and _is_state_graph_call(rhs):
+            for target_name in targets:
+                found.append(
+                    DetectedAgent(
+                        framework="LANGGRAPH",
+                        file_path=rel_path,
+                        variable_name=target_name,
+                        inferred_name="",
+                        confidence="MEDIUM",
+                        source="source",
+                    )
+                )
+            continue
+
+        if has_lg and _is_call_to(rhs, frozenset(lg_builder_funcs)):
             for target_name in targets:
                 found.append(
                     DetectedAgent(
@@ -240,6 +266,65 @@ def _receiver_name(call: ast.AST) -> set[str]:
     if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
         return {func.value.id}
     return set()
+
+
+def _iter_fn_statements(fn: ast.FunctionDef | ast.AsyncFunctionDef):
+    """Yield every descendant of ``fn``'s body, skipping nested defs/classes.
+
+    Bounded scope keeps the analyzer pure-AST and easy to reason about:
+    nested functions own their own locals and don't bleed into the parent's
+    return value.
+    """
+    skip = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+    stack: list[ast.AST] = list(fn.body)
+    while stack:
+        node = stack.pop()
+        yield node
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, skip):
+                continue
+            stack.append(child)
+
+
+def _function_returns_langgraph(
+    fn: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> bool:
+    """True if ``fn`` returns a ``StateGraph(...)`` (compiled or bare).
+
+    Mirrors the module-level shapes recognized in ``_detect_in_source``:
+    direct ``StateGraph(...)``, ``StateGraph(...).compile()``, ``<g>.compile()``
+    where ``g`` is a local StateGraph binding, or a return of any such
+    binding by name.
+    """
+    state_graph_locals: set[str] = set()
+    compiled_locals: set[str] = set()
+
+    for node in _iter_fn_statements(fn):
+        targets = _assign_targets(node)
+        if not targets:
+            continue
+        rhs = _assign_rhs(node)
+        if rhs is None:
+            continue
+        if _is_state_graph_call(rhs):
+            state_graph_locals.update(targets)
+            continue
+        if _module_compile_target(rhs, state_graph_locals):
+            compiled_locals.update(targets)
+
+    for node in _iter_fn_statements(fn):
+        if not isinstance(node, ast.Return) or node.value is None:
+            continue
+        value = node.value
+        if _is_state_graph_call(value):
+            return True
+        if _module_compile_target(value, state_graph_locals):
+            return True
+        if isinstance(value, ast.Name) and (
+            value.id in state_graph_locals or value.id in compiled_locals
+        ):
+            return True
+    return False
 
 
 def _detect_in_langgraph_json(root: Path) -> list[DetectedAgent]:

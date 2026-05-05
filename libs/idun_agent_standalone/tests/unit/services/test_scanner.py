@@ -102,6 +102,149 @@ async def test_no_false_positive_on_unrelated_compile(tmp_path: Path) -> None:
     assert result.detected == []
 
 
+async def test_detect_langgraph_via_build_function(tmp_path: Path) -> None:
+    """Issue #555: ``def _build(): ...; return builder.compile()`` + ``graph = _build()``.
+
+    The canonical LangGraph idiom wraps construction in a function so the
+    build can be parameterized (env switches, conditional nodes, DI).
+    The scanner must follow a module-level call into a same-module
+    function whose body returns a compiled StateGraph.
+    """
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "\n"
+        "def _build():\n"
+        "    builder = StateGraph(int)\n"
+        "    builder.add_node('a', lambda s: s)\n"
+        "    return builder.compile()\n"
+        "\n"
+        "graph = _build()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.framework == "LANGGRAPH"
+    assert d.file_path == "agent.py"
+    assert d.variable_name == "graph"
+    assert d.confidence == "MEDIUM"
+    assert d.source == "source"
+
+
+async def test_detect_langgraph_via_build_function_chained(tmp_path: Path) -> None:
+    """``return StateGraph(int).compile()`` (no intermediate variable)."""
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "\n"
+        "def build():\n"
+        "    return StateGraph(int).compile()\n"
+        "\n"
+        "graph = build()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "graph"
+
+
+async def test_detect_langgraph_via_async_build_function(tmp_path: Path) -> None:
+    """``async def _build()`` is a legitimate (if rare) builder shape."""
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "\n"
+        "async def _build():\n"
+        "    builder = StateGraph(int)\n"
+        "    return builder.compile()\n"
+        "\n"
+        "graph = _build()\n"  # await elided — AST shape is what we test
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "graph"
+
+
+async def test_detect_langgraph_via_build_function_returning_uncompiled(
+    tmp_path: Path,
+) -> None:
+    """A builder returning a bare (uncompiled) StateGraph still counts.
+
+    Mirrors the module-level behavior where ``graph = StateGraph(int)``
+    is detected even without a ``.compile()``.
+    """
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "\n"
+        "def build():\n"
+        "    builder = StateGraph(int)\n"
+        "    return builder\n"
+        "\n"
+        "graph = build()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "graph"
+
+
+async def test_no_detection_when_build_function_does_not_return_graph(
+    tmp_path: Path,
+) -> None:
+    """A function that builds a StateGraph but returns ``None`` is ignored.
+
+    Guards against the false positive of "any function that touches
+    StateGraph is a builder." We require an actual return chain.
+    """
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "\n"
+        "def configure():\n"
+        "    builder = StateGraph(int)\n"
+        "    builder.add_node('a', lambda s: s)\n"
+        "    builder.compile()\n"  # compiled but discarded
+        "\n"
+        "graph = configure()\n"  # actually None at runtime
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_no_detection_for_unrelated_function_call(tmp_path: Path) -> None:
+    """``graph = some_helper()`` where the helper is not a builder must not match."""
+    src = (
+        "from langgraph.graph import StateGraph\n"  # langgraph imported elsewhere
+        "\n"
+        "def helper():\n"
+        "    return 42\n"
+        "\n"
+        "_real = StateGraph(int).compile()\n"
+        "value = helper()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    # Only `_real` should be detected; `value = helper()` must not.
+    names = {d.variable_name for d in result.detected}
+    assert names == {"_real"}
+
+
+async def test_detect_langgraph_via_build_function_called_twice(tmp_path: Path) -> None:
+    """One builder, two module-level calls → two detections."""
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "\n"
+        "def build():\n"
+        "    return StateGraph(int).compile()\n"
+        "\n"
+        "alpha = build()\n"
+        "beta = build()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    names = {d.variable_name for d in result.detected}
+    assert names == {"alpha", "beta"}
+
+
 async def test_detect_minimal_adk(tmp_path: Path) -> None:
     (tmp_path / "agent.py").write_text(
         "from google.adk.agents import Agent\n" "root_agent = Agent(name='x')\n"
