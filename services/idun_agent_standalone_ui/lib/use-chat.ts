@@ -414,6 +414,7 @@ export function useChat(threadId: string) {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const eventIdRef = useRef(0);
+  const sendActionInFlightRef = useRef(false);
   /**
    * Guard against the hydrate-vs-send race: if ``send()`` fires before the
    * hydration request resolves, the live stream's events would be clobbered
@@ -574,7 +575,11 @@ export function useChat(threadId: string) {
       action: A2uiClientAction,
       dataModel: A2uiClientDataModel | undefined,
     ): Promise<void> => {
-      if (status !== "idle") return;
+      // Synchronous guard against same-tick double-dispatch (React state
+      // batching means two callers within one tick would both observe
+      // status === "idle"). The ref flips before any state mutation.
+      if (sendActionInFlightRef.current || status !== "idle") return;
+      sendActionInFlightRef.current = true;
 
       hydratableRef.current = false;
       const runId = crypto.randomUUID();
@@ -643,6 +648,7 @@ export function useChat(threadId: string) {
           setStatus("idle");
         }
       } finally {
+        sendActionInFlightRef.current = false;
         setMessages((prev) =>
           prev.map((m) =>
             m.role === "assistant" && m.id === assistantMsg.id && m.streaming

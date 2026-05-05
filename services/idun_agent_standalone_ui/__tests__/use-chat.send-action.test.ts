@@ -185,4 +185,20 @@ describe("useChat.sendAction", () => {
       resolveFirst();
     });
   });
+
+  it("is a no-op against same-tick double-dispatch", async () => {
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const { result } = renderHook(() => useChat("t1"));
+    await act(async () => {
+      // Fire twice synchronously — both should NOT fire runAgent.
+      const p1 = result.current.sendAction(_action, undefined);
+      const p2 = result.current.sendAction(_action, undefined);
+      await Promise.all([p1, p2]);
+    });
+    // Exactly one runAgent call should have happened, despite two
+    // synchronous invocations in the same tick.
+    expect(runAgent).toHaveBeenCalledTimes(1);
+  });
 });
