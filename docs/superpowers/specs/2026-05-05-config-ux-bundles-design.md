@@ -21,7 +21,7 @@ This spec covers three independent bundles that together close those gaps. They 
 |---|---|---|---|
 | **A — Status & Errors** | Surface runtime state, route `field_errors` to forms, show engine version | PR-1 | runtime_status route, `applyFieldErrors` helper, version chip, reload-failed banner |
 | **B — File-reference validation** | Catch broken paths at save time with field-mapped errors; add a dry-run flag for live validation | PR-2 | engine validator extraction, round-3 classifier, `?dryRun=true` on every mutation, frontend regex |
-| **C — Form polish** | Unify admin headers, ship a real tag input, guard tab-close on dirty forms | PR-3 | `<AdminPageHeader>`, `<TagInput>`, `useBeforeUnload`, dead-code cleanup |
+| **C — Form polish** | Unify admin headers, install shadcn Combobox-with-chips for tag fields, guard tab-close on dirty forms | PR-3 | `<AdminPageHeader>`, shadcn Combobox primitive, `useBeforeUnload`, dead-code cleanup |
 
 **Out of bundle scope** (consciously deferred): per-field tooltip help icons, sidebar-click navigation guards, env-var resolution check at save time, ADK/Haystack file-ref validators, mobile-responsive header tweaks, i18n.
 
@@ -50,10 +50,10 @@ Some artifacts span bundles. Ownership is fixed to the first PR that needs them.
 | `lib/api/form-errors.ts`: `applyFieldErrors(form, error, pathMap?)` helper | PR-1 | Same |
 | `components/admin/AdminPageHeader.tsx` | PR-3 | C's prerequisite for #15 / #16 |
 | `hooks/use-before-unload.ts` | PR-3 | Pairs with isDirty already on header |
-| `components/ui/tag-input.tsx` | PR-3 | Used only in guardrails |
+| `components/ui/combobox.tsx` (added via `npx shadcn@latest add combobox`) | PR-3 | Used by guardrails tag-shaped fields. Zero new code authored — copied from upstream per shadcn's distribution model |
 | Engine refactor: `validate_graph_definition(framework, definition, project_root)` callable | PR-2 | Solo consumer is B |
 | `services/error_classifier.py` (round-3 taxonomy) | PR-2 | Tied to round-3 mapping |
-| `?dryRun=true` query param on every resource mutation | PR-2 | Couples with file-ref validator |
+| `?dryRun=true` query param on the **agent** PATCH (other 6 routers deferred until they have a real call site) | PR-2 | Couples with file-ref validator |
 
 ---
 
@@ -102,7 +102,7 @@ Transform error feedback from "toast + reload" to **field-precise + status-aware
 ```
 operator save → admin PATCH → reload pipeline → runtime_state row updated
                                                        ↓
-                       polling (30s) ← /admin/api/v1/runtime/status ← TanStack Query
+                       polling (60s) ← /admin/api/v1/runtime/status ← TanStack Query
                                                        ↓
                                { lastStatus, lastError, ... }
                                 ↓                          ↓
@@ -202,7 +202,7 @@ Move broken-config detection from **round 3 (engine init at reload time)** to **
 - **CHANGED** `services/reload.py`:
   - Round 2.5 invokes `validate_graph_definition` between cross-resource validation (round 2) and engine reload (round 3).
   - Round 3 catches `ReloadInitFailed` → routes through `classify_reload_error` instead of the current flat `code=RELOAD_FAILED` envelope.
-- **CHANGED** all 7 resource routers (`agent`, `memory`, `observability`, `mcp_servers`, `guardrails`, `prompts`, `integrations`) — accept `?dryRun=true` query flag, short-circuit before `commit_with_reload` when set, return `reload.status="not_attempted"`.
+- **CHANGED** the **agent** PATCH router only — accepts `?dryRun=true` query flag, short-circuits before `commit_with_reload` when set, returns `reload.status="not_attempted"`. The other six resource routers (`memory`, `observability`, `mcp_servers`, `guardrails`, `prompts`, `integrations`) deliberately don't get the flag yet — they have no compelling save-time validation today (round 2 covers their needs). Adding the flag to them when a real call site shows up is a small follow-up per router.
 
 ### Frontend
 - **CHANGED** `app/admin/agent/page.tsx` zod schema — add structural regex on `definition`:
@@ -215,16 +215,16 @@ Move broken-config detection from **round 3 (engine init at reload time)** to **
       "Use the format `path/file.py:variable` or `module.path:variable`",
     ),
   ```
-- **NEW** `hooks/use-dry-run-validation.ts` — debounced (400ms) dry-run mutation; cancels in-flight on new keystroke; routes errors through `applyFieldErrors` from Bundle A.
+- **NEW** `hooks/use-blur-dry-run.ts` — fires the dry-run mutation **on `onBlur`** of the `definition` field (not on every keystroke). Routes errors through `applyFieldErrors` from Bundle A. No debounce, no in-flight cancellation, no race handling — when the user pauses (tabs out, clicks elsewhere, hits Save), the dry-run runs once. Same real-world UX with ~40 fewer LoC than a debounced-on-keystroke variant.
 
 ## Data flow
 
-Live validation as user types:
+Live validation on field blur:
 
 ```
-operator types in field
-       ↓ (400ms debounce)
-useDryRunValidation triggers PATCH /agent?dryRun=true
+operator edits the definition field, then tabs/clicks out (onBlur)
+       ↓
+useBlurDryRun triggers PATCH /agent?dryRun=true
        ↓
 backend rounds: 1 (Pydantic) → 2 (assembled config) → 2.5 (file-ref) → skip 3
        ↓
@@ -257,19 +257,19 @@ rounds 1 → 2 → 2.5 (file-ref)
 | LangGraph compile errors (cycles, unreachable nodes) | `compile_error` | `agent.config.graphDefinition` | — |
 | Anything else | `init_failed_unknown` | (none) | top-level message uses raw `str(exc)` |
 
-## Dry-run flag pattern (per-router)
+## Dry-run flag pattern (agent router only)
 
-Applied uniformly:
+Applied to `PATCH /admin/api/v1/agent`:
 
 ```python
-@router.patch("/{resource_id}")
-async def patch_resource(
-    body: ResourcePatch,
+@router.patch("")
+async def patch_agent(
+    body: AgentPatch,
     dry_run: bool = Query(default=False, alias="dryRun"),
     # ...
-) -> StandaloneMutationResponse[ResourceRead]:
+) -> StandaloneMutationResponse[AgentRead]:
     # rounds 1 + 2 (Pydantic + assembled config) run as today
-    # + new round 2.5: graph_definition / file-ref probe (when applicable)
+    # + new round 2.5: graph_definition file-ref probe
     if dry_run:
         return StandaloneMutationResponse(
             data=_to_read(prospective_row),
@@ -278,7 +278,7 @@ async def patch_resource(
     # else: commit_with_reload as today
 ```
 
-A small helper extracts the boilerplate (`assemble_engine_config + validate_assembled_config + validate_graph_definition`) so each router stays thin.
+The other six resource routers don't get the flag yet — round 2's cross-resource validation already covers their needs, and adding the flag everywhere is overhead for endpoints with no compelling dry-run use case. Add per-router when a real call site shows up.
 
 ## Frontend regex strictness
 
@@ -299,8 +299,8 @@ Catches the most common typo (missing colon) instantly without overstepping.
 ## Testing
 
 - **Engine:** pytest unit on `validate_graph_definition` for each `GraphValidationCode` (file missing, import broken, variable not found, wrong type, happy path).
-- **Backend:** pytest unit on `classify_reload_error` for each exception type → expected admin error shape. Pytest integration for `?dryRun=true` flag on each of the 7 routers (smoke: dry-run a known-good config returns 200 + `not_attempted`; dry-run a broken config returns 422; DB row count unchanged in both).
-- **Frontend:** vitest for `useDryRunValidation` hook in isolation (mocked mutationFn): assert debounce window, in-flight cancellation on new input, mutation triggered exactly once after settle. Vitest integration test on the agent page form: render the page with a mocked `api.patchAgent`, type an invalid path → assert `form.setError` is called for `definition` after debounce settles.
+- **Backend:** pytest unit on `classify_reload_error` for each exception type → expected admin error shape. Pytest integration on the agent router for `?dryRun=true` (smoke: dry-run a known-good config returns 200 + `not_attempted`; dry-run a broken config returns 422; DB row count unchanged in both).
+- **Frontend:** vitest for `useBlurDryRun` hook in isolation (mocked mutationFn): assert blur triggers exactly one mutation; second blur with unchanged value is a no-op (cache via dependency comparison). Vitest integration test on the agent page form: render the page with a mocked `api.patchAgent`, type an invalid path → blur the field → assert `form.setError` is called for `definition`.
 
 ## Engine refactor scope guard
 
@@ -310,6 +310,10 @@ Catches the most common typo (missing colon) instantly without overstepping.
 
 - Env-var resolution check at save time (would require walking the assembled config for `${VAR}` strings before the engine runs). Round-3 classifier still surfaces `env_unset` when it actually fires.
 - ADK / Haystack file-ref validators. Engine refactor exposes a callable per-framework; first PR delivers LangGraph only. ADK and Haystack land as follow-ups when their adapters are reworked.
+
+## PR-2 sequencing note
+
+If PR-2 grows too large during implementation, the round-3 **classifier** (`services/error_classifier.py`) is the safest piece to split into a follow-up PR — round-2.5 already catches most of the painful failures, so the flat `reload_failed` envelope remaining at round 3 is no worse than today. Ship the classifier in a small follow-up rather than letting PR-2 balloon. The engine refactor + round-2.5 invocation + dry-run flag must stay together since they're tightly coupled.
 
 ---
 
@@ -340,29 +344,41 @@ Layout:
 
 Replaces inline `<header>` blocks across all 6 admin pages.
 
-### NEW: `<TagInput>`
+### INSTALL: shadcn Combobox-with-chips
+
+Run `npx shadcn@latest add combobox` to copy the upstream Combobox primitive into `components/ui/combobox.tsx`. The primitive ships exports for `Combobox`, `ComboboxChips`, `ComboboxChip`, `ComboboxChipsInput`, `ComboboxValue`, etc., and natively supports the multi-select chips pattern we need.
+
+Usage in guardrails fields looks like:
 
 ```tsx
-type TagInputProps = {
-  value: string[];
-  onChange: (next: string[]) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  className?: string;
-};
+<Combobox
+  multiple
+  value={field.value}
+  onValueChange={field.onChange}
+  items={[]}  // free-form input; no preset list
+>
+  <ComboboxChips>
+    <ComboboxValue>
+      {field.value.map((tag) => (
+        <ComboboxChip key={tag}>{tag}</ComboboxChip>
+      ))}
+    </ComboboxValue>
+    <ComboboxChipsInput placeholder="Add term" />
+  </ComboboxChips>
+</Combobox>
 ```
 
-Behaviors (deliberately minimal):
-- **Enter** → commit current input as a new tag (after trim, skip if duplicate).
-- **Comma** in input → split on commit (so paste of `word1, word2, word3` → 3 tags).
-- **X button per pill** → remove that tag.
+Behaviors come for free:
+- Enter to commit the current input as a chip.
+- X button on each chip removes it.
+- Backspace on empty input removes the last chip.
+- Keyboard navigation between chips.
+- Accessible by default (proper ARIA roles).
 
-Cut from manager-web's tag input (deliberately):
-- Blur to commit (data-loss risk; saves at most one Enter).
-- Backspace on empty → remove last (non-discoverable; X covers it).
-- Double-click pill → edit (non-discoverable; users delete + retype).
+What we lose vs the previously-spec'd custom TagInput:
+- Comma-paste auto-split (paste `word1, word2` → 2 tags). Acceptable: users hit Enter between tags. If complaints surface, intercept the input's `onValueChange` to split commas (~5 LoC).
 
-Estimated LoC: ~50–60.
+Net: zero new component code authored. Upstream maintenance for free.
 
 ### NEW: `useBeforeUnload(when: boolean)`
 
@@ -397,7 +413,8 @@ Both are dead code (no admin page imports them). `SaveToolbar`'s badge → owned
 
 ### Refactor: guardrails tag fields
 
-Six fields move from `<Input>` + `joinList`/`splitList` helpers to `<TagInput>`:
+Six fields move from `<Input>` + `joinList`/`splitList` helpers to the shadcn Combobox-with-chips primitive (see "INSTALL" section above):
+
 - `banned_words`
 - `pii_entities`
 - `competitors`
@@ -422,13 +439,13 @@ If a docs page doesn't yet exist on the live docs site, the link goes to the par
 
 ## Error handling
 
-- `<TagInput>`: trim before commit; skip duplicates silently. Invalid input (e.g. empty string) handled at the parent form level via zod (`z.array(z.string().min(1))`).
+- shadcn Combobox: handles trim/dedup/X-button/keyboard-nav natively. Invalid input (e.g. empty string) handled at the parent form level via zod (`z.array(z.string().min(1))`).
 - `useBeforeUnload`: standard `BeforeUnloadEvent` handling with both `e.preventDefault()` and `e.returnValue = ""` for legacy Chrome compat.
 - `<AdminPageHeader>`: if `docsHref` is undefined, the docs button doesn't render. No fallback href, no broken affordance.
 
 ## Testing
 
-- **vitest for `<TagInput>`:** Enter commits, comma-paste splits, X removes, dedup works, blur doesn't commit.
+- **vitest for the guardrails page Combobox usage:** smoke test that field values round-trip through the form (Enter adds a tag, X removes a tag, form value mirrors the chip list). The Combobox primitive itself is upstream-tested; we only test our wiring.
 - **vitest for `<AdminPageHeader>`:** renders title, conditional description, conditional docs button, conditional dirty badge.
 - **vitest for `useBeforeUnload`:** registers/unregisters listener correctly with `when` toggling.
 - **One refactor smoke per admin page:** assert that the `<AdminPageHeader>` is the first child of the page root.
