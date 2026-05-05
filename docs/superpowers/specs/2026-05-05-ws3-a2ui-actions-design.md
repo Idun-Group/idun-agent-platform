@@ -89,7 +89,7 @@ A2UISurfaceWrapper renders the new surface inside the new
 | Q5 | Lifecycle of past surfaces | Only the latest assistant message's surfaces are interactive. Older surfaces render in history but their actions are disabled (CSS `pointer-events-none` + handler guard). |
 | Q6 | Smoke-test agent demo | Combined — form echo (`submit_form`), branching menu (`option_a/b/c`), reset (`reset`) on the existing showcase. |
 | Q7 | LLM example | Travel destination picker. Gemini Flash via `langchain-google-genai`. 2-node graph (`propose` / `acknowledge`). Folder `examples/a2ui-llm-picker/`. |
-| — | Validation strategy | `a2ui-agent-sdk==0.2.1` pinned. Mandatory inbound validation in `read_a2ui_context`. Mandatory outbound validation in `build_emit_envelope` and `build_update_envelope` (WS2 retrofit). |
+| — | Validation strategy | `a2ui-agent-sdk==0.2.1` pinned. **Inbound** validation in `read_a2ui_context` is Pydantic-with-`extra="forbid"` only — the SDK does not ship JSON Schemas for `client_to_server.json` or `client_data_model.json` (verified at install: only `server_to_client.json` + `common_types.json` + `basic_catalog.json` ship as wheel assets at `a2ui/assets/0.9/`). This matches the SDK's own design — `a2ui.schema.validator` only builds a server→client validator, treating client→server as Pydantic/Zod-validated. **Outbound** validation in `build_emit_envelope` / `build_update_envelope` uses the SDK's bundled `server_to_client.json` (mandatory, raises `ValueError` on malformed envelopes). |
 
 ## 5. Wire contract
 
@@ -153,27 +153,18 @@ from importlib.resources import files
 from functools import cache
 import json, logging
 from typing import Any, Literal, Mapping
-from jsonschema import Draft202012Validator, RefResolver
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from a2ui.schema.constants import VERSION_0_9  # noqa: F401  — version pin documentation
 
 log = logging.getLogger(__name__)
 
-
-@cache
-def _client_to_server_validator() -> Draft202012Validator:
-    pkg = files("a2ui").joinpath("assets/specification/v0_9/json")
-    cts = json.loads(pkg.joinpath("client_to_server.json").read_text())
-    common = json.loads(pkg.joinpath("common_types.json").read_text())
-    resolver = RefResolver.from_schema(cts, store={"common_types.json": common})
-    return Draft202012Validator(cts, resolver=resolver)
-
-
-@cache
-def _client_data_model_validator() -> Draft202012Validator:
-    pkg = files("a2ui").joinpath("assets/specification/v0_9/json")
-    cdm = json.loads(pkg.joinpath("client_data_model.json").read_text())
-    return Draft202012Validator(cdm)
+# Note: a2ui-agent-sdk 0.2.1 does NOT ship JSON Schemas for client_to_server.json
+# or client_data_model.json — only server_to_client.json + common_types.json +
+# basic_catalog.json (at a2ui/assets/0.9/). This matches the SDK's own design:
+# inbound (client→server) is Pydantic/Zod-validated, outbound (server→client) is
+# JSON-Schema-validated. We follow the same stance:
+#   - Inbound (this module): Pydantic with extra="forbid" is the validation.
+#   - Outbound (envelope.py via _server_to_client_validator below): JSON Schema.
 
 
 class A2UIClientAction(BaseModel):
@@ -209,11 +200,13 @@ class A2UIContext(BaseModel):
 
 
 def read_a2ui_context(state: Mapping[str, Any]) -> A2UIContext | None:
-    """Read + JSON-Schema-validate + box the A2UI action+dataModel from state.
+    """Read + Pydantic-validate + box the A2UI action+dataModel from state.
 
-    Validation is mandatory. Soft-fails to None on missing or malformed payload
-    (logs WARNING). Text-mode turns (no idun.a2uiClientMessage) return None
-    silently.
+    Validation is mandatory and Pydantic-backed (the SDK does not ship JSON
+    Schemas for client→server messages, matching its own design). Pydantic
+    models use extra="forbid" so malformed payloads fail loudly. Soft-fails
+    to None on missing or malformed payload (logs WARNING). Text-mode turns
+    (no idun.a2uiClientMessage) return None silently.
     """
     idun = state.get("idun") if state else None
     if not isinstance(idun, Mapping):
@@ -223,23 +216,11 @@ def read_a2ui_context(state: Mapping[str, Any]) -> A2UIContext | None:
     if raw_msg is None:
         return None
 
-    msg_errors = list(_client_to_server_validator().iter_errors(raw_msg))
-    if msg_errors:
-        log.warning("a2ui action failed schema validation: %s",
-                    msg_errors[0].message)
-        return None
-    if raw_dm is not None:
-        dm_errors = list(_client_data_model_validator().iter_errors(raw_dm))
-        if dm_errors:
-            log.warning("a2ui dataModel failed schema validation: %s",
-                        dm_errors[0].message)
-            return None
-
     try:
         msg = A2UIClientMessage.model_validate(raw_msg)
         dm  = A2UIClientDataModel.model_validate(raw_dm) if raw_dm else None
-    except ValidationError as e:  # pragma: no cover  — guarded above
-        log.warning("a2ui pydantic mirror disagreed with schema: %s", e)
+    except ValidationError as e:
+        log.warning("a2ui payload failed validation: %s", e)
         return None
     return A2UIContext(action=msg.action, data_model=dm)
 ```
@@ -260,8 +241,8 @@ Added to `idun_agent_engine.a2ui.__init__.__all__`:
 
 `libs/idun_agent_engine/src/idun_agent_engine/a2ui/envelope.py` is updated to:
 
-1. Validate the produced envelope against `server_to_client.json` before returning. On validation error, raise `ValueError` with the JSON-Schema error path (e.g., `/messages/0/createSurface/components/2/component`). Mandatory — no opt-in flag.
-2. Validate each entry in `components: [...]` against the Basic Catalog component schema (also from `a2ui-agent-sdk`'s bundled assets). Catches typos like `{"compoonent": "Button"}` at agent side instead of silent placeholder rendering.
+1. Validate the produced envelope against `server_to_client.json` before returning. The validator wires `common_types.json` via `referencing.Registry` (or `RefResolver` on older `jsonschema`), matching the pattern `a2ui.schema.validator` uses internally. On validation error, raise `ValueError` with the JSON-Schema error path (e.g., `/messages/0/createSurface/components/2/component`). Mandatory — no opt-in flag. Schemas load from `a2ui/assets/0.9/` (the SDK's actual bundled-asset path, verified at install).
+2. Validate each entry in `components: [...]` against the Basic Catalog component schema (`a2ui/assets/0.9/basic_catalog.json`). Catches typos like `{"compoonent": "Button"}` at agent side instead of silent placeholder rendering.
 3. Default `sendDataModel: True` on `createSurface`. New `send_data_model: bool = True` kwarg on `build_emit_envelope` and `emit_surface` to override.
 
 `BASIC_CATALOG_V09` stays as the canonical URL string `"https://a2ui.org/specification/v0_9/basic_catalog.json"` — that URL is A2UI's stable public catalog identifier, and the wire field is the URL itself. We do not re-export an `a2ui.basic_catalog` constant because doing so would couple Idun's public API to that package's internal naming.
@@ -545,7 +526,7 @@ services/idun_agent_standalone_ui/CLAUDE.md              # MOD: +sendAction, +in
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| `a2ui-agent-sdk` doesn't ship `client_to_server.json` as a wheel asset (the SDK's `SPEC_VERSION_MAP` references only `server_to_client.json` and `common_types.json` for v0.9; whether the client schema files are packaged via `pack_specs_hook.py` needs confirmation) | Low | First-import probe via `importlib.resources.files("a2ui").joinpath("assets/specification/v0_9/json/client_to_server.json").is_file()` raises a clear `ImportError` naming the SDK version. Fallback: vendor the single 1 KB file under `idun_agent_engine/a2ui/schemas/v0_9/` and load it from there with the same validator wiring. |
+| Pydantic-only inbound validation drifts vs. a future A2UI client→server JSON Schema if the SDK ever publishes one | Low | Verified at install time that `a2ui-agent-sdk==0.2.1` only bundles `server_to_client.json` + `common_types.json` + `basic_catalog.json` (at `a2ui/assets/0.9/`). The SDK itself uses Pydantic/Zod for client→server, not JSON Schema. If a future SDK release adds the missing schema files, layer JSON-Schema validation in `read_a2ui_context` alongside the Pydantic mirror. Until then, Pydantic with `extra="forbid"` is the strongest validation available and matches the SDK's stance. |
 | Gemini model id wrong or unavailable | Medium | `GEMINI_MODEL` env override; first-call exception surfaces a clear message naming the env var. |
 | `with_structured_output` returns inconsistent shapes across Gemini versions | Low | Pydantic `min_length=3, max_length=3` raises a clear `ValidationError`; example degrades to a text fallback. |
 | Old WS2 surfaces with no `sendDataModel` send no dataModel | Low | Engine default flips to `True`; agents handle `data_for() is None` gracefully. |

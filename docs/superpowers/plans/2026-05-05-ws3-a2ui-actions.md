@@ -93,19 +93,19 @@ Expected: `a2ui-agent-sdk`, `a2a-sdk`, `jsonschema` (and pre-existing `google-ad
 
 - [ ] **Step 3: Verify the schema files are bundled in the wheel**
 
-Run:
+`a2ui-agent-sdk==0.2.1` ships THREE v0.9 schemas at `a2ui/assets/0.9/`: `server_to_client.json`, `common_types.json`, `basic_catalog.json`. It does NOT ship `client_to_server.json` or `client_data_model.json` (the SDK uses Pydantic/Zod for client→server, not JSON Schema — we follow the same stance). Run:
 
 ```bash
 uv run --no-sync python -c "
 from importlib.resources import files
-pkg = files('a2ui').joinpath('assets/specification/v0_9/json')
-for fname in ('client_to_server.json', 'server_to_client.json', 'common_types.json', 'client_data_model.json'):
+pkg = files('a2ui').joinpath('assets/0.9')
+for fname in ('server_to_client.json', 'common_types.json', 'basic_catalog.json'):
     p = pkg.joinpath(fname)
     print(fname, p.is_file(), p.stat().st_size if p.is_file() else 'MISSING')
 "
 ```
 
-Expected: all four lines say `True <size>`. If any prints `MISSING`, STOP and escalate — the wheel doesn't ship that schema and the fallback (vendor the file) needs to engage. Per the spec's risk register, vendor `client_to_server.json` under `libs/idun_agent_engine/src/idun_agent_engine/a2ui/schemas/v0_9/` and load it from there in subsequent tasks.
+Expected: all three lines say `True <size>` (a few KB to ~50 KB each). If any prints `MISSING`, STOP and escalate via BLOCKED — the SDK pin is broken and we need to either bump or vendor.
 
 - [ ] **Step 4: Commit**
 
@@ -114,9 +114,11 @@ git add libs/idun_agent_engine/pyproject.toml uv.lock
 git commit -m "$(cat <<'EOF'
 chore(engine): pin a2ui-agent-sdk==0.2.1 + add examples extra
 
-Adds a2ui-agent-sdk for canonical A2UI v0.9 JSON Schemas (client_to_server,
-server_to_client, common_types, client_data_model). Verified the spec
-files ship as wheel assets via importlib.resources. Adds an [examples]
+Adds a2ui-agent-sdk for canonical A2UI v0.9 JSON Schemas. Verified the
+SDK ships server_to_client.json + common_types.json + basic_catalog.json
+as wheel assets at a2ui/assets/0.9/ (the SDK does NOT ship JSON Schemas
+for client_to_server.json or client_data_model.json — by design, it
+uses Pydantic/Zod for client→server validation). Adds an [examples]
 optional extra for langchain-google-genai used by the upcoming WS3
 travel-picker example.
 
@@ -359,7 +361,9 @@ EOF
 
 ---
 
-### Task 3: JSON Schema validators + agreement gate
+### Task 3: Outbound JSON Schema validator + fixtures
+
+**Note on scope after install-time discovery:** `a2ui-agent-sdk==0.2.1` ships JSON Schemas only for the **outbound** (server→client) direction — `server_to_client.json`, `common_types.json`, `basic_catalog.json`. It does NOT ship `client_to_server.json` or `client_data_model.json`, mirroring the SDK's own design where client→server is Pydantic/Zod-validated only. We adopt the same stance: outbound validation uses JSON Schema (this task + T6), inbound validation uses Pydantic with `extra="forbid"` (T4 already gives us that via the mirror models from T2).
 
 **Files:**
 - Modify: `libs/idun_agent_engine/src/idun_agent_engine/a2ui/actions.py`
@@ -401,7 +405,9 @@ Create `libs/idun_agent_engine/tests/unit/a2ui/fixtures/valid_data_model.json`:
 }
 ```
 
-- [ ] **Step 2: Append validator + agreement-gate tests to `test_actions.py`**
+These fixtures power the inbound Pydantic tests in T4. They are not paired with JSON-Schema tests because the SDK ships no inbound schemas.
+
+- [ ] **Step 2: Append outbound-validator tests to `test_actions.py`**
 
 Append at the end of `libs/idun_agent_engine/tests/unit/a2ui/test_actions.py`:
 
@@ -409,85 +415,33 @@ Append at the end of `libs/idun_agent_engine/tests/unit/a2ui/test_actions.py`:
 
 
 @pytest.mark.unit
-class TestValidators:
-    def _load(self, name: str) -> dict:
-        import json
-        from pathlib import Path
-        return json.loads(
-            (Path(__file__).parent / "fixtures" / name).read_text()
-        )
+class TestServerToClientValidator:
+    """The outbound (server→client) JSON Schema validator wraps the SDK's
+    bundled server_to_client.json and is consumed by T6 envelope retrofit."""
 
-    def test_client_to_server_validator_accepts_valid_action(self) -> None:
-        from idun_agent_engine.a2ui.actions import _client_to_server_validator
-        v = _client_to_server_validator()
-        errors = list(v.iter_errors(self._load("valid_action.json")))
+    def test_accepts_minimal_create_surface_message(self) -> None:
+        from idun_agent_engine.a2ui.actions import _server_to_client_validator
+        v = _server_to_client_validator()
+        msg = {
+            "version": "v0.9",
+            "createSurface": {
+                "surfaceId": "s1",
+                "catalogId": "https://a2ui.org/specification/v0_9/basic_catalog.json",
+            },
+        }
+        errors = list(v.iter_errors(msg))
         assert errors == [], f"unexpected schema errors: {errors}"
 
-    def test_client_to_server_validator_rejects_missing_required(self) -> None:
-        from idun_agent_engine.a2ui.actions import _client_to_server_validator
-        v = _client_to_server_validator()
-        msg = self._load("valid_action.json")
-        del msg["action"]["timestamp"]
-        errors = list(v.iter_errors(msg))
+    def test_rejects_missing_required(self) -> None:
+        from idun_agent_engine.a2ui.actions import _server_to_client_validator
+        v = _server_to_client_validator()
+        bad = {"version": "v0.9", "createSurface": {}}  # surfaceId/catalogId missing
+        errors = list(v.iter_errors(bad))
         assert errors, "expected at least one schema error"
 
-    def test_client_data_model_validator_accepts_valid(self) -> None:
-        from idun_agent_engine.a2ui.actions import _client_data_model_validator
-        v = _client_data_model_validator()
-        errors = list(v.iter_errors(self._load("valid_data_model.json")))
-        assert errors == []
-
-    def test_validators_are_cached(self) -> None:
-        from idun_agent_engine.a2ui.actions import (
-            _client_to_server_validator, _client_data_model_validator,
-        )
-        assert _client_to_server_validator() is _client_to_server_validator()
-        assert _client_data_model_validator() is _client_data_model_validator()
-
-
-@pytest.mark.unit
-class TestSchemaPydanticAgreement:
-    """Regression gate — Pydantic models and JSON Schemas must agree.
-
-    When A2UI bumps the schema, this test fails first. The upgrade path
-    becomes: refresh fixtures → fix Pydantic → bump SDK pin.
-    """
-
-    def _load(self, name: str) -> dict:
-        import json
-        from pathlib import Path
-        return json.loads(
-            (Path(__file__).parent / "fixtures" / name).read_text()
-        )
-
-    def test_valid_action_accepted_by_both(self) -> None:
-        from idun_agent_engine.a2ui.actions import (
-            _client_to_server_validator, A2UIClientMessage,
-        )
-        msg = self._load("valid_action.json")
-        assert list(_client_to_server_validator().iter_errors(msg)) == []
-        # Pydantic must also accept (no exception):
-        A2UIClientMessage.model_validate(msg)
-
-    def test_missing_field_rejected_by_both(self) -> None:
-        from idun_agent_engine.a2ui.actions import (
-            _client_to_server_validator, A2UIClientMessage,
-        )
-        msg = self._load("valid_action.json")
-        del msg["action"]["sourceComponentId"]
-        assert list(_client_to_server_validator().iter_errors(msg))
-        with pytest.raises(ValidationError):
-            A2UIClientMessage.model_validate(msg)
-
-    def test_extra_field_rejected_by_pydantic(self) -> None:
-        # JSON Schema may use "additionalProperties: false" or true depending
-        # on the section; Pydantic is strict via extra="forbid". This test
-        # captures the strict-vs-strict invariant on the action sub-object.
-        from idun_agent_engine.a2ui.actions import A2UIClientMessage
-        msg = self._load("valid_action.json")
-        msg["action"]["unknownField"] = "x"
-        with pytest.raises(ValidationError):
-            A2UIClientMessage.model_validate(msg)
+    def test_validator_is_cached(self) -> None:
+        from idun_agent_engine.a2ui.actions import _server_to_client_validator
+        assert _server_to_client_validator() is _server_to_client_validator()
 ```
 
 - [ ] **Step 3: Run extended tests to verify they fail**
@@ -496,9 +450,9 @@ class TestSchemaPydanticAgreement:
 uv run --no-sync pytest libs/idun_agent_engine/tests/unit/a2ui/test_actions.py -v
 ```
 
-Expected: 9 existing tests still PASS, new tests FAIL with `ImportError: cannot import name '_client_to_server_validator' from 'idun_agent_engine.a2ui.actions'`.
+Expected: 9 existing tests still PASS, 3 new tests FAIL with `ImportError: cannot import name '_server_to_client_validator' from 'idun_agent_engine.a2ui.actions'`.
 
-- [ ] **Step 4: Add validators to `actions.py`**
+- [ ] **Step 4: Add the outbound validator to `actions.py`**
 
 Open `libs/idun_agent_engine/src/idun_agent_engine/a2ui/actions.py` and prepend these imports under the existing `from __future__ import annotations`:
 
@@ -518,11 +472,13 @@ Add the following block immediately after the imports and before the `class A2UI
 log = logging.getLogger(__name__)
 
 
-# A2UI v0.9 schemas ship inside the a2ui-agent-sdk wheel under
-# a2ui/assets/specification/v0_9/json/. We load them directly via
-# importlib.resources so we don't depend on the SDK's SPEC_VERSION_MAP
-# (which currently lists only server_to_client + common_types for v0.9).
-_A2UI_SCHEMA_DIR = files("a2ui").joinpath("assets/specification/v0_9/json")
+# a2ui-agent-sdk 0.2.1 ships v0.9 JSON Schemas under a2ui/assets/0.9/.
+# Only server→client schemas are bundled (server_to_client.json,
+# common_types.json, basic_catalog.json). The SDK's own design treats
+# client→server messages as Pydantic/Zod-validated, so we mirror that:
+# outbound validation goes through the validator below; inbound uses the
+# Pydantic models in this module.
+_A2UI_SCHEMA_DIR = files("a2ui").joinpath("assets/0.9")
 
 
 def _load_schema(filename: str) -> dict:
@@ -530,20 +486,15 @@ def _load_schema(filename: str) -> dict:
 
 
 @cache
-def _client_to_server_validator() -> Draft202012Validator:
-    """Validator for v0.9 client→server messages, with $ref resolution
-    for common_types.json which the schema references."""
-    cts = _load_schema("client_to_server.json")
+def _server_to_client_validator() -> Draft202012Validator:
+    """Validator for v0.9 server→client envelopes (createSurface,
+    updateComponents, updateDataModel). Resolves $ref to common_types."""
+    s2c = _load_schema("server_to_client.json")
     common = _load_schema("common_types.json")
     resolver = RefResolver.from_schema(
-        cts, store={"common_types.json": common},
+        s2c, store={"common_types.json": common},
     )
-    return Draft202012Validator(cts, resolver=resolver)
-
-
-@cache
-def _client_data_model_validator() -> Draft202012Validator:
-    return Draft202012Validator(_load_schema("client_data_model.json"))
+    return Draft202012Validator(s2c, resolver=resolver)
 ```
 
 - [ ] **Step 5: Run tests to verify they pass**
@@ -552,7 +503,7 @@ def _client_data_model_validator() -> Draft202012Validator:
 uv run --no-sync pytest libs/idun_agent_engine/tests/unit/a2ui/test_actions.py -v
 ```
 
-Expected: all tests PASS (9 from Task 2 + 4 validator tests + 3 agreement-gate tests = 16 total).
+Expected: all tests PASS (9 from Task 2 + 3 outbound-validator tests = 12 total).
 
 - [ ] **Step 6: Commit**
 
@@ -561,16 +512,20 @@ git add libs/idun_agent_engine/src/idun_agent_engine/a2ui/actions.py \
         libs/idun_agent_engine/tests/unit/a2ui/test_actions.py \
         libs/idun_agent_engine/tests/unit/a2ui/fixtures/
 git commit -m "$(cat <<'EOF'
-feat(engine): add A2UI v0.9 JSON Schema validators
+feat(engine): add A2UI v0.9 outbound JSON Schema validator
 
-Loads client_to_server.json + common_types.json + client_data_model.json
-from a2ui-agent-sdk's bundled assets via importlib.resources. Wraps
-Draft202012Validator with a RefResolver pinning common_types so $ref
-resolution stays local. Validators are functools.cached singletons.
+Loads server_to_client.json + common_types.json from a2ui-agent-sdk's
+bundled assets at a2ui/assets/0.9/. Wraps Draft202012Validator with a
+RefResolver pinning common_types so $ref resolution stays local.
+Validator is a functools.cached singleton, consumed by the envelope
+retrofit in T6.
 
-Adds a regression gate test that cross-checks Pydantic mirrors against
-the canonical JSON Schemas — failures here are the early-warning signal
-when A2UI bumps the schema.
+Inbound (client→server) actions/data-model are not validated here —
+the SDK does not ship those JSON Schemas (its own client→server path
+relies on Pydantic/Zod). We follow the same stance; T4 covers inbound
+validation via Pydantic mirrors with extra="forbid".
+
+Adds fixture files used by T4's Pydantic tests.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -646,9 +601,21 @@ class TestReadA2UIContext:
             ctx = read_a2ui_context(bad)
         assert ctx is None
         assert any(
-            "a2ui action failed schema validation" in rec.getMessage()
+            "a2ui payload failed validation" in rec.getMessage()
             for rec in caplog.records
         )
+
+    def test_extra_field_rejected_by_pydantic(self, caplog) -> None:
+        # Pydantic with extra="forbid" must reject unknown fields. This is
+        # our mandatory inbound validation layer (the SDK does not ship
+        # client_to_server JSON Schemas, so Pydantic IS the schema).
+        import logging
+        from idun_agent_engine.a2ui.actions import read_a2ui_context
+        bad = self._state_with_action()
+        bad["idun"]["a2uiClientMessage"]["action"]["unknownField"] = "x"
+        with caplog.at_level(logging.WARNING):
+            ctx = read_a2ui_context(bad)
+        assert ctx is None
 
     def test_malformed_data_model_returns_none(self, caplog) -> None:
         import logging
@@ -684,7 +651,7 @@ from typing import Mapping  # noqa: E402  — placed after class defs for docstr
 
 
 def read_a2ui_context(state: Mapping[str, Any]) -> A2UIContext | None:
-    """Read + JSON-Schema-validate + box the A2UI action+dataModel from state.
+    """Read + Pydantic-validate + box the A2UI action+dataModel from state.
 
     ag-ui-langgraph spreads the request's ``forwarded_props`` into the
     initial LangGraph input via ``stream_input = {**forwarded_props,
@@ -692,11 +659,16 @@ def read_a2ui_context(state: Mapping[str, Any]) -> A2UIContext | None:
     ``state["idun"]["a2uiClientMessage"]`` and (optionally)
     ``state["idun"]["a2uiClientDataModel"]`` are visible to nodes.
 
-    Validation is mandatory: malformed payload returns ``None`` and logs
-    a WARNING. Text-mode turns (no idun.a2uiClientMessage) return ``None``
-    silently. Designed so a frontend bug in the action path can never
+    Validation is mandatory and Pydantic-backed (the SDK does not ship
+    JSON Schemas for client→server messages, matching its own design).
+    Pydantic models use ``extra="forbid"`` so malformed payloads fail
+    loudly. Soft-fails to None on missing or malformed payload (logs a
+    WARNING). Text-mode turns (no idun.a2uiClientMessage) return None
+    silently — designed so a frontend bug in the action path can never
     crash a text-mode turn.
     """
+    from pydantic import ValidationError
+
     if not isinstance(state, Mapping):
         return None
     idun = state.get("idun")
@@ -707,22 +679,6 @@ def read_a2ui_context(state: Mapping[str, Any]) -> A2UIContext | None:
     if raw_msg is None:
         return None
 
-    msg_errors = list(_client_to_server_validator().iter_errors(raw_msg))
-    if msg_errors:
-        log.warning(
-            "a2ui action failed schema validation: %s",
-            msg_errors[0].message,
-        )
-        return None
-    if raw_dm is not None:
-        dm_errors = list(_client_data_model_validator().iter_errors(raw_dm))
-        if dm_errors:
-            log.warning(
-                "a2ui dataModel failed schema validation: %s",
-                dm_errors[0].message,
-            )
-            return None
-
     try:
         msg = A2UIClientMessage.model_validate(raw_msg)
         dm = (
@@ -730,8 +686,8 @@ def read_a2ui_context(state: Mapping[str, Any]) -> A2UIContext | None:
             if raw_dm is not None
             else None
         )
-    except Exception as e:  # pragma: no cover  — guarded above
-        log.warning("a2ui pydantic mirror disagreed with schema: %s", e)
+    except ValidationError as e:
+        log.warning("a2ui payload failed validation: %s", e)
         return None
     return A2UIContext(action=msg.action, data_model=dm)
 ```
@@ -742,7 +698,7 @@ def read_a2ui_context(state: Mapping[str, Any]) -> A2UIContext | None:
 uv run --no-sync pytest libs/idun_agent_engine/tests/unit/a2ui/test_actions.py -v
 ```
 
-Expected: all tests PASS (16 from Tasks 2-3 + 7 new = 23 total).
+Expected: all tests PASS (12 from Tasks 2-3 + 8 new = 20 total).
 
 - [ ] **Step 5: Commit**
 
@@ -753,8 +709,12 @@ git commit -m "$(cat <<'EOF'
 feat(engine): add read_a2ui_context helper for action ingest
 
 Reads idun.a2uiClientMessage + (optional) idun.a2uiClientDataModel
-from LangGraph state, validates against A2UI v0.9's JSON Schemas
-(mandatory), and boxes into typed Pydantic A2UIContext.
+from LangGraph state, validates via the Pydantic mirror models
+(extra="forbid"), and boxes into typed A2UIContext.
+
+Validation is mandatory and Pydantic-backed — a2ui-agent-sdk does not
+ship JSON Schemas for client→server (the SDK's own design treats this
+direction as Pydantic/Zod-validated; we follow the same stance).
 
 Soft-fail design: text-mode turns and malformed payloads both return
 None — agents that mix text + action turns won't crash if the frontend
@@ -969,23 +929,15 @@ uv run --no-sync pytest libs/idun_agent_engine/tests/unit/a2ui/test_envelope_val
 
 Expected: tests FAIL — happy paths pass (validation not yet wired) but the typo/unknown tests don't raise, and `sendDataModel` field doesn't exist yet.
 
-- [ ] **Step 4: Add `_server_to_client_validator` to actions module**
+- [ ] **Step 4: (no-op — `_server_to_client_validator` already exists)**
 
-Open `libs/idun_agent_engine/src/idun_agent_engine/a2ui/actions.py`. After `_client_data_model_validator`, append:
+The outbound validator was added in Task 3. Verify it imports cleanly:
 
-```python
-@cache
-def _server_to_client_validator() -> Draft202012Validator:
-    """Validator for v0.9 server→client envelopes (createSurface,
-    updateComponents, updateDataModel). $refs to common_types.
-    """
-    s2c = _load_schema("server_to_client.json")
-    common = _load_schema("common_types.json")
-    resolver = RefResolver.from_schema(
-        s2c, store={"common_types.json": common},
-    )
-    return Draft202012Validator(s2c, resolver=resolver)
+```bash
+uv run --no-sync python -c "from idun_agent_engine.a2ui.actions import _server_to_client_validator; print(_server_to_client_validator())"
 ```
+
+Expected: prints a `Draft202012Validator` repr. Skip this step's "append code" portion entirely — the validator is already in place.
 
 - [ ] **Step 5: Wire validation + `send_data_model` into `envelope.py`**
 
