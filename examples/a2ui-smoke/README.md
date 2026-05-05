@@ -9,8 +9,12 @@ the agent is deterministic.
 After sending any message in the chat:
 
 - A short text summary in the assistant bubble (the markdown body)
-- Below it, an A2UI **Card** containing a title and 3 list items
-  (NYC coffee shops)
+- Below it, an A2UI **Basic Catalog showcase** rendered inside a
+  Card: typography (h1–h5, body, caption), layout (Column, Row,
+  Divider), inputs (TextField, CheckBox, Slider, DateTimeInput,
+  ChoicePicker), visuals (Image, Icon), a Button, and a Tabs
+  component. Inputs are interactive — they round-trip user edits
+  via the surface dataModel.
 
 ## Files
 

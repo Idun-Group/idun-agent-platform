@@ -6,7 +6,7 @@ remove the corresponding ``apply_*`` function **and** its call in ``apply_all()`
 HOW TO VERIFY REMOVAL IS SAFE
 ------------------------------
 1. Remove the patch.
-2. Run an agent that uses MCP tools via the /agent/copilotkit/stream endpoint.
+2. Run an agent that uses MCP tools via the /agent/run endpoint.
 3. Trigger a tool call and confirm the stream completes without errors.
 4. For the Gemini patch: send a simple chat message and confirm TEXT_MESSAGE_*
    events appear in the stream (not just RAW events).
@@ -304,7 +304,7 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
                     yield evt
             return
 
-        # --- Case 2: List of outputs (BUG — upstream crashes here) --------
+        # --- Case 2: List of outputs (silently skipped upstream — see Fix (a)) --
         if isinstance(tool_call_output, list):
             tool_messages = [m for m in tool_call_output if isinstance(m, ToolMessage)]
             for tool_msg in tool_messages:
@@ -403,7 +403,7 @@ def apply_all() -> None:
     To remove a patch after the upstream fix is released:
     1. Delete the ``apply_*`` function and its helper.
     2. Remove its call below.
-    3. Test with an MCP-tool agent via /agent/copilotkit/stream.
+    3. Test with an MCP-tool agent via /agent/run.
     4. Test with a Gemini agent — confirm TEXT_MESSAGE_* events appear.
     """
     apply_handle_single_event_patch()

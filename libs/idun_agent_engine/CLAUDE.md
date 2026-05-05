@@ -27,6 +27,7 @@ idun_agent_engine/
 │   └── helpers         # emit_surface, update_components — wrap adispatch_custom_event
 ├── agent/              # Framework adapters (all implement BaseAgent ABC)
 │   ├── base            # BaseAgent protocol: initialize(), invoke(), stream(), copilotkit_agent_instance
+│   │                   #   (legacy name; returns ag_ui_langgraph.LangGraphAgent / ag_ui_adk.ADKAgent)
 │   ├── langgraph/      # Primary adapter. Full streaming (AG-UI events). Expects uncompiled StateGraph.
 │   ├── adk/            # Google ADK adapter. Mature. Session + memory services. Stream not yet implemented.
 │   └── haystack/       # Haystack adapter. Accepts Pipeline or Agent. Basic invoke only. Experimental.
