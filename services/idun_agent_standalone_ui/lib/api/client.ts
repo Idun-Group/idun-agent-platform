@@ -14,7 +14,7 @@
 import type { FieldError } from "./types";
 
 export class ApiError extends Error {
-  public readonly fieldErrors: FieldError[];
+  public readonly fieldErrors: readonly FieldError[];
 
   constructor(
     public status: number,
@@ -25,19 +25,19 @@ export class ApiError extends Error {
   }
 }
 
-function extractFieldErrors(detail: unknown): FieldError[] {
+function extractFieldErrors(detail: unknown): readonly FieldError[] {
   if (!detail || typeof detail !== "object") return [];
   const error = (detail as { error?: unknown }).error;
   if (!error || typeof error !== "object") return [];
   const raw = (error as { fieldErrors?: unknown }).fieldErrors;
   if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (item): item is FieldError =>
-      item != null &&
-      typeof item === "object" &&
-      typeof (item as { field?: unknown }).field === "string" &&
-      typeof (item as { message?: unknown }).message === "string",
-  );
+  return raw.filter((item): item is FieldError => {
+    if (item == null || typeof item !== "object") return false;
+    const o = item as { field?: unknown; message?: unknown; code?: unknown };
+    if (typeof o.field !== "string") return false;
+    if (typeof o.message !== "string") return false;
+    return typeof o.code === "string" || o.code === null;
+  });
 }
 
 let redirected = false;

@@ -117,6 +117,7 @@ describe("apiFetch fieldErrors parsing", () => {
   });
 
   it("parses fieldErrors out of the admin error envelope", async () => {
+    expect.assertions(4);
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -132,20 +133,19 @@ describe("apiFetch fieldErrors parsing", () => {
         { status: 422, headers: { "content-type": "application/json" } },
       ),
     );
-    let caught: unknown = null;
     try {
       await apiFetch("/admin/api/v1/agent");
     } catch (e) {
-      caught = e;
+      expect(e).toBeInstanceOf(ApiError);
+      const err = e as ApiError;
+      expect(err.fieldErrors).toHaveLength(2);
+      expect(err.fieldErrors[0].field).toBe("agent.config.graphDefinition");
+      expect(err.fieldErrors[1].code).toBeNull();
     }
-    expect(caught).toBeInstanceOf(ApiError);
-    const err = caught as ApiError;
-    expect(err.fieldErrors).toHaveLength(2);
-    expect(err.fieldErrors[0].field).toBe("agent.config.graphDefinition");
-    expect(err.fieldErrors[1].code).toBeNull();
   });
 
   it("exposes empty fieldErrors when none present", async () => {
+    expect.assertions(2);
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
