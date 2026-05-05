@@ -97,9 +97,7 @@ async def test_on_tool_end_list_output_emits_per_tool_message_events():
         "data": {"output": tool_messages, "input": {"query": "x"}},
     }
 
-    events = await _drain(
-        LangGraphAgent._handle_single_event(agent, event, state={})
-    )
+    events = await _drain(LangGraphAgent._handle_single_event(agent, event, state={}))
 
     # has_function_streaming=False → start/args/end + result for each msg = 4 per msg
     result_events = [e for e in events if e.type == EventType.TOOL_CALL_RESULT]
@@ -139,9 +137,7 @@ async def test_on_tool_end_raw_dict_output_resolves_tool_call_id_from_metadata()
         "data": {"output": {"hits": ["a", "b"]}, "input": {"q": "test"}},
     }
 
-    events = await _drain(
-        LangGraphAgent._handle_single_event(agent, event, state={})
-    )
+    events = await _drain(LangGraphAgent._handle_single_event(agent, event, state={}))
 
     result_events = [
         e for e in events if getattr(e, "type", None) == EventType.TOOL_CALL_RESULT
@@ -211,6 +207,65 @@ async def test_on_chat_model_stream_strips_finish_reason_when_content_present():
         assert events == ["delegated"]
         # And the patch restored finish_reason on the chunk afterwards.
         assert chunk.response_metadata["finish_reason"] == "STOP"
+    finally:
+        patches._ORIGINAL_HANDLE_SINGLE_EVENT = original_backup
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_on_chat_model_stream_handles_dict_shaped_chunk():
+    """Fix (b) dict-chunk safety: chunks may arrive as plain dicts (not just
+    BaseMessage instances) from some LangChain providers/forwarders. Upstream
+    0.0.35 introduced ``_chunk_get`` (agent.py:903-906) for exactly this case.
+    The patch must mirror that pattern so dict-shaped chunks don't crash with
+    ``AttributeError: 'dict' object has no attribute 'response_metadata'``.
+    """
+    from ag_ui_langgraph.agent import LangGraphAgent
+    from ag_ui_langgraph.types import LangGraphEventTypes
+
+    from idun_agent_engine.server import patches
+    from idun_agent_engine.server.patches import apply_handle_single_event_patch
+
+    apply_handle_single_event_patch()
+
+    seen_finish_reasons = []
+
+    async def _spy_original(self, event, state):
+        chunk = event["data"]["chunk"]
+
+        def _chunk_get(c, key, default=None):
+            if isinstance(c, dict):
+                return c.get(key, default)
+            return getattr(c, key, default)
+
+        response_metadata = _chunk_get(chunk, "response_metadata", {}) or {}
+        seen_finish_reasons.append(response_metadata.get("finish_reason"))
+        yield "delegated"
+
+    original_backup = patches._ORIGINAL_HANDLE_SINGLE_EVENT
+    patches._ORIGINAL_HANDLE_SINGLE_EVENT = _spy_original
+    try:
+        agent = _make_patched_agent_stub()
+        # Plain dict chunk — NOT a MagicMock — to exercise the dict path.
+        chunk: dict[str, Any] = {
+            "response_metadata": {"finish_reason": "STOP"},
+            "content": "hello world",
+            "tool_call_chunks": [],
+        }
+        event = {
+            "event": LangGraphEventTypes.OnChatModelStream,
+            "data": {"chunk": chunk},
+        }
+
+        events = await _drain(
+            LangGraphAgent._handle_single_event(agent, event, state={})
+        )
+
+        # Spy invoked exactly once with finish_reason stripped, and chunk
+        # restored after delegation.
+        assert seen_finish_reasons == [None]
+        assert events == ["delegated"]
+        assert chunk["response_metadata"]["finish_reason"] == "STOP"
     finally:
         patches._ORIGINAL_HANDLE_SINGLE_EVENT = original_backup
 

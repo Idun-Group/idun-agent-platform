@@ -53,6 +53,12 @@ PATCHES
         is no content and no tool call data. When content IS present, we
         temporarily strip ``finish_reason`` from response_metadata before
         delegating to the original handler, then restore it.
+      - Dict-chunk safety: chunks may arrive as plain dicts (not just
+        ``BaseMessage`` instances) from some LangChain providers/forwarders.
+        Upstream 0.0.35 added a ``_chunk_get(c, key, default)`` accessor
+        (``ag_ui_langgraph/agent.py`` lines 903-906) for exactly this case;
+        the patch mirrors that pattern so dict-shaped chunks don't crash
+        with ``AttributeError`` before the Gemini fix can even run.
 
 REMOVED PATCHES
 ---------------
@@ -169,16 +175,33 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
         # =================================================================
         if event_type == LangGraphEventTypes.OnChatModelStream:
             chunk = event["data"]["chunk"]
-            finish_reason = chunk.response_metadata.get("finish_reason")
+
+            # Mirrors upstream ag_ui_langgraph 0.0.35 ``_chunk_get`` accessor
+            # (agent.py:903-906): chunks may arrive as plain dicts from some
+            # LangChain providers/forwarders, not just BaseMessage instances.
+            # Without this, dict chunks crashed before the Gemini fix ran.
+            def _chunk_get(c, key, default=None):
+                if isinstance(c, dict):
+                    return c.get(key, default)
+                return getattr(c, key, default)
+
+            response_metadata = _chunk_get(chunk, "response_metadata", None) or {}
+            finish_reason = response_metadata.get("finish_reason")
 
             if finish_reason:
-                has_content = chunk.content and resolve_message_content(chunk.content)
-                has_tool_calls = bool(chunk.tool_call_chunks)
+                chunk_content = _chunk_get(chunk, "content", None)
+                has_content = bool(chunk_content) and bool(
+                    resolve_message_content(chunk_content)
+                )
+                has_tool_calls = bool(_chunk_get(chunk, "tool_call_chunks", None))
 
                 if has_content or has_tool_calls:
                     # Strip finish_reason so the original handler processes
-                    # this chunk normally instead of returning early.
-                    original_finish = chunk.response_metadata.pop("finish_reason")
+                    # this chunk normally instead of returning early. The
+                    # resolved metadata is the same dict object regardless of
+                    # chunk shape, so .pop() / item assignment hit the real
+                    # object in both the dict and BaseMessage paths.
+                    original_finish = response_metadata.pop("finish_reason")
                     try:
                         async for evt in _ORIGINAL_HANDLE_SINGLE_EVENT(
                             self, event, state
@@ -186,7 +209,7 @@ def apply_handle_single_event_patch() -> None:  # noqa: C901
                             yield evt
                     finally:
                         # Restore to avoid mutating the event permanently.
-                        chunk.response_metadata["finish_reason"] = original_finish
+                        response_metadata["finish_reason"] = original_finish
                     return
 
             # No finish_reason, or finish_reason with no content — let
