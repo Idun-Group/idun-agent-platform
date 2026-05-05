@@ -59,10 +59,18 @@ def render_ascii(graph: AgentGraph) -> str:
     for w in graph.metadata.warnings:
         lines.append(f"⚠ {w}")
 
+    # Cycle guard — LangGraph IRs can have cycles (conditional edges that loop
+    # back). Without this, _walk recurses until the stack blows up.
+    visited: set[str] = set()
+
     def _walk(node_id: str, prefix: str, is_last: bool, is_root: bool) -> None:
         node = nodes_by_id[node_id]
         connector = "" if is_root else ("└─ " if is_last else "├─ ")
         if isinstance(node, AgentNode):
+            if node_id in visited:
+                lines.append(f"{prefix}{connector}{_agent_label(node)} ↺")
+                return
+            visited.add(node_id)
             lines.append(f"{prefix}{connector}{_agent_label(node)}")
         else:
             assert isinstance(node, ToolNode)
