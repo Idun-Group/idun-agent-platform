@@ -16,18 +16,22 @@ Run via:
     uv run idun agent serve --source file --path examples/a2ui-smoke/config.yaml
 """
 
-from typing import Annotated, TypedDict
+from typing import Annotated, Any, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 
-from idun_agent_engine.a2ui import emit_surface
+from idun_agent_engine.a2ui import emit_surface, read_a2ui_context
 
 
 class State(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
+    # WS3: forwarded_props.idun (a2ui action + dataModel) lands here.
+    # Plain dict — no reducer — so each turn's value overwrites the
+    # previous (no checkpointer staleness).
+    idun: dict[str, Any] | None
 
 
 _FALLBACK = (
@@ -267,10 +271,107 @@ async def respond(state: State, config: RunnableConfig) -> State:
     return {"messages": [AIMessage(content=_FALLBACK)]}
 
 
+async def acknowledge(state: State, config: RunnableConfig) -> State:
+    """Branch on the A2UI action that triggered this turn and emit a response.
+
+    submit_form -> confirmation Card with the form values + Reset button
+    reset       -> re-emit the original showcase
+    option_a/b/c -> small per-option confirmation Card
+    anything else -> degraded text-only response (no surface emitted)
+    """
+    ctx = read_a2ui_context(state)
+    if ctx is None:
+        # Router shouldn't reach this path without an action; defend anyway.
+        return {"messages": [AIMessage(content="No A2UI action in state.")]}
+
+    name = ctx.action.name
+
+    if name == "submit_form":
+        values = ctx.data_for(ctx.action.surface_id) or {}
+        await emit_surface(
+            config=config,
+            surface_id="submit_confirmation",
+            fallback_text=f"Form submitted with {len(values)} fields.",
+            components=[
+                {"id": "h", "component": "Text", "text": "Form submitted!", "variant": "h2"},
+                {"id": "f_name", "component": "Text", "text": f"Name: {values.get('name') or '—'}"},
+                {"id": "f_color", "component": "Text", "text": f"Color: {values.get('color') or '—'}"},
+                {"id": "f_volume", "component": "Text", "text": f"Volume: {values.get('volume', '—')}"},
+                {"id": "f_agreed", "component": "Text", "text": f"Subscribe: {values.get('agreed', False)}"},
+                {"id": "f_when", "component": "Text", "text": f"When: {values.get('when') or '—'}"},
+                {"id": "reset_label", "component": "Text", "text": "Reset"},
+                {
+                    "id": "reset_btn",
+                    "component": "Button",
+                    "child": "reset_label",
+                    "action": {"event": {"name": "reset", "context": {}}},
+                },
+                {
+                    "id": "col",
+                    "component": "Column",
+                    "children": [
+                        "h", "f_name", "f_color", "f_volume",
+                        "f_agreed", "f_when", "reset_btn",
+                    ],
+                },
+                {"id": "root", "component": "Card", "child": "col"},
+            ],
+        )
+        return {"messages": [AIMessage(content="Submitted — see confirmation surface.")]}
+
+    if name == "reset":
+        await emit_surface(
+            config=config,
+            surface_id="a2ui_showcase",
+            components=_COMPONENTS,
+            fallback_text=_FALLBACK,
+            metadata={"source": "smoke_test", "shape": "showcase"},
+            data={
+                "name": "",
+                "agreed": False,
+                "color": "blue",
+                "volume": 50,
+                "when": "",
+            },
+        )
+        return {"messages": [AIMessage(content="Reset. Try again.")]}
+
+    if name in ("option_a", "option_b", "option_c"):
+        letter = name.split("_", 1)[1].upper()
+        await emit_surface(
+            config=config,
+            surface_id=f"branch_{name}",
+            fallback_text=f"You picked Option {letter}.",
+            components=[
+                {"id": "h", "component": "Text", "text": f"Option {letter} picked", "variant": "h2"},
+                {"id": "src", "component": "Text",
+                 "text": f"Source: {ctx.action.source_component_id}"},
+                {"id": "col", "component": "Column", "children": ["h", "src"]},
+                {"id": "root", "component": "Card", "child": "col"},
+            ],
+        )
+        return {"messages": [AIMessage(content=f"Option {letter} acknowledged.")]}
+
+    return {"messages": [AIMessage(content=f"Unknown action: {name}")]}
+
+
+def _route_entry(state: State) -> str:
+    """Route to acknowledge() iff the turn carries an A2UI action."""
+    state_dict = state if isinstance(state, dict) else dict(state)
+    idun = state_dict.get("idun")
+    has_action = isinstance(idun, dict) and "a2uiClientMessage" in idun
+    return "acknowledge" if has_action else "respond"
+
+
 # Module-level binding so the standalone wizard's AST scanner detects
 # this as a LangGraph agent. _build() inside a function would hide it.
 builder = StateGraph(State)
 builder.add_node("respond", respond)
-builder.set_entry_point("respond")
+builder.add_node("acknowledge", acknowledge)
+builder.set_conditional_entry_point(
+    _route_entry,
+    {"respond": "respond", "acknowledge": "acknowledge"},
+)
 builder.add_edge("respond", END)
+builder.add_edge("acknowledge", END)
 graph = builder.compile()
