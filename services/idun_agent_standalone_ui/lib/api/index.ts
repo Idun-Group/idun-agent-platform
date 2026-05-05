@@ -121,6 +121,10 @@ export const api = {
     apiFetch<MutationResponse<DeleteResult>>(`${ADMIN}/mcp-servers/${id}`, {
       method: "DELETE",
     }),
+  discoverMcpTools: (id: string) =>
+    apiFetch<ConnectionCheckResult>(`${ADMIN}/mcp-servers/${id}/tools`, {
+      method: "POST",
+    }),
 
   // guardrails (collection)
   listGuardrails: () => apiFetch<GuardrailRead[]>(`${ADMIN}/guardrails`),
@@ -208,4 +212,14 @@ export const api = {
     apiFetch<{ mermaid: string }>("/agent/graph/mermaid"),
   getAgentGraphAscii: () =>
     apiFetch<{ ascii: string }>("/agent/graph/ascii"),
+
+  // Engine surface — health probe (used by the agent page Verify button).
+  // Returns 503 with `agent_not_ready` until the engine is materialized.
+  checkAgentHealth: () =>
+    apiFetch<{
+      status: string;
+      service: string;
+      version: string;
+      agent_name: string | null;
+    }>("/health"),
 };
