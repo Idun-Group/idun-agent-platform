@@ -10,12 +10,13 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Mapping
 from functools import cache
 from importlib.resources import files
 from typing import Any, Literal
 
 from jsonschema import Draft202012Validator
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
@@ -112,3 +113,43 @@ class A2UIContext(BaseModel):
         if self.data_model is None:
             return None
         return self.data_model.surfaces.get(surface_id)
+
+
+def read_a2ui_context(state: Mapping[str, Any]) -> A2UIContext | None:
+    """Read + Pydantic-validate + box the A2UI action+dataModel from state.
+
+    ag-ui-langgraph spreads the request's ``forwarded_props`` into the
+    initial LangGraph input via ``stream_input = {**forwarded_props,
+    **payload_input}`` (see ag_ui_langgraph/agent.py:540), so
+    ``state["idun"]["a2uiClientMessage"]`` and (optionally)
+    ``state["idun"]["a2uiClientDataModel"]`` are visible to nodes.
+
+    Validation is mandatory and Pydantic-backed (the SDK does not ship
+    JSON Schemas for client→server messages, matching its own design).
+    Pydantic models use ``extra="forbid"`` so malformed payloads fail
+    loudly. Soft-fails to None on missing or malformed payload (logs a
+    WARNING). Text-mode turns (no idun.a2uiClientMessage) return None
+    silently — designed so a frontend bug in the action path can never
+    crash a text-mode turn.
+    """
+    if not isinstance(state, Mapping):
+        return None
+    idun = state.get("idun")
+    if not isinstance(idun, Mapping):
+        return None
+    raw_msg = idun.get("a2uiClientMessage")
+    raw_dm = idun.get("a2uiClientDataModel")
+    if raw_msg is None:
+        return None
+
+    try:
+        msg = A2UIClientMessage.model_validate(raw_msg)
+        dm = (
+            A2UIClientDataModel.model_validate(raw_dm)
+            if raw_dm is not None
+            else None
+        )
+    except ValidationError as e:
+        log.warning("a2ui payload failed validation: %s", e)
+        return None
+    return A2UIContext(action=msg.action, data_model=dm)

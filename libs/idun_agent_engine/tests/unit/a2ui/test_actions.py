@@ -1,6 +1,10 @@
 """Unit tests for idun_agent_engine.a2ui.actions."""
 from __future__ import annotations
 
+import json
+import logging
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -10,6 +14,7 @@ from idun_agent_engine.a2ui.actions import (
     A2UIClientMessage,
     A2UIContext,
     _server_to_client_validator,
+    read_a2ui_context,
 )
 
 
@@ -160,3 +165,73 @@ class TestServerToClientValidator:
             f"unexpected schema errors on transitive ref path: "
             f"{[e.message for e in errors]}"
         )
+
+
+@pytest.mark.unit
+class TestReadA2UIContext:
+    def _state_with_action(self, *, with_dm: bool = False) -> dict:
+        fx = Path(__file__).parent / "fixtures"
+        msg = json.loads((fx / "valid_action.json").read_text())
+        state: dict = {"messages": [], "idun": {"a2uiClientMessage": msg}}
+        if with_dm:
+            state["idun"]["a2uiClientDataModel"] = json.loads(
+                (fx / "valid_data_model.json").read_text()
+            )
+        return state
+
+    def test_returns_typed_view(self) -> None:
+        ctx = read_a2ui_context(self._state_with_action(with_dm=True))
+        assert isinstance(ctx, A2UIContext)
+        assert ctx.action.name == "submit_form"
+        assert ctx.action.surface_id == "a2ui_showcase"
+        assert ctx.action.source_component_id == "btn_demo"
+        assert ctx.data_for("a2ui_showcase") == {
+            "name": "alice", "agreed": True,
+            "color": "blue", "volume": 50,
+            "when": "2026-06-01T09:00:00Z",
+        }
+
+    def test_text_mode_returns_none(self) -> None:
+        assert read_a2ui_context({"messages": []}) is None
+        assert read_a2ui_context({}) is None
+
+    def test_idun_present_but_no_message_returns_none(self) -> None:
+        assert read_a2ui_context({"idun": {}}) is None
+
+    def test_data_model_optional(self) -> None:
+        ctx = read_a2ui_context(self._state_with_action(with_dm=False))
+        assert ctx is not None
+        assert ctx.data_model is None
+        assert ctx.data_for("a2ui_showcase") is None
+
+    def test_malformed_action_returns_none_and_logs(self, caplog) -> None:
+        bad = self._state_with_action()
+        del bad["idun"]["a2uiClientMessage"]["action"]["timestamp"]
+        with caplog.at_level(logging.WARNING):
+            ctx = read_a2ui_context(bad)
+        assert ctx is None
+        assert any(
+            "a2ui payload failed validation" in rec.getMessage()
+            for rec in caplog.records
+        )
+
+    def test_extra_field_rejected_by_pydantic(self, caplog) -> None:
+        # Pydantic with extra="forbid" must reject unknown fields. This is
+        # our mandatory inbound validation layer (the SDK does not ship
+        # client_to_server JSON Schemas, so Pydantic IS the schema).
+        bad = self._state_with_action()
+        bad["idun"]["a2uiClientMessage"]["action"]["unknownField"] = "x"
+        with caplog.at_level(logging.WARNING):
+            ctx = read_a2ui_context(bad)
+        assert ctx is None
+
+    def test_malformed_data_model_returns_none(self, caplog) -> None:
+        bad = self._state_with_action(with_dm=True)
+        bad["idun"]["a2uiClientDataModel"]["surfaces"] = "not-a-dict"
+        with caplog.at_level(logging.WARNING):
+            ctx = read_a2ui_context(bad)
+        assert ctx is None
+
+    def test_state_with_non_dict_idun_returns_none(self) -> None:
+        assert read_a2ui_context({"idun": "scalar"}) is None
+        assert read_a2ui_context({"idun": [1, 2, 3]}) is None
