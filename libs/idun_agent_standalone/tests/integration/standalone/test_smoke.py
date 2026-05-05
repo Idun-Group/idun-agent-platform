@@ -19,4 +19,5 @@ async def test_password_app_starts_unauthenticated(standalone_password):
 
 
 async def test_seeded_agent_has_id(standalone, seeded_agent):
+    assert standalone is not None
     assert seeded_agent is not None

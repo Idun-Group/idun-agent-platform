@@ -13,6 +13,19 @@ from idun_agent_standalone.core.security import hash_password
 from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
 from idun_agent_standalone.db.migrate import upgrade_head
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.session import (
+    create_db_engine,
+    create_sessionmaker,
+)
+
+
+_LANGGRAPH_AGENT_BODY = {
+    "server": {"api": {"port": 8000}},
+    "agent": {
+        "type": "LANGGRAPH",
+        "config": {"name": "ada", "graph_definition": "agent.py:graph"},
+    },
+}
 
 
 def _sqlite_url(db_path: Path) -> str:
@@ -32,10 +45,8 @@ async def standalone(
 ) -> AsyncIterator[FastAPI]:
     db_path = tmp_path / "standalone.db"
     await _migrate(db_path, monkeypatch)
-    settings = StandaloneSettings(
-        database_url=_sqlite_url(db_path),
-        auth_mode=AuthMode.NONE,
-    )
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", AuthMode.NONE.value)
+    settings = StandaloneSettings()
     app = await create_standalone_app(settings)
     try:
         yield app
@@ -49,16 +60,10 @@ async def standalone_password(
 ) -> AsyncIterator[FastAPI]:
     db_path = tmp_path / "standalone.db"
     await _migrate(db_path, monkeypatch)
-    session_secret = "x" * 64
-    password_hash = hash_password("hunter2")
-    monkeypatch.setenv("IDUN_SESSION_SECRET", session_secret)
-    monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", password_hash)
-    settings = StandaloneSettings(
-        database_url=_sqlite_url(db_path),
-        auth_mode=AuthMode.PASSWORD,
-        session_secret=session_secret,
-        admin_password_hash=password_hash,
-    )
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", AuthMode.PASSWORD.value)
+    monkeypatch.setenv("IDUN_SESSION_SECRET", "x" * 64)
+    monkeypatch.setenv("IDUN_ADMIN_PASSWORD_HASH", hash_password("hunter2"))
+    settings = StandaloneSettings()
     app = await create_standalone_app(settings)
     try:
         yield app
@@ -74,18 +79,38 @@ async def seeded_agent(request: pytest.FixtureRequest) -> str:
         app = request.getfixturevalue("standalone_password")
     else:
         app = request.getfixturevalue("standalone")
-    base_engine_config = {
-        "server": {"api": {"port": 8000}},
-        "agent": {
-            "type": "LANGGRAPH",
-            "config": {"name": "ada", "graph_definition": "agent.py:graph"},
-        },
-    }
     async with app.state.sessionmaker() as session:
         row = StandaloneAgentRow(
             name="Ada",
-            base_engine_config=base_engine_config,
+            base_engine_config=_LANGGRAPH_AGENT_BODY,
         )
         session.add(row)
         await session.commit()
         return row.id
+
+
+@pytest.fixture
+async def standalone_with_agent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> AsyncIterator[FastAPI]:
+    db_path = tmp_path / "standalone.db"
+    db_url = _sqlite_url(db_path)
+    monkeypatch.setenv("DATABASE_URL", db_url)
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", AuthMode.NONE.value)
+    await asyncio.to_thread(upgrade_head)
+
+    db_engine = create_db_engine(db_url)
+    sessionmaker = create_sessionmaker(db_engine)
+    async with sessionmaker() as session:
+        session.add(
+            StandaloneAgentRow(name="Ada", base_engine_config=_LANGGRAPH_AGENT_BODY)
+        )
+        await session.commit()
+    await db_engine.dispose()
+
+    settings = StandaloneSettings()
+    app = await create_standalone_app(settings)
+    try:
+        yield app
+    finally:
+        await app.state.db_engine.dispose()
