@@ -15,12 +15,14 @@ import {
   AdkIcon,
   LangGraphIcon,
 } from "@/components/admin/provider-icons";
+import { RuntimeStatusCard } from "@/components/admin/RuntimeStatusCard";
 import {
   AgentGraphLazy,
   type AgentGraphHandle,
 } from "@/components/graph/AgentGraphLazy";
 import { ExportMenu } from "@/components/graph/ExportMenu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -156,6 +158,7 @@ export default function AgentPage() {
   const [verifyAttempt, setVerifyAttempt] = useState(0);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
+  const [verifiedVersion, setVerifiedVersion] = useState<string | null>(null);
   const verifyAbort = useRef<AbortController | null>(null);
 
   useEffect(
@@ -180,6 +183,7 @@ export default function AgentPage() {
         const health = await api.checkAgentHealth();
         if (controller.signal.aborted) return;
         if (health.status === "ok") {
+          setVerifiedVersion(health.version ?? null);
           setVerifiedName(health.agent_name ?? null);
           setVerifyStatus("connected");
           return;
@@ -312,12 +316,19 @@ export default function AgentPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-4xl">
-      <header className="space-y-1">
-        <h1 className="font-serif text-2xl font-medium text-foreground">Agent</h1>
-        <p className="text-sm text-muted-foreground">
-          Identity and graph definition for the running agent. Memory is configured
-          on its own page.
-        </p>
+      <header className="flex flex-row items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="font-serif text-2xl font-medium text-foreground">Agent</h1>
+          <p className="text-sm text-muted-foreground">
+            Identity and graph definition for the running agent. Memory is configured
+            on its own page.
+          </p>
+        </div>
+        {verifiedVersion && (
+          <Badge variant="outline" className="font-mono text-xs">
+            engine {verifiedVersion}
+          </Badge>
+        )}
       </header>
 
       {restartRequired && (
@@ -393,6 +404,8 @@ export default function AgentPage() {
           )}
         </CardContent>
       </Card>
+
+      <RuntimeStatusCard />
 
       <Card>
         <CardHeader>
