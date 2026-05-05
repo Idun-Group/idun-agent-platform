@@ -1,10 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import type { A2uiClientAction, A2uiClientDataModel } from "@a2ui/web_core/v0_9";
 import {
   type AGUIEvent,
   GuardrailRejectedError,
   type IdunA2UIEvent,
+  type IdunForwardedProps,
   type Message,
   runAgent,
 } from "@/lib/agui";
@@ -549,9 +558,133 @@ export function useChat(threadId: string) {
     [threadId],
   );
 
+  /**
+   * Send an A2UI action turn. Mirrors ``send(text)`` but skips the synthetic
+   * user-message bubble (action turns aren't user utterances) and POSTs the
+   * action via ``forwardedProps.idun.a2uiClientMessage`` instead of a chat
+   * message. The optional ``dataModel`` snapshot is forwarded under
+   * ``a2uiClientDataModel`` so the engine can hydrate server-side state.
+   *
+   * No-op when ``status !== "idle"``: the wrapper already gates click delivery
+   * via ``isInteractive`` (T10), but a programmatic call mid-stream should
+   * also be ignored to keep the run pipeline single-tracked.
+   */
+  const sendAction = useCallback(
+    async (
+      action: A2uiClientAction,
+      dataModel: A2uiClientDataModel | undefined,
+    ): Promise<void> => {
+      if (status !== "idle") return;
+
+      hydratableRef.current = false;
+      const runId = crypto.randomUUID();
+      const assistantMsg: Message = {
+        id: runId + "-a",
+        role: "assistant",
+        text: "",
+        toolCalls: [],
+        thinking: [],
+        opener: "",
+        plan: "",
+        thoughts: "",
+        streaming: true,
+      };
+      setMessages((m) => [...m, assistantMsg]);
+      setStatus("streaming");
+      setError(null);
+
+      abortRef.current = new AbortController();
+      const snapshotRef: SnapshotRef = { current: null };
+
+      const forwardedProps: IdunForwardedProps = {
+        idun: {
+          a2uiClientMessage: { version: "v0.9", action },
+          ...(dataModel ? { a2uiClientDataModel: dataModel } : {}),
+        },
+      };
+
+      try {
+        await runAgent({
+          threadId,
+          runId,
+          forwardedProps: forwardedProps as unknown as Record<string, unknown>,
+          signal: abortRef.current.signal,
+          onEvent: (e) => {
+            const captured: ChatEvent = {
+              ...e,
+              _id: ++eventIdRef.current,
+              _at: Date.now(),
+            };
+            setEvents((prev) => {
+              const next = [...prev, captured];
+              return next.length > MAX_EVENTS
+                ? next.slice(next.length - MAX_EVENTS)
+                : next;
+            });
+            applyEvent(setMessages, setStatus, setError, snapshotRef, e);
+          },
+        });
+      } catch (e: unknown) {
+        const name = (e as { name?: string }).name;
+        if (e instanceof GuardrailRejectedError) {
+          setStatus("idle");
+          setError(null);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.role === "assistant" && m.id === assistantMsg.id
+                ? { ...m, text: e.reason, streaming: false }
+                : m,
+            ),
+          );
+        } else if (name !== "AbortError") {
+          setStatus("error");
+          setError((e as Error).message ?? "stream failed");
+        } else {
+          setStatus("idle");
+        }
+      } finally {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.role === "assistant" && m.id === assistantMsg.id && m.streaming
+              ? { ...m, streaming: false, currentStep: undefined }
+              : m,
+          ),
+        );
+      }
+    },
+    [threadId, status],
+  );
+
   const stop = useCallback(() => {
     abortRef.current?.abort();
   }, []);
 
-  return { messages, events, status, error, send, stop };
+  return { messages, events, status, error, send, sendAction, stop };
+}
+
+/** Value exposed by ChatActionsContext — currently just ``sendAction``. */
+type ChatActionsContextValue = {
+  sendAction: (
+    action: A2uiClientAction,
+    dataModel: A2uiClientDataModel | undefined,
+  ) => Promise<void>;
+};
+
+/**
+ * Lightweight Context for components nested deep in the chat tree
+ * (e.g., A2UISurfaceWrapper in T10). The Provider is wired in T11
+ * by the chat page that owns useChat.
+ */
+export const ChatActionsContext = createContext<ChatActionsContextValue | null>(
+  null,
+);
+
+export function useChatActions(): ChatActionsContextValue {
+  const ctx = useContext(ChatActionsContext);
+  if (ctx === null) {
+    throw new Error(
+      "useChatActions called outside <ChatActionsContext.Provider>",
+    );
+  }
+  return ctx;
 }
