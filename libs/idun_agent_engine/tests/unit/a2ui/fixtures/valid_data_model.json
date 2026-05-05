@@ -1,0 +1,12 @@
+{
+  "version": "v0.9",
+  "surfaces": {
+    "a2ui_showcase": {
+      "name": "alice",
+      "agreed": true,
+      "color": "blue",
+      "volume": 50,
+      "when": "2026-06-01T09:00:00Z"
+    }
+  }
+}

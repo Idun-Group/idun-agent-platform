@@ -115,3 +115,33 @@ class TestA2UIContext:
     def test_data_for_no_data_model_returns_none(self) -> None:
         ctx = self._ctx(with_data=False)
         assert ctx.data_for("s1") is None
+
+
+@pytest.mark.unit
+class TestServerToClientValidator:
+    """The outbound (server→client) JSON Schema validator wraps the SDK's
+    bundled server_to_client.json and is consumed by T6 envelope retrofit."""
+
+    def test_accepts_minimal_create_surface_message(self) -> None:
+        from idun_agent_engine.a2ui.actions import _server_to_client_validator
+        v = _server_to_client_validator()
+        msg = {
+            "version": "v0.9",
+            "createSurface": {
+                "surfaceId": "s1",
+                "catalogId": "https://a2ui.org/specification/v0_9/basic_catalog.json",
+            },
+        }
+        errors = list(v.iter_errors(msg))
+        assert errors == [], f"unexpected schema errors: {errors}"
+
+    def test_rejects_missing_required(self) -> None:
+        from idun_agent_engine.a2ui.actions import _server_to_client_validator
+        v = _server_to_client_validator()
+        bad = {"version": "v0.9", "createSurface": {}}  # surfaceId/catalogId missing
+        errors = list(v.iter_errors(bad))
+        assert errors, "expected at least one schema error"
+
+    def test_validator_is_cached(self) -> None:
+        from idun_agent_engine.a2ui.actions import _server_to_client_validator
+        assert _server_to_client_validator() is _server_to_client_validator()

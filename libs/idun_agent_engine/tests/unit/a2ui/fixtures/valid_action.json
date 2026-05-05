@@ -1,0 +1,10 @@
+{
+  "version": "v0.9",
+  "action": {
+    "name": "submit_form",
+    "surfaceId": "a2ui_showcase",
+    "sourceComponentId": "btn_demo",
+    "timestamp": "2026-05-05T10:42:13.412Z",
+    "context": {}
+  }
+}
