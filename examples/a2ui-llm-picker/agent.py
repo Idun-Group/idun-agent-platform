@@ -177,8 +177,74 @@ async def propose(state: State, config: RunnableConfig) -> State:
 # ----------------------------------------------------------------------------
 
 
+_ACK_SYSTEM = (
+    "The user just chose a travel destination. Write a 2-paragraph pitch:"
+    " paragraph 1 (4-6 sentences) describes the destination; paragraph 2"
+    " (3-5 sentences) suggests one perfect day. Concrete, sensory, no"
+    " marketing-speak."
+)
+
+
 async def acknowledge(state: State, config: RunnableConfig) -> State:
-    raise NotImplementedError("acknowledge: implemented in Task 17")
+    """Read the picked destination from the action context, generate a pitch,
+    and emit a follow-up surface.
+
+    The propose surface uses flat scalars in action.event.context
+    ({id, name, tagline}) per A2UI v0.9 DynamicValue constraints (see T16
+    deviation). We read those scalars directly off the typed action.
+    """
+    ctx = read_a2ui_context(state)
+    if ctx is None or ctx.action.name != "pick_destination":
+        return {"messages": [AIMessage(content="No destination selected.")]}
+
+    chosen = ctx.action.context or {}
+    name = chosen.get("name", "your destination")
+    tagline = chosen.get("tagline", "")
+    chosen_id = chosen.get("id", "x")
+
+    pitch_msg = await _llm().ainvoke([
+        SystemMessage(_ACK_SYSTEM),
+        HumanMessage(f"Destination: {name}.\nTagline: {tagline}."),
+    ])
+    pitch = (
+        pitch_msg.content
+        if isinstance(pitch_msg.content, str)
+        else str(pitch_msg.content)
+    )
+    paragraphs = [p.strip() for p in pitch.split("\n\n") if p.strip()][:2]
+
+    components = [
+        {"id": "h", "component": "Text", "text": name, "variant": "h2"},
+        {"id": "tag", "component": "Text", "text": tagline, "variant": "caption"},
+        *[
+            {"id": f"p{i}", "component": "Text", "text": para}
+            for i, para in enumerate(paragraphs)
+        ],
+        {"id": "again_lbl", "component": "Text", "text": "Ask another question"},
+        {
+            "id": "again_btn",
+            "component": "Button",
+            "child": "again_lbl",
+            "action": {"event": {"name": "ask_again", "context": {}}},
+        },
+        {
+            "id": "col",
+            "component": "Column",
+            "children": [
+                "h", "tag",
+                *[f"p{i}" for i in range(len(paragraphs))],
+                "again_btn",
+            ],
+        },
+        {"id": "root", "component": "Card", "child": "col"},
+    ]
+    await emit_surface(
+        config=config,
+        surface_id=f"travel_pitch_{chosen_id}",
+        fallback_text=f"Pitch for {name}.",
+        components=components,
+    )
+    return {"messages": [AIMessage(content=name)]}
 
 
 def _route_entry(state: State) -> str:
