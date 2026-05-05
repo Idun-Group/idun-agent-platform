@@ -147,8 +147,32 @@ _COMPONENTS = [
         "id": "btn_demo",
         "component": "Button",
         "child": "btn_label",
+        "action": {"event": {"name": "submit_form", "context": {}}},
     },
     {"id": "div_5", "component": "Divider"},
+    # ---- Branching menu ----------------------------------------------------
+    {"id": "h_branch", "component": "Text", "text": "Branching menu", "variant": "h2"},
+    {"id": "lab_a", "component": "Text", "text": "Option A"},
+    {"id": "lab_b", "component": "Text", "text": "Option B"},
+    {"id": "lab_c", "component": "Text", "text": "Option C"},
+    {
+        "id": "btn_a", "component": "Button", "child": "lab_a",
+        "action": {"event": {"name": "option_a", "context": {}}},
+    },
+    {
+        "id": "btn_b", "component": "Button", "child": "lab_b",
+        "action": {"event": {"name": "option_b", "context": {}}},
+    },
+    {
+        "id": "btn_c", "component": "Button", "child": "lab_c",
+        "action": {"event": {"name": "option_c", "context": {}}},
+    },
+    {
+        "id": "row_branch", "component": "Row",
+        "children": ["btn_a", "btn_b", "btn_c"],
+        "justify": "spaceBetween",
+    },
+    {"id": "div_branch", "component": "Divider"},
     # ---- Tabs --------------------------------------------------------------
     {"id": "h_tabs", "component": "Text", "text": "Tabs", "variant": "h2"},
     {
@@ -206,6 +230,9 @@ _COMPONENTS = [
             "h_action",
             "btn_demo",
             "div_5",
+            "h_branch",
+            "row_branch",
+            "div_branch",
             "h_tabs",
             "tabs_demo",
         ],
