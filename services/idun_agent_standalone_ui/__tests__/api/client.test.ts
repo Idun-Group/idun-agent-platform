@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ApiError, apiFetch } from "@/lib/api/client";
+
 type ApiFetch = typeof import("@/lib/api/client").apiFetch;
 
 describe("apiFetch 401 redirect", () => {
@@ -99,5 +101,64 @@ describe("apiFetch 401 redirect", () => {
     await expect(apiFetch("/admin/api/v1/agent")).rejects.toThrow();
     // href is unchanged — apiFetch did not redirect.
     expect(window.location.href).toBe("SENTINEL_NO_REDIRECT");
+  });
+});
+
+describe("apiFetch fieldErrors parsing", () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    fetchMock.mockReset();
+    vi.unstubAllGlobals();
+  });
+
+  it("parses fieldErrors out of the admin error envelope", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            code: "validation_failed",
+            message: "Bad config",
+            fieldErrors: [
+              { field: "agent.config.graphDefinition", message: "bad path", code: "invalid" },
+              { field: "agent.config.name", message: "required", code: null },
+            ],
+          },
+        }),
+        { status: 422, headers: { "content-type": "application/json" } },
+      ),
+    );
+    let caught: unknown = null;
+    try {
+      await apiFetch("/admin/api/v1/agent");
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ApiError);
+    const err = caught as ApiError;
+    expect(err.fieldErrors).toHaveLength(2);
+    expect(err.fieldErrors[0].field).toBe("agent.config.graphDefinition");
+    expect(err.fieldErrors[1].code).toBeNull();
+  });
+
+  it("exposes empty fieldErrors when none present", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: { code: "internal_error", message: "boom" },
+        }),
+        { status: 500, headers: { "content-type": "application/json" } },
+      ),
+    );
+    try {
+      await apiFetch("/admin/api/v1/agent");
+    } catch (e) {
+      expect(e).toBeInstanceOf(ApiError);
+      expect((e as ApiError).fieldErrors).toEqual([]);
+    }
   });
 });
