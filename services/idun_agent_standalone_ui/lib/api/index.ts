@@ -35,6 +35,7 @@ import type {
   PromptCreate,
   PromptPatch,
   PromptRead,
+  RuntimeStatus,
   ScanResponse,
   SingletonDeleteResult,
 } from "./types";
@@ -222,4 +223,8 @@ export const api = {
       version: string;
       agent_name: string | null;
     }>("/health"),
+
+  // Runtime status (singleton — last reload outcome)
+  getRuntimeStatus: () =>
+    apiFetch<RuntimeStatus>(`${ADMIN}/runtime/status`),
 };
