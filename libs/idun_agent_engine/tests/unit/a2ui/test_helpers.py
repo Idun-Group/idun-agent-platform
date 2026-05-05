@@ -25,7 +25,7 @@ class TestEmitSurface:
             await emit_surface(
                 config={"configurable": {}},
                 surface_id="s",
-                components=[],
+                components=[{"id": "root", "component": "Text", "text": "hi"}],
             )
 
         assert mock.await_count == 1
@@ -57,7 +57,11 @@ class TestEmitSurface:
         mock = AsyncMock()
         config = {"configurable": {"thread_id": "t1"}}
         with patch("idun_agent_engine.a2ui.helpers.adispatch_custom_event", mock):
-            await emit_surface(config=config, surface_id="s", components=[])
+            await emit_surface(
+                config=config,
+                surface_id="s",
+                components=[{"id": "root", "component": "Text", "text": "hi"}],
+            )
         _, kwargs = mock.call_args
         assert kwargs.get("config") is config
 
@@ -68,7 +72,8 @@ class TestEmitSurface:
                 config={"configurable": {}},
                 surface_id="form",
                 components=[
-                    {"id": "name", "component": "TextField",
+                    {"id": "root", "component": "TextField",
+                     "label": "Name",
                      "value": {"path": "/name"}},
                 ],
                 data={"name": "alice"},
@@ -77,11 +82,12 @@ class TestEmitSurface:
         args, _ = mock.call_args
         envelope = args[1]
         assert len(envelope["messages"]) == 3
+        # A2UI v0.9 spec uses "value" for the updateDataModel payload.
         assert envelope["messages"][2] == {
             "version": "v0.9",
             "updateDataModel": {
                 "surfaceId": "form",
-                "data": {"name": "alice"},
+                "value": {"name": "alice"},
             },
         }
 
@@ -99,7 +105,7 @@ class TestUpdateComponents:
             await update_components(
                 config={"configurable": {}},
                 surface_id="s",
-                components=[],
+                components=[{"id": "root", "component": "Text", "text": "hi"}],
             )
 
         args, kwargs = mock.call_args

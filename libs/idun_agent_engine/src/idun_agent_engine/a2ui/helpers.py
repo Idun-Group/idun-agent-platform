@@ -31,6 +31,7 @@ async def emit_surface(
     catalog_id: str = BASIC_CATALOG_V09,
     metadata: dict[str, Any] | None = None,
     data: dict[str, Any] | None = None,
+    send_data_model: bool = True,
 ) -> None:
     """Dispatch an A2UI v0.9 envelope (createSurface + updateComponents
     + optional updateDataModel) as a LangGraph custom event named
@@ -57,6 +58,9 @@ async def emit_surface(
     Without ``data``, inputs render but user edits do not update because
     the renderer has no dataModel target for ``setValue``.
 
+    ``send_data_model`` controls whether the surface's dataModel is
+    forwarded to the agent on action clicks; default ``True``.
+
     Pure JSON only — non-serializable values in ``components``,
     ``metadata``, or ``data`` will be silently dropped by
     ag-ui-langgraph's ``dump_json_safe``.
@@ -68,6 +72,7 @@ async def emit_surface(
         catalog_id=catalog_id,
         metadata=metadata,
         data=data,
+        send_data_model=send_data_model,
     )
     await adispatch_custom_event(CUSTOM_EVENT_NAME, envelope, config=config)
 
