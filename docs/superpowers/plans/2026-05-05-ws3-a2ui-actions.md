@@ -2448,7 +2448,7 @@ EOF
 **Files:**
 - Modify: `examples/a2ui-smoke/agent.py`
 
-- [ ] **Step 1: Update the import line to pull in `read_a2ui_context`**
+- [ ] **Step 1: Update the import line to pull in `read_a2ui_context` + `Any`**
 
 Find:
 
@@ -2462,7 +2462,33 @@ Replace with:
 from idun_agent_engine.a2ui import emit_surface, read_a2ui_context
 ```
 
-- [ ] **Step 2: Add the `acknowledge` async function**
+Also ensure `Any` is imported from `typing`:
+
+```python
+from typing import Annotated, Any, TypedDict   # add Any if not present
+```
+
+- [ ] **Step 2: Add `idun` to the State TypedDict**
+
+This is REQUIRED — `StateGraph(<TypedDict>)` filters out top-level keys not declared on the schema, so `forwarded_props.idun` would be stripped before reaching `acknowledge` unless State declares it. (Empirically verified during T7. Side effect: capability discovery flips `input.mode` to `structured` — accepted in the spec.) Find:
+
+```python
+class State(TypedDict):
+    messages: Annotated[list[BaseMessage], add_messages]
+```
+
+Replace with:
+
+```python
+class State(TypedDict):
+    messages: Annotated[list[BaseMessage], add_messages]
+    # WS3: forwarded_props.idun (a2ui action + dataModel) lands here.
+    # Plain dict — no reducer — so each turn's value overwrites the
+    # previous (no checkpointer staleness).
+    idun: dict[str, Any] | None
+```
+
+- [ ] **Step 3: Add the `acknowledge` async function**
 
 Insert immediately after the existing `respond` async function:
 
@@ -2551,7 +2577,7 @@ async def acknowledge(state: State, config: RunnableConfig) -> State:
     return {"messages": [AIMessage(content=f"Unknown action: {name}")]}
 ```
 
-- [ ] **Step 3: Replace the linear `respond → END` graph with conditional entry**
+- [ ] **Step 4: Replace the linear `respond → END` graph with conditional entry**
 
 Find at the bottom of the file:
 
@@ -2586,7 +2612,7 @@ builder.add_edge("acknowledge", END)
 graph = builder.compile()
 ```
 
-- [ ] **Step 4: Sanity-check the graph still imports cleanly**
+- [ ] **Step 5: Sanity-check the graph still imports cleanly**
 
 ```bash
 uv run --no-sync python -c "from examples.a2ui_smoke.agent import graph; print('graph nodes:', list(graph.nodes.keys()))"
@@ -2606,7 +2632,7 @@ print('graph nodes:', list(m.graph.nodes.keys()))
 "
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add examples/a2ui-smoke/agent.py
@@ -2928,7 +2954,7 @@ Run via the engine:
 """
 
 import os
-from typing import Annotated, TypedDict
+from typing import Annotated, Any, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
@@ -2946,6 +2972,12 @@ from idun_agent_engine.a2ui import emit_surface, read_a2ui_context
 
 class State(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
+    # WS3: forwarded_props.idun (a2ui action + dataModel) lands here.
+    # Plain dict (no reducer) so each turn's value overwrites — no
+    # checkpointer staleness. Required: StateGraph filters out top-level
+    # keys not declared on the TypedDict, so omitting this means
+    # read_a2ui_context() would always return None.
+    idun: dict[str, Any] | None
 
 
 # ----------------------------------------------------------------------------
