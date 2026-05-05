@@ -2101,7 +2101,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.14.0,<2.0.0" },
     { name = "asyncpg", specifier = ">=0.30.0,<0.31.0" },
     { name = "authlib" },
-    { name = "fastapi", specifier = ">=0.115.0,<0.116.0" },
+    { name = "fastapi", specifier = ">=0.115.0,<1.0.0" },
     { name = "gunicorn", specifier = ">=23.0.0,<24.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "idun-agent-schema", specifier = ">=0.3.8,<1.0.0" },
