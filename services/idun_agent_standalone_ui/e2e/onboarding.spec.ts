@@ -197,10 +197,20 @@ test("EMPTY → user picks LangGraph → confirms → done shows OPENAI_API_KEY"
   await expect(page.locator(".react-flow__node").first()).toBeVisible({
     timeout: 10_000,
   });
-  // Export dropdown is rendered in the "Your agent" card header.
-  await expect(
-    page.getByRole("button", { name: /export/i }),
-  ).toBeVisible();
+  // Export dropdown is rendered in the "Your agent" card header — and
+  // clicking "Download PNG" actually fires a real download. This is the
+  // only test that exercises the end-to-end ref chain (Lazy → Suspense
+  // → AgentGraph → handle → bounds → html-to-image). Catches future
+  // regressions of either the next/dynamic ref-hijack fix or the dagre
+  // node-dimension / viewport-transform fixes.
+  const exportButton = page.getByRole("button", { name: /^export/i });
+  await expect(exportButton).toBeVisible();
+  await exportButton.click();
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 15_000 }),
+    page.getByRole("menuitem", { name: /download png/i }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/\.png$/);
 });
 
 test("ONE_DETECTED → user clicks Use → done shows generic env reminder", async ({
