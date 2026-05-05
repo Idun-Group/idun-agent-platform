@@ -11,6 +11,6 @@ agent:
   type: "LANGGRAPH"
   config:
     name: "A2UI Smoke Test"
-    graph_definition: "./agent.py:graph"
+    graph_definition: "/Users/geoffreyharrazi/Documents/GitHub/idun-agent-platform/examples/a2ui-smoke/agent.py:graph"
     checkpointer:
       type: "memory"
