@@ -32,6 +32,14 @@ vi.mock("@a2ui/markdown-it", () => ({
   renderMarkdown: vi.fn(async (text: string) => `<p>${text}</p>`),
 }));
 
+vi.mock("@/lib/use-chat", async () => {
+  const actual = await vi.importActual<any>("@/lib/use-chat");
+  return {
+    ...actual,
+    useChatActions: () => ({ sendAction: vi.fn() }),
+  };
+});
+
 describe("A2UISurfaceWrapper", () => {
   beforeEach(() => {
     onSurfaceCreatedHandlers.length = 0;
@@ -45,7 +53,7 @@ describe("A2UISurfaceWrapper", () => {
       catalogId: "https://a2ui.org/specification/v0_9/basic_catalog.json",
       messages: [],
     };
-    render(<A2UISurfaceWrapper surface={surface} />);
+    render(<A2UISurfaceWrapper surface={surface} isInteractive={true} />);
 
     // React dev mode may invoke ``useMemo`` factories more than once
     // for purity checks; assert at least once with the right shape.
@@ -67,7 +75,7 @@ describe("A2UISurfaceWrapper", () => {
         { version: "v0.9", updateComponents: { surfaceId: "s1", components: [] } },
       ],
     };
-    render(<A2UISurfaceWrapper surface={surface} />);
+    render(<A2UISurfaceWrapper surface={surface} isInteractive={true} />);
 
     // React dev mode may invoke ``useMemo`` factories twice for purity
     // checks — only the latest constructed instance is the one the
@@ -84,7 +92,7 @@ describe("A2UISurfaceWrapper", () => {
       catalogId: "https://a2ui.org/specification/v0_9/basic_catalog.json",
       messages: [],
     };
-    const { queryByTestId, container } = render(<A2UISurfaceWrapper surface={surface} />);
+    const { queryByTestId, container } = render(<A2UISurfaceWrapper surface={surface} isInteractive={true} />);
     expect(queryByTestId("a2ui-surface")).toBeNull();
     expect(container.textContent).toBe("");
   });
@@ -95,7 +103,7 @@ describe("A2UISurfaceWrapper", () => {
       catalogId: "https://a2ui.org/specification/v0_9/basic_catalog.json",
       messages: [],
     };
-    const { queryByTestId } = render(<A2UISurfaceWrapper surface={surface} />);
+    const { queryByTestId } = render(<A2UISurfaceWrapper surface={surface} isInteractive={true} />);
 
     // Capture the handler the wrapper registered.
     expect(onSurfaceCreatedHandlers.length).toBe(1);
@@ -114,7 +122,7 @@ describe("A2UISurfaceWrapper", () => {
       catalogId: "https://a2ui.org/specification/v0_9/basic_catalog.json",
       messages: [],
     };
-    const { queryByTestId } = render(<A2UISurfaceWrapper surface={surface} />);
+    const { queryByTestId } = render(<A2UISurfaceWrapper surface={surface} isInteractive={true} />);
 
     act(() => {
       onSurfaceCreatedHandlers[0]({ id: "different" });
@@ -140,7 +148,7 @@ describe("A2UISurfaceWrapper", () => {
 
     render(
       <React.StrictMode>
-        <A2UISurfaceWrapper surface={surface} />
+        <A2UISurfaceWrapper surface={surface} isInteractive={true} />
       </React.StrictMode>,
     );
 
@@ -198,7 +206,7 @@ describe("A2UISurfaceWrapper", () => {
     // Silence the expected console.error so the test output stays clean.
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const { rerender } = render(<A2UISurfaceWrapper surface={surface} />);
+    const { rerender } = render(<A2UISurfaceWrapper surface={surface} isInteractive={true} />);
     expect(processMessages).toHaveBeenCalledTimes(1);
     expect(processMessages).toHaveBeenNthCalledWith(1, surface.messages);
 
@@ -209,7 +217,7 @@ describe("A2UISurfaceWrapper", () => {
         { version: "v0.9", updateComponents: { surfaceId: "s1", components: [] } },
       ],
     };
-    rerender(<A2UISurfaceWrapper surface={updated} />);
+    rerender(<A2UISurfaceWrapper surface={updated} isInteractive={true} />);
 
     // The counter must have advanced past the throwing batch, so the
     // second call is exactly the new tail — not the throwing batch + tail.
