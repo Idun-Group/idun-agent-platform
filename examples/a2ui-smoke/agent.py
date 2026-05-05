@@ -127,7 +127,6 @@ _COMPONENTS = [
         "value": {"path": "/volume"},
         "min": 0,
         "max": 100,
-        "step": 1,
     },
     {
         "id": "input_date",
