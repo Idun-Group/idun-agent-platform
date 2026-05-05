@@ -165,4 +165,6 @@ async def test_round3_failure_rolls_back(
         patch = await client.patch("/admin/api/v1/observability", json=_langfuse_body())
         get = await client.get("/admin/api/v1/observability")
     assert patch.status_code == 500
+    assert patch.json()["error"]["code"] == "reload_failed"
+    assert patch.json()["error"]["details"] == {"recovered": True}
     assert get.status_code == 404

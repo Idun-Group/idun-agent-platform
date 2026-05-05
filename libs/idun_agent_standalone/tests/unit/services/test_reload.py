@@ -270,3 +270,76 @@ async def test_hash_not_propagated_on_failure(async_session, frozen_now) -> None
     state = await runtime_state.get(async_session)
     assert state is not None
     assert state.last_applied_config_hash is None
+
+
+@pytest.mark.asyncio
+async def test_runtime_state_full_shape_on_reloaded(
+    async_session, stub_reload_callable, frozen_now
+) -> None:
+    await _seed_agent(async_session)
+    await commit_with_reload(
+        async_session,
+        reload_callable=stub_reload_callable,
+        now=frozen_now,
+    )
+    state = await runtime_state.get(async_session)
+    assert state is not None
+    assert state.last_status == "reloaded"
+    assert state.last_message == "Saved and reloaded."
+    assert state.last_error is None
+    assert state.last_applied_config_hash is not None
+
+
+@pytest.mark.asyncio
+async def test_runtime_state_full_shape_on_restart_required(
+    async_session, stub_reload_callable, frozen_now
+) -> None:
+    await _seed_agent(async_session)
+    await commit_with_reload(
+        async_session,
+        reload_callable=stub_reload_callable,
+        now=frozen_now,
+    )
+
+    agent = (await async_session.execute(select(StandaloneAgentRow))).scalar_one()
+    agent.base_engine_config = {
+        "server": {"api": {"port": 8000}},
+        "agent": {
+            "type": "LANGGRAPH",
+            "config": {"name": "ada", "graph_definition": "agent.py:other_graph"},
+        },
+    }
+    await async_session.flush()
+
+    await commit_with_reload(
+        async_session,
+        reload_callable=stub_reload_callable,
+        now=frozen_now,
+    )
+
+    state = await runtime_state.get(async_session)
+    assert state is not None
+    assert state.last_status == "restart_required"
+    assert "restart" in state.last_message.lower()
+    assert state.last_error is None
+    assert state.last_applied_config_hash is not None
+
+
+@pytest.mark.asyncio
+async def test_runtime_state_full_shape_on_reload_failed(
+    async_session, frozen_now
+) -> None:
+    await _seed_agent(async_session)
+    failing_reload = AsyncMock(side_effect=ReloadInitFailed("engine boom"))
+    with pytest.raises(AdminAPIError):
+        await commit_with_reload(
+            async_session,
+            reload_callable=failing_reload,
+            now=frozen_now,
+        )
+    state = await runtime_state.get(async_session)
+    assert state is not None
+    assert state.last_status == "reload_failed"
+    assert state.last_message == "Engine reload failed; config not saved."
+    assert state.last_error == "engine boom"
+    assert state.last_applied_config_hash is None

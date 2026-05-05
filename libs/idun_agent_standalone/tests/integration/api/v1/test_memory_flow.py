@@ -203,7 +203,8 @@ async def test_round_3_failure_rolls_back_db(
             },
         )
         assert response.status_code == 500
-        # No row was committed
+        assert response.json()["error"]["code"] == "reload_failed"
+        assert response.json()["error"]["details"] == {"recovered": True}
         get_response = await client.get("/admin/api/v1/memory")
     assert get_response.status_code == 404
 

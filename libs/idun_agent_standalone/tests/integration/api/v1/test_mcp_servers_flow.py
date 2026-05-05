@@ -209,4 +209,6 @@ async def test_round3_failure_rolls_back(
         post = await client.post("/admin/api/v1/mcp-servers", json=_stdio_body())
         listed = await client.get("/admin/api/v1/mcp-servers")
     assert post.status_code == 500
+    assert post.json()["error"]["code"] == "reload_failed"
+    assert post.json()["error"]["details"] == {"recovered": True}
     assert listed.json() == []
