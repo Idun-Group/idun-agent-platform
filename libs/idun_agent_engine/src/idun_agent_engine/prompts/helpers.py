@@ -45,29 +45,37 @@ def get_prompts_from_file(config_path: str | Path) -> list[PromptConfig]:
 
 
 def get_prompts_from_api() -> list[PromptConfig]:
-    """Fetch prompts from the Idun Manager API."""
+    """Fetch prompts from the Idun Manager API.
+
+    Returns an empty list when the manager env vars are unset or the
+    manager is unreachable. Connection and read timeouts are short
+    so a missing manager never stalls a request that calls this.
+    """
     api_key = os.environ.get("IDUN_AGENT_API_KEY")
     manager_host = os.environ.get("IDUN_MANAGER_HOST")
 
-    if not api_key:
-        raise ValueError("Environment variable 'IDUN_AGENT_API_KEY' is not set")
-    if not manager_host:
-        raise ValueError("Environment variable 'IDUN_MANAGER_HOST' is not set")
+    if not api_key or not manager_host:
+        logger.debug(
+            "Skipping prompt API fetch (IDUN_AGENT_API_KEY or IDUN_MANAGER_HOST unset)"
+        )
+        return []
 
     host = manager_host.removesuffix("/")
     url = f"{host}/api/v1/agents/config"
     headers = {"auth": f"Bearer {api_key}"}
 
     try:
-        response = requests.get(url=url, headers=headers, timeout=30)
+        response = requests.get(url=url, headers=headers, timeout=(2, 3))
         response.raise_for_status()
     except requests.RequestException as e:
-        raise ValueError(f"Failed to fetch config from API: {e}") from e
+        logger.warning("Could not load prompts from manager (%s)", e)
+        return []
 
     try:
         raw = yaml.safe_load(response.text)
     except yaml.YAMLError as e:
-        raise ValueError(f"Failed to parse config YAML: {e}") from e
+        logger.warning("Could not parse prompt config from manager (%s)", e)
+        return []
 
     config_data = _unwrap_engine_config(raw)
     prompts = _extract_prompts(config_data)
@@ -76,7 +84,11 @@ def get_prompts_from_api() -> list[PromptConfig]:
 
 
 def get_prompts(config_path: str | Path | None = None) -> list[PromptConfig]:
-    """Return prompts: config_path > IDUN_CONFIG_PATH env > Manager API."""
+    """Return prompts: config_path > IDUN_CONFIG_PATH env > Manager API.
+
+    Never raises on a missing or unreachable source. Callers receive
+    an empty list and decide whether to use a default prompt.
+    """
     if config_path:
         return get_prompts_from_file(config_path)
 
