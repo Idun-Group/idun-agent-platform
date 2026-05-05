@@ -21,7 +21,13 @@ class BaseIntegration(ABC):
 
     @abstractmethod
     async def setup(self, app: FastAPI, agent: BaseAgent) -> None:
-        """Register webhook routes and initialize provider client."""
+        """Register webhook routes and initialize provider client.
+
+        All routes and ``app.state`` mutations must be registered
+        synchronously inside this call. Anything registered after
+        ``setup()`` returns will not be cleaned up by ``cleanup_agent``
+        and will leak across reloads.
+        """
 
     @abstractmethod
     async def shutdown(self) -> None:
@@ -60,7 +66,21 @@ async def setup_integrations(
     configs: list[IntegrationConfig],
     agent: BaseAgent,
 ) -> list[BaseIntegration]:
-    """Create and wire all enabled integrations into the FastAPI app."""
+    """Create and wire all enabled integrations into the FastAPI app.
+
+    Routes added by each integration's ``setup()`` are tracked on
+    ``app.state.integration_routes`` so ``cleanup_agent`` can remove
+    them on reload. Each integration must register its routes and
+    ``app.state`` mutations synchronously inside ``setup()``; lazy
+    registration after ``setup()`` returns is not tracked and will
+    leak across reloads.
+    """
+    before = list(app.router.routes)
+    logger.info(
+        "setup_integrations: starting configs=%d existing_routes=%d",
+        len(configs),
+        len(before),
+    )
     integrations: list[BaseIntegration] = []
     for config in configs:
         if not config.enabled:
@@ -73,4 +93,12 @@ async def setup_integrations(
             logger.info(f"Integration {config.provider} set up successfully")
         except Exception:
             logger.exception(f"Failed to set up integration {config.provider}")
+    tracked = [r for r in app.router.routes if r not in before]
+    app.state.integration_routes = tracked
+    logger.info(
+        "setup_integrations: complete integrations=%d routes_tracked=%d paths=%s",
+        len(integrations),
+        len(tracked),
+        [getattr(r, "path", "<unknown>") for r in tracked],
+    )
     return integrations
