@@ -49,6 +49,9 @@ class TeamsIntegration(BaseIntegration):
         app.state.teams_adapter = adapter
         app.state.teams_bot = bot
         self._app = app
+        from .handler import router
+
+        app.include_router(router, prefix="/integrations/teams", tags=["Teams"])
         logger.info("Teams integration configured")
 
     async def shutdown(self) -> None:
