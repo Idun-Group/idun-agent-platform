@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
 from idun_agent_schema.engine.capabilities import AgentCapabilities
+from idun_agent_schema.engine.graph import AgentGraph
 from idun_agent_schema.engine.guardrails import Guardrail
 from idun_agent_schema.engine.sessions import SessionDetail, SessionSummary
 from pydantic import BaseModel
@@ -58,9 +59,7 @@ def _guardrail_input_from(input_data: RunAgentInput) -> str | None:
     return None
 
 
-def _run_guardrails(
-    guardrails: list[Guardrail], text: str, position: str
-) -> None:
+def _run_guardrails(guardrails: list[Guardrail], text: str, position: str) -> None:
     """Validate text against guardrails matching the given position."""
     for guard in guardrails:
         if guard.position != position:  # type: ignore[attr-defined]
@@ -223,29 +222,63 @@ async def run(
                 yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
         finally:
             current_user_id.reset(token)
-            logger.debug(
-                f"Run — reset user_id token thread_id={input_data.thread_id}"
-            )
+            logger.debug(f"Run — reset user_id token thread_id={input_data.thread_id}")
 
     return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
 
 
-@agent_router.get("/graph")
-async def get_graph(
+@agent_router.get("/graph", response_model=AgentGraph)
+async def get_graph_ir(
     agent: Annotated[BaseAgent, Depends(get_agent)],
     _user: Annotated[dict | None, Depends(get_verified_user)],
-):
-    """Return the Mermaid diagram of the compiled LangGraph agent."""
-    from langgraph.graph.state import CompiledStateGraph
-
-    instance = getattr(agent, "_agent_instance", None)
-    if not isinstance(instance, CompiledStateGraph):
+) -> AgentGraph:
+    """Framework-agnostic JSON IR — primary contract for UI rendering."""
+    try:
+        return agent.get_graph_ir()
+    except NotImplementedError as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("Graph IR extraction failed")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Graph visualization is only available for LangGraph agents",
-        )
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Graph introspection failed",
+        ) from e
 
-    return {"graph": instance.get_graph().draw_mermaid()}
+
+@agent_router.get("/graph/mermaid")
+async def get_graph_mermaid(
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
+) -> dict[str, str]:
+    """Mermaid source string."""
+    try:
+        return {"mermaid": agent.draw_mermaid()}
+    except NotImplementedError as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("Mermaid rendering failed")
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Mermaid rendering failed",
+        ) from e
+
+
+@agent_router.get("/graph/ascii")
+async def get_graph_ascii(
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
+) -> dict[str, str]:
+    """ASCII art rendering."""
+    try:
+        return {"ascii": agent.draw_ascii()}
+    except NotImplementedError as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("ASCII rendering failed")
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="ASCII rendering failed",
+        ) from e
 
 
 @agent_router.get("/config")
@@ -435,9 +468,7 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         """Invoke the agent with a message and get a response."""
         guardrails = getattr(request.app.state, "guardrails", [])
         if guardrails:
-            _run_guardrails(
-                guardrails, text=input_data.query, position="input"
-            )
+            _run_guardrails(guardrails, text=input_data.query, position="input")
 
         try:
             query = input_data.query[:120]

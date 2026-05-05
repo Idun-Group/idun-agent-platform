@@ -7,6 +7,7 @@
  */
 
 import { apiFetch, j } from "./client";
+import type { AgentGraph } from "./types/graph";
 import type {
   AgentCapabilities,
   AgentPatch,
@@ -190,4 +191,11 @@ export const api = {
       method: "POST",
       body: j(body),
     }),
+
+  // Engine surface — graph visualizer (LangGraph + ADK)
+  getAgentGraph: () => apiFetch<AgentGraph>("/agent/graph"),
+  getAgentGraphMermaid: () =>
+    apiFetch<{ mermaid: string }>("/agent/graph/mermaid"),
+  getAgentGraphAscii: () =>
+    apiFetch<{ ascii: string }>("/agent/graph/ascii"),
 };

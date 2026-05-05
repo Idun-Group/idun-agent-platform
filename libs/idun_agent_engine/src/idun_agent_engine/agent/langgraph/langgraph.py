@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from ag_ui.core import BaseEvent
     from ag_ui.core.types import RunAgentInput
     from idun_agent_schema.engine.capabilities import AgentCapabilities
+    from idun_agent_schema.engine.graph import AgentGraph
 
 import aiosqlite
 from ag_ui.core import events as ag_events
@@ -848,6 +849,110 @@ class LanggraphAgent(agent_base.BaseAgent):
         )
         self._cached_capabilities = result
         return result
+
+    def get_graph_ir(self) -> AgentGraph:
+        """Return a framework-agnostic graph IR populated from the compiled graph."""
+        from idun_agent_schema.engine.agent_framework import AgentFramework
+        from idun_agent_schema.engine.graph import (
+            AgentGraph,
+            AgentGraphEdge,
+            AgentGraphMetadata,
+            AgentKind,
+            AgentNode,
+            EdgeKind,
+        )
+
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph graph introspection requires a CompiledStateGraph"
+            )
+
+        lg_graph = self._agent_instance.get_graph()
+        nodes: list[AgentNode] = []
+        edges: list[AgentGraphEdge] = []
+
+        # Skip `__end__` so it doesn't render as a "ghost" Custom agent card.
+        # Keep `__start__` — it marks the entry point (is_root=True).
+        # Edges into `__end__` are also dropped to avoid dangling references.
+        skip_nodes = {"__end__"}
+
+        for node_id in lg_graph.nodes:
+            if node_id in skip_nodes:
+                continue
+            is_root = node_id == "__start__"
+            nodes.append(
+                AgentNode(
+                    id=f"node:{node_id}",
+                    name=node_id,
+                    agent_kind=AgentKind.CUSTOM,
+                    is_root=is_root,
+                )
+            )
+
+        for lg_edge in lg_graph.edges:
+            if lg_edge.source in skip_nodes or lg_edge.target in skip_nodes:
+                continue
+            # Public attrs: source, target. `conditional` and `data` are documented;
+            # if a future LangGraph version renames them, fall back gracefully.
+            data = getattr(lg_edge, "data", None)
+            condition: str | None = None
+            try:
+                if getattr(lg_edge, "conditional", False) and data is not None:
+                    condition = str(data)
+            except Exception:
+                logger.debug(
+                    "Failed to inspect LangGraph edge condition", exc_info=True
+                )
+                condition = None
+            label = str(data) if data is not None and not condition else None
+            edges.append(
+                AgentGraphEdge(
+                    source=f"node:{lg_edge.source}",
+                    target=f"node:{lg_edge.target}",
+                    kind=EdgeKind.GRAPH_EDGE,
+                    condition=condition,
+                    label=label,
+                )
+            )
+
+        return AgentGraph(
+            metadata=AgentGraphMetadata(
+                framework=AgentFramework.LANGGRAPH,
+                agent_name=self.name,
+                root_id="node:__start__",
+            ),
+            nodes=nodes,
+            edges=edges,
+        )
+
+    def draw_mermaid(self) -> str:
+        """Delegate to LangGraph's native draw_mermaid for polish/parity."""
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph mermaid rendering requires a CompiledStateGraph"
+            )
+        return self._agent_instance.get_graph().draw_mermaid()
+
+    def draw_ascii(self) -> str:
+        """Render ASCII art.
+
+        Delegates to LangGraph's native grandalf-backed renderer when grandalf
+        is installed; falls back to the framework-agnostic IR renderer otherwise.
+        """
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph ascii rendering requires a CompiledStateGraph"
+            )
+        try:
+            return self._agent_instance.get_graph().draw_ascii()
+        except ImportError:
+            logger.warning(
+                "grandalf not installed; using framework-agnostic ASCII renderer "
+                "for LangGraph agent"
+            )
+            from idun_agent_engine.server.graph.ascii import render_ascii
+
+            return render_ascii(self.get_graph_ir())
 
     def history_capabilities(self) -> HistoryCapabilities:
         """Declare LangGraph session-history support.

@@ -11,7 +11,11 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     // Keep Playwright's e2e/ tree out of the Vitest run; it has its own runner.
-    include: ["__tests__/**/*.{test,spec}.{ts,tsx}"],
+    include: [
+      "__tests__/**/*.{test,spec}.{ts,tsx}",
+      "components/**/__tests__/**/*.{test,spec}.{ts,tsx}",
+      "lib/**/__tests__/**/*.{test,spec}.{ts,tsx}",
+    ],
     exclude: ["node_modules", ".next", "out", "e2e"],
   },
   resolve: {
