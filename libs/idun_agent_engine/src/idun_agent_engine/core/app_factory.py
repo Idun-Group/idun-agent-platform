@@ -156,37 +156,6 @@ def create_app(
     # Remove when /agent/invoke shim is fully removed.
     register_invoke_route(app, input_model)
 
-    # Register integration routers based on config
-    if validated_config.integrations:
-        from idun_agent_schema.engine.integrations import IntegrationProvider
-
-        from ..integrations.discord.handler import router as discord_router
-        from ..integrations.teams.handler import router as teams_router
-        from ..integrations.whatsapp.handler import router as whatsapp_router
-
-        for integration in validated_config.integrations:
-            match integration.provider:
-                case IntegrationProvider.WHATSAPP if integration.enabled:
-                    app.include_router(
-                        whatsapp_router,
-                        prefix="/integrations/whatsapp",
-                        tags=["WhatsApp"],
-                    )
-                case IntegrationProvider.DISCORD if integration.enabled:
-                    app.include_router(
-                        discord_router,
-                        prefix="/integrations/discord",
-                        tags=["Discord"],
-                    )
-                case IntegrationProvider.TEAMS if integration.enabled:
-                    app.include_router(
-                        teams_router,
-                        prefix="/integrations/teams",
-                        tags=["Teams"],
-                    )
-                case _:
-                    pass
-
     # Mount the static UI last so explicit routes (everything above) win.
     # When no UI dir is configured, fall back to the JSON info payload at /.
     if not _maybe_mount_static_ui(app):
