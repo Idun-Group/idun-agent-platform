@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ApiError, type AgentRead, api } from "@/lib/api";
+import { applyFieldErrors } from "@/lib/api/form-errors";
 
 type Framework = "langgraph" | "adk";
 
@@ -253,6 +254,11 @@ export default function AgentPage() {
       qc.invalidateQueries({ queryKey: ["agent"] });
     },
     onError: (e) => {
+      const handled = applyFieldErrors(form, e, {
+        "agent.config.graphDefinition": "definition",
+        "agent.config.name": "name",
+      });
+      if (handled) return;
       const detail = e instanceof ApiError ? e.detail : undefined;
       const message = (detail as { error?: { message?: string } } | undefined)?.error
         ?.message;
