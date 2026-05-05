@@ -57,7 +57,7 @@ jobs:
       - name: Build wheel and sdist (schema)
         working-directory: libs/idun_agent_schema
         run: |
-          uv build --no-sources
+          uv build --no-sources --out-dir dist
 
       - name: Check distribution metadata
         working-directory: libs/idun_agent_schema
