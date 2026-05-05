@@ -102,7 +102,7 @@ Issues = "https://github.com/geoffreyharrazi/idun-agent-platform/issues"
 
 [project.optional-dependencies]
 examples = [
-    "langchain-google-genai>=2.0.0",
+    "langchain-google-genai>=2.0.0,<3.0.0",
 ]
 
 [dependency-groups]
