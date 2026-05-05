@@ -105,9 +105,11 @@
 }
 
 /* Icon — load Material Symbols outlined via CSS ---------------- */
+/* TODO: air-gapped / CSP-restricted installs cannot reach Google Fonts;
+ * self-host the Material Icons font under public/fonts/ and swap this
+ * @import for a local @font-face. Tracked as a follow-up. */
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
-.a2ui-surface .material-icons,
-.a2ui-surface [class*="icon"] {
+.a2ui-surface .material-icons {
   font-family: "Material Icons", system-ui, sans-serif;
 }
 
