@@ -197,6 +197,10 @@ test("EMPTY → user picks LangGraph → confirms → done shows OPENAI_API_KEY"
   await expect(page.locator(".react-flow__node").first()).toBeVisible({
     timeout: 10_000,
   });
+  // Export dropdown is rendered in the "Your agent" card header.
+  await expect(
+    page.getByRole("button", { name: /export/i }),
+  ).toBeVisible();
 });
 
 test("ONE_DETECTED → user clicks Use → done shows generic env reminder", async ({
