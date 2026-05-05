@@ -146,12 +146,17 @@ async def test_framework_memory_mismatch_422(
             json={
                 "agentFramework": "ADK",
                 "memory": {
-                    "type": "in_memory",  # ADK SessionService shape
+                    "type": "in_memory",
                 },
             },
         )
-    # Either round 1 (Pydantic body) or round 2 (assembled) catches it.
+        listed = await client.get("/admin/api/v1/memory")
     assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["code"] == "validation_failed"
+    assert len(body["error"]["fieldErrors"]) >= 1
+    stub_reload_callable.assert_not_called()
+    assert listed.status_code == 404
 
 
 async def test_delete_memory_after_first_write(
