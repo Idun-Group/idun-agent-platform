@@ -68,8 +68,11 @@ function triggerDownload(dataUrl: string, filename: string): void {
   a.download = filename;
   a.style.display = "none";
   document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  try {
+    a.click();
+  } finally {
+    a.remove();
+  }
 }
 
 export async function exportToPng(
