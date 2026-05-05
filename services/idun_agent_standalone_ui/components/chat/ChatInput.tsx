@@ -59,6 +59,7 @@ export function ChatInput({
 
   return (
     <form
+      data-tour="chat-composer"
       className="relative rounded-3xl border border-border bg-card shadow-sm transition focus-within:border-accent/40 focus-within:ring-1 focus-within:ring-accent/20"
       onSubmit={(e) => {
         e.preventDefault();

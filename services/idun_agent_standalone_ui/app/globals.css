@@ -157,3 +157,57 @@ body::before {
   background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 18%, transparent), transparent);
   height: 1px;
 }
+
+/* ────────────────────────────────────────────────────────────────────
+ * Driver.js theming — bind the guided tour's popover styling to the
+ * runtime CSS variables so it inherits light/dark mode + custom themes
+ * without per-mode duplication. Driver.js is imported by TourProvider
+ * which also imports its base CSS; these declarations override that
+ * baseline.
+ * ──────────────────────────────────────────────────────────────────── */
+
+.driver-popover {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.driver-popover-title {
+  font-family: var(--font-serif);
+  color: var(--popover-foreground);
+}
+
+.driver-popover-description {
+  color: var(--muted-foreground);
+}
+
+.driver-popover-next-btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: 1px solid var(--primary);
+  border-radius: calc(var(--radius) * 0.75);
+  text-shadow: none;
+}
+
+.driver-popover-prev-btn {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.75);
+  text-shadow: none;
+}
+
+.driver-popover-close-btn {
+  color: var(--muted-foreground);
+}
+
+.driver-popover-progress-text {
+  color: var(--muted-foreground);
+}
+
+.driver-popover-arrow {
+  border-color: var(--popover);
+}

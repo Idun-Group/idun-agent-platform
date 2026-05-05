@@ -10,6 +10,17 @@ from .capabilities import (  # noqa: F401
     OutputDescriptor,
 )
 from .engine import EngineConfig  # noqa: F401
+from .graph import (  # noqa: F401
+    AgentGraph,
+    AgentGraphEdge,
+    AgentGraphMetadata,
+    AgentGraphNode,
+    AgentKind,
+    AgentNode,
+    EdgeKind,
+    ToolKind,
+    ToolNode,
+)
 from .integrations import (  # noqa: F401
     DiscordIntegrationConfig,
     IntegrationConfig,

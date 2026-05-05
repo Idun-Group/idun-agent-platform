@@ -1,10 +1,11 @@
 import "./globals.css";
 import Script from "next/script";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/lib/query-client";
 import { ThemeLoader } from "@/lib/theme-loader";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { TourProvider } from "@/components/tour/TourProvider";
 import { fontSans, fontSerif, fontMono } from "@/lib/fonts";
 
 export const metadata = { title: "Idun Agent" };
@@ -48,7 +49,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           disableTransitionOnChange
         >
           <ThemeLoader />
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <Suspense fallback={null}>
+              <TourProvider>{children}</TourProvider>
+            </Suspense>
+          </QueryProvider>
           <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>

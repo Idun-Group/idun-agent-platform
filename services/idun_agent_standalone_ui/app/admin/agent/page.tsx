@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { stringify as stringifyYaml } from "yaml";
@@ -15,6 +15,11 @@ import {
   AdkIcon,
   LangGraphIcon,
 } from "@/components/admin/provider-icons";
+import {
+  AgentGraphLazy,
+  type AgentGraphHandle,
+} from "@/components/graph/AgentGraphLazy";
+import { ExportMenu } from "@/components/graph/ExportMenu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,6 +132,17 @@ export default function AgentPage() {
     queryKey: ["agent"],
     queryFn: api.getAgent,
   });
+
+  const graphQuery = useQuery({
+    queryKey: ["admin-agent-graph"],
+    queryFn: () => api.getAgentGraph(),
+    retry: (failureCount, err) => {
+      if (err instanceof ApiError && err.status === 404) return false;
+      return failureCount < 2;
+    },
+  });
+
+  const graphRef = useRef<AgentGraphHandle | null>(null);
 
   const initialFramework = useMemo(() => readFramework(data), [data]);
   const [activeTab, setActiveTab] = useState<Framework>(initialFramework);
@@ -347,6 +363,49 @@ export default function AgentPage() {
             {save.isPending ? "Saving…" : "Save"}
           </Button>
         </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+          <div className="space-y-1.5">
+            <CardTitle>Agent graph</CardTitle>
+            <CardDescription>
+              A visual map of this agent&apos;s sub-agents and tools.
+            </CardDescription>
+          </div>
+          <ExportMenu
+            graphRef={graphRef}
+            agentName={data?.name ?? "agent"}
+            disabled={
+              graphQuery.isLoading || graphQuery.isError || !graphQuery.data
+            }
+          />
+        </CardHeader>
+        <CardContent>
+          {graphQuery.isLoading && (
+            <div className="h-[480px] animate-pulse rounded-md bg-muted" />
+          )}
+          {graphQuery.isError &&
+            graphQuery.error instanceof ApiError &&
+            graphQuery.error.status === 404 && (
+              <p className="text-sm text-muted-foreground">
+                Graph view isn&apos;t available for this agent type yet.
+              </p>
+            )}
+          {graphQuery.isError &&
+            !(
+              graphQuery.error instanceof ApiError &&
+              graphQuery.error.status === 404
+            ) && (
+              <Alert>
+                <AlertTitle>Graph unavailable</AlertTitle>
+                <AlertDescription>Try reloading the page.</AlertDescription>
+              </Alert>
+            )}
+          {graphQuery.data && (
+            <AgentGraphLazy ref={graphRef} graph={graphQuery.data} height={480} />
+          )}
+        </CardContent>
       </Card>
 
       <EditYamlSheet

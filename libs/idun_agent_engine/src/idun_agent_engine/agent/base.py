@@ -3,9 +3,14 @@
 Defines the abstract `BaseAgent` used by all agent implementations.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from idun_agent_schema.engine.graph import AgentGraph
 
 from ag_ui.core import BaseEvent
 from ag_ui.core.types import RunAgentInput
@@ -133,9 +138,7 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
         # For the ABC, we can't have a `yield` directly in the abstract method body.
         # The signature itself defines it as an async generator.
         # Example: async for chunk in agent.stream(message): ...
-        if (
-            False
-        ):  # pragma: no cover (This is just to make it a generator type for static analysis)
+        if False:  # pragma: no cover (This is just to make it a generator type for static analysis)
             yield
 
     @abstractmethod
@@ -193,3 +196,34 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
         raise NotImplementedError(
             f"get_session not implemented for {type(self).__name__}"
         )
+
+    def get_graph_ir(self) -> AgentGraph:
+        """Return a framework-agnostic graph IR.
+
+        Override in subclasses that can introspect their underlying agent.
+        """
+        raise NotImplementedError(
+            f"{self.agent_type} does not support graph introspection"
+        )
+
+    def draw_mermaid(self) -> str:
+        """Render the agent graph as a Mermaid source string.
+
+        Default: render the IR via the engine's framework-agnostic renderer.
+        Adapters with native diagram support (e.g. LangGraph) may override.
+        """
+        ir = self.get_graph_ir()
+        from idun_agent_engine.server.graph.mermaid import render_mermaid
+
+        return render_mermaid(ir)
+
+    def draw_ascii(self) -> str:
+        """Render the agent graph as ASCII art.
+
+        Default: render the IR via the engine's framework-agnostic renderer.
+        Adapters with native ASCII support (e.g. LangGraph + grandalf) may override.
+        """
+        ir = self.get_graph_ir()
+        from idun_agent_engine.server.graph.ascii import render_ascii
+
+        return render_ascii(ir)

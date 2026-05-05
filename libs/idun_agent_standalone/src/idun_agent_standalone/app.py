@@ -24,8 +24,6 @@ from idun_agent_engine import create_app as create_engine_app
 
 from idun_agent_standalone.api.v1.deps import reload_disabled, require_auth
 from idun_agent_standalone.api.v1.errors import register_admin_exception_handlers
-from idun_agent_standalone.core.security import SESSION_COOKIE_NAME
-from idun_agent_standalone.services import auth as auth_service
 from idun_agent_standalone.api.v1.routers.agent import router as agent_router
 from idun_agent_standalone.api.v1.routers.auth import router as auth_router
 from idun_agent_standalone.api.v1.routers.guardrails import (
@@ -41,16 +39,21 @@ from idun_agent_standalone.api.v1.routers.memory import router as memory_router
 from idun_agent_standalone.api.v1.routers.observability import (
     router as observability_router,
 )
+from idun_agent_standalone.api.v1.routers.onboarding import (
+    router as onboarding_router,
+)
 from idun_agent_standalone.api.v1.routers.prompts import (
     router as prompts_router,
 )
 from idun_agent_standalone.core.logging import get_logger
+from idun_agent_standalone.core.security import SESSION_COOKIE_NAME
 from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
 from idun_agent_standalone.infrastructure.db.session import (
     create_db_engine,
     create_sessionmaker,
 )
 from idun_agent_standalone.runtime_config import router as runtime_config_router
+from idun_agent_standalone.services import auth as auth_service
 from idun_agent_standalone.services.engine_config import (
     AssemblyError,
     assemble_engine_config,
@@ -88,9 +91,7 @@ def _is_public_runtime_path(path: str) -> bool:
         return True
     if path.startswith("/agent/") or path.startswith("/_engine/"):
         return False
-    if path == "/reload":
-        return False
-    return True
+    return path != "/reload"
 
 
 def _install_engine_runtime_gate(app: FastAPI) -> None:
@@ -164,17 +165,27 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
             logger.warning("boot engine layer skipped, admin only mode reason=%s", exc)
             engine_config = None
 
+    # Always boot through the engine factory. When ``engine_config`` is
+    # ``None`` (no agent in DB yet — first-run wizard hasn't materialized),
+    # the engine boots in unconfigured mode: routes are registered but
+    # ``/agent/*`` returns 503 ``agent_not_ready``. The wizard's
+    # materialize step calls the reload pipeline which runs
+    # ``configure_app`` and brings the same routes online — no process
+    # restart required.
+    app = create_engine_app(
+        engine_config=engine_config,
+        reload_auth=reload_disabled,
+    )
     if engine_config is not None:
-        app = create_engine_app(
-            engine_config=engine_config,
-            reload_auth=reload_disabled,
-        )
         logger.info(
             "boot engine app built framework=%s",
             engine_config.agent.type.value,
         )
     else:
-        app = FastAPI(title="Idun Agent Standalone (admin only)")
+        logger.info(
+            "boot engine app started unconfigured "
+            "(no agent yet — wizard will materialize)"
+        )
 
     app.state.settings = settings
     app.state.db_engine = db_engine
@@ -196,6 +207,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.include_router(guardrails_router, dependencies=admin_auth)
     app.include_router(prompts_router, dependencies=admin_auth)
     app.include_router(integrations_router, dependencies=admin_auth)
+    app.include_router(onboarding_router, dependencies=admin_auth)
     app.include_router(runtime_config_router)
 
     ui_dir = _resolve_ui_dir(settings)

@@ -14,19 +14,40 @@ logger = logging.getLogger(__name__)
 async def get_agent(request: Request):
     """Return the pre-initialized agent instance from the app state.
 
-    Falls back to loading from the default config if not present (e.g., tests).
+    Returns ``503 agent_not_ready`` when the engine booted unconfigured
+    and ``configure_app`` has not yet been called (e.g. the standalone
+    is in admin-only mode while the user finishes the onboarding wizard).
+    Falls back to loading from the default config only when
+    ``app.state.agent`` was never set at all — the legacy test path
+    where lifespan didn't run.
     """
     if hasattr(request.app.state, "agent"):
-        return request.app.state.agent
-    else:
-        # This is a fallback for cases where the lifespan event did not run,
-        # like in some testing scenarios.
-        # Consider logging a warning here.
-        logger.warning("⚠️ Agent not found in app state, initializing fallback agent...")
-
-        app_config = ConfigBuilder.load_from_file()
-        agent = await ConfigBuilder.initialize_agent_from_config(app_config)
+        agent = request.app.state.agent
+        if agent is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={
+                    "error": {
+                        "code": "agent_not_ready",
+                        "message": (
+                            "Agent has not been configured yet. "
+                            "Complete onboarding or call configure_app() "
+                            "to bring the agent online."
+                        ),
+                    }
+                },
+            )
         return agent
+
+    # Legacy fallback for cases where the lifespan event did not run,
+    # like some testing scenarios. Embedders running unconfigured set
+    # ``app.state.agent = None`` in lifespan, so ``hasattr`` returns
+    # True for them and we raise 503 above instead of reaching this.
+    logger.warning("⚠️ Agent not found in app state, initializing fallback agent...")
+
+    app_config = ConfigBuilder.load_from_file()
+    agent = await ConfigBuilder.initialize_agent_from_config(app_config)
+    return agent
 
 
 async def get_copilotkit_agent(request: Request):

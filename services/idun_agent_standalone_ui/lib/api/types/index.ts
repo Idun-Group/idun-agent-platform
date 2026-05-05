@@ -7,3 +7,15 @@ export * from "./guardrails";
 export * from "./prompts";
 export * from "./integrations";
 export * from "./sessions";
+export * from "./onboarding";
+export type {
+  AgentGraph,
+  AgentGraphEdge,
+  AgentGraphMetadata,
+  AgentGraphNode,
+  AgentKind,
+  AgentNode,
+  EdgeKind,
+  ToolKind,
+  ToolNode,
+} from "./graph";
