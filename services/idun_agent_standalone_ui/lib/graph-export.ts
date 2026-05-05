@@ -39,12 +39,12 @@ function htmlToImageOpts(cfg: ExportConfig) {
     pixelRatio: cfg.pixelRatio ?? 2,
     backgroundColor: cfg.background ?? "#ffffff",
     style: {
-      transform: `translate(${-cfg.bounds.x + padding}px, ${
-        -cfg.bounds.y + padding
-      }px)`,
-      transformOrigin: "0 0",
       width: `${w}px`,
       height: `${h}px`,
+      transform: `translate(${-cfg.bounds.x + padding}px, ${
+        -cfg.bounds.y + padding
+      }px) scale(1)`,
+      transformOrigin: "0 0",
     },
     filter: (node: HTMLElement) => {
       const cls = node.classList;

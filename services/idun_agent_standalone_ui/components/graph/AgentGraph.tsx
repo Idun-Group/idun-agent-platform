@@ -54,9 +54,11 @@ export const AgentGraph = forwardRef<AgentGraphHandle, AgentGraphProps>(
       ref,
       () => ({
         getCanvasElement(): HTMLElement | null {
-          // The .react-flow div is the deepest stable DOM ancestor of all
-          // rendered nodes/edges. html-to-image walks down from here.
-          return containerRef.current?.querySelector<HTMLElement>(".react-flow") ?? null;
+          // Capture the viewport (not the outer .react-flow wrapper) so html-to-image
+          // gets the nodes/edges layer; our transform override will reset its own
+          // pan/zoom transform (otherwise it composes with the user's current viewport
+          // and the export reflects whatever pan/zoom they have).
+          return containerRef.current?.querySelector<HTMLElement>(".react-flow__viewport") ?? null;
         },
         getNodesBounds() {
           if (nodes.length === 0) return null;

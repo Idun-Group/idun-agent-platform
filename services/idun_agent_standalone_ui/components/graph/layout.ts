@@ -29,6 +29,8 @@ export function applyDagreLayout(
         x: pos.x - NODE_WIDTH / 2,
         y: pos.y - NODE_HEIGHT / 2,
       },
+      width: NODE_WIDTH,
+      height: NODE_HEIGHT,
     };
   });
 }
