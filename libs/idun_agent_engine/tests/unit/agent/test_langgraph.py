@@ -213,3 +213,83 @@ async def test_compiled_graph_name_preserved_in_compile():
 
     assert isinstance(agent.agent_instance, CompiledStateGraph)
     assert agent.agent_instance.name == "test_name_preserved"
+
+
+# ---------------------------------------------------------------------------
+# WS3: sidecar fields excluded from input-mode detection
+# ---------------------------------------------------------------------------
+
+
+def _build_agent_with_state(state_cls):
+    """Helper: compile an echo node over a state TypedDict, return a
+    LanggraphAgent ready for ``discover_capabilities``."""
+    from langgraph.graph import END, StateGraph
+
+    from idun_agent_engine.agent.langgraph.langgraph import LanggraphAgent
+
+    async def node(state, config):  # pragma: no cover — never invoked
+        return state
+
+    builder = StateGraph(state_cls)
+    builder.add_node("n", node)
+    builder.set_entry_point("n")
+    builder.add_edge("n", END)
+    graph = builder.compile()
+
+    agent = LanggraphAgent()
+    agent._agent_instance = graph
+    return agent
+
+
+@pytest.mark.unit
+class TestSidecarFieldsExcludedFromInputMode:
+    """WS3: agents with `idun` (or future) sidecar fields must still
+    report input.mode == "chat" so plain-text user messages aren't
+    rejected as invalid JSON by the structured-input validator."""
+
+    def test_state_with_only_messages_is_chat(self):
+        # Sanity: existing chat-mode agent stays chat-mode.
+        from typing import Annotated, TypedDict
+
+        from langchain_core.messages import BaseMessage
+        from langgraph.graph.message import add_messages
+
+        class State(TypedDict):
+            messages: Annotated[list[BaseMessage], add_messages]
+
+        agent = _build_agent_with_state(State)
+        caps = agent.discover_capabilities()
+        assert caps.input.mode == "chat"
+
+    def test_state_with_messages_and_idun_is_chat(self):
+        # WS3 invariant: idun is a sidecar, not structured user input.
+        from typing import Annotated, Any, TypedDict
+
+        from langchain_core.messages import BaseMessage
+        from langgraph.graph.message import add_messages
+
+        class State(TypedDict):
+            messages: Annotated[list[BaseMessage], add_messages]
+            idun: dict[str, Any] | None
+
+        agent = _build_agent_with_state(State)
+        caps = agent.discover_capabilities()
+        assert caps.input.mode == "chat", (
+            "agents with `idun` sidecar must remain chat-mode"
+        )
+
+    def test_state_with_other_extra_field_is_structured(self):
+        # Counter-invariant: agents with non-sidecar extra fields are
+        # genuinely structured-mode.
+        from typing import Annotated, TypedDict
+
+        from langchain_core.messages import BaseMessage
+        from langgraph.graph.message import add_messages
+
+        class State(TypedDict):
+            messages: Annotated[list[BaseMessage], add_messages]
+            custom_field: str
+
+        agent = _build_agent_with_state(State)
+        caps = agent.discover_capabilities()
+        assert caps.input.mode == "structured"

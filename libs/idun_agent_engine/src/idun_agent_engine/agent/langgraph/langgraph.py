@@ -43,6 +43,13 @@ from idun_agent_engine.agent import base as agent_base
 logger = logging.getLogger(__name__)
 
 
+# WS3: state fields the engine itself injects from forwarded_props rather
+# than the agent user. These are excluded from capability discovery's
+# structured-vs-chat input mode decision. Add new sidecars here as the
+# engine grows new forwarded-props features.
+_SIDECAR_STATE_FIELDS = frozenset({"idun"})
+
+
 def _extract_text_content(content: Any) -> str:
     """Normalise LLM message content to a plain-text string."""
     if isinstance(content, str):
@@ -811,11 +818,19 @@ class LanggraphAgent(agent_base.BaseAgent):
             output_fields = None
 
         # Detect input mode
+        # WS3: exclude sidecar fields (engine-injected, not user-supplied
+        # structured input) when computing whether the agent is "chat" or
+        # "structured" mode. Today the only sidecar is `idun`, which carries
+        # forwarded_props.idun (A2UI v0.9 client_to_server message + dataModel
+        # snapshot). Without this filter, every WS3-action-aware agent would
+        # incorrectly report structured-input mode and reject plain-text user
+        # turns.
         input_mode = "chat"
         input_json_schema = None
         if input_fields is not None:
-            has_messages = "messages" in input_fields
-            only_messages = has_messages and len(input_fields) == 1
+            user_fields = set(input_fields) - _SIDECAR_STATE_FIELDS
+            has_messages = "messages" in user_fields
+            only_messages = has_messages and len(user_fields) == 1
 
             if only_messages:
                 input_mode = "chat"
