@@ -1,18 +1,13 @@
 """Build the engine reload callable for the standalone runtime.
 
-Phase 3 case (b): the engine does not expose a public ``reconfigure``
-method on its FastAPI app. It does expose two app-level lifecycle
-hooks at ``idun_agent_engine.server.lifespan`` — ``cleanup_agent(app)``
-and ``configure_app(app, engine_config)``. We rebuild the agent in
-place by tearing down the old one and re-running the configure step
-on the same FastAPI app instance, which is exactly what the engine
-itself does on its own ``POST /reload`` route.
-
-The legacy ``idun_agent_standalone.reload`` module (kept for reference
-only — not imported here) does the same dance with extra recovery
-machinery; the standalone Phase 3 reload pipeline owns rollback +
-runtime_state recording, so the callable just translates engine
-exceptions to ``ReloadInitFailed``.
+The engine exposes two app level lifecycle hooks at
+``idun_agent_engine.server.lifespan``: ``cleanup_agent(app)`` and
+``configure_app(app, engine_config)``. We rebuild the agent in place
+by tearing down the old one and re running the configure step on the
+same FastAPI app instance, which is exactly what the engine itself
+does on its own ``POST /reload`` route. The standalone reload
+pipeline owns rollback and runtime_state recording, so the callable
+just translates engine exceptions to ``ReloadInitFailed``.
 """
 
 from __future__ import annotations
@@ -20,7 +15,6 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI
-from fastapi.routing import APIRoute
 from idun_agent_engine.server.lifespan import cleanup_agent, configure_app
 from idun_agent_schema.engine.engine import EngineConfig
 
@@ -46,31 +40,10 @@ def build_engine_reload_callable(
             try:
                 await cleanup_agent(engine_app)
             except Exception:
-                # Teardown errors are noisy but not fatal — the engine
-                # logs them, we proceed to reconfigure regardless.
                 logger.exception("engine_reload.cleanup_failed continuing to configure")
-            _prune_integration_routes(engine_app)
             await configure_app(engine_app, config)
         except Exception as exc:
             logger.exception("engine_reload.configure_failed")
             raise ReloadInitFailed(str(exc)) from exc
 
     return _reload
-
-
-# TODO(#527): drop once the engine grows ``teardown_integrations`` and
-# calls it from ``configure_app``. Until then, the engine never removes
-# integration routes added by ``setup_integrations``, so deleted or
-# disabled integrations leave dead handlers behind.
-def _prune_integration_routes(app: FastAPI) -> None:
-    """Strip engine integration routes by prefix before reconfigure."""
-    routes = app.router.routes
-    before = len(routes)
-    app.router.routes = [
-        r
-        for r in routes
-        if not (isinstance(r, APIRoute) and r.path.startswith("/integrations/"))
-    ]
-    removed = before - len(app.router.routes)
-    if removed:
-        logger.info("engine_reload.pruned_integration_routes count=%d", removed)
