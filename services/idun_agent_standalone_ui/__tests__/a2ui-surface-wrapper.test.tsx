@@ -122,4 +122,100 @@ describe("A2UISurfaceWrapper", () => {
 
     expect(queryByTestId("a2ui-surface")).toBeNull();
   });
+
+  it("replays the full message array to every processor instance under StrictMode", async () => {
+    const React = await import("react");
+    const { MessageProcessor } = await import("@a2ui/web_core/v0_9");
+    const mockedFn = MessageProcessor as unknown as ReturnType<typeof vi.fn>;
+    mockedFn.mockClear();
+
+    const surface: A2UISurfaceState = {
+      surfaceId: "s1",
+      catalogId: "https://a2ui.org/specification/v0_9/basic_catalog.json",
+      messages: [
+        { version: "v0.9", createSurface: { surfaceId: "s1", catalogId: "x" } },
+        { version: "v0.9", updateComponents: { surfaceId: "s1", components: [] } },
+      ],
+    };
+
+    render(
+      <React.StrictMode>
+        <A2UISurfaceWrapper surface={surface} />
+      </React.StrictMode>,
+    );
+
+    // StrictMode mounts → unmounts → remounts the component, and
+    // useMemo factories may run extra times for purity checks. So
+    // multiple processor instances may be constructed. The invariant:
+    // every processor that ever sees processMessages must see the
+    // *full* message array starting from index 0 — otherwise that
+    // processor never got the createSurface envelope and the surface
+    // would stay in the "render null" branch forever.
+    const results = mockedFn.mock.results;
+    expect(results.length).toBeGreaterThanOrEqual(2);
+
+    let processorsThatProcessed = 0;
+    for (const result of results) {
+      const instance = result.value as { processMessages: ReturnType<typeof vi.fn> };
+      for (const call of instance.processMessages.mock.calls) {
+        expect(call[0]).toEqual(surface.messages);
+        processorsThatProcessed++;
+      }
+    }
+    expect(processorsThatProcessed).toBeGreaterThanOrEqual(2);
+  });
+
+  it("advances past a throwing batch so subsequent messages still flow through", async () => {
+    const { MessageProcessor } = await import("@a2ui/web_core/v0_9");
+    const mockedFn = MessageProcessor as unknown as ReturnType<typeof vi.fn>;
+    mockedFn.mockClear();
+
+    // Make the first call to processMessages throw, then succeed.
+    const processMessages = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        throw new Error("boom");
+      })
+      .mockImplementation(() => undefined);
+
+    mockedFn.mockImplementationOnce(() => ({
+      model: { dispose: vi.fn() },
+      processMessages,
+      onSurfaceCreated: vi.fn((handler: (s: { id: string }) => void) => {
+        onSurfaceCreatedHandlers.push(handler);
+        return { unsubscribe: vi.fn() };
+      }),
+    }));
+
+    const surface: A2UISurfaceState = {
+      surfaceId: "s1",
+      catalogId: "https://a2ui.org/specification/v0_9/basic_catalog.json",
+      messages: [
+        { version: "v0.9", createSurface: { surfaceId: "s1", catalogId: "x" } },
+      ],
+    };
+
+    // Silence the expected console.error so the test output stays clean.
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { rerender } = render(<A2UISurfaceWrapper surface={surface} />);
+    expect(processMessages).toHaveBeenCalledTimes(1);
+    expect(processMessages).toHaveBeenNthCalledWith(1, surface.messages);
+
+    const updated: A2UISurfaceState = {
+      ...surface,
+      messages: [
+        ...surface.messages,
+        { version: "v0.9", updateComponents: { surfaceId: "s1", components: [] } },
+      ],
+    };
+    rerender(<A2UISurfaceWrapper surface={updated} />);
+
+    // The counter must have advanced past the throwing batch, so the
+    // second call is exactly the new tail — not the throwing batch + tail.
+    expect(processMessages).toHaveBeenCalledTimes(2);
+    expect(processMessages).toHaveBeenNthCalledWith(2, [updated.messages[1]]);
+
+    errSpy.mockRestore();
+  });
 });

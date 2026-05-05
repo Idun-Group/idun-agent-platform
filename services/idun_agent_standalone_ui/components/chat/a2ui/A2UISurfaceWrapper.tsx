@@ -54,14 +54,20 @@ export function A2UISurfaceWrapper({ surface }: Props) {
   }, [processor, surface.surfaceId]);
 
   useEffect(() => {
+    lastSeenLength.current = 0;
+  }, [processor]);
+
+  useEffect(() => {
     const next = surface.messages.slice(lastSeenLength.current);
     if (next.length === 0) return;
     try {
       processor.processMessages(next as A2uiMessage[]);
-      lastSeenLength.current = surface.messages.length;
     } catch (err) {
       console.error("[a2ui] processMessages failed", err);
     }
+    // Advance past the batch even on failure — leaving the counter
+    // unchanged would permanently block all subsequent messages.
+    lastSeenLength.current = surface.messages.length;
   }, [processor, surface.messages]);
 
   if (!model) return null;
