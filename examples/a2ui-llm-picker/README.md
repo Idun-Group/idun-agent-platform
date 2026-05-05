@@ -7,12 +7,17 @@ two-paragraph pitch in a follow-up surface.
 ## Prerequisites
 
 ```bash
-uv sync --extra examples         # installs langchain-google-genai
+# The [examples] extra lives on idun-agent-engine — install via the package flag:
+uv sync --package idun-agent-engine --extra examples
 export GEMINI_API_KEY=<your-key>  # or GOOGLE_API_KEY
 ```
 
-Optional: `export GEMINI_MODEL=gemini-2.5-flash` (or another available model)
-to override the default.
+The default model is `gemini-3-flash-preview`. If your API key doesn't yet have
+preview access, override to a stable model:
+
+```bash
+export GEMINI_MODEL=gemini-2.5-flash
+```
 
 ## Run
 
