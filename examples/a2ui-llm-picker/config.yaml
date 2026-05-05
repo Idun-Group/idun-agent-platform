@@ -1,0 +1,16 @@
+# WS3 A2UI LLM travel-picker config.
+#
+# 2-node LangGraph that uses Gemini Flash for both propose and acknowledge.
+# Set GEMINI_API_KEY before running.
+
+server:
+  api:
+    port: 8002
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "A2UI LLM Travel Picker"
+    graph_definition: "examples/a2ui-llm-picker/agent.py:graph"
+    checkpointer:
+      type: "memory"
