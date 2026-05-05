@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RotateCcw } from "lucide-react";
+import { CheckCircle2, RotateCcw, ShieldCheck, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -10,8 +10,16 @@ import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
+import { ProviderPicker } from "@/components/admin/ProviderPicker";
+import {
+  MemoryChipIcon,
+  PostgresIcon,
+  SqliteIcon,
+  VertexAiIcon,
+} from "@/components/admin/provider-icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -30,7 +38,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, type AgentFramework, api } from "@/lib/api";
 
 const LG_TYPES = ["memory", "sqlite", "postgres"] as const;
@@ -45,6 +52,30 @@ const TAB_LABELS: Record<MemoryType, string> = {
   vertex_ai: "Vertex AI",
   database: "Database",
 };
+
+const MEMORY_DESCRIPTIONS: Record<MemoryType, string> = {
+  memory: "Volatile. Lost on restart. Good for dev.",
+  sqlite: "File-backed local store. Single replica.",
+  postgres: "Production. Multi-replica friendly.",
+  in_memory: "Volatile. Lost on restart. Good for dev.",
+  vertex_ai: "Managed. Required for multi-replica ADK.",
+  database: "PostgreSQL session service.",
+};
+
+function memoryIcon(t: MemoryType) {
+  switch (t) {
+    case "memory":
+    case "in_memory":
+      return <MemoryChipIcon size={44} />;
+    case "sqlite":
+      return <SqliteIcon size={44} />;
+    case "postgres":
+    case "database":
+      return <PostgresIcon size={44} />;
+    case "vertex_ai":
+      return <VertexAiIcon size={44} />;
+  }
+}
 
 const formSchema = z
   .object({
@@ -171,6 +202,12 @@ export default function MemoryPage() {
 
   const framework: AgentFramework = data?.agentFramework ?? "LANGGRAPH";
   const types = framework === "ADK" ? ADK_TYPES : LG_TYPES;
+  const typeOptions = types.map((t) => ({
+    id: t,
+    label: TAB_LABELS[t],
+    description: MEMORY_DESCRIPTIONS[t],
+    icon: memoryIcon(t),
+  }));
 
   const initialValues = useMemo(
     () => configToValues(framework, data?.memory),
@@ -180,6 +217,15 @@ export default function MemoryPage() {
   const [activeTab, setActiveTab] = useState<MemoryType>(initialValues.type);
   const [yamlOpen, setYamlOpen] = useState(false);
   const [restartRequired, setRestartRequired] = useState(false);
+  const [verifyFeedback, setVerifyFeedback] = useState<"ok" | "fail" | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!verifyFeedback) return;
+    const t = setTimeout(() => setVerifyFeedback(null), 3000);
+    return () => clearTimeout(t);
+  }, [verifyFeedback]);
 
   useEffect(() => {
     setActiveTab(initialValues.type);
@@ -212,6 +258,26 @@ export default function MemoryPage() {
       const message = (detail as { error?: { message?: string } } | undefined)
         ?.error?.message;
       toast.error(message ?? "Save failed");
+    },
+  });
+
+  const verify = useMutation({
+    mutationFn: api.checkMemoryConnection,
+    onSuccess: (result) => {
+      if (result.ok) {
+        setVerifyFeedback("ok");
+      } else {
+        setVerifyFeedback("fail");
+        toast.error(result.error ?? "Connection failed.");
+      }
+    },
+    onError: (e) => {
+      const detail = e instanceof ApiError ? e.detail : undefined;
+      const message =
+        (detail as { error?: { message?: string } } | undefined)?.error
+          ?.message ?? (e instanceof Error ? e.message : "Verify failed");
+      setVerifyFeedback("fail");
+      toast.error(message);
     },
   });
 
@@ -267,25 +333,20 @@ export default function MemoryPage() {
               : "LangGraph checkpointer. PostgreSQL is required for multi-replica deployments."}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs
+        <CardContent className="space-y-6">
+          <ProviderPicker
             value={activeTab}
-            onValueChange={(t) => setActiveTab(t as MemoryType)}
-          >
-            <TabsList>
-              {types.map((t) => (
-                <TabsTrigger key={t} value={t}>
-                  {TAB_LABELS[t]}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            onChange={(t) => setActiveTab(t as MemoryType)}
+            options={typeOptions}
+            columns={3}
+          />
 
-            <Form {...form}>
-              <form
-                id="memory-form"
-                onSubmit={form.handleSubmit(onSheetSave)}
-                className="mt-4 space-y-4"
-              >
+          <Form {...form}>
+            <form
+              id="memory-form"
+              onSubmit={form.handleSubmit(onSheetSave)}
+              className="space-y-4"
+            >
                 {(activeTab === "memory" || activeTab === "in_memory") && (
                   <p className="text-sm text-muted-foreground">
                     Volatile backend — state is lost when the process restarts.
@@ -422,11 +483,10 @@ export default function MemoryPage() {
                     />
                   </>
                 )}
-              </form>
-            </Form>
-          </Tabs>
+            </form>
+          </Form>
         </CardContent>
-        <CardFooter className="justify-between">
+        <CardFooter className="justify-between gap-2">
           <Button
             variant="outline"
             type="button"
@@ -434,12 +494,43 @@ export default function MemoryPage() {
           >
             Edit YAML
           </Button>
-          <Button
-            onClick={form.handleSubmit(onSheetSave)}
-            disabled={save.isPending}
-          >
-            {save.isPending ? "Saving…" : "Save"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => verify.mutate()}
+              disabled={verify.isPending || !data}
+              title={!data ? "Save first" : "Probe the configured backend"}
+              className={cn(
+                "transition-colors",
+                verifyFeedback === "ok" &&
+                  "border-emerald-500/60 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15 hover:text-emerald-700 dark:text-emerald-300",
+                verifyFeedback === "fail" &&
+                  "border-destructive/60 bg-destructive/15 text-destructive hover:bg-destructive/15 hover:text-destructive",
+              )}
+            >
+              {verifyFeedback === "ok" ? (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              ) : verifyFeedback === "fail" ? (
+                <XCircle className="mr-2 h-4 w-4" />
+              ) : (
+                <ShieldCheck className="mr-2 h-4 w-4" />
+              )}
+              {verify.isPending
+                ? "Verifying…"
+                : verifyFeedback === "ok"
+                  ? "Verified"
+                  : verifyFeedback === "fail"
+                    ? "Failed"
+                    : "Verify"}
+            </Button>
+            <Button
+              onClick={form.handleSubmit(onSheetSave)}
+              disabled={save.isPending}
+            >
+              {save.isPending ? "Saving…" : "Save"}
+            </Button>
+          </div>
         </CardFooter>
       </Card>
 

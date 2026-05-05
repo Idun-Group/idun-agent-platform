@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from idun_agent_standalone.core.logging import get_logger
+from idun_agent_standalone.core.settings import StandaloneSettings
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.infrastructure.db.models.guardrail import (
     StandaloneGuardrailRow,
@@ -84,6 +85,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     memory_payload = _resolve_memory_payload(agent.name, memory, framework)
 
     base_dict = base_config.model_dump(exclude_none=True)
+    base_dict["server"] = {"api": {"port": StandaloneSettings().port}}
     _layer_memory(base_dict, framework, memory_payload)
     _layer_observability(base_dict, agent.name, observability)
     _layer_mcp_servers(base_dict, agent.name, mcp_servers)

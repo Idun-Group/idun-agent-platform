@@ -2,12 +2,21 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Plus, Settings, Trash2 } from "lucide-react";
+import { Plus, Settings, Trash2 } from "lucide-react";
+import * as React from "react";
 import { useEffect, useState } from "react";
 import { useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { ProviderPicker } from "@/components/admin/ProviderPicker";
+import {
+  DiscordIcon,
+  GoogleChatIcon,
+  MicrosoftTeamsIcon,
+  SlackIcon,
+  WhatsAppIcon,
+} from "@/components/admin/provider-icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,13 +48,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Sheet,
   SheetContent,
   SheetFooter,
@@ -61,7 +63,13 @@ import {
   api,
 } from "@/lib/api";
 
-const PROVIDERS = ["SLACK", "WHATSAPP", "DISCORD", "GOOGLE_CHAT"] as const;
+const PROVIDERS = [
+  "SLACK",
+  "WHATSAPP",
+  "DISCORD",
+  "GOOGLE_CHAT",
+  "TEAMS",
+] as const;
 type Provider = (typeof PROVIDERS)[number];
 
 const PROVIDER_META: Record<Provider, { label: string; summary: string }> = {
@@ -81,7 +89,33 @@ const PROVIDER_META: Record<Provider, { label: string; summary: string }> = {
     label: "Google Chat",
     summary: "Bridge Google Chat spaces with the agent.",
   },
+  TEAMS: {
+    label: "Microsoft Teams",
+    summary: "Connect a Bot Framework app to relay Teams messages.",
+  },
 };
+
+function providerIcon(p: Provider, size = 40): React.ReactNode {
+  switch (p) {
+    case "SLACK":
+      return <SlackIcon size={size} />;
+    case "WHATSAPP":
+      return <WhatsAppIcon size={size} />;
+    case "DISCORD":
+      return <DiscordIcon size={size} />;
+    case "GOOGLE_CHAT":
+      return <GoogleChatIcon size={size} />;
+    case "TEAMS":
+      return <MicrosoftTeamsIcon size={size} />;
+  }
+}
+
+const PROVIDER_PICKER_OPTIONS = PROVIDERS.map((p) => ({
+  id: p,
+  label: PROVIDER_META[p].label,
+  description: PROVIDER_META[p].summary,
+  icon: providerIcon(p, 44),
+}));
 
 function isProvider(v: unknown): v is Provider {
   return typeof v === "string" && (PROVIDERS as readonly string[]).includes(v);
@@ -119,6 +153,10 @@ const formSchema = z.object({
   service_account_credentials_json: z.string().optional().default(""),
   project_number: z.string().optional().default(""),
   local_mode: z.boolean().optional().default(false),
+  // Teams
+  app_id: z.string().optional().default(""),
+  app_password: z.string().optional().default(""),
+  app_tenant_id: z.string().optional().default(""),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -144,6 +182,9 @@ function emptyForm(): FormValues {
     service_account_credentials_json: "",
     project_number: "",
     local_mode: false,
+    app_id: "",
+    app_password: "",
+    app_tenant_id: "",
   };
 }
 
@@ -181,6 +222,12 @@ function configToValues(
         str(config.projectNumber) || str(config.project_number);
       base.local_mode = bool(config.localMode ?? config.local_mode, false);
       break;
+    case "TEAMS":
+      base.app_id = str(config.appId) || str(config.app_id);
+      base.app_password = str(config.appPassword) || str(config.app_password);
+      base.app_tenant_id =
+        str(config.appTenantId) || str(config.app_tenant_id);
+      break;
   }
   return base;
 }
@@ -211,6 +258,12 @@ function valuesToConfig(values: FormValues): Record<string, unknown> {
         service_account_credentials_json: values.service_account_credentials_json,
         project_number: values.project_number,
         local_mode: values.local_mode,
+      };
+    case "TEAMS":
+      return {
+        app_id: values.app_id,
+        app_password: values.app_password,
+        app_tenant_id: values.app_tenant_id,
       };
   }
 }
@@ -293,6 +346,30 @@ function ProviderFields({
           control={control}
           name="guild_id"
           label="Guild ID (optional)"
+        />
+      </>
+    );
+  }
+  if (provider === "TEAMS") {
+    return (
+      <>
+        <TextField
+          control={control}
+          name="app_id"
+          label="App ID"
+          placeholder="Microsoft App ID (Azure AD client ID)"
+        />
+        <SecretField
+          control={control}
+          name="app_password"
+          label="App password"
+          placeholder="Client secret value"
+        />
+        <TextField
+          control={control}
+          name="app_tenant_id"
+          label="App tenant ID"
+          placeholder="Azure AD tenant ID"
         />
       </>
     );
@@ -619,24 +696,16 @@ export default function IntegrationsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Provider</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(v) => field.onChange(v as Provider)}
-                        disabled={editingId !== "new"}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Pick a channel" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PROVIDERS.map((p) => (
-                            <SelectItem key={p} value={p}>
-                              {PROVIDER_META[p].label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <fieldset disabled={editingId !== "new"} className="contents">
+                          <ProviderPicker
+                            value={field.value}
+                            onChange={(v) => field.onChange(v as Provider)}
+                            options={PROVIDER_PICKER_OPTIONS}
+                            columns={2}
+                          />
+                        </fieldset>
+                      </FormControl>
                       <FormDescription>
                         Provider cannot change after creation.
                       </FormDescription>
@@ -741,9 +810,7 @@ function IntegrationCard({
     <Card className="flex flex-col">
       <CardHeader className="flex-row items-start justify-between space-y-0 gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted shrink-0">
-            <MessageSquare className="h-5 w-5 text-muted-foreground" />
-          </div>
+          {providerIcon(provider, 40)}
           <div className="min-w-0">
             <CardTitle className="text-base truncate">
               {integration.name}

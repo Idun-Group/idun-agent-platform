@@ -59,6 +59,45 @@ async def cleanup_agent(app: FastAPI):
             if inspect.isawaitable(result):
                 await result
 
+    integrations = getattr(app.state, "integrations", [])
+    if integrations:
+        logger.info("Shutting down %d integration(s)", len(integrations))
+        for integration in integrations:
+            try:
+                await integration.shutdown()
+                logger.info("Integration %s shut down", type(integration).__name__)
+            except Exception:
+                logger.exception("integration shutdown failed during reload")
+        app.state.integrations = []
+
+    tracked = getattr(app.state, "integration_routes", [])
+    if tracked:
+        logger.info(
+            "cleanup_agent: removing %d integration route(s) paths=%s",
+            len(tracked),
+            [getattr(r, "path", "<unknown>") for r in tracked],
+        )
+        removed = 0
+        for route in tracked:
+            try:
+                app.router.routes.remove(route)
+                removed += 1
+                logger.debug(
+                    "cleanup_agent: removed integration route path=%s",
+                    getattr(route, "path", "<unknown>"),
+                )
+            except ValueError:
+                logger.warning(
+                    "cleanup_agent: tracked integration route already absent path=%s",
+                    getattr(route, "path", "<unknown>"),
+                )
+        logger.info(
+            "cleanup_agent: integration route removal complete removed=%d remaining_routes=%d",
+            removed,
+            len(app.router.routes),
+        )
+    app.state.integration_routes = []
+
 
 async def configure_app(app: FastAPI, engine_config):
     """Initialize the agent, MCP registry, guardrails, and app state with the given engine config.

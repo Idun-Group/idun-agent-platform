@@ -10,6 +10,11 @@ import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
+import { ProviderPicker } from "@/components/admin/ProviderPicker";
+import {
+  AdkIcon,
+  LangGraphIcon,
+} from "@/components/admin/provider-icons";
 import {
   AgentGraphLazy,
   type AgentGraphHandle,
@@ -35,11 +40,24 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, type AgentRead, api } from "@/lib/api";
 
 type Framework = "langgraph" | "adk";
-const FRAMEWORKS: Framework[] = ["langgraph", "adk"];
+
+const FRAMEWORK_OPTIONS = [
+  {
+    id: "langgraph" as const,
+    label: "LangGraph",
+    description: "Graph-based orchestration. The default for most agents.",
+    icon: <LangGraphIcon size={44} />,
+  },
+  {
+    id: "adk" as const,
+    label: "ADK",
+    description: "Google Agent Development Kit. Vertex-friendly.",
+    icon: <AdkIcon size={44} />,
+  },
+];
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -265,81 +283,73 @@ export default function AgentPage() {
             is a structural change and requires a restart.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs
+        <CardContent className="space-y-6">
+          <ProviderPicker
             value={activeTab}
-            onValueChange={(t) => setActiveTab(t as Framework)}
-          >
-            <TabsList>
-              {FRAMEWORKS.map((f) => (
-                <TabsTrigger key={f} value={f}>
-                  {f === "langgraph" ? "LangGraph" : "ADK"}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            onChange={(t) => setActiveTab(t)}
+            options={FRAMEWORK_OPTIONS}
+            columns={2}
+          />
 
-            <TabsContent value={activeTab} className="mt-4">
-              <Form {...form}>
-                <form
-                  id="agent-form"
-                  onSubmit={form.handleSubmit(handleSubmit)}
-                  className="space-y-4"
-                >
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="definition"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {activeTab === "adk" ? "Agent definition" : "Graph definition"}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder={
-                              activeTab === "adk"
-                                ? "./agent/agent.py:root_agent"
-                                : "./agent.py:graph"
-                            }
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Module path and attribute, separated by a colon.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </form>
-              </Form>
-            </TabsContent>
-          </Tabs>
+          <Form {...form}>
+            <form
+              id="agent-form"
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="definition"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {activeTab === "adk" ? "Agent definition" : "Graph definition"}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder={
+                          activeTab === "adk"
+                            ? "./agent/agent.py:root_agent"
+                            : "./agent.py:graph"
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Module path and attribute, separated by a colon.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
         </CardContent>
         <CardFooter className="justify-between">
           <Button

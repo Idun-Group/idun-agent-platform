@@ -178,12 +178,12 @@ def create_app(
     app.include_router(agent_router, prefix="/agent", tags=["Agent"])
     app.include_router(base_router, tags=["Base"])
 
-    # Config-dependent setup. Skipped when booting unconfigured — these
-    # surfaces (the deprecated /agent/invoke shim, third-party
-    # integration webhooks) require knowing the agent type and the
-    # configured integrations up front. Embedders that need them must
-    # boot with a config; reload-only re-registration is tracked by
-    # TODO(#527) for integrations and the deprecation track for /invoke.
+    # Config-dependent setup. Skipped when booting unconfigured — the
+    # deprecated /agent/invoke shim requires knowing the agent type up
+    # front. Embedders that need it must boot with a config; the
+    # deprecation track for /invoke covers reload-only re-registration.
+    # Integration webhook routers are registered by each integration's
+    # ``setup()`` (called from ``configure_app``), not here.
     if validated_config is not None:
         # Resolve input model for the deprecated /agent/invoke endpoint.
         try:
@@ -194,30 +194,6 @@ def create_app(
         # TODO: DEPRECATED — register_invoke_route uses ChatRequest only now.
         # Remove when /agent/invoke shim is fully removed.
         register_invoke_route(app, input_model)
-
-        # Register integration routers based on config
-        if validated_config.integrations:
-            from idun_agent_schema.engine.integrations import IntegrationProvider
-
-            from ..integrations.discord.handler import router as discord_router
-            from ..integrations.whatsapp.handler import router as whatsapp_router
-
-            for integration in validated_config.integrations:
-                match integration.provider:
-                    case IntegrationProvider.WHATSAPP if integration.enabled:
-                        app.include_router(
-                            whatsapp_router,
-                            prefix="/integrations/whatsapp",
-                            tags=["WhatsApp"],
-                        )
-                    case IntegrationProvider.DISCORD if integration.enabled:
-                        app.include_router(
-                            discord_router,
-                            prefix="/integrations/discord",
-                            tags=["Discord"],
-                        )
-                    case _:
-                        pass
 
     # Mount the static UI last so explicit routes (everything above) win.
     # When no UI dir is configured, fall back to the JSON info payload at /.
