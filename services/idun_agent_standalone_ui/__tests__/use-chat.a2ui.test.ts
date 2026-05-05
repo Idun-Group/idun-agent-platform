@@ -135,7 +135,7 @@ describe("useChat — CUSTOM idun.a2ui.messages", () => {
               version: "v0.9",
               updateDataModel: {
                 surfaceId: "surf-1",
-                data: { count: 1 },
+                value: { count: 1 },
               },
             },
           ],

@@ -22,7 +22,12 @@ export class GuardrailRejectedError extends Error {
 export type RunOptions = {
   threadId: string;
   runId: string;
-  message: string;
+  /** Text turn — append a user message to the history. Mutually
+   *  exclusive in practice with forwardedProps but both can be set
+   *  if a future flow needs it. */
+  message?: string;
+  /** Action / metadata turn — carry idun.a2uiClientMessage etc. */
+  forwardedProps?: Record<string, unknown>;
   signal?: AbortSignal;
   onEvent: (event: AGUIEvent) => void;
 };
@@ -36,7 +41,7 @@ export type IdunA2UIMessage = {
   version: "v0.9";
   createSurface?: { surfaceId: string; catalogId: string };
   updateComponents?: { surfaceId: string; components: unknown[] };
-  updateDataModel?: { surfaceId: string; data: unknown };
+  updateDataModel?: { surfaceId: string; value: unknown };
 };
 
 /** Payload of a ``CUSTOM idun.a2ui.messages`` event. The engine
@@ -58,6 +63,19 @@ export type A2UISurfaceState = {
   catalogId: string;
   messages: IdunA2UIMessage[];
   fallbackText?: string;
+};
+
+import type { A2uiClientAction, A2uiClientDataModel } from "@a2ui/web_core/v0_9";
+
+/** Action wire shape sent from the standalone-UI to the engine via
+ *  forwardedProps. Mirrors A2UI v0.9 client_to_server.json#/properties/action
+ *  carried inside an idun-namespaced sub-tree so other Idun features can
+ *  add fields without colliding. */
+export type IdunForwardedProps = {
+  idun: {
+    a2uiClientMessage: { version: "v0.9"; action: A2uiClientAction };
+    a2uiClientDataModel?: A2uiClientDataModel;
+  };
 };
 
 export type Message =
@@ -95,6 +113,9 @@ export type ToolCall = {
 };
 
 export async function runAgent(opts: RunOptions): Promise<void> {
+  const messages = opts.message
+    ? [{ id: opts.runId + "-u", role: "user", content: opts.message }]
+    : [];
   const res = await fetch("/agent/run", {
     method: "POST",
     credentials: "include",
@@ -105,11 +126,11 @@ export async function runAgent(opts: RunOptions): Promise<void> {
     body: JSON.stringify({
       threadId: opts.threadId,
       runId: opts.runId,
-      messages: [{ id: opts.runId + "-u", role: "user", content: opts.message }],
+      messages,
       state: {},
       tools: [],
       context: [],
-      forwardedProps: {},
+      forwardedProps: opts.forwardedProps ?? {},
     }),
     signal: opts.signal,
   });
