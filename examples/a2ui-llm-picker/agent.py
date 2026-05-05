@@ -76,13 +76,105 @@ class TravelProposal(BaseModel):
 
 
 # ----------------------------------------------------------------------------
-# Graph (nodes + routing land in Tasks 16-17-18)
+# Surface builder for the proposal step
 # ----------------------------------------------------------------------------
 
 
-# Placeholders so the file imports cleanly while we wire the graph.
+def _proposal_surface_components(p: TravelProposal) -> list[dict]:
+    """Card column with intro text + per-option Card[Title, Tagline, Button].
+
+    Each option Button carries the destination identity as scalar fields
+    in its action.event.context (id, name, tagline). A2UI v0.9
+    DynamicValue does not allow object literals in context (only string,
+    number, boolean, array, DataBinding, FunctionCall) so we flatten
+    rather than nest — same information reaches acknowledge without
+    losing schema validity.
+    """
+    children: list[str] = ["intro"]
+    out: list[dict] = [
+        {"id": "intro", "component": "Text", "text": p.intro, "variant": "h3"},
+    ]
+    for i, opt in enumerate(p.options):
+        title_id = f"opt{i}_title"
+        tag_id = f"opt{i}_tag"
+        lbl_id = f"opt{i}_lbl"
+        btn_id = f"opt{i}_btn"
+        col_id = f"opt{i}_col"
+        card_id = f"opt{i}_card"
+        out.extend([
+            {"id": title_id, "component": "Text", "text": opt.name, "variant": "h4"},
+            {"id": tag_id, "component": "Text", "text": opt.tagline},
+            {"id": lbl_id, "component": "Text", "text": "Choose this destination"},
+            {
+                "id": btn_id, "component": "Button", "child": lbl_id,
+                "action": {"event": {
+                    "name": "pick_destination",
+                    "context": {
+                        "id": opt.id,
+                        "name": opt.name,
+                        "tagline": opt.tagline,
+                    },
+                }},
+            },
+            {
+                "id": col_id, "component": "Column",
+                "children": [title_id, tag_id, btn_id],
+            },
+            {"id": card_id, "component": "Card", "child": col_id},
+        ])
+        children.append(card_id)
+    out.append({"id": "root", "component": "Column", "children": children})
+    return out
+
+
+# ----------------------------------------------------------------------------
+# propose
+# ----------------------------------------------------------------------------
+
+
+_PROPOSE_SYSTEM = (
+    "You are a travel concierge. The user describes their preferences;"
+    " you propose exactly THREE destinations that fit. Each must be"
+    " distinct (different region, climate, or vibe), realistic, and"
+    " short enough to render as a button. Avoid 'top 10' clichés."
+)
+
+
 async def propose(state: State, config: RunnableConfig) -> State:
-    raise NotImplementedError("propose: implemented in Task 16")
+    last_user = next(
+        (m for m in reversed(state["messages"]) if m.type == "human"),
+        None,
+    )
+    prompt = (
+        last_user.content
+        if last_user is not None
+        else "I want a relaxing trip somewhere warm under $1500."
+    )
+
+    proposal: TravelProposal = (
+        await _llm()
+        .with_structured_output(TravelProposal)
+        .ainvoke([
+            SystemMessage(_PROPOSE_SYSTEM),
+            HumanMessage(prompt),
+        ])
+    )
+
+    components = _proposal_surface_components(proposal)
+    await emit_surface(
+        config=config,
+        surface_id="travel_proposal",
+        components=components,
+        fallback_text=(
+            proposal.intro + " " + ", ".join(o.name for o in proposal.options)
+        ),
+    )
+    return {"messages": [AIMessage(content=proposal.intro)]}
+
+
+# ----------------------------------------------------------------------------
+# Graph (acknowledge + routing land in Tasks 17-18)
+# ----------------------------------------------------------------------------
 
 
 async def acknowledge(state: State, config: RunnableConfig) -> State:
