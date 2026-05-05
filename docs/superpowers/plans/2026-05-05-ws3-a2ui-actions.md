@@ -3313,7 +3313,14 @@ def _proposal_surface_components(p: TravelProposal) -> list[dict]:
                 "id": btn_id, "component": "Button", "child": lbl_id,
                 "action": {"event": {
                     "name": "pick_destination",
-                    "context": {"destination": opt.model_dump()},
+                    # A2UI v0.9 DynamicValue rejects nested object literals
+                    # in component-level action.event.context — use flat
+                    # scalars from opt instead of opt.model_dump().
+                    "context": {
+                        "id": opt.id,
+                        "name": opt.name,
+                        "tagline": opt.tagline,
+                    },
                 }},
             },
             {
@@ -3450,11 +3457,11 @@ def _state_with_action(name: str, *, destination: dict | None = None) -> dict:
                     "surfaceId": "travel_proposal",
                     "sourceComponentId": "opt0_btn",
                     "timestamp": "2026-05-05T00:00:00Z",
-                    "context": {"destination": destination or {
+                    "context": destination or {
                         "id": "bali",
                         "name": "Bali, Indonesia",
                         "tagline": "Volcanoes, surf, and warm rice paddies.",
-                    }},
+                    },
                 },
             },
         },
@@ -3532,7 +3539,11 @@ async def acknowledge(state: State, config: RunnableConfig) -> State:
     if ctx is None or ctx.action.name != "pick_destination":
         return {"messages": [AIMessage(content="No destination selected.")]}
 
-    chosen = ctx.action.context.get("destination") or {}
+    # T16 deviation: A2UI v0.9 schema's DynamicValue rejects nested
+    # object literals in component-level action.event.context, so the
+    # propose surface uses flat scalars: context = {id, name, tagline}.
+    # Read them directly off the action context.
+    chosen = ctx.action.context or {}
     name = chosen.get("name", "your destination")
     tagline = chosen.get("tagline", "")
 
@@ -3597,7 +3608,8 @@ git add examples/a2ui-llm-picker/agent.py \
 git commit -m "$(cat <<'EOF'
 feat(llm-picker): acknowledge node + LLM-mocked tests
 
-Reads the chosen destination from ctx.action.context.destination, asks
+Reads the chosen destination from ctx.action.context (flat scalars per
+T16 schema-driven deviation), asks
 the LLM for a 2-paragraph pitch, and emits a follow-up surface
 (travel_pitch_<id>) with title + tagline + paragraphs + ask_again
 button.
