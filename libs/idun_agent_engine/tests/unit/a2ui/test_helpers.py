@@ -61,6 +61,30 @@ class TestEmitSurface:
         _, kwargs = mock.call_args
         assert kwargs.get("config") is config
 
+    async def test_data_kwarg_lands_in_dispatched_envelope(self) -> None:
+        mock = AsyncMock()
+        with patch("idun_agent_engine.a2ui.helpers.adispatch_custom_event", mock):
+            await emit_surface(
+                config={"configurable": {}},
+                surface_id="form",
+                components=[
+                    {"id": "name", "component": "TextField",
+                     "value": {"path": "/name"}},
+                ],
+                data={"name": "alice"},
+            )
+
+        args, _ = mock.call_args
+        envelope = args[1]
+        assert len(envelope["messages"]) == 3
+        assert envelope["messages"][2] == {
+            "version": "v0.9",
+            "updateDataModel": {
+                "surfaceId": "form",
+                "data": {"name": "alice"},
+            },
+        }
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio

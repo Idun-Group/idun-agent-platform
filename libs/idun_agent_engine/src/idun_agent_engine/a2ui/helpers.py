@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from langchain_core.callbacks.manager import adispatch_custom_event
+from langchain_core.runnables import RunnableConfig
 
 from idun_agent_engine.a2ui.envelope import (
     BASIC_CATALOG_V09,
@@ -22,7 +23,7 @@ CUSTOM_EVENT_NAME = "idun.a2ui.messages"
 
 
 async def emit_surface(
-    config: dict[str, Any],
+    config: RunnableConfig,
     *,
     surface_id: str,
     components: list[dict[str, Any]],
@@ -72,7 +73,7 @@ async def emit_surface(
 
 
 async def update_components(
-    config: dict[str, Any],
+    config: RunnableConfig,
     *,
     surface_id: str,
     components: list[dict[str, Any]],

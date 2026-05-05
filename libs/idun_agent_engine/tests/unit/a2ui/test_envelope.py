@@ -83,6 +83,48 @@ class TestBuildEmitEnvelope:
         create_msg = envelope["messages"][0]["createSurface"]
         assert create_msg["catalogId"] == "https://idun-example.com/catalogs/v1.json"
 
+    def test_includes_update_data_model_when_data_provided(self) -> None:
+        envelope = build_emit_envelope(
+            surface_id="form",
+            components=[],
+            data={"name": "alice"},
+        )
+        assert len(envelope["messages"]) == 3
+        assert envelope["messages"][2] == {
+            "version": "v0.9",
+            "updateDataModel": {
+                "surfaceId": "form",
+                "data": {"name": "alice"},
+            },
+        }
+
+    def test_omits_update_data_model_when_data_none(self) -> None:
+        envelope = build_emit_envelope(surface_id="s", components=[])
+        assert len(envelope["messages"]) == 2
+        assert all(
+            "updateDataModel" not in msg for msg in envelope["messages"]
+        )
+
+    def test_data_is_copied_before_insertion(self) -> None:
+        data = {"name": ""}
+        envelope = build_emit_envelope(
+            surface_id="form",
+            components=[],
+            data=data,
+        )
+        data["name"] = "mutated"
+        assert envelope["messages"][2]["updateDataModel"]["data"] == {"name": ""}
+
+    def test_preserves_nested_data_values(self) -> None:
+        envelope = build_emit_envelope(
+            surface_id="form",
+            components=[],
+            data={"foo": {"bar": [1, 2, 3]}},
+        )
+        assert envelope["messages"][2]["updateDataModel"]["data"] == {
+            "foo": {"bar": [1, 2, 3]}
+        }
+
 
 @pytest.mark.unit
 class TestBuildUpdateEnvelope:
