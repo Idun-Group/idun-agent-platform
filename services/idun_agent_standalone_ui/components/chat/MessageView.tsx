@@ -11,6 +11,14 @@ import { ReasoningPanel } from "./ReasoningPanel";
 
 type Props = {
   m: Message;
+  /**
+   * True when this message is the latest assistant message AND the chat
+   * is idle. Threaded down to ``A2UISurfaceWrapper`` to gate clicks via
+   * the two-layer ``pointer-events`` + handler-side no-op contract
+   * established in T10. Computed once at the chat-pane level so all
+   * surfaces on the same message share the same liveness signal.
+   */
+  isInteractive: boolean;
 };
 
 /**
@@ -22,7 +30,7 @@ type Props = {
  * logo image or its initials text — mirrors the `IdunMark` shape used
  * elsewhere without introducing a separate primitive.
  */
-export function MessageView({ m }: Props) {
+export function MessageView({ m, isInteractive }: Props) {
   // Theme is read on mount (mirrors WelcomeHero / InspectorLayout) so the
   // static export still renders before /runtime-config.js applies.
   const [theme, setTheme] = useState<ThemeConfig | null>(null);
@@ -107,7 +115,10 @@ export function MessageView({ m }: Props) {
         {m.role === "assistant" &&
           m.a2uiSurfaces?.map((surface) => (
             <A2UISurfaceErrorBoundary key={surface.surfaceId}>
-              <A2UISurfaceWrapper surface={surface} />
+              <A2UISurfaceWrapper
+                surface={surface}
+                isInteractive={isInteractive}
+              />
             </A2UISurfaceErrorBoundary>
           ))}
       </div>

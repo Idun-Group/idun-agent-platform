@@ -58,7 +58,7 @@ function makeAssistant(overrides: Record<string, unknown> = {}): Message {
 describe("MessageView — A2UI", () => {
   it("renders no A2UI surface when a2uiSurfaces is undefined", () => {
     const m = makeAssistant();
-    const { queryAllByTestId } = render(<MessageView m={m} />);
+    const { queryAllByTestId } = render(<MessageView m={m} isInteractive={false} />);
     expect(queryAllByTestId("a2ui-surface")).toHaveLength(0);
   });
 
@@ -69,7 +69,7 @@ describe("MessageView — A2UI", () => {
         { surfaceId: "s2", catalogId: "x", messages: [] },
       ],
     });
-    const { queryAllByTestId } = render(<MessageView m={m} />);
+    const { queryAllByTestId } = render(<MessageView m={m} isInteractive={false} />);
     const surfaces = queryAllByTestId("a2ui-surface");
     expect(surfaces).toHaveLength(2);
     expect(surfaces[0].getAttribute("data-surface-id")).toBe("s1");
@@ -81,7 +81,7 @@ describe("MessageView — A2UI", () => {
       text: "summary text",
       a2uiSurfaces: [{ surfaceId: "s", catalogId: "x", messages: [] }],
     });
-    const { container, getByTestId } = render(<MessageView m={m} />);
+    const { container, getByTestId } = render(<MessageView m={m} isInteractive={false} />);
 
     // The summary text appears somewhere in the DOM.
     expect(container.textContent).toContain("summary text");

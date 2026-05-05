@@ -3,10 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type AgentSessionSummary, api } from "@/lib/api";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
-import { useChat } from "@/lib/use-chat";
+import { ChatActionsContext, useChat } from "@/lib/use-chat";
 import {
   Sheet,
   SheetContent,
@@ -39,13 +39,20 @@ import { WelcomeHero } from "./WelcomeHero";
  */
 export function BrandedLayout({ threadId }: { threadId: string }) {
   const router = useRouter();
-  const { messages, send, stop, status } = useChat(threadId);
+  const chat = useChat(threadId);
+  const { messages, send, stop, status, sendAction } = chat;
   const [theme, setTheme] = useState<ThemeConfig | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     setTheme(getRuntimeConfig().theme);
   }, []);
   const empty = messages.length === 0;
+  // Computed once at the pane level so every MessageView/Surface on this
+  // pane shares the same "this is the live message" signal.
+  const latestAssistantMessageId = useMemo(
+    () => [...messages].reverse().find((m) => m.role === "assistant")?.id,
+    [messages],
+  );
 
   // Capability discovery — non-blocking. If the request fails (older engine,
   // network blip), we treat history as available; the listing query will
@@ -74,8 +81,9 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
   };
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      <div className="hidden md:block">
+    <ChatActionsContext.Provider value={{ sendAction }}>
+      <div className="flex h-screen bg-background text-foreground">
+        <div className="hidden md:block">
         <HistorySidebar
           activeId={threadId}
           onPick={pickSession}
@@ -135,7 +143,15 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
             <div className="scroll-fade relative z-10 flex-1 overflow-y-auto">
               <div className="mx-auto max-w-[720px] space-y-6 px-6 py-8">
                 {messages.map((m) => (
-                  <MessageView key={m.id} m={m} />
+                  <MessageView
+                    key={m.id}
+                    m={m}
+                    isInteractive={
+                      m.role === "assistant" &&
+                      m.id === latestAssistantMessageId &&
+                      status === "idle"
+                    }
+                  />
                 ))}
               </div>
             </div>
@@ -150,8 +166,9 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
             </div>
           </>
         )}
+        </div>
       </div>
-    </div>
+    </ChatActionsContext.Provider>
   );
 }
 

@@ -3,10 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type AgentSessionSummary, api } from "@/lib/api";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
-import { type ChatEvent, useChat } from "@/lib/use-chat";
+import { ChatActionsContext, type ChatEvent, useChat } from "@/lib/use-chat";
 import {
   Sheet,
   SheetContent,
@@ -69,12 +69,19 @@ function EventRow({
  */
 export function InspectorLayout({ threadId }: { threadId: string }) {
   const router = useRouter();
-  const { messages, events, send, stop, status } = useChat(threadId);
+  const chat = useChat(threadId);
+  const { messages, events, send, stop, status, sendAction } = chat;
   const [theme, setTheme] = useState<ThemeConfig | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     setTheme(getRuntimeConfig().theme);
   }, []);
+  // Computed once at the pane level so every MessageView/Surface on this
+  // pane shares the same "this is the live message" signal.
+  const latestAssistantMessageId = useMemo(
+    () => [...messages].reverse().find((m) => m.role === "assistant")?.id,
+    [messages],
+  );
 
   // Capability discovery — non-blocking. Failures fall back to "history is
   // available" because the listing query itself surfaces its own errors.
@@ -112,7 +119,8 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
   };
 
   return (
-    <div className="grid h-screen grid-cols-1 bg-background text-foreground md:grid-cols-[260px_1fr] lg:grid-cols-[260px_1fr_320px]">
+    <ChatActionsContext.Provider value={{ sendAction }}>
+      <div className="grid h-screen grid-cols-1 bg-background text-foreground md:grid-cols-[260px_1fr] lg:grid-cols-[260px_1fr_320px]">
       <div className="hidden md:block">
         <HistorySidebar
           activeId={threadId}
@@ -164,7 +172,15 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
         <div className="scroll-fade flex-1 overflow-y-auto">
           <div className="space-y-4 p-4">
             {messages.map((m) => (
-              <MessageView key={m.id} m={m} />
+              <MessageView
+                key={m.id}
+                m={m}
+                isInteractive={
+                  m.role === "assistant" &&
+                  m.id === latestAssistantMessageId &&
+                  status === "idle"
+                }
+              />
             ))}
           </div>
         </div>
@@ -228,6 +244,7 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
           )}
         </div>
       </aside>
-    </div>
+      </div>
+    </ChatActionsContext.Provider>
   );
 }

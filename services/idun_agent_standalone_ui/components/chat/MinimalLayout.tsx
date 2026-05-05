@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
-import { useChat } from "@/lib/use-chat";
+import { ChatActionsContext, useChat } from "@/lib/use-chat";
 import { ChatInput } from "./ChatInput";
 import { MessageView } from "./MessageView";
 
@@ -16,55 +16,72 @@ import { MessageView } from "./MessageView";
  * (`MessageView`, `ChatInput`) so theme tokens and behaviour stay aligned.
  */
 export function MinimalLayout({ threadId }: { threadId: string }) {
-  const { messages, send, stop, status } = useChat(threadId);
+  const chat = useChat(threadId);
+  const { messages, send, stop, status, sendAction } = chat;
   const [theme, setTheme] = useState<ThemeConfig | null>(null);
   useEffect(() => {
     setTheme(getRuntimeConfig().theme);
   }, []);
   const empty = messages.length === 0;
+  // Computed once at the pane level so every MessageView/Surface on this
+  // pane shares the same "this is the live message" signal.
+  const latestAssistantMessageId = useMemo(
+    () => [...messages].reverse().find((m) => m.role === "assistant")?.id,
+    [messages],
+  );
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-[720px] items-center px-6 py-3">
-          <Logo theme={theme} />
-        </div>
-      </header>
-      {empty ? (
-        <div className="flex flex-1 items-center justify-center px-6">
-          <div className="w-full max-w-2xl space-y-6 text-center">
-            <h1 className="font-serif text-[40px] leading-[1.1] tracking-[-0.02em] text-foreground">
-              {theme?.greeting ?? "How can I help?"}
-            </h1>
-            <ChatInput
-              onSend={send}
-              streaming={status === "streaming"}
-              onStop={stop}
-              autoFocus
-            />
+    <ChatActionsContext.Provider value={{ sendAction }}>
+      <div className="flex min-h-screen flex-col bg-background text-foreground">
+        <header className="border-b border-border">
+          <div className="mx-auto flex max-w-[720px] items-center px-6 py-3">
+            <Logo theme={theme} />
           </div>
-        </div>
-      ) : (
-        <>
-          <div className="scroll-fade flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-[720px] space-y-6 px-6 py-6">
-              {messages.map((m) => (
-                <MessageView key={m.id} m={m} />
-              ))}
-            </div>
-          </div>
-          <div className="bg-gradient-to-t from-background via-background/90 to-background/0 pt-3 pb-5">
-            <div className="mx-auto max-w-[720px] px-6">
+        </header>
+        {empty ? (
+          <div className="flex flex-1 items-center justify-center px-6">
+            <div className="w-full max-w-2xl space-y-6 text-center">
+              <h1 className="font-serif text-[40px] leading-[1.1] tracking-[-0.02em] text-foreground">
+                {theme?.greeting ?? "How can I help?"}
+              </h1>
               <ChatInput
                 onSend={send}
                 streaming={status === "streaming"}
                 onStop={stop}
+                autoFocus
               />
             </div>
           </div>
-        </>
-      )}
-    </div>
+        ) : (
+          <>
+            <div className="scroll-fade flex-1 overflow-y-auto">
+              <div className="mx-auto max-w-[720px] space-y-6 px-6 py-6">
+                {messages.map((m) => (
+                  <MessageView
+                    key={m.id}
+                    m={m}
+                    isInteractive={
+                      m.role === "assistant" &&
+                      m.id === latestAssistantMessageId &&
+                      status === "idle"
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="bg-gradient-to-t from-background via-background/90 to-background/0 pt-3 pb-5">
+              <div className="mx-auto max-w-[720px] px-6">
+                <ChatInput
+                  onSend={send}
+                  streaming={status === "streaming"}
+                  onStop={stop}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </ChatActionsContext.Provider>
   );
 }
 

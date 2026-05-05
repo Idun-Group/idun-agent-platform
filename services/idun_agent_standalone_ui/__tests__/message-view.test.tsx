@@ -36,7 +36,10 @@ import { MessageView } from "@/components/chat/MessageView";
 describe("MessageView", () => {
   it("renders a user message inside a right-aligned ink bubble", () => {
     const { container } = render(
-      <MessageView m={{ id: "u1", role: "user", text: "hi" }} />,
+      <MessageView
+        m={{ id: "u1", role: "user", text: "hi" }}
+        isInteractive={false}
+      />,
     );
 
     // The user-bubble layout uses `justify-end` on the wrapper; assert that
@@ -56,6 +59,7 @@ describe("MessageView", () => {
           toolCalls: [],
           thinking: [],
         }}
+        isInteractive={false}
       />,
     );
 
@@ -73,6 +77,7 @@ describe("MessageView", () => {
           thinking: [],
           streaming: true,
         }}
+        isInteractive={false}
       />,
     );
 
@@ -91,6 +96,7 @@ describe("MessageView", () => {
           toolCalls: [],
           thinking: [],
         }}
+        isInteractive={false}
       />,
     );
 
