@@ -4,11 +4,18 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+from idun_agent_engine.a2ui.actions import (
+    A2UIClientAction,
+    A2UIClientDataModel,
+    A2UIClientMessage,
+    A2UIContext,
+    _server_to_client_validator,
+)
+
 
 @pytest.mark.unit
 class TestA2UIClientAction:
     def test_round_trips_camel_to_snake(self) -> None:
-        from idun_agent_engine.a2ui.actions import A2UIClientAction
         wire = {
             "name": "submit_form",
             "surfaceId": "showcase",
@@ -24,7 +31,6 @@ class TestA2UIClientAction:
         assert a.context == {"foo": "bar"}
 
     def test_constructable_via_snake_case_names(self) -> None:
-        from idun_agent_engine.a2ui.actions import A2UIClientAction
         a = A2UIClientAction(
             name="x",
             surface_id="s",
@@ -35,7 +41,6 @@ class TestA2UIClientAction:
         assert a.surface_id == "s"
 
     def test_extra_field_forbidden(self) -> None:
-        from idun_agent_engine.a2ui.actions import A2UIClientAction
         with pytest.raises(ValidationError):
             A2UIClientAction.model_validate({
                 "name": "x", "surfaceId": "s", "sourceComponentId": "c",
@@ -47,7 +52,6 @@ class TestA2UIClientAction:
 @pytest.mark.unit
 class TestA2UIClientMessage:
     def test_envelope_shape(self) -> None:
-        from idun_agent_engine.a2ui.actions import A2UIClientMessage
         m = A2UIClientMessage.model_validate({
             "version": "v0.9",
             "action": {
@@ -59,7 +63,6 @@ class TestA2UIClientMessage:
         assert m.action.name == "x"
 
     def test_wrong_version_literal_rejected(self) -> None:
-        from idun_agent_engine.a2ui.actions import A2UIClientMessage
         with pytest.raises(ValidationError):
             A2UIClientMessage.model_validate({
                 "version": "v0.8",
@@ -73,7 +76,6 @@ class TestA2UIClientMessage:
 @pytest.mark.unit
 class TestA2UIClientDataModel:
     def test_minimal_shape(self) -> None:
-        from idun_agent_engine.a2ui.actions import A2UIClientDataModel
         d = A2UIClientDataModel.model_validate({
             "version": "v0.9",
             "surfaces": {"s1": {"name": "alice", "agreed": True}},
@@ -81,7 +83,6 @@ class TestA2UIClientDataModel:
         assert d.surfaces["s1"]["name"] == "alice"
 
     def test_empty_surfaces_allowed(self) -> None:
-        from idun_agent_engine.a2ui.actions import A2UIClientDataModel
         d = A2UIClientDataModel.model_validate({"version": "v0.9", "surfaces": {}})
         assert d.surfaces == {}
 
@@ -89,11 +90,6 @@ class TestA2UIClientDataModel:
 @pytest.mark.unit
 class TestA2UIContext:
     def _ctx(self, *, with_data: bool) -> object:
-        from idun_agent_engine.a2ui.actions import (
-            A2UIClientAction,
-            A2UIClientDataModel,
-            A2UIContext,
-        )
         action = A2UIClientAction(
             name="submit_form", surface_id="s1", source_component_id="btn",
             timestamp="2026-05-05T00:00:00Z", context={},
@@ -123,7 +119,6 @@ class TestServerToClientValidator:
     bundled server_to_client.json and is consumed by T6 envelope retrofit."""
 
     def test_accepts_minimal_create_surface_message(self) -> None:
-        from idun_agent_engine.a2ui.actions import _server_to_client_validator
         v = _server_to_client_validator()
         msg = {
             "version": "v0.9",
@@ -136,12 +131,32 @@ class TestServerToClientValidator:
         assert errors == [], f"unexpected schema errors: {errors}"
 
     def test_rejects_missing_required(self) -> None:
-        from idun_agent_engine.a2ui.actions import _server_to_client_validator
         v = _server_to_client_validator()
         bad = {"version": "v0.9", "createSurface": {}}  # surfaceId/catalogId missing
         errors = list(v.iter_errors(bad))
         assert errors, "expected at least one schema error"
 
     def test_validator_is_cached(self) -> None:
-        from idun_agent_engine.a2ui.actions import _server_to_client_validator
         assert _server_to_client_validator() is _server_to_client_validator()
+
+    def test_accepts_update_components_with_real_components(self) -> None:
+        """Exercises the transitive $ref path:
+        server_to_client.json → catalog.json#/$defs/anyComponent → common_types.json
+        Without this, T6's mandatory envelope validation would fail with
+        RefResolutionError on the first updateComponents envelope."""
+        v = _server_to_client_validator()
+        msg = {
+            "version": "v0.9",
+            "updateComponents": {
+                "surfaceId": "s1",
+                "components": [
+                    {"id": "title", "component": "Text", "text": "Hi"},
+                    {"id": "root", "component": "Card", "child": "title"},
+                ],
+            },
+        }
+        errors = list(v.iter_errors(msg))
+        assert errors == [], (
+            f"unexpected schema errors on transitive ref path: "
+            f"{[e.message for e in errors]}"
+        )

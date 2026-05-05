@@ -15,8 +15,9 @@ from importlib.resources import files
 from typing import Any, Literal
 
 from jsonschema import Draft202012Validator
-from jsonschema.validators import RefResolver
 from pydantic import BaseModel, ConfigDict, Field
+from referencing import Registry, Resource
+from referencing.jsonschema import DRAFT202012
 
 log = logging.getLogger(__name__)
 
@@ -30,20 +31,44 @@ log = logging.getLogger(__name__)
 _A2UI_SCHEMA_DIR = files("a2ui").joinpath("assets/0.9")
 
 
-def _load_schema(filename: str) -> dict:
+def _load_schema(filename: str) -> dict[str, Any]:
     return json.loads(_A2UI_SCHEMA_DIR.joinpath(filename).read_text())
 
 
 @cache
 def _server_to_client_validator() -> Draft202012Validator:
     """Validator for v0.9 server→client envelopes (createSurface,
-    updateComponents, updateDataModel). Resolves $ref to common_types."""
+    updateComponents, updateDataModel).
+
+    Resolves $refs transitively through catalog.json (loaded from
+    basic_catalog.json on disk) and common_types.json:
+      server_to_client.json  →  catalog.json#/$defs/anyComponent, theme
+      catalog.json           →  common_types.json#/$defs/{DynamicString, ...}
+      common_types.json      →  catalog.json#/$defs/anyFunction
+    Both must be in the registry for transitive resolution to land.
+
+    Uses referencing.Registry rather than the deprecated RefResolver.
+    RefResolver fails on this schema set with PointerToNowhere errors when
+    a resolved cross-document fragment (e.g. catalog → #/components/Text)
+    is dereferenced — the scope stack does not push the catalog as the
+    new base, so the second hop is looked up in the original document.
+    """
     s2c = _load_schema("server_to_client.json")
+    catalog = _load_schema("basic_catalog.json")
     common = _load_schema("common_types.json")
-    resolver = RefResolver.from_schema(
-        s2c, store={"common_types.json": common},
+    registry: Registry = Registry().with_resources(
+        [
+            (
+                "https://a2ui.org/specification/v0_9/catalog.json",
+                Resource(contents=catalog, specification=DRAFT202012),
+            ),
+            (
+                "https://a2ui.org/specification/v0_9/common_types.json",
+                Resource(contents=common, specification=DRAFT202012),
+            ),
+        ]
     )
-    return Draft202012Validator(s2c, resolver=resolver)
+    return Draft202012Validator(s2c, registry=registry)
 
 
 class A2UIClientAction(BaseModel):
