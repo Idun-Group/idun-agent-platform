@@ -10,10 +10,18 @@ live in one loop.
 When assembly fails (no agent row, corrupted base config) the engine
 layer is skipped and only the admin surface comes up so the operator
 can still inspect and fix the install through the admin API.
+
+The engine's lifespan is wrapped so a cooperative scheduling fence runs
+between startup completion and the first request — without it, langgraph
+checkpointer bootstrap and other deferred callbacks have been observed
+to leave the first ``/agent/run`` SSE stream stalled. The wrapper also
+disposes the SQLAlchemy AsyncEngine on shutdown.
 """
 
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
@@ -143,11 +151,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     The DB engine and sessionmaker stay on ``app.state`` for admin
     routers to use across the rest of the process lifetime.
     """
-    logger.info(
-        "boot start db_url=%s auth_mode=%s",
-        settings.database_url,
-        settings.auth_mode.value,
-    )
+    logger.info("boot start auth_mode=%s", settings.auth_mode.value)
 
     db_engine = create_db_engine(settings.database_url)
     sessionmaker = create_sessionmaker(db_engine)
@@ -196,6 +200,27 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 
     app.state.reload_callable = build_engine_reload_callable(app)
 
+    # Wrap the engine's lifespan so any callbacks scheduled during startup
+    # (langgraph checkpointer schema bootstrap, asyncpg / aiosqlite pool
+    # warmups) get one cooperative tick to run before the first request
+    # arrives. Without the ``asyncio.sleep(0)`` fence, ``/agent/run`` SSE
+    # streams have been observed to stall on first message because the
+    # checkpointer is still mid-init when the handler tries to read state.
+    # Also disposes the SQLAlchemy AsyncEngine on shutdown so the pool
+    # closes cleanly.
+    original_lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def standalone_lifespan(app: FastAPI):
+        try:
+            async with original_lifespan(app):
+                await asyncio.sleep(0)
+                yield
+        finally:
+            await db_engine.dispose()
+
+    app.router.lifespan_context = standalone_lifespan
+
     _install_engine_runtime_gate(app)
     register_admin_exception_handlers(app)
     admin_auth = [Depends(require_auth)]
@@ -212,10 +237,17 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 
     ui_dir = _resolve_ui_dir(settings)
     if ui_dir is not None:
+        # Drop only the engine's GET / so the static SPA can take over the
+        # bare path, but leave any POST / route intact (e.g. agent runs that
+        # may legitimately bind there).
         app.router.routes = [
             r
             for r in app.router.routes
-            if not (isinstance(r, APIRoute) and r.path == "/")
+            if not (
+                isinstance(r, APIRoute)
+                and r.path == "/"
+                and "GET" in r.methods
+            )
         ]
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
         logger.info("boot ui mounted from=%s", ui_dir)
