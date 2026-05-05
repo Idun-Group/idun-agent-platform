@@ -58,6 +58,33 @@ The chat reducer (`lib/use-chat.ts`) handles both `THINKING_*` and `REASONING_*`
 
 CUSTOM events with name `idun.a2ui.messages` are routed through the chat reducer into `Message.a2uiSurfaces`. `MessageView.tsx` renders one `<A2UISurfaceWrapper>` per surface, each wrapped in an `<A2UISurfaceErrorBoundary>`. Renderer is `@a2ui/react@^0.9.1` (subpath `/v0_9`); processor is per-message-per-surface and lives as long as the assistant message. Surface goes below the markdown text body. Render errors are silently absorbed (text stays visible, `console.error` for devs). Catalog: A2UI Basic v0.9. Styles auto-inject at runtime via `injectBasicCatalogStyles` inside the renderer — no explicit CSS import is needed at the app root (v0.9's `index.css` is not declared in the package's `exports` field, so importing it directly fails).
 
+### A2UI actions (WS3)
+
+`@a2ui/web_core/v0_9`'s `MessageProcessor` accepts a global `actionHandler`
+at construction; `A2UISurfaceWrapper` installs one that calls
+`useChat.sendAction(action, processor.getClientDataModel())`. The wrapper's
+`isInteractive` prop (parent-computed: latest assistant message AND chat
+status idle) gates clicks via two layers — CSS `pointer-events-none` and
+a handler-side no-op guard.
+
+`useChat.sendAction(action, dataModel?)` POSTs `/agent/run` with
+`forwardedProps.idun.a2uiClientMessage` (+ optional
+`a2uiClientDataModel`). No synthetic user message bubble is appended;
+the existing streaming indicator gives feedback. Reentrancy is rejected
+(no-op when `status !== "idle"`, plus a synchronous `sendActionInFlightRef`
+to close the same-tick race).
+
+The `ChatActionsContext.Provider` (wired in `MinimalLayout`,
+`BrandedLayout`, `InspectorLayout`) exposes `sendAction` to deeply
+nested wrappers without prop-drilling. The Provider value is memoized
+via `useMemo([sendAction])` to avoid consumer churn on parent re-render.
+
+Wire format alignment: `lib/agui.ts`'s `IdunA2UIMessage.updateDataModel`
+uses the spec-correct `value: unknown` field (not `data`) per A2UI v0.9
+`server_to_client.json#/$defs/UpdateDataModelMessage`. The engine's
+envelope retrofit (T6) emits the same shape; mandatory schema validation
+guarantees the contract.
+
 ## Build
 
 ```bash

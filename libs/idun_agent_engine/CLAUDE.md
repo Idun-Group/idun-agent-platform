@@ -340,6 +340,77 @@ Read-only — actions land in WS3.
 
 Spec: `docs/superpowers/specs/2026-04-30-ws2-a2ui-mvp1-design.md`.
 
+### Reading actions (WS3)
+
+Surfaces with `sendDataModel: True` (the default since WS3) and components
+that fire actions (e.g., `Button` with `action.event.name = "submit_form"`)
+round-trip back to the agent over `/agent/run` `forwardedProps`. The agent
+reads the typed action via:
+
+```python
+from idun_agent_engine.a2ui import read_a2ui_context
+
+async def my_node(state, config: RunnableConfig):
+    ctx = read_a2ui_context(state)
+    if ctx is None:
+        # Text-mode turn — no action this run.
+        ...
+    else:
+        # Typed view via Pydantic mirror of A2UI v0.9
+        # client_to_server.json + client_data_model.json:
+        ctx.action.name                       # str, e.g., "submit_form"
+        ctx.action.surface_id                 # str
+        ctx.action.source_component_id        # str (the Button's id)
+        ctx.action.timestamp                  # str (ISO 8601)
+        ctx.action.context                    # dict[str, Any]
+        ctx.data_for(ctx.action.surface_id)   # dict | None — surface dataModel
+```
+
+**State requirement:** Agents that call `read_a2ui_context` MUST declare
+`idun: dict[str, Any] | None` on their State TypedDict. LangGraph's
+StateGraph filters out top-level keys not declared on the schema, so
+`forwarded_props.idun` would be stripped before the node runs. The engine
+treats `idun` as a sidecar (excluded from chat/structured input mode
+discovery) so adding it does NOT flip the agent's input mode.
+
+The wire shape is:
+
+```jsonc
+forwardedProps: {
+  idun: {
+    a2uiClientMessage: { version: "v0.9", action: A2uiClientAction },
+    a2uiClientDataModel: { version: "v0.9", surfaces: {...} } | undefined
+  }
+}
+```
+
+`ag-ui-langgraph` snake-cases only top-level `forwardedProps` keys, so
+nested keys (`a2uiClientMessage`, `surfaceId`, etc.) reach the agent
+camelCase — `read_a2ui_context` handles the casing internally via the
+Pydantic mirror models' Field aliases.
+
+**Validation strategy:**
+- **Inbound** (this helper): Pydantic-only with `extra="forbid"`. The SDK
+  does not ship JSON Schemas for client→server messages — the SDK's own
+  design treats this direction as Pydantic/Zod-validated; we follow the
+  same stance. Mandatory: malformed payloads return `None` from
+  `read_a2ui_context` (logged at WARNING) so a frontend bug in the action
+  path can never crash a text-mode turn.
+- **Outbound** (`build_emit_envelope` / `build_update_envelope` —
+  WS2 retrofit): JSON-Schema-validated against `server_to_client.json`.
+  Mandatory; raises `ValueError` with the JSON Pointer path on malformed
+  components (catches typos at agent side instead of silent placeholder
+  rendering on the frontend).
+
+`a2ui-agent-sdk==0.2.1` is pinned for the bundled JSON Schemas at
+`a2ui/assets/0.9/`. Bumped deliberately when A2UI ships v0.10.
+
+Worked examples:
+- `examples/a2ui-smoke/agent.py` (deterministic — submit/reset/branching)
+- `examples/a2ui-llm-picker/agent.py` (Gemini-driven travel picker with
+  conditional entry routing — pick_destination → acknowledge,
+  ask_again → re-propose)
+
 ## Development
 
 ```bash
