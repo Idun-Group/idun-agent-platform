@@ -40,6 +40,7 @@ from langgraph.graph.state import CompiledStateGraph
 
 from idun_agent_engine import observability
 from idun_agent_engine.agent import base as agent_base
+from idun_agent_engine.agent.validation import validate_graph_definition
 
 logger = logging.getLogger(__name__)
 
@@ -456,62 +457,59 @@ class LanggraphAgent(agent_base.BaseAgent):
             raise NotImplementedError("Store functionality is not yet implemented.")
 
     def _load_graph_builder(self, graph_definition: str) -> StateGraph:
-        """Loads a StateGraph instance from a specified path."""
+        """Loads a StateGraph instance from a specified path.
+
+        Delegates the import + attribute lookup to ``validate_graph_definition``
+        so the standalone admin surface can probe save-time without booting
+        a full engine. Compilation and the ``CompiledStateGraph`` extraction
+        remain here; this function still returns a real ``StateGraph``.
+        """
+        from pathlib import Path
+
+        result = validate_graph_definition(
+            framework="langgraph",
+            definition=graph_definition,
+            project_root=Path.cwd(),
+        )
+
+        if not result.ok:
+            # Translate the structured failure into the engine's existing
+            # ``ValueError`` contract so call sites that already rescue it
+            # (the standalone reload pipeline catches this and re-raises
+            # as ReloadInitFailed) keep working.
+            raise ValueError(result.message)
+
+        # The validator has already proved this resolves and is the right
+        # type. Re-resolve to the actual object now.
         try:
             module_path, graph_variable_name = graph_definition.rsplit(":", 1)
-            if not module_path.endswith(".py"):
-                module_path += ".py"
-        except ValueError:
+        except ValueError as exc:
             raise ValueError(
                 "graph_definition must be in the format 'path/to/file.py:variable_name'"
-            ) from None
+            ) from exc
 
-        # Try loading as a file path first
-        try:
-            from pathlib import Path
+        if not module_path.endswith(".py"):
+            module_path += ".py"
 
-            resolved_path = Path(module_path).resolve()
-            # If the file doesn't exist, it might be a python module path
-            if not resolved_path.exists():
-                raise FileNotFoundError
-
+        resolved_path = Path(module_path).resolve()
+        if resolved_path.is_file():
             spec = importlib.util.spec_from_file_location(
                 graph_variable_name, str(resolved_path)
             )
             if spec is None or spec.loader is None:
-                raise ImportError(f"Could not load spec for module at {module_path}")
-
+                raise ValueError(
+                    f"Could not load spec for module at {module_path}"
+                )
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
+        else:
+            module_import_path = module_path[:-3]
+            module = importlib.import_module(module_import_path)
 
-            graph_builder = getattr(module, graph_variable_name)
-            return self._validate_graph_builder(
-                graph_builder, module_path, graph_variable_name
-            )
-
-        except (FileNotFoundError, ImportError):
-            # Fallback: try loading as a python module
-            try:
-                module_import_path = (
-                    module_path[:-3] if module_path.endswith(".py") else module_path
-                )
-                module = importlib.import_module(module_import_path)
-                graph_builder = getattr(module, graph_variable_name)
-                return self._validate_graph_builder(
-                    graph_builder, module_path, graph_variable_name
-                )
-            except ImportError as e:
-                raise ValueError(
-                    f"Failed to load agent from {graph_definition}. Checked file path and python module: {e}"
-                ) from e
-            except AttributeError as e:
-                raise ValueError(
-                    f"Variable '{graph_variable_name}' not found in module {module_path}: {e}"
-                ) from e
-        except Exception as e:
-            raise ValueError(
-                f"Failed to load agent from {graph_definition}: {e}"
-            ) from e
+        graph_builder = getattr(module, graph_variable_name)
+        return self._validate_graph_builder(
+            graph_builder, module_path, graph_variable_name
+        )
 
     def _validate_graph_builder(
         self, graph_builder: Any, module_path: str, graph_variable_name: str
