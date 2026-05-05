@@ -150,7 +150,7 @@ CRUD models for resources managed via the manager API. Each follows the pattern:
 
 | Resource | Module | Key Fields |
 |---|---|---|
-| **Agent** | `managed_agent.py` | `name`, `status` (`AgentStatus` enum), `version`, `base_url`, `engine_config` (full `EngineConfig`) |
+| **Agent** | `managed_agent.py` | `name`, `status` (`AgentStatus` enum), `version`, `base_url`, `engine_config` (full `EngineConfig`). `ManagedAgentPatch` includes `version: Optional[str]` to allow version updates via PATCH. |
 | **Guardrail** | `managed_guardrail.py` | `name`, `guardrail` (`ManagerGuardrailConfig`) |
 | **MCP Server** | `managed_mcp_server.py` | `name`, `mcp_server` (`MCPServer`) |
 | **Memory** | `managed_memory.py` | `name`, `agent_framework`, `memory` (`CheckpointConfig \| SessionServiceConfig`) |
