@@ -1,11 +1,13 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
 import type { ReactNode } from "react";
 
-import type { AgentGraphHandle } from "@/components/graph/AgentGraph";
+import {
+  AgentGraphLazy,
+  type AgentGraphHandle,
+} from "@/components/graph/AgentGraphLazy";
 import { ExportMenu } from "@/components/graph/ExportMenu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -18,16 +20,6 @@ import {
 } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api";
 import type { AgentRead, Framework } from "@/lib/api";
-
-const AgentGraph = dynamic(
-  () => import("@/components/graph/AgentGraph").then((m) => m.AgentGraph),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[420px] animate-pulse rounded-md bg-muted" />
-    ),
-  },
-);
 
 type Mode = "starter" | "detection";
 
@@ -124,7 +116,7 @@ export function WizardDone({
               </Alert>
             )}
           {graphQuery.data && (
-            <AgentGraph ref={graphRef} graph={graphQuery.data} />
+            <AgentGraphLazy ref={graphRef} graph={graphQuery.data} />
           )}
         </CardContent>
       </Card>

@@ -15,14 +15,10 @@ vi.mock("@/lib/api", async () => {
   };
 });
 
-// next/dynamic is not supported in vitest jsdom; stub it so AgentGraph
-// resolves to a simple div without triggering ReactFlow canvas errors.
-vi.mock("next/dynamic", () => ({
-  default: (_loader: unknown, _opts: unknown) => {
-    const Stub = () => <div data-testid="agent-graph-stub" />;
-    Stub.displayName = "AgentGraphStub";
-    return Stub;
-  },
+// Stub the lazy graph wrapper — keeps ReactFlow + html-to-image out of jsdom
+// without affecting the suspense/lazy plumbing we want WizardDone to use.
+vi.mock("@/components/graph/AgentGraphLazy", () => ({
+  AgentGraphLazy: () => <div data-testid="agent-graph-stub" />,
 }));
 
 import { api, ApiError } from "@/lib/api";
