@@ -21,32 +21,51 @@ def build_emit_envelope(
     fallback_text: str | None = None,
     catalog_id: str = BASIC_CATALOG_V09,
     metadata: dict[str, Any] | None = None,
+    data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the A2UI v0.9 envelope for a ``createSurface`` + ``updateComponents``
-    pair (the common one-shot case).
+    (+ optional ``updateDataModel``) sequence.
 
     The returned dict becomes ``CustomEvent.value`` once the dispatcher
     fires it through ``adispatch_custom_event``.
+
+    When ``data`` is provided, an additional ``updateDataModel`` message
+    is appended so input components can bind to JSON Pointer paths
+    (``{"path": "/name"}``) and round-trip user edits through the local
+    surface state. Without ``data``, inputs render but their values do
+    not update on user interaction (the renderer has no target for
+    ``setValue``).
     """
+    messages: list[dict[str, Any]] = [
+        {
+            "version": "v0.9",
+            "createSurface": {
+                "surfaceId": surface_id,
+                "catalogId": catalog_id,
+            },
+        },
+        {
+            "version": "v0.9",
+            "updateComponents": {
+                "surfaceId": surface_id,
+                "components": list(components),
+            },
+        },
+    ]
+    if data is not None:
+        messages.append(
+            {
+                "version": "v0.9",
+                "updateDataModel": {
+                    "surfaceId": surface_id,
+                    "data": dict(data),
+                },
+            }
+        )
     envelope: dict[str, Any] = {
         "a2uiVersion": "v0.9",
         "surfaceId": surface_id,
-        "messages": [
-            {
-                "version": "v0.9",
-                "createSurface": {
-                    "surfaceId": surface_id,
-                    "catalogId": catalog_id,
-                },
-            },
-            {
-                "version": "v0.9",
-                "updateComponents": {
-                    "surfaceId": surface_id,
-                    "components": list(components),
-                },
-            },
-        ],
+        "messages": messages,
     }
     if fallback_text is not None:
         envelope["fallbackText"] = fallback_text

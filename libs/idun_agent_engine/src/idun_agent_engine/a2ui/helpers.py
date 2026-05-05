@@ -29,17 +29,36 @@ async def emit_surface(
     fallback_text: str | None = None,
     catalog_id: str = BASIC_CATALOG_V09,
     metadata: dict[str, Any] | None = None,
+    data: dict[str, Any] | None = None,
 ) -> None:
-    """Dispatch an A2UI v0.9 envelope (createSurface + updateComponents)
-    as a LangGraph custom event named ``idun.a2ui.messages``.
+    """Dispatch an A2UI v0.9 envelope (createSurface + updateComponents
+    + optional updateDataModel) as a LangGraph custom event named
+    ``idun.a2ui.messages``.
 
     Must be called from inside a LangGraph node where ``config`` is
     available (the second positional arg of the node function). The
     event reaches the AG-UI adapter via ``astream_events(version="v2")``.
 
-    Pure JSON only — non-serializable values in ``components`` or
-    ``metadata`` will be silently dropped by ag-ui-langgraph's
-    ``dump_json_safe``.
+    For interactive inputs (TextField, CheckBox, Slider, etc.) pass
+    a ``data`` dict to seed the surface's dataModel and bind input
+    ``value`` props to JSON Pointer paths::
+
+        await emit_surface(
+            config=config,
+            surface_id="form",
+            components=[
+                {"id": "name", "component": "TextField", "label": "Name",
+                 "value": {"path": "/name"}},
+            ],
+            data={"name": ""},
+        )
+
+    Without ``data``, inputs render but user edits do not update because
+    the renderer has no dataModel target for ``setValue``.
+
+    Pure JSON only — non-serializable values in ``components``,
+    ``metadata``, or ``data`` will be silently dropped by
+    ag-ui-langgraph's ``dump_json_safe``.
     """
     envelope = build_emit_envelope(
         surface_id=surface_id,
@@ -47,6 +66,7 @@ async def emit_surface(
         fallback_text=fallback_text,
         catalog_id=catalog_id,
         metadata=metadata,
+        data=data,
     )
     await adispatch_custom_event(CUSTOM_EVENT_NAME, envelope, config=config)
 
