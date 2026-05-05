@@ -53,6 +53,7 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
     () => [...messages].reverse().find((m) => m.role === "assistant")?.id,
     [messages],
   );
+  const actionsValue = useMemo(() => ({ sendAction }), [sendAction]);
 
   // Capability discovery — non-blocking. If the request fails (older engine,
   // network blip), we treat history as available; the listing query will
@@ -81,7 +82,7 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
   };
 
   return (
-    <ChatActionsContext.Provider value={{ sendAction }}>
+    <ChatActionsContext.Provider value={actionsValue}>
       <div className="flex h-screen bg-background text-foreground">
         <div className="hidden md:block">
         <HistorySidebar

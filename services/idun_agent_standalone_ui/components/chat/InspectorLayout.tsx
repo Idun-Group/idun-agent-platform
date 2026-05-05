@@ -82,6 +82,7 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
     () => [...messages].reverse().find((m) => m.role === "assistant")?.id,
     [messages],
   );
+  const actionsValue = useMemo(() => ({ sendAction }), [sendAction]);
 
   // Capability discovery — non-blocking. Failures fall back to "history is
   // available" because the listing query itself surfaces its own errors.
@@ -119,7 +120,7 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
   };
 
   return (
-    <ChatActionsContext.Provider value={{ sendAction }}>
+    <ChatActionsContext.Provider value={actionsValue}>
       <div className="grid h-screen grid-cols-1 bg-background text-foreground md:grid-cols-[260px_1fr] lg:grid-cols-[260px_1fr_320px]">
       <div className="hidden md:block">
         <HistorySidebar

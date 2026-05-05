@@ -29,9 +29,10 @@ export function MinimalLayout({ threadId }: { threadId: string }) {
     () => [...messages].reverse().find((m) => m.role === "assistant")?.id,
     [messages],
   );
+  const actionsValue = useMemo(() => ({ sendAction }), [sendAction]);
 
   return (
-    <ChatActionsContext.Provider value={{ sendAction }}>
+    <ChatActionsContext.Provider value={actionsValue}>
       <div className="flex min-h-screen flex-col bg-background text-foreground">
         <header className="border-b border-border">
           <div className="mx-auto flex max-w-[720px] items-center px-6 py-3">
