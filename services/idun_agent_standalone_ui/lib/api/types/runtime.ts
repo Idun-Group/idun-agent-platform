@@ -1,7 +1,8 @@
 export type ReloadStatusKind =
   | "reloaded"
   | "restart_required"
-  | "reload_failed";
+  | "reload_failed"
+  | "not_attempted";
 
 export type RuntimeStatus = {
   lastStatus: ReloadStatusKind | null;
