@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
 import { ProviderPicker } from "@/components/admin/ProviderPicker";
 import {
@@ -40,6 +41,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { ApiError, type AgentRead, api } from "@/lib/api";
 
 type Framework = "langgraph" | "adk";
@@ -260,6 +262,8 @@ export default function AgentPage() {
     save.mutate({ ...values, framework: activeTab });
   };
 
+  useBeforeUnload(form.formState.isDirty);
+
   const yamlText = useMemo(() => {
     if (!data) return "";
     const v = form.getValues();
@@ -312,13 +316,12 @@ export default function AgentPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-4xl">
-      <header className="space-y-1">
-        <h1 className="font-serif text-2xl font-medium text-foreground">Agent</h1>
-        <p className="text-sm text-muted-foreground">
-          Identity and graph definition for the running agent. Memory is configured
-          on its own page.
-        </p>
-      </header>
+      <AdminPageHeader
+        title="Agent"
+        description="Identity and graph definition for the running agent. Memory is configured on its own page."
+        docsHref="https://docs.idunplatform.com/standalone/agent"
+        isDirty={form.formState.isDirty}
+      />
 
       {restartRequired && (
         <Alert variant="destructive">
