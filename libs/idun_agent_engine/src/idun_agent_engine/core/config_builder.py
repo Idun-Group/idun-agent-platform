@@ -60,6 +60,7 @@ class ConfigBuilder:
         self._sso: SSOConfig | None = None
         self._integrations: list | None = None
         self._prompts: list[PromptConfig] | None = None
+        self._skills: list | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """Set the API port for the server.
@@ -126,6 +127,7 @@ class ConfigBuilder:
             self._sso = engine_config.sso
             self._integrations = engine_config.integrations
             self._prompts = engine_config.prompts
+            self._skills = engine_config.skills
 
             return self
         except Exception as e:
@@ -229,6 +231,7 @@ class ConfigBuilder:
             sso=self._sso,
             integrations=self._integrations,
             prompts=self._prompts,
+            skills=self._skills,
         )
 
     def build_dict(self) -> dict[str, Any]:  # NOT USED
@@ -423,9 +426,14 @@ class ConfigBuilder:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration
+        init_kwargs: dict[str, Any] = {}
+        # Pass skills config to ADK agents (native SkillToolset support)
+        if agent_type == AgentFramework.ADK and engine_config.skills:
+            init_kwargs["skills_config"] = engine_config.skills
         await agent_instance.initialize(
             validated_config,
             observability_config,  # , mcp_registry=mcp_registry
+            **init_kwargs,
         )  # type: ignore[arg-type]
         return agent_instance
 
@@ -612,6 +620,7 @@ class ConfigBuilder:
         builder._sso = engine_config.sso
         builder._integrations = engine_config.integrations
         builder._prompts = engine_config.prompts
+        builder._skills = engine_config.skills
         return builder
 
     @classmethod
@@ -646,6 +655,7 @@ class ConfigBuilder:
         builder._sso = engine_config.sso
         builder._integrations = engine_config.integrations
         builder._prompts = engine_config.prompts
+        builder._skills = engine_config.skills
 
         return builder
 
