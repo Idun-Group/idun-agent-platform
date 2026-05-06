@@ -5,8 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 /**
  * Minimal JSON editor — replaces Monaco for the MVP. Validates the buffer
- * on every keystroke and only emits the parsed value when valid, so a
- * SaveToolbar can commit the change.
+ * on every keystroke and only emits the parsed value when valid, so the
+ * page-level save action can commit the change.
  */
 export function JsonEditor({
   value,
