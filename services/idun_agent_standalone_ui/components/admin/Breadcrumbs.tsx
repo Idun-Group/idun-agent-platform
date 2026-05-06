@@ -20,6 +20,7 @@ const LABELS: Record<string, string> = {
   observability: "Observability",
   prompts: "Prompts",
   integrations: "Integrations",
+  sso: "SSO",
   settings: "Settings",
   traces: "Traces",
   logs: "Logs",

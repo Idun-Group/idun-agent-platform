@@ -7,6 +7,8 @@
  * heavy dep keeps the static export bundle small.
  */
 
+import { authHeaders } from "@/lib/auth";
+
 export type AGUIEvent = {
   type: string;
   [key: string]: unknown;
@@ -61,12 +63,14 @@ export type ToolCall = {
 };
 
 export async function runAgent(opts: RunOptions): Promise<void> {
+  const bearer = await authHeaders();
   const res = await fetch("/agent/run", {
     method: "POST",
     credentials: "include",
     headers: {
       "content-type": "application/json",
       accept: "text/event-stream",
+      ...bearer,
     },
     body: JSON.stringify({
       threadId: opts.threadId,
@@ -84,12 +88,17 @@ export async function runAgent(opts: RunOptions): Promise<void> {
     const detail = (body as { detail?: string } | null)?.detail;
     throw new GuardrailRejectedError(detail ?? "Blocked by a guardrail.");
   }
+  if (res.status === 401) {
+    throw new Error("Unauthorized. Please sign in again.");
+  }
   if (!res.ok || !res.body) {
     throw new Error(`agent run failed: ${res.status}`);
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let sawTerminalEvent = false;
+  const terminalTypes = new Set(["RUN_FINISHED", "RUN_ERROR"]);
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -105,10 +114,17 @@ export async function runAgent(opts: RunOptions): Promise<void> {
         .join("");
       if (!dataLine) continue;
       try {
-        opts.onEvent(JSON.parse(dataLine));
+        const event = JSON.parse(dataLine) as AGUIEvent;
+        if (terminalTypes.has(event.type)) sawTerminalEvent = true;
+        opts.onEvent(event);
       } catch {
         // ignore malformed event chunks
       }
     }
+  }
+  if (!sawTerminalEvent && !opts.signal?.aborted) {
+    throw new Error(
+      "Agent stream ended unexpectedly. Token may have expired; sign in again.",
+    );
   }
 }

@@ -29,6 +29,7 @@ from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemo
 from idun_agent_standalone.infrastructure.db.models.observability import (
     StandaloneObservabilityRow,
 )
+from idun_agent_standalone.infrastructure.db.models.sso import StandaloneSsoRow
 from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
 
 logger = get_logger(__name__)
@@ -78,6 +79,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     guardrails = await _load_guardrails(session)
     prompts = await _load_prompts(session)
     integrations = await _load_integrations(session)
+    sso = await _load_sso(session)
 
     base_config = _parse_base_config(agent)
     framework = base_config.agent.type
@@ -92,6 +94,7 @@ async def assemble_engine_config(session: AsyncSession) -> EngineConfig:
     _layer_guardrails(base_dict, agent.name, guardrails)
     _layer_prompts(base_dict, agent.name, prompts)
     _layer_integrations(base_dict, agent.name, integrations)
+    _layer_sso(base_dict, agent.name, sso)
 
     return _validate_assembled(base_dict, agent.name, framework)
 
@@ -108,6 +111,10 @@ async def _load_agent(session: AsyncSession) -> StandaloneAgentRow:
 
 async def _load_memory(session: AsyncSession) -> StandaloneMemoryRow | None:
     return (await session.execute(select(StandaloneMemoryRow))).scalar_one_or_none()
+
+
+async def _load_sso(session: AsyncSession) -> StandaloneSsoRow | None:
+    return (await session.execute(select(StandaloneSsoRow))).scalar_one_or_none()
 
 
 async def _load_observability(
@@ -424,6 +431,31 @@ def _layer_integrations(
         "assemble: integrations agent=%s count=%d",
         agent_name,
         len(payloads),
+    )
+
+
+def _layer_sso(
+    base_dict: dict[str, Any],
+    agent_name: str,
+    sso: StandaloneSsoRow | None,
+) -> None:
+    """Layer the singleton SSO config onto the engine config.
+
+    Absent row leaves ``sso`` unset so the engine treats agent routes
+    as unprotected. Stored shape mirrors ``SSOConfig`` directly so the
+    JSON dict is layered as is.
+    """
+    if sso is None:
+        logger.info("assemble: no sso provider agent=%s", agent_name)
+        return
+    base_dict["sso"] = sso.sso_config
+    enabled = sso.sso_config.get("enabled", True)
+    issuer = sso.sso_config.get("issuer", "unknown")
+    logger.info(
+        "assemble: sso agent=%s issuer=%s enabled=%s",
+        agent_name,
+        issuer,
+        enabled,
     )
 
 

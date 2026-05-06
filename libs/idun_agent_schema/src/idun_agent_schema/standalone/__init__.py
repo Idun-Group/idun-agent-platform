@@ -58,6 +58,10 @@ from .observability import (  # noqa: F401
     StandaloneObservabilityPatch,
     StandaloneObservabilityRead,
 )
+from .sso import (  # noqa: F401
+    StandaloneSsoPatch,
+    StandaloneSsoRead,
+)
 from .onboarding import (  # noqa: F401
     CreateFromDetectionBody,
     CreateStarterBody,
