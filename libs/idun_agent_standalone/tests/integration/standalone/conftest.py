@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+import os
+from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,33 @@ from idun_agent_standalone.infrastructure.db.session import (
     create_db_engine,
     create_sessionmaker,
 )
+
+
+@pytest.fixture(autouse=True)
+def _graph_module_in_cwd(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
+    """Materialize ``agent.py:graph`` in cwd for round-2.5 probes.
+
+    See the matching fixture in ``tests/integration/api/v1/conftest.py``
+    for rationale. Uses ``tmp_path_factory`` so the chdir target does
+    not collide with the per-test ``tmp_path`` used for SQLite DBs and
+    other fixture-owned files.
+    """
+    cwd_dir = tmp_path_factory.mktemp("graph_cwd")
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "from typing_extensions import TypedDict\n"
+        "class S(TypedDict, total=False):\n"
+        "    x: int\n"
+        "graph = StateGraph(S)\n"
+        "other_graph = StateGraph(S)\n"
+    )
+    (cwd_dir / "agent.py").write_text(src)
+    cwd = os.getcwd()
+    os.chdir(cwd_dir)
+    try:
+        yield
+    finally:
+        os.chdir(cwd)
 
 
 _LANGGRAPH_AGENT_BODY = {

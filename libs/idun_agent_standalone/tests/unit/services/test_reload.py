@@ -12,6 +12,8 @@ the necessary rows before calling commit_with_reload.
 from __future__ import annotations
 
 import asyncio
+import os
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
@@ -32,6 +34,37 @@ from idun_agent_standalone.services.reload import (
     commit_with_reload,
 )
 from sqlalchemy import select
+
+
+@pytest.fixture(autouse=True)
+def _graph_module_in_cwd(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
+    """Materialize ``agent.py:graph`` in a tmp cwd for round-2.5 probes.
+
+    Round 2.5 (file-reference probe in ``commit_with_reload``) runs
+    ``validate_graph_definition(framework="langgraph", definition,
+    project_root=Path.cwd())``. The seed config in this file uses
+    ``"agent.py:graph"`` as a placeholder, which the probe resolves
+    against the cwd. Without a real file, every test that exercises
+    the pipeline would fail at round 2.5. Fixing the fixture (rather
+    than every test) preserves the existing seed shape and keeps the
+    test signal focused on pipeline behavior.
+    """
+    cwd_dir = tmp_path_factory.mktemp("graph_cwd")
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "from typing_extensions import TypedDict\n"
+        "class S(TypedDict, total=False):\n"
+        "    x: int\n"
+        "graph = StateGraph(S)\n"
+        "other_graph = StateGraph(S)\n"
+    )
+    (cwd_dir / "agent.py").write_text(src)
+    cwd = os.getcwd()
+    os.chdir(cwd_dir)
+    try:
+        yield
+    finally:
+        os.chdir(cwd)
 
 
 def _seed_engine_config_dict() -> dict:
@@ -343,3 +376,71 @@ async def test_runtime_state_full_shape_on_reload_failed(
     assert state.last_message == "Engine reload failed; config not saved."
     assert state.last_error == "engine boom"
     assert state.last_applied_config_hash is None
+
+
+@pytest.mark.asyncio
+async def test_round_two_and_a_half_blocks_bad_graph_definition(
+    async_session, stub_reload_callable, frozen_now
+) -> None:
+    """A broken ``graph_definition`` must be caught at round 2.5 with a
+    field-mapped 422, before the reload callable runs."""
+    row = StandaloneAgentRow(
+        name="bad-graph",
+        base_engine_config={
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "ada",
+                    "graph_definition": "./missing_module_x.py:graph",
+                },
+            },
+        },
+    )
+    async_session.add(row)
+    await async_session.flush()
+
+    with pytest.raises(AdminAPIError) as exc_info:
+        await commit_with_reload(
+            async_session,
+            reload_callable=stub_reload_callable,
+            now=frozen_now,
+        )
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.error.code == StandaloneErrorCode.VALIDATION_FAILED
+    field_paths = [fe.field for fe in exc_info.value.error.field_errors or []]
+    assert "agent.config.graphDefinition" in field_paths
+    stub_reload_callable.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_round_three_import_error_emits_field_errors(
+    async_session, frozen_now
+) -> None:
+    """Round-3 ImportError must surface as field_errors on graphDefinition.
+
+    The round-3 catch routes the original exception through
+    ``classify_reload_error`` so the UI can highlight the agent's
+    graph definition field instead of toasting a generic message.
+    The ``recovered=True`` marker must always be present.
+    """
+    await _seed_agent(async_session)
+    failing_reload = AsyncMock(
+        side_effect=ReloadInitFailed(
+            "Engine init failed: cannot import",
+            original=ImportError("cannot import name 'graph' from 'agent'"),
+        )
+    )
+
+    with pytest.raises(AdminAPIError) as info:
+        await commit_with_reload(
+            async_session,
+            reload_callable=failing_reload,
+            now=frozen_now,
+        )
+    assert info.value.status_code == 500
+    assert info.value.error.code == StandaloneErrorCode.RELOAD_FAILED
+    paths = [fe.field for fe in info.value.error.field_errors or []]
+    assert "agent.config.graphDefinition" in paths
+    assert info.value.error.details is not None
+    assert info.value.error.details.get("recovered") is True

@@ -42,7 +42,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ApiError, type AgentRead, api } from "@/lib/api";
+import { useBlurDryRun } from "@/hooks/use-blur-dry-run";
+import { ApiError, type AgentPatch, type AgentRead, api } from "@/lib/api";
 import { applyFieldErrors } from "@/lib/api/form-errors";
 
 type Framework = "langgraph" | "adk";
@@ -65,7 +66,13 @@ const FRAMEWORK_OPTIONS = [
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string(),
-  definition: z.string().min(1, "Definition is required"),
+  definition: z
+    .string()
+    .min(1, "Definition is required")
+    .regex(
+      /^[^\s:]+:[A-Za-z_]\w*$/,
+      "Use the format `path/file.py:variable` or `module.path:variable`",
+    ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -226,6 +233,28 @@ export default function AgentPage() {
     resolver: zodResolver(formSchema),
     defaultValues: initialValues,
     values: initialValues,
+  });
+
+  const dryRun = useBlurDryRun({
+    mutationFn: async (definition: string) => {
+      const v = form.getValues();
+      return api.patchAgent(
+        {
+          baseEngineConfig: buildBaseEngineConfig(
+            data?.baseEngineConfig,
+            activeTab,
+            definition,
+            v.name,
+          ),
+        } as AgentPatch,
+        { dryRun: true },
+      );
+    },
+    onError: (err) => {
+      applyFieldErrors(form, err, {
+        "agent.config.graphDefinition": "definition",
+      });
+    },
   });
 
   const save = useMutation({
@@ -472,6 +501,12 @@ export default function AgentPage() {
                     <FormControl>
                       <Input
                         {...field}
+                        onBlur={(e) => {
+                          field.onBlur();
+                          if (e.target.value) {
+                            void dryRun.run(e.target.value);
+                          }
+                        }}
                         placeholder={
                           activeTab === "adk"
                             ? "./agent/agent.py:root_agent"

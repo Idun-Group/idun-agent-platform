@@ -179,3 +179,71 @@ async def test_malformed_body_returns_422(admin_app, async_session) -> None:
         response = await client.patch("/admin/api/v1/agent", json={"name": None})
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "validation_failed"
+
+
+async def test_patch_dry_run_skips_commit_and_reload(
+    admin_app, async_session, stub_reload_callable
+) -> None:
+    """Dry-run on a valid PATCH must return reload.status=not_attempted
+    and leave the DB unchanged."""
+    from sqlalchemy import select
+
+    await _seed_agent(async_session)
+
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.patch(
+            "/admin/api/v1/agent?dryRun=true",
+            json={"name": "renamed-via-dry-run"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["reload"]["status"] == "not_attempted"
+    # Returned data reflects the unchanged row.
+    assert body["data"]["name"] == "Ada"
+    # The reload callable was never invoked on a dry-run.
+    stub_reload_callable.assert_not_called()
+
+    # DB row is unchanged: same count, same name.
+    rows = (await async_session.execute(select(StandaloneAgentRow))).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].name == "Ada"
+
+
+async def test_patch_dry_run_with_bad_graph_definition_returns_422(
+    admin_app, async_session, stub_reload_callable
+) -> None:
+    """Dry-run that hits a broken graph_definition returns 422 + field_errors.
+
+    The PATCH body is metadata-only (StandaloneAgentPatch doesn't accept
+    baseEngineConfig), so we seed an agent row whose graph_definition
+    already points at a missing file. The round 2.5 probe fires during
+    dry-run and surfaces the field error without committing or reloading.
+    """
+    row = StandaloneAgentRow(
+        name="Ada",
+        base_engine_config={
+            "server": {"api": {"port": 8000}},
+            "agent": {
+                "type": "LANGGRAPH",
+                "config": {
+                    "name": "ada",
+                    "graph_definition": "./missing.py:graph",
+                },
+            },
+        },
+    )
+    async_session.add(row)
+    await async_session.commit()
+
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.patch(
+            "/admin/api/v1/agent?dryRun=true",
+            json={"name": "renamed-via-dry-run"},
+        )
+    assert response.status_code == 422
+    body = response.json()
+    paths = [fe["field"] for fe in body["error"]["fieldErrors"]]
+    assert "agent.config.graphDefinition" in paths
+    stub_reload_callable.assert_not_called()

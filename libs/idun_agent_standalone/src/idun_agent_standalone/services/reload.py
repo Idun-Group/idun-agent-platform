@@ -70,7 +70,14 @@ class ReloadInitFailed(Exception):  # noqa: N818
     Named for the action that fails (engine reload init), not as
     a generic ``-Error``, so the call site reads as a flow-control
     signal rather than a typed error class.
+
+    Carries the original exception so callers can classify it (the
+    classifier inspects the real type to decide which field to flag).
     """
+
+    def __init__(self, message: str, *, original: BaseException | None = None) -> None:
+        super().__init__(message)
+        self.original = original
 
 
 def _default_now() -> datetime:
@@ -189,6 +196,47 @@ async def commit_with_reload(
             ),
         ) from exc
 
+    # Round 2.5 — file-reference probe for the agent's graph_definition.
+    # Catches broken file paths, missing variables, and wrong types
+    # before the engine is asked to compile. Failures map to
+    # field_errors[agent.config.graphDefinition].
+    if assembled.agent.type.value == "LANGGRAPH":
+        graph_def = getattr(assembled.agent.config, "graph_definition", None)
+        if graph_def:
+            from pathlib import Path
+
+            from idun_agent_engine.agent.validation import (
+                validate_graph_definition,
+            )
+            from idun_agent_schema.standalone import StandaloneFieldError
+
+            probe = validate_graph_definition(
+                framework="langgraph",
+                definition=graph_def,
+                project_root=Path.cwd(),
+            )
+            if not probe.ok:
+                await session.rollback()
+                logger.info(
+                    "reload.round2_5_failed code=%s",
+                    probe.code.value if probe.code else "unknown",
+                )
+                raise AdminAPIError(
+                    status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    error=StandaloneAdminError(
+                        code=StandaloneErrorCode.VALIDATION_FAILED,
+                        message="Graph definition could not be loaded.",
+                        field_errors=[
+                            StandaloneFieldError(
+                                field="agent.config.graphDefinition",
+                                message=probe.message
+                                + (f" {probe.hint}" if probe.hint else ""),
+                                code=probe.code.value if probe.code else "invalid",
+                            ),
+                        ],
+                    ),
+                )
+
     structural_hash = _structural_hash(assembled)
     prior = await runtime_state.get(session)
     structural = _is_structural_change(assembled, prior)
@@ -213,6 +261,10 @@ async def commit_with_reload(
     try:
         await reload_callable(assembled)
     except ReloadInitFailed as exc:
+        from idun_agent_standalone.services.error_classifier import (
+            classify_reload_error,
+        )
+
         await session.rollback()
         await runtime_state.record_reload_outcome(
             session,
@@ -224,13 +276,15 @@ async def commit_with_reload(
         )
         await session.commit()
         logger.warning("reload.round3_failed error=%s", str(exc)[:120])
+        admin_error = classify_reload_error(exc.original or exc, assembled)
+        # Always include the recovered marker so the UI knows the prior
+        # config is still live.
+        details = dict(admin_error.details or {})
+        details["recovered"] = True
+        admin_error.details = details
         raise AdminAPIError(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            error=StandaloneAdminError(
-                code=StandaloneErrorCode.RELOAD_FAILED,
-                message="Engine reload failed; config not saved.",
-                details={"recovered": True},
-            ),
+            error=admin_error,
         ) from exc
 
     await session.commit()

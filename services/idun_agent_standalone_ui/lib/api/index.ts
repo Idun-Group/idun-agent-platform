@@ -64,11 +64,14 @@ export const api = {
 
   // agent (singleton)
   getAgent: () => apiFetch<AgentRead>(`${ADMIN}/agent`),
-  patchAgent: (body: AgentPatch) =>
-    apiFetch<MutationResponse<AgentRead>>(`${ADMIN}/agent`, {
-      method: "PATCH",
-      body: j(body),
-    }),
+  patchAgent: (body: AgentPatch, opts?: { dryRun?: boolean }) =>
+    apiFetch<MutationResponse<AgentRead>>(
+      `${ADMIN}/agent${opts?.dryRun ? "?dryRun=true" : ""}`,
+      {
+        method: "PATCH",
+        body: j(body),
+      },
+    ),
 
   // memory (singleton)
   getMemory: () => apiFetch<MemoryRead | null>(`${ADMIN}/memory`),

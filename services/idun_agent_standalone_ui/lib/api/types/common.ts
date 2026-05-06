@@ -1,4 +1,8 @@
-export type ReloadStatus = "reloaded" | "restart_required" | "reload_failed";
+export type ReloadStatus =
+  | "reloaded"
+  | "restart_required"
+  | "reload_failed"
+  | "not_attempted";
 
 export type ReloadResult = {
   status: ReloadStatus;
