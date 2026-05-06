@@ -360,15 +360,17 @@ class AdkAgent(agent_base.BaseAgent):
 
         adk_skills = []
         for sc in skills_config:
-            # Build L3 resources if provided
-            resources = None
-            if sc.resources and (
-                sc.resources.references or sc.resources.assets or sc.resources.scripts
-            ):
-                resources = skill_models.Resources(
-                    references=sc.resources.references or {},
-                    assets=sc.resources.assets or {},
-                )
+            # Build L3 resources — always instantiate a Resources() object
+            # even when the skill has no resources (e.g. meeting-processor),
+            # because the ADK Skill Pydantic model does not accept None.
+            resources = skill_models.Resources(
+                references=(
+                    sc.resources.references if sc.resources else {}
+                ),
+                assets=(
+                    sc.resources.assets if sc.resources else {}
+                ),
+            )
 
             adk_skill = skill_models.Skill(
                 frontmatter=skill_models.Frontmatter(
