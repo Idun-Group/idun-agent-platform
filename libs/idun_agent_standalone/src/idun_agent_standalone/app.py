@@ -53,6 +53,9 @@ from idun_agent_standalone.api.v1.routers.onboarding import (
 from idun_agent_standalone.api.v1.routers.prompts import (
     router as prompts_router,
 )
+from idun_agent_standalone.api.v1.routers.runtime import (
+    router as runtime_router,
+)
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.core.security import SESSION_COOKIE_NAME
 from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
@@ -232,6 +235,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.include_router(guardrails_router, dependencies=admin_auth)
     app.include_router(prompts_router, dependencies=admin_auth)
     app.include_router(integrations_router, dependencies=admin_auth)
+    app.include_router(runtime_router, dependencies=admin_auth)
     app.include_router(onboarding_router, dependencies=admin_auth)
     app.include_router(runtime_config_router)
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AppSidebar } from "@/components/admin/AppSidebar";
 import { AuthGuard } from "@/components/admin/AuthGuard";
 import { GlobalCommand } from "@/components/admin/GlobalCommand";
+import { ReloadFailedBanner } from "@/components/admin/ReloadFailedBanner";
 import { Topbar } from "@/components/admin/Topbar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,6 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <SidebarInset>
             <Topbar onOpenCommand={() => setCommandOpen(true)} />
             <main className="flex-1 overflow-y-auto bg-background">
+              <ReloadFailedBanner />
               {children}
             </main>
           </SidebarInset>
