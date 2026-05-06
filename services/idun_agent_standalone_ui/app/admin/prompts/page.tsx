@@ -8,6 +8,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +55,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { ApiError, type PromptRead, api } from "@/lib/api";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -167,6 +169,8 @@ export default function PromptsPage() {
     () => !listsEqual(working, initialList),
     [working, initialList],
   );
+
+  useBeforeUnload(isDirty);
 
   const form = useForm<PromptFormValues>({
     resolver: zodResolver(promptFormSchema),
@@ -311,15 +315,12 @@ export default function PromptsPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-5xl">
-      <header className="space-y-1">
-        <h1 className="font-serif text-2xl font-medium text-foreground">
-          Prompts
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Versioned prompt templates. Editing a prompt and saving creates a new
-          version.
-        </p>
-      </header>
+      <AdminPageHeader
+        title="Prompts"
+        description="Versioned prompt templates. Editing a prompt and saving creates a new version."
+        docsHref="https://docs.idunplatform.com/standalone/prompts"
+        isDirty={isDirty}
+      />
 
       <Card>
         <CardHeader className="flex-row items-center justify-between">
