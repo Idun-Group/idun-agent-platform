@@ -8,6 +8,7 @@ import { useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -29,6 +30,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxValue,
+} from "@/components/ui/combobox";
 import {
   Form,
   FormControl,
@@ -53,7 +61,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -63,6 +70,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { ApiError, type GuardrailRead, api } from "@/lib/api";
 
 const GUARD_IDS = [
@@ -100,35 +108,35 @@ const PII_ENTITIES = [
 ] as const;
 
 const GUARD_DEFAULTS: Record<GuardId, GuardFormFields> = {
-  ban_list: { reject_message: "ban!!", banned_words: "" },
-  detect_pii: { reject_message: "PII detected", pii_entities: "" },
+  ban_list: { reject_message: "ban!!", banned_words: [] },
+  detect_pii: { reject_message: "PII detected", pii_entities: [] },
   nsfw_text: { reject_message: "NSFW content", threshold: 0.7 },
   toxic_language: { reject_message: "Toxic content", threshold: 0.7 },
   gibberish_text: { reject_message: "Gibberish detected", threshold: 0.7 },
   bias_check: { reject_message: "Bias detected", threshold: 0.5 },
   competition_check: {
     reject_message: "Competitor mentioned",
-    competitors: "",
+    competitors: [],
   },
   correct_language: {
     reject_message: "Language not allowed",
-    expected_languages: "",
+    expected_languages: [],
   },
   restrict_to_topic: {
     reject_message: "Off-topic",
-    valid_topics: "",
-    invalid_topics: "",
+    valid_topics: [],
+    invalid_topics: [],
   },
 };
 
 type GuardFormFields = {
   reject_message?: string;
-  banned_words?: string;
-  pii_entities?: string;
-  competitors?: string;
-  expected_languages?: string;
-  valid_topics?: string;
-  invalid_topics?: string;
+  banned_words?: string[];
+  pii_entities?: string[];
+  competitors?: string[];
+  expected_languages?: string[];
+  valid_topics?: string[];
+  invalid_topics?: string[];
   threshold?: number;
 };
 
@@ -136,12 +144,12 @@ const guardFormSchema = z.object({
   config_id: z.enum(GUARD_IDS),
   api_key: z.string().optional().default(""),
   reject_message: z.string().optional(),
-  banned_words: z.string().optional(),
-  pii_entities: z.string().optional(),
-  competitors: z.string().optional(),
-  expected_languages: z.string().optional(),
-  valid_topics: z.string().optional(),
-  invalid_topics: z.string().optional(),
+  banned_words: z.array(z.string().min(1)).optional().default([]),
+  pii_entities: z.array(z.string().min(1)).optional().default([]),
+  competitors: z.array(z.string().min(1)).optional().default([]),
+  expected_languages: z.array(z.string().min(1)).optional().default([]),
+  valid_topics: z.array(z.string().min(1)).optional().default([]),
+  invalid_topics: z.array(z.string().min(1)).optional().default([]),
   threshold: z.number().optional(),
 });
 
@@ -173,13 +181,10 @@ function isGuardId(value: unknown): value is GuardId {
   );
 }
 
-function joinList(value: unknown): string {
-  return Array.isArray(value) ? (value as string[]).join(", ") : "";
-}
-
-function splitList(value: string | undefined): string[] {
-  if (!value) return [];
-  return value.split(",").map((s) => s.trim()).filter(Boolean);
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? (value as unknown[]).filter((v): v is string => typeof v === "string")
+    : [];
 }
 
 function wireGuardToForm(raw: Record<string, unknown>): GuardFormValues {
@@ -191,13 +196,19 @@ function wireGuardToForm(raw: Record<string, unknown>): GuardFormValues {
       typeof raw.reject_message === "string"
         ? (raw.reject_message as string)
         : "",
+    banned_words: [],
+    pii_entities: [],
+    competitors: [],
+    expected_languages: [],
+    valid_topics: [],
+    invalid_topics: [],
   };
   switch (id) {
     case "ban_list":
-      base.banned_words = joinList(raw.banned_words);
+      base.banned_words = asStringArray(raw.banned_words);
       break;
     case "detect_pii":
-      base.pii_entities = joinList(raw.pii_entities);
+      base.pii_entities = asStringArray(raw.pii_entities);
       break;
     case "nsfw_text":
     case "toxic_language":
@@ -207,14 +218,14 @@ function wireGuardToForm(raw: Record<string, unknown>): GuardFormValues {
         typeof raw.threshold === "number" ? raw.threshold : 0.5;
       break;
     case "competition_check":
-      base.competitors = joinList(raw.competitors);
+      base.competitors = asStringArray(raw.competitors);
       break;
     case "correct_language":
-      base.expected_languages = joinList(raw.expected_languages);
+      base.expected_languages = asStringArray(raw.expected_languages);
       break;
     case "restrict_to_topic":
-      base.valid_topics = joinList(raw.valid_topics ?? raw.topics);
-      base.invalid_topics = joinList(raw.invalid_topics);
+      base.valid_topics = asStringArray(raw.valid_topics ?? raw.topics);
+      base.invalid_topics = asStringArray(raw.invalid_topics);
       break;
   }
   return base;
@@ -226,10 +237,10 @@ function formGuardToWire(g: GuardFormValues): Record<string, unknown> {
   if (g.reject_message) out.reject_message = g.reject_message;
   switch (g.config_id) {
     case "ban_list":
-      out.banned_words = splitList(g.banned_words);
+      out.banned_words = g.banned_words ?? [];
       break;
     case "detect_pii":
-      out.pii_entities = splitList(g.pii_entities);
+      out.pii_entities = g.pii_entities ?? [];
       break;
     case "nsfw_text":
     case "toxic_language":
@@ -238,14 +249,14 @@ function formGuardToWire(g: GuardFormValues): Record<string, unknown> {
       out.threshold = typeof g.threshold === "number" ? g.threshold : 0.5;
       break;
     case "competition_check":
-      out.competitors = splitList(g.competitors);
+      out.competitors = g.competitors ?? [];
       break;
     case "correct_language":
-      out.expected_languages = splitList(g.expected_languages);
+      out.expected_languages = g.expected_languages ?? [];
       break;
     case "restrict_to_topic":
-      out.valid_topics = splitList(g.valid_topics);
-      out.invalid_topics = splitList(g.invalid_topics);
+      out.valid_topics = g.valid_topics ?? [];
+      out.invalid_topics = g.invalid_topics ?? [];
       break;
   }
   return out;
@@ -257,7 +268,17 @@ function emptyRowForm(): RowFormValues {
     enabled: true,
     position: "input",
     sortOrder: 0,
-    guard: { config_id: "ban_list", api_key: "", reject_message: "ban!!", banned_words: "" },
+    guard: {
+      config_id: "ban_list",
+      api_key: "",
+      reject_message: "ban!!",
+      banned_words: [],
+      pii_entities: [],
+      competitors: [],
+      expected_languages: [],
+      valid_topics: [],
+      invalid_topics: [],
+    },
   };
 }
 
@@ -350,22 +371,35 @@ function GuardFields({
         <FormField
           control={control}
           name="guard.banned_words"
-          render={({ field }) => (
-            <FormItem className="md:col-span-2">
-              <FormLabel>Banned words</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="comma, separated, terms"
-                />
-              </FormControl>
-              <FormDescription>
-                Comma-separated; trailing whitespace is trimmed.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            const tags = (field.value ?? []) as string[];
+            return (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Banned words</FormLabel>
+                <FormControl>
+                  <Combobox
+                    multiple
+                    items={[]}
+                    value={tags}
+                    onValueChange={(next) => field.onChange(next)}
+                  >
+                    <ComboboxChips>
+                      <ComboboxValue>
+                        {tags.map((tag) => (
+                          <ComboboxChip key={tag}>{tag}</ComboboxChip>
+                        ))}
+                      </ComboboxValue>
+                      <ComboboxChipsInput placeholder="Add term" />
+                    </ComboboxChips>
+                  </Combobox>
+                </FormControl>
+                <FormDescription>
+                  Press Enter after each term. Trailing whitespace is trimmed.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
       )}
 
@@ -374,31 +408,27 @@ function GuardFields({
           control={control}
           name="guard.pii_entities"
           render={({ field }) => {
-            const selected = new Set(splitList(field.value));
-            const toggle = (entity: string, checked: boolean) => {
-              if (checked) selected.add(entity);
-              else selected.delete(entity);
-              field.onChange(
-                PII_ENTITIES.filter((e) => selected.has(e)).join(", "),
-              );
-            };
+            const tags = (field.value ?? []) as string[];
             return (
               <FormItem className="md:col-span-2">
                 <FormLabel>PII entities</FormLabel>
-                <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-muted/30 p-3">
-                  {PII_ENTITIES.map((entity) => (
-                    <label
-                      key={entity}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <Checkbox
-                        checked={selected.has(entity)}
-                        onCheckedChange={(c) => toggle(entity, c === true)}
-                      />
-                      {entity}
-                    </label>
-                  ))}
-                </div>
+                <FormControl>
+                  <Combobox
+                    multiple
+                    items={PII_ENTITIES as unknown as string[]}
+                    value={tags}
+                    onValueChange={(next) => field.onChange(next)}
+                  >
+                    <ComboboxChips>
+                      <ComboboxValue>
+                        {tags.map((tag) => (
+                          <ComboboxChip key={tag}>{tag}</ComboboxChip>
+                        ))}
+                      </ComboboxValue>
+                      <ComboboxChipsInput placeholder="Add entity" />
+                    </ComboboxChips>
+                  </Combobox>
+                </FormControl>
                 <FormDescription>
                   Each is mapped to its Guardrails Hub identifier server-side
                   (Email → EMAIL_ADDRESS, etc.).
@@ -414,20 +444,33 @@ function GuardFields({
         <FormField
           control={control}
           name="guard.competitors"
-          render={({ field }) => (
-            <FormItem className="md:col-span-2">
-              <FormLabel>Competitors</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="acme, globex, initech"
-                />
-              </FormControl>
-              <FormDescription>Comma-separated company names.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            const tags = (field.value ?? []) as string[];
+            return (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Competitors</FormLabel>
+                <FormControl>
+                  <Combobox
+                    multiple
+                    items={[]}
+                    value={tags}
+                    onValueChange={(next) => field.onChange(next)}
+                  >
+                    <ComboboxChips>
+                      <ComboboxValue>
+                        {tags.map((tag) => (
+                          <ComboboxChip key={tag}>{tag}</ComboboxChip>
+                        ))}
+                      </ComboboxValue>
+                      <ComboboxChipsInput placeholder="Add competitor" />
+                    </ComboboxChips>
+                  </Combobox>
+                </FormControl>
+                <FormDescription>Press Enter after each company name.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
       )}
 
@@ -435,22 +478,35 @@ function GuardFields({
         <FormField
           control={control}
           name="guard.expected_languages"
-          render={({ field }) => (
-            <FormItem className="md:col-span-2">
-              <FormLabel>Expected languages</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="en, fr, es"
-                />
-              </FormControl>
-              <FormDescription>
-                Comma-separated ISO 639-1 codes.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            const tags = (field.value ?? []) as string[];
+            return (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Expected languages</FormLabel>
+                <FormControl>
+                  <Combobox
+                    multiple
+                    items={[]}
+                    value={tags}
+                    onValueChange={(next) => field.onChange(next)}
+                  >
+                    <ComboboxChips>
+                      <ComboboxValue>
+                        {tags.map((tag) => (
+                          <ComboboxChip key={tag}>{tag}</ComboboxChip>
+                        ))}
+                      </ComboboxValue>
+                      <ComboboxChipsInput placeholder="Add language" />
+                    </ComboboxChips>
+                  </Combobox>
+                </FormControl>
+                <FormDescription>
+                  ISO 639-1 codes (en, fr, es…).
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
       )}
 
@@ -459,43 +515,69 @@ function GuardFields({
           <FormField
             control={control}
             name="guard.valid_topics"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Valid topics</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="billing, support, returns"
-                  />
-                </FormControl>
-                <FormDescription>
-                  Comma-separated. Topics the agent IS allowed to discuss.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+            render={({ field }) => {
+              const tags = (field.value ?? []) as string[];
+              return (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Valid topics</FormLabel>
+                  <FormControl>
+                    <Combobox
+                      multiple
+                      items={[]}
+                      value={tags}
+                      onValueChange={(next) => field.onChange(next)}
+                    >
+                      <ComboboxChips>
+                        <ComboboxValue>
+                          {tags.map((tag) => (
+                            <ComboboxChip key={tag}>{tag}</ComboboxChip>
+                          ))}
+                        </ComboboxValue>
+                        <ComboboxChipsInput placeholder="Add topic" />
+                      </ComboboxChips>
+                    </Combobox>
+                  </FormControl>
+                  <FormDescription>
+                    Topics the agent IS allowed to discuss.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
           <FormField
             control={control}
             name="guard.invalid_topics"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Invalid topics</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="competitor names, internal pricing"
-                  />
-                </FormControl>
-                <FormDescription>
-                  Comma-separated. Topics the agent must refuse. At least one of
-                  the two lists is required.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+            render={({ field }) => {
+              const tags = (field.value ?? []) as string[];
+              return (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Invalid topics</FormLabel>
+                  <FormControl>
+                    <Combobox
+                      multiple
+                      items={[]}
+                      value={tags}
+                      onValueChange={(next) => field.onChange(next)}
+                    >
+                      <ComboboxChips>
+                        <ComboboxValue>
+                          {tags.map((tag) => (
+                            <ComboboxChip key={tag}>{tag}</ComboboxChip>
+                          ))}
+                        </ComboboxValue>
+                        <ComboboxChipsInput placeholder="Add topic" />
+                      </ComboboxChips>
+                    </Combobox>
+                  </FormControl>
+                  <FormDescription>
+                    Topics the agent must refuse. At least one of the two lists
+                    is required.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
         </>
       )}
@@ -558,6 +640,8 @@ export default function GuardrailsPage() {
     () => !listsEqual(working, initialList),
     [working, initialList],
   );
+
+  useBeforeUnload(isDirty);
 
   const form = useForm<RowFormValues>({
     resolver: zodResolver(rowFormSchema),
@@ -701,15 +785,13 @@ export default function GuardrailsPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-5xl">
-      <header className="space-y-1">
-        <h1 className="font-serif text-2xl font-medium text-foreground">
-          Guardrails
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Content safety, PII detection, and topic restrictions for the running
-          agent. Each guard fires in sort order within its position.
-        </p>
-      </header>
+      <AdminPageHeader
+        title="Guardrails"
+        description="Content safety, PII detection, and topic restrictions for the running agent. Each guard fires in sort order within its position."
+        docsHref="https://docs.idunplatform.com/standalone/guardrails"
+        isDirty={isDirty}
+      />
+
 
       {restartRequired && (
         <Alert variant="destructive">
@@ -962,24 +1044,24 @@ export default function GuardrailsPage() {
                           );
                           form.setValue(
                             "guard.banned_words",
-                            d.banned_words ?? "",
+                            d.banned_words ?? [],
                           );
                           form.setValue(
                             "guard.pii_entities",
-                            d.pii_entities ?? "",
+                            d.pii_entities ?? [],
                           );
-                          form.setValue("guard.competitors", d.competitors ?? "");
+                          form.setValue("guard.competitors", d.competitors ?? []);
                           form.setValue(
                             "guard.expected_languages",
-                            d.expected_languages ?? "",
+                            d.expected_languages ?? [],
                           );
                           form.setValue(
                             "guard.valid_topics",
-                            d.valid_topics ?? "",
+                            d.valid_topics ?? [],
                           );
                           form.setValue(
                             "guard.invalid_topics",
-                            d.invalid_topics ?? "",
+                            d.invalid_topics ?? [],
                           );
                           form.setValue("guard.threshold", d.threshold);
                         }}

@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@base-ui/react": "^1.4.1",
     "@dagrejs/dagre": "^3.0.0",
     "@hookform/resolvers": "^3.9.0",
     "@monaco-editor/react": "^4.6.0",

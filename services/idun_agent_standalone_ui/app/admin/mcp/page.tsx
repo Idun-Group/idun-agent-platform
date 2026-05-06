@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -84,6 +85,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { ApiError, type ConnectionCheckResult, type McpRead, api } from "@/lib/api";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -345,6 +347,8 @@ export default function McpPage() {
     [working, initialList],
   );
 
+  useBeforeUnload(isDirty);
+
   const form = useForm<ServerFormValues>({
     resolver: zodResolver(serverFormSchema),
     defaultValues: emptyFormValues(),
@@ -553,14 +557,12 @@ export default function McpPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-5xl">
-      <header className="space-y-1">
-        <h1 className="font-serif text-2xl font-medium text-foreground">
-          MCP servers
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Tool servers exposed via the Model Context Protocol.
-        </p>
-      </header>
+      <AdminPageHeader
+        title="MCP servers"
+        description="Tool servers exposed via the Model Context Protocol."
+        docsHref="https://docs.idunplatform.com/standalone/mcp"
+        isDirty={isDirty}
+      />
 
       {restartRequired && (
         <Alert variant="destructive">

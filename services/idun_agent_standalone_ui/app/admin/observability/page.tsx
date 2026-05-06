@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
 import { ProviderPicker } from "@/components/admin/ProviderPicker";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { ApiError, api } from "@/lib/api";
 
 type Provider =
@@ -344,6 +346,8 @@ export default function ObservabilityPage() {
     });
   };
 
+  useBeforeUnload(form.formState.isDirty);
+
   const handleProviderChange = (next: Provider) => {
     setActiveProvider(next);
     if (next === initial.provider) {
@@ -381,15 +385,12 @@ export default function ObservabilityPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-4xl">
-      <header className="space-y-1">
-        <h1 className="font-serif text-2xl font-medium text-foreground">
-          Observability
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Trace exporter for the running agent. Only one provider is active at
-          a time.
-        </p>
-      </header>
+      <AdminPageHeader
+        title="Observability"
+        description="Trace exporter for the running agent. Only one provider is active at a time."
+        docsHref="https://docs.idunplatform.com/standalone/observability"
+        isDirty={form.formState.isDirty}
+      />
 
       {restartRequired && (
         <Alert variant="destructive">

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
 import { ProviderPicker } from "@/components/admin/ProviderPicker";
 import {
@@ -38,6 +39,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { ApiError, type AgentFramework, api } from "@/lib/api";
 
 const LG_TYPES = ["memory", "sqlite", "postgres"] as const;
@@ -285,6 +287,8 @@ export default function MemoryPage() {
     save.mutate(valuesToConfig({ ...values, type: activeTab }));
   };
 
+  useBeforeUnload(form.formState.isDirty);
+
   const yamlText = useMemo(() => {
     const v = form.getValues();
     return stringifyYaml(valuesToConfig({ ...v, type: activeTab }));
@@ -304,15 +308,12 @@ export default function MemoryPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-4xl">
-      <header className="space-y-1">
-        <h1 className="font-serif text-2xl font-medium text-foreground">
-          Memory
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Where the agent persists conversational state between turns.
-          Backends are scoped to the active framework ({framework}).
-        </p>
-      </header>
+      <AdminPageHeader
+        title="Memory"
+        description={`Where the agent persists conversational state between turns. Backends are scoped to the active framework (${framework}).`}
+        docsHref="https://docs.idunplatform.com/standalone/memory"
+        isDirty={form.formState.isDirty}
+      />
 
       {restartRequired && (
         <Alert variant="destructive">
