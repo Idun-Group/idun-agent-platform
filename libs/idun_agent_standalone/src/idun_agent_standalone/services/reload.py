@@ -70,7 +70,14 @@ class ReloadInitFailed(Exception):  # noqa: N818
     Named for the action that fails (engine reload init), not as
     a generic ``-Error``, so the call site reads as a flow-control
     signal rather than a typed error class.
+
+    Carries the original exception so callers can classify it (the
+    classifier inspects the real type to decide which field to flag).
     """
+
+    def __init__(self, message: str, *, original: BaseException | None = None) -> None:
+        super().__init__(message)
+        self.original = original
 
 
 def _default_now() -> datetime:
@@ -254,6 +261,10 @@ async def commit_with_reload(
     try:
         await reload_callable(assembled)
     except ReloadInitFailed as exc:
+        from idun_agent_standalone.services.error_classifier import (
+            classify_reload_error,
+        )
+
         await session.rollback()
         await runtime_state.record_reload_outcome(
             session,
@@ -265,13 +276,15 @@ async def commit_with_reload(
         )
         await session.commit()
         logger.warning("reload.round3_failed error=%s", str(exc)[:120])
+        admin_error = classify_reload_error(exc.original or exc, assembled)
+        # Always include the recovered marker so the UI knows the prior
+        # config is still live.
+        details = dict(admin_error.details or {})
+        details["recovered"] = True
+        admin_error.details = details
         raise AdminAPIError(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            error=StandaloneAdminError(
-                code=StandaloneErrorCode.RELOAD_FAILED,
-                message="Engine reload failed; config not saved.",
-                details={"recovered": True},
-            ),
+            error=admin_error,
         ) from exc
 
     await session.commit()

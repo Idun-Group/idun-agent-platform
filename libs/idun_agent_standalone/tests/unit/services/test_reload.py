@@ -411,3 +411,36 @@ async def test_round_two_and_a_half_blocks_bad_graph_definition(
     field_paths = [fe.field for fe in exc_info.value.error.field_errors or []]
     assert "agent.config.graphDefinition" in field_paths
     stub_reload_callable.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_round_three_import_error_emits_field_errors(
+    async_session, frozen_now
+) -> None:
+    """Round-3 ImportError must surface as field_errors on graphDefinition.
+
+    The round-3 catch routes the original exception through
+    ``classify_reload_error`` so the UI can highlight the agent's
+    graph definition field instead of toasting a generic message.
+    The ``recovered=True`` marker must always be present.
+    """
+    await _seed_agent(async_session)
+    failing_reload = AsyncMock(
+        side_effect=ReloadInitFailed(
+            "Engine init failed: cannot import",
+            original=ImportError("cannot import name 'graph' from 'agent'"),
+        )
+    )
+
+    with pytest.raises(AdminAPIError) as info:
+        await commit_with_reload(
+            async_session,
+            reload_callable=failing_reload,
+            now=frozen_now,
+        )
+    assert info.value.status_code == 500
+    assert info.value.error.code == StandaloneErrorCode.RELOAD_FAILED
+    paths = [fe.field for fe in info.value.error.field_errors or []]
+    assert "agent.config.graphDefinition" in paths
+    assert info.value.error.details is not None
+    assert info.value.error.details.get("recovered") is True

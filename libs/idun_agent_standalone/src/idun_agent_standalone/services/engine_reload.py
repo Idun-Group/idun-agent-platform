@@ -44,6 +44,6 @@ def build_engine_reload_callable(
             await configure_app(engine_app, config)
         except Exception as exc:
             logger.exception("engine_reload.configure_failed")
-            raise ReloadInitFailed(str(exc)) from exc
+            raise ReloadInitFailed(str(exc), original=exc) from exc
 
     return _reload
