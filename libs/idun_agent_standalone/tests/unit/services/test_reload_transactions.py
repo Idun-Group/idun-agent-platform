@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+from collections.abc import Iterator
 from unittest.mock import AsyncMock
 
 import pytest
@@ -9,6 +11,29 @@ from idun_agent_standalone.services.reload import (
     ReloadInitFailed,
     commit_with_reload,
 )
+
+
+@pytest.fixture(autouse=True)
+def _graph_module_in_cwd(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
+    """Materialize ``agent.py:graph`` in a tmp cwd for round-2.5 probes.
+
+    See the matching fixture in ``test_reload.py`` for rationale.
+    """
+    cwd_dir = tmp_path_factory.mktemp("graph_cwd")
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "from typing_extensions import TypedDict\n"
+        "class S(TypedDict, total=False):\n"
+        "    x: int\n"
+        "graph = StateGraph(S)\n"
+    )
+    (cwd_dir / "agent.py").write_text(src)
+    cwd = os.getcwd()
+    os.chdir(cwd_dir)
+    try:
+        yield
+    finally:
+        os.chdir(cwd)
 
 
 def _seed_engine_config_dict() -> dict:

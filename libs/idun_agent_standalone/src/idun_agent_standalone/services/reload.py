@@ -189,6 +189,47 @@ async def commit_with_reload(
             ),
         ) from exc
 
+    # Round 2.5 — file-reference probe for the agent's graph_definition.
+    # Catches broken file paths, missing variables, and wrong types
+    # before the engine is asked to compile. Failures map to
+    # field_errors[agent.config.graphDefinition].
+    if assembled.agent.type.value == "LANGGRAPH":
+        graph_def = getattr(assembled.agent.config, "graph_definition", None)
+        if graph_def:
+            from pathlib import Path
+
+            from idun_agent_engine.agent.validation import (
+                validate_graph_definition,
+            )
+            from idun_agent_schema.standalone import StandaloneFieldError
+
+            probe = validate_graph_definition(
+                framework="langgraph",
+                definition=graph_def,
+                project_root=Path.cwd(),
+            )
+            if not probe.ok:
+                await session.rollback()
+                logger.info(
+                    "reload.round2_5_failed code=%s",
+                    probe.code.value if probe.code else "unknown",
+                )
+                raise AdminAPIError(
+                    status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    error=StandaloneAdminError(
+                        code=StandaloneErrorCode.VALIDATION_FAILED,
+                        message="Graph definition could not be loaded.",
+                        field_errors=[
+                            StandaloneFieldError(
+                                field="agent.config.graphDefinition",
+                                message=probe.message
+                                + (f" {probe.hint}" if probe.hint else ""),
+                                code=probe.code.value if probe.code else "invalid",
+                            ),
+                        ],
+                    ),
+                )
+
     structural_hash = _structural_hash(assembled)
     prior = await runtime_state.get(session)
     structural = _is_structural_change(assembled, prior)

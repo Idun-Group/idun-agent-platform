@@ -10,6 +10,10 @@ one router and reads back the after-effect through another (PATCH
 
 from __future__ import annotations
 
+import os
+from collections.abc import Iterator
+
+import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from idun_agent_schema.engine.engine import EngineConfig
@@ -26,6 +30,41 @@ from idun_agent_standalone.infrastructure.db.models.agent import (
     StandaloneAgentRow,
 )
 from idun_agent_standalone.services.reload import ReloadInitFailed
+
+
+@pytest.fixture(autouse=True)
+def _graph_module_in_cwd(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
+    """Materialize ``agent.py:graph`` in a dedicated cwd for round-2.5 probes.
+
+    Round 2.5 (file-reference probe in ``commit_with_reload``) resolves
+    ``graph_definition`` against ``Path.cwd()``. Integration fixtures
+    seed ``"agent.py:graph"`` as a placeholder; without a real file in
+    cwd, every PATCH ``/agent`` round-trip would fail at round 2.5
+    rather than the round being tested. Materializing a tiny
+    ``StateGraph`` and chdir'ing keeps the probe satisfied and the test
+    signal focused on the router/pipeline interaction under test.
+
+    Uses a dedicated temp dir (not the function-scoped ``tmp_path``)
+    because some tests pass ``tmp_path`` to onboarding scan-root
+    overrides — sharing the dir would pollute their scans with the
+    seeded ``agent.py``.
+    """
+    cwd_dir = tmp_path_factory.mktemp("graph_cwd")
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "from typing_extensions import TypedDict\n"
+        "class S(TypedDict, total=False):\n"
+        "    x: int\n"
+        "graph = StateGraph(S)\n"
+        "other_graph = StateGraph(S)\n"
+    )
+    (cwd_dir / "agent.py").write_text(src)
+    cwd = os.getcwd()
+    os.chdir(cwd_dir)
+    try:
+        yield
+    finally:
+        os.chdir(cwd)
 
 
 async def _seed_agent(async_session) -> None:
