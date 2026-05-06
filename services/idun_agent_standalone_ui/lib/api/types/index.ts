@@ -8,6 +8,7 @@ export * from "./prompts";
 export * from "./integrations";
 export * from "./sessions";
 export * from "./onboarding";
+export * from "./sso";
 export type {
   AgentGraph,
   AgentGraphEdge,

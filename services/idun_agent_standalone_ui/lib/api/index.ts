@@ -37,6 +37,8 @@ import type {
   PromptRead,
   ScanResponse,
   SingletonDeleteResult,
+  SSOPatch,
+  SSORead,
 } from "./types";
 
 export { ApiError } from "./client";
@@ -103,6 +105,18 @@ export const api = {
       `${ADMIN}/observability/check-connection`,
       { method: "POST" },
     ),
+
+  // sso (singleton)
+  getSso: () => apiFetch<SSORead | null>(`${ADMIN}/sso`),
+  patchSso: (body: SSOPatch) =>
+    apiFetch<MutationResponse<SSORead>>(`${ADMIN}/sso`, {
+      method: "PATCH",
+      body: j(body),
+    }),
+  deleteSso: () =>
+    apiFetch<MutationResponse<SingletonDeleteResult>>(`${ADMIN}/sso`, {
+      method: "DELETE",
+    }),
 
   // mcp servers (collection)
   listMcp: () => apiFetch<McpRead[]>(`${ADMIN}/mcp-servers`),

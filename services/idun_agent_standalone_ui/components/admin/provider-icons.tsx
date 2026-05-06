@@ -172,3 +172,15 @@ export function GoogleChatIcon(p: IconProps) {
     <RemoteBrandTile domain="chat.google.com" alt="Google Chat" {...p} />
   );
 }
+
+export function GoogleIdentityIcon(p: IconProps) {
+  return <RemoteBrandTile domain="accounts.google.com" alt="Google" {...p} />;
+}
+
+export function MicrosoftEntraIcon(p: IconProps) {
+  return <RemoteBrandTile domain="microsoft.com" alt="Microsoft Entra ID" {...p} />;
+}
+
+export function OktaIcon(p: IconProps) {
+  return <RemoteBrandTile domain="okta.com" alt="Okta" {...p} />;
+}

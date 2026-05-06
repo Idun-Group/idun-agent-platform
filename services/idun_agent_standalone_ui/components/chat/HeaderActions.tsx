@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import {
+  fetchSsoInfo,
+  signOut as ssoSignOut,
+  type SsoInfo,
+} from "@/lib/auth";
+import {
   type RuntimeConfig,
   getRuntimeConfig,
 } from "@/lib/runtime-config";
@@ -27,14 +32,28 @@ const PILL =
 export function HeaderActions({ onNewSession }: Props) {
   const router = useRouter();
   const [config, setConfig] = useState<RuntimeConfig | null>(null);
+  const [ssoInfo, setSsoInfo] = useState<SsoInfo | null>(null);
 
-  // Read runtime config inside an effect so SSR / static export remain
-  // deterministic and we don't dereference window during render.
   useEffect(() => {
     setConfig(getRuntimeConfig());
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetchSsoInfo()
+      .then((info) => {
+        if (!cancelled) setSsoInfo(info);
+      })
+      .catch(() => {
+        if (!cancelled) setSsoInfo({ enabled: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const authMode = config?.authMode ?? "none";
+  const ssoEnabled = ssoInfo?.enabled === true;
 
   const handleNewSession = () => {
     if (onNewSession) {
@@ -49,20 +68,22 @@ export function HeaderActions({ onNewSession }: Props) {
   };
 
   const handleSignOut = async () => {
+    if (ssoEnabled) {
+      await ssoSignOut().catch(() => {});
+      if (typeof window !== "undefined") window.location.replace("/");
+      return;
+    }
     try {
       await api.logout();
     } catch {
-      // Even if the logout request fails we still want to drop the local
-      // session: the cookie may already be gone server-side.
+      // cookie may already be gone server-side
     }
     if (typeof window !== "undefined") {
       window.location.href = "/login/";
     }
   };
 
-  // TODO(B7+): expose user email/username via /admin/api/v1/auth/me so we
-  // can render an account chip here. Today the endpoint only returns
-  // `authenticated` + `auth_mode`.
+  const showSignOut = authMode === "password" || ssoEnabled;
 
   return (
     <div className="flex items-center gap-2">
@@ -72,7 +93,7 @@ export function HeaderActions({ onNewSession }: Props) {
       <Link href="/admin/" className={PILL}>
         Admin
       </Link>
-      {authMode === "password" ? (
+      {showSignOut ? (
         <button type="button" onClick={handleSignOut} className={PILL}>
           Sign out
         </button>

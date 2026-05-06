@@ -10,6 +10,7 @@ import {
   Database,
   Eye,
   FileText,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -59,6 +60,7 @@ const NAV: NavGroup[] = [
       { href: "/admin/observability/", label: "Observability", icon: Eye },
       { href: "/admin/prompts/", label: "Prompts", icon: MessageSquare },
       { href: "/admin/integrations/", label: "Integrations", icon: Puzzle },
+      { href: "/admin/sso/", label: "SSO", icon: KeyRound },
     ],
   },
   {
