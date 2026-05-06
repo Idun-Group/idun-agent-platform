@@ -1,7 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
 import { type AgentSessionSummary, ApiError, api } from "@/lib/api";
+import {
+  fetchSsoInfo,
+  signOut as ssoSignOut,
+  type SsoInfo,
+} from "@/lib/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -85,6 +92,26 @@ export function HistorySidebar({
 
   const items = data ?? [];
 
+  const [ssoInfo, setSsoInfo] = useState<SsoInfo | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchSsoInfo()
+      .then((info) => {
+        if (!cancelled) setSsoInfo(info);
+      })
+      .catch(() => {
+        if (!cancelled) setSsoInfo({ enabled: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await ssoSignOut().catch(() => {});
+    if (typeof window !== "undefined") window.location.replace("/");
+  };
+
   return (
     <aside className="flex h-screen w-[300px] shrink-0 flex-col border-r border-border bg-card/60">
       <header className="flex items-center justify-between px-5 pt-5 pb-3">
@@ -163,6 +190,18 @@ export function HistorySidebar({
           </ul>
         )}
       </div>
+      {ssoInfo?.enabled ? (
+        <div className="border-t border-border px-3 py-3">
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[12.5px] font-medium text-muted-foreground transition hover:bg-card hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </button>
+        </div>
+      ) : null}
     </aside>
   );
 }
