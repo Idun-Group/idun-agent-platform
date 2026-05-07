@@ -1,7 +1,7 @@
 [project]
 name = "idun-engine"
 version = "0.6.0"
-description =  "Idun Engine"
+description = "Idun Engine"
 authors = [{ name = "Idun Group", email = "h.geoffrey@idun-group.com" }]
 requires-python = ">=3.12,<3.13"
 readme = "README.md"
@@ -9,7 +9,7 @@ license = "GPL-3.0-only"
 dependencies = [
     "cryptography>=46.0.3",
     "idun-agent-engine>=0.6.0,<0.7.0",
-    "idun-agent-schema>=0.5.4,<0.6.0",
+    "idun-agent-schema>=0.6.0,<0.7.0",
     "idun-agent-standalone",
     "posthog>=7.7.0",
     "setuptools>=80.9.0,<83.0.0",
@@ -28,15 +28,6 @@ dev = [
     "pytest-cov>=5.0.0,<6",
     "types-PyYAML>=6.0.12.20240808,<7",
     "pyright>=1.1.404,<2",
-    "mkdocs>=1.6.1,<2",
-    "mkdocs-material>=9.5.39,<10",
-    "mkdocstrings[python]>=0.26.2,<0.27",
-    "mkdocs-gen-files>=0.5.0,<0.6",
-    "mkdocs-autorefs>=1.2.0,<2",
-    "mkdocs-include-markdown-plugin>=7.0.0,<8",
-    "mkdocs-redirects>=1.2.1,<2",
-    "mkdocs-section-index>=0.3.9,<0.4",
-    "mkdocs-git-revision-date-localized-plugin>=1.2.6,<2",
     "torch>=2.10.0",
     "pytest-asyncio>=1.3.0",
     "typer>=0.15.0",
@@ -46,12 +37,8 @@ dev = [
 package = false
 
 # Declare the three Idun libs as a uv workspace so `uv build --package
-# idun-agent-standalone` works from the repo root and resolves the inter-lib
-# editable installs by name. ``services/idun_agent_manager`` is intentionally
-# excluded — it ships with its own self-contained uv lockfile and pins
-# conflicting pytest-asyncio versions; merging it into the root workspace
-# makes ``uv sync`` unsolvable. The path-based source below preserves the
-# previous behavior for manager.
+# idun-agent-standalone` works from the repo root and resolves the
+# inter-lib editable installs by name.
 [tool.uv.workspace]
 members = [
     "libs/idun_agent_engine",
