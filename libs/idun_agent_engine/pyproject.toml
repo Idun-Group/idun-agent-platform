@@ -86,9 +86,20 @@ dependencies = [
     "langchain-mcp-adapters>=0.2.0,<0.3.0",
     "tavily-python>=0.7.9,<0.8.0",
     # Internal package and external delivery integrations
-    "idun-agent-schema>=0.5.0,<1.0.0",
+    "idun-agent-schema>=0.6.0,<0.7.0",
     "slack-sdk>=3.33.0,<4.0.0",
+    "alembic>=1.13,<2",
+    "asyncpg>=0.29,<1",
+    "bcrypt>=4.0,<5",
+    "itsdangerous>=2.2,<3",
+    "pydantic-settings>=2.0,<3",
+    "apscheduler>=3.10,<4",
+    "rfc8785>=0.1,<1",
+    "sentencepiece>=0.2.1,<1",
 ]
+
+[project.scripts]
+idun = "idun_agent_standalone.cli:main"
 
 
 [project.urls]
@@ -125,6 +136,9 @@ include = [
 
 [tool.hatch.build.targets.wheel.sources]
 "src/idun_agent_engine" = "idun_agent_engine"
+
+[tool.hatch.build.targets.wheel.force-include]
+"../idun_agent_standalone/src/idun_agent_standalone" = "idun_agent_standalone"
 
 [build-system]
 requires = ["hatchling"]

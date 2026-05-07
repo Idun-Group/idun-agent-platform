@@ -32,9 +32,6 @@ dependencies = [
     "sentencepiece>=0.2.1",
 ]
 
-[project.scripts]
-idun = "idun_agent_standalone.cli:main"
-
 [tool.hatch.build.targets.sdist]
 include = ["src/idun_agent_standalone"]
 
