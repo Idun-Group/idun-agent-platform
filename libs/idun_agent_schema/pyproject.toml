@@ -3,7 +3,6 @@ name = "idun-agent-schema"
 version = "0.5.4"
 description = "Centralized Pydantic schema library for Idun Agent Engine and Manager"
 authors = [{ name = "Idun Group", email = "contact@idun-group.com" }]
-readme = "README.md"
 license = "GPL-3.0-only"
 requires-python = ">=3.12,<3.13"
 keywords = ["pydantic", "schemas", "fastapi", "langgraph", "idun"]
