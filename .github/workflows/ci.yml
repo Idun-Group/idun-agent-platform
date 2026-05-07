@@ -63,28 +63,3 @@ jobs:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
         run: |
           uv run pytest libs/idun_agent_engine/tests
-
-  test-manager:
-    name: Test manager (Py3.12)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: false
-
-      - name: Install workspace dependencies
-        run: |
-          uv sync --group dev
-
-      - name: Run manager tests
-        run: |
-          uv run pytest services/idun_agent_manager/tests

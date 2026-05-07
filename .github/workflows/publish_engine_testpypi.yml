@@ -89,7 +89,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install libs/idun_agent_schema/dist/*.whl
           python -m pip install libs/idun_agent_engine/dist/*.whl
-          python -c "import idun_agent_engine; import idun_platform_cli; print(idun_agent_engine.__file__)"
+          python -c "import idun_agent_engine; print(idun_agent_engine.__file__)"
 
       - name: Smoke test sdist install
         run: |
@@ -98,7 +98,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install libs/idun_agent_schema/dist/*.tar.gz
           python -m pip install libs/idun_agent_engine/dist/*.tar.gz
-          python -c "import idun_agent_engine; import idun_platform_cli; print(idun_agent_engine.__file__)"
+          python -c "import idun_agent_engine; print(idun_agent_engine.__file__)"
 
       - name: Upload validation artifact bundle
         uses: actions/upload-artifact@v4

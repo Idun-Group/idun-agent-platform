@@ -39,7 +39,7 @@ function envReminder(framework: Framework, mode: Mode): ReactNode {
     <>
       Set <code>{envVar}</code> in your environment before chatting. Copy{" "}
       <code>.env.example</code> to <code>.env</code> and fill it in, then
-      restart <code>idun-standalone</code>.
+      restart <code>idun</code>.
     </>
   );
 }
