@@ -1,15 +1,14 @@
 [project]
-name = "idun-agent-platform"
-version = "0.1.0"
-description = "Monorepo for Idun Agent Platform"
-authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
+name = "idun-engine"
+version = "0.6.0"
+description =  "Idun Engine"
+authors = [{ name = "Idun Group", email = "h.geoffrey@idun-group.com" }]
 requires-python = ">=3.12,<3.13"
 readme = "README.md"
 license = "GPL-3.0-only"
 dependencies = [
     "cryptography>=46.0.3",
     "idun-agent-engine>=0.6.0,<0.7.0",
-    "idun-agent-manager>=0.5.4,<0.6.0",
     "idun-agent-schema>=0.5.4,<0.6.0",
     "idun-agent-standalone",
     "posthog>=7.7.0",
@@ -64,7 +63,6 @@ members = [
 idun-agent-engine = { workspace = true }
 idun-agent-schema = { workspace = true }
 idun-agent-standalone = { workspace = true }
-idun-agent-manager = { path = "services/idun_agent_manager", editable = true }
 
 [build-system]
 requires = ["hatchling"]
