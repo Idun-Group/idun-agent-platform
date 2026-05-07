@@ -15,36 +15,81 @@ The framework is specified in the `agent.type` config field. Each framework has 
 
 ## How does authentication work?
 
-The platform has two layers of authentication:
+It depends on which product you run. See the [glossary](/glossary) for the four products.
 
-**Manager authentication** controls access to the Manager API and web UI. Two modes are available:
+<Tabs>
+  <Tab title="Engine">
+    The engine has no built-in admin auth. By default, every endpoint is open. You can protect agent routes with the per-agent OIDC SSO config (clients must present a valid JWT to call `/agent/*`). Operationally, you typically front the engine with your own gateway, mTLS, or VPC.
 
-- **Username/password** (default): Users register and log in with email and password. Active when `AUTH__DISABLE_USERNAME_PASSWORD` is `false`
-- **Google OIDC SSO**: Users authenticate through Google. Active when `AUTH__DISABLE_USERNAME_PASSWORD` is `true`
+    Note: `/reload` is not gated by the SSO dependency, and CORS is wildcard. Treat the engine as a process you run inside a trusted boundary.
+  </Tab>
+  <Tab title="Standalone">
+    Two modes via `IDUN_ADMIN_AUTH_MODE`:
 
-**Per-agent SSO** protects individual agent API endpoints. When enabled, clients must provide a valid OIDC JWT to call agent routes. This is configured per agent through the SSO config.
+    - `none`: open admin (laptop default).
+    - `password`: bcrypt password + signed session cookie with sliding renewal.
+
+    OIDC is deferred to a later release of the standalone product. Use `idun-standalone hash-password` to generate the bcrypt hash, set it as `IDUN_ADMIN_PASSWORD_HASH` on first boot, and set `IDUN_SESSION_SECRET` (min 32 chars) when running in `password` mode.
+  </Tab>
+  <Tab title="Manager">
+    Session cookie auth with two modes, controlled by `AUTH__DISABLE_USERNAME_PASSWORD`:
+
+    - Email/password (default): bcrypt + signed session cookie.
+    - Google OIDC SSO: redirect-based flow via `authlib`.
+
+    Sessions live in an HTTP-only cookie signed with `AUTH__SESSION_SECRET`. TTL defaults to 24h.
+  </Tab>
+</Tabs>
 
 See [Authentication](/auth/overview) for setup instructions.
 
+## Does Idun require a database?
+
+Depends on which product you run.
+
+<Tabs>
+  <Tab title="Engine">
+    No database required. The engine reads its YAML config at boot and serves the agent. Conversation state is whatever you configure for the LangGraph checkpointer (in-memory, SQLite file, or Postgres) or the ADK session service. If you choose `in_memory`, nothing is persisted.
+  </Tab>
+  <Tab title="Standalone">
+    Yes. The standalone product holds admin state and AG-UI trace events in a database. SQLite by default (a file on disk). Postgres optional via `DATABASE_URL`. Without a DB, the standalone has nowhere to persist admin edits, traces, or session cookies.
+  </Tab>
+  <Tab title="Manager">
+    Yes, Postgres required. Workspaces, users, memberships, agents, and the materialized `engine_config` JSONB all live there. Migrations run automatically at startup via Alembic.
+  </Tab>
+</Tabs>
+
 ## Where is data stored?
 
-- **Agent configurations**: Stored in PostgreSQL as materialized JSON snapshots (JSONB column). Managed by the Manager API
-- **Conversation state (checkpoints)**: Depends on the checkpointer type: in-memory (lost on restart), SQLite (local file), or PostgreSQL (production-grade)
-- **User accounts and workspaces**: Stored in PostgreSQL by the Manager
-- **Agent code**: Lives in your repository. The engine wraps your code at runtime; it does not copy or store it
-
-In standalone mode (no Manager), configuration is read from a YAML file. No database is required.
+- **Agent code**: Lives in your repository. The engine wraps your code at runtime; it does not copy or store it.
+- **Engine-only**: Configuration comes from a YAML file. Conversation state goes to whichever checkpointer or session service you configure.
+- **Standalone**: Admin state (agent config, prompts, guardrails, MCP servers, observability, integrations, theme) and trace events live in the local database (SQLite by default, Postgres optional).
+- **Manager**: User accounts, workspaces, memberships, agents, and per-agent materialized `engine_config` snapshots all live in Postgres.
 
 ## Can I run without the Manager?
 
-Yes. The engine runs standalone from a YAML config file:
+Yes. You have two options without a Manager.
+
+**Engine-only.** Run the engine with a YAML config:
 
 ```bash
 pip install idun-agent-engine
 idun agent serve --source file --path config.yaml
 ```
 
-No Manager, no database, no web UI required. You define your agent configuration, guardrails, MCP servers, and observability in the YAML file. This mode works well for local development, single-agent deployments, and CI/CD pipelines. See the [quickstart](/quickstart) to get started.
+No Manager, no database, no web UI. Good for local development, CI/CD pipelines, or when you have your own admin stack.
+
+**Standalone product.** Run the single-process product that bundles a chat UI, admin REST surface, and traces:
+
+```bash
+pip install idun-agent-standalone
+idun-standalone init my-agent
+cd my-agent
+cp .env.example .env
+idun-standalone serve
+```
+
+This still has no Manager, but it does have a local DB (SQLite by default). See the [Standalone overview](/standalone/overview) for the full path.
 
 ## How do guardrails work?
 
@@ -57,17 +102,19 @@ Each guardrail has a type, a reject message, and type-specific configuration (th
 
 The platform supports 15 guardrail types, including `BAN_LIST`, `DETECT_PII`, `TOXIC_LANGUAGE`, `DETECT_JAILBREAK`, `PROMPT_INJECTION`, `RESTRICT_TO_TOPIC`, `MODEL_ARMOR` (Google Cloud), and `CUSTOM_LLM`. See the [guardrails reference](/guardrails/reference) for the full list.
 
-## What is the difference between the Engine and the Manager?
+## What is the difference between the Engine, Standalone, and Manager?
 
-| | Engine | Manager |
-|---|---|---|
-| **Role** | Runtime SDK that wraps your agent code into a production API | Control plane API for centralized configuration and management |
-| **Runs** | Per agent (one instance per deployed agent) | Once (shared by all agents) |
-| **Requires** | Python 3.12+, your agent code | PostgreSQL, Docker (recommended) |
-| **Config source** | YAML file or Manager API | Internal (stored in PostgreSQL) |
-| **Endpoints** | `/health`, `/agent/run`, `/agent/config`, `/agent/capabilities` | `/api/v1/agents`, `/api/v1/guardrails`, `/api/v1/prompts`, and more |
+| | Engine | Standalone | Manager |
+|---|---|---|---|
+| **Role** | Runtime SDK that wraps your agent code into a production API | Single-process product: engine plus chat UI, admin REST, traces | Multi-tenant control plane API for fleets of agents |
+| **Runs** | One process per agent | One process per agent | Once, shared by all engines |
+| **Requires** | Python 3.12+, your agent code | Python 3.12+, your agent code, a local file for SQLite | PostgreSQL, Docker (recommended) |
+| **Has a UI?** | No | Yes (chat, admin, traces, bundled) | No on its own (pairs with the Web UI) |
+| **Has a DB?** | No | Yes (SQLite by default; Postgres optional) | Yes (Postgres required) |
+| **Config source** | YAML file or Manager API | DB-backed (seeded from YAML on first boot) | Internal Postgres |
+| **Auth** | None by default; per-agent OIDC for `/agent/*` | `none` or `password` | Email/password or Google OIDC |
 
-The Engine can run without the Manager (standalone mode). The Manager provides a centralized way to configure and manage multiple agents, but is not required for single-agent deployments.
+For a side-by-side definition of all four products (Engine, Standalone, Manager, Web UI) and which install path to choose, see the [glossary](/glossary).
 
 ## Is it free and open source?
 

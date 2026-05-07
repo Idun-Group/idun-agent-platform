@@ -1,9 +1,10 @@
 """Base routes for service health and landing info."""
 
+import inspect
 import logging
 import os
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from ..._version import __version__
@@ -19,6 +20,56 @@ class ReloadRequest(BaseModel):
     """Request body for reload endpoint."""
 
     path: str | None = None
+
+
+async def _reload_auth_dep(request: Request) -> None:
+    """Resolve the optional /reload auth dependency from app state.
+
+    When ``app.state.reload_auth`` is ``None`` (the default), this is a
+    no-op so ``/reload`` remains unprotected for backwards compatibility.
+    Otherwise the callable is invoked; it is expected to raise
+    :class:`fastapi.HTTPException` on rejection. Both sync and async
+    callables are supported.
+
+    The registered callable may itself be a FastAPI dependency that
+    declares ``Depends(...)``-typed parameters (e.g. the standalone's
+    ``require_auth`` which depends on injected ``Settings``). We run it
+    through FastAPI's dependency solver so those nested deps resolve
+    correctly. A no-arg or single-``request`` callable still works
+    because the solver fills only the parameters it needs.
+    """
+    auth = getattr(request.app.state, "reload_auth", None)
+    if auth is None:
+        return None
+
+    from contextlib import AsyncExitStack
+
+    from fastapi.dependencies.utils import get_dependant, solve_dependencies
+
+    dependant = get_dependant(path="/reload", call=auth)
+    async with AsyncExitStack() as stack:
+        solved = await solve_dependencies(
+            request=request,
+            dependant=dependant,
+            async_exit_stack=stack,
+            embed_body_fields=False,
+        )
+    # solve_dependencies returns a SolvedDependency(values, errors, ...) in
+    # FastAPI 0.115+. Older releases returned a tuple; we support both.
+    if hasattr(solved, "values"):
+        kwargs = solved.values
+        errors = solved.errors
+    else:  # pragma: no cover — older FastAPI shapes
+        kwargs, errors, *_ = solved
+    if errors:
+        from fastapi.exceptions import RequestValidationError
+
+        raise RequestValidationError(errors)
+
+    result = auth(**kwargs)
+    if inspect.isawaitable(result):
+        await result
+    return None
 
 
 @base_router.get("/health")
@@ -38,10 +89,18 @@ def health_check(request: Request):
 
 
 @base_router.post("/reload")
-async def reload_config(request: Request, body: ReloadRequest | None = None):
-    # TODO: This endpoint is not SSO-protected. Add require_auth dependency
-    # to prevent unauthorized config reloads. See /agent/* routes for pattern.
-    """Reload the agent configuration from the manager or a file."""
+async def reload_config(
+    request: Request,
+    body: ReloadRequest | None = None,
+    _auth: None = Depends(_reload_auth_dep),
+):
+    """Reload the agent configuration from the manager or a file.
+
+    The optional ``_auth`` dependency consults
+    ``app.state.reload_auth`` (configured via ``create_app(reload_auth=...)``)
+    and, if set, invokes it. The configured callable is responsible for
+    raising :class:`fastapi.HTTPException` to deny the request.
+    """
     try:
         if body and body.path:
             logger.info(f"🔄 Reloading configuration from file: {body.path}...")
@@ -84,10 +143,13 @@ async def reload_config(request: Request, body: ReloadRequest | None = None):
         )
 
 
-# Add a root endpoint with helpful information
-@base_router.get("/")
-def read_root():
-    """Root endpoint with basic information about the service."""
+# Engine info — always served at /_engine/info. The bare `/` route is
+# registered conditionally by `app_factory.create_app` only when no static
+# UI is mounted at `/`, so users can override `/` by setting IDUN_UI_DIR
+# without route shadowing.
+@base_router.get("/_engine/info")
+def engine_info():
+    """Engine info endpoint — basic information about the service."""
     return {
         "message": "Welcome to your Idun Agent Engine server!",
         "docs": "/docs",

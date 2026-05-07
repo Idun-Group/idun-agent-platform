@@ -190,7 +190,7 @@ class TestGetPromptsFromApi:
         mock_get.assert_called_once_with(
             url="http://localhost:8000/api/v1/agents/config",
             headers={"auth": "Bearer test-key"},
-            timeout=30,
+            timeout=(2, 3),
         )
 
     @patch("idun_agent_engine.prompts.helpers.requests.get")
@@ -214,31 +214,29 @@ class TestGetPromptsFromApi:
         mock_get.assert_called_once_with(
             url="http://localhost:8000/api/v1/agents/config",
             headers={"auth": "Bearer key"},
-            timeout=30,
+            timeout=(2, 3),
         )
 
-    def test_raises_without_api_key(self) -> None:
+    def test_returns_empty_without_api_key(self) -> None:
         from idun_agent_engine.prompts.helpers import get_prompts_from_api
 
         with patch.dict(
             "os.environ",
             {"IDUN_AGENT_API_KEY": "", "IDUN_MANAGER_HOST": "http://localhost"},
         ):
-            with pytest.raises(ValueError, match="IDUN_AGENT_API_KEY"):
-                get_prompts_from_api()
+            assert get_prompts_from_api() == []
 
-    def test_raises_without_manager_host(self) -> None:
+    def test_returns_empty_without_manager_host(self) -> None:
         from idun_agent_engine.prompts.helpers import get_prompts_from_api
 
         with patch.dict(
             "os.environ",
             {"IDUN_AGENT_API_KEY": "key", "IDUN_MANAGER_HOST": ""},
         ):
-            with pytest.raises(ValueError, match="IDUN_MANAGER_HOST"):
-                get_prompts_from_api()
+            assert get_prompts_from_api() == []
 
     @patch("idun_agent_engine.prompts.helpers.requests.get")
-    def test_raises_on_http_error(self, mock_get: Mock) -> None:
+    def test_returns_empty_on_http_error(self, mock_get: Mock) -> None:
         import requests as req
 
         from idun_agent_engine.prompts.helpers import get_prompts_from_api
@@ -256,11 +254,10 @@ class TestGetPromptsFromApi:
                 "IDUN_MANAGER_HOST": "http://localhost:8000",
             },
         ):
-            with pytest.raises(ValueError, match="Failed to fetch config"):
-                get_prompts_from_api()
+            assert get_prompts_from_api() == []
 
     @patch("idun_agent_engine.prompts.helpers.requests.get")
-    def test_raises_on_invalid_yaml_response(self, mock_get: Mock) -> None:
+    def test_returns_empty_on_invalid_yaml_response(self, mock_get: Mock) -> None:
         from idun_agent_engine.prompts.helpers import get_prompts_from_api
 
         mock_response = Mock()
@@ -275,8 +272,7 @@ class TestGetPromptsFromApi:
                 "IDUN_MANAGER_HOST": "http://localhost:8000",
             },
         ):
-            with pytest.raises(ValueError, match="Failed to parse"):
-                get_prompts_from_api()
+            assert get_prompts_from_api() == []
 
 
 @pytest.mark.unit

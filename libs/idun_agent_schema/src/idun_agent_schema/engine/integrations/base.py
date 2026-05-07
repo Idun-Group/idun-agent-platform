@@ -11,6 +11,7 @@ from pydantic.alias_generators import to_camel
 from .discord import DiscordIntegrationConfig
 from .google_chat import GoogleChatIntegrationConfig
 from .slack import SlackIntegrationConfig
+from .teams import TeamsIntegrationConfig
 from .whatsapp import WhatsAppIntegrationConfig
 
 
@@ -21,6 +22,7 @@ class IntegrationProvider(StrEnum):
     DISCORD = "DISCORD"
     SLACK = "SLACK"
     GOOGLE_CHAT = "GOOGLE_CHAT"
+    TEAMS = "TEAMS"
 
 
 class IntegrationConfig(BaseModel):
@@ -48,6 +50,7 @@ class IntegrationConfig(BaseModel):
         DiscordIntegrationConfig,
         SlackIntegrationConfig,
         GoogleChatIntegrationConfig,
+        TeamsIntegrationConfig,
     ] = Field(
         description="Provider-specific configuration.",
     )
@@ -74,5 +77,7 @@ class IntegrationConfig(BaseModel):
                 values["config"] = SlackIntegrationConfig(**config)
             elif provider_str == IntegrationProvider.GOOGLE_CHAT:
                 values["config"] = GoogleChatIntegrationConfig(**config)
+            elif provider_str == IntegrationProvider.TEAMS:
+                values["config"] = TeamsIntegrationConfig(**config)
 
         return values

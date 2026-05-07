@@ -3,6 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Superpowers brainstorming artifacts
+.superpowers/
+
+# Standalone UI build output gets baked into the wheel by the Makefile
+# (`make build-standalone-ui`); the static/ directory is otherwise empty.
+libs/idun_agent_standalone/src/idun_agent_standalone/static/*
+!libs/idun_agent_standalone/src/idun_agent_standalone/static/.gitkeep
+
 
 
 .python-version
@@ -17,8 +25,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -201,6 +209,13 @@ poetry.lock
 # Editor / tool artifacts
 .specstory/
 .cursor/rules/claude-mem-context.mdc
+
+# Local agent / tooling state (never commit)
+/.claude/settings.json
+/.claude/scheduled_tasks.lock
+/.claude/worktrees/
+/.claude/smoke-test/
+/.cursor/hooks.json
 
 # Remotion video project
 video/

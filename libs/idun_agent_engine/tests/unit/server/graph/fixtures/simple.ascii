@@ -1,0 +1,7 @@
+ADK · root
+root (LlmAgent, root)
+├─ tools
+│  └─ search (mcp: stdio: npx server-filesystem)
+└─ child (LlmAgent)
+   └─ tools
+      └─ fetch (native)

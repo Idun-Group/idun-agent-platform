@@ -1,0 +1,48 @@
+---
+title: Deploy with docker-compose
+description: Multi-container deploy with Postgres and the standalone.
+---
+
+Use this template when you want Postgres alongside the standalone, or when you're running other services (MCP sidecars, custom tooling) on the same network.
+
+## Files
+
+Start from `libs/idun_agent_standalone/docker-compose.example.yml` and `libs/idun_agent_standalone/docker/Dockerfile.example` — both ship in the repo.
+
+## Steps
+
+```bash
+# Copy the templates
+mkdir my-deploy && cd my-deploy
+cp /path/to/idun-agent-platform/libs/idun_agent_standalone/docker-compose.example.yml docker-compose.yml
+cp /path/to/idun-agent-platform/libs/idun_agent_standalone/docker/Dockerfile.example .
+
+# Place your agent code under ./my_agent/
+mkdir my_agent
+cat > my_agent/config.yaml <<'EOF'
+agent:
+  type: LANGGRAPH
+  config:
+    name: My agent
+    graph_definition: ./agent.py:graph
+    checkpointer:
+      type: memory
+EOF
+# (and your agent.py)
+
+# Generate secrets
+export IDUN_ADMIN_PASSWORD_HASH=$(docker run --rm ghcr.io/idun-group/idun-agent-standalone:0.1.0 idun-standalone hash-password --password testpass)
+export IDUN_SESSION_SECRET=$(openssl rand -hex 32)
+
+# Boot
+docker compose up -d
+```
+
+Open <http://localhost:8000/>. Sign in at <http://localhost:8000/login/> with `testpass`.
+
+## What you get
+
+- `standalone` — the FastAPI process serving chat + admin + traces.
+- `postgres` — Postgres 16 storing admin config + traces.
+
+The compose file declares health checks and `depends_on: condition: service_healthy` so the standalone waits for Postgres before booting.

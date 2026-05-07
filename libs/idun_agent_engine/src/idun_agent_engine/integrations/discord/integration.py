@@ -37,6 +37,9 @@ class DiscordIntegration(BaseIntegration):
         self._client = DiscordClient(self._discord_config)
         app.state.discord_client = self._client
         app.state.discord_public_key = self._discord_config.public_key
+        from .handler import router
+
+        app.include_router(router, prefix="/integrations/discord", tags=["Discord"])
         logger.info("Discord integration configured")
 
     async def shutdown(self) -> None:

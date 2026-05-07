@@ -3,15 +3,30 @@
 Defines the abstract `BaseAgent` used by all agent implementations.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from idun_agent_schema.engine.graph import AgentGraph
 
 from ag_ui.core import BaseEvent
 from ag_ui.core.types import RunAgentInput
 from idun_agent_schema.engine.agent import BaseAgentConfig
 from idun_agent_schema.engine.capabilities import AgentCapabilities
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.sessions import (
+    HistoryCapabilities,
+    SessionDetail,
+    SessionSummary,
+)
+
+from idun_agent_engine.agent.observers import (
+    RunEventObserver,
+    RunEventObserverRegistry,
+)
 
 
 class BaseAgent[ConfigType: BaseAgentConfig](ABC):
@@ -21,6 +36,18 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
     """
 
     _configuration: ConfigType
+
+    def __init__(self) -> None:
+        """Initialize shared agent state.
+
+        Subclasses must call ``super().__init__()`` to populate the
+        run-event observer registry.
+        """
+        self.run_event_observers: RunEventObserverRegistry = RunEventObserverRegistry()
+
+    def register_run_event_observer(self, observer: RunEventObserver) -> None:
+        """Register an async observer for run events."""
+        self.run_event_observers.register(observer)
 
     @property
     @abstractmethod
@@ -134,3 +161,69 @@ class BaseAgent[ConfigType: BaseAgentConfig](ABC):
         """
         if False:  # pragma: no cover
             yield  # type: ignore[misc]
+
+    def history_capabilities(self) -> HistoryCapabilities:
+        """Declare session-history support for this adapter.
+
+        Default: not supported. Override in concrete adapters that wire a
+        memory backend (ADK ``session_service``, LangGraph ``checkpointer``).
+        """
+        return HistoryCapabilities(can_list=False, can_get=False)
+
+    async def list_sessions(
+        self, *, user_id: str | None = None
+    ) -> list[SessionSummary]:
+        """List sessions visible to ``user_id``.
+
+        Concrete adapters that report ``history_capabilities().can_list``
+        as ``True`` must override. The default raises
+        ``NotImplementedError`` so misconfiguration surfaces loudly
+        instead of silently returning empty data.
+        """
+        raise NotImplementedError(
+            f"list_sessions not implemented for {type(self).__name__}"
+        )
+
+    async def get_session(
+        self, session_id: str, *, user_id: str | None = None
+    ) -> SessionDetail | None:
+        """Return the reconstructed message thread for ``session_id``.
+
+        Concrete adapters that report ``history_capabilities().can_get``
+        as ``True`` must override. Returning ``None`` is the
+        404-equivalent at the route layer.
+        """
+        raise NotImplementedError(
+            f"get_session not implemented for {type(self).__name__}"
+        )
+
+    def get_graph_ir(self) -> AgentGraph:
+        """Return a framework-agnostic graph IR.
+
+        Override in subclasses that can introspect their underlying agent.
+        """
+        raise NotImplementedError(
+            f"{self.agent_type} does not support graph introspection"
+        )
+
+    def draw_mermaid(self) -> str:
+        """Render the agent graph as a Mermaid source string.
+
+        Default: render the IR via the engine's framework-agnostic renderer.
+        Adapters with native diagram support (e.g. LangGraph) may override.
+        """
+        ir = self.get_graph_ir()
+        from idun_agent_engine.server.graph.mermaid import render_mermaid
+
+        return render_mermaid(ir)
+
+    def draw_ascii(self) -> str:
+        """Render the agent graph as ASCII art.
+
+        Default: render the IR via the engine's framework-agnostic renderer.
+        Adapters with native ASCII support (e.g. LangGraph + grandalf) may override.
+        """
+        ir = self.get_graph_ir()
+        from idun_agent_engine.server.graph.ascii import render_ascii
+
+        return render_ascii(ir)

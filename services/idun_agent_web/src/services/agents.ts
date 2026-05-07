@@ -227,12 +227,12 @@ export function performHealthCheck(
 }
 
 export async function fetchAgentGraph(baseUrl: string): Promise<string | null> {
-    const url = buildAgentUrl(baseUrl, '/agent/graph');
+    const url = buildAgentUrl(baseUrl, '/agent/graph/mermaid');
     try {
         const res = await agentFetch(url);
         if (!res.ok) return null;
         const data = await res.json();
-        return data.graph ?? null;
+        return data.mermaid ?? null;
     } catch {
         return null;
     }

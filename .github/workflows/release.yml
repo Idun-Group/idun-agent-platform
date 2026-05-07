@@ -49,7 +49,7 @@ jobs:
       - name: Build schema package
         working-directory: libs/idun_agent_schema
         run: |
-          uv build --wheel --sdist
+          uv build --wheel --sdist --out-dir dist
           ls -lh dist/
 
       - name: Publish to PyPI
@@ -112,7 +112,7 @@ jobs:
       - name: Build engine package
         working-directory: libs/idun_agent_engine
         run: |
-          uv build --wheel --sdist
+          uv build --wheel --sdist --out-dir dist
           ls -lh dist/
 
       - name: Publish to PyPI
