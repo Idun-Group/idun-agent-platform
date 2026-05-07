@@ -66,8 +66,11 @@ dependencies = [
     "langfuse>=2.60.8,<4.0.0",
     "langfuse-haystack>=2.3.0",
     "arize-phoenix-otel>=0.2.0,<1.0.0",
-    # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
     "arize-phoenix>=11.22.0,<14.0.0",
+    # Pin jmespath directly: arize-phoenix's transitive resolution can pull
+    # jmespath==99.99.99 (a typosquat placeholder that phones home and breaks
+    # in sandboxed builds). Forcing a real version keeps CI installs reproducible.
+    "jmespath>=1.0,<2.0",
     "openinference-instrumentation-langchain>=0.1.13,<2.0.0",
     "openinference-instrumentation-vertexai>=0.1.0,<2.0.0",
     "openinference-instrumentation-google-adk>=0.1.0,<2.0.0",
