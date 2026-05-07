@@ -4,7 +4,7 @@ Initializes the agent at startup and cleans up resources on shutdown.
 """
 import inspect
 import logging
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -19,16 +19,33 @@ from ..telemetry import get_telemetry, sanitize_telemetry_config
 logger = logging.getLogger(__name__)
 
 
+PostConfigureCallback = Callable[[FastAPI], Awaitable[None]]
+
+
 def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
-    """Adds the position of the guardrails (input/output) and returns the lift of updated guardrails."""
+    """Build guard instances; one failure does not drop the rest."""
     from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
 
     if not guardrails_obj:
         return []
 
-    return [GHGuard(guard, position="input") for guard in guardrails_obj.input] + [
-        GHGuard(guard, position="output") for guard in guardrails_obj.output
-    ]
+    guards: list[BaseGuardrail] = []
+    for position, configs in (
+        ("input", guardrails_obj.input),
+        ("output", guardrails_obj.output),
+    ):
+        for guard in configs:
+            config_id = getattr(guard, "config_id", "<unknown>")
+            try:
+                guards.append(GHGuard(guard, position=position))
+                logger.info("Guardrail '%s' (%s) initialized", config_id, position)
+            except (Exception, SystemExit):
+                logger.exception(
+                    "Guardrail '%s' (%s) init failed; skipping",
+                    config_id,
+                    position,
+                )
+    return guards
 
 
 async def cleanup_agent(app: FastAPI):
@@ -42,9 +59,62 @@ async def cleanup_agent(app: FastAPI):
             if inspect.isawaitable(result):
                 await result
 
+    integrations = getattr(app.state, "integrations", [])
+    if integrations:
+        logger.info("Shutting down %d integration(s)", len(integrations))
+        for integration in integrations:
+            try:
+                await integration.shutdown()
+                logger.info("Integration %s shut down", type(integration).__name__)
+            except Exception:
+                logger.exception("integration shutdown failed during reload")
+        app.state.integrations = []
+
+    tracked = getattr(app.state, "integration_routes", [])
+    if tracked:
+        logger.info(
+            "cleanup_agent: removing %d integration route(s) paths=%s",
+            len(tracked),
+            [getattr(r, "path", "<unknown>") for r in tracked],
+        )
+        removed = 0
+        for route in tracked:
+            try:
+                app.router.routes.remove(route)
+                removed += 1
+                logger.debug(
+                    "cleanup_agent: removed integration route path=%s",
+                    getattr(route, "path", "<unknown>"),
+                )
+            except ValueError:
+                logger.warning(
+                    "cleanup_agent: tracked integration route already absent path=%s",
+                    getattr(route, "path", "<unknown>"),
+                )
+        logger.info(
+            "cleanup_agent: integration route removal complete removed=%d remaining_routes=%d",
+            removed,
+            len(app.router.routes),
+        )
+    app.state.integration_routes = []
+
 
 async def configure_app(app: FastAPI, engine_config):
-    """Initialize the agent, MCP registry, guardrails, and app state with the given engine config."""
+    """Initialize the agent, MCP registry, guardrails, and app state with the given engine config.
+
+    After all setup is done — including reload via ``POST /reload`` — every
+    callback registered in ``app.state.post_configure_callbacks`` is awaited.
+    Embedders (e.g. ``idun_agent_standalone``) use this hook to re-attach
+    cross-cutting concerns (run-event observers, telemetry instrumentation)
+    that would otherwise be lost when ``configure_app`` rebuilds the agent
+    from scratch.
+    """
+    # Preserve any callbacks the embedder registered before the engine
+    # lifespan ran. Reload only mutates ``app.state.agent`` etc., so the
+    # callback list naturally survives across reloads.
+    if not hasattr(app.state, "post_configure_callbacks"):
+        app.state.post_configure_callbacks = []
+
     guardrails_obj = engine_config.guardrails
     try:
         guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
@@ -61,6 +131,10 @@ async def configure_app(app: FastAPI, engine_config):
         mcp_registry = MCPClientRegistry()
     set_active_registry(mcp_registry)
     app.state.mcp_registry = mcp_registry
+    # Surface per-server failures so embedders (e.g. the standalone
+    # admin UI) can render a "failed" badge instead of guessing from
+    # logs. Replaced on every reload so stale failures don't linger.
+    app.state.failed_mcp_servers = mcp_registry.failed
     try:
         agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config, mcp_registry)
     except Exception as e:
@@ -136,6 +210,20 @@ async def configure_app(app: FastAPI, engine_config):
     else:
         app.state.integrations = []
 
+    # Run embedder-supplied post-configure callbacks. We deliberately log
+    # and continue on failure so a misbehaving callback can't take the
+    # whole reload down with it (the agent itself is already live by now).
+    callbacks: list[PostConfigureCallback] = list(
+        getattr(app.state, "post_configure_callbacks", [])
+    )
+    for cb in callbacks:
+        try:
+            await cb(app)
+        except Exception:
+            logger.exception(
+                "post_configure_callback %r raised; continuing", cb
+            )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -147,10 +235,20 @@ async def lifespan(app: FastAPI):
 
     # Load config and initialize agent on startup
     logger.info("🚀 Server starting up...")
-    if not app.state.engine_config:
-        raise ValueError("Error: No Engine configuration found.")
-
-    await configure_app(app, app.state.engine_config)
+    if app.state.engine_config is not None:
+        await configure_app(app, app.state.engine_config)
+    else:
+        # Unconfigured boot: agent state stays empty until an embedder
+        # calls ``configure_app`` explicitly (typically via the standalone
+        # reload pipeline once a wizard materializes the agent). Set the
+        # markers downstream readers expect so ``getattr(...)`` short
+        # -circuits cleanly.
+        app.state.agent = None
+        if not hasattr(app.state, "post_configure_callbacks"):
+            app.state.post_configure_callbacks = []
+        logger.info(
+            "⏸️  Engine started unconfigured — /agent/* will 503 until configure_app runs"
+        )
 
     try:
         telemetry = get_telemetry()

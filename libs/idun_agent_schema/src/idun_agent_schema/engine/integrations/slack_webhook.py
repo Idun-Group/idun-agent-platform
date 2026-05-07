@@ -14,6 +14,8 @@ class SlackMessageEvent(BaseModel):
     channel: str = ""
     ts: str = ""
     bot_id: str | None = None
+    subtype: str | None = None
+    app_id: str | None = None
 
 
 class SlackEventPayload(BaseModel):

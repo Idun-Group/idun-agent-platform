@@ -221,9 +221,14 @@ class RestrictToTopicConfig(BaseModel):
         GuardrailConfigId.RESTRICT_TO_TOPIC
     )
     api_key: str = ""
-    guard_url: str = "hub://guardrails/restrict_to_topic"
+    guard_url: str = "hub://tryolabs/restricttotopic"
     reject_message: str = "Off-topic content detected"
-    topics: list[str] = Field(description="List of allowed topics")
+    valid_topics: list[str] = Field(
+        default_factory=list, description="Topics the agent is allowed to discuss"
+    )
+    invalid_topics: list[str] = Field(
+        default_factory=list, description="Topics the agent must refuse"
+    )
 
 
 class ToxicLanguageConfig(BaseModel):

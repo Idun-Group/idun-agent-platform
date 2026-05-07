@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -7,6 +8,8 @@ import yaml
 from idun_agent_schema.engine.mcp_server import MCPServer
 
 from idun_agent_engine.mcp.registry import MCPClientRegistry
+
+logger = logging.getLogger(__name__)
 
 
 def _extract_mcp_configs(config_data: dict[str, Any]) -> list[MCPServer]:
@@ -65,6 +68,9 @@ def _load_config_from_file(config_path: str | Path) -> dict[str, Any]:
     return _unwrap_engine_config(config_data)
 
 
+_API_FETCH_TIMEOUT_SECONDS = 5.0
+
+
 def _fetch_config_from_api() -> dict[str, Any]:
     """Fetch configuration from the Idun Manager API."""
     api_key = os.environ.get("IDUN_AGENT_API_KEY")
@@ -80,7 +86,9 @@ def _fetch_config_from_api() -> dict[str, Any]:
     url = f"{manager_host.rstrip('/')}/api/v1/agents/config"
 
     try:
-        response = requests.get(url=url, headers=headers)
+        response = requests.get(
+            url=url, headers=headers, timeout=_API_FETCH_TIMEOUT_SECONDS
+        )
         response.raise_for_status()
         config_data = yaml.safe_load(response.text)
         return _unwrap_engine_config(config_data)
@@ -118,7 +126,9 @@ def get_adk_tools(config_path: str | Path | None = None) -> list[Any]:
 
     The function resolves configuration in the following order:
     1. Uses the provided config_path if specified
-    2. Uses the active in-memory registry if set (engine is running)
+    2. Uses the active in-memory registry if set (engine is running). When the
+       engine has set a registry with no usable servers, returns an empty list
+       rather than falling through.
     3. Uses IDUN_CONFIG_PATH environment variable if set
     4. Falls back to fetching from Idun Manager API
 
@@ -138,8 +148,13 @@ def get_adk_tools(config_path: str | Path | None = None) -> list[Any]:
     from .registry import get_active_registry
 
     registry = get_active_registry()
-    if registry and registry.enabled:
-        return registry.get_adk_toolsets()
+    if registry is not None:
+        if registry.enabled:
+            return registry.get_adk_toolsets()
+        logger.info(
+            "Active MCP registry has no usable servers, returning no ADK toolsets."
+        )
+        return []
 
     env_config_path = os.environ.get("IDUN_CONFIG_PATH")
     if env_config_path:
@@ -165,7 +180,9 @@ async def get_langchain_tools(config_path: str | Path | None = None) -> list[Any
 
     The function resolves configuration in the following order:
     1. Uses the provided config_path if specified
-    2. Uses the active in-memory registry if set (engine is running)
+    2. Uses the active in-memory registry if set (engine is running). When the
+       engine has set a registry with no usable servers, returns an empty list
+       rather than falling through.
     3. Uses IDUN_CONFIG_PATH environment variable if set
     4. Falls back to fetching from Idun Manager API
 
@@ -185,8 +202,13 @@ async def get_langchain_tools(config_path: str | Path | None = None) -> list[Any
     from .registry import get_active_registry
 
     registry = get_active_registry()
-    if registry and registry.enabled:
-        return await registry.get_tools()
+    if registry is not None:
+        if registry.enabled:
+            return await registry.get_tools()
+        logger.info(
+            "Active MCP registry has no usable servers, returning no LangChain tools."
+        )
+        return []
 
     env_config_path = os.environ.get("IDUN_CONFIG_PATH")
     if env_config_path:

@@ -59,7 +59,7 @@ jobs:
       - name: Build wheel and sdist (schema)
         working-directory: libs/idun_agent_schema
         run: |
-          uv build --no-sources
+          uv build --no-sources --out-dir dist
 
       - name: Update engine version and local schema dependency
         working-directory: libs/idun_agent_engine
@@ -76,7 +76,7 @@ jobs:
       - name: Build wheel and sdist (engine)
         working-directory: libs/idun_agent_engine
         run: |
-          uv build --no-sources
+          uv build --no-sources --out-dir dist
 
       - name: Check distribution metadata
         run: |
@@ -173,7 +173,7 @@ jobs:
         working-directory: libs/idun_agent_engine
         run: |
           echo "Building engine with schema from TestPyPI..."
-          UV_INDEX_URL=https://test.pypi.org/simple/ UV_EXTRA_INDEX_URL=https://pypi.org/simple/ uv build --no-sources
+          UV_INDEX_URL=https://test.pypi.org/simple/ UV_EXTRA_INDEX_URL=https://pypi.org/simple/ uv build --no-sources --out-dir dist
 
       - name: Publish to TestPyPI
         id: publish

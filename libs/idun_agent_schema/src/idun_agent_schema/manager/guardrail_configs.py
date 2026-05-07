@@ -80,7 +80,12 @@ class SimpleRestrictToTopicConfig(BaseModel):
     config_id: Literal[GuardrailConfigId.RESTRICT_TO_TOPIC] = GuardrailConfigId.RESTRICT_TO_TOPIC
     api_key: str = ""
     reject_message: str = ""
-    topics: list[str] = Field(description="List of allowed topics")
+    valid_topics: list[str] = Field(
+        default_factory=list, description="Topics the agent is allowed to discuss"
+    )
+    invalid_topics: list[str] = Field(
+        default_factory=list, description="Topics the agent must refuse"
+    )
 
 
 ManagerGuardrailConfig = Union[
@@ -107,6 +112,10 @@ def convert_guardrail(guardrails_data: dict) -> dict:
 
     converted = {"input": [], "output": []}
 
+    def _reject_message(guardrail: dict, default: str) -> str:
+        msg = guardrail.get("reject_message")
+        return msg if isinstance(msg, str) and msg else default
+
     for position in ["input", "output"]:
         if position not in guardrails_data:
             continue
@@ -129,7 +138,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 converted[position].append({
                     "config_id": "ban_list",
                     "api_key": api_key,
-                    "reject_message": "ban!!",
+                    "reject_message": _reject_message(guardrail, "ban!!"),
                     "guard_url": "hub://guardrails/ban_list",
                     "guard_params": {"banned_words": banned_words},
                 })
@@ -153,7 +162,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 converted[position].append({
                     "config_id": "detect_pii",
                     "api_key": api_key,
-                    "reject_message": "PII detected",
+                    "reject_message": _reject_message(guardrail, "PII detected"),
                     "guard_url": "hub://guardrails/detect_pii",
                     "guard_params": {
                         "pii_entities": mapped_entities,
@@ -165,7 +174,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 converted[position].append({
                     "config_id": "nsfw_text",
                     "api_key": api_key,
-                    "reject_message": "NSFW content detected",
+                    "reject_message": _reject_message(guardrail, "NSFW content detected"),
                     "guard_url": "hub://guardrails/nsfw_text",
                     "threshold": guardrail["threshold"],
                 })
@@ -174,7 +183,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 converted[position].append({
                     "config_id": "toxic_language",
                     "api_key": api_key,
-                    "reject_message": "Toxic language detected",
+                    "reject_message": _reject_message(guardrail, "Toxic language detected"),
                     "guard_url": "hub://guardrails/toxic_language",
                     "threshold": guardrail["threshold"],
                 })
@@ -183,7 +192,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 converted[position].append({
                     "config_id": "gibberish_text",
                     "api_key": api_key,
-                    "reject_message": "Gibberish text detected",
+                    "reject_message": _reject_message(guardrail, "Gibberish text detected"),
                     "guard_url": "hub://guardrails/gibberish_text",
                     "threshold": guardrail["threshold"],
                 })
@@ -192,7 +201,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 converted[position].append({
                     "config_id": "bias_check",
                     "api_key": api_key,
-                    "reject_message": "Bias detected",
+                    "reject_message": _reject_message(guardrail, "Bias detected"),
                     "guard_url": "hub://guardrails/bias_check",
                     "threshold": guardrail["threshold"],
                 })
@@ -201,7 +210,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 converted[position].append({
                     "config_id": "competition_check",
                     "api_key": api_key,
-                    "reject_message": "Competitor mentioned",
+                    "reject_message": _reject_message(guardrail, "Competitor mentioned"),
                     "guard_url": "hub://guardrails/competitor_check",
                     "competitors": guardrail["competitors"],
                 })
@@ -210,7 +219,7 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 converted[position].append({
                     "config_id": "correct_language",
                     "api_key": api_key,
-                    "reject_message": "Incorrect language detected",
+                    "reject_message": _reject_message(guardrail, "Incorrect language detected"),
                     "guard_url": "hub://scb-10x/correct_language",
                     "expected_languages": guardrail["expected_languages"],
                 })
@@ -219,9 +228,10 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                 converted[position].append({
                     "config_id": "restrict_to_topic",
                     "api_key": api_key,
-                    "reject_message": "Off-topic content detected",
-                    "guard_url": "hub://guardrails/restrict_to_topic",
-                    "topics": guardrail["topics"],
+                    "reject_message": _reject_message(guardrail, "Off-topic content detected"),
+                    "guard_url": "hub://tryolabs/restricttotopic",
+                    "valid_topics": guardrail.get("valid_topics", []),
+                    "invalid_topics": guardrail.get("invalid_topics", []),
                 })
 
             else:
