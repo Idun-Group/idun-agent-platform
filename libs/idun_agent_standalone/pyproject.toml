@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [project.scripts]
-idun-standalone = "idun_agent_standalone.cli:main"
+idun = "idun_agent_standalone.cli:main"
 
 [tool.hatch.build.targets.sdist]
 include = ["src/idun_agent_standalone"]

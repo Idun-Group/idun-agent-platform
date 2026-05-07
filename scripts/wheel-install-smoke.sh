@@ -61,7 +61,7 @@ print(f"alembic.ini ok: {p}")
 PY
 
 # Smoke: scaffold + serve + health.
-"$TMP/venv/bin/idun-standalone" init smoke-agent --target "$TMP/scratch" >/dev/null
+"$TMP/venv/bin/idun" init smoke-agent --target "$TMP/scratch" >/dev/null
 PORT=${IDUN_E2E_PORT:-8765}
 
 # The scaffolded config uses a relative ``graph_definition`` (./agent.py:graph),
@@ -71,7 +71,7 @@ PORT=${IDUN_E2E_PORT:-8765}
   DATABASE_URL="sqlite+aiosqlite:///$TMP/scratch/smoke.db" \
     IDUN_ADMIN_AUTH_MODE=none \
     IDUN_PORT=$PORT \
-    "$TMP/venv/bin/idun-standalone" serve \
+    "$TMP/venv/bin/idun" serve \
     --config "$TMP/scratch/config.yaml" \
     --port "$PORT" &
   echo $! > "$TMP/server.pid"

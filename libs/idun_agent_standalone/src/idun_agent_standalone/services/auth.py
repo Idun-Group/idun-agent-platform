@@ -88,7 +88,7 @@ async def ensure_admin_seeded(
         raise SeedHashMissingError(
             "IDUN_ADMIN_AUTH_MODE=password is set but no admin row exists "
             "and IDUN_ADMIN_PASSWORD_HASH is empty. Generate one with "
-            "`idun-standalone hash-password` and export it."
+            "`idun hash-password` and export it."
         )
 
     session.add(

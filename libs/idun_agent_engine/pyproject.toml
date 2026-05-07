@@ -91,10 +91,6 @@ dependencies = [
 ]
 
 
-[project.scripts]
-idun = "idun_platform_cli.main:cli"
-
-
 [project.urls]
 Homepage = "https://github.com/geoffreyharrazi/idun-agent-platform"
 Repository = "https://github.com/geoffreyharrazi/idun-agent-platform"
@@ -119,19 +115,16 @@ dev = [
 include = [
     "src/idun_agent_engine",
     "src/idun_agent_engine/py.typed",
-    "src/idun_platform_cli",
 ]
 
 [tool.hatch.build.targets.wheel]
 include = [
   "src/idun_agent_engine",
   "src/idun_agent_engine/py.typed",
-  "src/idun_platform_cli",
 ]
 
 [tool.hatch.build.targets.wheel.sources]
 "src/idun_agent_engine" = "idun_agent_engine"
-"src/idun_platform_cli" = "idun_platform_cli"
 
 [build-system]
 requires = ["hatchling"]
@@ -228,7 +221,6 @@ omit = [
     "*/templates/*",
     "*/_version.py",
     "*/idun_agent_engine_ui/*",
-    "*/idun_platform_cli/*",
     "*/mcp/*",  # CHANGED: MCP has Pydantic compatibility issues with coverage
 ]
 
