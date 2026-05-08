@@ -21,9 +21,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/geoffreyharrazi/idun-agent-platform"
-Repository = "https://github.com/geoffreyharrazi/idun-agent-platform"
-Issues = "https://github.com/geoffreyharrazi/idun-agent-platform/issues"
+Homepage = "https://github.com/Idun-Group/idun-agent-platform"
+Repository = "https://github.com/Idun-Group/idun-agent-platform"
+Issues = "https://github.com/Idun-Group/idun-agent-platform/issues"
 
 [build-system]
 requires = ["hatchling>=1.25.0"]
