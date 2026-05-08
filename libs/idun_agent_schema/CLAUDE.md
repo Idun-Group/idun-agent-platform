@@ -168,11 +168,11 @@ Admin API contracts for the standalone admin surface (the in-process control pla
 | `memory.py` | `StandaloneMemoryRead`, `StandaloneMemoryPatch` |
 | `observability.py` | `StandaloneObservabilityRead`, `StandaloneObservabilityPatch` |
 | `onboarding.py` | `OnboardingState`, `ScanResponse`, `ScanResult`, `DetectedAgent`, `CreateStarterBody`, `CreateFromDetectionBody` |
+| `operational.py` | Reserved (no public types yet) — placeholder for forthcoming audit-log schemas |
 | `prompts.py` | `StandalonePromptCreate / Read / Patch` |
 | `reload.py` | `StandaloneReloadResult`, `StandaloneReloadStatus` |
 | `runtime_status.py` | `StandaloneRuntimeStatus` and friends — runtime introspection payloads |
 | `sso.py` | `StandaloneSsoRead`, `StandaloneSsoPatch` |
-| `operational.py` | Operational utilities used by the admin runtime |
 
 Many of the `Standalone*` models embed engine schemas directly (e.g. `StandaloneMaterializedConfig` wraps `EngineConfig`), so they stay in lockstep with the engine namespace.
 
