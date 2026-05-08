@@ -2,7 +2,6 @@ export type AgentFramework =
   | "LANGGRAPH"
   | "ADK"
   | "CREWAI"
-  | "HAYSTACK"
   | "CUSTOM"
   | "TRANSLATION_AGENT"
   | "CORRECTION_AGENT"

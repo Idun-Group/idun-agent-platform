@@ -71,16 +71,6 @@ export function GoogleCloudIcon(p: IconProps) {
 export const VertexAiIcon = GoogleCloudIcon;
 export const AdkIcon = GoogleCloudIcon;
 
-export function HaystackIcon(p: IconProps) {
-  return (
-    <RemoteBrandTile
-      domain="deepset.ai"
-      alt="Haystack"
-      {...p}
-    />
-  );
-}
-
 export function PostgresIcon(p: IconProps) {
   return (
     <RemoteBrandTile domain="postgresql.org" alt="PostgreSQL" {...p} />

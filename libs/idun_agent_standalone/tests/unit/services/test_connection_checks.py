@@ -39,7 +39,7 @@ async def test_memory_missing_type_fails() -> None:
 
 
 async def test_memory_unsupported_framework_fails() -> None:
-    result = await connection_checks.check_memory("HAYSTACK", {"type": "memory"})
+    result = await connection_checks.check_memory("FOOBAR", {"type": "memory"})
     assert result.ok is False
     assert "unsupported agent framework" in result.error  # type: ignore[operator]
 

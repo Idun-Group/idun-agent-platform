@@ -26,6 +26,7 @@ import click
 import uvicorn
 from dotenv import load_dotenv
 
+from idun_agent_standalone._telemetry import track_command
 from idun_agent_standalone.core.logging import get_logger, setup_logging
 from idun_agent_standalone.core.settings import StandaloneSettings
 
@@ -62,6 +63,7 @@ def main() -> None:
     confirmation_prompt=True,
     help="Plaintext password to hash. Prompted if omitted.",
 )
+@track_command("hash-password")
 def hash_password_cmd(password: str) -> None:
     """Print a bcrypt hash suitable for IDUN_ADMIN_PASSWORD_HASH."""
     from idun_agent_standalone.core.security import hash_password
@@ -77,6 +79,7 @@ def hash_password_cmd(password: str) -> None:
     default=None,
     help="Path to YAML config. Overrides IDUN_CONFIG_PATH.",
 )
+@track_command("setup")
 def setup_cmd(config_path_override: str | None) -> None:
     """Create DB schema and seed from YAML if the DB is empty."""
     setup_logging()
@@ -88,6 +91,7 @@ def setup_cmd(config_path_override: str | None) -> None:
 
 
 @main.command("serve")
+@track_command("serve")
 def serve_cmd() -> None:
     """Run the standalone server (engine routes plus admin REST)."""
     setup_logging()
@@ -110,6 +114,7 @@ def serve_cmd() -> None:
     default=False,
     help="Don't open the browser automatically. Useful for Cloud Run + headless.",
 )
+@track_command("init")
 def init_cmd(port_override: int | None, no_browser: bool) -> None:
     """Initialize Idun in the current folder and launch chat + admin.
 
@@ -305,6 +310,7 @@ def agent_group() -> None:
     type=click.Path(),
     help="Path to a local config.yaml. Required when --source=file.",
 )
+@track_command("agent.serve")
 def agent_serve_cmd(source: str, path: str | None) -> None:
     """Serve an agent from a manager or file source."""
     logger = get_logger(__name__)

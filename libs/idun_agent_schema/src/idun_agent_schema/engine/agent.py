@@ -5,7 +5,6 @@ from pydantic import BaseModel, model_validator
 from idun_agent_schema.engine.adk import AdkAgentConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.base_agent import BaseAgentConfig
-from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_schema.engine.langgraph import LangGraphAgentConfig
 from idun_agent_schema.engine.templates import (
     CorrectionAgentConfig,
@@ -20,7 +19,6 @@ class AgentConfig(BaseModel):
     type: AgentFramework
     config: (
         LangGraphAgentConfig
-        | HaystackAgentConfig
         | AdkAgentConfig
         | TranslationAgentConfig
         | CorrectionAgentConfig
@@ -33,19 +31,16 @@ class AgentConfig(BaseModel):
         """Ensure the `config` type matches the selected framework.
 
         - LANGGRAPH  -> LangGraphAgentConfig
-        - HAYSTACK   -> HaystackAgentConfig
         - ADK        -> AdkAgentConfig
         - TRANSLATION_AGENT -> TranslationAgentConfig
         - CORRECTION_AGENT -> CorrectionAgentConfig
         - DEEP_RESEARCH_AGENT -> DeepResearchAgentConfig
-        - ADK/CREWAI/CUSTOM -> BaseAgentConfig (or subclass)
+        - CREWAI/CUSTOM -> BaseAgentConfig (or subclass)
         """
         expected_type: type[BaseAgentConfig] | None = None
 
         if self.type == AgentFramework.LANGGRAPH:
             expected_type = LangGraphAgentConfig
-        elif self.type == AgentFramework.HAYSTACK:
-            expected_type = HaystackAgentConfig
         elif self.type == AgentFramework.TRANSLATION_AGENT:
             expected_type = TranslationAgentConfig
         elif self.type == AgentFramework.ADK:

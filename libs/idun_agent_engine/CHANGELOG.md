@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Removed
+
+- Haystack agent adapter, `HaystackAgentConfig` schema, and the `langfuse-haystack` runtime dependency. Migrate Haystack agents to LangGraph or ADK.
+
 ## 0.6.0 — 2026-04-25
 
 ### Added

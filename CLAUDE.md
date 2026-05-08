@@ -89,6 +89,7 @@ For service-specific test commands, see the service's CLAUDE.md.
 - Use global exception handlers for unexpected errors. Catch locally only when the response or recovery logic differs from the default.
 - `logger.exception()` for unexpected errors (preserves traceback). `logger.error()` only when you intentionally omit the traceback.
 - Never swallow exceptions silently. Never catch `Exception` to re-raise a generic message unless preventing internal detail leaks.
+- Telemetry and observability code (PostHog captures, Langfuse exporters, OpenTelemetry instrumentation, audit-log middleware) must never alter command or runtime semantics. Wrap singleton init, capture, and flush/shutdown calls in their own `try/except Exception` and log via `logger.exception(...)`. Gate downstream telemetry calls on the client/handle being non-None — a failed init must not skip the wrapped function or mask its exception.
 
 ### Refactoring
 
