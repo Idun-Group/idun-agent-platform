@@ -1,0 +1,11 @@
+server:
+  api:
+    port: {{ port | default(8000) }}
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "e2e-lg-calculator"
+    graph_definition: "{{ agent_module_path }}:graph"
+    checkpointer:
+      type: "memory"
