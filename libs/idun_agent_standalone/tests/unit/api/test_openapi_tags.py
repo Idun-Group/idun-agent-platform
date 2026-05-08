@@ -12,21 +12,8 @@ from idun_agent_engine.integrations.teams.handler import router as teams_router
 from idun_agent_engine.integrations.whatsapp.handler import router as whatsapp_router
 from idun_agent_engine.server.routers.agent import agent_router as engine_agent_router
 from idun_agent_engine.server.routers.base import base_router as engine_base_router
-from idun_agent_standalone import runtime_config
+from idun_agent_standalone.api.v1._register import register_standalone_routers
 from idun_agent_standalone.api.v1.openapi import OPENAPI_TAG_NAMES, OPENAPI_TAGS
-from idun_agent_standalone.api.v1.routers import (
-    agent,
-    auth,
-    guardrails,
-    integrations,
-    mcp_servers,
-    memory,
-    observability,
-    onboarding,
-    prompts,
-    sso,
-    sso_info,
-)
 
 
 def _build_test_app() -> FastAPI:
@@ -43,19 +30,9 @@ def _build_test_app() -> FastAPI:
     app.include_router(slack_router, prefix="/integrations/slack")
     app.include_router(teams_router, prefix="/integrations/teams")
     app.include_router(whatsapp_router, prefix="/integrations/whatsapp")
-    # Standalone admin + public routes
-    app.include_router(agent.router)
-    app.include_router(auth.router)
-    app.include_router(guardrails.router)
-    app.include_router(integrations.router)
-    app.include_router(mcp_servers.router)
-    app.include_router(memory.router)
-    app.include_router(observability.router)
-    app.include_router(onboarding.router)
-    app.include_router(prompts.router)
-    app.include_router(sso.router)
-    app.include_router(sso_info.router)
-    app.include_router(runtime_config.router)
+    # Standalone admin + public routes — single source of truth shared
+    # with create_standalone_app.
+    register_standalone_routers(app)
     return app
 
 

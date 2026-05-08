@@ -30,32 +30,10 @@ from fastapi.routing import APIRoute, Mount
 from fastapi.staticfiles import StaticFiles
 from idun_agent_engine import create_app as create_engine_app
 
+from idun_agent_standalone.api.v1._register import register_standalone_routers
 from idun_agent_standalone.api.v1.deps import reload_disabled, require_auth
 from idun_agent_standalone.api.v1.errors import register_admin_exception_handlers
 from idun_agent_standalone.api.v1.openapi import OPENAPI_TAGS
-from idun_agent_standalone.api.v1.routers.agent import router as agent_router
-from idun_agent_standalone.api.v1.routers.auth import router as auth_router
-from idun_agent_standalone.api.v1.routers.guardrails import (
-    router as guardrails_router,
-)
-from idun_agent_standalone.api.v1.routers.integrations import (
-    router as integrations_router,
-)
-from idun_agent_standalone.api.v1.routers.mcp_servers import (
-    router as mcp_servers_router,
-)
-from idun_agent_standalone.api.v1.routers.memory import router as memory_router
-from idun_agent_standalone.api.v1.routers.observability import (
-    router as observability_router,
-)
-from idun_agent_standalone.api.v1.routers.onboarding import (
-    router as onboarding_router,
-)
-from idun_agent_standalone.api.v1.routers.prompts import (
-    router as prompts_router,
-)
-from idun_agent_standalone.api.v1.routers.sso import router as sso_router
-from idun_agent_standalone.api.v1.routers.sso_info import router as sso_info_router
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.core.security import SESSION_COOKIE_NAME
 from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
@@ -63,7 +41,6 @@ from idun_agent_standalone.infrastructure.db.session import (
     create_db_engine,
     create_sessionmaker,
 )
-from idun_agent_standalone.runtime_config import router as runtime_config_router
 from idun_agent_standalone.services import auth as auth_service
 from idun_agent_standalone.services.engine_config import (
     AssemblyError,
@@ -229,18 +206,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     register_admin_exception_handlers(app)
     app.openapi_tags = OPENAPI_TAGS
     admin_auth = [Depends(require_auth)]
-    app.include_router(auth_router)
-    app.include_router(agent_router, dependencies=admin_auth)
-    app.include_router(memory_router, dependencies=admin_auth)
-    app.include_router(observability_router, dependencies=admin_auth)
-    app.include_router(mcp_servers_router, dependencies=admin_auth)
-    app.include_router(guardrails_router, dependencies=admin_auth)
-    app.include_router(prompts_router, dependencies=admin_auth)
-    app.include_router(integrations_router, dependencies=admin_auth)
-    app.include_router(sso_router, dependencies=admin_auth)
-    app.include_router(onboarding_router, dependencies=admin_auth)
-    app.include_router(runtime_config_router)
-    app.include_router(sso_info_router)
+    register_standalone_routers(app, admin_auth=admin_auth)
 
     ui_dir = _resolve_ui_dir(settings)
     if ui_dir is not None:
