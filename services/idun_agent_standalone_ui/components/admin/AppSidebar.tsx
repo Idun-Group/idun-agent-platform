@@ -164,7 +164,11 @@ export function AppSidebar() {
                         >
                           <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>
-                          <ExternalLink className="ml-auto h-3 w-3 opacity-60" />
+                          <span className="sr-only"> (opens in a new tab)</span>
+                          <ExternalLink
+                            className="ml-auto h-3 w-3 opacity-60"
+                            aria-hidden="true"
+                          />
                         </a>
                       ) : (
                         <Link href={item.href}>
