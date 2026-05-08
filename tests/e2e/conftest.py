@@ -112,9 +112,14 @@ def pytest_collection_modifyitems(config: Config, items: list[pytest.Item]) -> N
 @pytest.fixture(scope="session", autouse=True)
 def _require_provider_keys() -> None:
     """Skip the whole suite if no provider key is available."""
-    if not os.environ.get("OPENAI_API_KEY") and not os.environ.get("GOOGLE_API_KEY"):
+    has_openai = bool(os.environ.get("OPENAI_API_KEY"))
+    has_gemini = bool(os.environ.get("GEMINI_API_KEY")) or bool(
+        os.environ.get("GOOGLE_API_KEY")
+    )
+    if not has_openai and not has_gemini:
         pytest.skip(
-            "tests/e2e/ requires OPENAI_API_KEY and/or GOOGLE_API_KEY in the env",
+            "tests/e2e/ requires OPENAI_API_KEY and/or "
+            "(GEMINI_API_KEY | GOOGLE_API_KEY) in the env",
             allow_module_level=True,
         )
 

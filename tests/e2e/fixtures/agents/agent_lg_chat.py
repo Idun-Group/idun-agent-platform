@@ -39,7 +39,14 @@ def _make_chat_model() -> object:
     if provider == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
 
-        return ChatGoogleGenerativeAI(model=model, temperature=0)
+        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "Gemini provider requires GEMINI_API_KEY or GOOGLE_API_KEY in env"
+            )
+        return ChatGoogleGenerativeAI(
+            model=model, temperature=0, google_api_key=api_key
+        )
     raise ValueError(f"unknown E2E_PROVIDER={provider!r}")
 
 
