@@ -43,7 +43,7 @@ sync-engine:
 	cd libs/idun_agent_engine && uv sync --active --all-groups
 
 # ─── Standalone UI ──────────────────────────────────────────────────────────────
-.PHONY: build-standalone-ui clean-standalone-ui build-standalone-wheel build-standalone-all \
+.PHONY: build-standalone-ui clean-standalone-ui build-standalone-wheel \
 	test-standalone e2e-standalone ci-standalone
 
 build-standalone-ui:
@@ -59,8 +59,6 @@ clean-standalone-ui:
 
 build-standalone-wheel:
 	cd libs/idun_agent_standalone && uv build --out-dir $(CURDIR)/dist/
-
-build-standalone-all: build-standalone-ui build-standalone-wheel
 
 test-standalone:
 	uv run pytest libs/idun_agent_standalone/tests -q
