@@ -49,16 +49,14 @@ reviews:
     - "!services/idun_agent_standalone_ui/public/**"
     - "!libs/idun_agent_standalone/src/**/_static_ui/**"
     - "!**/*.snap"
-    - "!**/*.svg"
-    - "!**/*.min.js"
-    - "!**/*.min.css"
     - "!docs/snippets/_generated/**"
 
   path_instructions:
     # ---------- Python (cross-cutting) ----------
     - path: "**/*.py"
       instructions: |
-        - All I/O paths must be async (asyncpg, httpx.AsyncClient, async SQLAlchemy sessions). Flag any blocking call inside an `async def`.
+        - Inside any `async def`, flag blocking I/O (sync DB drivers, `requests`, `time.sleep`, blocking file reads on hot paths). Use `asyncpg`, `httpx.AsyncClient`, async SQLAlchemy sessions, or `asyncio.to_thread` for unavoidable sync calls.
+        - For runtime application code under `libs/idun_agent_engine/src/**` and `libs/idun_agent_standalone/src/**`, prefer async-first APIs at module boundaries. Sync is acceptable in Alembic revisions, tests, scripts in `scripts/`, and one-off CLI utilities.
         - No `Any` unless genuinely unavoidable. Read the source for the real type. Prefer Pydantic models, dataclasses, or TypedDict for data crossing module boundaries — not raw dicts.
         - `logger.exception(...)` for unexpected errors (preserves traceback). `logger.error(...)` only when the traceback is intentionally omitted.
         - Never catch bare `Exception` to re-raise a generic message. Do not swallow exceptions silently.
