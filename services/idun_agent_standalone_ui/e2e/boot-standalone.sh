@@ -15,6 +15,21 @@
 # command no longer accepts flags (simplified in the post-rework branch).
 set -euo pipefail
 
+# Real-LLM e2e: select provider + model. Defaults preserve the existing
+# echo-agent path when these vars aren't set. The spawned standalone
+# subprocess reads E2E_PROVIDER / E2E_MODEL via the agent fixtures.
+LLM_PROVIDER="${LLM_PROVIDER:-}"
+LLM_MODEL="${LLM_MODEL:-}"
+if [[ -n "$LLM_PROVIDER" ]]; then
+  export E2E_PROVIDER="$LLM_PROVIDER"
+  export E2E_MODEL="$LLM_MODEL"
+fi
+
+# Force AI Studio (GEMINI_API_KEY / GOOGLE_API_KEY) auth — host
+# .env files that export GOOGLE_GENAI_USE_VERTEXAI=TRUE would
+# otherwise route ChatGoogleGenerativeAI through Vertex ADC.
+export GOOGLE_GENAI_USE_VERTEXAI=false
+
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 PORT="${E2E_PORT:-8001}"
 TMPDIR_E2E="$(mktemp -d -t idun-e2e-XXXXXX)"
