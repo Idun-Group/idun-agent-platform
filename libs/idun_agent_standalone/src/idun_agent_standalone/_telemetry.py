@@ -19,8 +19,11 @@ from typing import ParamSpec, TypeVar
 
 from idun_agent_engine.telemetry import get_telemetry
 
+from idun_agent_standalone.core.logging import get_logger
+
 P = ParamSpec("P")
 R = TypeVar("R")
+logger = get_logger(__name__)
 
 
 def track_command(name: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -30,17 +33,28 @@ def track_command(name: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
         @wraps(fn)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             client = get_telemetry()
-            client.capture(f"cli.{name}", {"command": name})
+            try:
+                client.capture(f"cli.{name}", {"command": name})
+            except Exception:
+                logger.exception("telemetry capture failed for cli.%s", name)
             try:
                 return fn(*args, **kwargs)
             except Exception as exc:
-                client.capture(
-                    f"cli.{name}.error",
-                    {"command": name, "error_type": type(exc).__name__},
-                )
+                try:
+                    client.capture(
+                        f"cli.{name}.error",
+                        {"command": name, "error_type": type(exc).__name__},
+                    )
+                except Exception:
+                    logger.exception(
+                        "telemetry capture failed for cli.%s.error", name
+                    )
                 raise
             finally:
-                client.shutdown(timeout_seconds=1.0)
+                try:
+                    client.shutdown(timeout_seconds=1.0)
+                except Exception:
+                    logger.exception("telemetry shutdown failed for cli.%s", name)
 
         return wrapper
 

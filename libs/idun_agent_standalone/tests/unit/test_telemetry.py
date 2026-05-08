@@ -76,3 +76,33 @@ def test_track_command_does_not_crash_when_disabled(
 
     assert fake_cmd(21) == 42
     mock_client.shutdown.assert_called_once_with(timeout_seconds=1.0)
+
+
+def test_track_command_swallows_telemetry_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When telemetry methods raise, the wrapped function must still
+    return its result and propagate its own exceptions unchanged."""
+    mock_client = MagicMock()
+    mock_client.capture.side_effect = RuntimeError("posthog blew up")
+    mock_client.shutdown.side_effect = RuntimeError("shutdown blew up")
+    monkeypatch.setattr(
+        "idun_agent_standalone._telemetry.get_telemetry", lambda: mock_client
+    )
+
+    from idun_agent_standalone._telemetry import track_command
+
+    @track_command("setup")
+    def fake_cmd(value: int) -> int:
+        return value * 2
+
+    # Telemetry exceptions must not surface as command failures.
+    assert fake_cmd(7) == 14
+
+    @track_command("init")
+    def boom() -> None:
+        raise ValueError("real command error")
+
+    # Telemetry exceptions must not mask the original command error.
+    with pytest.raises(ValueError, match="real command error"):
+        boom()
