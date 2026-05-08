@@ -28,7 +28,7 @@ from idun_agent_engine.server.dependencies import (
 )
 
 logger = logging.getLogger(__name__)
-agent_router = APIRouter()
+agent_router = APIRouter(tags=["Runtime"])
 
 
 def _extract_text_values(data: Any) -> list[str]:
@@ -97,9 +97,10 @@ async def list_sessions(
 ):
     """List session summaries from the active memory backend.
 
-    Returns 501 when the adapter doesn't support listing (Haystack, or a
-    LangGraph agent without a checkpointer). When SSO is enabled, the
-    user id from the JWT is forwarded to the adapter for per-user scoping.
+    Returns 501 when the adapter doesn't support listing (an ADK agent,
+    or a LangGraph agent without a checkpointer). When SSO is enabled,
+    the user id from the JWT is forwarded to the adapter for per-user
+    scoping.
     """
     caps = agent.history_capabilities()
     if not caps.can_list:
@@ -504,6 +505,5 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         invoke,
         methods=["POST"],
         response_model=ChatResponse,
-        tags=["Agent"],
         deprecated=True,
     )

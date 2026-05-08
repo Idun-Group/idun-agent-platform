@@ -40,7 +40,7 @@ from idun_agent_standalone.services import reload as reload_service
 from idun_agent_standalone.services.connection_checks import check_memory
 from idun_agent_standalone.services.reload import commit_with_reload
 
-router = APIRouter(prefix="/admin/api/v1/memory", tags=["admin"])
+router = APIRouter(prefix="/admin/api/v1/memory", tags=["Agent Configuration"])
 
 logger = get_logger(__name__)
 

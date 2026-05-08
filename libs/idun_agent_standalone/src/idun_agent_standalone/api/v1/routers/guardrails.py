@@ -48,7 +48,7 @@ from idun_agent_standalone.services.slugs import (
     normalize_slug,
 )
 
-router = APIRouter(prefix="/admin/api/v1/guardrails", tags=["admin"])
+router = APIRouter(prefix="/admin/api/v1/guardrails", tags=["Agent Configuration"])
 
 logger = get_logger(__name__)
 

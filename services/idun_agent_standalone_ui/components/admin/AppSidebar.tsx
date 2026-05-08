@@ -6,8 +6,11 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   ArrowLeft,
+  BookOpen,
+  Code2,
   Cog,
   Database,
+  ExternalLink,
   Eye,
   FileText,
   KeyRound,
@@ -38,6 +41,7 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  external?: boolean;
 };
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -67,6 +71,13 @@ const NAV: NavGroup[] = [
     label: "System",
     items: [
       { href: "/admin/settings/", label: "Settings", icon: SettingsIcon },
+    ],
+  },
+  {
+    label: "Developer",
+    items: [
+      { href: "/docs", label: "API Docs (Swagger)", icon: Code2, external: true },
+      { href: "/redoc", label: "API Reference", icon: BookOpen, external: true },
     ],
   },
 ];
@@ -135,7 +146,7 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
-                      isActive={isActive(pathname, item.href)}
+                      isActive={item.external ? false : isActive(pathname, item.href)}
                       tooltip={item.label}
                       data-tour={
                         item.href === "/admin/agent/"
@@ -145,10 +156,26 @@ export function AppSidebar() {
                           : undefined
                       }
                     >
-                      <Link href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
+                      {item.external ? (
+                        <a
+                          href={item.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                          <span className="sr-only"> (opens in a new tab)</span>
+                          <ExternalLink
+                            className="ml-auto h-3 w-3 opacity-60"
+                            aria-hidden="true"
+                          />
+                        </a>
+                      ) : (
+                        <Link href={item.href}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

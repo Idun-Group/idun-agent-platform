@@ -33,7 +33,7 @@ class WhatsAppIntegration(BaseIntegration):
         app.state.whatsapp_verify_token = self._config.config.verify_token
         from .handler import router
 
-        app.include_router(router, prefix="/integrations/whatsapp", tags=["WhatsApp"])
+        app.include_router(router, prefix="/integrations/whatsapp")
         logger.info("WhatsApp integration configured")
 
     async def shutdown(self) -> None:

@@ -50,7 +50,7 @@ from idun_agent_standalone.services.slugs import (
     normalize_slug,
 )
 
-router = APIRouter(prefix="/admin/api/v1/mcp-servers", tags=["admin"])
+router = APIRouter(prefix="/admin/api/v1/mcp-servers", tags=["Integrations & Tools"])
 
 logger = get_logger(__name__)
 

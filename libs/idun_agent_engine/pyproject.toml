@@ -65,7 +65,6 @@ dependencies = [
     # Observability and telemetry
     "langsmith>=0.3.0,<1.0.0",
     "langfuse>=2.60.8,<4.0.0",
-    "langfuse-haystack>=2.3.0",
     "arize-phoenix-otel>=0.2.0,<1.0.0",
     "arize-phoenix>=11.22.0,<14.0.0",
     # Pin jmespath directly: arize-phoenix's transitive resolution can pull

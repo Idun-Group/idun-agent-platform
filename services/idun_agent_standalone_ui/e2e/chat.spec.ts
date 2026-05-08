@@ -161,3 +161,76 @@ test("chat layout uses inline sidebar on desktop viewport (1280px)", async ({
   ).toHaveCount(0);
   await ctx.close();
 });
+
+test.describe("admin link discoverability", () => {
+  // The chat page picks its layout from `window.__IDUN_CONFIG__.layout`,
+  // populated by the `/runtime-config.js` script the FastAPI backend
+  // serves before first paint (see lib/runtime-config.ts and
+  // libs/idun_agent_standalone/.../runtime_config.py). We override that
+  // script with `page.route()` so each test runs the chosen layout
+  // without rebooting the backend.
+  for (const layout of ["branded", "minimal", "inspector"] as const) {
+    test(`admin link visible on welcome and conversation in ${layout} layout`, async ({
+      page,
+    }) => {
+      await page.route("**/runtime-config.js", async (route) => {
+        const config = {
+          theme: {
+            appName: "Idun Agent",
+            greeting: "How can I help?",
+            starterPrompts: [],
+            logo: { text: "IA" },
+            layout,
+            radius: "0.625",
+            fontSans: "",
+            fontSerif: "",
+            fontMono: "",
+            defaultColorScheme: "system",
+            colors: { light: {}, dark: {} },
+          },
+          authMode: "none",
+          layout,
+        };
+        await route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: `window.__IDUN_CONFIG__ = ${JSON.stringify(config)};\n`,
+          headers: { "Cache-Control": "no-store" },
+        });
+      });
+
+      await page.goto("/");
+
+      // Welcome state — composer is mounted, no messages have been sent.
+      // Wait on the composer (instead of the welcome heading) because
+      // BrandedLayout's welcome hero and InspectorLayout's empty list
+      // surface different copy; the composer is the one cross-layout
+      // proof the chat shell finished hydrating.
+      const input = page.locator('textarea[placeholder^="Message"]');
+      await expect(input).toBeVisible({ timeout: 15_000 });
+
+      // Admin pill (HeaderActions.tsx renders <Link href="/admin/">Admin</Link>)
+      // must be reachable in the welcome state across all three layouts.
+      await expect(
+        page.getByRole("link", { name: "Admin" }).first(),
+      ).toBeVisible({ timeout: 10_000 });
+
+      // Send a message to drive the conversation state. Mirror the existing
+      // chat-send pattern from the spec: fill the textarea, click the
+      // "Send message" button, then wait for the user bubble to render.
+      await input.fill("hello from admin link e2e");
+      await page.getByRole("button", { name: /send message/i }).click();
+      await expect(
+        page.locator("text=hello from admin link e2e").first(),
+      ).toBeVisible({ timeout: 10_000 });
+
+      // Conversation state — the Admin pill must remain visible. This is
+      // the regression Tasks 6/7 closed: MinimalLayout did not mount
+      // HeaderActions at all, and BrandedLayout's welcome state hid the
+      // header above the editorial hero.
+      await expect(
+        page.getByRole("link", { name: "Admin" }).first(),
+      ).toBeVisible();
+    });
+  }
+});

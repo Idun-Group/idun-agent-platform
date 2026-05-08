@@ -104,7 +104,7 @@ PHOENIX_COLLECTOR_ENDPOINT=https://your-phoenix-endpoint.com
 ## Troubleshooting
 
 ### AGUI endpoint not available
-- Ensure you're using a LangGraph agent (not Haystack or other types)
+- Ensure you're using a LangGraph agent (not other types)
 - Check the console output for "✅ AGUI endpoint configured" message
 - If you see a warning about AGUI setup failure, check the error details
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from botbuilder.schema import Activity
 from fastapi import APIRouter, Request, Response
 
-router = APIRouter()
+router = APIRouter(tags=["Runtime"])
 
 
 @router.post("/messages")

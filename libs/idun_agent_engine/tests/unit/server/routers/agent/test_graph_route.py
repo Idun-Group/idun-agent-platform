@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -20,29 +18,6 @@ def _langgraph_app():
                 "config": {
                     "name": "Test Agent",
                     "graph_definition": "tests.fixtures.agents.mock_graph:graph",
-                },
-            },
-        }
-    ).build()
-    return create_app(engine_config=config)
-
-
-def _haystack_app():
-    mock_path = (
-        Path(__file__).resolve().parent.parent.parent.parent.parent
-        / "fixtures"
-        / "agents"
-        / "mock_haystack_pipeline.py"
-    )
-    config = ConfigBuilder.from_dict(
-        {
-            "server": {"api": {"port": 8000}},
-            "agent": {
-                "type": "HAYSTACK",
-                "config": {
-                    "name": "Haystack Agent",
-                    "component_type": "pipeline",
-                    "component_definition": f"{mock_path}:mock_haystack_pipeline",
                 },
             },
         }
@@ -79,21 +54,3 @@ class TestAgentGraphRoutes:
         body = response.json()
         assert "ascii" in body
         assert isinstance(body["ascii"], str) and body["ascii"]
-
-    def test_ir_route_404_for_haystack(self) -> None:
-        app = _haystack_app()
-        with TestClient(app) as client:
-            response = client.get("/agent/graph")
-        assert response.status_code == 404
-
-    def test_mermaid_route_404_for_haystack(self) -> None:
-        app = _haystack_app()
-        with TestClient(app) as client:
-            response = client.get("/agent/graph/mermaid")
-        assert response.status_code == 404
-
-    def test_ascii_route_404_for_haystack(self) -> None:
-        app = _haystack_app()
-        with TestClient(app) as client:
-            response = client.get("/agent/graph/ascii")
-        assert response.status_code == 404

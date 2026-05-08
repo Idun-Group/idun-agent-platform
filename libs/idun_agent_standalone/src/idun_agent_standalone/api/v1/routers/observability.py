@@ -39,7 +39,7 @@ from idun_agent_standalone.services import reload as reload_service
 from idun_agent_standalone.services.connection_checks import check_observability
 from idun_agent_standalone.services.reload import commit_with_reload
 
-router = APIRouter(prefix="/admin/api/v1/observability", tags=["admin"])
+router = APIRouter(prefix="/admin/api/v1/observability", tags=["Observability"])
 
 logger = get_logger(__name__)
 

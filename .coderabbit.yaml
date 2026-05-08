@@ -1,0 +1,199 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit configuration for idun-agent-platform.
+# Reference: https://docs.coderabbit.ai/reference/configuration
+# Path-instruction guidance complements (does not replace) CLAUDE.md, which
+# CodeRabbit auto-loads as Code Guidelines from the repo root and per-package.
+
+language: "en-US"
+early_access: false
+tone_instructions: "Be direct and technical. Skip preamble and pleasantries. Cite the specific line and recommended fix."
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  auto_apply_labels: false
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+  poem: false
+  in_progress_fortune: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    base_branches:
+      - "develop"
+      - "main"
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "[skip review]"
+
+  # Skip lock files, build output, generated assets, and the bundled UI
+  # static export that ships inside the standalone wheel.
+  path_filters:
+    - "!**/uv.lock"
+    - "!**/poetry.lock"
+    - "!**/.next/**"
+    - "!**/.turbo/**"
+    - "!services/idun_agent_standalone_ui/public/**"
+    - "!libs/idun_agent_standalone/src/**/_static_ui/**"
+    - "!**/*.snap"
+    - "!docs/snippets/_generated/**"
+
+  path_instructions:
+    # ---------- Python (cross-cutting) ----------
+    - path: "**/*.py"
+      instructions: |
+        - Inside any `async def`, flag blocking I/O (sync DB drivers, `requests`, `time.sleep`, blocking file reads on hot paths). Use `asyncpg`, `httpx.AsyncClient`, async SQLAlchemy sessions, or `asyncio.to_thread` for unavoidable sync calls.
+        - For runtime application code under `libs/idun_agent_engine/src/**` and `libs/idun_agent_standalone/src/**`, prefer async-first APIs at module boundaries. Sync is acceptable in Alembic revisions, tests, scripts in `scripts/`, and one-off CLI utilities.
+        - No `Any` unless genuinely unavoidable. Read the source for the real type. Prefer Pydantic models, dataclasses, or TypedDict for data crossing module boundaries — not raw dicts.
+        - `logger.exception(...)` for unexpected errors (preserves traceback). `logger.error(...)` only when the traceback is intentionally omitted.
+        - Never catch bare `Exception` to re-raise a generic message. Do not swallow exceptions silently.
+        - Line length 88 (Black default). Don't suggest reformatting beyond what `ruff format` / `black` would do.
+        - Don't request docstrings purely for the sake of coverage; only flag missing docstrings on public APIs where the WHY is non-obvious.
+
+    # ---------- Schema library (the contract) ----------
+    - path: "libs/idun_agent_schema/**/*.py"
+      instructions: |
+        - This package is the public Pydantic contract. Any field rename, removal, or type-narrowing is a breaking change for engine, standalone, and the UI types.
+        - Flag breaking changes loudly and require a migration note in the PR description.
+        - Prefer Pydantic discriminated unions for polymorphic config. New variants must keep existing discriminator values stable.
+        - Validators should be pure: no I/O, no logging.
+
+    # ---------- Engine (runtime source of truth) ----------
+    - path: "libs/idun_agent_engine/**/*.py"
+      instructions: |
+        - This is the runtime source of truth. Standalone composes engine — never the other way around.
+        - AG-UI is the streaming contract. Don't introduce a parallel protocol or invent new event types without an ADR.
+        - Adapters (LangGraph / ADK) must stay framework-isolated. Engine code outside `agent/<framework>/` should not import framework-specific symbols.
+        - Guardrails / observability / MCP integrations are opt-in and config-driven. Failing-open vs failing-closed must be explicit.
+
+    # ---------- Standalone (single-process product) ----------
+    - path: "libs/idun_agent_standalone/**/*.py"
+      instructions: |
+        - Single-process, single-tenant. One agent per install. Reject changes that introduce multi-tenant assumptions here.
+        - DB is steady-state truth. YAML seeds run at first boot only; runtime mutations must flow through the admin REST and the validate-rebuild-reload pipeline.
+        - Engine init failures must roll back the DB write. Flag any admin route that mutates DB state without that rollback path.
+        - Don't duplicate engine logic. If a helper feels useful here, push it down into engine first.
+
+    # ---------- Alembic migrations ----------
+    - path: "**/alembic/versions/*.py"
+      instructions: |
+        - Every migration needs a working `downgrade()`. Flag empty or `pass` downgrades unless the upgrade is genuinely irreversible (and explain why in a comment).
+        - Backfills on large tables must be batched and concurrency-safe. NOT NULL on a populated column requires a backfill and a separate ALTER step.
+        - Avoid renaming columns/tables in a single revision when the running app still references the old name — split into add → backfill → switch → drop revisions.
+        - Don't import application code (models, settings) at module top level — use the bound metadata only.
+
+    # ---------- Standalone UI (Next.js / React 19 / TS) ----------
+    - path: "services/idun_agent_standalone_ui/**/*.{ts,tsx}"
+      instructions: |
+        - No `any`. Use the generated types from `src/generated/` for anything crossing the API boundary; don't hand-roll request/response shapes.
+        - AG-UI streaming uses the official client. Don't re-implement event parsing.
+        - Server-only code must not leak into client bundles. Flag `process.env` reads in components and missing `"use server"` / `"use client"` directives where they matter.
+        - Prefer composition over prop drilling more than 2 levels deep; suggest context only when state is genuinely cross-cutting.
+
+    # ---------- Tests ----------
+    - path: "**/tests/**/*.py"
+      instructions: |
+        - Test infrastructure must match production patterns: real PostgreSQL via testcontainers or the docker-compose dev DB, NOT mocks of the DB layer. The engine and manager DB lifecycles regressed in the past when mocked.
+        - No broad `except Exception` in tests — let unexpected failures surface.
+        - Descriptive test names (`test_<scenario>_<expected_outcome>`). Flag opaque names like `test_1`, `test_works`.
+        - One concern per test. Split assertions that test independent behaviours into separate tests.
+
+    # ---------- Docker ----------
+    - path: "docker/**/Dockerfile*"
+      instructions: |
+        - Multi-stage builds. The final stage must not contain build toolchains (uv, gcc, node_modules dev deps).
+        - Pin base images by digest where feasible; at minimum pin to a specific tag, not `latest`.
+        - `COPY` ordering should maximize layer cache hits: dependencies before source.
+
+    # ---------- CI / GitHub Actions ----------
+    - path: ".github/workflows/**/*.{yml,yaml}"
+      instructions: |
+        - All actions must be pinned by SHA, not by tag. Flag any `uses: org/repo@v1` style pin.
+        - Secrets must come from `secrets.*`; flag any hardcoded token or environment leak via `echo`.
+        - Long-running jobs should set explicit `timeout-minutes`.
+
+    # ---------- Mintlify docs ----------
+    - path: "docs/**/*.{md,mdx}"
+      instructions: |
+        - Check for accuracy first, prose second. Flag references to deprecated routes, removed env vars, or old config field names.
+        - Internal links must resolve to existing pages in this docs/ tree. External links should use HTTPS.
+        - Code samples must be runnable as-is when the user copies them — flag missing imports or undefined variables.
+
+    # ---------- Examples ----------
+    - path: "examples/**/*.py"
+      instructions: |
+        - Examples are public-facing. They must run as-is against the documented quickstart setup with no hidden imports.
+        - Prefer minimal config. Don't pull in optional features (Langfuse, Phoenix, MCP) unless the example is specifically about them.
+
+  tools:
+    ruff:
+      enabled: true
+    markdownlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+    hadolint:
+      enabled: true
+    yamllint:
+      enabled: true
+    eslint:
+      enabled: true
+    biome:
+      enabled: false
+    languagetool:
+      enabled: true
+      level: default
+      disabled_categories:
+        - TYPOS
+        - TYPOGRAPHY
+        - CASING
+    github-checks:
+      enabled: true
+      timeout_ms: 180000
+
+  finishing_touches:
+    docstrings:
+      enabled: true
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+
+  pre_merge_checks:
+    title:
+      mode: warning
+      requirements: |
+        Use a Conventional Commits prefix (`feat:`, `fix:`, `docs:`, `chore:`,
+        `refactor:`, `test:`, `ci:`) optionally with a scope, e.g.
+        `feat(engine): support PostgreSQL checkpointer`. Keep titles under
+        72 characters.
+    description:
+      mode: warning
+    issue_assessment:
+      mode: warning
+    docstrings:
+      mode: "off"
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+  learnings:
+    scope: "auto"

@@ -1,7 +1,5 @@
 """Tests for agent router endpoints with real agents."""
 
-from pathlib import Path
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -38,41 +36,6 @@ class TestAgentInvokeRoute:
             assert response.status_code == 200
             data = response.json()
             assert data["session_id"] == "test-123"
-            assert "response" in data
-
-    def test_invoke_with_haystack_agent(self):
-        """Invoke endpoint with Haystack mock agent."""
-        mock_pipeline_path = (
-            Path(__file__).parent.parent.parent.parent.parent
-            / "fixtures"
-            / "agents"
-            / "mock_haystack_pipeline.py"
-        )
-
-        config_dict = {
-            "server": {"api": {"port": 8000}},
-            "agent": {
-                "type": "HAYSTACK",
-                "config": {
-                    "name": "Test Haystack Agent",
-                    "component_type": "pipeline",
-                    "component_definition": f"{mock_pipeline_path}:mock_haystack_pipeline",
-                },
-            },
-        }
-
-        config = ConfigBuilder.from_dict(config_dict).build()
-        app = create_app(engine_config=config)
-
-        with TestClient(app) as client:
-            response = client.post(
-                "/agent/invoke",
-                json={"session_id": "haystack-123", "query": "Test query"},
-            )
-
-            assert response.status_code == 200
-            data = response.json()
-            assert data["session_id"] == "haystack-123"
             assert "response" in data
 
 
