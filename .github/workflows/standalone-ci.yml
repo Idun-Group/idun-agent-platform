@@ -3,6 +3,8 @@ name: Standalone CI
 on:
   pull_request:
     paths:
+      - "pyproject.toml"
+      - "uv.lock"
       - "libs/idun_agent_standalone/**"
       - "libs/idun_agent_engine/**"
       - "libs/idun_agent_schema/**"
@@ -11,6 +13,8 @@ on:
   push:
     branches: [main, develop]
     paths:
+      - "pyproject.toml"
+      - "uv.lock"
       - "libs/idun_agent_standalone/**"
       - "libs/idun_agent_engine/**"
       - "libs/idun_agent_schema/**"
