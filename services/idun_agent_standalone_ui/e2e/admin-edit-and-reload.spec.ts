@@ -2,6 +2,18 @@ import { expect, test } from "@playwright/test";
 
 const SENTINEL = "qwertanu";
 
+// This spec exercises the admin REST → commit_with_reload → engine pickup
+// pipeline by adding a BAN_LIST guardrail. The engine's guardrail
+// converter requires GUARDRAILS_API_KEY to inject into the api_key field;
+// the new e2e-real-llm.yml workflow forwards it, but the existing
+// standalone-ci.yml Playwright job doesn't (and shouldn't — its boot
+// uses an inline echo agent without guardrails). Skip cleanly when the
+// key isn't present so this spec only fires from the real-LLM workflow.
+test.skip(
+  !process.env.GUARDRAILS_API_KEY,
+  "admin-edit-and-reload requires GUARDRAILS_API_KEY (real-LLM workflow only)",
+);
+
 test("admin guardrail addition triggers reload — chat with sentinel blocked", async ({
   page,
   request,
