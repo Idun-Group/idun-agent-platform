@@ -33,7 +33,7 @@ EngineConfig                    # Top-level config (engine/engine.py)
 ├── server: ServerConfig        # Server settings (engine/server.py)
 │   └── api: ServerAPIConfig    #   port (default 8000)
 ├── agent: AgentConfig          # Agent definition (engine/agent.py)
-│   ├── type: AgentFramework    #   LANGGRAPH | ADK | HAYSTACK | ...
+│   ├── type: AgentFramework    #   LANGGRAPH | ADK | ...
 │   └── config: <framework-specific config>
 ├── observability: list[ObservabilityConfig]  # (engine/observability_v2.py)
 ├── guardrails: GuardrailsV2    # (engine/guardrails_v2.py)
@@ -52,9 +52,8 @@ All extend `BaseAgentConfig` (`engine/base_agent.py`):
 | `BaseAgentConfig` | `base_agent.py` | `name`, `observability` (deprecated) |
 | `LangGraphAgentConfig` | `langgraph.py` | `graph_definition` (str), `checkpointer` (CheckpointConfig), `store` |
 | `AdkAgentConfig` | `adk.py` | `agent` (str), `app_name`, `session_service`, `memory_service` |
-| `HaystackAgentConfig` | `haystack.py` | `component_type` (pipeline\|agent), `component_definition` (str) |
 
-**`AgentFramework`** enum (`agent_framework.py`): `LANGGRAPH`, `ADK`, `HAYSTACK`, `CREWAI`, `CUSTOM`, `TRANSLATION_AGENT`, `CORRECTION_AGENT`, `DEEP_RESEARCH_AGENT`
+**`AgentFramework`** enum (`agent_framework.py`): `LANGGRAPH`, `ADK`, `CREWAI`, `CUSTOM`, `TRANSLATION_AGENT`, `CORRECTION_AGENT`, `DEEP_RESEARCH_AGENT`
 
 **`AgentConfig`** (`agent.py`) uses a model validator to enforce that `config` type matches `type` (e.g. `LANGGRAPH` → `LangGraphAgentConfig`).
 
