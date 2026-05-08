@@ -54,3 +54,11 @@ pythonpath = [
     "../idun_agent_schema/src",
 ]
 addopts = "-ra -q --strict-markers --import-mode=importlib"
+filterwarnings = [
+    # FastAPI 0.115 builds TypeAdapter(Annotated[T, FieldInfo]) per body field
+    # in fastapi/_compat.py:112; Pydantic 2.12 then warns about alias info on
+    # the FieldInfo even though pydantic itself flags this as a known FastAPI
+    # interaction (see the HACK note in pydantic/_internal/_generate_schema.py).
+    # Drop the noise until FastAPI ships a fix.
+    "ignore::pydantic.warnings.UnsupportedFieldAttributeWarning",
+]

@@ -42,7 +42,7 @@ reviews:
   # Skip lock files, build output, generated assets, and the bundled UI
   # static export that ships inside the standalone wheel.
   path_filters:
-    - "!uv.lock"
+    - "!**/uv.lock"
     - "!**/poetry.lock"
     - "!**/.next/**"
     - "!**/.turbo/**"
