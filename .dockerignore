@@ -34,12 +34,6 @@ __pycache__
 .claude
 .superpowers
 docs
-old-docs
-docs/old-docs
-
-# Other services not needed for the standalone build
-services/idun_agent_web
-services/idun_agent_manager
 
 # Tests + dev artifacts
 **/tests

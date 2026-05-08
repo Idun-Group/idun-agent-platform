@@ -18,7 +18,6 @@ from idun_agent_standalone.infrastructure.db.session import (
     create_sessionmaker,
 )
 
-
 _LANGGRAPH_AGENT_BODY = {
     "server": {"api": {"port": 8000}},
     "agent": {

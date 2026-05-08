@@ -4,10 +4,11 @@
 
 `idun_agent_standalone` is a single-process, single-tenant agent runtime. It wraps `idun-agent-engine` with an embedded admin REST surface, an in-process reload pipeline, and a bundled Next.js UI (chat plus admin pages). One agent per install — laptop, VM, or Cloud Run.
 
-Published to PyPI as `idun-agent-standalone`. CLI entry point: `idun-standalone`.
+Published to PyPI as `idun-agent-standalone`. CLI entry point: `idun`.
 
 ## Module map
 
+<!-- VERIFY: regenerate from libs/idun_agent_standalone/src/idun_agent_standalone/ -->
 ```
 idun_agent_standalone/
 ├── cli.py                    # Click commands: setup, serve
@@ -43,14 +44,14 @@ Empty legacy directories (`admin/`, `auth/`, `theme/`, `traces/`) remain only as
 
 ## Key entry points
 
-- `idun-standalone init` — first-run launcher. Runs migrations + seed + opens the browser at `http://<host>:<port>/` + boots uvicorn. Idempotent. `--port` flag (or `IDUN_PORT` env), `--no-browser` flag for Cloud Run / headless. The browser handles the wizard-or-chat conditional via the chat root's `getAgent` 200/404 redirect.
-- `idun-standalone setup` — runs Alembic migrations and seeds the DB from `IDUN_CONFIG_PATH` if empty.
-- `idun-standalone serve` — runs `create_standalone_app(settings)` under uvicorn in the same event loop.
+- `idun init` — first-run launcher. Runs migrations + seed + opens the browser at `http://<host>:<port>/` + boots uvicorn. Idempotent. `--port` flag (or `IDUN_PORT` env), `--no-browser` flag for Cloud Run / headless. The browser handles the wizard-or-chat conditional via the chat root's `getAgent` 200/404 redirect.
+- `idun setup` — runs Alembic migrations and seeds the DB from `IDUN_CONFIG_PATH` if empty.
+- `idun serve` — runs `create_standalone_app(settings)` under uvicorn in the same event loop.
 - `create_standalone_app(settings: StandaloneSettings) -> FastAPI` — public async factory used by tests and embedders.
 
 ## Config flow
 
-1. **First boot**: operator runs `idun-standalone setup`. If the DB is empty and `IDUN_CONFIG_PATH` points to a YAML file, `infrastructure/scripts/seed.seed_from_yaml_if_empty` materializes the admin tables.
+1. **First boot**: operator runs `idun setup`. If the DB is empty and `IDUN_CONFIG_PATH` points to a YAML file, `infrastructure/scripts/seed.seed_from_yaml_if_empty` materializes the admin tables.
 2. **Steady state**: the DB is the source of truth. `services/engine_config.assemble_engine_config()` materializes a fresh `EngineConfig` for the engine on every (re)load.
 3. **Admin write**: every admin REST mutation runs through `services/reload.commit_with_reload`, which (a) reassembles + validates the engine config, (b) on success calls the engine reload callable so the running engine picks up the new shape, (c) on failure rolls back the DB write so the API surface remains consistent.
 
@@ -61,12 +62,14 @@ Two modes, gated by `IDUN_ADMIN_AUTH_MODE`:
 - `none` — open admin (laptop default). `require_auth` is a pass-through.
 - `password` — bcrypt-hashed admin password + signed session cookie. Strict-minimum scope: login / logout / change-password / me, no rate-limit, no CSRF token, no sliding renewal, no rotation invalidation of outstanding sessions.
 
+<!-- VERIFY: env vars in libs/idun_agent_standalone/src/idun_agent_standalone/core/settings.py -->
 Required env vars in password mode:
 
 - `IDUN_SESSION_SECRET` — at least 32 characters; signs the `idun_session` cookie. Startup fails fast with `SettingsValidationError` when shorter.
-- `IDUN_ADMIN_PASSWORD_HASH` — bcrypt hash, only consulted at first boot to seed the admin row. Generate with `idun-standalone hash-password` and export. Once the row exists, the env var is ignored.
+- `IDUN_ADMIN_PASSWORD_HASH` — bcrypt hash, only consulted at first boot to seed the admin row. Generate with `idun hash-password` and export. Once the row exists, the env var is ignored.
 - `IDUN_SESSION_TTL_HOURS` — defaults to 24, range `[1, 720]`.
 
+<!-- VERIFY: regenerate from libs/idun_agent_standalone/src/idun_agent_standalone/api/v1/routers/auth.py -->
 Endpoints (`/admin/api/v1/auth/`):
 
 - `GET /me` — `{authenticated, authMode}`. In `none` mode always authenticated. In `password` mode reflects the cookie/session lookup.
@@ -110,8 +113,8 @@ These were present in the pre-rework standalone but have **no router or service 
 | Real password auth (login, logout, change-password, /me) | `auth/` | **Implemented** in strict-minimum scope; see "Auth" above. Sliding renewal, rotation invalidation, rate-limit, CSRF token still deferred. |
 | `/admin/api/v1/theme` (theme model + admin route) | `theme/` | The runtime-config bootstrap (`runtime_config.py`) still exposes a default theme to the SPA, but there is no admin route to mutate it |
 | Traces (AG-UI run-event observer, batched writer to `trace_event`, hourly retention purge via APScheduler) | `traces/` | Backend dropped; `trace_event` table is not materialized by the baseline migration. UI pages under `/traces` will 404 against the API |
-| `idun-standalone init <name>` scaffold command | `scaffold.py` | **Restored** — see "Key entry points" above. Now a thin launcher (migrations + seed + browser + serve), not the legacy multi-file scaffolder. |
-| `idun-standalone hash-password` | `cli.py` | **Restored** — generates a bcrypt hash for `IDUN_ADMIN_PASSWORD_HASH`. |
+| `idun init <name>` scaffold command | `scaffold.py` | **Restored** — see "Key entry points" above. Now a thin launcher (migrations + seed + browser + serve), not the legacy multi-file scaffolder. |
+| `idun hash-password` | `cli.py` | **Restored** — generates a bcrypt hash for `IDUN_ADMIN_PASSWORD_HASH`. |
 | `idun-standalone export` | `config_io.py` | Removed; YAML export comes back with the materialized-config endpoints (deferred) |
 | `runtime.py` (live agent handle, observer registration after each reload) | top-level | Removed with traces |
 

@@ -91,7 +91,7 @@ agent:
       type: memory
 YAML
 
-echo "[boot] running idun-standalone setup (migrations + seed)" >&2
+echo "[boot] running idun setup (migrations + seed)" >&2
 
 # `setup` creates the SQLite schema and seeds the agent row from the
 # config YAML. Without this, `serve` would boot but every admin call
@@ -102,9 +102,9 @@ IDUN_PORT="$PORT" \
   IDUN_UI_DIR="$UIDIR" \
   IDUN_CONFIG_PATH="$CONFIG" \
   DATABASE_URL="sqlite+aiosqlite:///$DBFILE" \
-  uv run --project "$ROOT" idun-standalone setup --config "$CONFIG"
+  uv run --project "$ROOT" idun setup --config "$CONFIG"
 
-echo "[boot] starting idun-standalone on 127.0.0.1:$PORT" >&2
+echo "[boot] starting idun on 127.0.0.1:$PORT" >&2
 
 # `serve` reads everything from env vars (IDUN_PORT, IDUN_HOST,
 # IDUN_ADMIN_AUTH_MODE, IDUN_UI_DIR, IDUN_CONFIG_PATH, DATABASE_URL).
@@ -116,7 +116,7 @@ IDUN_PORT="$PORT" \
   IDUN_UI_DIR="$UIDIR" \
   IDUN_CONFIG_PATH="$CONFIG" \
   DATABASE_URL="sqlite+aiosqlite:///$DBFILE" \
-  uv run --project "$ROOT" idun-standalone serve &
+  uv run --project "$ROOT" idun serve &
 SERVER_PID=$!
 
 # Block until /health returns 200. Playwright's webServer integration

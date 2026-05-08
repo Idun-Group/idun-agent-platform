@@ -1,19 +1,14 @@
 # CLAUDE.md — Idun Agent Engine
 
-## What This Is
+## What this is
 
 `idun_agent_engine` is a Python SDK that wraps agent frameworks (LangGraph, Google ADK, Haystack) into production-ready FastAPI services. Users define their agent and configuration, and the engine handles serving, streaming (AG-UI protocol via CopilotKit), memory, Langgraph checkpointing, observability, guardrails, and MCP tool management.
 
-Published to PyPI as `idun-agent-engine`. CLI entry point: `idun`.
+Published to PyPI as `idun-agent-engine`. The library is consumed programmatically via `create_app()` / `run_server()`. The `idun` console script source lives in `idun_agent_standalone` but is re-exported by the engine wheel: `[project.scripts] idun = "idun_agent_standalone.cli:main"` plus a `[tool.hatch.build.targets.wheel.force-include]` of the standalone package in `pyproject.toml`. Installing `idun-agent-engine` from PyPI therefore still ships the `idun` command. For the CLI's surface area (commands, flags), see `libs/idun_agent_standalone/CLAUDE.md`.
 
-## Package Structure
+## Module map
 
-There are **two packages** in `src/`:
-
-- `idun_agent_engine/` — The SDK library
-- `idun_platform_cli/` — The CLI (Click + Textual TUI)
-
-## Module Map
+<!-- VERIFY: regenerate from libs/idun_agent_engine/src/idun_agent_engine/ -->
 
 ```
 idun_agent_engine/
@@ -28,8 +23,8 @@ idun_agent_engine/
 │   ├── adk/            # Google ADK adapter. Mature. Session + memory services. Stream not yet implemented.
 │   └── haystack/       # Haystack adapter. Accepts Pipeline or Agent. Basic invoke only. Experimental.
 ├── server/             # FastAPI layer
-│   ├── routers/agent   # /agent/capabilities, /agent/run, /agent/invoke (deprecated), /agent/stream (deprecated), /agent/copilotkit/stream (deprecated), /agent/config
-│   ├── routers/base    # /, /health, /reload
+│   ├── routers/agent   # /agent/capabilities, /agent/run, /agent/sessions, /agent/graph*, /agent/config
+│   ├── routers/base    # /health, /reload, /_engine/info
 │   ├── auth            # OIDCValidator — JWT validation via OIDC JWKS, require_auth dependency
 │   ├── dependencies    # DI: get_agent, get_copilotkit_agent, get_mcp_registry
 │   └── lifespan        # Startup: agent init, guardrails parsing, CopilotKit setup, SSO, telemetry
@@ -39,14 +34,22 @@ idun_agent_engine/
 ├── observability/      # Provider-agnostic tracing
 │   ├── base            # ObservabilityHandlerBase ABC, factory functions
 │   ├── langfuse/       # LangChain CallbackHandler integration
-│   ├── phoenix/        # OpenTelemetry + OpenInference instrumentation
+│   ├── langsmith/      # Env-var driven LangSmith tracing (no callbacks; uses LANGSMITH_* vars)
+│   ├── phoenix/        # OpenTelemetry + OpenInference instrumentation (remote collector)
+│   ├── phoenix_local/  # Same as phoenix/, but starts a local Phoenix server via CLI subprocess
 │   ├── gcp_trace/      # Cloud Trace exporter + OpenInference instrumentation
 │   └── gcp_logging/    # Google Cloud Logging (hooks into python logging)
 ├── integrations/       # Messaging/webhook provider integrations
 │   ├── base            # BaseIntegration ABC, setup_integrations() factory, IntegrationProvider dispatch
 │   ├── whatsapp/       # WhatsApp Cloud API: handler (webhook verify + receive), client (send_text_message)
-│   └── discord/        # Discord Interactions Endpoint: handler (Ed25519 verify + slash commands),
-│                       #   client (edit_interaction_response), verify (signature check), integration (app.state setup)
+│   ├── discord/        # Discord Interactions Endpoint: handler (Ed25519 verify + slash commands),
+│   │                   #   client (edit_interaction_response), verify (signature check), integration (app.state setup)
+│   ├── slack/          # Slack Events API: handler (HMAC signing-secret verify), client (chat.postMessage),
+│   │                   #   verify (X-Slack-Signature check), integration (app.state setup)
+│   ├── teams/          # Microsoft Teams (Bot Framework): handler (/messages, Authorization-header verified
+│   │                   #   via BotFrameworkAdapter.process_activity), integration (app.state setup)
+│   └── google_chat/    # Google Chat: handler (Bearer token verify via verify_google_chat_token),
+│                       #   verify (Google ID token check), integration (app.state setup)
 ├── prompts/            # Prompt loading and helpers
 │   ├── __init__        # Re-exports get_prompt
 │   └── helpers         # get_prompt(), get_prompts(), get_prompts_from_file(), get_prompts_from_api()
@@ -55,12 +58,6 @@ idun_agent_engine/
 │   └── helpers         # get_langchain_tools(), get_adk_tools() — convenience functions
 ├── templates/          # Pre-built LangGraph agents (translation, correction, deep_research). Ignore.
 └── telemetry/          # Anonymous usage telemetry (PostHog). Opt-out: IDUN_TELEMETRY_ENABLED=false. Tag deployment: IDUN_DEPLOYMENT_TYPE=cloud|self-hosted
-
-idun_platform_cli/
-├── main.py             # CLI entry: `idun agent serve`, `idun init`
-├── groups/agent/serve  # `idun agent serve --source file --path config.yaml` or `--source manager`
-├── groups/init         # `idun init` — launches Textual TUI for interactive config creation
-└── tui/                # Textual TUI: screens, widgets (chat, observability, guardrails, memory, MCP, serve)
 ```
 
 ## Public API
@@ -80,10 +77,9 @@ from idun_agent_engine import (
 
 ## Configuration Flow
 
-YAML config is preferred. Two sources:
+A local YAML file is the primary boot source. The engine reads `config.yaml` → validates into `EngineConfig` (Pydantic) → builds the FastAPI app → serves.
 
-1. **File-based** (`--source file`): Reads `config.yaml` → validates into `EngineConfig` (Pydantic) → builds FastAPI app → serves.
-2. **Manager-based** (`--source manager`): Requires `IDUN_AGENT_API_KEY` + `IDUN_MANAGER_HOST` env vars → fetches config from manager API → same flow. The config structure is identical in both cases.
+Optional secondary path: `POST /reload` (and `prompts.helpers` / `mcp.helpers`) can fetch config from a remote manager API when `IDUN_AGENT_API_KEY` + `IDUN_MANAGER_HOST` are set. This is a hot-reload escape hatch, not the boot path — see Deferred features.
 
 Config resolution priority in `ConfigBuilder.resolve_config()`:
 1. `engine_config` (pre-validated EngineConfig)
@@ -196,6 +192,8 @@ All adapters implement `BaseAgent` (generic ABC parameterized by config type).
 
 All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) and `run()` (canonical AG-UI interaction, delegates to framework AG-UI wrapper).
 
+<!-- VERIFY: regenerate from libs/idun_agent_engine/src/idun_agent_engine/agent/ -->
+
 | Adapter | Config Model | Graph Loading | Streaming | CopilotKit |
 |---|---|---|---|---|
 | **LanggraphAgent** | `LangGraphAgentConfig` | `graph_definition` → dynamic import → accepts `StateGraph` (preferred) or `CompiledStateGraph` (extracts `.builder`, recompiles with engine checkpointer/store, logs warning) | Full AG-UI event stream via `astream_events` | `LangGraphAGUIAgent` |
@@ -216,20 +214,26 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 
 ## Server Endpoints
 
+<!-- VERIFY: regenerate from server/routers/ + integrations/*/integration.py -->
+
 | Endpoint | Method | Purpose |
 |---|---|---|
-| `/` | GET | Service info |
 | `/health` | GET | Health check |
-| `/docs` | GET | OpenAPI docs |
 | `/reload` | POST | Hot-reload agent config without restarting the server |
+| `/_engine/info` | GET | Engine introspection (version, capabilities, mounted endpoints) |
 | `/agent/capabilities` | GET | Agent capability discovery (input/output schemas, supported modes) |
-| `/agent/run` | POST | Canonical AG-UI interaction endpoint (accepts RunAgentInput, returns SSE) |
-| `/agent/invoke` | POST | **(Deprecated)** Invoke agent. Use `/agent/run` instead. |
-| `/agent/stream` | POST | **(Deprecated)** Stream AG-UI events. Use `/agent/run` instead. |
-| `/agent/copilotkit/stream` | POST | **(Deprecated)** Stream via CopilotKit. Use `/agent/run` instead. |
+| `/agent/run` | POST | Canonical AG-UI interaction endpoint (accepts `RunAgentInput`, returns SSE) |
+| `/agent/sessions` | GET | List session summaries from the active memory backend |
+| `/agent/sessions/{session_id}` | GET | Fetch a single session's detail |
+| `/agent/graph` | GET | Return the agent graph as `AgentGraph` |
+| `/agent/graph/mermaid` | GET | Render the agent graph as Mermaid |
+| `/agent/graph/ascii` | GET | Render the agent graph as ASCII |
 | `/agent/config` | GET | Get current agent config |
 | `/integrations/whatsapp/webhook` | GET/POST | WhatsApp webhook (GET: Meta verify, POST: receive messages) |
 | `/integrations/discord/webhook` | POST | Discord Interactions Endpoint (Ed25519 verified, handles PING + slash commands) |
+| `/integrations/slack/webhook` | POST | Slack Events API webhook (HMAC signing-secret verified via `X-Slack-Signature`) |
+| `/integrations/teams/messages` | POST | Microsoft Teams Bot Framework messages endpoint (Authorization header verified via `BotFrameworkAdapter`) |
+| `/integrations/google-chat/webhook` | POST | Google Chat webhook (Bearer token verified via Google ID token check) |
 
 `/reload` is not currently protected by the SSO dependency used on `/agent/*` routes. Because engine CORS remains wildcard, any browser origin that can reach the agent can call `/reload` cross-origin as well.
 
@@ -248,7 +252,9 @@ Top-level config. Multiple providers can be active simultaneously. All are lazy-
 | Provider | Mechanism | Callbacks? |
 |---|---|---|
 | **Langfuse** | Sets env vars → `CallbackHandler` for LangChain | Yes |
-| **Phoenix** | `phoenix.otel.register()` + `LangChainInstrumentor` | No (global instrumentation) |
+| **LangSmith** | Sets `LANGSMITH_*` env vars → automatic LangChain/LangGraph tracing | No (env-var based) |
+| **Phoenix** | `phoenix.otel.register()` + `LangChainInstrumentor` (remote collector) | No (global instrumentation) |
+| **Phoenix (local)** | Same as Phoenix, plus starts a local Phoenix server via CLI subprocess | No (global instrumentation) |
 | **GCP Trace** | `CloudTraceSpanExporter` + `LangChainInstrumentor` + optional Guardrails/VertexAI/MCP instrumentors | No (global instrumentation) |
 | **GCP Logging** | `google.cloud.logging.Client.setup_logging()` | No (hooks into python logging) |
 
@@ -280,19 +286,6 @@ Resolution priority in `get_prompts()`:
 - Supports `stdio` transport (and SSE/HTTP for LangChain adapters).
 - Provides `get_langchain_tools()` for LangGraph agents and `get_adk_toolsets()` for ADK agents.
 
-## CLI
-
-```bash
-# Serve from a config file
-idun agent serve --source file --path config.yaml
-
-# Serve from the manager (requires env vars: IDUN_AGENT_API_KEY and IDUN_MANAGER_HOST)
-idun agent serve --source manager
-
-# Interactive TUI for creating config + launching server
-idun init
-```
-
 ## Key Dependencies
 
 - `idun_agent_schema` — Shared Pydantic models (local editable dep)
@@ -302,26 +295,31 @@ idun init
 - `guardrails-ai` — Guardrails hub
 - `langfuse`, `arize-phoenix`, `opentelemetry-*`, `google-cloud-*` — Observability
 
-## Development
+## Tests
 
 ```bash
-# Run tests
 uv run pytest libs/idun_agent_engine/tests/ -v
 
 # Skip tests requiring external services
-uv run pytest -m "not requires_langfuse and not requires_phoenix and not requires_postgres"
-
-# Lint and format
-make lint && make format
-
-# Type check
-make mypy
+uv run pytest libs/idun_agent_engine/tests/ -m "not requires_langfuse and not requires_phoenix and not requires_postgres"
 ```
+
+Tests are split into `tests/unit/` (module-level) and `tests/integration/` (full-stack with the framework). Tests do not auto-load `.env`; export required vars in your shell before running.
 
 ## Conventions
 
 - All agent operations are async (`initialize`, `invoke`, `stream`).
-- Schema changes go in `idun_agent_schema` first, then consumed here.
 - Observability config is top-level in the YAML, not nested inside `agent.config` (agent-level is deprecated).
 - Dynamic imports for agent loading: file path first, Python module fallback.
 - `CompiledStateGraph` is **accepted** — the engine extracts `.builder` and recompiles with its own checkpointer/store. Compile options (`interrupt_before`/`interrupt_after`) are preserved. A warning is logged. Providing an uncompiled `StateGraph` is preferred. Note: `.builder` is an internal LangGraph attribute (verified on langgraph 1.x), not part of the public API.
+
+## Deferred features
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| `/agent/invoke` (POST) | Deprecated | Compatibility shim registered in `core/app_factory.py`. Use `/agent/run`. |
+| `/agent/stream` (POST) | Deprecated | Marked `deprecated=True` in `server/routers/agent.py`. Use `/agent/run`. |
+| `/agent/copilotkit/stream` (POST) | Deprecated | Marked `deprecated=True` in `server/routers/agent.py`. Use `/agent/run`. |
+| Haystack adapter | Present | Lives in `agent/haystack/`. Basic invoke only; no streaming, no CopilotKit. Treat as experimental. |
+| Manager-fetch config source | Present (secondary) | Hot-reload only via `POST /reload`, plus prompt/MCP helpers. Requires `IDUN_AGENT_API_KEY` + `IDUN_MANAGER_HOST`. Not the primary boot path. |
+| Textual TUI (`idun init`) | Removed | Removed in commit `556e75a2` ("chore(engine): remove TUI and streamlit demo UI"). The `idun` CLI source now lives in `idun_agent_standalone`, but the engine wheel re-exports the `idun` console script via `[project.scripts]` + `force-include` (see top of this doc). |

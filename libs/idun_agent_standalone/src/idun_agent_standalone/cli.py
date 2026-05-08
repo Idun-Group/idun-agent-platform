@@ -17,7 +17,9 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 import webbrowser
+from enum import StrEnum
 from pathlib import Path
 
 import click
@@ -200,3 +202,122 @@ async def _setup(config_path_override: str | None) -> None:
         await db_engine.dispose()
 
     logger.info("setup complete")
+
+
+class _ServerSource(StrEnum):
+    MANAGER = "manager"
+    FILE = "file"
+
+
+class _AgentServe:
+    def __init__(self, source: _ServerSource, path: str | None = None) -> None:
+        from idun_agent_engine.core.config_builder import ConfigBuilder
+        from idun_agent_engine.core.engine_config import EngineConfig
+        from idun_agent_engine.core.utils import print_banner
+
+        setup_logging()
+        print_banner()
+
+        self._source = source
+        self._path = path or None
+
+        if self._source == _ServerSource.MANAGER and (
+            not os.getenv("IDUN_AGENT_API_KEY") or not os.getenv("IDUN_MANAGER_HOST")
+        ):
+            get_logger(__name__).error(
+                "IDUN_AGENT_API_KEY or IDUN_MANAGER_HOST not found. Both env "
+                "variables are required for `manager` source."
+            )
+            sys.exit(1)
+
+        if self._source == _ServerSource.MANAGER:
+            self._url = os.environ["IDUN_MANAGER_HOST"]
+            self._agent_api_key = os.environ["IDUN_AGENT_API_KEY"]
+
+        self._builder_cls = ConfigBuilder
+        self._config: EngineConfig | None = self._resolve_source()
+
+    def _resolve_source(self):
+        logger = get_logger(__name__)
+        if self._source == _ServerSource.MANAGER:
+            logger.info("Fetching config from the manager...")
+            return self._fetch_from_manager()
+        elif self._source == _ServerSource.FILE:
+            logger.info(f"Building config from: {self._path}")
+            return self._fetch_from_path()
+
+    def _fetch_from_path(self):
+        try:
+            config = self._builder_cls().load_from_file(self._path or "")
+            get_logger(__name__).info(
+                f"✅ Successfully fetched and built config from {self._path}"
+            )
+            return config
+        except Exception as e:
+            raise ValueError(f"Cannot fetch config from {self._path}: {e}") from e
+
+    def _fetch_from_manager(self):
+        logger = get_logger(__name__)
+        try:
+            config = (
+                self._builder_cls()
+                .with_config_from_api(
+                    agent_api_key=self._agent_api_key, url=self._url
+                )
+                .build()
+            )
+            logger.info(f"✅ Successfully fetched and built config from {self._url}")
+            return config
+        except Exception as e:
+            logger.error(f"Cannot fetch config from {self._url}: {e}")
+            sys.exit(1)
+
+    def serve(self) -> None:
+        from idun_agent_engine.core.app_factory import create_app
+        from idun_agent_engine.core.server_runner import run_server
+
+        try:
+            app = create_app(engine_config=self._config)
+            run_server(app, port=self._config.server.api.port, reload=False)  # pyright: ignore
+        except Exception as e:
+            raise ValueError(f"[ERROR]: Cannot start the agent server: {e}") from e
+
+
+@main.group("agent")
+def agent_group() -> None:
+    """Run agents from a config (manager API or local file)."""
+
+
+@agent_group.command("serve")
+@click.option(
+    "--source",
+    type=click.Choice([s.value for s in _ServerSource]),
+    required=True,
+    help=(
+        "Where the agent config comes from. "
+        "'manager' fetches from the hosted API "
+        "(needs IDUN_AGENT_API_KEY and IDUN_MANAGER_HOST). "
+        "'file' loads a local config.yaml (needs --path)."
+    ),
+)
+@click.option(
+    "--path",
+    type=click.Path(),
+    help="Path to a local config.yaml. Required when --source=file.",
+)
+def agent_serve_cmd(source: str, path: str | None) -> None:
+    """Serve an agent from a manager or file source."""
+    logger = get_logger(__name__)
+    match source:
+        case _ServerSource.MANAGER:
+            _AgentServe(source=_ServerSource.MANAGER).serve()
+        case _ServerSource.FILE:
+            if not path:
+                logger.error(
+                    "No config path provided. Specify the path of your config.yaml"
+                )
+                sys.exit(1)
+            _AgentServe(source=_ServerSource.FILE, path=path).serve()
+        case _:
+            logger.error(f"Argument {source} not recognized.")
+            sys.exit(1)

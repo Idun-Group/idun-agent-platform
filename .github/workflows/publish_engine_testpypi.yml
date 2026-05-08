@@ -29,6 +29,18 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: services/idun_agent_standalone_ui/pnpm-lock.yaml
+
       - name: Get current versions and create dev versions
         id: versions
         run: |
@@ -73,14 +85,17 @@ jobs:
           grep -m 1 'version = ' pyproject.toml
           grep 'idun-agent-schema' pyproject.toml
 
-      - name: Build wheel and sdist (engine)
+      - name: Build standalone UI
+        run: make build-standalone-ui
+
+      - name: Build wheel (engine)
         working-directory: libs/idun_agent_engine
         run: |
-          uv build --no-sources --out-dir dist
+          uv build --no-sources --wheel --out-dir dist
 
       - name: Check distribution metadata
         run: |
-          uvx twine check libs/idun_agent_schema/dist/* libs/idun_agent_engine/dist/*
+          uvx twine check libs/idun_agent_engine/dist/*.whl libs/idun_agent_schema/dist/*
 
       - name: Smoke test wheel install
         run: |
@@ -89,16 +104,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install libs/idun_agent_schema/dist/*.whl
           python -m pip install libs/idun_agent_engine/dist/*.whl
-          python -c "import idun_agent_engine; import idun_platform_cli; print(idun_agent_engine.__file__)"
-
-      - name: Smoke test sdist install
-        run: |
-          python -m venv /tmp/engine-sdist-venv
-          source /tmp/engine-sdist-venv/bin/activate
-          python -m pip install --upgrade pip
-          python -m pip install libs/idun_agent_schema/dist/*.tar.gz
-          python -m pip install libs/idun_agent_engine/dist/*.tar.gz
-          python -c "import idun_agent_engine; import idun_platform_cli; print(idun_agent_engine.__file__)"
+          python -c "import idun_agent_engine, idun_agent_standalone, idun_agent_schema"
+          python -c "from importlib.resources import files; assert (files('idun_agent_standalone') / 'alembic.ini').is_file(); assert (files('idun_agent_standalone') / 'static' / 'index.html').is_file()"
+          idun --help
+          idun agent serve --help
+          idun init --help
+          idun setup --help
+          idun hash-password --help
 
       - name: Upload validation artifact bundle
         uses: actions/upload-artifact@v4
@@ -129,6 +141,18 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: services/idun_agent_standalone_ui/pnpm-lock.yaml
 
       - name: Get latest schema test version from TestPyPI
         id: schema_version
@@ -169,11 +193,28 @@ jobs:
           grep -m 1 'version = ' pyproject.toml
           grep 'idun-agent-schema' pyproject.toml
 
+      - name: Build standalone UI
+        run: make build-standalone-ui
+
       - name: Build publishable engine distributions
         working-directory: libs/idun_agent_engine
         run: |
           echo "Building engine with schema from TestPyPI..."
-          UV_INDEX_URL=https://test.pypi.org/simple/ UV_EXTRA_INDEX_URL=https://pypi.org/simple/ uv build --no-sources --out-dir dist
+          UV_INDEX_URL=https://test.pypi.org/simple/ UV_EXTRA_INDEX_URL=https://pypi.org/simple/ uv build --no-sources --wheel --out-dir dist
+
+      - name: Smoke test built engine wheel before publishing
+        run: |
+          python -m venv /tmp/engine-prepub-venv
+          source /tmp/engine-prepub-venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install \
+            --index-url https://test.pypi.org/simple/ \
+            --extra-index-url https://pypi.org/simple/ \
+            libs/idun_agent_engine/dist/*.whl
+          python -c "import idun_agent_engine, idun_agent_standalone, idun_agent_schema"
+          python -c "from importlib.resources import files; assert (files('idun_agent_standalone') / 'alembic.ini').is_file(); assert (files('idun_agent_standalone') / 'static' / 'index.html').is_file()"
+          idun --help
+          idun agent serve --help
 
       - name: Publish to TestPyPI
         id: publish

@@ -61,7 +61,7 @@ jobs:
       - name: Build standalone image
         run: |
           docker build \
-            -f libs/idun_agent_standalone/docker/Dockerfile.base \
+            -f docker/Dockerfile.base \
             -t standalone:ci \
             .
       - name: Boot image and hit /admin/api/v1/health
@@ -76,7 +76,7 @@ jobs:
               checkpointer:
                 type: memory
           EOF
-          HASH=$(docker run --rm --entrypoint idun-standalone standalone:ci hash-password --password ci-smoke-pass | tail -1)
+          HASH=$(docker run --rm --entrypoint idun standalone:ci hash-password --password ci-smoke-pass | tail -1)
           SECRET=$(openssl rand -hex 32)
           docker run --rm -d --name standalone-smoke -p 8000:8000 \
             -v /tmp/standalone-smoke:/app/agent:ro \
@@ -85,7 +85,7 @@ jobs:
             -e IDUN_SESSION_SECRET="$SECRET" \
             standalone:ci
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:8000/admin/api/v1/health; then
+            if curl -sf http://localhost:8000/health; then
               echo
               echo "health ok after ${i}s"
               docker stop standalone-smoke >/dev/null

@@ -16,7 +16,7 @@ cd "$ROOT"
 make build-standalone-ui >/dev/null
 make build-standalone-wheel >/dev/null
 (cd libs/idun_agent_schema && uv build --out-dir "$ROOT/dist" >/dev/null)
-(cd libs/idun_agent_engine && uv build --out-dir "$ROOT/dist" >/dev/null)
+(cd libs/idun_agent_engine && uv build --wheel --out-dir "$ROOT/dist" >/dev/null)
 
 # Clean venv on a Python 3.12 interpreter (matches the standalone's pin).
 TMP=$(mktemp -d)
@@ -60,20 +60,27 @@ assert os.path.isfile(p), f"alembic.ini not found at {p}"
 print(f"alembic.ini ok: {p}")
 PY
 
-# Smoke: scaffold + serve + health.
-"$TMP/venv/bin/idun-standalone" init smoke-agent --target "$TMP/scratch" >/dev/null
+# Smoke: scaffold a minimal config.yaml using the built-in echo graph,
+# then `idun init --no-browser` (= migrate + seed + serve in one shot).
 PORT=${IDUN_E2E_PORT:-8765}
+mkdir -p "$TMP/scratch"
+cat > "$TMP/scratch/config.yaml" <<'YAML'
+agent:
+  type: LANGGRAPH
+  config:
+    name: Wheel Smoke
+    graph_definition: idun_agent_standalone.testing:echo_graph
+    checkpointer:
+      type: memory
+YAML
 
-# The scaffolded config uses a relative ``graph_definition`` (./agent.py:graph),
-# so the engine must resolve it from the scratch dir. Run serve with cwd there.
 (
   cd "$TMP/scratch"
   DATABASE_URL="sqlite+aiosqlite:///$TMP/scratch/smoke.db" \
+    IDUN_CONFIG_PATH="$TMP/scratch/config.yaml" \
     IDUN_ADMIN_AUTH_MODE=none \
     IDUN_PORT=$PORT \
-    "$TMP/venv/bin/idun-standalone" serve \
-    --config "$TMP/scratch/config.yaml" \
-    --port "$PORT" &
+    "$TMP/venv/bin/idun" init --no-browser &
   echo $! > "$TMP/server.pid"
 )
 SERVER_PID=$(cat "$TMP/server.pid")
@@ -81,7 +88,7 @@ trap "kill $SERVER_PID 2>/dev/null || true; rm -rf $TMP" EXIT
 
 # Wait for boot.
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-  if curl -fsS "http://127.0.0.1:$PORT/admin/api/v1/health" > /dev/null 2>&1; then
+  if curl -fsS "http://127.0.0.1:$PORT/health" > /dev/null 2>&1; then
     echo "Wheel install smoke: PASS"
     exit 0
   fi

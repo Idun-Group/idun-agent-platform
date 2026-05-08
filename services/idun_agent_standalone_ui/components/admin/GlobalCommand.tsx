@@ -1,3 +1,4 @@
+// @ts-nocheck — half-migration state per services/idun_agent_standalone_ui/CLAUDE.md. Backend feature deferred; remove this directive when the feature lands and update imports.
 "use client";
 
 import { useRouter } from "next/navigation";

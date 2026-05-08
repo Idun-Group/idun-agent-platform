@@ -4,15 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "idun-agent-standalone"
-version = "0.1.0"
+version = "0.6.0"
 description = "Single-process, single-tenant Idun agent with embedded UI, admin panel, and traces viewer."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
-authors = [{ name = "Idun Group" }]
+authors = [{ name = "Idun Group", email = "h.geoffrey@idun-group.com" }]
 license = { text = "GPL-3.0-only" }
 dependencies = [
     "idun-agent-engine>=0.6.0,<0.7.0",
-    "idun-agent-schema>=0.5.4,<0.6.0",
+    "idun-agent-schema>=0.6.0,<0.7.0",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "sqlalchemy[asyncio]>=2.0",
@@ -31,9 +31,6 @@ dependencies = [
     "rfc8785>=0.1",
     "sentencepiece>=0.2.1",
 ]
-
-[project.scripts]
-idun-standalone = "idun_agent_standalone.cli:main"
 
 [tool.hatch.build.targets.sdist]
 include = ["src/idun_agent_standalone"]

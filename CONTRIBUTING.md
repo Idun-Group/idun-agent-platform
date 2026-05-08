@@ -86,6 +86,16 @@ cd services/idun_agent_standalone_ui
 # Visit http://127.0.0.1:8001
 ```
 
+## Documentation
+
+The repo includes per-package `CLAUDE.md` files that orient contributors (and AI tools) on the architecture, conventions, and current scope of each library and service. These are part of the public contract:
+
+- If your PR adds, removes, or renames a public function or class, an HTTP route, a CLI command, an env var, a config field, a module, or a top-level directory — update the relevant `CLAUDE.md` in the same PR.
+- Volatile blocks (route tables, env var lists, module trees) carry a `<!-- VERIFY: ... -->` HTML comment. Treat the comment as a checklist when editing the block.
+- New top-level directories or services require a one-line entry in the root `CLAUDE.md`'s Repository Map.
+
+Reviewers reject PRs where scope-changing code is not accompanied by a CLAUDE.md update.
+
 ## Code of Conduct
 
 By contributing to this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).

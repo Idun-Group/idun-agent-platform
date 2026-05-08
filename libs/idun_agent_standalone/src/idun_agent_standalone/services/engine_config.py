@@ -29,8 +29,8 @@ from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemo
 from idun_agent_standalone.infrastructure.db.models.observability import (
     StandaloneObservabilityRow,
 )
-from idun_agent_standalone.infrastructure.db.models.sso import StandaloneSsoRow
 from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
+from idun_agent_standalone.infrastructure.db.models.sso import StandaloneSsoRow
 
 logger = get_logger(__name__)
 

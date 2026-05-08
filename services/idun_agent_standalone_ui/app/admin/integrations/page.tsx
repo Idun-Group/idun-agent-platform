@@ -442,7 +442,6 @@ function TextField({
   return (
     <FormField
       control={control}
-      // @ts-expect-error name is a known string key; RHF's narrow typing isn't worth fighting here
       name={name}
       render={({ field }) => (
         <FormItem>
@@ -475,7 +474,6 @@ function SecretField({
   return (
     <FormField
       control={control}
-      // @ts-expect-error name is a known string key; RHF's narrow typing isn't worth fighting here
       name={name}
       render={({ field }) => (
         <FormItem>

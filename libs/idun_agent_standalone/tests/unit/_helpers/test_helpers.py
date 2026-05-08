@@ -6,7 +6,6 @@ import logging
 
 import httpx
 import pytest
-
 from _helpers.cookies import parsed_set_cookie
 from _helpers.logs import captured_logs
 
