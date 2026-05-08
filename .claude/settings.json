@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "idun": {
+      "source": {
+        "source": "github",
+        "repo": "Idun-Group/idun-dev"
+      },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "idun-team@idun": true
+  }
+}

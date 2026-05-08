@@ -211,7 +211,6 @@ poetry.lock
 .cursor/rules/claude-mem-context.mdc
 
 # Local agent / tooling state (never commit)
-/.claude/settings.json
 /.claude/scheduled_tasks.lock
 /.claude/worktrees/
 /.claude/smoke-test/
