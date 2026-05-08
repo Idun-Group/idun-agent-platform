@@ -87,6 +87,18 @@ reviews:
         - Engine init failures must roll back the DB write. Flag any admin route that mutates DB state without that rollback path.
         - Don't duplicate engine logic. If a helper feels useful here, push it down into engine first.
 
+    # ---------- Telemetry / observability helpers ----------
+    - path: "**/{telemetry,observability,_telemetry}*.py"
+      instructions: |
+        Telemetry and observability code must never alter command or
+        runtime semantics. Wrap every call (singleton init, capture,
+        flush/shutdown) in its own try/except Exception and log with
+        `logger.exception(...)` to preserve the traceback. Gate
+        downstream telemetry calls on the client/handle being non-None
+        — a failed init must not skip the wrapped function or mask its
+        exceptions. Never let a telemetry failure replace the original
+        exception in an except branch.
+
     # ---------- Alembic migrations ----------
     - path: "**/alembic/versions/*.py"
       instructions: |
