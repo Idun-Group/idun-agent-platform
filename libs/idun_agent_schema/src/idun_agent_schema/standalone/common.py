@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Generic, Literal, TypeVar
+from typing import Literal
 from uuid import UUID
 
 from ._base import _CamelModel
@@ -34,10 +34,7 @@ class StandaloneSingletonDeleteResult(_CamelModel):
     deleted: Literal[True] = True
 
 
-T = TypeVar("T")
-
-
-class StandaloneMutationResponse(_CamelModel, Generic[T]):
+class StandaloneMutationResponse[T](_CamelModel):
     """Envelope returned by every successful admin mutation."""
 
     data: T
