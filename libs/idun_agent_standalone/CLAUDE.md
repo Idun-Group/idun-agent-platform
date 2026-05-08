@@ -8,6 +8,7 @@ Published to PyPI as `idun-agent-standalone`. CLI entry point: `idun-standalone`
 
 ## Module map
 
+<!-- VERIFY: regenerate from libs/idun_agent_standalone/src/idun_agent_standalone/ -->
 ```
 idun_agent_standalone/
 ├── cli.py                    # Click commands: setup, serve
@@ -61,12 +62,14 @@ Two modes, gated by `IDUN_ADMIN_AUTH_MODE`:
 - `none` — open admin (laptop default). `require_auth` is a pass-through.
 - `password` — bcrypt-hashed admin password + signed session cookie. Strict-minimum scope: login / logout / change-password / me, no rate-limit, no CSRF token, no sliding renewal, no rotation invalidation of outstanding sessions.
 
+<!-- VERIFY: env vars in libs/idun_agent_standalone/src/idun_agent_standalone/core/settings.py -->
 Required env vars in password mode:
 
 - `IDUN_SESSION_SECRET` — at least 32 characters; signs the `idun_session` cookie. Startup fails fast with `SettingsValidationError` when shorter.
 - `IDUN_ADMIN_PASSWORD_HASH` — bcrypt hash, only consulted at first boot to seed the admin row. Generate with `idun-standalone hash-password` and export. Once the row exists, the env var is ignored.
 - `IDUN_SESSION_TTL_HOURS` — defaults to 24, range `[1, 720]`.
 
+<!-- VERIFY: regenerate from libs/idun_agent_standalone/src/idun_agent_standalone/api/v1/routers/auth.py -->
 Endpoints (`/admin/api/v1/auth/`):
 
 - `GET /me` — `{authenticated, authMode}`. In `none` mode always authenticated. In `password` mode reflects the cookie/session lookup.
