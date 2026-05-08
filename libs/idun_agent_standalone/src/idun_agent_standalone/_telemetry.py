@@ -32,29 +32,37 @@ def track_command(name: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
     def decorator(fn: Callable[P, R]) -> Callable[P, R]:
         @wraps(fn)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            client = get_telemetry()
+            client = None
             try:
-                client.capture(f"cli.{name}", {"command": name})
+                client = get_telemetry()
             except Exception:
-                logger.exception("telemetry capture failed for cli.%s", name)
+                logger.exception("telemetry init failed for cli.%s", name)
+
+            if client is not None:
+                try:
+                    client.capture(f"cli.{name}", {"command": name})
+                except Exception:
+                    logger.exception("telemetry capture failed for cli.%s", name)
             try:
                 return fn(*args, **kwargs)
             except Exception as exc:
-                try:
-                    client.capture(
-                        f"cli.{name}.error",
-                        {"command": name, "error_type": type(exc).__name__},
-                    )
-                except Exception:
-                    logger.exception(
-                        "telemetry capture failed for cli.%s.error", name
-                    )
+                if client is not None:
+                    try:
+                        client.capture(
+                            f"cli.{name}.error",
+                            {"command": name, "error_type": type(exc).__name__},
+                        )
+                    except Exception:
+                        logger.exception(
+                            "telemetry capture failed for cli.%s.error", name
+                        )
                 raise
             finally:
-                try:
-                    client.shutdown(timeout_seconds=1.0)
-                except Exception:
-                    logger.exception("telemetry shutdown failed for cli.%s", name)
+                if client is not None:
+                    try:
+                        client.shutdown(timeout_seconds=1.0)
+                    except Exception:
+                        logger.exception("telemetry shutdown failed for cli.%s", name)
 
         return wrapper
 

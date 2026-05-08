@@ -106,3 +106,35 @@ def test_track_command_swallows_telemetry_failures(
     # Telemetry exceptions must not mask the original command error.
     with pytest.raises(ValueError, match="real command error"):
         boom()
+
+
+def test_track_command_runs_command_when_get_telemetry_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """If get_telemetry() itself raises, the wrapped function must
+    still run and return its value, and original exceptions must
+    still propagate."""
+
+    def raising_get_telemetry() -> object:
+        raise RuntimeError("singleton init blew up")
+
+    monkeypatch.setattr(
+        "idun_agent_standalone._telemetry.get_telemetry", raising_get_telemetry
+    )
+
+    from idun_agent_standalone._telemetry import track_command
+
+    @track_command("setup")
+    def fake_cmd(value: int) -> int:
+        return value * 3
+
+    # Init failure must not surface as a command failure.
+    assert fake_cmd(4) == 12
+
+    @track_command("init")
+    def boom() -> None:
+        raise ValueError("real command error")
+
+    # Init failure must not mask the original command error.
+    with pytest.raises(ValueError, match="real command error"):
+        boom()
