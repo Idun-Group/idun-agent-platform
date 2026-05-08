@@ -16,7 +16,7 @@ from .verify import verify_slack_signature
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["Runtime"])
 
 
 async def _handle_message(

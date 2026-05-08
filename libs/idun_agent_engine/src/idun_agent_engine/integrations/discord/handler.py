@@ -19,7 +19,7 @@ from .verify import verify_discord_signature
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["Runtime"])
 
 DISCORD_MAX_MESSAGE_LENGTH = 2000
 
