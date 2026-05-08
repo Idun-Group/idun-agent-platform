@@ -19,7 +19,7 @@ A Next.js 15 + Tailwind v4 + React 19 SPA shipped as a static export. Bundled in
 | `/admin/prompts` | Prompts versioned collection — wired to `/admin/api/v1/prompts` |
 | `/admin/settings` | Theme + password sections — **runtime 404** (deferred backend; see "Deferred features") |
 | `/admin` | Dashboard with sessions list — **runtime 404** (sessions route deferred) |
-| `/login` | Password sign-in — **runtime 404** (deferred backend) |
+| `/login` | Password sign-in — **runtime 404** (SPA wiring deferred; standalone backend exists) |
 | `/traces`, `/traces/session` | Sessions list, run timeline, event detail — **runtime 404** (traces dropped from backend) |
 | `/logs` | Live tail of recent events — **runtime 404** (no backend route) |
 
@@ -39,19 +39,6 @@ All admin calls go through `lib/api/`:
 
 Errors are normalized to `ApiError` with `status` and `detail` fields.
 
-## Deferred features
-
-| Page / feature | Status | Notes |
-| --- | --- | --- |
-| `/admin/settings` (theme + password) | Runtime 404 | Backend deferred. Page references will typecheck-fail until restored or deleted. |
-| `/admin` dashboard with sessions list | Runtime 404 | Sessions backend deferred. |
-| `/login` password sign-in | Runtime 404 | Standalone backend implements password auth in strict-minimum scope; the SPA login page wiring is on a separate branch. |
-| `/traces`, `/traces/session` | Runtime 404 | Traces backend dropped from baseline migration; `trace_event` table not materialized. |
-| `/logs` live tail | Runtime 404 | No backend route. |
-| `/admin/integrations` (still uses old `kind` field) | Half-migrated | Update to current `IntegrationConfig` shape when revisiting messaging integrations. |
-
-`next.config.mjs` sets `typescript: { ignoreBuildErrors: true }` to allow shipping while these gaps exist. `tsc --noEmit` lists the remaining gaps. Flip the flag back to `false` once every page above is either restored or deleted.
-
 ## AG-UI
 
 Hand-rolled SSE reader in `lib/agui.ts` — no `@ag-ui/client` dependency. Streams events from `/agent/run`, dispatches them into the chat store, and reconnects on transient failures. Keeps the bundle small.
@@ -60,8 +47,8 @@ Hand-rolled SSE reader in `lib/agui.ts` — no `@ag-ui/client` dependency. Strea
 
 ```bash
 cd services/idun_agent_standalone_ui
-npm install
-npm run build       # produces ./out (static export)
+pnpm install
+pnpm build          # produces ./out (static export)
 ```
 
 The repo Make target `build-standalone-ui` runs the build and copies `out/` into `libs/idun_agent_standalone/src/idun_agent_standalone/static/`.
@@ -77,7 +64,7 @@ pnpm test:e2e                  # playwright; auto-boots the standalone server
 pnpm build                     # static export → ./out
 ```
 
-Unit tests live alongside source in `__tests__/`. End-to-end tests live in `e2e/`; the suite uses `e2e/boot-standalone.sh` to start a real Python standalone process before driving the browser.
+Unit tests live in the top-level `__tests__/` directory, organized by surface (`__tests__/api/`, `__tests__/onboarding/`, `__tests__/tour/`, plus component-level files at the root). End-to-end tests live in `e2e/`; the suite uses `e2e/boot-standalone.sh` to start a real Python standalone process before driving the browser.
 
 ## Conventions
 
@@ -85,3 +72,16 @@ Unit tests live alongside source in `__tests__/`. End-to-end tests live in `e2e/
 - Components are grouped by surface: `components/{ui,admin,chat,traces,common}/`.
 - All fetches go through `lib/api/` — components never call `fetch` directly.
 - Styles via Tailwind utilities + CSS variables; no styled-components.
+
+## Deferred features
+
+| Page / feature | Status | Notes |
+| --- | --- | --- |
+| `/admin/settings` (theme + password) | Runtime 404 | Backend deferred. Page references will typecheck-fail until restored or deleted. |
+| `/admin` dashboard with sessions list | Runtime 404 | Sessions backend deferred. |
+| `/login` password sign-in | Runtime 404 | Standalone backend implements password auth in strict-minimum scope; the SPA login page wiring is on a separate branch. |
+| `/traces`, `/traces/session` | Runtime 404 | Traces backend dropped from baseline migration; `trace_event` table not materialized. |
+| `/logs` live tail | Runtime 404 | No backend route. |
+| `/admin/integrations` (still uses old `kind` field) | Half-migrated | Update to current `IntegrationConfig` shape when revisiting messaging integrations. |
+
+`next.config.mjs` sets `typescript: { ignoreBuildErrors: true }` to allow shipping while these gaps exist. `tsc --noEmit` lists the remaining gaps. Flip the flag back to `false` once every page above is either restored or deleted.
