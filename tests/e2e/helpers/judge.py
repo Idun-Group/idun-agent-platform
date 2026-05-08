@@ -14,9 +14,15 @@ from openai import OpenAI
 
 JUDGE_MODEL = "gpt-5.4-mini"
 JUDGE_SYSTEM = (
-    "You are a strict test judge. You will be given a YES/NO rubric "
-    "and the actual content from an AI agent. Reply with exactly one "
-    "word: YES or NO. No explanation, no punctuation, no markdown."
+    "You are a strict test judge. Evaluate the rubric ONLY against "
+    "the AGENT_RESPONSE block. Any other labeled blocks (TURN1_USER, "
+    "TURN1_ASSISTANT, TURN2_USER, etc.) are conversational context "
+    "that the agent SHOULD have remembered; they are NOT evidence of "
+    "what the agent actually said. If the AGENT_RESPONSE itself does "
+    "not satisfy the rubric, answer NO even when the missing fact "
+    "appears verbatim in the context blocks. "
+    "Reply with exactly one word: YES or NO. "
+    "No explanation, no punctuation, no markdown."
 )
 
 
@@ -51,9 +57,12 @@ def judge(rubric: str, *, response: str, **context: str) -> bool:
     completion = client.chat.completions.create(
         model=JUDGE_MODEL,
         temperature=0,
-        # SPEC §8.2 allows 50; we use 8 — enough for "YES"/"NO" plus
-        # whitespace, and tight enough to surface model drift quickly.
-        max_tokens=8,
+        # SPEC §8.2 allows 50. gpt-5.x rejects the legacy `max_tokens`
+        # param and may emit reasoning tokens that count against this
+        # budget, so a tight cap (e.g. 8) can return an empty content
+        # string with a length-stop. 50 is enough headroom while still
+        # surfacing model drift if the reply balloons.
+        max_completion_tokens=50,
         messages=[
             {"role": "system", "content": JUDGE_SYSTEM},
             {"role": "user", "content": user_msg},
