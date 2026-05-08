@@ -7,9 +7,16 @@ literal comes from E2E_MODEL.
 
 The graph is the smallest meaningful LangGraph: a single node that
 calls a `ChatModel.invoke(state["messages"])` and appends the result.
-"""
 
-from __future__ import annotations
+Note: this module deliberately does NOT use `from __future__ import
+annotations`. The engine loads agent modules via
+`importlib.util.spec_from_file_location` + `exec_module` without
+registering the module in `sys.modules`. With deferred annotations,
+`get_type_hints()` (called by LangGraph's `StateGraph` to resolve
+the TypedDict schema) cannot resolve forward references like
+`BaseMessage`. Eager annotations evaluate at class-creation time
+where the import is in scope.
+"""
 
 import os
 from typing import TypedDict

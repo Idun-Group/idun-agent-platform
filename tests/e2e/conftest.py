@@ -288,7 +288,11 @@ def _spawn_idun(
             proc.wait()
         drainer.join(timeout=2)
         snapshot = list(captured)
-        if proc.returncode not in (0, -signal.SIGTERM):
+        # `uv run` is the immediate child; on SIGTERM it forwards the signal
+        # to the python child, waits, and exits with the shell convention
+        # 128+signum=143. A python child killed directly would return -15.
+        # Accept both so the check works regardless of process tree shape.
+        if proc.returncode not in (0, -signal.SIGTERM, 128 + signal.SIGTERM):
             pytest.fail(
                 f"standalone exited with rc={proc.returncode}\n"
                 f"stdout:\n{''.join(snapshot)[-4000:]}"
