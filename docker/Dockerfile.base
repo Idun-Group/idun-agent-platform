@@ -36,12 +36,13 @@ COPY --from=ui /app/services/idun_agent_standalone_ui/out \
 
 # Build all three wheels into /dist. Build the schema first because the engine
 # and the standalone both depend on it; the standalone also depends on the
-# engine. We rely on `uv build` building a sdist+wheel without resolving
-# transitive deps (deps are installed in the runtime stage, not at build time).
+# engine. The engine is built wheel-only because its hatch force-include of the
+# standalone source tree doesn't survive sdist packaging (deps are installed in
+# the runtime stage, not at build time).
 WORKDIR /build/libs/idun_agent_schema
 RUN uv build --out-dir /dist
 WORKDIR /build/libs/idun_agent_engine
-RUN uv build --out-dir /dist
+RUN uv build --wheel --out-dir /dist
 WORKDIR /build/libs/idun_agent_standalone
 RUN uv build --out-dir /dist
 

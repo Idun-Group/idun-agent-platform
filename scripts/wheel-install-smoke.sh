@@ -16,7 +16,7 @@ cd "$ROOT"
 make build-standalone-ui >/dev/null
 make build-standalone-wheel >/dev/null
 (cd libs/idun_agent_schema && uv build --out-dir "$ROOT/dist" >/dev/null)
-(cd libs/idun_agent_engine && uv build --out-dir "$ROOT/dist" >/dev/null)
+(cd libs/idun_agent_engine && uv build --wheel --out-dir "$ROOT/dist" >/dev/null)
 
 # Clean venv on a Python 3.12 interpreter (matches the standalone's pin).
 TMP=$(mktemp -d)

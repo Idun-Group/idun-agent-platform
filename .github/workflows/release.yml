@@ -165,7 +165,7 @@ jobs:
       - name: Build engine package
         working-directory: libs/idun_agent_engine
         run: |
-          uv build --no-sources --wheel --sdist --out-dir dist
+          uv build --no-sources --wheel --out-dir dist
           ls -lh dist/
 
       - name: Check distribution metadata
