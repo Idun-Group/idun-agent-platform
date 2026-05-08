@@ -56,7 +56,7 @@ def test_detected_agent_rejects_unknown_framework() -> None:
 
     with pytest.raises(ValidationError):
         DetectedAgent(
-            framework="HAYSTACK",
+            framework="FOOBAR",
             file_path="x.py",
             variable_name="x",
             inferred_name="X",
@@ -119,7 +119,7 @@ def test_create_from_detection_body_rejects_unknown_framework() -> None:
 
     with pytest.raises(ValidationError):
         CreateFromDetectionBody(
-            framework="HAYSTACK",  # type: ignore[arg-type]
+            framework="FOOBAR",  # type: ignore[arg-type]
             file_path="agent.py",
             variable_name="graph",
         )

@@ -452,7 +452,7 @@ async def test_idun_config_unsupported_type_skipped(tmp_path: Path) -> None:
         yaml.safe_dump(
             {
                 "agent": {
-                    "type": "HAYSTACK",
+                    "type": "FOOBAR",
                     "config": {"component_definition": "./pipe.py:pipe"},
                 }
             }

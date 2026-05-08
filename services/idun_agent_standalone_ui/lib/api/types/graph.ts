@@ -59,7 +59,7 @@ export interface AgentGraphEdge extends Record<string, unknown> {
 }
 
 export interface AgentGraphMetadata {
-  framework: "LANGGRAPH" | "ADK" | "HAYSTACK";
+  framework: "LANGGRAPH" | "ADK";
   agent_name: string;
   root_id: string;
   warnings: string[];

@@ -8,7 +8,7 @@ Have an idea, integration request, or feedback on priorities? Please start a thr
 
 ### ✅ Done / shipped
 
-- **Agent frameworks**: LangGraph, ADK, Haystack compatibility foundation (ongoing maintenance)
+- **Agent frameworks**: LangGraph and Google ADK
 - **API (built-in)**: Simple Invoke + Batch Invoke
 - **API (AG-UI / CopilotKit)**: initial event streaming + front interaction support
 - **Observability foundation**: OpenTelemetry, Langfuse, LangSmith, Phoenix, GCP Trace/Logging (baseline integrations)

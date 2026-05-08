@@ -159,7 +159,7 @@ async def test_list_sessions_returns_501_when_history_unsupported(echo_agent_con
     """Adapter without history support returns 501 with `agent_type`."""
     app = create_app(config_dict=echo_agent_config)
     async with app.router.lifespan_context(app):
-        _install_stub_agent(app, agent_type="Haystack")
+        _install_stub_agent(app, agent_type="ADK")
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://t",
@@ -167,7 +167,7 @@ async def test_list_sessions_returns_501_when_history_unsupported(echo_agent_con
             resp = await client.get("/agent/sessions")
         assert resp.status_code == 501, resp.text
         body = resp.json()
-        assert body["detail"]["agent_type"] == "Haystack"
+        assert body["detail"]["agent_type"] == "ADK"
         assert "listing" in body["detail"]["error"].lower()
 
 
@@ -176,7 +176,7 @@ async def test_get_session_returns_501_when_history_unsupported(echo_agent_confi
     """Detail endpoint mirrors the 501 contract for unsupported adapters."""
     app = create_app(config_dict=echo_agent_config)
     async with app.router.lifespan_context(app):
-        _install_stub_agent(app, agent_type="Haystack")
+        _install_stub_agent(app, agent_type="ADK")
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://t",
@@ -184,7 +184,7 @@ async def test_get_session_returns_501_when_history_unsupported(echo_agent_confi
             resp = await client.get("/agent/sessions/anything")
         assert resp.status_code == 501, resp.text
         body = resp.json()
-        assert body["detail"]["agent_type"] == "Haystack"
+        assert body["detail"]["agent_type"] == "ADK"
 
 
 # -----------------------------------------------------------------------------

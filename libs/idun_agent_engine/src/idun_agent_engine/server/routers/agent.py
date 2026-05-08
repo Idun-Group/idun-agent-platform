@@ -97,9 +97,10 @@ async def list_sessions(
 ):
     """List session summaries from the active memory backend.
 
-    Returns 501 when the adapter doesn't support listing (Haystack, or a
-    LangGraph agent without a checkpointer). When SSO is enabled, the
-    user id from the JWT is forwarded to the adapter for per-user scoping.
+    Returns 501 when the adapter doesn't support listing (an ADK agent,
+    or a LangGraph agent without a checkpointer). When SSO is enabled,
+    the user id from the JWT is forwarded to the adapter for per-user
+    scoping.
     """
     caps = agent.history_capabilities()
     if not caps.can_list:
