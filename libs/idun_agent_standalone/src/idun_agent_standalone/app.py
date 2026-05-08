@@ -32,6 +32,7 @@ from idun_agent_engine import create_app as create_engine_app
 
 from idun_agent_standalone.api.v1.deps import reload_disabled, require_auth
 from idun_agent_standalone.api.v1.errors import register_admin_exception_handlers
+from idun_agent_standalone.api.v1.openapi import OPENAPI_TAGS
 from idun_agent_standalone.api.v1.routers.agent import router as agent_router
 from idun_agent_standalone.api.v1.routers.auth import router as auth_router
 from idun_agent_standalone.api.v1.routers.guardrails import (
@@ -226,6 +227,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 
     _install_engine_runtime_gate(app)
     register_admin_exception_handlers(app)
+    app.openapi_tags = OPENAPI_TAGS
     admin_auth = [Depends(require_auth)]
     app.include_router(auth_router)
     app.include_router(agent_router, dependencies=admin_auth)
