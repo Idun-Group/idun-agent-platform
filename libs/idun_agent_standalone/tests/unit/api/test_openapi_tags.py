@@ -81,9 +81,7 @@ def test_no_orphan_operations() -> None:
                 seen_unknown.setdefault(f"{method.upper()} {path}", []).extend(
                     unknown if unknown else ["<no tag>"]
                 )
-    assert not seen_unknown, (
-        f"Operations with unknown or missing tags: {seen_unknown}"
-    )
+    assert not seen_unknown, f"Operations with unknown or missing tags: {seen_unknown}"
 
 
 def test_every_tag_has_at_least_one_operation() -> None:
