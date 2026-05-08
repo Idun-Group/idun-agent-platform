@@ -237,6 +237,11 @@ def _spawn_idun(
         "DATABASE_URL": f"sqlite+aiosqlite:///{tmp_path}/idun.db",
         "IDUN_TELEMETRY_ENABLED": "false",
         "IDUN_ADMIN_AUTH_MODE": "none",
+        # Force AI Studio (GEMINI_API_KEY / GOOGLE_API_KEY) auth — host
+        # `.env` files that export GOOGLE_GENAI_USE_VERTEXAI=TRUE would
+        # otherwise route ChatGoogleGenerativeAI through Vertex ADC,
+        # which doesn't accept the api_key arg and would fail in CI/dev.
+        "GOOGLE_GENAI_USE_VERTEXAI": "false",
         "E2E_PAIR": pair["name"],
         "E2E_PROVIDER": pair["provider"],
         "E2E_MODEL": pair["model"],
