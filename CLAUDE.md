@@ -1,119 +1,66 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (and humans) working in `idun-agent-platform`.
 
 ## Project Overview
 
-Idun Agent Platform is a self-hosted control plane that wraps LangGraph/ADK agents into production-ready services. It's a monorepo with three layers: a Python SDK/engine, a FastAPI management backend, and a React admin UI.
+Idun Agent Platform is the open-source toolkit for shipping a single LangGraph or Google ADK agent to production. Developers `pip install idun-agent-standalone`, point at their agent module, and get a FastAPI service with a chat UI, admin panel, and built-in MCP, guardrails, observability, and auth — deployable on a laptop or Cloud Run with no manager service required.
 
-## Repository Structure
+## Constitution
 
-- `libs/idun_agent_schema/` — Shared Pydantic models (published to PyPI)
-- `libs/idun_agent_engine/` — SDK runtime that wraps agents into FastAPI services (published to PyPI)
-- `libs/idun_agent_standalone/` — Single-process agent (chat UI + admin + traces) — published to PyPI as `idun-agent-standalone`
-- `services/idun_agent_manager/` — FastAPI + PostgreSQL backend for agent config CRUD, auth, policy enforcement
-- `services/idun_agent_web/` — React 19 + Vite + TypeScript admin dashboard
-- `services/idun_agent_standalone_ui/` — Next.js 15 SPA bundled into the standalone wheel
-- `docs/` — Mintlify documentation site (deployed to docs.idunplatform.com)
-- `old-docs/` — Legacy MkDocs documentation (archived, do not edit)
+These principles are load-bearing. Read them before deciding how to structure new work.
 
-## Per-Service Documentation
+- **Schema flows first.** Pydantic models in `idun_agent_schema` change before consumers (engine, standalone, UI types).
+- **Engine is the runtime source of truth.** `idun_agent_standalone` never duplicates engine logic — it composes it.
+- **Standalone is the open-source product target.** Single-process, single-tenant, deployable on Cloud Run with `pip install`. One agent per install.
+- **DB is steady-state truth in standalone.** YAML seeds at first boot only; runtime mutations flow through the admin REST.
+- **Reload over restart.** Admin mutations route through the validate-rebuild-reload pipeline; engine init failures roll back the DB write.
+- **AG-UI is the streaming contract.** Don't invent another protocol.
+- **Async throughout.** All Python I/O paths are async — agents, sessions, DB, HTTP.
 
-Each package/service has its own `CLAUDE.md` with detailed architecture, module maps, and conventions. **Always read the relevant CLAUDE.md before working on a specific package:**
+## Repository Map
 
-- `libs/idun_agent_schema/CLAUDE.md` — Schema library: Pydantic models, config hierarchy, discriminated unions, manager schemas
-- `libs/idun_agent_engine/CLAUDE.md` — Engine SDK: agent adapters, config flow, server endpoints, guardrails, observability, MCP, CLI
-- `libs/idun_agent_standalone/CLAUDE.md` — Standalone runtime: admin REST, traces capture, reload orchestration, auth, Docker
-- `services/idun_agent_manager/CLAUDE.md` — Manager API: routes, auth (OIDC + basic), multi-tenancy, database models, migrations
-- `services/idun_agent_web/CLAUDE.md` — Web UI: routes, auth flow, API layer, styling, i18n, state management
-- `services/idun_agent_standalone_ui/CLAUDE.md` — Standalone UI: Next.js app, theme system, admin editors, traces viewer
+| Path | Purpose | Read its CLAUDE.md when… |
+| --- | --- | --- |
+| `libs/idun_agent_schema` | Shared Pydantic models | Changing config shape, enums, validation |
+| `libs/idun_agent_engine` | Engine SDK runtime | Touching agent adapters, AG-UI streaming, MCP, guardrails, observability |
+| `libs/idun_agent_standalone` | Single-process runtime | Working on admin REST, reload pipeline, auth, CLI |
+| `services/idun_agent_standalone_ui` | Bundled Next.js UI | Working on chat, admin pages, theme, traces viewer |
+| `docs/` | Mintlify public docs | Writing user-facing documentation |
 
-## Build & Development Commands
+## Quick Commands
 
-**Package manager:** UV (Python), npm (Node.js)
-
-```bash
-# Install all Python dependencies
-make sync                    # or: uv sync --all-groups
-
-# Install libs in editable mode
-make dev
-
-# Run full dev stack (PostgreSQL + Manager + Web)
-docker compose -f docker-compose.dev.yml up --build
-
-# Run manager locally (port 8000)
-make dev-manager
-
-# Run frontend locally (port 3000)
-cd services/idun_agent_web && npm install && npm run dev
-```
-
-## Testing
+Package managers: `uv` (Python workspace), `pnpm` (Node — only in `services/idun_agent_standalone_ui`).
 
 ```bash
-make test                    # Run all tests (uv run pytest -q)
-make pytest                  # Run all tests (uv run pytest)
+# First-time setup
+uv sync --all-groups          # full workspace install
+make dev                       # editable installs of the three libs
 
-# Run a single test file
-uv run pytest libs/idun_agent_engine/tests/unit/agent/test_langgraph.py -v
+# Fast inner loop
+make test                      # all pytest
+make lint                      # ruff check
+make format                    # black + ruff format
+make mypy                      # mypy on engine
+make precommit                 # all pre-commit hooks
+make ci                        # lint + mypy + pytest
 
-# Run a specific test
-uv run pytest tests/unit/agent/test_langgraph.py::test_name -v
+# Standalone runtime
+idun-standalone setup          # alembic migrations + seed from IDUN_CONFIG_PATH
+idun-standalone serve          # uvicorn under create_standalone_app
+idun-standalone init <name>    # first-run launcher (migrate + seed + open browser + serve)
 
-# Skip tests requiring external services
-uv run pytest -m "not requires_langfuse and not requires_phoenix and not requires_postgres"
+# Standalone UI dev
+cd services/idun_agent_standalone_ui
+pnpm install
+pnpm dev                       # local Next.js dev server
+
+# Wheel build (UI bundled into standalone wheel)
+make build-standalone-ui       # builds Next.js, copies static export into the standalone package
+make build-standalone-wheel    # builds the Python wheel
 ```
 
-Tests are in `libs/idun_agent_engine/tests/` with `unit/` and `integration/` subdirectories.
-
-Local `pytest` runs do not globally auto-load the repository `.env` file. Manager tests may read values from `.env` through Pydantic `BaseSettings` (`env_file=".env"`), while engine tests generally rely on environment variables already exported in the shell unless a specific module explicitly calls `load_dotenv()`. If a test needs secrets or service credentials, ensure the required variables are available in your environment before running `uv run pytest`.
-
-## Linting & Formatting
-
-```bash
-make lint                    # Ruff check
-make format                  # Black + Ruff format
-make mypy                    # Type check engine lib
-make precommit               # Run all pre-commit hooks
-make ci                      # lint + mypy + pytest
-```
-
-Pre-commit hooks: Ruff linter/formatter, Pyright (manual stage), Gitleaks secret detection.
-
-## Architecture
-
-**Engine** (`idun_agent_engine`): FastAPI wrapper around agent frameworks. Config-driven (YAML or programmatic). Handles streaming (AG-UI protocol), checkpointing (in-memory/SQLite/PostgreSQL), observability (Langfuse/Phoenix/LangSmith/OpenTelemetry), guardrails (PII detection, topic restriction, toxicity filtering), and MCP tool management. Entry point: `idun` CLI command.
-
-**Manager** (`idun_agent_manager`): Control plane API. Routers in `src/app/api/v1/routers/` for agents, auth (OIDC + session-based), guardrails, memory, observability, MCP servers, workspaces (multi-tenancy). Database models in `src/app/infrastructure/db/models/`. Migrations via Alembic in `alembic/`.
-
-**Web UI** (`idun_agent_web`): Pages in `src/pages/` (login, dashboard, agent forms, settings). Components in `src/components/`. Auto-generated API types in `src/generated/`. Uses styled-components, Monaco Editor, AG-UI client, i18next.
-
-## Database Migrations (Manager)
-
-```bash
-# Create a new migration
-cd services/idun_agent_manager && alembic revision --autogenerate -m "description"
-
-# Run migrations (happens automatically in dev Docker setup)
-alembic upgrade head
-```
-
-## Key Tech Stack
-
-- **Python 3.12+**, FastAPI, SQLAlchemy (async), Pydantic 2.11+, Alembic
-- **Node.js 20 LTS**, React 19, Vite 7, TypeScript
-- **PostgreSQL 16** (asyncpg driver)
-- **Agent frameworks:** LangGraph (primary), Google ADK, Haystack (experimental)
-- **Build:** Hatchling (Python packages), UV workspace with editable local deps
-
-## Conventions
-
-- Python line length: 88 (Black default)
-- Python code uses async throughout (asyncpg, SQLAlchemy async sessions)
-- Ruff for linting, Black for formatting, mypy for type checking
-- Schema changes go in `idun_agent_schema` first, then consumed by engine/manager
-- Branch naming: `feat/*`, `fix/*`, `docs/*`, `chore/*`, `misc/*`
+For service-specific test commands, see the service's CLAUDE.md.
 
 ## Development Principles
 
@@ -138,70 +85,65 @@ alembic upgrade head
 - Test infrastructure must match production patterns (same drivers, same lifecycle).
 
 ### Error Handling
+
 - Use global exception handlers for unexpected errors. Catch locally only when the response or recovery logic differs from the default.
 - `logger.exception()` for unexpected errors (preserves traceback). `logger.error()` only when you intentionally omit the traceback.
 - Never swallow exceptions silently. Never catch `Exception` to re-raise a generic message unless preventing internal detail leaks.
 
 ### Refactoring
+
 - Never reduce error safety when refactoring.
 - Extract only when there are 2+ call sites with meaningfully coupled logic.
 - Don't add abstraction layers for hypothetical future use.
 
 ### Type Safety
+
 - No `Any` unless genuinely unavoidable. Read the source to find the real type.
-- Use dataclasses, `TypedDict`, or Pydantic models for structured data that crosses module boundaries — not raw dicts.
+- Use dataclasses, `TypedDict`, or Pydantic models for structured data crossing module boundaries — not raw dicts.
 
 ### Code Changes
+
 - Read before you write. Understand existing patterns before modifying.
 - Minimize blast radius — change only what's needed for the task.
 - Preserve existing conventions even if you'd do it differently in a greenfield project.
 - Don't mix refactoring with feature work in the same change.
 - Small, focused commits — one concern per commit.
 - When proposing a change, state what could break.
-- Verify assumptions before acting on them (e.g. check if an import is circular before moving it, check if a dependency override matches before rewriting a test).
-
-### Code Quality
-- Run `make lint` and `make precommit` before committing.
-- Only add comments when the logic isn't self-evident. No restating what the code does.
-- Run `make ci` (lint + mypy + pytest) to validate changes end-to-end.
+- Verify assumptions before acting on them (e.g. check if an import is circular before moving it).
 
 ### Decision-Making
+
 - Reason from PEPs, framework docs, and established patterns. State the reasoning.
 - Don't reverse a position based on tone — only on new technical information.
 - When unsure between two valid approaches, state both with trade-offs instead of picking one arbitrarily.
 - If something feels off about a request or approach, say so and explain why. Push back with reasoning rather than complying silently.
 - If the user's suggestion would introduce a bug, reduce safety, or violate a best practice, flag it clearly before proceeding.
 
-### Keeping Documentation Current
-- When you add a major feature, change architecture, or modify conventions in a service, update the corresponding `CLAUDE.md` to reflect the change.
-- This includes new routes, new config options, new env vars, changed module structure, or deprecated behavior.
+## Documentation Workflow
 
-<!-- IDUN-KNOWLEDGE-START -->
-## Shared Knowledge — Idun Knowledge Vault (via Obsidian MCP)
+CLAUDE.md is part of the public contract — read by Claude, contributors, and AI indexers. Keep it current.
 
-This project uses the `idun-knowledge` Obsidian vault as single source of truth. It is connected via the Obsidian MCP server (auto-available in every Claude Code session).
+- **PR scope rule.** If your PR adds, removes, or renames any of: a public function/class, an HTTP route, a CLI command, an env var, a config field, a module, or a top-level directory — update the relevant CLAUDE.md in the same PR. Reviewers reject drift.
+- **Verification anchors.** Volatile blocks (route tables, env var lists, module trees) carry an HTML comment immediately above of the form `<!-- VERIFY: regenerate from <path> -->`, `<!-- VERIFY: confirm against <path>:<symbol> -->`, or `<!-- VERIFY: env vars in <path> -->`. Always verify against source before quoting them.
+- **New paths.** Adding a top-level directory or service requires a one-line entry in the Repository Map above.
+- **Service files own their detail.** Don't restate route tables, env vars, or module trees in this root. Link to the service file instead.
 
-### How to access the vault
-- Use the Obsidian MCP tools to search and read vault notes
-- Do NOT use hardcoded file paths — always go through the MCP
-- You can also write/update vault notes when preserving learnings
+### Service-level template
 
-### Before starting any work, read the relevant vault notes:
-product/architecture.md — platform architecture and tech stack
-product/conventions.md — code style, git workflow, PR rules
-product/roadmap.md — current priorities
-brand/brand-identity.md — for any UI work
-brand/design-tokens.json — design tokens for components
-brand/voice-and-tone.md — for user-facing copy
+Every CLAUDE.md under `libs/` and `services/` must contain these sections in order:
 
-### Memory System
-- Start sessions with `/resume` to load context from vault + recent session logs
-- End sessions with `/compress` to save session log to vault
-- Use `/preserve` to save permanent learnings back to the vault
+1. `# CLAUDE.md — <Package Name>`
+2. **What this is** — 2–4 sentences. What it does, what it's published as, entry points.
+3. **Module map** — directory tree with one-line description per file/folder, prefixed by `<!-- VERIFY: regenerate from src/ tree -->`.
+4. **Public API** *(or "Entry points")* — surface other parts of the system depend on.
+5. **Tests** — how to run, what's in unit/ vs integration/, infrastructure quirks.
+6. **Conventions** — rules specific to this package.
+7. **Deferred features** — table of intentionally absent things a reader might expect.
 
-### Vault Structure
-- `brand/` — Brand identity, colors, typography, voice, design tokens
-- `company/` — Strategy, positioning, clients, processes
-- `product/` — Architecture, conventions, specs, ADRs, roadmap
-- `team/` — Onboarding, Claude Code patterns, workflows
-<!-- IDUN-KNOWLEDGE-END -->
+Plus any of these domain blocks that genuinely apply, in this order: Config flow · Auth · Reload pipeline · Endpoints / routes table · Adapters / integrations table · Settings / environment variables · Build / packaging notes.
+
+## Branch and code conventions
+
+- Branch naming: `feat/*`, `fix/*`, `docs/*`, `chore/*`, `misc/*`.
+- Python line length: 88. Async throughout. Ruff + Black + Mypy.
+- Schema changes land in `idun_agent_schema` first, then engine and standalone consumers. Frontend types regenerate from the standalone OpenAPI spec.
