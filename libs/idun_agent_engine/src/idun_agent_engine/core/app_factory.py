@@ -175,8 +175,8 @@ def create_app(
     # gates ``/agent/*`` on ``app.state.agent``, so handlers return 503
     # ``agent_not_ready`` until ``configure_app`` runs. ``/health``,
     # ``/reload`` and the engine info endpoint stay reachable.
-    app.include_router(agent_router, prefix="/agent", tags=["Agent"])
-    app.include_router(base_router, tags=["Base"])
+    app.include_router(agent_router, prefix="/agent")
+    app.include_router(base_router)
 
     # Config-dependent setup. Skipped when booting unconfigured — the
     # deprecated /agent/invoke shim requires knowing the agent type up

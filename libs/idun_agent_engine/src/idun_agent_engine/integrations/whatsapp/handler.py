@@ -15,7 +15,7 @@ from .client import WhatsAppClient
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["Runtime"])
 
 
 async def _handle_text_message(

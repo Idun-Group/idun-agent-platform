@@ -39,7 +39,7 @@ from idun_agent_standalone.core.security import SESSION_COOKIE_NAME
 from idun_agent_standalone.core.settings import AuthMode
 from idun_agent_standalone.services import auth as auth_service
 
-router = APIRouter(prefix="/admin/api/v1/auth", tags=["admin"])
+router = APIRouter(prefix="/admin/api/v1/auth", tags=["Auth & SSO"])
 
 logger = get_logger(__name__)
 

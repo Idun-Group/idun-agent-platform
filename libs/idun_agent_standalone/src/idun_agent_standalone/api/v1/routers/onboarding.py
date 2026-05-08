@@ -36,7 +36,7 @@ from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.services import onboarding, scanner
 
-router = APIRouter(prefix="/admin/api/v1/onboarding", tags=["admin"])
+router = APIRouter(prefix="/admin/api/v1/onboarding", tags=["Agent Configuration"])
 
 logger = get_logger(__name__)
 

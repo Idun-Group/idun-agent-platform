@@ -4,16 +4,18 @@ import { useEffect, useState } from "react";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
 import { useChat } from "@/lib/use-chat";
 import { ChatInput } from "./ChatInput";
+import { HeaderActions } from "./HeaderActions";
 import { MessageView } from "./MessageView";
 
 /**
  * Embedded chat layout (D5 in the MVP spec).
  *
- * Single column, no sidebar, no halo around the welcome state, and a
- * pared-down header that only shows the logo+appName — appropriate for
- * embed contexts where the host page handles "New conversation" and
- * sign-out concerns. Reuses the same building blocks as `BrandedLayout`
- * (`MessageView`, `ChatInput`) so theme tokens and behaviour stay aligned.
+ * Single column, no sidebar, no halo around the welcome state. The
+ * header carries the logo+appName plus the shared `HeaderActions`
+ * pills (Admin link, sign-out when applicable) so operators can
+ * always reach the back-office. Reuses the same building blocks as
+ * `BrandedLayout` (`MessageView`, `ChatInput`) so theme tokens and
+ * behaviour stay aligned.
  */
 export function MinimalLayout({ threadId }: { threadId: string }) {
   const { messages, send, stop, status } = useChat(threadId);
@@ -26,8 +28,9 @@ export function MinimalLayout({ threadId }: { threadId: string }) {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="border-b border-border">
-        <div className="mx-auto flex max-w-[720px] items-center px-6 py-3">
+        <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3 px-6 py-3">
           <Logo theme={theme} />
+          <HeaderActions threadId={threadId} />
         </div>
       </header>
       {empty ? (
