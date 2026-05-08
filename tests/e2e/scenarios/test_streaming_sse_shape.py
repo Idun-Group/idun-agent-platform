@@ -47,7 +47,7 @@ def test_streaming_sse_shape_adk(pair, render_config, standalone_with_config) ->
         agent_module_path=ADK_AGENT,
     )
     with standalone_with_config(config) as base_url:
-        events = _post_run(base_url, "Hi.")
+        events = post_run(base_url, "Hi.")
     assert_envelope_complete(events)
     assert_event_sequence(
         events,

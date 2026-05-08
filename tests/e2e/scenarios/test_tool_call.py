@@ -30,7 +30,7 @@ def _assert_result_visible(events: list[AGUIEvent], substring: str) -> None:
     if substring in text:
         return
     tool_payloads = [
-        e.get("content", "") for e in events if e.get("type") == "TOOL_CALL_RESULT"
+        str(e.get("content", "")) for e in events if e.get("type") == "TOOL_CALL_RESULT"
     ]
     combined = " ".join(tool_payloads)
     assert substring in combined, (
@@ -67,7 +67,7 @@ def test_tool_call_adk_multiply(pair, render_config, standalone_with_config) -> 
         agent_module_path=ADK_AGENT,
     )
     with standalone_with_config(config) as base_url:
-        events = _post_run(
+        events = post_run(
             base_url,
             "Use the multiply tool to compute 47 times 13. "
             "Reply with the integer result only.",

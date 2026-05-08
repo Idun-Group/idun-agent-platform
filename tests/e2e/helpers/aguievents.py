@@ -26,6 +26,7 @@ class AGUIEvent(TypedDict, total=False):
     delta: str
     toolCallId: str
     toolCallName: str
+    content: str
 
 
 def parse_sse_lines(lines: Iterable[str]) -> list[AGUIEvent]:
