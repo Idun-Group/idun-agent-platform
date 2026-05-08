@@ -11,7 +11,7 @@ You are writing public-facing technical documentation for an open-source AI agen
 When facts conflict, trust in this order:
 
 1. **Code** — schema enums, route definitions, config models, test fixtures
-2. **Service-level CLAUDE.md files** — `libs/idun_agent_engine/CLAUDE.md`, `libs/idun_agent_schema/CLAUDE.md`, `services/idun_agent_manager/CLAUDE.md`, `services/idun_agent_web/CLAUDE.md`
+2. **Service-level CLAUDE.md files** — `libs/idun_agent_schema/CLAUDE.md`, `libs/idun_agent_engine/CLAUDE.md`, `libs/idun_agent_standalone/CLAUDE.md`, `services/idun_agent_standalone_ui/CLAUDE.md`
 3. **Root CLAUDE.md** — `/CLAUDE.md`
 4. **README.md** — repo root and service READMEs
 5. **Existing MkDocs pages** — `/docs/` (reference only, may be stale)
@@ -73,9 +73,9 @@ Before publishing any factual claim:
 
 1. **Framework support** — verify adapter exists in `libs/idun_agent_engine/src/idun_agent_engine/agent/`
 2. **Config options** — verify field exists in `libs/idun_agent_schema/src/idun_agent_schema/engine/`
-3. **API endpoints** — verify route exists in `services/idun_agent_manager/src/app/api/v1/routers/`
+3. **API endpoints** — engine routes in `libs/idun_agent_engine/src/idun_agent_engine/server/routers/`; standalone admin routes in `libs/idun_agent_standalone/src/idun_agent_standalone/api/v1/routers/`
 4. **Guardrail types** — verify enum value in schema `guardrails.py`
-5. **Environment variables** — verify in manager `Settings` class or engine config resolution
+5. **Environment variables** — verify in `libs/idun_agent_standalone/src/idun_agent_standalone/core/settings.py` for standalone, or engine config resolution for engine-only vars
 6. **Integration claims** — verify integration code exists, not just a schema entry
 
 ## Style alignment with idunplatform.com
