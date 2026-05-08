@@ -85,7 +85,7 @@ jobs:
             -e IDUN_SESSION_SECRET="$SECRET" \
             standalone:ci
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:8000/admin/api/v1/health; then
+            if curl -sf http://localhost:8000/health; then
               echo
               echo "health ok after ${i}s"
               docker stop standalone-smoke >/dev/null

@@ -1,15 +1,18 @@
-"""Test fixtures for CI smoke flows.
+"""Test fixtures for CI smoke flows and engine integration tests.
 
-Provides a minimal LangGraph that can be referenced from a
-``config.yaml`` as ``idun_agent_standalone.testing:echo_graph`` so the
-wheel-install-smoke script and the docker-smoke job can boot the
-standalone end-to-end without scaffolding a separate ``agent.py``.
+Provides:
+
+- ``echo_graph`` — minimal LangGraph (StateGraph) referenced by smoke
+  configs via ``idun_agent_standalone.testing:echo_graph``.
+- ``echo_agent_config()`` — callable returning a dict-shaped EngineConfig
+  consumed by engine integration tests
+  (``libs/idun_agent_engine/tests/integration/server/conftest.py``).
 
 ``langgraph`` is a transitive dependency through ``idun-agent-engine``;
 the standalone wheel always ships alongside the engine wheel.
 """
 
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from langgraph.graph import END, StateGraph
 
@@ -31,3 +34,23 @@ _builder.add_edge("echo", END)
 # The engine accepts an uncompiled StateGraph here and applies its own
 # compile-with-checkpointer step (see engine/agent/langgraph/langgraph.py).
 echo_graph: StateGraph = _builder
+
+
+def echo_agent_config() -> dict[str, Any]:
+    """Return an EngineConfig dict wiring ``echo_graph`` as a LangGraph agent.
+
+    Used by ``create_app(config_dict=echo_agent_config())`` in engine
+    integration tests so they can boot a real agent without any external
+    dependencies (no checkpoint DB, no observability provider, no MCP
+    servers).
+    """
+    return {
+        "agent": {
+            "type": "LANGGRAPH",
+            "config": {
+                "name": "Echo",
+                "graph_definition": "idun_agent_standalone.testing:echo_graph",
+                "checkpointer": {"type": "memory"},
+            },
+        },
+    }
