@@ -149,8 +149,13 @@ mintlify-docs/
 ├── deployment/
 │   ├── overview.mdx
 │   └── gcp.mdx
-├── manager/
-│   └── overview.mdx
+├── standalone/
+│   ├── overview.mdx
+│   ├── quickstart.mdx
+│   ├── cli.mdx
+│   ├── docker-compose.mdx
+│   ├── cloud-run.mdx
+│   └── customizing-ui.mdx
 ├── cli/
 │   └── overview.mdx
 ├── api-reference/
