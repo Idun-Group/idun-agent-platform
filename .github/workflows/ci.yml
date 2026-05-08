@@ -62,4 +62,4 @@ jobs:
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
         run: |
-          uv run pytest libs/idun_agent_engine/tests
+          uv run pytest libs/idun_agent_engine/tests -m "not requires_langfuse and not requires_phoenix and not requires_postgres"

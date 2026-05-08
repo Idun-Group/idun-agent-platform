@@ -60,20 +60,27 @@ assert os.path.isfile(p), f"alembic.ini not found at {p}"
 print(f"alembic.ini ok: {p}")
 PY
 
-# Smoke: scaffold + serve + health.
-"$TMP/venv/bin/idun" init smoke-agent --target "$TMP/scratch" >/dev/null
+# Smoke: scaffold a minimal config.yaml using the built-in echo graph,
+# then `idun init --no-browser` (= migrate + seed + serve in one shot).
 PORT=${IDUN_E2E_PORT:-8765}
+mkdir -p "$TMP/scratch"
+cat > "$TMP/scratch/config.yaml" <<'YAML'
+agent:
+  type: LANGGRAPH
+  config:
+    name: Wheel Smoke
+    graph_definition: idun_agent_standalone.testing:echo_graph
+    checkpointer:
+      type: memory
+YAML
 
-# The scaffolded config uses a relative ``graph_definition`` (./agent.py:graph),
-# so the engine must resolve it from the scratch dir. Run serve with cwd there.
 (
   cd "$TMP/scratch"
   DATABASE_URL="sqlite+aiosqlite:///$TMP/scratch/smoke.db" \
+    IDUN_CONFIG_PATH="$TMP/scratch/config.yaml" \
     IDUN_ADMIN_AUTH_MODE=none \
     IDUN_PORT=$PORT \
-    "$TMP/venv/bin/idun" serve \
-    --config "$TMP/scratch/config.yaml" \
-    --port "$PORT" &
+    "$TMP/venv/bin/idun" init --no-browser &
   echo $! > "$TMP/server.pid"
 )
 SERVER_PID=$(cat "$TMP/server.pid")
