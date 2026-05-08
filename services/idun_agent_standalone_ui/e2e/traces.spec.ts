@@ -17,9 +17,11 @@ test("traces page renders heading + search input", async ({ page }) => {
   await expect(search).toHaveValue("nonexistent-zzz");
 });
 
-test("traces appear after a chat turn and Open reveals a sheet", async ({
+test.skip("traces appear after a chat turn and Open reveals a sheet", async ({
   page,
 }) => {
+  // skip(): traces backend deferred per services/idun_agent_standalone_ui/CLAUDE.md.
+  // Unskip when /traces and /traces/session backend routes return.
   await page.goto("/");
   await page
     .locator('textarea[placeholder^="Message"]')
