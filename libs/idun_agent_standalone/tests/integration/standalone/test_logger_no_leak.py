@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import logging
 
-from httpx import ASGITransport, AsyncClient
-
 from _helpers.logs import captured_logs
+from httpx import ASGITransport, AsyncClient
 
 _PASSWORD = "hunter2"
 _NEW_PASSWORD = "newSecretValue123"

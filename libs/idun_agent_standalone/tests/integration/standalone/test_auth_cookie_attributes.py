@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from httpx import ASGITransport, AsyncClient
-
 from _helpers.cookies import parsed_set_cookie
+from httpx import ASGITransport, AsyncClient
 
 
 async def test_login_cookie_attributes_over_http(standalone_password):
