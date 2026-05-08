@@ -58,10 +58,20 @@ def _make_chat_model() -> object:
 
 def _build_graph() -> StateGraph:
     chat = _make_chat_model()
+    system_prompt = os.environ.get("E2E_SYSTEM_PROMPT", "").strip()
 
-    def call(state: State) -> dict:
-        # `add_messages` reducer handles append; return only the new msg.
-        response = chat.invoke(state["messages"])
+    def call(state: State) -> State:
+        from langchain_core.messages import SystemMessage
+
+        msgs = list(state["messages"])
+        # Only inject the system prompt once per thread — if the
+        # checkpointer-loaded state already has a SystemMessage at the
+        # head, don't duplicate.
+        if system_prompt and not any(
+            getattr(m, "type", None) == "system" for m in msgs
+        ):
+            msgs = [SystemMessage(content=system_prompt), *msgs]
+        response = chat.invoke(msgs)
         return {"messages": [response]}
 
     g: StateGraph = StateGraph(State)
