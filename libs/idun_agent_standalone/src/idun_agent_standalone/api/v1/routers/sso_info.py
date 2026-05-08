@@ -18,7 +18,7 @@ from idun_agent_standalone.api.v1.deps import SessionDep
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.sso import StandaloneSsoRow
 
-router = APIRouter(tags=["sso"])
+router = APIRouter(tags=["Auth & SSO"])
 
 logger = get_logger(__name__)
 

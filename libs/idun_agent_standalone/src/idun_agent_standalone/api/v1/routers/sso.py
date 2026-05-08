@@ -34,7 +34,7 @@ from idun_agent_standalone.infrastructure.db.models.sso import StandaloneSsoRow
 from idun_agent_standalone.services import reload as reload_service
 from idun_agent_standalone.services.reload import commit_with_reload
 
-router = APIRouter(prefix="/admin/api/v1/sso", tags=["admin"])
+router = APIRouter(prefix="/admin/api/v1/sso", tags=["Auth & SSO"])
 
 logger = get_logger(__name__)
 

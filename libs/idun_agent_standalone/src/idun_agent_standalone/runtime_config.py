@@ -17,7 +17,7 @@ from typing import Any
 
 from fastapi import APIRouter, Request, Response
 
-router = APIRouter(tags=["runtime-config"])
+router = APIRouter(tags=["Runtime"])
 
 _LIGHT_COLORS: dict[str, str] = {
     "background": "#f7f6f0",
