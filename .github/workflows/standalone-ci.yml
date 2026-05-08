@@ -8,6 +8,14 @@ on:
       - "libs/idun_agent_schema/**"
       - "services/idun_agent_standalone_ui/**"
       - ".github/workflows/standalone-ci.yml"
+  push:
+    branches: [main, develop]
+    paths:
+      - "libs/idun_agent_standalone/**"
+      - "libs/idun_agent_engine/**"
+      - "libs/idun_agent_schema/**"
+      - "services/idun_agent_standalone_ui/**"
+      - ".github/workflows/standalone-ci.yml"
   workflow_dispatch:
 
 permissions:
