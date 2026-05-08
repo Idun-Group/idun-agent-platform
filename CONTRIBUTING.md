@@ -96,6 +96,18 @@ The repo includes per-package `CLAUDE.md` files that orient contributors (and AI
 
 Reviewers reject PRs where scope-changing code is not accompanied by a CLAUDE.md update.
 
+## End-to-end test coverage for LLM-driven UI features
+
+Any new UI feature that triggers an LLM-driven flow must:
+
+1. **Add a Playwright spec** under `services/idun_agent_standalone_ui/e2e/` that exercises the feature end-to-end, with assertions tolerant of real-LLM output drift (substring or shape checks, never exact strings).
+2. **Wire the spec into `.github/workflows/e2e-real-llm.yml`** if it needs a new agent fixture (under `tests/e2e/fixtures/agents/`) or YAML template (under `tests/e2e/fixtures/configs/`). For specs that only consume an existing fixture, no workflow change is needed — `playwright test` runs every spec in the directory.
+3. **Run on the existing required-check pair (LG+OpenAI)** at minimum. Extend to other pairs (`lg-gemini`, `adk-gemini`) only when the feature has provider-specific behavior worth covering.
+
+The pytest layer at `tests/e2e/` covers the engine-side surface; the Playwright layer covers the UI-streaming + real-browser path. Both must stay green to merge to `main` or `develop`.
+
+See `tests/e2e/README.md` for the run-book and scenario-authoring guide.
+
 ## Code of Conduct
 
 By contributing to this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
