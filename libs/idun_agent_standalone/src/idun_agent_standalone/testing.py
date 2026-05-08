@@ -8,22 +8,35 @@ Provides:
   consumed by engine integration tests
   (``libs/idun_agent_engine/tests/integration/server/conftest.py``).
 
+The graph uses LangChain message types and the ``add_messages`` reducer
+so engine session-reconstruction (``GET /agent/sessions/{id}``) sees
+``HumanMessage``/``AIMessage`` pairs that round-trip cleanly through
+the checkpointer.
+
 ``langgraph`` is a transitive dependency through ``idun-agent-engine``;
 the standalone wheel always ships alongside the engine wheel.
 """
 
-from typing import Any, TypedDict
+from typing import Annotated, Any, TypedDict
 
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.graph import END, StateGraph
+from langgraph.graph.message import add_messages
 
 
 class _EchoState(TypedDict):
-    messages: list
+    messages: Annotated[list[BaseMessage], add_messages]
 
 
-def _echo(state: _EchoState) -> dict:
-    last = state["messages"][-1] if state["messages"] else "nothing"
-    return {"messages": [("ai", f"echo: {last}")]}
+def _echo(state: _EchoState) -> dict[str, list[BaseMessage]]:
+    last = state["messages"][-1] if state["messages"] else None
+    if isinstance(last, HumanMessage):
+        text = last.content
+    elif last is not None:
+        text = getattr(last, "content", str(last))
+    else:
+        text = "nothing"
+    return {"messages": [AIMessage(content=f"echo: {text}")]}
 
 
 _builder = StateGraph(_EchoState)
