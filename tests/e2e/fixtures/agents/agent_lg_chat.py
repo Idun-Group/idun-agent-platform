@@ -19,14 +19,20 @@ where the import is in scope.
 """
 
 import os
-from typing import TypedDict
+from typing import Annotated, TypedDict
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.message import add_messages
 
 
 class State(TypedDict):
-    messages: list[BaseMessage]
+    # `add_messages` reducer appends new messages to the prior state
+    # instead of overwriting it. Required for multi-turn scenarios that
+    # round-trip through a checkpointer + AG-UI: the wire layer only
+    # forwards the newest user message on turn N, so without a reducer
+    # the prior history would be dropped on entry.
+    messages: Annotated[list[BaseMessage], add_messages]
 
 
 def _make_chat_model() -> object:
@@ -53,9 +59,10 @@ def _make_chat_model() -> object:
 def _build_graph() -> StateGraph:
     chat = _make_chat_model()
 
-    def call(state: State) -> State:
+    def call(state: State) -> dict:
+        # `add_messages` reducer handles append; return only the new msg.
         response = chat.invoke(state["messages"])
-        return {"messages": [*state["messages"], response]}
+        return {"messages": [response]}
 
     g: StateGraph = StateGraph(State)
     g.add_node("chat", call)
