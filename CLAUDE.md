@@ -34,7 +34,7 @@ Package managers: `uv` (Python workspace), `pnpm` (Node — only in `services/id
 
 ```bash
 # First-time setup
-uv sync --all-groups          # full workspace install
+make sync                      # uv sync --all-groups (full workspace install)
 make dev                       # editable installs of the three libs
 
 # Fast inner loop
@@ -48,7 +48,7 @@ make ci                        # lint + mypy + pytest
 # Standalone runtime
 idun-standalone setup          # alembic migrations + seed from IDUN_CONFIG_PATH
 idun-standalone serve          # uvicorn under create_standalone_app
-idun-standalone init <name>    # first-run launcher (migrate + seed + open browser + serve)
+idun-standalone init           # first-run launcher (migrate + seed + open browser + serve)
 
 # Standalone UI dev
 cd services/idun_agent_standalone_ui
