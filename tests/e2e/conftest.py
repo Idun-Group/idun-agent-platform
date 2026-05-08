@@ -19,7 +19,9 @@ import socket
 import subprocess
 import threading
 import time
+from collections import deque
 from collections.abc import Callable, Generator
+from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict
 
@@ -122,8 +124,8 @@ def pair(request: pytest.FixtureRequest) -> PairId:
     """Return the PairId for the currently active pair selection."""
     selected = _selected_pairs(request.config.getoption("--pair"))
     assert len(selected) == 1, (
-        "tests must be parametrized to a single pair via the @pytest.mark.pair "
-        f"marker; got {selected}"
+        f"the `pair` fixture requires a single active pair; got {selected}. "
+        "Pass --pair=lg-openai (or set E2E_PAIR) to scope the run."
     )
     name = selected[0]
     spec = PAIR_TABLE[name]
@@ -172,6 +174,9 @@ def _wait_for_health(base_url: str, *, timeout: float) -> None:
     raise TimeoutError(f"standalone did not become healthy within {timeout}s")
 
 
+_StandaloneCM = AbstractContextManager[str]
+
+
 @pytest.fixture
 def standalone_with_config(
     tmp_path: Path,
@@ -190,7 +195,6 @@ def standalone_with_config(
     SIGTERM (10s grace) → SIGKILL teardown and dumps captured stdout on
     non-zero exit so failures are debuggable from the pytest log.
     """
-    from contextlib import contextmanager
 
     @contextmanager
     def _ctx(config_path: Path) -> Generator[str, None, None]:
@@ -210,11 +214,6 @@ def standalone_with_config(
                 pass
 
     return _ctx
-
-
-# Type alias for editor / mypy friendliness; the actual type is whatever
-# `contextmanager` produces. Kept loose here.
-_StandaloneCM = object
 
 
 def _spawn_idun(
@@ -253,7 +252,7 @@ def _spawn_idun(
         text=True,
         bufsize=1,
     )
-    captured: list[str] = []
+    captured: deque[str] = deque(maxlen=2000)
 
     def _drain() -> None:
         assert proc.stdout is not None
@@ -274,9 +273,10 @@ def _spawn_idun(
             except subprocess.TimeoutExpired:
                 proc.kill()
             drainer.join(timeout=2)
+            snapshot = list(captured)
             pytest.fail(
                 f"standalone failed to boot for pair={pair['name']}\n"
-                f"stdout:\n{''.join(captured)[-4000:]}"
+                f"stdout:\n{''.join(snapshot)[-4000:]}"
             )
         yield base_url
     finally:
@@ -287,8 +287,9 @@ def _spawn_idun(
             proc.kill()
             proc.wait()
         drainer.join(timeout=2)
+        snapshot = list(captured)
         if proc.returncode not in (0, -signal.SIGTERM):
             pytest.fail(
                 f"standalone exited with rc={proc.returncode}\n"
-                f"stdout:\n{''.join(captured)[-4000:]}"
+                f"stdout:\n{''.join(snapshot)[-4000:]}"
             )
