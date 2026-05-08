@@ -20,7 +20,7 @@ idun_agent_engine/
 ├── agent/              # Framework adapters (all implement BaseAgent ABC)
 │   ├── base            # BaseAgent protocol: initialize(), invoke(), stream(), copilotkit_agent_instance
 │   ├── langgraph/      # Primary adapter. Full streaming (AG-UI events). Expects uncompiled StateGraph.
-│   └── adk/            # Google ADK adapter. Mature. Session + memory services. Stream not yet implemented.
+│   └── adk/            # Google ADK adapter. Mature. Session + memory services. AG-UI streaming via /agent/run (ADKAGUIAgent).
 ├── server/             # FastAPI layer
 │   ├── routers/agent   # /agent/capabilities, /agent/run, /agent/sessions, /agent/graph*, /agent/config
 │   ├── routers/base    # /health, /reload, /_engine/info
