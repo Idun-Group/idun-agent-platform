@@ -7,7 +7,7 @@ from tests.e2e.helpers.aguievents import (
     assert_response_contains,
     assert_tool_called_once,
 )
-from tests.e2e.scenarios.test_chat_happy_path import _post_run
+from tests.e2e.helpers.run_client import post_run
 
 LG_AGENT = "tests/e2e/fixtures/agents/agent_lg_calculator.py"
 
@@ -22,7 +22,7 @@ def test_tool_call_langgraph_multiply(
         agent_module_path=LG_AGENT,
     )
     with standalone_with_config(config) as base_url:
-        events = _post_run(
+        events = post_run(
             base_url,
             "Use the multiply tool to compute 47 times 13. "
             "Reply with the integer result only.",

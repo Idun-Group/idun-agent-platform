@@ -11,7 +11,7 @@ from tests.e2e.helpers.aguievents import (
     assert_response_contains,
     assert_response_non_empty,
 )
-from tests.e2e.scenarios.test_chat_happy_path import _post_run
+from tests.e2e.helpers.run_client import post_run
 
 LG_AGENT = "tests/e2e/fixtures/agents/agent_lg_chat.py"
 
@@ -53,6 +53,6 @@ def test_prompt_templating_includes_token(
     )
     with _set_system_prompt(sys_prompt):
         with standalone_with_config(config) as base_url:
-            events = _post_run(base_url, "Say hi.")
+            events = post_run(base_url, "Say hi.")
     assert_response_non_empty(events)
     assert_response_contains(events, INJECTED_TOKEN)

@@ -92,10 +92,11 @@ def test_multi_turn_adk_judge(
         thread = str(uuid.uuid4())
         turn1 = "My favorite color is teal."
         r1 = _post_run_with_thread(base_url, thread_id=thread, message=turn1)
+        turn2 = "What did I just tell you about my favorite color?"
         r2 = _post_run_with_thread(
             base_url,
             thread_id=thread,
-            message="What did I just tell you about my favorite color?",
+            message=turn2,
         )
     assert judge(
         rubric=(
@@ -105,4 +106,5 @@ def test_multi_turn_adk_judge(
         response=r2,
         turn1_user=turn1,
         turn1_assistant=r1,
+        turn2_user=turn2,
     )

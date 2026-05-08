@@ -7,7 +7,7 @@ import jsonschema
 import pytest
 
 from tests.e2e.helpers.aguievents import assert_response_non_empty
-from tests.e2e.scenarios.test_chat_happy_path import _post_run
+from tests.e2e.helpers.run_client import post_run
 
 LG_AGENT = "tests/e2e/fixtures/agents/agent_lg_chat.py"
 
@@ -49,11 +49,11 @@ def test_structured_output_validates(
         "No code fences. No prose. Reply with the JSON object only."
     )
     with standalone_with_config(config) as base_url:
-        events = _post_run(base_url, user_msg)
+        events = post_run(base_url, user_msg)
     text = assert_response_non_empty(events)
     # LLMs sometimes wrap output in code fences despite the instruction;
     # extract the first JSON object regardless of surrounding markup.
-    json_blob = re.search(r"\{.*\}", text, flags=re.DOTALL)
+    json_blob = re.search(r"\{.*?\}", text, flags=re.DOTALL)
     assert json_blob, f"no JSON object found in response: {text!r}"
     parsed = json.loads(json_blob.group(0))
     jsonschema.validate(parsed, SCHEMA)

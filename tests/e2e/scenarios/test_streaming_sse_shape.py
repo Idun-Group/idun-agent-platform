@@ -6,7 +6,8 @@ from tests.e2e.helpers.aguievents import (
     assert_envelope_complete,
     assert_event_sequence,
 )
-from tests.e2e.scenarios.test_chat_happy_path import AGENT_MODULE, _post_run
+from tests.e2e.helpers.run_client import post_run
+from tests.e2e.scenarios.test_chat_happy_path import AGENT_MODULE
 
 
 @pytest.mark.pair("lg-openai", "lg-gemini")
@@ -21,7 +22,7 @@ def test_streaming_sse_shape_langgraph(
         checkpointer_db=None,
     )
     with standalone_with_config(config) as base_url:
-        events = _post_run(base_url, "Hi.")
+        events = post_run(base_url, "Hi.")
     assert_envelope_complete(events)
     assert_event_sequence(
         events,

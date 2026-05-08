@@ -21,6 +21,7 @@ where the import is in scope.
 import os
 from typing import Annotated, TypedDict
 
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
@@ -35,7 +36,7 @@ class State(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
 
-def _make_chat_model() -> object:
+def _make_chat_model() -> BaseChatModel:
     provider = os.environ.get("E2E_PROVIDER", "openai")
     model = os.environ.get("E2E_MODEL", "gpt-5.4-mini")
     if provider == "openai":
@@ -67,10 +68,10 @@ def _build_graph() -> StateGraph:
         # Only inject the system prompt once per thread — if the
         # checkpointer-loaded state already has a SystemMessage at the
         # head, don't duplicate.
-        if system_prompt and not any(
-            getattr(m, "type", None) == "system" for m in msgs
-        ):
-            msgs = [SystemMessage(content=system_prompt), *msgs]
+        if system_prompt:
+            head_is_system = bool(msgs) and getattr(msgs[0], "type", None) == "system"
+            if not head_is_system:
+                msgs = [SystemMessage(content=system_prompt), *msgs]
         response = chat.invoke(msgs)
         return {"messages": [response]}
 
