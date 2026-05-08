@@ -73,6 +73,26 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
     router.push(`/?session=${encodeURIComponent(routeId)}`);
   };
 
+  const header = (
+    <header className="relative z-10">
+      <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3 px-6 pt-6 pb-4">
+        <div className="flex items-center gap-3">
+          <HamburgerButton onClick={() => setDrawerOpen(true)} />
+          <Logo theme={theme} />
+        </div>
+        <HeaderActions
+          threadId={threadId}
+          onNewSession={newConversation}
+        />
+      </div>
+      {!empty ? (
+        <div className="mx-auto max-w-[720px] px-6">
+          <div className="hairline" />
+        </div>
+      ) : null}
+    </header>
+  );
+
   return (
     <div className="flex h-screen bg-background text-foreground">
       <div className="hidden md:block">
@@ -106,18 +126,7 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
       <div className="relative flex min-w-0 flex-1 flex-col">
         {empty ? (
           <>
-            <header className="relative z-10">
-              <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3 px-6 pt-6 pb-4">
-                <div className="flex items-center gap-3">
-                  <HamburgerButton onClick={() => setDrawerOpen(true)} />
-                  <Logo theme={theme} />
-                </div>
-                <HeaderActions
-                  threadId={threadId}
-                  onNewSession={newConversation}
-                />
-              </div>
-            </header>
+            {header}
             <WelcomeHero
               onSend={send}
               streaming={status === "streaming"}
@@ -126,21 +135,7 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
           </>
         ) : (
           <>
-            <header className="relative z-10">
-              <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3 px-6 pt-6 pb-4">
-                <div className="flex items-center gap-3">
-                  <HamburgerButton onClick={() => setDrawerOpen(true)} />
-                  <Logo theme={theme} />
-                </div>
-                <HeaderActions
-                  threadId={threadId}
-                  onNewSession={newConversation}
-                />
-              </div>
-              <div className="mx-auto max-w-[720px] px-6">
-                <div className="hairline" />
-              </div>
-            </header>
+            {header}
             <div className="scroll-fade relative z-10 flex-1 overflow-y-auto">
               <div className="mx-auto max-w-[720px] space-y-6 px-6 py-8">
                 {messages.map((m) => (
