@@ -3,6 +3,12 @@ name: Release Idun Agent Platform
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.6.0). Required for manual dispatch."
+        required: true
+        type: string
 
 env:
   PYTHON_VERSION: "3.12"
@@ -35,7 +41,11 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          if [ -n "${{ inputs.tag }}" ]; then
+            RAW_REF="${{ inputs.tag }}"
+          else
+            RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          fi
           VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
@@ -57,6 +67,7 @@ jobs:
         with:
           packages-dir: libs/idun_agent_schema/dist/
           verbose: true
+          skip-existing: true
 
   # ============================================================================
   # Job 2: Publish Engine to PyPI (depends on schema)
@@ -98,7 +109,11 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          if [ -n "${{ inputs.tag }}" ]; then
+            RAW_REF="${{ inputs.tag }}"
+          else
+            RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          fi
           VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
@@ -111,6 +126,8 @@ jobs:
           echo "Updated pyproject.toml:"
           grep -m 1 'version = ' pyproject.toml
           grep 'idun-agent-schema' pyproject.toml
+          grep -q '^version = "${{ steps.version.outputs.VERSION }}"$' pyproject.toml || (echo "::error::Engine version sed did not produce expected pin"; exit 1)
+          grep -q '"idun-agent-schema==${{ steps.version.outputs.VERSION }}"' pyproject.toml || (echo "::error::Schema dep sed did not produce expected pin"; exit 1)
 
       - name: Wait for schema to be available on PyPI
         run: |
@@ -147,6 +164,7 @@ jobs:
         with:
           packages-dir: libs/idun_agent_engine/dist/
           verbose: true
+          skip-existing: true
 
   # ============================================================================
   # Job 3: Create Release Summary
@@ -155,7 +173,7 @@ jobs:
     name: Create Release Summary
     runs-on: ubuntu-latest
     needs: [publish-schema, publish-engine]
-    if: always()
+    if: success()
 
     steps:
       - name: Extract version from tag
