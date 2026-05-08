@@ -246,3 +246,5 @@ class IdunTelemetry:
                 executor.shutdown(wait=False, cancel_futures=False)
             except Exception:
                 pass
+            self._executor = None
+            self._client = None
