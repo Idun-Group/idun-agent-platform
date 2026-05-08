@@ -33,7 +33,7 @@ def build_config(
 
     Args:
         port: The API port number.
-        agent_type: The type of agent (e.g., "LANGGRAPH", "adk").
+        agent_type: The type of agent (e.g., "LANGGRAPH", "ADK").
         name: The agent name.
         graph_definition: Path to the graph definition.
         observability: Optional observability configuration.
