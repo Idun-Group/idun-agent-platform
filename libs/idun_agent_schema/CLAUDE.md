@@ -1,22 +1,24 @@
 # CLAUDE.md — Idun Agent Schema
 
-## What This Is
+## What this is
 
-`idun_agent_schema` is the **centralized Pydantic model library** shared across the entire Idun Agent Platform. It defines the data contracts between the engine, the manager, and the web UI. Every config structure, API payload, and managed resource schema lives here.
+`idun_agent_schema` is the **centralized Pydantic model library** shared across the Idun Agent Platform. It defines the data contracts between the engine, the standalone admin API, and the web UI. Every config structure, API payload, and managed resource schema lives here.
 
 Published to PyPI as `idun-agent-schema`. Minimal dependencies: `pydantic` + `pydantic-settings` only.
 
-**This is the source of truth for all data shapes.** Schema changes start here, then propagate to engine and manager.
+**This is the source of truth for all data shapes.** Schema changes start here, then propagate to the engine, the standalone admin API, and the web UI.
 
 ## Package Structure
 
-Three namespaces, each with its own `__init__.py`:
+Four namespaces, each with its own `__init__.py`:
 
+<!-- VERIFY: regenerate from libs/idun_agent_schema/src/idun_agent_schema/ -->
 ```
 idun_agent_schema/
 ├── engine/          # Schemas consumed by idun_agent_engine (config YAML → Pydantic)
-├── manager/         # Schemas consumed by idun_agent_manager (API request/response models)
-└── shared/          # Cross-cutting base classes
+├── manager/         # Legacy CRUD models (back-compat; superseded by standalone/)
+├── shared/          # Cross-cutting base classes
+└── standalone/      # Admin API contracts used by the standalone admin surface
 ```
 
 ## Engine Schemas (`engine/`)
@@ -25,6 +27,7 @@ These models define the YAML config structure that the engine parses.
 
 ### Core Config Hierarchy
 
+<!-- VERIFY: confirm against libs/idun_agent_schema/src/idun_agent_schema/engine/engine.py -->
 ```
 EngineConfig                    # Top-level config (engine/engine.py)
 ├── server: ServerConfig        # Server settings (engine/server.py)
@@ -142,23 +145,54 @@ Uses camelCase aliases (`ConfigDict(alias_generator=to_camel, populate_by_name=T
 
 ### Templates
 
-`templates.py`: `TranslationAgentConfig`, `CorrectionAgentConfig`, `DeepResearchAgentConfig` — extend `LangGraphAgentConfig` or `BaseAgentConfig`. Ignore these.
+`templates.py`: `TranslationAgentConfig`, `CorrectionAgentConfig`, `DeepResearchAgentConfig` — extend `LangGraphAgentConfig` or `BaseAgentConfig`. Internal-only pre-built agents; ignore unless extending the engine itself.
+
+## Standalone Schemas (`standalone/`)
+
+Admin API contracts for the standalone admin surface (the in-process control plane that replaces the old manager service). Each module exposes the `Standalone*` Pydantic models that the admin routes accept and return.
+
+<!-- VERIFY: regenerate from libs/idun_agent_schema/src/idun_agent_schema/standalone/ -->
+
+| Module | Purpose |
+|---|---|
+| `agent.py` | `StandaloneAgentRead`, `StandaloneAgentPatch` — current agent config view + partial update |
+| `auth.py` | `StandaloneAuthLoginBody`, `StandaloneAuthChangePasswordBody`, `StandaloneAuthMe`, `StandaloneAuthMutationResult` |
+| `common.py` | Shared response envelopes (`StandaloneMutationResponse`, `StandaloneDeleteResult`, `StandaloneResourceIdentity`, `StandaloneSingletonDeleteResult`) |
+| `config.py` | `StandaloneMaterializedConfig` — full materialized engine config returned by admin endpoints |
+| `diagnostics.py` | `StandaloneReadyzResponse`, `StandaloneReadyzCheckStatus`, `StandaloneConnectionCheck` |
+| `enrollment.py` | `StandaloneEnrollmentInfo`, `StandaloneEnrollmentMode`, `StandaloneEnrollmentStatus` |
+| `errors.py` | `StandaloneAdminError`, `StandaloneErrorCode`, `StandaloneFieldError` (uniform error envelope) |
+| `guardrails.py` | `StandaloneGuardrailCreate / Read / Patch` |
+| `integrations.py` | `StandaloneIntegrationCreate / Read / Patch` |
+| `mcp_servers.py` | `StandaloneMCPServerCreate / Read / Patch` |
+| `memory.py` | `StandaloneMemoryRead`, `StandaloneMemoryPatch` |
+| `observability.py` | `StandaloneObservabilityRead`, `StandaloneObservabilityPatch` |
+| `onboarding.py` | `OnboardingState`, `ScanResponse`, `ScanResult`, `DetectedAgent`, `CreateStarterBody`, `CreateFromDetectionBody` |
+| `prompts.py` | `StandalonePromptCreate / Read / Patch` |
+| `reload.py` | `StandaloneReloadResult`, `StandaloneReloadStatus` |
+| `runtime_status.py` | `StandaloneRuntimeStatus` and friends — runtime introspection payloads |
+| `sso.py` | `StandaloneSsoRead`, `StandaloneSsoPatch` |
+| `operational.py` | Operational utilities used by the admin runtime |
+
+Many of the `Standalone*` models embed engine schemas directly (e.g. `StandaloneMaterializedConfig` wraps `EngineConfig`), so they stay in lockstep with the engine namespace.
 
 ## Manager Schemas (`manager/`)
 
-CRUD models for resources managed via the manager API. Each follows the pattern: `Create`, `Read`, `Patch`.
+Legacy CRUD models from the previous manager service. **Kept for back-compat only** — new admin work should use `standalone/` schemas. Each follows the pattern: `Create`, `Read`, `Patch`.
+
+<!-- VERIFY: regenerate from libs/idun_agent_schema/src/idun_agent_schema/manager/ -->
 
 | Resource | Module | Key Fields |
 |---|---|---|
 | **Agent** | `managed_agent.py` | `name`, `status` (`AgentStatus` enum), `version`, `base_url`, `engine_config` (full `EngineConfig`) |
 | **Guardrail** | `managed_guardrail.py` | `name`, `guardrail` (`ManagerGuardrailConfig`) |
-| **MCP Server** | `managed_mcp_server.py` | `name`, `mcp_server` (`MCPServer`) |
+| **MCP Server** | `managed_mcp_server.py` | `name`, `mcp_server` (`MCPServer`), plus `MCPToolSchema`, `MCPToolsResponse` |
 | **Memory** | `managed_memory.py` | `name`, `agent_framework`, `memory` (`CheckpointConfig \| SessionServiceConfig`) |
 | **Observability** | `managed_observability.py` | `name`, `observability` (`ObservabilityConfig` V2) |
 | **SSO** | `managed_sso.py` | `name`, `sso` (`SSOConfig`) |
 | **Integration** | `managed_integration.py` | `name`, `integration` (`IntegrationConfig`) |
 | **Prompt** | `managed_prompt.py` | `prompt_id`, `content`, `tags` (Create); adds `id`, `version`, `created_at`, `updated_at` (Read); `tags` only (Patch) |
-| **API Key** | `api.py` | `api_key` (str) |
+| **API Key** | `api.py` | `ApiKeyResponse` (`api_key` str) |
 
 **`AgentStatus`** enum: `DRAFT`, `ACTIVE`, `INACTIVE`, `DEPRECATED`, `ERROR`
 
@@ -168,24 +202,35 @@ CRUD models for resources managed via the manager API. Each follows the pattern:
 
 `SharedBaseModel` (`shared/base.py`): `pydantic-settings` `BaseSettings` subclass with camelCase alias generation and env var fallback. For models that need both frontend-friendly JSON keys and env var population.
 
-## Conventions
-
-- **CamelCase aliases**: Most models use `ConfigDict(alias_generator=to_camel, populate_by_name=True)` for frontend compatibility. Fields accept both `snake_case` and `camelCase`.
-- **Discriminated unions**: Used for checkpointer configs (`type` field), ADK session/memory configs (`type` field).
-- **Env var resolution**: V1 observability supports `${VAR}` syntax in YAML values, resolved via `_resolve_env()`.
-- **Schema changes flow**: Change here first → update engine/manager consumers → update frontend generated types.
-- **Pydantic 2.11+**: Uses `model_validator`, `field_validator`, `ConfigDict`, `Field` with `alias`.
-- **No runtime dependencies beyond Pydantic** (+ `jinja2` for `PromptConfig.format()`): This package must stay lightweight. `langchain_core` is lazy-imported only inside `to_langchain()` — not a declared dependency.
-
-## Development
+## Tests
 
 ```bash
-# Lint
+# Lint + format
 uv run ruff check libs/idun_agent_schema/
-
-# Format
 uv run black libs/idun_agent_schema/
 
 # Type check
 cd libs/idun_agent_schema && uv run mypy src/
+
+# Run schema unit tests (covers the standalone/ namespace)
+uv run pytest libs/idun_agent_schema/tests/ -v
 ```
+
+Real pytest tests live in `libs/idun_agent_schema/tests/standalone/` (one file per standalone module — `test_agent.py`, `test_config.py`, `test_guardrails.py`, etc.) plus `test_namespace.py`, which guards the public re-exports of the package. The engine and shared/manager namespaces have no dedicated test suite here — their contracts are exercised by the engine and standalone test suites. If you change a schema, run `make ci` to ensure consumers still validate.
+
+## Conventions
+
+- **CamelCase aliases**: Most models use `ConfigDict(alias_generator=to_camel, populate_by_name=True)` for frontend compatibility. Fields accept both `snake_case` and `camelCase`.
+- **Discriminated unions**: Used for checkpointer configs (`type` field), ADK session/memory configs (`type` field), and several `Standalone*` payloads.
+- **Env var resolution**: V1 observability supports `${VAR}` syntax in YAML values, resolved via `_resolve_env()`.
+- **Pydantic 2.11+**: Uses `model_validator`, `field_validator`, `ConfigDict`, `Field` with `alias`.
+- **No runtime dependencies beyond Pydantic** (+ `jinja2` for `PromptConfig.format()`): This package must stay lightweight. `langchain_core` is lazy-imported only inside `to_langchain()` — not a declared dependency.
+
+## Deferred features
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| V1 observability (`engine/observability.py`) | Deprecated | V2 (`observability_v2.py`) is the standard at top-level `EngineConfig.observability`. |
+| V1 guardrails (`engine/guardrails.py`) | Deprecated | V2 (`guardrails_v2.py`) is the standard. |
+| Manager schemas (`manager/`) | Active (back-compat) | Superseded by `standalone/`. Kept so external consumers and frozen migrations keep importing without breaking. New admin work uses `standalone/`. |
+| Templates (`engine/templates.py`) | Internal-only | Pre-built LangGraph agents (translation/correction/deep_research). Ignored by external consumers. |
