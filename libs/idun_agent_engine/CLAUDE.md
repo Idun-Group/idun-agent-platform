@@ -186,7 +186,7 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 | Adapter | Config Model | Graph Loading | Streaming | CopilotKit |
 |---|---|---|---|---|
 | **LanggraphAgent** | `LangGraphAgentConfig` | `graph_definition` → dynamic import → accepts `StateGraph` (preferred) or `CompiledStateGraph` (extracts `.builder`, recompiles with engine checkpointer/store, logs warning) | Full AG-UI event stream via `astream_events` | `LangGraphAGUIAgent` |
-| **AdkAgent** | `AdkAgentConfig` | `agent` field → dynamic import | Not implemented | `ADKAGUIAgent` |
+| **AdkAgent** | `AdkAgentConfig` | `agent` field → dynamic import | AG-UI streaming via `/agent/run` (delegates to `ADKAGUIAgent`); the internal `BaseAgent.stream()` method is unimplemented and unused on the HTTP path | `ADKAGUIAgent` |
 
 ### LangGraph: Key Details
 
