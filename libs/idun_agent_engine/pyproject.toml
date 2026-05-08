@@ -78,6 +78,7 @@ dependencies = [
     "opentelemetry-exporter-gcp-trace>=1.6.0,<2.0.0",
     "opentelemetry-exporter-otlp-proto-http>=1.22.0,<2.0.0",
     "google-cloud-logging>=3.10.0,<4.0.0",
+    "cryptography>=46.0.3,<47.0.0",
     "posthog>=7.0.0,<8.0.0",
     # Data layer and persistence
     "aiosqlite>=0.21.0,<=0.22.1",
