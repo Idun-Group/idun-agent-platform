@@ -1869,7 +1869,7 @@ requires-dist = [
     { name = "cachetools", specifier = ">=5.0.0,<7.0.0" },
     { name = "click", specifier = ">=8.2.0,<9.0.0" },
     { name = "copilotkit", specifier = "==0.1.78" },
-    { name = "cryptography", specifier = ">=46.0.3,<47.0.0" },
+    { name = "cryptography", specifier = ">=46.0.3,<48.0.0" },
     { name = "deepagents", specifier = ">=0.2.8,<1.0.0" },
     { name = "fastapi", specifier = ">=0.115.0,<=0.134.0" },
     { name = "google-adk", specifier = ">=1.19.0,<2.0.0" },
