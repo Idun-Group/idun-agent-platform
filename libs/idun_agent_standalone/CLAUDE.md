@@ -122,4 +122,10 @@ The empty `admin/`, `auth/`, `theme/`, `traces/` directories remain on disk so i
 
 ## Conventions
 
-Same as the rest of the monorepo: ruff + black, mypy, async throughout, schema lives in `idun_agent_schema`. The engine remains the single source of truth for runtime config — the standalone never duplicates engine logic; assembly is JSON normalization plus the manager-shape converters where needed.
+Same as the rest of the monorepo: ruff + black, mypy, async throughout, schema lives in `idun_agent_schema`.
+
+**Don't duplicate engine logic.** The engine is the single source of truth for runtime config. If a helper feels useful here, push it down into engine first; standalone consumes it. Assembly in this package is JSON normalization plus the manager-shape converters — nothing that overlaps with adapter, observability, guardrails, or MCP behavior already owned by the engine. **Why:** standalone is a thin composition layer over engine. Duplicating logic here causes drift between adapters, observability, and the rebuild-reload pipeline, and breaks the constitutional rule in the root CLAUDE.md ("Engine is the runtime source of truth — `idun_agent_standalone` never duplicates engine logic, it composes it").
+
+**Single-process, single-tenant.** Reject changes that introduce multi-tenant assumptions (per-request tenant lookups, workspace scoping, multi-agent registries). One agent per install.
+
+**DB is steady-state truth.** YAML seeds run at first boot only. Runtime mutations must flow through the admin REST and the validate-rebuild-reload pipeline (`services/reload.commit_with_reload`). Engine init failures must roll back the DB write — admin routes that mutate state without that rollback path are bugs.

@@ -69,6 +69,8 @@ Optional but encouraged:
 
 ## Verification rules
 
+**Accuracy first, prose second.** When reviewing or editing a doc, flag references to deprecated routes, removed env vars, or old config field names before any stylistic edits. A doc must compile against the current codebase before its prose is worth polishing. **Why:** stale technical claims poison every downstream consumer (developers, AI retrieval, support); a clean sentence around a wrong route is worse than rough prose around a correct one.
+
 Before publishing any factual claim:
 
 1. **Framework support** — verify adapter exists in `libs/idun_agent_engine/src/idun_agent_engine/agent/`
