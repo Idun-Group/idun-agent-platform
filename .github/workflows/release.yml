@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -83,6 +85,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -179,7 +183,11 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          if [ -n "${{ inputs.tag }}" ]; then
+            RAW_REF="${{ inputs.tag }}"
+          else
+            RAW_REF="${GITHUB_REF_NAME:-${GITHUB_REF#refs/tags/}}"
+          fi
           VERSION=${RAW_REF#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
