@@ -1,14 +1,11 @@
 """Pydantic schemas for Agent Manager API I/O."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ApiKeyResponse(BaseModel):
     """Response shape for a single agent resource."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     api_key: str
-
-    class Config:
-        """Pydantic configuration for ORM compatibility."""
-
-        from_attributes = True
