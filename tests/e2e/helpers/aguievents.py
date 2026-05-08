@@ -70,11 +70,11 @@ def assert_event_sequence(events: list[AGUIEvent], pattern: list[str]) -> None:
     """Assert the event-type stream matches a regex-like pattern.
 
     Pattern items: "Foo" (one), "Foo+" (>=1), "Foo*" (>=0).
-    Other event types may appear between matched tokens.
+    Other event types may appear before, between, or after matched tokens.
     """
     types = _types(events)
     flat = " ".join(types) + " "
-    parts: list[str] = []
+    parts: list[str] = [r"(?:[A-Z_]+ )*"]  # allow extras before the first token
     for tok in pattern:
         if tok.endswith("+"):
             parts.append(rf"(?:{re.escape(tok[:-1])} )+")
