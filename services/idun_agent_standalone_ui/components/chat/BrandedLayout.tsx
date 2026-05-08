@@ -106,9 +106,18 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
       <div className="relative flex min-w-0 flex-1 flex-col">
         {empty ? (
           <>
-            <div className="absolute top-4 left-4 z-20 md:hidden">
-              <HamburgerButton onClick={() => setDrawerOpen(true)} />
-            </div>
+            <header className="relative z-10">
+              <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3 px-6 pt-6 pb-4">
+                <div className="flex items-center gap-3">
+                  <HamburgerButton onClick={() => setDrawerOpen(true)} />
+                  <Logo theme={theme} />
+                </div>
+                <HeaderActions
+                  threadId={threadId}
+                  onNewSession={newConversation}
+                />
+              </div>
+            </header>
             <WelcomeHero
               onSend={send}
               streaming={status === "streaming"}
