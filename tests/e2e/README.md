@@ -28,7 +28,7 @@ If neither `OPENAI_API_KEY` nor a Gemini key is set, the entire suite skips at s
 
 ## Layout
 
-```
+```text
 tests/e2e/
 ├── conftest.py                       # session + per-scenario fixtures
 ├── helpers/
