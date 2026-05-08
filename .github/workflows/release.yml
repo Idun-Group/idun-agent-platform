@@ -83,6 +83,18 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: services/idun_agent_standalone_ui/pnpm-lock.yaml
+
       - name: Extract version from tag
         id: version
         run: |
@@ -91,29 +103,44 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
 
-      #   - name: Update version in pyproject.toml
-      #     working-directory: libs/idun_agent_engine
-      #     run: |
-      #       sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
-      #       cat pyproject.toml | grep version
-
-      #   - name: Update schema dependency version
-      #     working-directory: libs/idun_agent_engine
-      #     run: |
-      #       # Update schema dependency to use the exact version we just published
-      #       sed -i 's|idun-agent-schema>=.*,<.*"|idun-agent-schema==${{ steps.version.outputs.VERSION }}"|' pyproject.toml
-      #       cat pyproject.toml | grep idun-agent-schema
+      - name: Update engine version and pin schema dependency
+        working-directory: libs/idun_agent_engine
+        run: |
+          sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
+          sed -i 's|"idun-agent-schema>=.*"|"idun-agent-schema==${{ steps.version.outputs.VERSION }}"|' pyproject.toml
+          echo "Updated pyproject.toml:"
+          grep -m 1 'version = ' pyproject.toml
+          grep 'idun-agent-schema' pyproject.toml
 
       - name: Wait for schema to be available on PyPI
         run: |
           echo "Waiting 30 seconds for schema to propagate on PyPI..."
           sleep 30
 
+      - name: Build standalone UI
+        run: make build-standalone-ui
+
       - name: Build engine package
         working-directory: libs/idun_agent_engine
         run: |
-          uv build --wheel --sdist --out-dir dist
+          uv build --no-sources --wheel --sdist --out-dir dist
           ls -lh dist/
+
+      - name: Smoke test built engine wheel
+        run: |
+          python -m venv /tmp/engine-prepub-venv
+          source /tmp/engine-prepub-venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install \
+            --extra-index-url https://pypi.org/simple/ \
+            libs/idun_agent_engine/dist/*.whl
+          python -c "import idun_agent_engine, idun_agent_standalone, idun_agent_schema"
+          python -c "from importlib.resources import files; assert (files('idun_agent_standalone') / 'alembic.ini').is_file(); assert (files('idun_agent_standalone') / 'static' / 'index.html').is_file()"
+          idun --help
+          idun agent serve --help
+          idun init --help
+          idun setup --help
+          idun hash-password --help
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -142,21 +169,16 @@ jobs:
         run: |
           echo "# 🚀 Idun Agent Platform Release ${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📦 Published Packages" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Install" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 1. Schema (PyPI)" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "pip install idun-agent-schema==${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 2. Engine (PyPI)" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "pip install idun-agent-engine==${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          echo "- [Schema on PyPI](https://pypi.org/project/idun-agent-schema/${{ steps.version.outputs.VERSION }}/)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Engine on PyPI](https://pypi.org/project/idun-agent-engine/${{ steps.version.outputs.VERSION }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "Includes the engine runtime, the standalone admin REST API, the bundled UI, and the \`idun\` CLI. The published \`idun-agent-schema\` package is pulled in as a transitive dependency." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Components published" >> $GITHUB_STEP_SUMMARY
+          echo "- [idun-agent-engine](https://pypi.org/project/idun-agent-engine/${{ steps.version.outputs.VERSION }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "- [idun-agent-schema](https://pypi.org/project/idun-agent-schema/${{ steps.version.outputs.VERSION }}/)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## ✅ Release Complete!" >> $GITHUB_STEP_SUMMARY
-          echo "All components have been successfully published." >> $GITHUB_STEP_SUMMARY
