@@ -28,7 +28,7 @@ from idun_agent_engine.server.dependencies import (
 )
 
 logger = logging.getLogger(__name__)
-agent_router = APIRouter()
+agent_router = APIRouter(tags=["Runtime"])
 
 
 def _extract_text_values(data: Any) -> list[str]:
@@ -504,6 +504,5 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         invoke,
         methods=["POST"],
         response_model=ChatResponse,
-        tags=["Agent"],
         deprecated=True,
     )

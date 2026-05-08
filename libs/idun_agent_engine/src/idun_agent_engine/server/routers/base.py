@@ -13,7 +13,7 @@ from ..lifespan import cleanup_agent, configure_app
 
 logger = logging.getLogger(__name__)
 
-base_router = APIRouter()
+base_router = APIRouter(tags=["Runtime"])
 
 
 class ReloadRequest(BaseModel):
