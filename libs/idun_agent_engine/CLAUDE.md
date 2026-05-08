@@ -2,7 +2,7 @@
 
 ## What this is
 
-`idun_agent_engine` is a Python SDK that wraps agent frameworks (LangGraph, Google ADK, Haystack) into production-ready FastAPI services. Users define their agent and configuration, and the engine handles serving, streaming (AG-UI protocol via CopilotKit), memory, Langgraph checkpointing, observability, guardrails, and MCP tool management.
+`idun_agent_engine` is a Python SDK that wraps agent frameworks (LangGraph, Google ADK) into production-ready FastAPI services. Users define their agent and configuration, and the engine handles serving, streaming (AG-UI protocol via CopilotKit), memory, Langgraph checkpointing, observability, guardrails, and MCP tool management.
 
 Published to PyPI as `idun-agent-engine`. The library is consumed programmatically via `create_app()` / `run_server()`. The `idun` console script source lives in `idun_agent_standalone` but is re-exported by the engine wheel: `[project.scripts] idun = "idun_agent_standalone.cli:main"` plus a `[tool.hatch.build.targets.wheel.force-include]` of the standalone package in `pyproject.toml`. Installing `idun-agent-engine` from PyPI therefore still ships the `idun` command. For the CLI's surface area (commands, flags), see `libs/idun_agent_standalone/CLAUDE.md`.
 
@@ -20,8 +20,7 @@ idun_agent_engine/
 ├── agent/              # Framework adapters (all implement BaseAgent ABC)
 │   ├── base            # BaseAgent protocol: initialize(), invoke(), stream(), copilotkit_agent_instance
 │   ├── langgraph/      # Primary adapter. Full streaming (AG-UI events). Expects uncompiled StateGraph.
-│   ├── adk/            # Google ADK adapter. Mature. Session + memory services. Stream not yet implemented.
-│   └── haystack/       # Haystack adapter. Accepts Pipeline or Agent. Basic invoke only. Experimental.
+│   └── adk/            # Google ADK adapter. Mature. Session + memory services. Stream not yet implemented.
 ├── server/             # FastAPI layer
 │   ├── routers/agent   # /agent/capabilities, /agent/run, /agent/sessions, /agent/graph*, /agent/config
 │   ├── routers/base    # /health, /reload, /_engine/info
@@ -176,16 +175,6 @@ agent:
       type: "in_memory"                   # in_memory | vertex_ai
 ```
 
-**Haystack:**
-```yaml
-agent:
-  type: "HAYSTACK"
-  config:
-    name: "Haystack Agent"
-    component_type: "pipeline"            # pipeline | agent
-    component_definition: "./pipe.py:pipe"  # module_path:variable_name
-```
-
 ## Agent Adapters
 
 All adapters implement `BaseAgent` (generic ABC parameterized by config type).
@@ -198,7 +187,6 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 |---|---|---|---|---|
 | **LanggraphAgent** | `LangGraphAgentConfig` | `graph_definition` → dynamic import → accepts `StateGraph` (preferred) or `CompiledStateGraph` (extracts `.builder`, recompiles with engine checkpointer/store, logs warning) | Full AG-UI event stream via `astream_events` | `LangGraphAGUIAgent` |
 | **AdkAgent** | `AdkAgentConfig` | `agent` field → dynamic import | Not implemented | `ADKAGUIAgent` |
-| **HaystackAgent** | `HaystackAgentConfig` | `component_definition` → dynamic import → `Pipeline` or `Agent` | Not implemented | Not supported |
 
 ### LangGraph: Key Details
 
@@ -289,7 +277,7 @@ Resolution priority in `get_prompts()`:
 ## Key Dependencies
 
 - `idun_agent_schema` — Shared Pydantic models (local editable dep)
-- `langgraph`, `google-adk`, `haystack-ai` — Agent frameworks
+- `langgraph`, `google-adk` — Agent frameworks
 - `copilotkit`, `ag-ui-core`, `ag-ui-encoder`, `ag-ui-adk` — AG-UI streaming protocol
 - `langchain-mcp-adapters` — MCP client
 - `guardrails-ai` — Guardrails hub
@@ -320,6 +308,5 @@ Tests are split into `tests/unit/` (module-level) and `tests/integration/` (full
 | `/agent/invoke` (POST) | Deprecated | Compatibility shim registered in `core/app_factory.py`. Use `/agent/run`. |
 | `/agent/stream` (POST) | Deprecated | Marked `deprecated=True` in `server/routers/agent.py`. Use `/agent/run`. |
 | `/agent/copilotkit/stream` (POST) | Deprecated | Marked `deprecated=True` in `server/routers/agent.py`. Use `/agent/run`. |
-| Haystack adapter | Present | Lives in `agent/haystack/`. Basic invoke only; no streaming, no CopilotKit. Treat as experimental. |
 | Manager-fetch config source | Present (secondary) | Hot-reload only via `POST /reload`, plus prompt/MCP helpers. Requires `IDUN_AGENT_API_KEY` + `IDUN_MANAGER_HOST`. Not the primary boot path. |
 | Textual TUI (`idun init`) | Removed | Removed in commit `556e75a2` ("chore(engine): remove TUI and streamlit demo UI"). The `idun` CLI source now lives in `idun_agent_standalone`, but the engine wheel re-exports the `idun` console script via `[project.scripts]` + `force-include` (see top of this doc). |
