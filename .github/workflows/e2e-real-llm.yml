@@ -1,0 +1,132 @@
+name: E2E (real LLM)
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+# Cancel in-flight runs on the same PR when a new commit lands.
+concurrency:
+  group: e2e-real-llm-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    name: Check secrets availability
+    runs-on: ubuntu-latest
+    outputs:
+      has_secrets: ${{ steps.check.outputs.has_secrets }}
+    steps:
+      - id: check
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [[ -n "$OPENAI_API_KEY" && ( -n "$GOOGLE_API_KEY" || -n "$GEMINI_API_KEY" ) ]]; then
+            echo "has_secrets=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_secrets=false" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping e2e-real-llm: secrets unavailable (likely a fork PR)."
+          fi
+
+  pytest-matrix:
+    name: pytest e2e — ${{ matrix.pair }}
+    needs: preflight
+    if: needs.preflight.outputs.has_secrets == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pair:
+          - lg-openai
+          - lg-gemini
+          - adk-gemini
+    env:
+      E2E_PAIR: ${{ matrix.pair }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GUARDRAILS_API_KEY: ${{ secrets.GUARDRAILS_API_KEY }}
+      IDUN_TELEMETRY_ENABLED: "false"
+      # Force AI Studio auth (bypasses any host Vertex env that might
+      # leak through — defense in depth; CI runner shouldn't have it,
+      # but matches the conftest's explicit override).
+      GOOGLE_GENAI_USE_VERTEXAI: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install workspace dependencies
+        run: uv sync --group dev
+
+      - name: Run pytest e2e for matrix pair
+        run: uv run pytest tests/e2e/ -v --pair=${{ matrix.pair }} --maxfail=3
+
+  playwright:
+    name: Playwright e2e (real LLM)
+    needs: preflight
+    if: needs.preflight.outputs.has_secrets == 'true'
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LLM_PROVIDER: openai
+      LLM_MODEL: gpt-5.4-mini
+      IDUN_TELEMETRY_ENABLED: "false"
+      GOOGLE_GENAI_USE_VERTEXAI: "false"
+      # Admin REST guardrail-add scenario also needs Guardrails Hub.
+      GUARDRAILS_API_KEY: ${{ secrets.GUARDRAILS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install workspace dependencies
+        run: uv sync --group dev
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install UI dependencies
+        working-directory: services/idun_agent_standalone_ui
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: services/idun_agent_standalone_ui
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Playwright real-LLM specs
+        working-directory: services/idun_agent_standalone_ui
+        run: pnpm exec playwright test e2e/chat-real-llm.spec.ts e2e/admin-edit-and-reload.spec.ts
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-${{ github.run_id }}
+          path: services/idun_agent_standalone_ui/test-results/
+          retention-days: 7
