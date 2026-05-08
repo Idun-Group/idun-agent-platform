@@ -4,7 +4,7 @@
 
 `idun_agent_engine` is a Python SDK that wraps agent frameworks (LangGraph, Google ADK, Haystack) into production-ready FastAPI services. Users define their agent and configuration, and the engine handles serving, streaming (AG-UI protocol via CopilotKit), memory, Langgraph checkpointing, observability, guardrails, and MCP tool management.
 
-Published to PyPI as `idun-agent-engine`. The library is consumed programmatically via `create_app()` / `run_server()`; the `idun` CLI lives in the separate `idun_agent_standalone` package.
+Published to PyPI as `idun-agent-engine`. The library is consumed programmatically via `create_app()` / `run_server()`. The `idun` console script source lives in `idun_agent_standalone` but is re-exported by the engine wheel: `[project.scripts] idun = "idun_agent_standalone.cli:main"` plus a `[tool.hatch.build.targets.wheel.force-include]` of the standalone package in `pyproject.toml`. Installing `idun-agent-engine` from PyPI therefore still ships the `idun` command. For the CLI's surface area (commands, flags), see `libs/idun_agent_standalone/CLAUDE.md`.
 
 ## Module map
 
@@ -34,14 +34,22 @@ idun_agent_engine/
 ├── observability/      # Provider-agnostic tracing
 │   ├── base            # ObservabilityHandlerBase ABC, factory functions
 │   ├── langfuse/       # LangChain CallbackHandler integration
-│   ├── phoenix/        # OpenTelemetry + OpenInference instrumentation
+│   ├── langsmith/      # Env-var driven LangSmith tracing (no callbacks; uses LANGSMITH_* vars)
+│   ├── phoenix/        # OpenTelemetry + OpenInference instrumentation (remote collector)
+│   ├── phoenix_local/  # Same as phoenix/, but starts a local Phoenix server via CLI subprocess
 │   ├── gcp_trace/      # Cloud Trace exporter + OpenInference instrumentation
 │   └── gcp_logging/    # Google Cloud Logging (hooks into python logging)
 ├── integrations/       # Messaging/webhook provider integrations
 │   ├── base            # BaseIntegration ABC, setup_integrations() factory, IntegrationProvider dispatch
 │   ├── whatsapp/       # WhatsApp Cloud API: handler (webhook verify + receive), client (send_text_message)
-│   └── discord/        # Discord Interactions Endpoint: handler (Ed25519 verify + slash commands),
-│                       #   client (edit_interaction_response), verify (signature check), integration (app.state setup)
+│   ├── discord/        # Discord Interactions Endpoint: handler (Ed25519 verify + slash commands),
+│   │                   #   client (edit_interaction_response), verify (signature check), integration (app.state setup)
+│   ├── slack/          # Slack Events API: handler (HMAC signing-secret verify), client (chat.postMessage),
+│   │                   #   verify (X-Slack-Signature check), integration (app.state setup)
+│   ├── teams/          # Microsoft Teams (Bot Framework): handler (/messages, Authorization-header verified
+│   │                   #   via BotFrameworkAdapter.process_activity), integration (app.state setup)
+│   └── google_chat/    # Google Chat: handler (Bearer token verify via verify_google_chat_token),
+│                       #   verify (Google ID token check), integration (app.state setup)
 ├── prompts/            # Prompt loading and helpers
 │   ├── __init__        # Re-exports get_prompt
 │   └── helpers         # get_prompt(), get_prompts(), get_prompts_from_file(), get_prompts_from_api()
@@ -206,7 +214,7 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 
 ## Server Endpoints
 
-<!-- VERIFY: regenerate from libs/idun_agent_engine/src/idun_agent_engine/server/routers/ -->
+<!-- VERIFY: regenerate from server/routers/ + integrations/*/integration.py -->
 
 | Endpoint | Method | Purpose |
 |---|---|---|
@@ -223,6 +231,9 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 | `/agent/config` | GET | Get current agent config |
 | `/integrations/whatsapp/webhook` | GET/POST | WhatsApp webhook (GET: Meta verify, POST: receive messages) |
 | `/integrations/discord/webhook` | POST | Discord Interactions Endpoint (Ed25519 verified, handles PING + slash commands) |
+| `/integrations/slack/webhook` | POST | Slack Events API webhook (HMAC signing-secret verified via `X-Slack-Signature`) |
+| `/integrations/teams/messages` | POST | Microsoft Teams Bot Framework messages endpoint (Authorization header verified via `BotFrameworkAdapter`) |
+| `/integrations/google-chat/webhook` | POST | Google Chat webhook (Bearer token verified via Google ID token check) |
 
 `/reload` is not currently protected by the SSO dependency used on `/agent/*` routes. Because engine CORS remains wildcard, any browser origin that can reach the agent can call `/reload` cross-origin as well.
 
@@ -241,7 +252,9 @@ Top-level config. Multiple providers can be active simultaneously. All are lazy-
 | Provider | Mechanism | Callbacks? |
 |---|---|---|
 | **Langfuse** | Sets env vars → `CallbackHandler` for LangChain | Yes |
-| **Phoenix** | `phoenix.otel.register()` + `LangChainInstrumentor` | No (global instrumentation) |
+| **LangSmith** | Sets `LANGSMITH_*` env vars → automatic LangChain/LangGraph tracing | No (env-var based) |
+| **Phoenix** | `phoenix.otel.register()` + `LangChainInstrumentor` (remote collector) | No (global instrumentation) |
+| **Phoenix (local)** | Same as Phoenix, plus starts a local Phoenix server via CLI subprocess | No (global instrumentation) |
 | **GCP Trace** | `CloudTraceSpanExporter` + `LangChainInstrumentor` + optional Guardrails/VertexAI/MCP instrumentors | No (global instrumentation) |
 | **GCP Logging** | `google.cloud.logging.Client.setup_logging()` | No (hooks into python logging) |
 
@@ -309,4 +322,4 @@ Tests are split into `tests/unit/` (module-level) and `tests/integration/` (full
 | `/agent/copilotkit/stream` (POST) | Deprecated | Marked `deprecated=True` in `server/routers/agent.py`. Use `/agent/run`. |
 | Haystack adapter | Present | Lives in `agent/haystack/`. Basic invoke only; no streaming, no CopilotKit. Treat as experimental. |
 | Manager-fetch config source | Present (secondary) | Hot-reload only via `POST /reload`, plus prompt/MCP helpers. Requires `IDUN_AGENT_API_KEY` + `IDUN_MANAGER_HOST`. Not the primary boot path. |
-| Textual TUI (`idun init`) | Removed | Removed in commit `556e75a2` ("chore(engine): remove TUI and streamlit demo UI"). The `idun` CLI now lives in the separate `idun_agent_standalone` package. |
+| Textual TUI (`idun init`) | Removed | Removed in commit `556e75a2` ("chore(engine): remove TUI and streamlit demo UI"). The `idun` CLI source now lives in `idun_agent_standalone`, but the engine wheel re-exports the `idun` console script via `[project.scripts]` + `force-include` (see top of this doc). |
