@@ -36,9 +36,9 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
       - name: Extract version from tag
         id: version
@@ -63,6 +63,9 @@ jobs:
         run: |
           uv build --wheel --sdist --out-dir dist
           ls -lh dist/
+
+      - name: Check distribution metadata
+        run: uvx twine check libs/idun_agent_schema/dist/*
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -94,9 +97,9 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -135,8 +138,26 @@ jobs:
 
       - name: Wait for schema to be available on PyPI
         run: |
-          echo "Waiting 30 seconds for schema to propagate on PyPI..."
-          sleep 30
+          echo "Waiting for schema ${{ steps.version.outputs.VERSION }} to be available on PyPI..."
+          MAX_ATTEMPTS=24
+          ATTEMPT=1
+          SLEEP_DURATION=5
+
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Looking for schema ${{ steps.version.outputs.VERSION }}..."
+
+            if pip index versions idun-agent-schema 2>/dev/null | grep -q "^idun-agent-schema (${{ steps.version.outputs.VERSION }})"; then
+              echo "✓ Schema ${{ steps.version.outputs.VERSION }} found on PyPI"
+              exit 0
+            fi
+
+            echo "Not yet available. Waiting ${SLEEP_DURATION}s..."
+            sleep $SLEEP_DURATION
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+
+          echo "::error::Could not find schema ${{ steps.version.outputs.VERSION }} on PyPI after ${MAX_ATTEMPTS} attempts (${MAX_ATTEMPTS} × ${SLEEP_DURATION}s = $((MAX_ATTEMPTS * SLEEP_DURATION))s)"
+          exit 1
 
       - name: Build standalone UI
         run: make build-standalone-ui
@@ -147,14 +168,15 @@ jobs:
           uv build --no-sources --wheel --sdist --out-dir dist
           ls -lh dist/
 
+      - name: Check distribution metadata
+        run: uvx twine check libs/idun_agent_engine/dist/*
+
       - name: Smoke test built engine wheel
         run: |
           python -m venv /tmp/engine-prepub-venv
           source /tmp/engine-prepub-venv/bin/activate
           python -m pip install --upgrade pip
-          python -m pip install \
-            --extra-index-url https://pypi.org/simple/ \
-            libs/idun_agent_engine/dist/*.whl
+          python -m pip install libs/idun_agent_engine/dist/*.whl
           python -c "import idun_agent_engine, idun_agent_standalone, idun_agent_schema"
           python -c "from importlib.resources import files; assert (files('idun_agent_standalone') / 'alembic.ini').is_file(); assert (files('idun_agent_standalone') / 'static' / 'index.html').is_file()"
           idun --help
