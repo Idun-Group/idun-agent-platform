@@ -5,6 +5,7 @@ gpt-5.4-mini with temperature=0 and asserts a strict YES/NO reply.
 Any ambiguity raises AssertionError with the judge's full reply
 captured.
 """
+
 from __future__ import annotations
 
 import os
@@ -38,7 +39,8 @@ def judge(rubric: str, *, response: str, **context: str) -> bool:
     e.g. `judge(rubric=..., response=resp, turn1_user="...", turn1_assistant="...")`.
     """
     api_key = os.environ.get("OPENAI_API_KEY")
-    assert api_key, "judge() requires OPENAI_API_KEY"
+    if not api_key:
+        raise RuntimeError("judge() requires OPENAI_API_KEY")
     client = OpenAI(api_key=api_key)
 
     body_parts = [f"RUBRIC: {rubric}", "", f"AGENT_RESPONSE:\n{response}"]
@@ -49,6 +51,8 @@ def judge(rubric: str, *, response: str, **context: str) -> bool:
     completion = client.chat.completions.create(
         model=JUDGE_MODEL,
         temperature=0,
+        # SPEC §8.2 allows 50; we use 8 — enough for "YES"/"NO" plus
+        # whitespace, and tight enough to surface model drift quickly.
         max_tokens=8,
         messages=[
             {"role": "system", "content": JUDGE_SYSTEM},
