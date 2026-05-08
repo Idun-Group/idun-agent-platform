@@ -46,9 +46,9 @@ make precommit                 # all pre-commit hooks
 make ci                        # lint + mypy + pytest
 
 # Standalone runtime
-idun-standalone setup          # alembic migrations + seed from IDUN_CONFIG_PATH
-idun-standalone serve          # uvicorn under create_standalone_app
-idun-standalone init           # first-run launcher (migrate + seed + open browser + serve)
+idun setup          # alembic migrations + seed from IDUN_CONFIG_PATH
+idun serve          # uvicorn under create_standalone_app
+idun init           # first-run launcher (migrate + seed + open browser + serve)
 
 # Standalone UI dev
 cd services/idun_agent_standalone_ui
