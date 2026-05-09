@@ -77,11 +77,6 @@
             ]
           },
           {
-            "group": "Manager",
-            "icon": "grid-2",
-            "pages": ["manager/overview", "manager/tutorial"]
-          },
-          {
             "group": "Agent frameworks",
             "icon": "layer-group",
             "pages": ["frameworks/overview", "frameworks/langgraph", "frameworks/adk"]
@@ -248,8 +243,7 @@
     { "source": "/deployment/gcp-self-hosted", "destination": "/deployment/gcp" },
     { "source": "/prompts/overview", "destination": "/prompts" },
     { "source": "/more/faq", "destination": "/faq" },
-    { "source": "/concepts/overview", "destination": "/architecture" },
-    { "source": "/agent-manager/overview", "destination": "/manager/overview" }
+    { "source": "/concepts/overview", "destination": "/architecture" }
   ],
   "integrations": {
     "posthog": {

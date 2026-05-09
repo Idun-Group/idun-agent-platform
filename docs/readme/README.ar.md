@@ -2,6 +2,8 @@
   <a href="../../README.md">English</a> | <a href="README.fr.md">Français</a> | <a href="README.es.md">Español</a> | <a href="README.zh.md">中文</a> | <strong>العربية</strong>
 </p>
 
+> تم التحديث لـ v0.6 من النسخة الإنجليزية. يُرجى الإبلاغ عن مشاكل الترجمة على [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=docs%2Ci18n).
+
 <div align="center">
 
 <picture>
@@ -12,7 +14,9 @@
 
 <br/>
 
-### كل ما تحتاجه لنشر وكلاء الذكاء الاصطناعي في بيئة الإنتاج
+### قم بإطلاق عملاء LangGraph و ADK في الإنتاج.
+
+استضافة ذاتية. مفتوح المصدر. بدون قيود الموردين.
 
 <br/>
 
@@ -33,9 +37,9 @@
 
 <br/>
 
-<p align="center">Idun Agent Platform هي منصة تحكم مفتوحة المصدر ذاتية الاستضافة لوكلاء <b>LangGraph</b> و <b>Google ADK</b>. سجّل وكيلك واحصل على خدمة جاهزة للإنتاج مع إمكانية المراقبة، حواجز الحماية، استمرار الذاكرة، حوكمة أدوات MCP، إدارة الموجّهات، وتسجيل الدخول الموحد مع عزل مساحات العمل.</p>
+<p align="center">Idun هو غلاف الإنتاج مفتوح المصدر لعملاء <b>LangGraph</b> و <b>Google ADK</b> — واجهة دردشة، تتبعات، حواجز، ذاكرة، و MCP، على البنية التحتية الخاصة بك. <code>pip install idun-agent-engine</code> ويعمل عميلك كعملية FastAPI مع واجهة دردشة مدمجة، لوحة إدارة، تتبعات، مراقبة، حواجز حماية، استمرار للذاكرة، حوكمة لأدوات MCP، وإدارة للموجّهات.</p>
 
-> **لماذا Idun؟** تواجه الفرق التي تبني وكلاء ذكاء اصطناعي مفاضلة صعبة: بناء المنصة بنفسك (بطيء، مكلف) أو اعتماد خدمة سحابية (تقييد، بدون سيادة). Idun هو الطريق الثالث: تحتفظ بكود الوكيل الخاص بك، بياناتك، وبنيتك التحتية. المنصة تتولى طبقة الإنتاج.
+> **لماذا Idun؟** تواجه الفرق التي تبني العملاء مفاضلة: بناء غلاف الإنتاج بنفسك (FastAPI + تتبعات + حواجز + لوحة إدارة — بطيء)، أو اعتماد خدمة SaaS مثل LangGraph Cloud أو LangSmith (التضحية بالسيادة). Idun هو الطريق الثالث: `pip install` لعملية FastAPI مكتفية ذاتياً تجمع عميلك مع واجهة دردشة، لوحة إدارة، تتبعات، وحواجز — كلها مفتوحة المصدر، وكلها على بنيتك التحتية.
 
 <p align="center">
   <img src="../images/readme/demo.gif" alt="عرض Idun Agent Platform" width="100%"/>
@@ -45,26 +49,17 @@
 
 ## البدء السريع
 
-> **المتطلبات الأساسية**: Docker و Git.
+> **المتطلبات الأساسية**: Python 3.12+ و pip.
 
 ```bash
-git clone https://github.com/Idun-Group/idun-agent-platform.git && cd idun-agent-platform
-cp .env.example .env
-docker compose -f docker-compose.dev.yml up --build
+pip install idun-agent-engine
+idun init my-agent
+cd my-agent && idun serve
 ```
 
-افتح [localhost:3000](http://localhost:3000). أنشئ حساباً. انشر وكيلك الأول بثلاث نقرات.
+افتح [http://localhost:8000](http://localhost:8000). تحدّث مع عميلك، ثم استكشف الإدارة على [/admin](http://localhost:8000/admin) والتتبعات على [/admin/traces](http://localhost:8000/admin/traces).
 
-> [!TIP]
-> **لا تحتاج المنصة الكاملة؟** شغّل وكيلاً مستقلاً بدون Manager وبدون قاعدة بيانات:
-> ```bash
-> pip install idun-agent-engine && idun init
-> ```
-> واجهة TUI التفاعلية تضبط إعدادات الإطار، الذاكرة، المراقبة، حواجز الحماية و MCP دفعة واحدة. راجع [توثيق CLI](https://docs.idunplatform.com/cli/overview).
-
----
-
-## المحتويات
+## ما الذي يتضمنه Idun
 
 <table>
 <tr>
@@ -74,20 +69,20 @@ docker compose -f docker-compose.dev.yml up --build
 
 Langfuse · Arize Phoenix · LangSmith · GCP Trace · GCP Logging
 
-تتبع كل تشغيل للوكيل. اربط عدة مزودين في نفس الوقت عبر الإعدادات.
+تتبّع كل تشغيل للعميل. اربط عدة موفرين في نفس الوقت من خلال الإعدادات.
 
 <img src="../images/readme/observability.png" alt="المراقبة" width="100%"/>
 
 </td>
 <td width="50%" valign="top">
 
-### حواجز الحماية
+### الحواجز
 
-كشف PII · لغة سامة · قوائم حظر · تقييد الموضوع · فحص التحيز · NSFW · و9 أنواع أخرى
+كشف PII · لغة سامة · قوائم حظر · تقييد المواضيع · فحص التحيز · NSFW · 9 أخرى
 
-طبّق سياسات لكل وكيل على المدخلات أو المخرجات أو كليهما. مدعوم من Guardrails AI.
+طبّق سياسات لكل عميل على المدخلات أو المخرجات أو كليهما. مدعوم بـ Guardrails AI.
 
-<img src="../images/readme/guardrails.png" alt="حواجز الحماية" width="100%"/>
+<img src="../images/readme/guardrails.png" alt="الحواجز" width="100%"/>
 
 </td>
 </tr>
@@ -96,97 +91,60 @@ Langfuse · Arize Phoenix · LangSmith · GCP Trace · GCP Logging
 
 ### حوكمة أدوات MCP
 
-سجّل خوادم MCP وتحكم في الأدوات التي يمكن لكل وكيل الوصول إليها. يدعم stdio و SSE و HTTP القابل للتدفق و WebSocket.
+سجّل خوادم MCP وتحكّم في الأدوات التي يمكن لكل عميل الوصول إليها. يدعم stdio و SSE و HTTP المتدفق و WebSocket.
 
 <img src="../images/readme/mcp.png" alt="MCP" width="100%"/>
 
 </td>
 <td width="50%" valign="top">
 
-### الذاكرة والاستمرارية
+### الذاكرة والاستمرار
 
 PostgreSQL · SQLite · في الذاكرة · Vertex AI · ADK Database
 
-المحادثات تستمر بعد إعادة التشغيل. اختر خلفية لكل وكيل.
+تستمر المحادثات عبر إعادة التشغيل. اختر الواجهة الخلفية لكل عميل.
 
 <img src="../images/readme/memory.png" alt="الذاكرة" width="100%"/>
 
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td colspan="2" valign="top" align="center">
 
 ### إدارة الموجّهات
 
-قوالب مُنسّخة مع متغيرات Jinja2. عيّن الموجّهات للوكلاء من واجهة المستخدم أو API.
+قوالب ذات إصدارات بمتغيرات Jinja2. اربط الموجّهات بالعملاء من الواجهة أو الـ API.
 
-<img src="../images/readme/prompts.png" alt="الموجّهات" width="100%"/>
-
-</td>
-<td width="50%" valign="top">
-
-### تكامل المراسلة
-
-WhatsApp · Discord · Slack
-
-ثنائي الاتجاه: استقبل الرسائل، استدعِ الوكلاء، أرسل الردود. التحقق من Webhook مُدمج.
-
-<img src="../images/readme/integrations.png" alt="التكاملات" width="100%"/>
+<img src="../images/readme/prompts.png" alt="الموجّهات" width="50%"/>
 
 </td>
 </tr>
 </table>
 
 > [!NOTE]
-> **SSO والتعدد** — OIDC مع Google و Okta، أو اسم مستخدم/كلمة مرور. مساحات عمل بأدوار (مالك، مدير، عضو، مشاهد). كل مورد محدد بمساحة عمل.
-
-> [!NOTE]
-> **بث AG-UI** — كل وكيل يحصل على API بث قائم على المعايير، متوافق مع عملاء CopilotKit. ساحة اختبار دردشة مدمجة.
+> **بث AG-UI** — يحصل كل عميل على واجهة بث برمجية قائمة على المعايير، متوافقة مع عملاء CopilotKit. ساحة دردشة مدمجة للاختبار.
 
 <p align="center">
-  <img src="../images/readme/agent-detail.png" alt="تفاصيل الوكيل" width="100%"/>
+  <img src="../images/readme/agent-detail.png" alt="تفاصيل العميل" width="100%"/>
 </p>
 
 ---
 
-## الهندسة المعمارية
+## البنية المعمارية
 
-| | |
-|---|---|
-| **Engine** | يغلف وكلاء LangGraph/ADK في خدمة FastAPI مع بث AG-UI، نقاط التفتيش، حواجز الحماية، المراقبة، MCP و SSO. الإعداد عبر YAML أو Manager API. |
-| **Manager** | مستوى التحكم. عمليات CRUD للوكلاء، إدارة الموارد، مساحات عمل متعددة المستأجرين. يقدم إعدادات مُجسّدة للمحركات. |
-| **Web UI** | لوحة تحكم React 19. معالج إنشاء الوكلاء، إعداد الموارد، دردشة مدمجة، إدارة المستخدمين. |
+يُشحن Idun كعملية واحدة: **`idun-agent-standalone`**. يجمع SDK المحرك، وواجهة دردشة Next.js، ولوحة إدارة، وعارض تتبعات — يعمل عميلك داخل هذه العملية، يُهيَّأ من ملف YAML ويُعاد تحميله مباشرة من REST الإدارة.
 
 ```mermaid
 flowchart LR
-  subgraph المشاركون
-    Users["المستخدمون / التطبيقات"]
-    Admin["المدير / DevOps"]
-    CICD["CI/CD"]
-  end
-
-  subgraph Platform["Idun Agent Platform"]
+  subgraph Idun["idun-agent-standalone (one process)"]
     direction TB
-    UI["Web UI"]
-    MGR["Manager API"]
-    subgraph Engines["المحركات"]
-      ENG1["LangGraph"]
-      ENG2["ADK"]
-    end
-    DB[(PostgreSQL)]
+    UI["Chat UI / Admin / Traces"] --> ENG["Engine SDK"]
+    ENG --> DB[(Postgres / SQLite)]
   end
-
-  subgraph Infra["البنية التحتية"]
-    OBS["المراقبة"]
-    MEM[(الذاكرة)]
-    LLM["LLMs"]
-    TOOLS["أدوات MCP"]
-  end
-
-  Admin --> UI --> MGR --> DB
-  Engines -- "إعدادات" --> MGR
-  CICD --> Engines
-  Users --> Engines --> Infra
+  Users --> UI
+  Admin --> UI
+  ENG --> Agent["Your LangGraph / ADK agent"]
+  Agent --> LLM["LLMs / MCP / tools"]
 ```
 
 ---
@@ -194,20 +152,22 @@ flowchart LR
 ## التكاملات
 
 <p align="center">
-  <img src="../../old-docs/images/logo/langgraph-color.png" alt="LangGraph" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/agent-development-kit.png" alt="ADK" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/langfuse-color.png" alt="Langfuse" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/mcp.png" alt="MCP" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/Postgresql_elephant.png" alt="PostgreSQL" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/phoenix.svg" alt="Phoenix" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/langsmith-color.png" alt="LangSmith" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/google-cloud.png" alt="Google Cloud" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/Okta-Logo.png" alt="Okta" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/guardrails-ai.png" alt="Guardrails AI" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/langchain-color.png" alt="LangChain" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/A2A.png" alt="A2A" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="../../old-docs/images/logo/ag-ui.png" alt="AG-UI" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/langgraph-color.png" alt="LangGraph" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/agent-development-kit.png" alt="ADK" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/langfuse-color.png" alt="Langfuse" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/mcp.png" alt="MCP" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/Postgresql_elephant.png" alt="PostgreSQL" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/phoenix.svg" alt="Phoenix" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/langsmith-color.png" alt="LangSmith" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/google-cloud.png" alt="Google Cloud" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/guardrails-ai.png" alt="Guardrails AI" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/langchain-color.png" alt="LangChain" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/A2A.png" alt="A2A" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="../images/logos/ag-ui.png" alt="AG-UI" style="height:36px; margin:6px; vertical-align:middle;" />
 </p>
+
+> [!NOTE]
+> **دعم أُطر العمل** — LangGraph و Google ADK مدعومان بشكل أساسي اليوم، مع محولات كاملة في المحرك. LangChain مدعوم عبر محول LangGraph؛ التوافق الأصلي الأوسع مع LangChain موجود في [خارطة الطريق](https://docs.idunplatform.com/roadmap).
 
 ---
 
@@ -215,30 +175,23 @@ flowchart LR
 
 | | **Idun Platform** | **LangGraph Cloud** | **LangSmith** | **DIY (FastAPI + glue)** |
 |---|:---:|:---:|:---:|:---:|
-| استضافة ذاتية / محلية | ✅ | ❌ | ❌ | ✅ |
-| متعدد الأطر (LangGraph + ADK) | ✅ | LangGraph فقط | ❌ (مراقبة فقط) | يدوي |
-| حواجز الحماية (PII، السمية، الموضوع) | ✅ 15+ مدمجة | ❌ | ❌ | ابنِها بنفسك |
-| حوكمة أدوات MCP | ✅ لكل وكيل | ❌ | ❌ | ابنِها بنفسك |
-| مساحات عمل متعددة المستأجرين + RBAC | ✅ | ❌ | ✅ | ابنِها بنفسك |
-| SSO (OIDC، Okta، Google) | ✅ | ❌ | ✅ | ابنِها بنفسك |
-| المراقبة (Langfuse، Phoenix، LangSmith، GCP) | ✅ متعدد المزودين | ❌ LangSmith فقط | ✅ LangSmith فقط | يدوي |
-| الذاكرة / نقاط التفتيش | ✅ Postgres، SQLite، في الذاكرة | ✅ | ❌ | ابنِها بنفسك |
-| إدارة الموجّهات (مُنسّخة، Jinja2) | ✅ | ❌ | ✅ Hub | ابنِها بنفسك |
-| المراسلة (WhatsApp، Discord، Slack) | ✅ | ❌ | ❌ | ابنِها بنفسك |
-| بث AG-UI / CopilotKit | ✅ | ✅ | ❌ | يدوي |
-| واجهة إدارة | ✅ | ✅ | ✅ | ❌ |
-| تقييد المزود | **لا يوجد** | عالي | عالي | لا يوجد |
-| مفتوح المصدر | ✅ GPLv3 | ❌ | ❌ | — |
-| عبء الصيانة | منخفض | منخفض | منخفض | **عالي** |
+| استضافة ذاتية / on-prem | ✅ | ❌ | ❌ | ✅ |
+| متعدد الأطر (LangGraph + ADK) | ✅ | LangGraph only | ❌ obs only | Manual |
+| الحواجز (15+ مدمجة) | ✅ | ❌ | ❌ | Build yourself |
+| حوكمة أدوات MCP | ✅ per-agent | ❌ | ❌ | Build yourself |
+| المراقبة (متعددة الموفرين) | ✅ Langfuse, Phoenix, LangSmith, GCP | ❌ LangSmith only | ✅ LangSmith only | Manual |
+| الذاكرة / نقاط التحقق | ✅ Postgres, SQLite, in-memory | ✅ | ❌ | Build yourself |
+| بث AG-UI / CopilotKit | ✅ | ✅ | ❌ | Manual |
+| مفتوح المصدر (GPLv3) | ✅ | ❌ | ❌ | — |
 
 > [!NOTE]
-> Idun ليست بديلاً عن LangSmith (المراقبة) أو LangGraph Cloud (الاستضافة). إنها الطبقة بين كود الوكيل والإنتاج التي تتعامل مع الحوكمة والأمان والعمليات، بغض النظر عن المراقبة أو الاستضافة التي تختارها.
+> Idun ليس بديلاً عن LangSmith (المراقبة) أو LangGraph Cloud (الاستضافة). إنه الطبقة بين كود عميلك والإنتاج، التي تتولى الحوكمة والأمان والعمليات، بغض النظر عن المراقبة أو الاستضافة التي تختارها.
 
 ---
 
-## الإعدادات
+## التهيئة
 
-يتم إعداد كل وكيل من خلال ملف YAML واحد. إليك مثال كامل مع تفعيل جميع الميزات:
+يتم تهيئة كل عميل من خلال ملف YAML واحد. فيما يلي مثال كامل مع تمكين جميع الميزات:
 
 ```yaml
 server:
@@ -266,7 +219,7 @@ guardrails:
   input:
     - config_id: "DETECT_PII"
       on_fail: "reject"
-      reject_message: "الطلب يحتوي على معلومات شخصية."
+      reject_message: "Request contains personal information."
   output:
     - config_id: "TOXIC_LANGUAGE"
       on_fail: "reject"
@@ -280,26 +233,12 @@ mcp_servers:
 prompts:
   - prompt_id: "system-prompt"
     version: 1
-    content: "أنت وكيل دعم لـ {{ company_name }}."
+    content: "You are a support agent for {{ company_name }}."
     tags: ["latest"]
-
-sso:
-  enabled: true
-  issuer: "https://accounts.google.com"
-  client_id: "123456789.apps.googleusercontent.com"
-  allowed_domains: ["yourcompany.com"]
-
-integrations:
-  - provider: "WHATSAPP"
-    enabled: true
-    config:
-      access_token: "${WHATSAPP_ACCESS_TOKEN}"
-      phone_number_id: "${WHATSAPP_PHONE_ID}"
-      verify_token: "${WHATSAPP_VERIFY_TOKEN}"
 ```
 
 > [!TIP]
-> متغيرات البيئة مثل `${LANGFUSE_SECRET_KEY}` يتم حلها عند بدء التشغيل. يمكنك استخدام ملفات `.env` أو حقنها عبر Docker/Kubernetes.
+> يتم حل متغيرات البيئة مثل `${LANGFUSE_SECRET_KEY}` عند بدء التشغيل. يمكنك استخدام ملفات `.env` أو حقنها عبر Docker/Kubernetes.
 
 التشغيل من ملف:
 
@@ -308,18 +247,10 @@ pip install idun-agent-engine
 idun agent serve --source file --path config.yaml
 ```
 
-أو جلب الإعدادات من Manager:
-
-```bash
-export IDUN_AGENT_API_KEY=your-agent-api-key
-export IDUN_MANAGER_HOST=https://manager.example.com
-idun agent serve --source manager
-```
-
 > [!IMPORTANT]
-> مرجع الإعدادات الكامل: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration)
+> مرجع التهيئة الكامل: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration)
 >
-> 9 أمثلة وكلاء قابلة للتشغيل: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
+> 9 أمثلة عملاء قابلة للتشغيل: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
 ---
 
@@ -327,7 +258,7 @@ idun agent serve --source manager
 
 | | |
 |---|---|
-| **أسئلة ومساعدة** | [Discord](https://discord.gg/KCZ6nW2jQe) |
+| **الأسئلة والمساعدة** | [Discord](https://discord.gg/KCZ6nW2jQe) |
 | **طلبات الميزات** | [GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions) |
 | **تقارير الأخطاء** | [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues) |
 | **المساهمة** | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
@@ -335,12 +266,12 @@ idun agent serve --source manager
 
 ## الدعم التجاري
 
-تتم الصيانة بواسطة [Idun Group](https://idunplatform.com). نساعد في هندسة المنصة، النشر، وتكامل IdP/الامتثال. [احجز مكالمة](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
+تتم صيانته من قبل [Idun Group](https://idunplatform.com). نساعد في بنية المنصة، النشر، وتكامل IdP/الامتثال. [حجز مكالمة](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
 
 ## القياس عن بُعد
 
-مقاييس استخدام مجهولة وبسيطة عبر PostHog. بدون PII. [عرض الكود المصدري](../../libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). إلغاء الاشتراك: `IDUN_TELEMETRY_ENABLED=false`
+مقاييس استخدام بسيطة ومجهولة الهوية عبر PostHog. لا توجد PII. [اعرض الكود المصدري](../../libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). الإيقاف: `IDUN_TELEMETRY_ENABLED=false`
 
-## الرخصة
+## الترخيص
 
 [GPLv3](../../LICENSE)
