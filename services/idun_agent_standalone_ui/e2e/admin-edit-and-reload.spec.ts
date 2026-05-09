@@ -4,15 +4,16 @@ const SENTINEL = "qwertanu";
 
 // This spec exercises the admin REST → commit_with_reload → engine pickup
 // pipeline by adding a BAN_LIST guardrail. The engine's guardrail
-// converter requires GUARDRAILS_API_KEY to inject into the api_key field;
-// the e2e-real-llm.yml Playwright job forwards it AND pre-installs the
-// BAN_LIST validator (caches the Hub install). Skip cleanly when the
-// key isn't present so this spec only fires from the real-LLM workflow
-// — the standalone-ci.yml Playwright job boots an echo agent without
-// guardrails and shouldn't run this spec.
+// converter requires GUARDRAILS_API_KEY AND a working Guardrails Hub
+// install path. The e2e-real-llm.yml Playwright job pre-installs
+// hub://guardrails/ban_list before the run; the standalone-ci.yml
+// E2E (Playwright) job does not (and shouldn't — its boot uses an
+// echo agent). Gate on LLM_PROVIDER (same gate chat-real-llm.spec.ts
+// uses) so the spec only fires from e2e-real-llm.yml, and additionally
+// require GUARDRAILS_API_KEY for the engine's converter.
 test.skip(
-  !process.env.GUARDRAILS_API_KEY,
-  "admin-edit-and-reload requires GUARDRAILS_API_KEY; runs from the e2e-real-llm.yml Playwright job which forwards it from repo secrets.",
+  !process.env.LLM_PROVIDER || !process.env.GUARDRAILS_API_KEY,
+  "admin-edit-and-reload requires LLM_PROVIDER + GUARDRAILS_API_KEY; runs from the e2e-real-llm.yml Playwright job which exports both AND pre-installs the BAN_LIST validator.",
 );
 
 test("admin guardrail addition triggers reload — chat with sentinel blocked", async ({

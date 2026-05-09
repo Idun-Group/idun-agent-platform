@@ -104,8 +104,8 @@ jobs:
             --token "$GUARDRAILS_API_KEY" \
             --disable-remote-inferencing \
             --disable-metrics
-          uv run guardrails install hub://guardrails/ban_list
-          uv run guardrails install hub://guardrails/detect_pii
+          uv run guardrails hub install hub://guardrails/ban_list
+          uv run guardrails hub install hub://guardrails/detect_pii
 
       - name: Run pytest e2e for matrix pair
         run: uv run pytest tests/e2e/ -v --pair=${{ matrix.pair }} --maxfail=3
@@ -153,7 +153,7 @@ jobs:
             --token "$GUARDRAILS_API_KEY" \
             --disable-remote-inferencing \
             --disable-metrics
-          uv run guardrails install hub://guardrails/ban_list
+          uv run guardrails hub install hub://guardrails/ban_list
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
