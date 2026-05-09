@@ -3,6 +3,12 @@
 Seeds the singleton agent plus the optional memory row from
 ``IDUN_CONFIG_PATH`` if the DB is empty. Schema creation is handled
 by Alembic via ``db.migrate.upgrade_head`` before this runs.
+
+The seeder is split into one ``_seed_<resource>_if_empty`` helper per
+resource, called by the ``seed_from_yaml_if_empty`` orchestrator. Each
+helper runs under its own try/except so a future per-resource seeder
+(observability, guardrails, ...) cannot kill the agent boot if it
+explodes — the operator still gets a working agent and a logged error.
 """
 
 from __future__ import annotations
@@ -10,8 +16,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from idun_agent_engine.core.config_builder import ConfigBuilder
+from idun_agent_engine.core.engine_config import EngineConfig
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
@@ -20,68 +27,125 @@ from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemo
 logger = get_logger(__name__)
 
 
-async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> None:
-    """Seed the agent (and optional memory) row if the DB has no agent."""
-    async with sm() as session:
-        existing = (
-            await session.execute(select(StandaloneAgentRow))
-        ).scalar_one_or_none()
-        if existing is not None:
-            return
+async def _seed_agent_if_empty(
+    session: AsyncSession, engine_config: EngineConfig
+) -> int:
+    """Seed the singleton agent row from ``engine_config`` if absent.
 
-        if not config_path.exists():
+    Returns the number of rows added (0 or 1) so the orchestrator can
+    log a coverage summary at the end of the seed pass.
+    """
+    existing = (await session.execute(select(StandaloneAgentRow))).scalar_one_or_none()
+    if existing is not None:
+        return 0
+
+    agent_config = engine_config.agent.config
+    framework = engine_config.agent.type.value
+
+    # Memory lives on its own row. Pull it off the agent config so
+    # base_engine_config holds only server + agent fields.
+    inner_dict = agent_config.model_dump(exclude_none=True)
+    inner_dict.pop("checkpointer", None)
+    inner_dict.pop("session_service", None)
+
+    base_engine_config = {
+        "server": engine_config.server.model_dump(),
+        "agent": {"type": framework, "config": inner_dict},
+    }
+
+    session.add(
+        StandaloneAgentRow(
+            name=agent_config.name,
+            base_engine_config=base_engine_config,
+            status="draft",
+        )
+    )
+    await session.commit()
+    return 1
+
+
+async def _seed_memory_if_empty(
+    session: AsyncSession, engine_config: EngineConfig
+) -> int:
+    """Seed the singleton memory row if the YAML declared one.
+
+    LangGraph configs put the persistence handle under ``checkpointer``;
+    ADK configs put it under ``session_service``. Either is mapped onto
+    the standalone memory row's ``memory_config`` JSON column. Absence
+    means the agent runs on the engine's in-memory default — that is a
+    valid configuration, not an error.
+    """
+    existing = (await session.execute(select(StandaloneMemoryRow))).scalar_one_or_none()
+    if existing is not None:
+        return 0
+
+    agent_config = engine_config.agent.config
+    framework = engine_config.agent.type.value
+
+    checkpointer = getattr(agent_config, "checkpointer", None)
+    session_service = getattr(agent_config, "session_service", None)
+    memory_payload: dict | None = None
+    if checkpointer is not None:
+        memory_payload = checkpointer.model_dump()
+    elif session_service is not None:
+        memory_payload = session_service.model_dump()
+
+    if memory_payload is None:
+        return 0
+
+    session.add(
+        StandaloneMemoryRow(
+            id="singleton",
+            agent_framework=framework,
+            memory_config=memory_payload,
+        )
+    )
+    await session.commit()
+    return 1
+
+
+async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> None:
+    """Seed each resource row from YAML if the DB is empty.
+
+    Each per-resource helper runs under its own try/except so an
+    isolated failure (e.g. a future observability seeder choking on a
+    malformed env var) does not prevent the agent from booting. The
+    operator gets a working agent plus a logged error pointing at the
+    failed resource.
+    """
+    if not config_path.exists():
+        # Nothing to seed; the operator may be running in fully
+        # config-less mode and will use the wizard.
+        async with sm() as session:
+            existing = (
+                await session.execute(select(StandaloneAgentRow))
+            ).scalar_one_or_none()
+        if existing is None:
             logger.info(
                 "No agent row and no config.yaml at %s. Standalone is unconfigured.",
                 config_path,
             )
-            return
+        return
 
-        config = ConfigBuilder.load_from_file(str(config_path))
+    engine_config = ConfigBuilder.load_from_file(str(config_path))
 
-        agent_config = config.agent.config
-        framework = config.agent.type.value
+    seeded: dict[str, int] = {"agent": 0, "memory": 0}
 
-        # Memory lives on its own row. Pull it off the agent config so
-        # base_engine_config holds only server + agent fields.
-        checkpointer = getattr(agent_config, "checkpointer", None)
-        session_service = getattr(agent_config, "session_service", None)
-        memory_payload: dict | None = None
-        if checkpointer is not None:
-            memory_payload = checkpointer.model_dump()
-        elif session_service is not None:
-            memory_payload = session_service.model_dump()
+    async with sm() as session:
+        try:
+            seeded["agent"] = await _seed_agent_if_empty(session, engine_config)
+        except Exception:
+            logger.exception("Failed to seed agent row from %s", config_path)
 
-        inner_dict = agent_config.model_dump(exclude_none=True)
-        inner_dict.pop("checkpointer", None)
-        inner_dict.pop("session_service", None)
+    async with sm() as session:
+        try:
+            seeded["memory"] = await _seed_memory_if_empty(session, engine_config)
+        except Exception:
+            logger.exception("Failed to seed memory row from %s", config_path)
 
-        base_engine_config = {
-            "server": config.server.model_dump(),
-            "agent": {"type": framework, "config": inner_dict},
-        }
-
-        session.add(
-            StandaloneAgentRow(
-                name=agent_config.name,
-                base_engine_config=base_engine_config,
-                status="draft",
-            )
-        )
-
-        if memory_payload is not None:
-            session.add(
-                StandaloneMemoryRow(
-                    id="singleton",
-                    agent_framework=framework,
-                    memory_config=memory_payload,
-                )
-            )
-
-        await session.commit()
-        logger.info(
-            "Seeded standalone DB from %s (name=%s, framework=%s, memory=%s)",
-            config_path,
-            agent_config.name,
-            framework,
-            "configured" if memory_payload else "default",
-        )
+    logger.info(
+        "seed complete from %s: agent=%d memory=%d",
+        config_path,
+        seeded["agent"],
+        seeded["memory"],
+    )
