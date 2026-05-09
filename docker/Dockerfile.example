@@ -1,29 +1,49 @@
 # Build a deployable image around your agent code.
-# Replace python:3.12-slim with your preferred base if needed.
-FROM python:3.12-slim
+# Multi-stage: deps install in `builder`; final image runs unprivileged.
+
+# ---- builder ----
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+# Install the engine + bundled standalone runtime into a clean prefix.
+# (The engine wheel force-includes the standalone source via Hatch.)
+RUN pip install --no-cache-dir --prefix=/install idun-agent-engine
+
+# Add any extra Python deps your agent needs:
+# RUN pip install --no-cache-dir --prefix=/install langchain-openai langchain-google-genai
+
+# ---- runtime ----
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    IDUN_HOST=0.0.0.0 \
+    IDUN_PORT=8000 \
+    IDUN_CONFIG_PATH=/app/agent/config.yaml
+
+# Create an unprivileged user. UID/GID 1001 is conventional for Cloud Run, GKE, and most managed hosts.
+RUN groupadd --system --gid 1001 idun \
+ && useradd --system --uid 1001 --gid idun --create-home --home-dir /home/idun idun
 
 WORKDIR /app
 
-# Install the standalone (pulls engine + UI as transitive deps).
-RUN pip install --no-cache-dir idun-agent-engine
+# Pull installed packages from the builder stage.
+COPY --from=builder /install /usr/local
 
-# Copy your agent code and config.
-# The standalone expects: IDUN_CONFIG_PATH=/app/agent/config.yaml
-COPY agent /app/agent
-ENV IDUN_CONFIG_PATH=/app/agent/config.yaml
+# Copy your agent code and config (must be readable by uid 1001).
+COPY --chown=idun:idun agent /app/agent
 
-# Add any extra Python deps your agent needs:
-# RUN pip install --no-cache-dir langchain-openai langchain-google-genai
-
-# Override defaults via env vars at deploy time:
-#   IDUN_ADMIN_AUTH_MODE=password
-#   IDUN_ADMIN_PASSWORD_HASH=...        (use: idun hash-password)
-#   IDUN_SESSION_SECRET=...              (use: openssl rand -hex 32)
-#   DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/idun
-#   OPENAI_API_KEY=...                   (whatever your agent needs)
+USER idun:idun
 
 EXPOSE 8000
 
+# Override defaults via env vars at deploy time:
+#   IDUN_ADMIN_AUTH_MODE=password
+#   IDUN_ADMIN_PASSWORD_HASH=<hash>          (use: idun hash-password)
+#   IDUN_SESSION_SECRET=<32-byte-hex>         (use: openssl rand -hex 32)
+#   DATABASE_URL=postgresql+asyncpg://<DB_USER>:<DB_PASSWORD>@<HOST>:5432/idun
+#   OPENAI_API_KEY=<your-key>                 (whatever your agent needs)
+
 # `idun serve` reads host/port from IDUN_HOST/IDUN_PORT env (defaults: 0.0.0.0:8000).
-# Override via -e at run time if you need a different binding.
 CMD ["idun", "serve"]
