@@ -1,5 +1,5 @@
 import os
-from typing import Literal, Union
+from typing import Any, Literal, Union
 
 from pydantic import BaseModel, Field
 
@@ -32,7 +32,9 @@ class SimpleNSFWTextConfig(BaseModel):
 
 
 class SimpleToxicLanguageConfig(BaseModel):
-    config_id: Literal[GuardrailConfigId.TOXIC_LANGUAGE] = GuardrailConfigId.TOXIC_LANGUAGE
+    config_id: Literal[GuardrailConfigId.TOXIC_LANGUAGE] = (
+        GuardrailConfigId.TOXIC_LANGUAGE
+    )
     api_key: str = ""
     reject_message: str = ""
     threshold: float = Field(
@@ -41,7 +43,9 @@ class SimpleToxicLanguageConfig(BaseModel):
 
 
 class SimpleGibberishTextConfig(BaseModel):
-    config_id: Literal[GuardrailConfigId.GIBBERISH_TEXT] = GuardrailConfigId.GIBBERISH_TEXT
+    config_id: Literal[GuardrailConfigId.GIBBERISH_TEXT] = (
+        GuardrailConfigId.GIBBERISH_TEXT
+    )
     api_key: str = ""
     reject_message: str = ""
     threshold: float = Field(
@@ -59,7 +63,9 @@ class SimpleBiasCheckConfig(BaseModel):
 
 
 class SimpleCompetitionCheckConfig(BaseModel):
-    config_id: Literal[GuardrailConfigId.COMPETITION_CHECK] = GuardrailConfigId.COMPETITION_CHECK
+    config_id: Literal[GuardrailConfigId.COMPETITION_CHECK] = (
+        GuardrailConfigId.COMPETITION_CHECK
+    )
     api_key: str = ""
     reject_message: str = ""
     competitors: list[str] = Field(
@@ -68,7 +74,9 @@ class SimpleCompetitionCheckConfig(BaseModel):
 
 
 class SimpleCorrectLanguageConfig(BaseModel):
-    config_id: Literal[GuardrailConfigId.CORRECT_LANGUAGE] = GuardrailConfigId.CORRECT_LANGUAGE
+    config_id: Literal[GuardrailConfigId.CORRECT_LANGUAGE] = (
+        GuardrailConfigId.CORRECT_LANGUAGE
+    )
     api_key: str = ""
     reject_message: str = ""
     expected_languages: list[str] = Field(
@@ -77,7 +85,9 @@ class SimpleCorrectLanguageConfig(BaseModel):
 
 
 class SimpleRestrictToTopicConfig(BaseModel):
-    config_id: Literal[GuardrailConfigId.RESTRICT_TO_TOPIC] = GuardrailConfigId.RESTRICT_TO_TOPIC
+    config_id: Literal[GuardrailConfigId.RESTRICT_TO_TOPIC] = (
+        GuardrailConfigId.RESTRICT_TO_TOPIC
+    )
     api_key: str = ""
     reject_message: str = ""
     valid_topics: list[str] = Field(
@@ -99,6 +109,7 @@ ManagerGuardrailConfig = Union[
     SimpleCorrectLanguageConfig,
     SimpleRestrictToTopicConfig,
 ]
+
 
 def convert_guardrail(guardrails_data: dict) -> dict:
     if not guardrails_data:
@@ -135,13 +146,15 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                     else:
                         banned_words.append(word.strip())
 
-                converted[position].append({
-                    "config_id": "ban_list",
-                    "api_key": api_key,
-                    "reject_message": _reject_message(guardrail, "ban!!"),
-                    "guard_url": "hub://guardrails/ban_list",
-                    "guard_params": {"banned_words": banned_words},
-                })
+                converted[position].append(
+                    {
+                        "config_id": "ban_list",
+                        "api_key": api_key,
+                        "reject_message": _reject_message(guardrail, "ban!!"),
+                        "guard_url": "hub://guardrails/ban_list",
+                        "guard_params": {"banned_words": banned_words},
+                    }
+                )
 
             elif (
                 config_id == "detect_pii"
@@ -159,82 +172,190 @@ def convert_guardrail(guardrails_data: dict) -> dict:
                     pii_entity_map.get(entity, entity)
                     for entity in guardrail["pii_entities"]
                 ]
-                converted[position].append({
-                    "config_id": "detect_pii",
-                    "api_key": api_key,
-                    "reject_message": _reject_message(guardrail, "PII detected"),
-                    "guard_url": "hub://guardrails/detect_pii",
-                    "guard_params": {
-                        "pii_entities": mapped_entities,
-                        "on_fail": "exception",
-                    },
-                })
+                converted[position].append(
+                    {
+                        "config_id": "detect_pii",
+                        "api_key": api_key,
+                        "reject_message": _reject_message(guardrail, "PII detected"),
+                        "guard_url": "hub://guardrails/detect_pii",
+                        "guard_params": {
+                            "pii_entities": mapped_entities,
+                            "on_fail": "exception",
+                        },
+                    }
+                )
 
             elif config_id == "nsfw_text" and "api_key" not in guardrail:
-                converted[position].append({
-                    "config_id": "nsfw_text",
-                    "api_key": api_key,
-                    "reject_message": _reject_message(guardrail, "NSFW content detected"),
-                    "guard_url": "hub://guardrails/nsfw_text",
-                    "threshold": guardrail["threshold"],
-                })
+                converted[position].append(
+                    {
+                        "config_id": "nsfw_text",
+                        "api_key": api_key,
+                        "reject_message": _reject_message(
+                            guardrail, "NSFW content detected"
+                        ),
+                        "guard_url": "hub://guardrails/nsfw_text",
+                        "threshold": guardrail["threshold"],
+                    }
+                )
 
             elif config_id == "toxic_language" and "api_key" not in guardrail:
-                converted[position].append({
-                    "config_id": "toxic_language",
-                    "api_key": api_key,
-                    "reject_message": _reject_message(guardrail, "Toxic language detected"),
-                    "guard_url": "hub://guardrails/toxic_language",
-                    "threshold": guardrail["threshold"],
-                })
+                converted[position].append(
+                    {
+                        "config_id": "toxic_language",
+                        "api_key": api_key,
+                        "reject_message": _reject_message(
+                            guardrail, "Toxic language detected"
+                        ),
+                        "guard_url": "hub://guardrails/toxic_language",
+                        "threshold": guardrail["threshold"],
+                    }
+                )
 
             elif config_id == "gibberish_text" and "api_key" not in guardrail:
-                converted[position].append({
-                    "config_id": "gibberish_text",
-                    "api_key": api_key,
-                    "reject_message": _reject_message(guardrail, "Gibberish text detected"),
-                    "guard_url": "hub://guardrails/gibberish_text",
-                    "threshold": guardrail["threshold"],
-                })
+                converted[position].append(
+                    {
+                        "config_id": "gibberish_text",
+                        "api_key": api_key,
+                        "reject_message": _reject_message(
+                            guardrail, "Gibberish text detected"
+                        ),
+                        "guard_url": "hub://guardrails/gibberish_text",
+                        "threshold": guardrail["threshold"],
+                    }
+                )
 
             elif config_id == "bias_check" and "api_key" not in guardrail:
-                converted[position].append({
-                    "config_id": "bias_check",
-                    "api_key": api_key,
-                    "reject_message": _reject_message(guardrail, "Bias detected"),
-                    "guard_url": "hub://guardrails/bias_check",
-                    "threshold": guardrail["threshold"],
-                })
+                converted[position].append(
+                    {
+                        "config_id": "bias_check",
+                        "api_key": api_key,
+                        "reject_message": _reject_message(guardrail, "Bias detected"),
+                        "guard_url": "hub://guardrails/bias_check",
+                        "threshold": guardrail["threshold"],
+                    }
+                )
 
             elif config_id == "competition_check" and "api_key" not in guardrail:
-                converted[position].append({
-                    "config_id": "competition_check",
-                    "api_key": api_key,
-                    "reject_message": _reject_message(guardrail, "Competitor mentioned"),
-                    "guard_url": "hub://guardrails/competitor_check",
-                    "competitors": guardrail["competitors"],
-                })
+                converted[position].append(
+                    {
+                        "config_id": "competition_check",
+                        "api_key": api_key,
+                        "reject_message": _reject_message(
+                            guardrail, "Competitor mentioned"
+                        ),
+                        "guard_url": "hub://guardrails/competitor_check",
+                        "competitors": guardrail["competitors"],
+                    }
+                )
 
             elif config_id == "correct_language" and "api_key" not in guardrail:
-                converted[position].append({
-                    "config_id": "correct_language",
-                    "api_key": api_key,
-                    "reject_message": _reject_message(guardrail, "Incorrect language detected"),
-                    "guard_url": "hub://scb-10x/correct_language",
-                    "expected_languages": guardrail["expected_languages"],
-                })
+                converted[position].append(
+                    {
+                        "config_id": "correct_language",
+                        "api_key": api_key,
+                        "reject_message": _reject_message(
+                            guardrail, "Incorrect language detected"
+                        ),
+                        "guard_url": "hub://scb-10x/correct_language",
+                        "expected_languages": guardrail["expected_languages"],
+                    }
+                )
 
             elif config_id == "restrict_to_topic" and "api_key" not in guardrail:
-                converted[position].append({
-                    "config_id": "restrict_to_topic",
-                    "api_key": api_key,
-                    "reject_message": _reject_message(guardrail, "Off-topic content detected"),
-                    "guard_url": "hub://tryolabs/restricttotopic",
-                    "valid_topics": guardrail.get("valid_topics", []),
-                    "invalid_topics": guardrail.get("invalid_topics", []),
-                })
+                converted[position].append(
+                    {
+                        "config_id": "restrict_to_topic",
+                        "api_key": api_key,
+                        "reject_message": _reject_message(
+                            guardrail, "Off-topic content detected"
+                        ),
+                        "guard_url": "hub://tryolabs/restricttotopic",
+                        "valid_topics": guardrail.get("valid_topics", []),
+                        "invalid_topics": guardrail.get("invalid_topics", []),
+                    }
+                )
 
             else:
                 converted[position].append(guardrail)
 
     return converted
+
+
+# Engine-shape fields that have no place in the manager-shape models.
+# Stripped by ``to_manager_shape`` before producing the manager dict.
+# ``api_key`` is stripped because the assembly path
+# (``services/engine_config._layer_guardrails``) injects it from the
+# ``GUARDRAILS_API_KEY`` env var; storing the engine's empty default in
+# the DB would force the assembly layer to special case it. ``guard_url``
+# is hardcoded per guard inside ``convert_guardrail`` so storing it would
+# duplicate that knowledge in two places.
+_ENGINE_ONLY_FIELDS: frozenset[str] = frozenset({"api_key", "guard_url"})
+
+# Engine guard ``config_id`` values that have a corresponding
+# ``Simple*Config`` manager model and are therefore round-trippable
+# through ``convert_guardrail``. The manager namespace covers a
+# deliberate subset of the engine's GuardrailConfigId enum (the guards
+# the legacy manager service ever shipped). Engine-only ids
+# (``detect_jailbreak``, ``prompt_injection``, ``rag_hallucination``,
+# ``code_scanner``, ``model_armor``, ``custom_llm``) fall through to the
+# passthrough branch in ``convert_guardrail`` and are likewise stored
+# verbatim by ``to_manager_shape`` minus the engine-only fields.
+_MANAGER_SUPPORTED_IDS: frozenset[str] = frozenset(
+    {
+        GuardrailConfigId.BAN_LIST.value,
+        GuardrailConfigId.DETECT_PII.value,
+        GuardrailConfigId.NSFW_TEXT.value,
+        GuardrailConfigId.TOXIC_LANGUAGE.value,
+        GuardrailConfigId.GIBBERISH_TEXT.value,
+        GuardrailConfigId.BIAS_CHECK.value,
+        GuardrailConfigId.COMPETITION_CHECK.value,
+        GuardrailConfigId.CORRECT_LANGUAGE.value,
+        GuardrailConfigId.RESTRICT_TO_TOPIC.value,
+    }
+)
+
+
+def to_manager_shape(engine_guard: Any) -> dict[str, Any]:
+    """Convert one engine-shape guardrail into the manager-shape dict.
+
+    The inverse of one iteration of ``convert_guardrail``. Used by the
+    standalone seeder to materialize the engine YAML's typed
+    ``GuardrailsV2`` configs into the manager-shape JSON column the
+    standalone DB stores.
+
+    The round trip
+    ``engine → to_manager_shape → manager → convert_guardrail → engine``
+    is lossless modulo two engine-only fields:
+
+    - ``api_key``: re-injected at assembly time from the
+      ``GUARDRAILS_API_KEY`` env var (see
+      ``services/engine_config._layer_guardrails``). Storing the
+      engine's empty default in the DB would force the assembly to
+      special case it.
+    - ``guard_url``: hardcoded per guard inside ``convert_guardrail``.
+
+    For unrecognized ``config_id`` values (engine guards that never had
+    a manager equivalent) we still strip the engine-only fields and
+    return the remaining payload verbatim — this matches
+    ``convert_guardrail``'s passthrough branch on the way back.
+
+    Accepts a Pydantic model instance (typed ``GuardrailConfig`` from
+    ``GuardrailsV2.input``/``.output``) or an already-dumped dict so
+    callers can use whichever shape is convenient.
+    """
+    if hasattr(engine_guard, "model_dump"):
+        engine_dict = engine_guard.model_dump(mode="json", exclude_none=True)
+    else:
+        engine_dict = dict(engine_guard)
+
+    # Normalize the config_id to its string value so downstream lookups
+    # against the manager union are stable regardless of whether the
+    # caller passed a Pydantic model (enum value) or a raw dict.
+    raw_id = engine_dict.get("config_id")
+    if hasattr(raw_id, "value"):
+        engine_dict["config_id"] = raw_id.value
+
+    manager_dict: dict[str, Any] = {
+        k: v for k, v in engine_dict.items() if k not in _ENGINE_ONLY_FIELDS
+    }
+    return manager_dict
