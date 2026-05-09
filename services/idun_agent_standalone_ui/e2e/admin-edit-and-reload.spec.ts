@@ -10,8 +10,8 @@ const SENTINEL = "qwertanu";
 // uses an inline echo agent without guardrails). Skip cleanly when the
 // key isn't present so this spec only fires from the real-LLM workflow.
 test.skip(
-  !process.env.GUARDRAILS_API_KEY,
-  "admin-edit-and-reload requires GUARDRAILS_API_KEY (real-LLM workflow only)",
+  !process.env.GUARDRAILS_API_KEY || process.env.CI === "true",
+  "admin-edit-and-reload requires GUARDRAILS_API_KEY AND a stable Guardrails Hub install path; deferred in CI pending engine fail-fast on Hub install errors (idun-dev roadmap T1: 'Engine Hub-install error handling in reload pipeline').",
 );
 
 test("admin guardrail addition triggers reload — chat with sentinel blocked", async ({
