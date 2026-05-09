@@ -154,18 +154,43 @@ Plus any of these domain blocks that genuinely apply, in this order: Config flow
 
 | ID | Title | Severity | Layer |
 | --- | --- | --- | --- |
+| ADR-001 | Architectural change requires an ADR | advise | pr-review-agent |
+| API-001 | Deprecation policy — semver and DeprecationWarning before removal | advise | pr-review-agent |
 | ASYNC-001 | No sync I/O on async paths | warn | pre-commit, pr-review-agent |
 | ASYNC-002 | Track `asyncio.create_task` references (no fire-and-forget) | warn | pre-commit, pr-review-agent |
+| ASYNC-003 | Async session-per-request lifecycle | warn | pr-review-agent, manual |
 | CMP-001 | Cyclomatic complexity ≤ 10 (advisory) | advise | pre-commit |
+| CMP-002 | Max 6 args; prefer dataclass/TypedDict over many positional args | advise | pre-commit |
+| CMP-003 | Extract on 2+ similar call sites; no premature DRY | advise | pr-review-agent |
+| DEP-001 | Lockfile must be in sync; pip-audit advisory | advise | ci |
+| DOC-001 | Public API requires a docstring | advise | pre-commit |
+| ENV-001 | Typed env vars via Pydantic Settings; no scattered `os.getenv` in business logic | warn | pre-commit, pr-review-agent |
 | ERR-001 | No `except Exception:` without re-raise + logger.exception | warn | pre-commit, pr-review-agent |
+| ERR-002 | Custom exception hierarchy at package boundaries | advise | pr-review-agent |
+| ERR-003 | Never swallow exceptions silently | warn | pre-commit, pr-review-agent |
+| GIT-001 | Conventional Commits | advise | pre-commit |
+| GIT-002 | PRs over 500 LOC should be split | advise | pr-review-agent |
 | LOG-001 | Use `logger.exception` for unexpected; never bare `except` | warn | pre-commit, pr-review-agent |
+| LOG-002 | Required structured log fields (request_id, agent_id, run_id) | advise | pr-review-agent |
 | LOG-003 | Redact secrets/PII from log args | warn | pr-review-agent |
+| MAGIC-001 | Magic numbers should be module-level Final constants | advise | pre-commit |
 | MIGRATION-001 | SQLAlchemy model change requires Alembic revision in same PR | warn | pr-review-agent |
+| OBS-001 | Telemetry must never alter business semantics | warn | pr-review-agent |
 | RES-001 | Use `async with` for HTTP/DB/files; no manual `.close()` | warn | pre-commit, pr-review-agent |
 | SCHEMA-001 | Schema changes ship in idun_agent_schema before consumers | warn | pr-review-agent |
+| SCHEMA-002 | Keep UI API types in sync when standalone backend routes change | warn | pr-review-agent, ci |
 | SQL-001 | Parametrized queries only; no f-string SQL | warn | pre-commit, pr-review-agent |
+| TEST-001 | New feature ships with at least one test | advise | pr-review-agent |
+| TEST-002 | Integration tests hit the real DB, not mocks | warn | pr-review-agent |
+| TEST-003 | Coverage thresholds (advisory) | advise | ci |
+| TEST-004 | UI and standalone tests gated on every PR | warn | ci |
 | TIME-001 | Always tz-aware UTC datetimes; ban `datetime.utcnow()` | warn | pre-commit, pr-review-agent |
+| TODO-001 | TODO/FIXME requires `# TODO(owner): <ticket-id>` | advise | pre-commit |
 | TYPE-001 | No `Any` outside FFI/JSON boundaries | warn | pre-commit |
+| TYPE-002 | Prefer TypedDict / dataclass / Pydantic over raw dicts at boundaries | advise | pr-review-agent |
+| UI-001 | TypeScript strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes | warn | ci |
+| UI-002 | Accessibility — eslint-plugin-jsx-a11y rules | advise | pre-commit |
+| UI-003 | i18n — user-facing strings via i18next, no inline literals | advise | pre-commit |
 
 Full rule book: `docs/team/CODING-GUIDELINES.md`.
 <!-- END: generated-by render_guidelines -->

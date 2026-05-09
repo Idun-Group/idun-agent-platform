@@ -112,3 +112,68 @@ jobs:
             Run `/render-guidelines` locally and commit the resulting changes.
 
             (This check is **advisory** in v1 — it will not block merge.)
+
+  # Disabled by default — set repo variable GUIDELINES_REVIEW_ENABLED=true to enable.
+  #
+  # When enabled, also requires the ANTHROPIC_API_KEY secret (team's Anthropic
+  # console; see SPEC §4.5). The job stays SKIPPED (not failed) until the
+  # variable is set, keeping the PR checks panel clean.
+  #
+  # To enable:
+  #   1. Repo Settings → Secrets and variables → Actions → Variables tab
+  #      → New repository variable: GUIDELINES_REVIEW_ENABLED = true
+  #   2. Same screen, Secrets tab → New repository secret: ANTHROPIC_API_KEY
+  guidelines-review:
+    name: Coding-guidelines advisory review (Claude headless)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && vars.GUIDELINES_REVIEW_ENABLED == 'true'
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0      # full history for the diff
+
+      - name: Capture PR diff
+        run: |
+          git diff origin/${{ github.base_ref }}...${{ github.event.pull_request.head.sha }} \
+            --no-color > /tmp/pr.diff
+          git diff origin/${{ github.base_ref }}...${{ github.event.pull_request.head.sha }} \
+            --name-only > /tmp/pr.files
+
+      - name: Verify code-reviewer agent prompt exists
+        id: verify_agent
+        run: |
+          if [ ! -f .claude/agents/code-reviewer.md ]; then
+            echo "Agent prompt missing — run /idun-team:render-guidelines and recommit." >&2
+            exit 1
+          fi
+
+      - name: Run Claude code-reviewer headless
+        id: review
+        # Pinned to the v1 major tag (canonical floating major from the
+        # action's release page). Bump deliberately when the team upgrades.
+        # NOTE: anthropics/claude-code-action@v1 has no `system_prompt_file`
+        # input; the agent prompt is concatenated into `prompt` instead, and
+        # the action posts its own sticky PR comment via `use_sticky_comment`.
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          use_sticky_comment: "true"
+          prompt: |
+            You are the Idun "code-reviewer" subagent. Your full system prompt
+            and rule set are in the file `.claude/agents/code-reviewer.md` in
+            this repository — read it first and follow it exactly.
+
+            Then read `/tmp/pr.diff` (the unified diff for this PR) and
+            `/tmp/pr.files` (the list of changed files), and produce the
+            markdown report described in the agent prompt's "Output format"
+            section. Output ONLY the report — no preamble, no trailing chatter.
+
+            Append this footer verbatim at the end of the report:
+
+            ---
+            _This check is **advisory** in v1. Run `/review-pr` locally to
+            iterate. Findings here do not block merge._
