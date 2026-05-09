@@ -2,10 +2,12 @@
 
 Initializes the agent at startup and cleans up resources on shutdown.
 """
+
 import inspect
 import logging
 from collections.abc import Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
 from fastapi import FastAPI
 from idun_agent_schema.engine.guardrails import Guardrails
@@ -22,30 +24,69 @@ logger = logging.getLogger(__name__)
 PostConfigureCallback = Callable[[FastAPI], Awaitable[None]]
 
 
-def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
-    """Build guard instances; one failure does not drop the rest."""
+@dataclass(frozen=True)
+class FailedGuardrail:
+    """A guardrail that failed to initialize.
+
+    Surfaced via ``app.state.failed_guardrails`` — same pattern the
+    engine already uses for ``failed_mcp_servers``. Embedders (e.g.
+    the standalone reload pipeline) inspect this list to detect
+    silent install failures and surface them as a non-success reload
+    outcome, instead of letting the request flow through with the
+    guardrail inactive.
+    """
+
+    config_id: str
+    position: str
+    error: str
+
+
+def _parse_guardrails(
+    guardrails_obj: Guardrails,
+) -> tuple[Sequence[BaseGuardrail], list[FailedGuardrail]]:
+    """Build guard instances; collect rather than swallow failures.
+
+    Returns ``(guards, failures)``. The boot path keeps the existing
+    "one failure does not drop the rest" behavior — it logs and
+    continues — but reload-time embedders use the ``failures`` list
+    to surface a clear signal back to the admin caller (e.g. when a
+    Hub install raises ``HttpError``, the install side-effects fail,
+    or a transitive dep like a spaCy model is missing). Without this
+    surface, the engine previously logged the failure and let
+    ``configure_app`` complete normally — admins saw ``reload OK``
+    and only noticed the silent inactivity when production traffic
+    bypassed the guardrail.
+    """
     from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
 
     if not guardrails_obj:
-        return []
+        return [], []
 
     guards: list[BaseGuardrail] = []
+    failures: list[FailedGuardrail] = []
     for position, configs in (
         ("input", guardrails_obj.input),
         ("output", guardrails_obj.output),
     ):
         for guard in configs:
-            config_id = getattr(guard, "config_id", "<unknown>")
+            config_id = str(getattr(guard, "config_id", "<unknown>"))
             try:
                 guards.append(GHGuard(guard, position=position))
                 logger.info("Guardrail '%s' (%s) initialized", config_id, position)
-            except (Exception, SystemExit):
+            except (Exception, SystemExit) as exc:
                 logger.exception(
                     "Guardrail '%s' (%s) init failed; skipping",
                     config_id,
                     position,
                 )
-    return guards
+                failures.append(
+                    FailedGuardrail(
+                        config_id=config_id,
+                        position=position,
+                        error=str(exc),
+                    )
+                )
+    return guards, failures
 
 
 async def cleanup_agent(app: FastAPI):
@@ -116,18 +157,29 @@ async def configure_app(app: FastAPI, engine_config):
         app.state.post_configure_callbacks = []
 
     guardrails_obj = engine_config.guardrails
+    failed_guardrails: list[FailedGuardrail] = []
     try:
-        guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
+        guardrails, failed_guardrails = (
+            _parse_guardrails(guardrails_obj) if guardrails_obj else ([], [])
+        )
         logger.debug(f"Guardrails: {guardrails}")
     except Exception as e:
         logger.exception(f"Failed to parse guardrails: {e}, continuing without them")
         guardrails = []
+        failed_guardrails = []
+    # Mirror the failed_mcp_servers pattern — surface install failures
+    # so embedders (e.g. the standalone reload pipeline) can roll back
+    # the DB write instead of letting the request flow through with
+    # the guardrail silently inactive.
+    app.state.failed_guardrails = failed_guardrails
 
     # Use ConfigBuilder's centralized agent initialization, passing the registry
     try:
         mcp_registry = MCPClientRegistry(engine_config.mcp_servers or [])
     except Exception as e:
-        logger.exception(f"⚠️ Failed to initialize MCP registry: {e}, continuing without MCP servers")
+        logger.exception(
+            f"⚠️ Failed to initialize MCP registry: {e}, continuing without MCP servers"
+        )
         mcp_registry = MCPClientRegistry()
     set_active_registry(mcp_registry)
     app.state.mcp_registry = mcp_registry
@@ -136,7 +188,9 @@ async def configure_app(app: FastAPI, engine_config):
     # logs. Replaced on every reload so stale failures don't linger.
     app.state.failed_mcp_servers = mcp_registry.failed
     try:
-        agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config, mcp_registry)
+        agent_instance = await ConfigBuilder.initialize_agent_from_config(
+            engine_config, mcp_registry
+        )
     except Exception as e:
         raise ValueError(
             f"Error retrieving agent instance from ConfigBuilder: {e}"
@@ -156,7 +210,9 @@ async def configure_app(app: FastAPI, engine_config):
                     f"🔧 MCP Server {s.name}: [{s.transport.upper()}] {s.url or s.command}"
                 )
         except Exception as e:
-            logger.exception(f"Failed to assign mcp servers to agent: {e}, continuing without them")
+            logger.exception(
+                f"Failed to assign mcp servers to agent: {e}, continuing without them"
+            )
             mcp_servers = []
 
     # SSO / OIDC setup
@@ -220,9 +276,7 @@ async def configure_app(app: FastAPI, engine_config):
         try:
             await cb(app)
         except Exception:
-            logger.exception(
-                "post_configure_callback %r raised; continuing", cb
-            )
+            logger.exception("post_configure_callback %r raised; continuing", cb)
 
 
 @asynccontextmanager

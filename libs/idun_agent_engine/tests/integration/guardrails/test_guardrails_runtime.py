@@ -83,7 +83,7 @@ async def test_ban_list_guardrail_blocks_banned_words(
     ).build()
     await ConfigBuilder.initialize_agent_from_config(engine_config)
 
-    guardrails = _parse_guardrails(engine_config.guardrails)
+    guardrails, _ = _parse_guardrails(engine_config.guardrails)
 
     banned_message = "This message contains a badword in it"
 
@@ -111,7 +111,7 @@ async def test_ban_list_guardrail_allows_clean_messages(
     ).build()
     agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
 
-    guardrails = _parse_guardrails(engine_config.guardrails)
+    guardrails, _ = _parse_guardrails(engine_config.guardrails)
 
     clean_message = "This is a perfectly clean message"
     message = {"query": clean_message, "session_id": "test123"}
@@ -134,7 +134,7 @@ async def test_pii_guardrail_blocks_email_addresses(
     engine_config = ConfigBuilder.from_dict(langgraph_config_with_pii_guardrail).build()
     await ConfigBuilder.initialize_agent_from_config(engine_config)
 
-    guardrails = _parse_guardrails(engine_config.guardrails)
+    guardrails, _ = _parse_guardrails(engine_config.guardrails)
 
     message_with_email = "Please contact me at user@example.com for more info"
 
@@ -159,7 +159,7 @@ async def test_pii_guardrail_allows_messages_without_pii(
     engine_config = ConfigBuilder.from_dict(langgraph_config_with_pii_guardrail).build()
     agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
 
-    guardrails = _parse_guardrails(engine_config.guardrails)
+    guardrails, _ = _parse_guardrails(engine_config.guardrails)
 
     clean_message = "This message has no personal information"
     message = {"query": clean_message, "session_id": "test123"}
@@ -213,7 +213,7 @@ async def test_multiple_guardrails_all_must_pass(skip_if_no_guardrails_api_key):
     engine_config = ConfigBuilder.from_dict(config).build()
     agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
 
-    guardrails = _parse_guardrails(engine_config.guardrails)
+    guardrails, _ = _parse_guardrails(engine_config.guardrails)
 
     # Banned word should be blocked
     with pytest.raises(HTTPException) as exc_info:
