@@ -16,6 +16,9 @@ from typing import Any
 import pytest
 import yaml
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.models.guardrail import (
+    StandaloneGuardrailRow,
+)
 from idun_agent_standalone.infrastructure.db.models.integration import (
     StandaloneIntegrationRow,
 )
@@ -660,6 +663,142 @@ async def test_seed_integrations_no_op_on_yaml_without_block(
     async with sessionmaker_factory() as session:
         count = await session.scalar(
             select(func.count()).select_from(StandaloneIntegrationRow)
+        )
+
+    assert count == 0
+
+
+# YAML with a top-level `guardrails:` block — exercises the guardrails
+# seeder. Mixed input (2) and output (1) so positions and sort_order
+# branches both fire. Engine YAML uses the engine-shape ``GuardrailsV2``
+# typed configs; the seeder converts each to manager-shape via
+# ``to_manager_shape`` before storing in the JSON column.
+_GUARDRAILS_YAML: dict[str, Any] = {
+    **_AGENT_YAML,
+    "guardrails": {
+        "input": [
+            {
+                "config_id": "ban_list",
+                "banned_words": ["secret-word", "another-banned"],
+                "api_key": "test-key",
+            },
+            {
+                "config_id": "detect_pii",
+                "pii_entities": ["EMAIL_ADDRESS", "PHONE_NUMBER"],
+                "api_key": "test-key",
+            },
+        ],
+        "output": [
+            {
+                "config_id": "toxic_language",
+                "threshold": 0.5,
+                "api_key": "test-key",
+            },
+        ],
+    },
+}
+
+
+@pytest.fixture
+def guardrails_yaml_path(tmp_path: Path) -> Path:
+    """Write a YAML config with a `guardrails:` block and return its path."""
+    config_path = tmp_path / "config-with-guardrails.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump(_GUARDRAILS_YAML, f)
+    return config_path
+
+
+async def test_seed_guardrails_inserts_input_and_output_rows(
+    sessionmaker_factory: async_sessionmaker, guardrails_yaml_path: Path
+) -> None:
+    """YAML with 2 input + 1 output guards → 3 StandaloneGuardrailRow records.
+
+    Exercises the position split (``input``/``output``), the per-position
+    ``sort_order`` counter, and the manager-shape conversion: the JSON
+    column must hold the manager-shape (``config_id`` + guard-specific
+    fields, no engine-only ``guard_url``).
+    """
+    await seed_from_yaml_if_empty(sessionmaker_factory, guardrails_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        rows = (
+            await session.scalars(
+                select(StandaloneGuardrailRow).order_by(
+                    StandaloneGuardrailRow.position,
+                    StandaloneGuardrailRow.sort_order,
+                )
+            )
+        ).all()
+
+    assert len(rows) == 3
+    inputs = [r for r in rows if r.position == "input"]
+    outputs = [r for r in rows if r.position == "output"]
+    assert len(inputs) == 2
+    assert len(outputs) == 1
+    # Sort order is monotonic and starts at 0 within each position bucket
+    # so the assembly layer's ORDER BY (position, sort_order) preserves
+    # the operator's YAML ordering.
+    assert [r.sort_order for r in inputs] == [0, 1]
+    assert outputs[0].sort_order == 0
+    # All enabled by default — engine GuardrailsV2 has no per-guard
+    # ``enabled`` flag so the seeder marks every row enabled.
+    assert all(r.enabled for r in rows)
+    # Slugs are unique across the seeded batch.
+    slugs = [r.slug for r in rows]
+    assert len(set(slugs)) == 3
+    # Manager-shape stored: each row holds a ``config_id`` and the
+    # guard-specific fields (no engine-only ``guard_url``).
+    config_ids = [r.guardrail_config["config_id"] for r in rows]
+    assert set(config_ids) == {"ban_list", "detect_pii", "toxic_language"}
+    for row in rows:
+        assert "guard_url" not in row.guardrail_config
+    ban_row = next(r for r in inputs if r.guardrail_config["config_id"] == "ban_list")
+    assert ban_row.guardrail_config["banned_words"] == [
+        "secret-word",
+        "another-banned",
+    ]
+
+
+async def test_seed_guardrails_skips_when_table_nonempty(
+    sessionmaker_factory: async_sessionmaker, guardrails_yaml_path: Path
+) -> None:
+    """If the guardrails table has any row, the seeder is a no-op."""
+    async with sessionmaker_factory() as session:
+        existing = StandaloneGuardrailRow(
+            slug="pre-existing",
+            name="pre-existing",
+            position="input",
+            sort_order=0,
+            enabled=True,
+            guardrail_config={
+                "config_id": "detect_pii",
+                "pii_entities": ["EMAIL_ADDRESS"],
+            },
+        )
+        session.add(existing)
+        await session.commit()
+
+    await seed_from_yaml_if_empty(sessionmaker_factory, guardrails_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        count = await session.scalar(
+            select(func.count()).select_from(StandaloneGuardrailRow)
+        )
+        rows = (await session.scalars(select(StandaloneGuardrailRow))).all()
+
+    assert count == 1
+    assert rows[0].slug == "pre-existing"
+
+
+async def test_seed_guardrails_no_op_on_yaml_without_block(
+    sessionmaker_factory: async_sessionmaker, yaml_config_path: Path
+) -> None:
+    """YAML without a `guardrails:` block → no rows, no error."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, yaml_config_path)
+
+    async with sessionmaker_factory() as session:
+        count = await session.scalar(
+            select(func.count()).select_from(StandaloneGuardrailRow)
         )
 
     assert count == 0

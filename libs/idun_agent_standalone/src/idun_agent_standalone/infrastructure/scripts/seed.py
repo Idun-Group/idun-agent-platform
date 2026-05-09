@@ -17,11 +17,15 @@ from pathlib import Path
 
 from idun_agent_engine.core.config_builder import ConfigBuilder
 from idun_agent_engine.core.engine_config import EngineConfig
+from idun_agent_schema.manager.guardrail_configs import to_manager_shape
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.models.guardrail import (
+    StandaloneGuardrailRow,
+)
 from idun_agent_standalone.infrastructure.db.models.integration import (
     StandaloneIntegrationRow,
 )
@@ -336,6 +340,87 @@ async def _seed_integrations_if_empty(
     return seeded
 
 
+async def _seed_guardrails_if_empty(
+    session: AsyncSession, engine_config: EngineConfig
+) -> int:
+    """Seed ``StandaloneGuardrailRow`` rows from ``engine_config.guardrails``.
+
+    No-op if the YAML omits the ``guardrails:`` block (or both
+    ``input`` and ``output`` are empty), or if the
+    ``standalone_guardrail`` table already has at least one row
+    (per-resource seed-if-empty semantics from SPEC §3). Returns the
+    number of rows written.
+
+    Each engine-shape typed guard (``BanListConfig``, ``DetectPIIConfig``,
+    ...) is converted to manager-shape via ``to_manager_shape`` before
+    being stored in the JSON column, because the assembly layer
+    (``services/engine_config._layer_guardrails``) reads rows back as
+    manager-shape and re-runs ``convert_guardrail`` on the way out. The
+    DB therefore canonically holds manager-shape and the seeder must
+    invert the engine YAML before writing.
+
+    ``position`` is mirrored from the YAML's ``input``/``output`` split.
+    ``sort_order`` is the per-position list index (resets to 0 between
+    buckets) so the assembly layer's ORDER BY (position, sort_order)
+    preserves the operator's YAML ordering. All rows are seeded as
+    ``enabled=True`` because the engine ``GuardrailsV2`` schema has no
+    per-guard enabled flag — the row-level toggle is added by the admin
+    layer for runtime pause/resume.
+
+    We ``await session.flush()`` after each insert so successive calls
+    to ``ensure_unique_slug`` see the rows we have already added in
+    this loop — otherwise duplicate config ids in the same YAML batch
+    (two ``ban_list`` input guards) would all collapse onto the bare
+    slug and violate the unique constraint at commit time.
+    """
+    guardrails = engine_config.guardrails
+    if not guardrails or (not guardrails.input and not guardrails.output):
+        return 0
+
+    existing_count = await session.scalar(
+        select(func.count()).select_from(StandaloneGuardrailRow)
+    )
+    if existing_count and existing_count > 0:
+        logger.info(
+            "guardrails table non-empty (count=%d); skipping seed",
+            existing_count,
+        )
+        return 0
+
+    seeded = 0
+    for position, bucket in (
+        ("input", guardrails.input or []),
+        ("output", guardrails.output or []),
+    ):
+        for sort_order, engine_guard in enumerate(bucket):
+            manager_dict = to_manager_shape(engine_guard)
+            config_id = manager_dict.get("config_id", "guardrail")
+            candidate = normalize_slug(f"{config_id}-{position}")
+            slug = await ensure_unique_slug(
+                session,
+                StandaloneGuardrailRow,
+                StandaloneGuardrailRow.slug,
+                candidate,
+            )
+            session.add(
+                StandaloneGuardrailRow(
+                    slug=slug,
+                    name=slug,
+                    enabled=True,
+                    position=position,
+                    sort_order=sort_order,
+                    guardrail_config=manager_dict,
+                )
+            )
+            # Flush so ensure_unique_slug on the next iteration sees this
+            # row when checking the "is this slug taken" query.
+            await session.flush()
+            seeded += 1
+
+    await session.commit()
+    return seeded
+
+
 async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> None:
     """Seed each resource row from YAML if the DB is empty.
 
@@ -369,6 +454,7 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         "sso": 0,
         "mcp_servers": 0,
         "integrations": 0,
+        "guardrails": 0,
     }
 
     async with sm() as session:
@@ -419,9 +505,17 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         except Exception:
             logger.exception("Failed to seed integration rows from %s", config_path)
 
+    async with sm() as session:
+        try:
+            seeded["guardrails"] = await _seed_guardrails_if_empty(
+                session, engine_config
+            )
+        except Exception:
+            logger.exception("Failed to seed guardrail rows from %s", config_path)
+
     logger.info(
         "seed complete from %s: agent=%d memory=%d prompts=%d observability=%d "
-        "sso=%d mcp_servers=%d integrations=%d",
+        "sso=%d mcp_servers=%d integrations=%d guardrails=%d",
         config_path,
         seeded["agent"],
         seeded["memory"],
@@ -430,4 +524,5 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         seeded["sso"],
         seeded["mcp_servers"],
         seeded["integrations"],
+        seeded["guardrails"],
     )
