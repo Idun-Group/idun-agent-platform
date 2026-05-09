@@ -17,12 +17,13 @@ from pathlib import Path
 
 from idun_agent_engine.core.config_builder import ConfigBuilder
 from idun_agent_engine.core.engine_config import EngineConfig
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
+from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
 
 logger = get_logger(__name__)
 
@@ -104,6 +105,38 @@ async def _seed_memory_if_empty(
     return 1
 
 
+async def _seed_prompts_if_empty(
+    session: AsyncSession, engine_config: EngineConfig
+) -> int:
+    """Seed ``StandalonePromptRow`` rows from ``engine_config.prompts``.
+
+    No-op if the YAML omits the ``prompts:`` block or if the prompts
+    table already has at least one row (per-resource seed-if-empty
+    semantics from SPEC §3). Returns the number of rows written.
+    """
+    if not engine_config.prompts:
+        return 0
+
+    existing_count = await session.scalar(
+        select(func.count()).select_from(StandalonePromptRow)
+    )
+    if existing_count and existing_count > 0:
+        logger.info("prompts table non-empty (count=%d); skipping seed", existing_count)
+        return 0
+
+    for prompt in engine_config.prompts:
+        session.add(
+            StandalonePromptRow(
+                prompt_id=prompt.prompt_id,
+                content=prompt.content,
+                version=prompt.version,
+                tags=list(prompt.tags or []),
+            )
+        )
+    await session.commit()
+    return len(engine_config.prompts)
+
+
 async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> None:
     """Seed each resource row from YAML if the DB is empty.
 
@@ -129,7 +162,7 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
 
     engine_config = ConfigBuilder.load_from_file(str(config_path))
 
-    seeded: dict[str, int] = {"agent": 0, "memory": 0}
+    seeded: dict[str, int] = {"agent": 0, "memory": 0, "prompts": 0}
 
     async with sm() as session:
         try:
@@ -143,9 +176,16 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         except Exception:
             logger.exception("Failed to seed memory row from %s", config_path)
 
+    async with sm() as session:
+        try:
+            seeded["prompts"] = await _seed_prompts_if_empty(session, engine_config)
+        except Exception:
+            logger.exception("Failed to seed prompt rows from %s", config_path)
+
     logger.info(
-        "seed complete from %s: agent=%d memory=%d",
+        "seed complete from %s: agent=%d memory=%d prompts=%d",
         config_path,
         seeded["agent"],
         seeded["memory"],
+        seeded["prompts"],
     )

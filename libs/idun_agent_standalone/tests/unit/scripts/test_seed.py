@@ -17,10 +17,11 @@ import pytest
 import yaml
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
+from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
 from idun_agent_standalone.infrastructure.db.session import Base
 from idun_agent_standalone.infrastructure.scripts import seed as seed_module
 from idun_agent_standalone.infrastructure.scripts.seed import seed_from_yaml_if_empty
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 # A minimal LangGraph YAML the engine's ConfigBuilder can validate
@@ -61,6 +62,35 @@ def yaml_config_path(tmp_path: Path) -> Path:
     config_path = tmp_path / "config.yaml"
     with open(config_path, "w") as f:
         yaml.dump(_AGENT_YAML, f)
+    return config_path
+
+
+# YAML with a top-level `prompts:` block — exercises the prompts seeder.
+_PROMPTS_YAML: dict[str, Any] = {
+    **_AGENT_YAML,
+    "prompts": [
+        {
+            "prompt_id": "system-prompt",
+            "version": 2,
+            "content": "You are a helpful assistant for {{ domain }}.",
+            "tags": ["latest", "production"],
+        },
+        {
+            "prompt_id": "rag-context",
+            "version": 1,
+            "content": "Use this context: {{ context }}",
+            "tags": ["rag"],
+        },
+    ],
+}
+
+
+@pytest.fixture
+def prompts_yaml_path(tmp_path: Path) -> Path:
+    """Write a YAML config with a `prompts:` block and return its path."""
+    config_path = tmp_path / "config-with-prompts.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump(_PROMPTS_YAML, f)
     return config_path
 
 
@@ -173,3 +203,66 @@ async def test_agent_failure_does_not_block_memory_seed(
     assert agents == []
     assert len(memories) == 1
     assert memories[0].agent_framework == "LANGGRAPH"
+
+
+async def test_seed_prompts_inserts_rows_when_empty(
+    sessionmaker_factory: async_sessionmaker, prompts_yaml_path: Path
+) -> None:
+    """YAML with 2 prompts → 2 StandalonePromptRow records, fields preserved."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, prompts_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        rows = (await session.scalars(select(StandalonePromptRow))).all()
+
+    assert len(rows) == 2
+    assert {r.prompt_id for r in rows} == {"system-prompt", "rag-context"}
+    sys_row = next(r for r in rows if r.prompt_id == "system-prompt")
+    assert sys_row.version == 2
+    assert sys_row.content == "You are a helpful assistant for {{ domain }}."
+    assert sys_row.tags == ["latest", "production"]
+
+
+async def test_seed_prompts_skips_when_table_nonempty(
+    sessionmaker_factory: async_sessionmaker, prompts_yaml_path: Path
+) -> None:
+    """If the prompts table already has rows, the prompts seeder is a no-op."""
+    async with sessionmaker_factory() as session:
+        session.add(
+            StandalonePromptRow(
+                prompt_id="pre-existing",
+                version=1,
+                content="already here",
+                tags=[],
+            )
+        )
+        await session.commit()
+
+    async with sessionmaker_factory() as session:
+        pre_count = await session.scalar(
+            select(func.count()).select_from(StandalonePromptRow)
+        )
+
+    await seed_from_yaml_if_empty(sessionmaker_factory, prompts_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        post_count = await session.scalar(
+            select(func.count()).select_from(StandalonePromptRow)
+        )
+        rows = (await session.scalars(select(StandalonePromptRow))).all()
+
+    assert post_count == pre_count, "prompts re-seeded despite non-empty table"
+    assert {r.prompt_id for r in rows} == {"pre-existing"}
+
+
+async def test_seed_prompts_no_op_on_yaml_without_prompts_block(
+    sessionmaker_factory: async_sessionmaker, yaml_config_path: Path
+) -> None:
+    """YAML without a `prompts:` block → no rows, no error."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, yaml_config_path)
+
+    async with sessionmaker_factory() as session:
+        count = await session.scalar(
+            select(func.count()).select_from(StandalonePromptRow)
+        )
+
+    assert count == 0
