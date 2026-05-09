@@ -238,10 +238,9 @@ prompts:
 > [!TIP]
 > Environment variables like `${LANGFUSE_SECRET_KEY}` are resolved at startup. You can use `.env` files or inject them through Docker/Kubernetes.
 
-Serve from a file:
+Serve the engine directly from a YAML file (no admin UI, just the agent endpoints):
 
 ```bash
-pip install idun-agent-engine
 idun agent serve --source file --path config.yaml
 ```
 
