@@ -1,19 +1,10 @@
-"""LangGraph chat with MCP tools wrapped as plain ``StructuredTool`` shims.
+"""LangGraph chat with MCP tools resolved from the engine's active registry.
 
-Why the wrapping: the AG-UI LangGraph adapter's ``make_json_safe`` (in
-``ag_ui_langgraph/utils.py``) calls ``dataclasses.asdict`` recursively
-on emitted event payloads. Native langchain-mcp-adapters tools include
-an ``MCPToolCallRequest`` dataclass that holds a LangGraph runtime
-reference, which transitively pulls in ``_GatheringFuture`` /
-``TaskStepMethWrapper`` instances. ``asdict`` deep-copies every field,
-chokes on those, and the AG-UI run aborts mid-stream with
-``cannot pickle '_GatheringFuture' object`` after the tool finishes.
-
-We sidestep the issue by wrapping each MCP tool in a fresh
-``StructuredTool`` whose coroutine forwards to the registry-resolved
-tool's coroutine. The wrapper closure captures only the underlying
-tool object (a plain Pydantic-like ``StructuredTool``) — not the
-LangGraph runtime — so the AG-UI adapter's recursion stays serializable.
+The engine's ``MCPClientRegistry.get_tools()`` returns serialization-safe
+``StructuredTool`` shims (see
+``libs/idun_agent_engine/src/idun_agent_engine/mcp/registry.py``
+:func:`_serialization_safe_shim`), so this fixture can bind them
+directly without any user-side wrapping.
 
 Tools are pre-resolved at module import time. The engine's lifespan
 sets the active ``MCPClientRegistry`` before loading the agent module,
@@ -32,7 +23,6 @@ import threading
 from typing import Annotated, Any, TypedDict
 
 from langchain_core.messages import BaseMessage
-from langchain_core.tools import StructuredTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -73,32 +63,7 @@ def _resolve_tools_blocking() -> list[Any]:
     return container
 
 
-def _wrap(mcp_tool: Any) -> StructuredTool:
-    underlying = mcp_tool
-
-    async def _shim(**kwargs: Any) -> str:
-        result = await underlying.ainvoke(kwargs)
-        if isinstance(result, str):
-            return result
-        if isinstance(result, list):
-            parts: list[str] = []
-            for item in result:
-                if isinstance(item, dict) and item.get("type") == "text":
-                    parts.append(str(item.get("text", "")))
-                else:
-                    parts.append(str(item))
-            return "\n".join(parts)
-        return str(result)
-
-    return StructuredTool(
-        name=underlying.name,
-        description=underlying.description or "",
-        args_schema=underlying.args_schema,
-        coroutine=_shim,
-    )
-
-
-_TOOLS: list[Any] = [_wrap(t) for t in _resolve_tools_blocking()]
+_TOOLS: list[Any] = _resolve_tools_blocking()
 
 
 def _build_graph() -> StateGraph:
