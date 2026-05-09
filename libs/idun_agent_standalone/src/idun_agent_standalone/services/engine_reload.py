@@ -33,7 +33,24 @@ def build_engine_reload_callable(
     ``configure_app`` with the supplied config. Any failure is wrapped
     in ``ReloadInitFailed`` so the standalone reload pipeline can
     record the outcome and surface a 500 to the admin caller.
+
+    Post-configure, the callable inspects ``app.state.failed_guardrails``
+    (populated by the engine's ``_parse_guardrails``). If the new
+    config introduced any guardrail that failed to install — typically
+    a Hub install error like 401 from ``hub://guardrails/<id>`` or a
+    missing transitive dep (presidio-analyzer, spaCy model) — the
+    callable raises ``ReloadInitFailed``. Without this surface the
+    engine logs the failure and ``configure_app`` returns normally,
+    so the admin sees ``reload OK`` while the new guardrail is in fact
+    inactive and traffic flows through. With this surface the
+    standalone reload pipeline rolls back the DB and returns 500, so
+    the admin caller sees the actual install failure and the prior
+    guard set stays active.
     """
+    prior_failed_keys: set[tuple[str, str]] = {
+        (f.config_id, f.position)
+        for f in getattr(engine_app.state, "failed_guardrails", []) or []
+    }
 
     async def _reload(config: EngineConfig) -> None:
         try:
@@ -45,5 +62,25 @@ def build_engine_reload_callable(
         except Exception as exc:
             logger.exception("engine_reload.configure_failed")
             raise ReloadInitFailed(str(exc)) from exc
+
+        nonlocal prior_failed_keys
+        new_failed = list(getattr(engine_app.state, "failed_guardrails", []) or [])
+        # Anything failing now that wasn't failing before is a regression
+        # introduced by the new config — surface it as a reload failure.
+        # Pre-existing failures are not re-raised on every reload (they
+        # would otherwise wedge admin from making any unrelated change).
+        new_failed_keys = {(f.config_id, f.position) for f in new_failed}
+        regressed = new_failed_keys - prior_failed_keys
+        prior_failed_keys = new_failed_keys
+        if regressed:
+            details = ", ".join(
+                f"{f.config_id} ({f.position}): {f.error}"
+                for f in new_failed
+                if (f.config_id, f.position) in regressed
+            )
+            logger.warning("engine_reload.guardrail_install_regressed %s", details)
+            raise ReloadInitFailed(
+                f"Guardrail install failed for new entries: {details}"
+            )
 
     return _reload
