@@ -69,4 +69,4 @@ repos:
         stages: [commit-msg]
         pass_filenames: false
         verbose: true
-default_stages: [commit]
+default_stages: [pre-commit]
