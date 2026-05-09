@@ -1,0 +1,14 @@
+server:
+  api:
+    port: {{ port | default(8000) }}
+
+agent:
+  type: "ADK"
+  config:
+    name: "e2e-adk-tools"
+    app_name: "e2e_adk_tools"
+    agent: "{{ agent_module_path }}:root_agent"
+    session_service:
+      type: "in_memory"
+    memory_service:
+      type: "in_memory"

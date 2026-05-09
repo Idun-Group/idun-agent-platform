@@ -34,3 +34,28 @@ def test_streaming_sse_shape_langgraph(
             "RUN_FINISHED",
         ],
     )
+
+
+ADK_AGENT = "tests/e2e/fixtures/agents/agent_adk_chat.py"
+
+
+@pytest.mark.pair("adk-gemini")
+def test_streaming_sse_shape_adk(pair, render_config, standalone_with_config) -> None:
+    config = render_config(
+        "adk_chat.yaml.j2",
+        port=0,
+        agent_module_path=ADK_AGENT,
+    )
+    with standalone_with_config(config) as base_url:
+        events = post_run(base_url, "Hi.")
+    assert_envelope_complete(events)
+    assert_event_sequence(
+        events,
+        [
+            "RUN_STARTED",
+            "TEXT_MESSAGE_START",
+            "TEXT_MESSAGE_CONTENT+",
+            "TEXT_MESSAGE_END",
+            "RUN_FINISHED",
+        ],
+    )
