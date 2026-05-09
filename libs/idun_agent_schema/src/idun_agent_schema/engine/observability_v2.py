@@ -14,7 +14,6 @@ class ObservabilityProvider(str, Enum):
 
     LANGFUSE = "LANGFUSE"
     PHOENIX = "PHOENIX"
-    # PHOENIX_LOCAL = "PHOENIX_LOCAL"
     GCP_LOGGING = "GCP_LOGGING"
     GCP_TRACE = "GCP_TRACE"
     LANGSMITH = "LANGSMITH"
@@ -48,13 +47,6 @@ class PhoenixConfig(BaseModel):
     provider: Literal[ObservabilityProvider.PHOENIX] = ObservabilityProvider.PHOENIX
     collector_endpoint: str = Field(default="https://collector.phoenix.com")
     project_name: str = Field(default="")
-
-
-# class PhoenixLocalConfig(BaseModel):
-#     """Phoenix Local configuration."""
-#
-#     collector_endpoint: str = Field(default="http://0.0.0.0:6006")
-#     project_name: str = Field(default="")
 
 
 class GCPLoggingConfig(BaseModel):

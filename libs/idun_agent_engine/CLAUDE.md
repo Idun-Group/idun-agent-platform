@@ -35,7 +35,6 @@ idun_agent_engine/
 │   ├── langfuse/       # LangChain CallbackHandler integration
 │   ├── langsmith/      # Env-var driven LangSmith tracing (no callbacks; uses LANGSMITH_* vars)
 │   ├── phoenix/        # OpenTelemetry + OpenInference instrumentation (remote collector)
-│   ├── phoenix_local/  # Same as phoenix/, but starts a local Phoenix server via CLI subprocess
 │   ├── gcp_trace/      # Cloud Trace exporter + OpenInference instrumentation
 │   └── gcp_logging/    # Google Cloud Logging (hooks into python logging)
 ├── integrations/       # Messaging/webhook provider integrations
@@ -242,7 +241,6 @@ Top-level config. Multiple providers can be active simultaneously. All are lazy-
 | **Langfuse** | Sets env vars → `CallbackHandler` for LangChain | Yes |
 | **LangSmith** | Sets `LANGSMITH_*` env vars → automatic LangChain/LangGraph tracing | No (env-var based) |
 | **Phoenix** | `phoenix.otel.register()` + `LangChainInstrumentor` (remote collector) | No (global instrumentation) |
-| **Phoenix (local)** | Same as Phoenix, plus starts a local Phoenix server via CLI subprocess | No (global instrumentation) |
 | **GCP Trace** | `CloudTraceSpanExporter` + `LangChainInstrumentor` + optional Guardrails/VertexAI/MCP instrumentors | No (global instrumentation) |
 | **GCP Logging** | `google.cloud.logging.Client.setup_logging()` | No (hooks into python logging) |
 
