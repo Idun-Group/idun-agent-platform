@@ -35,7 +35,7 @@ Self-hosted. Open source. No vendor lock-in.
 
 <br/>
 
-<p align="center">Idun Agent Platform is an open-source, self-hosted production wrapper for <b>LangGraph</b> and <b>Google ADK</b> agents. <code>pip install idun-agent-standalone</code> and your agent runs as a FastAPI process with built-in chat UI, admin panel, traces, observability, guardrails, memory persistence, MCP tool governance, and prompt management.</p>
+<p align="center">Idun Agent Platform is an open-source, self-hosted production wrapper for <b>LangGraph</b> and <b>Google ADK</b> agents. <code>pip install idun-agent-engine</code> and your agent runs as a FastAPI process with built-in chat UI, admin panel, traces, observability, guardrails, memory persistence, MCP tool governance, and prompt management.</p>
 
 > **Why Idun?** Teams building agents face a tradeoff: build the production wrapper yourself (FastAPI + traces + guardrails + admin UI — slow), or adopt a SaaS like LangGraph Cloud or LangSmith (sovereignty trade-off). Idun is the third path: pip install a self-sufficient FastAPI process that bundles your agent with chat UI, admin, traces, and guardrails — all open source, all on your infrastructure.
 
@@ -50,9 +50,9 @@ Self-hosted. Open source. No vendor lock-in.
 > **Prerequisites**: Python 3.12+ and pip.
 
 ```bash
-pip install idun-agent-standalone
-idun-standalone init my-agent
-cd my-agent && idun-standalone serve
+pip install idun-agent-engine
+idun init my-agent
+cd my-agent && idun serve
 ```
 
 Open [http://localhost:8000](http://localhost:8000). Chat with your agent, then explore the admin at [/admin](http://localhost:8000/admin) and traces at [/admin/traces](http://localhost:8000/admin/traces).

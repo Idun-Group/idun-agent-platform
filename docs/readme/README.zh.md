@@ -37,7 +37,7 @@
 
 <br/>
 
-<p align="center">Idun 是 <b>LangGraph</b> 和 <b>Google ADK</b> 智能体的开源生产封装层 — 聊天界面、追踪、护栏、记忆和 MCP，全部运行在您自己的基础设施上。<code>pip install idun-agent-standalone</code>，您的智能体即作为一个 FastAPI 进程运行，内置聊天界面、管理面板、追踪、可观测性、护栏、记忆持久化、MCP 工具治理与提示词管理。</p>
+<p align="center">Idun 是 <b>LangGraph</b> 和 <b>Google ADK</b> 智能体的开源生产封装层 — 聊天界面、追踪、护栏、记忆和 MCP，全部运行在您自己的基础设施上。<code>pip install idun-agent-engine</code>，您的智能体即作为一个 FastAPI 进程运行，内置聊天界面、管理面板、追踪、可观测性、护栏、记忆持久化、MCP 工具治理与提示词管理。</p>
 
 > **为什么选择 Idun？** 构建智能体的团队面临一个权衡：自己搭建生产封装层（FastAPI + 追踪 + 护栏 + 管理界面 — 缓慢），或者采用 LangGraph Cloud、LangSmith 等 SaaS（牺牲主权）。Idun 是第三条路：通过 `pip install` 获得一个自给自足的 FastAPI 进程，将您的智能体与聊天界面、管理面板、追踪和护栏一同打包 — 全部开源，全部运行在您的基础设施上。
 
@@ -52,9 +52,9 @@
 > **前提条件**：Python 3.12+ 和 pip。
 
 ```bash
-pip install idun-agent-standalone
-idun-standalone init my-agent
-cd my-agent && idun-standalone serve
+pip install idun-agent-engine
+idun init my-agent
+cd my-agent && idun serve
 ```
 
 打开 [http://localhost:8000](http://localhost:8000)。与您的智能体对话，然后访问管理面板 [/admin](http://localhost:8000/admin) 和追踪页面 [/admin/traces](http://localhost:8000/admin/traces)。

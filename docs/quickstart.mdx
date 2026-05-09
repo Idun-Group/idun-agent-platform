@@ -1,7 +1,7 @@
 ---
 title: "Quickstart"
 description: "Deploy your first AI agent with Idun in under 30 minutes — pip install to live chat UI."
-keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", "idun-agent-standalone", "pip install"]
+keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", "idun-agent-engine", "pip install"]
 ---
 
 `pip install` → chat UI → production agent in under 30 minutes. No Docker required, no separate frontend, no extra services to deploy.
@@ -17,14 +17,14 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
 <Steps>
   <Step title="Install">
     ```bash
-    pip install idun-agent-standalone
+    pip install idun-agent-engine
     ```
     Installs the standalone package plus its dependencies (engine, FastAPI, Next.js static UI, AG-UI client).
   </Step>
 
   <Step title="Initialize a new agent project">
     ```bash
-    idun-standalone init my-agent
+    idun init my-agent
     cd my-agent
     ```
     Scaffolds:
@@ -44,7 +44,7 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
 
   <Step title="Serve">
     ```bash
-    idun-standalone serve
+    idun serve
     ```
     Runs Alembic migrations, seeds the database from `config.yaml`, and starts uvicorn at `http://localhost:8000`.
 

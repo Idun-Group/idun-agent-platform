@@ -37,7 +37,7 @@ Auto-hébergé. Open source. Aucun verrou propriétaire.
 
 <br/>
 
-<p align="center">Idun est l'enveloppe de production open source pour les agents <b>LangGraph</b> et <b>Google ADK</b> — interface de chat, traces, garde-fous, mémoire et MCP, sur votre propre infrastructure. <code>pip install idun-agent-standalone</code> et votre agent s'exécute comme un processus FastAPI avec interface de chat intégrée, panneau d'administration, traces, observabilité, garde-fous, persistance de mémoire, gouvernance des outils MCP et gestion des prompts.</p>
+<p align="center">Idun est l'enveloppe de production open source pour les agents <b>LangGraph</b> et <b>Google ADK</b> — interface de chat, traces, garde-fous, mémoire et MCP, sur votre propre infrastructure. <code>pip install idun-agent-engine</code> et votre agent s'exécute comme un processus FastAPI avec interface de chat intégrée, panneau d'administration, traces, observabilité, garde-fous, persistance de mémoire, gouvernance des outils MCP et gestion des prompts.</p>
 
 > **Pourquoi Idun ?** Les équipes qui construisent des agents font face à un compromis : construire soi-même l'enveloppe de production (FastAPI + traces + garde-fous + interface admin — lent), ou adopter un SaaS comme LangGraph Cloud ou LangSmith (compromis sur la souveraineté). Idun est la troisième voie : un `pip install` d'un processus FastAPI autonome qui regroupe votre agent avec interface de chat, admin, traces et garde-fous — tout en open source, tout sur votre infrastructure.
 
@@ -52,9 +52,9 @@ Auto-hébergé. Open source. Aucun verrou propriétaire.
 > **Prérequis** : Python 3.12+ et pip.
 
 ```bash
-pip install idun-agent-standalone
-idun-standalone init my-agent
-cd my-agent && idun-standalone serve
+pip install idun-agent-engine
+idun init my-agent
+cd my-agent && idun serve
 ```
 
 Ouvrez [http://localhost:8000](http://localhost:8000). Discutez avec votre agent, puis explorez l'admin sur [/admin](http://localhost:8000/admin) et les traces sur [/admin/traces](http://localhost:8000/admin/traces).

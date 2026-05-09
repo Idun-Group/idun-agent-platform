@@ -37,7 +37,7 @@ Autoalojado. Código abierto. Sin dependencia de proveedores.
 
 <br/>
 
-<p align="center">Idun es la envoltura de producción de código abierto para agentes <b>LangGraph</b> y <b>Google ADK</b> — interfaz de chat, trazas, guardarraíles, memoria y MCP, en tu propia infraestructura. <code>pip install idun-agent-standalone</code> y tu agente se ejecuta como un proceso FastAPI con interfaz de chat integrada, panel de administración, trazas, observabilidad, guardarraíles, persistencia de memoria, gobernanza de herramientas MCP y gestión de prompts.</p>
+<p align="center">Idun es la envoltura de producción de código abierto para agentes <b>LangGraph</b> y <b>Google ADK</b> — interfaz de chat, trazas, guardarraíles, memoria y MCP, en tu propia infraestructura. <code>pip install idun-agent-engine</code> y tu agente se ejecuta como un proceso FastAPI con interfaz de chat integrada, panel de administración, trazas, observabilidad, guardarraíles, persistencia de memoria, gobernanza de herramientas MCP y gestión de prompts.</p>
 
 > **¿Por qué Idun?** Los equipos que construyen agentes se enfrentan a un compromiso: construir tú mismo la envoltura de producción (FastAPI + trazas + guardarraíles + interfaz admin — lento), o adoptar un SaaS como LangGraph Cloud o LangSmith (compromiso de soberanía). Idun es la tercera vía: un `pip install` de un proceso FastAPI autosuficiente que empaqueta tu agente con interfaz de chat, admin, trazas y guardarraíles — todo de código abierto, todo en tu infraestructura.
 
@@ -52,9 +52,9 @@ Autoalojado. Código abierto. Sin dependencia de proveedores.
 > **Requisitos previos**: Python 3.12+ y pip.
 
 ```bash
-pip install idun-agent-standalone
-idun-standalone init my-agent
-cd my-agent && idun-standalone serve
+pip install idun-agent-engine
+idun init my-agent
+cd my-agent && idun serve
 ```
 
 Abre [http://localhost:8000](http://localhost:8000). Chatea con tu agente, luego explora la administración en [/admin](http://localhost:8000/admin) y las trazas en [/admin/traces](http://localhost:8000/admin/traces).

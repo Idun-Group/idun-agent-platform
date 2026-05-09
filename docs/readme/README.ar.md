@@ -37,7 +37,7 @@
 
 <br/>
 
-<p align="center">Idun هو غلاف الإنتاج مفتوح المصدر لعملاء <b>LangGraph</b> و <b>Google ADK</b> — واجهة دردشة، تتبعات، حواجز، ذاكرة، و MCP، على البنية التحتية الخاصة بك. <code>pip install idun-agent-standalone</code> ويعمل عميلك كعملية FastAPI مع واجهة دردشة مدمجة، لوحة إدارة، تتبعات، مراقبة، حواجز حماية، استمرار للذاكرة، حوكمة لأدوات MCP، وإدارة للموجّهات.</p>
+<p align="center">Idun هو غلاف الإنتاج مفتوح المصدر لعملاء <b>LangGraph</b> و <b>Google ADK</b> — واجهة دردشة، تتبعات، حواجز، ذاكرة، و MCP، على البنية التحتية الخاصة بك. <code>pip install idun-agent-engine</code> ويعمل عميلك كعملية FastAPI مع واجهة دردشة مدمجة، لوحة إدارة، تتبعات، مراقبة، حواجز حماية، استمرار للذاكرة، حوكمة لأدوات MCP، وإدارة للموجّهات.</p>
 
 > **لماذا Idun؟** تواجه الفرق التي تبني العملاء مفاضلة: بناء غلاف الإنتاج بنفسك (FastAPI + تتبعات + حواجز + لوحة إدارة — بطيء)، أو اعتماد خدمة SaaS مثل LangGraph Cloud أو LangSmith (التضحية بالسيادة). Idun هو الطريق الثالث: `pip install` لعملية FastAPI مكتفية ذاتياً تجمع عميلك مع واجهة دردشة، لوحة إدارة، تتبعات، وحواجز — كلها مفتوحة المصدر، وكلها على بنيتك التحتية.
 
@@ -52,9 +52,9 @@
 > **المتطلبات الأساسية**: Python 3.12+ و pip.
 
 ```bash
-pip install idun-agent-standalone
-idun-standalone init my-agent
-cd my-agent && idun-standalone serve
+pip install idun-agent-engine
+idun init my-agent
+cd my-agent && idun serve
 ```
 
 افتح [http://localhost:8000](http://localhost:8000). تحدّث مع عميلك، ثم استكشف الإدارة على [/admin](http://localhost:8000/admin) والتتبعات على [/admin/traces](http://localhost:8000/admin/traces).

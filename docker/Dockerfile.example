@@ -5,7 +5,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Install the standalone (pulls engine + UI as transitive deps).
-RUN pip install --no-cache-dir idun-agent-standalone
+RUN pip install --no-cache-dir idun-agent-engine
 
 # Copy your agent code and config.
 # The standalone expects: IDUN_CONFIG_PATH=/app/agent/config.yaml
@@ -23,4 +23,4 @@ ENV IDUN_CONFIG_PATH=/app/agent/config.yaml
 #   OPENAI_API_KEY=...                   (whatever your agent needs)
 
 EXPOSE 8000
-CMD ["idun-standalone", "serve", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["idun", "serve", "--host", "0.0.0.0", "--port", "8000"]
