@@ -113,14 +113,20 @@ jobs:
 
             (This check is **advisory** in v1 — it will not block merge.)
 
-  # Requires repo secrets:
-  #   - ANTHROPIC_API_KEY (from team's Anthropic console; see SPEC §4.5)
-  # Without the secret, the action step fails but the workflow stays green
-  # via continue-on-error: true at the job level.
+  # Disabled by default — set repo variable GUIDELINES_REVIEW_ENABLED=true to enable.
+  #
+  # When enabled, also requires the ANTHROPIC_API_KEY secret (team's Anthropic
+  # console; see SPEC §4.5). The job stays SKIPPED (not failed) until the
+  # variable is set, keeping the PR checks panel clean.
+  #
+  # To enable:
+  #   1. Repo Settings → Secrets and variables → Actions → Variables tab
+  #      → New repository variable: GUIDELINES_REVIEW_ENABLED = true
+  #   2. Same screen, Secrets tab → New repository secret: ANTHROPIC_API_KEY
   guidelines-review:
     name: Coding-guidelines advisory review (Claude headless)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.GUIDELINES_REVIEW_ENABLED == 'true'
     continue-on-error: true
     permissions:
       contents: read
