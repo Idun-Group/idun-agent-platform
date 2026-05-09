@@ -69,7 +69,7 @@ def test_using_user_stamps_user_id_attribute(in_memory_tracer):
     assert "alice" in user_attrs
 
 
-def _build_test_app(fake_agent, resolve_user_returns):
+def _build_test_app(fake_agent):
     """Mount the real `/agent` router on a minimal app and override the
     Depends-based auth + agent dependencies so the route runs without
     SSO and without a real ConfigBuilder boot.
@@ -127,7 +127,7 @@ def test_event_generator_wraps_agent_run_with_using_user(
                 yield None  # pragma: no cover
 
     fake_agent = _FakeAgent()
-    app = _build_test_app(fake_agent, resolve_user_returns="alice")
+    app = _build_test_app(fake_agent)
 
     # `_resolve_user_id` is a plain function called inside the route
     # body — patch the module attribute so it returns "alice".
@@ -177,7 +177,7 @@ def test_event_generator_default_user_does_not_crash(monkeypatch, in_memory_trac
                 yield None  # pragma: no cover
 
     fake_agent = _FakeAgent()
-    app = _build_test_app(fake_agent, resolve_user_returns=None)
+    app = _build_test_app(fake_agent)
 
     # No SSO user; _resolve_user_id returns None so the route falls
     # back to current_user_id.get() which has the "standalone" default.
