@@ -23,6 +23,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
+from idun_agent_standalone.infrastructure.db.models.observability import (
+    StandaloneObservabilityRow,
+)
 from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
 
 logger = get_logger(__name__)
@@ -137,6 +140,39 @@ async def _seed_prompts_if_empty(
     return len(engine_config.prompts)
 
 
+async def _seed_observability_if_empty(
+    session: AsyncSession, engine_config: EngineConfig
+) -> int:
+    """Seed the singleton ``StandaloneObservabilityRow`` from YAML.
+
+    ``engine_config.observability`` is a ``list[ObservabilityConfig]``;
+    standalone is single-tenant and stores at most one provider, so we
+    take the first element. The assembly layer
+    (``services/engine_config._layer_observability``) wraps it back into
+    a one-element list when materializing ``EngineConfig`` at runtime.
+
+    No-op if the singleton row already exists or the YAML omits the
+    ``observability:`` block.
+    """
+    if not engine_config.observability:
+        return 0
+
+    existing = await session.get(StandaloneObservabilityRow, "singleton")
+    if existing is not None:
+        logger.info("observability singleton exists; skipping seed")
+        return 0
+
+    first = engine_config.observability[0]
+    session.add(
+        StandaloneObservabilityRow(
+            id="singleton",
+            observability_config=first.model_dump(mode="json"),
+        )
+    )
+    await session.commit()
+    return 1
+
+
 async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> None:
     """Seed each resource row from YAML if the DB is empty.
 
@@ -162,7 +198,12 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
 
     engine_config = ConfigBuilder.load_from_file(str(config_path))
 
-    seeded: dict[str, int] = {"agent": 0, "memory": 0, "prompts": 0}
+    seeded: dict[str, int] = {
+        "agent": 0,
+        "memory": 0,
+        "prompts": 0,
+        "observability": 0,
+    }
 
     async with sm() as session:
         try:
@@ -182,10 +223,19 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         except Exception:
             logger.exception("Failed to seed prompt rows from %s", config_path)
 
+    async with sm() as session:
+        try:
+            seeded["observability"] = await _seed_observability_if_empty(
+                session, engine_config
+            )
+        except Exception:
+            logger.exception("Failed to seed observability row from %s", config_path)
+
     logger.info(
-        "seed complete from %s: agent=%d memory=%d prompts=%d",
+        "seed complete from %s: agent=%d memory=%d prompts=%d observability=%d",
         config_path,
         seeded["agent"],
         seeded["memory"],
         seeded["prompts"],
+        seeded["observability"],
     )

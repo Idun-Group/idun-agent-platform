@@ -17,6 +17,9 @@ import pytest
 import yaml
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
+from idun_agent_standalone.infrastructure.db.models.observability import (
+    StandaloneObservabilityRow,
+)
 from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
 from idun_agent_standalone.infrastructure.db.session import Base
 from idun_agent_standalone.infrastructure.scripts import seed as seed_module
@@ -91,6 +94,34 @@ def prompts_yaml_path(tmp_path: Path) -> Path:
     config_path = tmp_path / "config-with-prompts.yaml"
     with open(config_path, "w") as f:
         yaml.dump(_PROMPTS_YAML, f)
+    return config_path
+
+
+# YAML with a top-level `observability:` block — exercises the
+# observability seeder (singleton resource: only the first provider
+# from the list is persisted, mirroring the assembly layer's wrap).
+_OBSERVABILITY_YAML: dict[str, Any] = {
+    **_AGENT_YAML,
+    "observability": [
+        {
+            "provider": "LANGFUSE",
+            "enabled": True,
+            "config": {
+                "host": "https://cloud.langfuse.com",
+                "public_key": "pk-test",
+                "secret_key": "sk-test",
+            },
+        },
+    ],
+}
+
+
+@pytest.fixture
+def observability_yaml_path(tmp_path: Path) -> Path:
+    """Write a YAML config with an `observability:` block and return its path."""
+    config_path = tmp_path / "config-with-observability.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump(_OBSERVABILITY_YAML, f)
     return config_path
 
 
@@ -263,6 +294,66 @@ async def test_seed_prompts_no_op_on_yaml_without_prompts_block(
     async with sessionmaker_factory() as session:
         count = await session.scalar(
             select(func.count()).select_from(StandalonePromptRow)
+        )
+
+    assert count == 0
+
+
+async def test_seed_observability_inserts_singleton_when_empty(
+    sessionmaker_factory: async_sessionmaker, observability_yaml_path: Path
+) -> None:
+    """YAML with observability provider → 1 StandaloneObservabilityRow (singleton)."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, observability_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        rows = (await session.scalars(select(StandaloneObservabilityRow))).all()
+
+    assert len(rows) == 1
+    row = rows[0]
+    # Singleton PK + config dict preserved from the first provider in YAML.
+    assert row.id == "singleton"
+    config = row.observability_config
+    assert config["provider"] == "LANGFUSE"
+    assert config["enabled"] is True
+    assert "config" in config
+
+
+async def test_seed_observability_skips_when_singleton_exists(
+    sessionmaker_factory: async_sessionmaker, observability_yaml_path: Path
+) -> None:
+    """If singleton row exists, no re-seed (existing config preserved)."""
+    async with sessionmaker_factory() as session:
+        session.add(
+            StandaloneObservabilityRow(
+                id="singleton",
+                observability_config={
+                    "provider": "PHOENIX",
+                    "enabled": False,
+                    "config": {},
+                },
+            )
+        )
+        await session.commit()
+
+    await seed_from_yaml_if_empty(sessionmaker_factory, observability_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        rows = (await session.scalars(select(StandaloneObservabilityRow))).all()
+
+    assert len(rows) == 1
+    # The pre-existing PHOENIX row was NOT overwritten with LANGFUSE.
+    assert rows[0].observability_config["provider"] == "PHOENIX"
+
+
+async def test_seed_observability_no_op_on_yaml_without_block(
+    sessionmaker_factory: async_sessionmaker, yaml_config_path: Path
+) -> None:
+    """YAML without observability block → no row, no error."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, yaml_config_path)
+
+    async with sessionmaker_factory() as session:
+        count = await session.scalar(
+            select(func.count()).select_from(StandaloneObservabilityRow)
         )
 
     assert count == 0
