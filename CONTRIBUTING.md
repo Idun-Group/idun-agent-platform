@@ -119,9 +119,9 @@ If you have any questions, feel free to ask by opening an issue.
 <!-- BEGIN: generated-by render_guidelines -->
 ## Coding Guidelines (auto-generated)
 
-This repository follows the Idun coding-guideline rule set (12 rules: 0 block / 11 warn / 1 advise).
+This repository follows the Idun coding-guideline rule set (37 rules: 0 block / 19 warn / 18 advise).
 
 Full reference: [`docs/team/CODING-GUIDELINES.md`](docs/team/CODING-GUIDELINES.md).
 
-Active rule ids: ASYNC-001, ASYNC-002, CMP-001, ERR-001, LOG-001, LOG-003, MIGRATION-001, RES-001, SCHEMA-001, SQL-001, TIME-001, TYPE-001.
+Active rule ids: ADR-001, API-001, ASYNC-001, ASYNC-002, ASYNC-003, CMP-001, CMP-002, CMP-003, DEP-001, DOC-001, ENV-001, ERR-001, ERR-002, ERR-003, GIT-001, GIT-002, LOG-001, LOG-002, LOG-003, MAGIC-001, MIGRATION-001, OBS-001, RES-001, SCHEMA-001, SCHEMA-002, SQL-001, TEST-001, TEST-002, TEST-003, TEST-004, TIME-001, TODO-001, TYPE-001, TYPE-002, UI-001, UI-002, UI-003.
 <!-- END: generated-by render_guidelines -->
