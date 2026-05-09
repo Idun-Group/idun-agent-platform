@@ -135,6 +135,15 @@ jobs:
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
+    env:
+      # Required by tests/e2e/admin-edit-and-reload.spec.ts: the spec adds a
+      # BAN_LIST guardrail via admin REST, which the engine's reload pipeline
+      # converts via convert_guardrail() — that call requires GUARDRAILS_API_KEY.
+      # Without this env wiring the spec auto-skips (test.skip guard) and the
+      # admin-REST → reload coverage doesn't fire here. Repo secret is set
+      # under the same name; fork PRs that can't access secrets fall back to
+      # the test.skip guard.
+      GUARDRAILS_API_KEY: ${{ secrets.GUARDRAILS_API_KEY }}
     defaults:
       run:
         working-directory: services/idun_agent_standalone_ui
