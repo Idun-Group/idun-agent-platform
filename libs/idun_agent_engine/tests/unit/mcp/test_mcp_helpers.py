@@ -7,7 +7,8 @@ Verifies the resolution order:
   4. Manager API fallback
 """
 
-from typing import Any
+from collections.abc import Mapping
+from dataclasses import dataclass
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -25,8 +26,9 @@ class _FakeArgs(BaseModel):
     query: str = ""
 
 
-def _fake_mcp_tool(name: str) -> Any:
-    """Build a stand-in MCP tool that survives ``_serialization_safe_shim``.
+@dataclass
+class _FakeMCPTool:
+    """Stand-in for a langchain-mcp-adapters tool that survives the shim.
 
     The shim reads ``name``/``description``/``args_schema`` and forwards
     via ``ainvoke``. ``args_schema`` must be a real pydantic model class
@@ -34,15 +36,20 @@ def _fake_mcp_tool(name: str) -> Any:
     construction time.
     """
 
-    async def _ainvoke(_kwargs: dict[str, Any]) -> str:
+    name: str
+    description: str
+    args_schema: type[BaseModel]
+
+    async def ainvoke(self, _kwargs: Mapping[str, object]) -> str:
         return "ok"
 
-    tool = MagicMock()
-    tool.name = name
-    tool.description = f"description of {name}"
-    tool.args_schema = _FakeArgs
-    tool.ainvoke = _ainvoke
-    return tool
+
+def _fake_mcp_tool(name: str) -> _FakeMCPTool:
+    return _FakeMCPTool(
+        name=name,
+        description=f"description of {name}",
+        args_schema=_FakeArgs,
+    )
 
 
 @pytest.fixture(autouse=True)

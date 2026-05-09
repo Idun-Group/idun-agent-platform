@@ -222,9 +222,7 @@ class MCPClientRegistry:
                                 {
                                     "name": config.name,
                                     "kind": str(config.transport),
-                                    "reason": (
-                                        f"client construction failed: " f"{exc}"
-                                    ),
+                                    "reason": f"client construction failed: {exc}",
                                 }
                             )
 
