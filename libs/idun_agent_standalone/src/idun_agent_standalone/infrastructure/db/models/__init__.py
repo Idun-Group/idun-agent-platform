@@ -15,4 +15,6 @@ from .observability import StandaloneObservabilityRow  # noqa: F401
 from .prompt import StandalonePromptRow  # noqa: F401
 from .runtime_state import StandaloneRuntimeStateRow  # noqa: F401
 from .session import StandaloneSessionRow  # noqa: F401
+from .span import StandaloneSpanRow  # noqa: F401
 from .sso import StandaloneSsoRow  # noqa: F401
+from .trace import StandaloneTraceRow  # noqa: F401
