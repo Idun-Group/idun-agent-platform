@@ -5,24 +5,25 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
+from idun_agent_schema.engine.observability_v2 import (
+    GCPTraceConfig,
+    ObservabilityConfig,
+    ObservabilityProvider,
+)
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
+from .. import otel_lifecycle
 from ..base import ObservabilityHandlerBase
 
 logger = logging.getLogger(__name__)
 
 
 class GCPTraceHandler(ObservabilityHandlerBase):
-    """GCP Trace handler."""
+    """GCP Trace handler — delegates lifecycle to ``otel_lifecycle``."""
 
     provider = "gcp_trace"
 
     def __init__(self, options: dict[str, Any] | None = None):
-        """Initialize handler."""
         super().__init__(options)
         self.options = options or {}
 
@@ -32,87 +33,72 @@ class GCPTraceHandler(ObservabilityHandlerBase):
         except ImportError as e:
             logger.error("GCP Trace dependencies not found: %s", e)
             raise ImportError(
-                "Please install 'opentelemetry-exporter-gcp-trace' and 'openinference-instrumentation-langchain' to use GCP Trace."
+                "Please install 'opentelemetry-exporter-gcp-trace' and "
+                "'openinference-instrumentation-langchain' to use GCP Trace."
             ) from e
 
-        project_id = self.options.get("project_id")
-        if not project_id:
-            project_id = None
-
-        # Initialize exporter
-        exporter = CloudTraceSpanExporter(
-            project_id=project_id,
+        # Build a typed config so the helper sees the same Resource +
+        # Sampler shape it would on a fresh boot. Constructed via
+        # ``model_validate`` so the schema's camelCase alias generator
+        # doesn't trip mypy on the snake_case kwargs.
+        gcp_config = GCPTraceConfig.model_validate(
+            {
+                "project_id": self.options.get("project_id") or "",
+                "region": self.options.get("region") or "",
+                "trace_name": self.options.get("trace_name") or "",
+                "sampling_rate": float(self.options.get("sampling_rate", 1.0)),
+                "flush_interval": int(self.options.get("flush_interval", 5)),
+                "ignore_urls": self.options.get("ignore_urls") or "",
+            }
         )
-
-        # Initialize sampler
-        sampling_rate = float(self.options.get("sampling_rate", 1.0))
-        sampler = TraceIdRatioBased(sampling_rate)
-
-        # Initialize resource
-        resource_attributes = {}
-        trace_name = self.options.get("trace_name")
-        if trace_name:
-            resource_attributes["service.name"] = trace_name
-
-        resource = Resource.create(resource_attributes)
-
-        # Initialize tracer provider
-        tracer_provider = TracerProvider(
-            sampler=sampler,
-            resource=resource,
+        observability = ObservabilityConfig(
+            provider=ObservabilityProvider.GCP_TRACE,
+            enabled=True,
+            config=gcp_config,
         )
+        otel_lifecycle.init_otel(observability)
 
-        # Add span processor
-        flush_interval = int(self.options.get("flush_interval", 5))
-        span_processor = BatchSpanProcessor(
+        # Exporter + processor — owned by the helper from now on.
+        exporter = CloudTraceSpanExporter(project_id=gcp_config.project_id or None)
+        flush_interval = gcp_config.flush_interval
+        processor = BatchSpanProcessor(
             exporter, schedule_delay_millis=flush_interval * 1000
         )
-        tracer_provider.add_span_processor(span_processor)
+        otel_lifecycle.attach_span_processor(processor)
 
-        # Set global tracer provider
-        trace.set_tracer_provider(tracer_provider)
+        # Instrumentors. Each may be unavailable depending on the user's
+        # extras; ImportError on any one is non-fatal — we degrade
+        # gracefully (matches existing behaviour).
+        otel_lifecycle.attach_instrumentor(LangChainInstrumentor())
 
-        # Instrument LangChain with OpenInference
-        LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
-
-        # Instrument Guardrails
         try:
-            from openinference.instrumentation.guardrails import GuardrailsInstrumentor
+            from openinference.instrumentation.guardrails import (
+                GuardrailsInstrumentor,
+            )
 
-            GuardrailsInstrumentor().instrument(tracer_provider=tracer_provider)
+            otel_lifecycle.attach_instrumentor(GuardrailsInstrumentor())
         except ImportError:
             pass
 
-        # Instrument VertexAI
         try:
             from openinference.instrumentation.vertexai import VertexAIInstrumentor
 
-            VertexAIInstrumentor().instrument(tracer_provider=tracer_provider)
+            otel_lifecycle.attach_instrumentor(VertexAIInstrumentor())
         except ImportError:
             pass
 
-        # TODO: GCP GoogleADKInstrumentor is n conflist with langfuse, so we don't need to instrument it here
-        # Instrument Google ADK
-        # try:
-        #     from openinference.instrumentation.google_adk import GoogleADKInstrumentor
-
-        #     GoogleADKInstrumentor().instrument(tracer_provider=tracer_provider)
-        # except ImportError:
-        #     pass
-
-        # Instrument MCP
         try:
             from openinference.instrumentation.mcp import MCPInstrumentor
 
-            MCPInstrumentor().instrument(tracer_provider=tracer_provider)
+            otel_lifecycle.attach_instrumentor(MCPInstrumentor())
         except ImportError:
             pass
 
         logger.info(
-            "GCP Trace initialized for project: %s", project_id or "auto-detected"
+            "GCP Trace initialized for project: %s",
+            gcp_config.project_id or "auto-detected",
         )
 
     def get_callbacks(self) -> list[Any]:
-        """Return callbacks."""
-        # OpenTelemetry instrumentation uses global tracer provider, so no explicit callbacks needed here
+        """Return callbacks. OTel works via global tracer provider."""
         return []

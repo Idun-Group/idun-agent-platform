@@ -16,6 +16,7 @@ from idun_agent_engine.mcp.registry import MCPClientRegistry, set_active_registr
 
 from ..core.config_builder import ConfigBuilder
 from ..guardrails.base import BaseGuardrail
+from ..observability.otel_lifecycle import shutdown_otel
 from ..telemetry import get_telemetry, sanitize_telemetry_config
 
 logger = logging.getLogger(__name__)
@@ -138,6 +139,12 @@ async def cleanup_agent(app: FastAPI):
             len(app.router.routes),
         )
     app.state.integration_routes = []
+
+    # Drain OTel resources installed by observability handlers (and the
+    # standalone runtime's post_configure_callbacks once it lands). Keeps
+    # reload N+1 from logging "Overriding of current TracerProvider is
+    # not allowed" and silently dropping the new processor.
+    shutdown_otel()
 
 
 async def configure_app(app: FastAPI, engine_config):
