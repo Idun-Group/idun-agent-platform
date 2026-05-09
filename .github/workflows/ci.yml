@@ -63,3 +63,52 @@ jobs:
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
         run: |
           uv run pytest libs/idun_agent_engine/tests -m "not requires_langfuse and not requires_phoenix and not requires_postgres"
+
+  guidelines-check:
+    name: Coding guidelines drift check (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone idun-dev plugin
+        env:
+          IDUN_DEV_TOKEN: ${{ secrets.IDUN_DEV_READ_TOKEN }}
+        run: |
+          if [ -z "$IDUN_DEV_TOKEN" ]; then
+            echo "IDUN_DEV_READ_TOKEN secret not set — cannot clone idun-dev plugin."
+            echo "Add the secret to repo settings or skip the guidelines-check job."
+            exit 1
+          fi
+          git clone --depth 1 \
+            https://x-access-token:$IDUN_DEV_TOKEN@github.com/Idun-Group/idun-dev.git \
+            $RUNNER_TEMP/idun-dev
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install renderer deps
+        run: |
+          cd $RUNNER_TEMP/idun-dev/.claude/scripts
+          uv sync --all-groups
+
+      - name: Drift check
+        id: drift
+        run: |
+          cd $RUNNER_TEMP/idun-dev/.claude/scripts
+          uv run python render_guidelines.py \
+            --target-repo $GITHUB_WORKSPACE --check
+        continue-on-error: true
+
+      - name: Comment on PR if drift
+        if: steps.drift.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: guidelines-drift
+          message: |
+            Coding-guideline outputs have drifted from the YAML source of truth.
+            Run `/render-guidelines` locally and commit the resulting changes.
+
+            (This check is **advisory** in v1 — it will not block merge.)
