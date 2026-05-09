@@ -4,14 +4,23 @@ repos:
     hooks:
     -   id: check-added-large-files
         name: "📏 files · Check for large files"
-        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
+        # LiteLLM model_prices_and_context_window.json is a ~1.4 MB vendored
+        # snapshot used by the standalone trace-cost calculator (see
+        # tasks/trace-feature-08-05-2026/06-cost-token-capture.md). Refreshed
+        # monthly via Dependabot-style chore PR.
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/|(^|/)libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/traces/data/litellm_prices\.json$
     -   id: check-ast
         name: "🐍 syntax · Check Python AST"
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: check-json
         name: "📋 format · Check JSON syntax"
-        # Note: VSCode launch configs and TS configs are JSONC (allow comments/trailing commas)
-        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)package-lock\.json$|(^|/)\.vscode/launch\.json$|(^|/)services/idun_agent_web/tsconfig\.(app|node)\.json$
+        # Note: VSCode launch configs and TS configs are JSONC (allow comments/trailing commas).
+        # LiteLLM prices snapshot has occasional upstream duplicate keys
+        # (e.g. zai.glm-5); Python json.loads accepts duplicates (last wins),
+        # but the strict pre-commit JSON check does not. The snapshot is a
+        # verbatim vendored mirror of an upstream file — refresh PRs surface
+        # malformed snapshots via the unit tests in test_costs.py.
+        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)package-lock\.json$|(^|/)\.vscode/launch\.json$|(^|/)services/idun_agent_web/tsconfig\.(app|node)\.json$|(^|/)libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/traces/data/litellm_prices\.json$
     -   id: check-merge-conflict
         name: "🔀 merge · Check for merge conflicts"
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
