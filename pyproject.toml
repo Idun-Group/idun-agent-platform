@@ -24,6 +24,7 @@ dev = [
     "pyright>=1.1.404,<2",
     "pytest-asyncio>=1.3.0",
     "typer>=0.15.0",
+    "langchain-openai>=0.3.0",
 ]
 
 [tool.uv]

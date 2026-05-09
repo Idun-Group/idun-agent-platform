@@ -20,7 +20,7 @@ idun_agent_engine/
 ├── agent/              # Framework adapters (all implement BaseAgent ABC)
 │   ├── base            # BaseAgent protocol: initialize(), invoke(), stream(), copilotkit_agent_instance
 │   ├── langgraph/      # Primary adapter. Full streaming (AG-UI events). Expects uncompiled StateGraph.
-│   └── adk/            # Google ADK adapter. Mature. Session + memory services. Stream not yet implemented.
+│   └── adk/            # Google ADK adapter. Mature. Session + memory services. AG-UI streaming via /agent/run (ADKAGUIAgent).
 ├── server/             # FastAPI layer
 │   ├── routers/agent   # /agent/capabilities, /agent/run, /agent/sessions, /agent/graph*, /agent/config
 │   ├── routers/base    # /health, /reload, /_engine/info
@@ -186,7 +186,7 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 | Adapter | Config Model | Graph Loading | Streaming | CopilotKit |
 |---|---|---|---|---|
 | **LanggraphAgent** | `LangGraphAgentConfig` | `graph_definition` → dynamic import → accepts `StateGraph` (preferred) or `CompiledStateGraph` (extracts `.builder`, recompiles with engine checkpointer/store, logs warning) | Full AG-UI event stream via `astream_events` | `LangGraphAGUIAgent` |
-| **AdkAgent** | `AdkAgentConfig` | `agent` field → dynamic import | Not implemented | `ADKAGUIAgent` |
+| **AdkAgent** | `AdkAgentConfig` | `agent` field → dynamic import | AG-UI streaming via `/agent/run` (delegates to `ADKAGUIAgent`); the internal `BaseAgent.stream()` method is unimplemented and unused on the HTTP path | `ADKAGUIAgent` |
 
 ### LangGraph: Key Details
 
