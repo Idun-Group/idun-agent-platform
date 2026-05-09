@@ -34,7 +34,9 @@ def test_capture_after_shutdown_rebuilds_executor_and_client() -> None:
         assert telemetry._client is None, "client not reset on shutdown"
 
         future_b = telemetry.capture("test.event", {"k": 2})
-        assert future_b is not None, "capture returned None after shutdown — singleton not rebuilt"
+        assert (
+            future_b is not None
+        ), "capture returned None after shutdown — singleton not rebuilt"
         future_b.result(timeout=2.0)
 
         telemetry.shutdown(timeout_seconds=1.0)

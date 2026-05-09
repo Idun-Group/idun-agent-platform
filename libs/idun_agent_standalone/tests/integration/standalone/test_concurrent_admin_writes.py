@@ -33,9 +33,7 @@ async def test_concurrent_creates_serialize_through_pipeline(standalone_with_age
             client.post(
                 "/admin/api/v1/guardrails", json=_ban_list_body("alpha filter")
             ),
-            client.post(
-                "/admin/api/v1/guardrails", json=_ban_list_body("beta filter")
-            ),
+            client.post("/admin/api/v1/guardrails", json=_ban_list_body("beta filter")),
         )
         listed = await client.get("/admin/api/v1/guardrails")
 

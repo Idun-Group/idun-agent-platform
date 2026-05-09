@@ -47,7 +47,8 @@ async def admin_app(async_session, stub_reload_callable, tmp_path):
 
 
 def _seed_langgraph_file(root: Path, *, var: str = "graph") -> None:
-    (root / "agent.py").write_text(textwrap.dedent(f"""
+    (root / "agent.py").write_text(
+        textwrap.dedent(f"""
             from langgraph.graph import StateGraph
             from typing import TypedDict
 
@@ -55,15 +56,18 @@ def _seed_langgraph_file(root: Path, *, var: str = "graph") -> None:
                 m: str
 
             {var} = StateGraph(State).compile()
-            """).lstrip())
+            """).lstrip()
+    )
 
 
 def _seed_adk_file(root: Path) -> None:
-    (root / "main_adk.py").write_text(textwrap.dedent("""
+    (root / "main_adk.py").write_text(
+        textwrap.dedent("""
             from google.adk.agents import Agent
 
             agent = Agent(name="x", model="gemini-2.5-flash")
-            """).lstrip())
+            """).lstrip()
+    )
 
 
 async def _seed_existing_agent(async_session) -> StandaloneAgentRow:

@@ -1,4 +1,5 @@
 """ADK: simple LlmAgent, no tools, no sub-agents."""
+
 from google.adk.agents import LlmAgent
 
 root_agent = LlmAgent(

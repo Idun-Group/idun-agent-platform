@@ -18,7 +18,6 @@ lint:
 	uv run ruff check . --no-cache
 
 format:
-	uv run black .
 	uv run ruff format . --no-cache
 
 mypy:

@@ -266,9 +266,7 @@ class _AgentServe:
         try:
             config = (
                 self._builder_cls()
-                .with_config_from_api(
-                    agent_api_key=self._agent_api_key, url=self._url
-                )
+                .with_config_from_api(agent_api_key=self._agent_api_key, url=self._url)
                 .build()
             )
             logger.info(f"✅ Successfully fetched and built config from {self._url}")

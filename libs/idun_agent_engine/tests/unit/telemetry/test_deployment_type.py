@@ -19,7 +19,10 @@ class TestGetDeploymentType:
 
     def test_returns_self_hosted_when_env_is_self_hosted(self):
         """IDUN_DEPLOYMENT_TYPE=self-hosted → self-hosted."""
-        assert get_deployment_type({"IDUN_DEPLOYMENT_TYPE": "self-hosted"}) == "self-hosted"
+        assert (
+            get_deployment_type({"IDUN_DEPLOYMENT_TYPE": "self-hosted"})
+            == "self-hosted"
+        )
 
     def test_case_insensitive_cloud(self):
         """IDUN_DEPLOYMENT_TYPE is matched case-insensitively."""

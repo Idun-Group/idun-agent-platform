@@ -178,9 +178,7 @@ class TestGoogleChatMessageHandling:
     def test_agent_error_still_returns_200(self, _mock_verify):
         app = _make_app()
         app.state.agent = AsyncMock()
-        app.state.agent.invoke = AsyncMock(
-            side_effect=RuntimeError("Agent crashed")
-        )
+        app.state.agent.invoke = AsyncMock(side_effect=RuntimeError("Agent crashed"))
         app.state.google_chat_client = AsyncMock()
 
         with TestClient(app) as client:

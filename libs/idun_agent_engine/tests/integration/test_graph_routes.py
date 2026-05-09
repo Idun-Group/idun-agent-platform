@@ -184,31 +184,30 @@ class TestGraphRoutesAcrossTopologies:
 
         agents = [n for n in ir["nodes"] if n["kind"] == "agent"]
         tools = [n for n in ir["nodes"] if n["kind"] == "tool"]
-        assert len(agents) == topology.expected_agent_count, (
-            f"agents: got {len(agents)}, want {topology.expected_agent_count}"
-        )
-        assert len(tools) == topology.expected_tool_count, (
-            f"tools: got {len(tools)}, want {topology.expected_tool_count}"
-        )
-        assert len(ir["edges"]) == topology.expected_edge_count, (
-            f"edges: got {len(ir['edges'])}, want {topology.expected_edge_count}"
-        )
+        assert (
+            len(agents) == topology.expected_agent_count
+        ), f"agents: got {len(agents)}, want {topology.expected_agent_count}"
+        assert (
+            len(tools) == topology.expected_tool_count
+        ), f"tools: got {len(tools)}, want {topology.expected_tool_count}"
+        assert (
+            len(ir["edges"]) == topology.expected_edge_count
+        ), f"edges: got {len(ir['edges'])}, want {topology.expected_edge_count}"
 
         # Subset checks — IR may have edge/agent/tool kinds beyond the expected
         # set, but it must include all expected kinds.
         edge_kinds = {e["kind"] for e in ir["edges"]}
-        assert topology.expected_edge_kinds <= edge_kinds, (
-            f"edge_kinds missing: {topology.expected_edge_kinds - edge_kinds}"
-        )
+        assert (
+            topology.expected_edge_kinds <= edge_kinds
+        ), f"edge_kinds missing: {topology.expected_edge_kinds - edge_kinds}"
         agent_kinds = {a["agent_kind"] for a in agents}
-        assert topology.expected_agent_kinds <= agent_kinds, (
-            f"agent_kinds missing: {topology.expected_agent_kinds - agent_kinds}"
-        )
+        assert (
+            topology.expected_agent_kinds <= agent_kinds
+        ), f"agent_kinds missing: {topology.expected_agent_kinds - agent_kinds}"
         if topology.expected_tool_kinds:
             tool_kinds = {t["tool_kind"] for t in tools}
             assert topology.expected_tool_kinds <= tool_kinds, (
-                f"tool_kinds missing: "
-                f"{topology.expected_tool_kinds - tool_kinds}"
+                f"tool_kinds missing: " f"{topology.expected_tool_kinds - tool_kinds}"
             )
 
     def test_mermaid_route_returns_non_empty_string(self, topology: Topology):

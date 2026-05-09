@@ -50,17 +50,19 @@ from idun_agent_standalone.services.engine_config import (
 logger = get_logger(__name__)
 
 
-_PUBLIC_PATHS = frozenset({
-    "/",
-    "/health",
-    "/runtime-config.js",
-    "/sso/info",
-    "/agent/run",
-    "/agent/stream",
-    "/agent/copilotkit/stream",
-    "/agent/invoke",
-    "/agent/capabilities",
-})
+_PUBLIC_PATHS = frozenset(
+    {
+        "/",
+        "/health",
+        "/runtime-config.js",
+        "/sso/info",
+        "/agent/run",
+        "/agent/stream",
+        "/agent/copilotkit/stream",
+        "/agent/invoke",
+        "/agent/capabilities",
+    }
+)
 
 
 def _is_public_runtime_path(path: str) -> bool:
@@ -99,9 +101,7 @@ def _install_engine_runtime_gate(app: FastAPI) -> None:
                 session, signed_cookie=cookie, settings=settings
             )
         if not ok:
-            return JSONResponse(
-                {"detail": "Authentication required."}, status_code=401
-            )
+            return JSONResponse({"detail": "Authentication required."}, status_code=401)
         return await call_next(request)
 
 
@@ -216,11 +216,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         app.router.routes = [
             r
             for r in app.router.routes
-            if not (
-                isinstance(r, APIRoute)
-                and r.path == "/"
-                and "GET" in r.methods
-            )
+            if not (isinstance(r, APIRoute) and r.path == "/" and "GET" in r.methods)
         ]
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
         logger.info("boot ui mounted from=%s", ui_dir)

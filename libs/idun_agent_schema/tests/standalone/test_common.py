@@ -27,9 +27,7 @@ def test_resource_identity_round_trip() -> None:
 
 def test_delete_result_round_trip() -> None:
     rid = uuid4()
-    parsed = StandaloneDeleteResult.model_validate(
-        {"id": str(rid), "deleted": True}
-    )
+    parsed = StandaloneDeleteResult.model_validate({"id": str(rid), "deleted": True})
     dumped = parsed.model_dump(by_alias=True, mode="json")
     assert dumped == {"id": str(rid), "deleted": True}
 

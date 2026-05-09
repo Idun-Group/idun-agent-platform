@@ -43,9 +43,7 @@ async def test_observers_called_before_sse_encoding(echo_agent_config):
                 json={
                     "threadId": "tid_1",
                     "runId": "rid_1",
-                    "messages": [
-                        {"id": "m1", "role": "user", "content": "hi"}
-                    ],
+                    "messages": [{"id": "m1", "role": "user", "content": "hi"}],
                     "state": {},
                     "tools": [],
                     "context": [],
@@ -57,6 +55,4 @@ async def test_observers_called_before_sse_encoding(echo_agent_config):
             await resp.aread()
 
     assert captured, "observer was never invoked"
-    assert all(
-        tid == "tid_1" and rid == "rid_1" for (_t, tid, rid) in captured
-    )
+    assert all(tid == "tid_1" and rid == "rid_1" for (_t, tid, rid) in captured)

@@ -64,7 +64,9 @@ async def _seed_thread(agent: LanggraphAgent, thread_id: str, prompt: str) -> No
     )
 
 
-async def _aclose_sqlite_saver(saver: AsyncSqliteSaver, conn: aiosqlite.Connection) -> None:
+async def _aclose_sqlite_saver(
+    saver: AsyncSqliteSaver, conn: aiosqlite.Connection
+) -> None:
     await conn.close()
 
 
@@ -166,9 +168,7 @@ async def test_get_session_drops_tool_messages(inmemory_agent):
         ToolMessage(content="64F", tool_call_id="call-1", name="weather"),
         AIMessage(content="It's 64F."),
     ]
-    await inmemory_agent._agent_instance.aupdate_state(
-        config, {"messages": augmented}
-    )
+    await inmemory_agent._agent_instance.aupdate_state(config, {"messages": augmented})
 
     detail = await inmemory_agent.get_session("t-tools")
     assert detail is not None

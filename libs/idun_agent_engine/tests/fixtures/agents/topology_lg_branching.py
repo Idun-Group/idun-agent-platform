@@ -1,4 +1,5 @@
 """LangGraph: realistic Self-RAG-style multi-node graph with conditional edges."""
+
 from typing import Annotated, TypedDict
 
 from langchain_core.messages import AIMessage

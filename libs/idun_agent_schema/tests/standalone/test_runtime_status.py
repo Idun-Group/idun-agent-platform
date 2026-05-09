@@ -73,9 +73,7 @@ def test_runtime_status_not_configured_round_trip() -> None:
 
 
 def test_engine_capabilities_camel_case_outbound() -> None:
-    caps = StandaloneEngineCapabilities(
-        streaming=True, history=False, thread_id=True
-    )
+    caps = StandaloneEngineCapabilities(streaming=True, history=False, thread_id=True)
     dumped = caps.model_dump(by_alias=True)
     assert dumped == {"streaming": True, "history": False, "threadId": True}
 

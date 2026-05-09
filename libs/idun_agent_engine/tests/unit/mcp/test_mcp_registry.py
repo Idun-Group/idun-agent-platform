@@ -354,9 +354,13 @@ class TestMCPRegistryGetADKToolsetsTransports:
         mock_toolset_class = MagicMock()
         mock_sse_params = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset_class), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset_class),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params
+            ),
+        ):
             toolsets = registry.get_adk_toolsets()
 
             mock_sse_params.assert_called_once()
@@ -367,15 +371,21 @@ class TestMCPRegistryGetADKToolsetsTransports:
 
     def test_sse_config_omits_none_optional_fields(self):
         configs = [
-            MCPServer(name="sse-minimal", transport="sse", url="https://mcp.example.com/sse")
+            MCPServer(
+                name="sse-minimal", transport="sse", url="https://mcp.example.com/sse"
+            )
         ]
         registry = MCPClientRegistry(configs=configs)
 
         mock_sse_params = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params
+            ),
+        ):
             registry.get_adk_toolsets()
 
             kwargs = mock_sse_params.call_args[1]
@@ -395,9 +405,13 @@ class TestMCPRegistryGetADKToolsetsTransports:
 
         mock_sse_params = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params
+            ),
+        ):
             registry.get_adk_toolsets()
 
             kwargs = mock_sse_params.call_args[1]
@@ -420,9 +434,14 @@ class TestMCPRegistryGetADKToolsetsTransports:
         mock_toolset_class = MagicMock()
         mock_http_params = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset_class), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StreamableHTTPConnectionParams", mock_http_params):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset_class),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.StreamableHTTPConnectionParams",
+                mock_http_params,
+            ),
+        ):
             toolsets = registry.get_adk_toolsets()
 
             mock_http_params.assert_called_once()
@@ -434,12 +453,16 @@ class TestMCPRegistryGetADKToolsetsTransports:
 
     def test_websocket_config_skipped_with_warning(self, caplog):
         configs = [
-            MCPServer(name="ws-server", transport="websocket", url="wss://mcp.example.com/ws")
+            MCPServer(
+                name="ws-server", transport="websocket", url="wss://mcp.example.com/ws"
+            )
         ]
         registry = MCPClientRegistry(configs=configs)
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+        ):
             toolsets = registry.get_adk_toolsets()
 
             assert len(toolsets) == 0
@@ -448,45 +471,64 @@ class TestMCPRegistryGetADKToolsetsTransports:
     def test_mixed_transports_creates_correct_toolsets(self):
         configs = [
             MCPServer(name="stdio-srv", transport="stdio", command="echo", args=["hi"]),
-            MCPServer(name="sse-srv", transport="sse", url="https://mcp.example.com/sse"),
-            MCPServer(name="http-srv", transport="streamable_http", url="https://mcp.example.com/mcp"),
+            MCPServer(
+                name="sse-srv", transport="sse", url="https://mcp.example.com/sse"
+            ),
+            MCPServer(
+                name="http-srv",
+                transport="streamable_http",
+                url="https://mcp.example.com/mcp",
+            ),
         ]
         registry = MCPClientRegistry(configs=configs)
 
         mock_toolset = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioConnectionParams", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StreamableHTTPConnectionParams", MagicMock()):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioConnectionParams", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.SseConnectionParams", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.StreamableHTTPConnectionParams",
+                MagicMock(),
+            ),
+        ):
             toolsets = registry.get_adk_toolsets()
             assert len(toolsets) == 3
 
     def test_sse_skipped_when_import_unavailable(self, caplog):
         configs = [
-            MCPServer(name="sse-srv", transport="sse", url="https://mcp.example.com/sse")
+            MCPServer(
+                name="sse-srv", transport="sse", url="https://mcp.example.com/sse"
+            )
         ]
         registry = MCPClientRegistry(configs=configs)
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", None):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.SseConnectionParams", None),
+        ):
             toolsets = registry.get_adk_toolsets()
             assert len(toolsets) == 0
             assert "SseConnectionParams not available" in caplog.text
 
     def test_toolset_creation_failure_skips_server(self, caplog):
         configs = [
-            MCPServer(name="bad-srv", transport="sse", url="https://mcp.example.com/sse")
+            MCPServer(
+                name="bad-srv", transport="sse", url="https://mcp.example.com/sse"
+            )
         ]
         registry = MCPClientRegistry(configs=configs)
 
         mock_toolset = MagicMock(side_effect=RuntimeError("boom"))
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", MagicMock()):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.SseConnectionParams", MagicMock()),
+        ):
             toolsets = registry.get_adk_toolsets()
             assert len(toolsets) == 0
             assert "Failed to create ADK toolset" in caplog.text

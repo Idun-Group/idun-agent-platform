@@ -29,9 +29,10 @@ async def test_reload_unprotected_when_no_auth_dep(echo_agent_config):
     confirms the back-compat path is preserved.
     """
     app = create_app(config_dict=echo_agent_config)
-    async with app.router.lifespan_context(app), AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://t"
-    ) as c:
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c,
+    ):
         r = await c.post("/reload")
         assert r.status_code != 401
 
@@ -44,9 +45,10 @@ async def test_reload_blocked_when_auth_dep_rejects(echo_agent_config):
         raise HTTPException(status_code=401, detail="nope")
 
     app = create_app(config_dict=echo_agent_config, reload_auth=deny)
-    async with app.router.lifespan_context(app), AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://t"
-    ) as c:
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c,
+    ):
         r = await c.post("/reload")
         assert r.status_code == 401
 
@@ -80,9 +82,10 @@ async def test_post_configure_callbacks_fire_on_boot_and_reload(
     # Register BEFORE lifespan so the boot configure_app picks it up.
     app.state.post_configure_callbacks = [_record]
 
-    async with app.router.lifespan_context(app), AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://t"
-    ) as c:
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c,
+    ):
         # Boot has fired the callback once.
         assert len(fired) == 1, fired
 
@@ -119,9 +122,10 @@ async def test_post_configure_callback_failure_does_not_break_reload(
 
     app.state.post_configure_callbacks = [_bad, _good]
 
-    async with app.router.lifespan_context(app), AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://t"
-    ) as c:
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as c,
+    ):
         # Boot ran both — _good still fired despite _bad raising.
         assert survived == [True]
 

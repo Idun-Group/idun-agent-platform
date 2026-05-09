@@ -56,4 +56,17 @@ repos:
     -   id: gitleaks
         name: "🔒 security · Detect hardcoded secrets"
         exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry\.py$
+-   repo: local
+    hooks:
+    -   id: commitlint-advisory
+        name: "📝 commits · commitlint (advisory)"
+        # Advisory only — `|| true` masks the exit code so non-Conventional
+        # commits still go through. `verbose: true` makes commitlint findings
+        # visible even when the hook reports "Passed". Graduates to a blocking
+        # hook in Phase 2 by removing `|| true`.
+        entry: bash -c 'npx --yes @commitlint/cli@19 --edit "$1" || true' --
+        language: system
+        stages: [commit-msg]
+        pass_filenames: false
+        verbose: true
 default_stages: [commit]

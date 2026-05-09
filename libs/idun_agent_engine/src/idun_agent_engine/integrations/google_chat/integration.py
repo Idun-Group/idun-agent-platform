@@ -42,9 +42,7 @@ class GoogleChatIntegration(BaseIntegration):
             self._google_chat_config.service_account_credentials_json,
         )
         app.state.google_chat_client = self._client
-        app.state.google_chat_project_number = (
-            self._google_chat_config.project_number
-        )
+        app.state.google_chat_project_number = self._google_chat_config.project_number
         app.state.google_chat_local_mode = self._google_chat_config.local_mode
         app.include_router(router, prefix="/integrations/google-chat")
         logger.info("Google Chat integration configured")

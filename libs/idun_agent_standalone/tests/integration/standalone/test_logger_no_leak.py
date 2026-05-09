@@ -13,9 +13,7 @@ async def test_login_does_not_log_password(standalone_password):
     transport = ASGITransport(app=standalone_password)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         with captured_logs("idun_agent_standalone", logging.DEBUG) as records:
-            await client.post(
-                "/admin/api/v1/auth/login", json={"password": _PASSWORD}
-            )
+            await client.post("/admin/api/v1/auth/login", json={"password": _PASSWORD})
     for record in records:
         assert _PASSWORD not in record.getMessage()
 
@@ -34,9 +32,7 @@ async def test_failed_login_does_not_log_password(standalone_password):
 async def test_change_password_does_not_log_either_password(standalone_password):
     transport = ASGITransport(app=standalone_password)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        await client.post(
-            "/admin/api/v1/auth/login", json={"password": _PASSWORD}
-        )
+        await client.post("/admin/api/v1/auth/login", json={"password": _PASSWORD})
         with captured_logs("idun_agent_standalone", logging.DEBUG) as records:
             response = await client.post(
                 "/admin/api/v1/auth/change-password",

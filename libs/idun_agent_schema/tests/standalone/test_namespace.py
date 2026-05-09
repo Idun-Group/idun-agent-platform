@@ -19,9 +19,7 @@ def test_every_public_type_is_camel_model_or_strenum() -> None:
 
     allowed_helpers: set[str] = set()  # extend if helpers are added later
 
-    public_names = [
-        name for name in dir(standalone) if not name.startswith("_")
-    ]
+    public_names = [name for name in dir(standalone) if not name.startswith("_")]
 
     for name in public_names:
         if name in allowed_helpers:
@@ -101,9 +99,7 @@ def test_envelope_round_trips_with_generic_payload() -> None:
     )
 
     dumped = envelope.model_dump(by_alias=True, mode="json")
-    parsed = StandaloneMutationResponse[StandaloneAgentRead].model_validate(
-        dumped
-    )
+    parsed = StandaloneMutationResponse[StandaloneAgentRead].model_validate(dumped)
     assert parsed.data.id == agent.id
     assert parsed.reload.status == StandaloneReloadStatus.RELOADED
     assert "data" in dumped and "reload" in dumped

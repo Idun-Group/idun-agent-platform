@@ -3,6 +3,7 @@
 Mirrors the example from §4 of the spec: a customer support agent with billing
 and tech support sub-agents, each carrying their own tools.
 """
+
 from google.adk.agents import LlmAgent
 from google.adk.tools import google_search
 

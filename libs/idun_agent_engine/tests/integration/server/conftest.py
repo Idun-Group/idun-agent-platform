@@ -16,9 +16,7 @@ def echo_agent_config():
     """
     pytest.importorskip(
         "idun_agent_standalone.testing",
-        reason=(
-            "echo agent fixture provided by idun_agent_standalone (Task 1.5)"
-        ),
+        reason=("echo agent fixture provided by idun_agent_standalone (Task 1.5)"),
     )
     from idun_agent_standalone.testing import echo_agent_config as _echo_config
 

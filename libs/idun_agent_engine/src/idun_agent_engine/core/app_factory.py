@@ -114,9 +114,7 @@ def create_app(
         try:
             validated_config = ConfigBuilder.resolve_config()
         except (FileNotFoundError, ValueError) as exc:
-            logger.info(
-                "create_app booting unconfigured (no config provided): %s", exc
-            )
+            logger.info("create_app booting unconfigured (no config provided): %s", exc)
             validated_config = None
     else:
         validated_config = ConfigBuilder.resolve_config(
