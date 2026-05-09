@@ -219,6 +219,16 @@ pythonpath = ["src", "tests"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    # Third-party noise we can't fix at our level:
+    # - google-adk / ag-ui-adk emit "[EXPERIMENTAL]" UserWarnings for stable APIs we depend on
+    "ignore:\\[EXPERIMENTAL\\]:UserWarning",
+    # - pydantic UnsupportedFieldAttributeWarning fires from downstream models
+    #   (ag-ui / copilotkit) using Field(alias=...) on Annotated type aliases / union members
+    "ignore::pydantic.warnings.UnsupportedFieldAttributeWarning",
+    # - langgraph emits LangChainPendingDeprecationWarning at import time about
+    #   `allowed_objects`; the import-time site bypasses the generic
+    #   PendingDeprecationWarning filter above
+    "ignore::langchain_core._api.deprecation.LangChainPendingDeprecationWarning",
 ]
 markers = [
     "unit: Unit tests (fast, no external dependencies)",

@@ -35,8 +35,9 @@ class TestLifespan:
         app = MagicMock()
         app.state.engine_config = engine_config
 
-        mock_agent = AsyncMock()
+        mock_agent = MagicMock()
         mock_agent.name = "Lifecycle Agent"
+        mock_agent.close = AsyncMock()
 
         with patch(
             "idun_agent_engine.core.config_builder.ConfigBuilder.initialize_agent_from_config"
