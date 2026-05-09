@@ -55,11 +55,22 @@ echo "[boot] building UI -> $UIDIR" >&2
 mkdir -p "$UIDIR"
 cp -R "$ROOT/services/idun_agent_standalone_ui/out/." "$UIDIR/"
 
-# Inline echo-agent module. A trivial LangGraph that echoes the last
-# user message back. Lives in the temp dir so the engine resolves the
-# absolute path via importlib.util.spec_from_file_location — no PYTHONPATH
-# games, no permanent test fixture in the package.
-cat > "$AGENT_FILE" <<'PY'
+# Agent module: real LLM if LLM_PROVIDER is set, otherwise inline echo.
+# Both live in the temp dir so the engine resolves the absolute path via
+# importlib.util.spec_from_file_location — no PYTHONPATH games, no
+# permanent test fixture in the package.
+if [[ -n "$LLM_PROVIDER" ]]; then
+  # Reuse the canonical real-LLM fixture used by the pytest e2e matrix.
+  # That module reads E2E_PROVIDER / E2E_MODEL at import time (already
+  # exported above) and exposes the same `graph` symbol the YAML below
+  # references. Without this swap the chat-real-llm spec would pass
+  # against echo and the UI gate against real-LLM streaming would be
+  # vacuous (CodeRabbit flagged this on PR #580).
+  echo "[boot] real-LLM mode (provider=$LLM_PROVIDER model=$LLM_MODEL)" >&2
+  cp "$ROOT/tests/e2e/fixtures/agents/agent_lg_chat.py" "$AGENT_FILE"
+else
+  echo "[boot] echo-agent mode (no LLM_PROVIDER set)" >&2
+  cat > "$AGENT_FILE" <<'PY'
 """Minimal LangGraph echo agent for E2E tests.
 
 Uses LangChain message types + `add_messages` reducer so the engine's
@@ -92,6 +103,7 @@ _builder.set_entry_point("echo")
 _builder.add_edge("echo", END)
 graph = _builder.compile()
 PY
+fi
 
 # Inline config — points at the temp-dir agent file. The engine's
 # LangGraph adapter resolves "/abs/path/to/file.py:varname" via

@@ -24,6 +24,7 @@ test("chat happy path with real LLM streams a non-empty assistant reply", async 
   // with a stable testid; we poll the page for any post-user text that
   // is at least 20 chars (filtering out the prompt itself + the
   // composer placeholder).
+  let lastReply = "";
   await expect
     .poll(
       async () => {
@@ -32,9 +33,16 @@ test("chat happy path with real LLM streams a non-empty assistant reply", async 
           .replace(prompt, "")
           .replace(/Message[^\n]*/g, "")
           .trim();
+        lastReply = trimmed;
         return trimmed.length;
       },
       { timeout: 60_000, intervals: [500, 1_000, 2_000] },
     )
     .toBeGreaterThan(20);
+
+  // Guard against silent fallback to the echo agent. boot-standalone.sh
+  // swaps the agent module when LLM_PROVIDER is set; if that swap ever
+  // regresses, length alone would still pass — assert the echo prefix
+  // is absent so the gate stays meaningful.
+  expect(lastReply.toLowerCase()).not.toContain("echo:");
 });
