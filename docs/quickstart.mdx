@@ -1,175 +1,77 @@
 ---
 title: "Quickstart"
-description: "Deploy your first AI agent with Idun Agent Platform in under 15 minutes using Docker Compose, the CLI, or a manual setup."
-keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "Docker Compose", "idun CLI"]
+description: "Deploy your first AI agent with Idun in under 30 minutes — pip install to live chat UI."
+keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", "idun-agent-standalone", "pip install"]
 ---
+
+`pip install` → chat UI → production agent in under 30 minutes. No Docker required, no separate frontend, no extra services to deploy.
 
 ## Prerequisites
 
-Before you begin, install the following:
-
 - **Python 3.12+** ([python.org](https://www.python.org/downloads/))
-- **Docker** and **Docker Compose** ([docs.docker.com](https://docs.docker.com/get-started/))
-- **Git** ([git-scm.com](https://git-scm.com/))
-- **uv** package manager ([docs.astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/))
+- **pip** (bundled with Python)
+- An LLM provider key (OpenAI, Anthropic, Google — whichever your agent calls)
 
-## Choose your path
+## Steps
 
-<Tabs>
-  <Tab title="Manager (recommended)">
-    The Manager path starts the full platform: PostgreSQL, the FastAPI backend, and the React admin UI.
+<Steps>
+  <Step title="Install">
+    ```bash
+    pip install idun-agent-standalone
+    ```
+    Installs the standalone package plus its dependencies (engine, FastAPI, Next.js static UI, AG-UI client).
+  </Step>
 
-    <Steps>
-      <Step title="Clone and configure">
-        ```bash
-        git clone https://github.com/Idun-Group/idun-agent-platform.git
-        cd idun-agent-platform
-        cp .env.example .env
-        ```
-      </Step>
-      <Step title="Start the platform">
-        <Note>Make sure the Docker daemon is running before you proceed.</Note>
+  <Step title="Initialize a new agent project">
+    ```bash
+    idun-standalone init my-agent
+    cd my-agent
+    ```
+    Scaffolds:
+    - `agent.py` — minimal LangGraph agent template
+    - `config.yaml` — engine + standalone config
+    - `.env.example` — environment variables stub
+  </Step>
 
-        <Tabs>
-          <Tab title="Production (pre-built images)">
-            ```bash
-            docker compose up -d
-            ```
-          </Tab>
-          <Tab title="Development (build from source)">
-            ```bash
-            docker compose -f docker-compose.dev.yml up --build
-            ```
-          </Tab>
-        </Tabs>
+  <Step title="Configure">
+    Copy the env stub and add your LLM key:
+    ```bash
+    cp .env.example .env
+    # Edit .env: set OPENAI_API_KEY (or your provider's key)
+    ```
+    Optionally review `config.yaml` to wire observability, guardrails, or MCP servers. The defaults work out of the box.
+  </Step>
 
-        Both start PostgreSQL, the Manager API, and the web UI.
+  <Step title="Serve">
+    ```bash
+    idun-standalone serve
+    ```
+    Runs Alembic migrations, seeds the database from `config.yaml`, and starts uvicorn at `http://localhost:8000`.
 
-        ![Idun login page](/images/ui/login.png)
-      </Step>
-      <Step title="Create an agent">
-        Open [http://localhost:3000](http://localhost:3000) in your browser.
+    ![Admin landing page](/images/readme/dashboard.png)
+  </Step>
 
-        Log in (if you have not configured an auth provider yet, press **Login** to skip). You land on the agent dashboard.
+  <Step title="Chat">
+    Open [http://localhost:8000](http://localhost:8000) in your browser. Send a message — the response streams back in real time.
 
-        ![Agent dashboard](/images/ui/agents-list.png)
+    ![Chat conversation](/images/readme/chat.png)
+  </Step>
 
-        Click **Create** to launch the 3-step wizard. Select your framework (LangGraph or ADK), configure framework-specific settings, then review and save.
-      </Step>
-    </Steps>
-  </Tab>
+  <Step title="Explore the admin">
+    Open [http://localhost:8000/admin](http://localhost:8000/admin). View your agent's config, attach guardrails, register MCP tools, and inspect traces — all without redeploying.
 
-  <Tab title="CLI">
-    The CLI provides an interactive TUI to configure and run a standalone agent without the Manager.
+    ![Agent detail](/images/readme/agent-detail.png)
+  </Step>
+</Steps>
 
-    <Steps>
-      <Step title="Install the engine">
-        ```bash
-        pip install idun-agent-engine
-        ```
-      </Step>
-      <Step title="Launch the interactive setup">
-        ```bash
-        idun init
-        ```
+## What next?
 
-        The TUI walks you through agent configuration: framework, memory, observability, guardrails, and MCP servers. When you finish, it saves the config and starts the agent server.
-      </Step>
-      <Step title="Verify the agent is running">
-        ```bash
-        curl http://localhost:8008/health
-        ```
+- [Pick a framework](/frameworks/overview) — LangGraph or Google ADK
+- [Add guardrails](/guardrails/overview) — 15+ built-in safety guards
+- [Wire observability](/observability/overview) — Langfuse, Phoenix, LangSmith, or GCP Trace
+- [Govern MCP tools](/tool-governance/overview) — per-agent tool access control
+- [Deploy](/deployment/overview) — Cloud Run, Kubernetes, or any single-container host
 
-        Open [http://localhost:8008/docs](http://localhost:8008/docs) to see the API documentation.
-      </Step>
-    </Steps>
-  </Tab>
-
-  <Tab title="Manual">
-    Use this path if you want full control over the configuration file.
-
-    <Steps>
-      <Step title="Install the engine">
-        ```bash
-        pip install idun-agent-engine
-        ```
-      </Step>
-      <Step title="Create a config file">
-        Save the following as `config.yaml` in your project directory. Update `graph_definition` to point to your agent file and variable.
-
-        ```yaml config.yaml
-        server:
-          api:
-            port: 8008
-
-        agent:
-          type: "LANGGRAPH"
-          config:
-            name: "my-agent"
-            graph_definition: "./agent.py:graph"
-            checkpointer:
-              type: "memory"
-        ```
-
-        <Info>
-          The `graph_definition` value follows the format `path/to/file.py:variable_name`. The variable should be a `StateGraph` (recommended) or `CompiledStateGraph`. The engine compiles it with the configured checkpointer.
-        </Info>
-      </Step>
-      <Step title="Start the agent">
-        ```bash
-        idun agent serve --source file --path config.yaml
-        ```
-      </Step>
-      <Step title="Verify the agent is running">
-        ```bash
-        curl http://localhost:8008/health
-        ```
-      </Step>
-    </Steps>
-  </Tab>
-</Tabs>
-
-## Minimal LangGraph agent example
-
-If you do not have an agent file yet, create `agent.py` alongside your config:
-
-```python agent.py
-from langgraph.graph import StateGraph, MessagesState
-
-def chatbot(state: MessagesState):
-    from langchain_openai import ChatOpenAI
-    model = ChatOpenAI(model="gpt-4o-mini")
-    return {"messages": [model.invoke(state["messages"])]}
-
-graph = StateGraph(MessagesState)
-graph.add_node("chatbot", chatbot)
-graph.set_entry_point("chatbot")
-graph.set_finish_point("chatbot")
-```
-
-<Warning>
-  This example requires the `OPENAI_API_KEY` environment variable. Export it in your shell or add it to your `.env` file before starting the agent.
-</Warning>
-
-## Next steps
-
-<Columns cols={2}>
-  <Card title="Frameworks" icon="layer-group" href="/frameworks/overview">
-    Configure LangGraph or Google ADK agents in detail
-  </Card>
-  <Card title="Guardrails" icon="shield-halved" href="/guardrails/overview">
-    Add PII detection, jailbreak prevention, and content filters
-  </Card>
-  <Card title="Observability" icon="chart-line" href="/observability/overview">
-    Connect Langfuse, Phoenix, LangSmith, or GCP Trace
-  </Card>
-  <Card title="Memory" icon="database" href="/memory/overview">
-    Set up SQLite or PostgreSQL checkpointing
-  </Card>
-  <Card title="Templates" icon="copy" href="/templates">
-    Clone a runnable agent template to start faster
-  </Card>
-  <Card title="Manager tutorial" icon="desktop" href="/manager/tutorial">
-    Full walkthrough of the Manager UI
-  </Card>
-</Columns>
+<Note>
+  The original `docker-compose` and Manager UI quickstart paths were retired in v0.6. If you're upgrading from a pre-v0.6 install, file a [GitHub issue](https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=docs%2Cmigration) and we'll publish a migration note.
+</Note>
