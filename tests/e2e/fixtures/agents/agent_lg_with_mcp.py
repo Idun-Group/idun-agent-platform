@@ -65,6 +65,11 @@ def _resolve_tools_blocking() -> list[Any]:
     t.join(timeout=60.0)
     if err:
         raise err[0]
+    if t.is_alive():
+        raise TimeoutError(
+            "MCP registry get_tools() did not return within 60s — likely a "
+            "stuck stdio child or unreachable MCP server."
+        )
     return container
 
 
