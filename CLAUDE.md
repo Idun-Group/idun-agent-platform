@@ -148,3 +148,24 @@ Plus any of these domain blocks that genuinely apply, in this order: Config flow
 - Branch naming: `feat/*`, `fix/*`, `docs/*`, `chore/*`, `misc/*`.
 - Python line length: 88. Async throughout. Ruff + Black + Mypy.
 - Schema changes land in `idun_agent_schema` first, then engine and standalone consumers. Frontend types regenerate from the standalone OpenAPI spec.
+
+<!-- BEGIN: generated-by render_guidelines -->
+## Coding Guidelines — Severity Matrix (auto-generated)
+
+| ID | Title | Severity | Layer |
+| --- | --- | --- | --- |
+| ASYNC-001 | No sync I/O on async paths | warn | pre-commit, pr-review-agent |
+| ASYNC-002 | Track `asyncio.create_task` references (no fire-and-forget) | warn | pre-commit, pr-review-agent |
+| CMP-001 | Cyclomatic complexity ≤ 10 (advisory) | advise | pre-commit |
+| ERR-001 | No `except Exception:` without re-raise + logger.exception | warn | pre-commit, pr-review-agent |
+| LOG-001 | Use `logger.exception` for unexpected; never bare `except` | warn | pre-commit, pr-review-agent |
+| LOG-003 | Redact secrets/PII from log args | warn | pr-review-agent |
+| MIGRATION-001 | SQLAlchemy model change requires Alembic revision in same PR | warn | pr-review-agent |
+| RES-001 | Use `async with` for HTTP/DB/files; no manual `.close()` | warn | pre-commit, pr-review-agent |
+| SCHEMA-001 | Schema changes ship in idun_agent_schema before consumers | warn | pr-review-agent |
+| SQL-001 | Parametrized queries only; no f-string SQL | warn | pre-commit, pr-review-agent |
+| TIME-001 | Always tz-aware UTC datetimes; ban `datetime.utcnow()` | warn | pre-commit, pr-review-agent |
+| TYPE-001 | No `Any` outside FFI/JSON boundaries | warn | pre-commit |
+
+Full rule book: `docs/team/CODING-GUIDELINES.md`.
+<!-- END: generated-by render_guidelines -->

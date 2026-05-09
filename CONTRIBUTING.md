@@ -115,3 +115,13 @@ By contributing to this project, you agree to abide by our [Code of Conduct](COD
 ## Questions?
 
 If you have any questions, feel free to ask by opening an issue.
+
+<!-- BEGIN: generated-by render_guidelines -->
+## Coding Guidelines (auto-generated)
+
+This repository follows the Idun coding-guideline rule set (12 rules: 0 block / 11 warn / 1 advise).
+
+Full reference: [`docs/team/CODING-GUIDELINES.md`](docs/team/CODING-GUIDELINES.md).
+
+Active rule ids: ASYNC-001, ASYNC-002, CMP-001, ERR-001, LOG-001, LOG-003, MIGRATION-001, RES-001, SCHEMA-001, SQL-001, TIME-001, TYPE-001.
+<!-- END: generated-by render_guidelines -->

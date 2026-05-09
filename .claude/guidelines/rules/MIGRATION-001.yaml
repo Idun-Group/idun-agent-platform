@@ -1,0 +1,22 @@
+id: MIGRATION-001
+title: SQLAlchemy model change requires Alembic revision in same PR
+category: schema
+severity: warn
+layer: [pr-review-agent]
+detection:
+  type: manual
+  spec: diff sniffer — touches services/idun_agent_manager/src/app/infrastructure/db/models/ AND no new file under services/idun_agent_manager/alembic/versions/
+owner: manager-team
+description: |
+  Any change to a SQLAlchemy ORM model must be accompanied by an Alembic
+  revision in the same PR. Otherwise the dev/prod migration breaks at deploy.
+fix_hint: |
+  Run `cd services/idun_agent_manager && alembic revision --autogenerate -m "<msg>"`
+  and commit the new file under alembic/versions/.
+graduation:
+  promote_to_block_when: "3 consecutive weeks zero violations"
+  default_block_target: pr-review-agent
+  current_phase: advisory
+state: active
+since: 2026-05-09
+last_updated: 2026-05-09
