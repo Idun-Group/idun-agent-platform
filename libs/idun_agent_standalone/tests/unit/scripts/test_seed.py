@@ -59,7 +59,7 @@ _AGENT_YAML: dict[str, Any] = {
 @pytest.fixture
 async def sessionmaker_factory() -> AsyncIterator[async_sessionmaker]:
     """Async sessionmaker bound to an in-memory SQLite with all ORMs created."""
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     factory = async_sessionmaker(engine, expire_on_commit=False)
