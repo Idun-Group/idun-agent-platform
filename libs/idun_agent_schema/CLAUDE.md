@@ -206,7 +206,7 @@ Legacy CRUD models from the previous manager service. **Kept for back-compat onl
 ```bash
 # Lint + format
 uv run ruff check libs/idun_agent_schema/
-uv run black libs/idun_agent_schema/
+uv run ruff format libs/idun_agent_schema/
 
 # Type check
 cd libs/idun_agent_schema && uv run mypy src/
