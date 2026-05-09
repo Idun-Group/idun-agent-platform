@@ -57,6 +57,4 @@ def test_guardrail_blocks_pii(pair, render_config, standalone_with_config) -> No
             "Send the report to user@example.com please.",
         )
     assert clean_status == 200, f"clean prompt returned {clean_status}"
-    assert (
-        blocked_status == 429
-    ), f"PII prompt returned {blocked_status}, expected 429"
+    assert blocked_status == 429, f"PII prompt returned {blocked_status}, expected 429"

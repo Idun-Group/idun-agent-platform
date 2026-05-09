@@ -52,9 +52,7 @@ def _assert_iso_timestamp_visible(events: list[AGUIEvent]) -> None:
 
 
 @pytest.mark.pair("lg-openai")
-def test_mcp_roundtrip_langgraph(
-    pair, render_config, standalone_with_config
-) -> None:
+def test_mcp_roundtrip_langgraph(pair, render_config, standalone_with_config) -> None:
     config = render_config(
         "lg_with_mcp.yaml.j2",
         port=0,
