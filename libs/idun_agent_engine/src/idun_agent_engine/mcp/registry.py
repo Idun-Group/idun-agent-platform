@@ -7,6 +7,7 @@ import sys
 from typing import TYPE_CHECKING, Any, cast
 
 from idun_agent_schema.engine.mcp_server import MCPServer
+from langchain_core.tools import StructuredTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import Connection
 
@@ -85,6 +86,61 @@ def _sanitize_schema(schema: Any) -> None:
     elif isinstance(schema, list):
         for item in schema:
             _sanitize_schema(item)
+
+
+def _serialization_safe_shim(mcp_tool: Any) -> StructuredTool:
+    """Wrap an MCP-resolved LangChain tool so AG-UI can serialize it.
+
+    Failure this fixes: ``langchain-mcp-adapters`` exposes each MCP tool
+    as a ``StructuredTool`` whose coroutine accepts a ``runtime`` kwarg
+    LangGraph injects with the live ``Runtime`` object. Inside that
+    coroutine the tool builds an ``MCPToolCallRequest`` dataclass that
+    captures the runtime. The AG-UI LangGraph adapter's
+    ``make_json_safe`` then recursively ``dataclasses.asdict()``s every
+    emitted event payload, which deep-copies the request — and
+    transitively the runtime, which holds ``_GatheringFuture`` /
+    ``TaskStepMethWrapper`` instances that are not picklable. Result:
+    every LG MCP run aborts with ``cannot pickle '_GatheringFuture'``
+    immediately after ``TOOL_CALL_END``.
+
+    The shim's coroutine takes only ``**kwargs`` (no ``runtime``
+    parameter). LangGraph's ToolNode doesn't pass ``runtime`` into a
+    coroutine that doesn't declare it, so the runtime never lands in
+    a closure or dataclass that AG-UI's recursion will visit. The
+    shim forwards via ``await underlying.ainvoke(kwargs)`` — the
+    underlying tool keeps its full request/runtime machinery, but it
+    is held in a frame the AG-UI adapter never serializes.
+
+    The wrapper returns plain ``str`` (or a flattened text join for
+    list-of-content-block returns) instead of the underlying tool's
+    ``content_and_artifact`` tuple. The artifact is dropped by design
+    — agents calling MCP tools through AG-UI receive the visible text
+    content, which is the format the LangGraph chat model already
+    consumes via ``ToolNode``. Restoring ``MCPToolArtifact`` would
+    re-introduce the serialization surface this shim is here to
+    remove.
+    """
+
+    async def _forward(**kwargs: Any) -> str:
+        result = await mcp_tool.ainvoke(kwargs)
+        if isinstance(result, str):
+            return result
+        if isinstance(result, list):
+            parts: list[str] = []
+            for item in result:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    parts.append(str(item.get("text", "")))
+                else:
+                    parts.append(str(item))
+            return "\n".join(parts)
+        return str(result)
+
+    return StructuredTool(
+        name=mcp_tool.name,
+        description=mcp_tool.description or "",
+        args_schema=mcp_tool.args_schema,
+        coroutine=_forward,
+    )
 
 
 _active_registry: MCPClientRegistry | None = None
@@ -166,9 +222,7 @@ class MCPClientRegistry:
                                 {
                                     "name": config.name,
                                     "kind": str(config.transport),
-                                    "reason": (
-                                        f"client construction failed: " f"{exc}"
-                                    ),
+                                    "reason": f"client construction failed: {exc}",
                                 }
                             )
 
@@ -224,6 +278,11 @@ class MCPClientRegistry:
 
         When loading from all servers, each server is tried individually
         so a single broken server does not prevent the others from loading.
+
+        Each tool is wrapped via ``_serialization_safe_shim`` so the
+        LangGraph runtime reference can't reach AG-UI's
+        ``make_json_safe`` recursive ``dataclasses.asdict``. See that
+        helper's docstring for the full failure mode.
         """
         if not self._client:
             raise RuntimeError("MCP client registry is not enabled.")
@@ -245,7 +304,7 @@ class MCPClientRegistry:
         for tool in tools:
             if hasattr(tool, "args_schema"):
                 _sanitize_schema(tool.args_schema)
-        return tools
+        return [_serialization_safe_shim(tool) for tool in tools]
 
     async def get_langchain_tools(self, name: str | None = None) -> list[Any]:
         """Alias for get_tools to make intent explicit when using LangChain/LangGraph agents."""
