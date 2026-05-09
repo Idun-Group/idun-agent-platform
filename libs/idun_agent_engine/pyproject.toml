@@ -114,7 +114,6 @@ Issues = "https://github.com/Idun-Group/idun-agent-platform/issues"
 [dependency-groups]
 dev = [
     "ruff>=0.6.5,<0.13",
-    "black>=24.8.0,<27",
     "pre-commit>=3.8.0,<5",
     "mypy>=1.10.0,<2",
     "pytest>=8.3.3,<9",
@@ -147,19 +146,6 @@ include = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.black]
-line-length = 88
-target-version = ["py312", "py313"]
-include = "\\.pyi?$"
-exclude = '''
-(
-  /build/|
-  /dist/|
-  /.venv/|
-  /.git/
-)
-'''
-
 [tool.ruff]
 target-version = "py312"
 line-length = 88
@@ -182,7 +168,7 @@ select = [
     "SIM", # flake8-simplify
 ]
 extend-ignore = [
-    "E501",  # line length handled by black
+    "E501",  # line length handled by ruff format
     # Keep linting actionable without behavior changes across the codebase.
     "E722",   # bare except
     "B904",   # raise from within except
