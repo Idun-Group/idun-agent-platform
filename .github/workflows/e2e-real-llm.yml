@@ -88,6 +88,25 @@ jobs:
       - name: Install workspace dependencies
         run: uv sync --group dev
 
+      - name: Pre-install Guardrails Hub validators
+        # Bootstraps ~/.guardrailsrc (the CLI's auth file) and eagerly
+        # downloads BanList + DetectPII validators along with their
+        # transitive deps (presidio-analyzer + a spaCy model for
+        # DetectPII). Without this step, the engine's _install_model
+        # path runs at boot/reload, and DetectPII's post-install hook
+        # silently fails on the runner (no spaCy model preinstalled),
+        # leaving the guard inactive — the exact silent-passthrough
+        # behavior PR #595 made loud. Pre-installing here turns
+        # _install_model into a fast no-op and makes the matrix
+        # non-flaky for guardrail scenarios.
+        run: |
+          uv run guardrails configure \
+            --token "$GUARDRAILS_API_KEY" \
+            --disable-remote-inferencing \
+            --disable-metrics
+          uv run guardrails hub install hub://guardrails/ban_list
+          uv run guardrails hub install hub://guardrails/detect_pii
+
       - name: Run pytest e2e for matrix pair
         run: uv run pytest tests/e2e/ -v --pair=${{ matrix.pair }} --maxfail=3
 
@@ -122,6 +141,19 @@ jobs:
 
       - name: Install workspace dependencies
         run: uv sync --group dev
+
+      - name: Pre-install Guardrails Hub validators
+        # admin-edit-and-reload.spec.ts adds a BAN_LIST guardrail via
+        # admin REST and asserts the reload-then-block. Same rationale
+        # as the pytest-matrix step above: bootstrap ~/.guardrailsrc and
+        # cache validator deps so the standalone subprocess's reload
+        # pipeline doesn't hit a slow/flaky Hub install during the test.
+        run: |
+          uv run guardrails configure \
+            --token "$GUARDRAILS_API_KEY" \
+            --disable-remote-inferencing \
+            --disable-metrics
+          uv run guardrails hub install hub://guardrails/ban_list
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
