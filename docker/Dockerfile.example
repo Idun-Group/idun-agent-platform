@@ -1,10 +1,16 @@
-# Extend the published base image with your own agent code.
-# Replace the version with the latest release tag.
-FROM ghcr.io/idun-group/idun-agent-standalone:0.1.0
+# Build a deployable image around your agent code.
+# Replace python:3.12-slim with your preferred base if needed.
+FROM python:3.12-slim
 
-# Your agent code and config.
-# The base image expects: IDUN_CONFIG_PATH=/app/agent/config.yaml
+WORKDIR /app
+
+# Install the standalone (pulls engine + UI as transitive deps).
+RUN pip install --no-cache-dir idun-agent-standalone
+
+# Copy your agent code and config.
+# The standalone expects: IDUN_CONFIG_PATH=/app/agent/config.yaml
 COPY agent /app/agent
+ENV IDUN_CONFIG_PATH=/app/agent/config.yaml
 
 # Add any extra Python deps your agent needs:
 # RUN pip install --no-cache-dir langchain-openai langchain-google-genai
@@ -15,3 +21,6 @@ COPY agent /app/agent
 #   IDUN_SESSION_SECRET=...              (use: openssl rand -hex 32)
 #   DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/idun
 #   OPENAI_API_KEY=...                   (whatever your agent needs)
+
+EXPOSE 8000
+CMD ["idun-standalone", "serve", "--host", "0.0.0.0", "--port", "8000"]
