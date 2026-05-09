@@ -16,6 +16,9 @@ from typing import Any
 import pytest
 import yaml
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.models.mcp_server import (
+    StandaloneMCPServerRow,
+)
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
 from idun_agent_standalone.infrastructure.db.models.observability import (
     StandaloneObservabilityRow,
@@ -146,6 +149,37 @@ def sso_yaml_path(tmp_path: Path) -> Path:
     config_path = tmp_path / "config-with-sso.yaml"
     with open(config_path, "w") as f:
         yaml.dump(_SSO_YAML, f)
+    return config_path
+
+
+# YAML with a top-level `mcp_servers:` block — exercises the mcp_servers
+# seeder. Collection resource: each entry becomes its own row with a
+# unique slug derived from the MCP server's name.
+_MCP_SERVERS_YAML: dict[str, Any] = {
+    **_AGENT_YAML,
+    "mcp_servers": [
+        {
+            "name": "time",
+            "transport": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-time"],
+        },
+        {
+            "name": "filesystem",
+            "transport": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+        },
+    ],
+}
+
+
+@pytest.fixture
+def mcp_servers_yaml_path(tmp_path: Path) -> Path:
+    """Write a YAML config with an `mcp_servers:` block and return its path."""
+    config_path = tmp_path / "config-with-mcp-servers.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump(_MCP_SERVERS_YAML, f)
     return config_path
 
 
@@ -438,5 +472,82 @@ async def test_seed_sso_no_op_on_yaml_without_block(
 
     async with sessionmaker_factory() as session:
         count = await session.scalar(select(func.count()).select_from(StandaloneSsoRow))
+
+    assert count == 0
+
+
+async def test_seed_mcp_servers_inserts_rows_when_empty(
+    sessionmaker_factory: async_sessionmaker, mcp_servers_yaml_path: Path
+) -> None:
+    """YAML with 2 MCP servers → 2 StandaloneMCPServerRow records with unique slugs."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, mcp_servers_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        rows = (await session.scalars(select(StandaloneMCPServerRow))).all()
+
+    assert len(rows) == 2
+    names = {r.name for r in rows}
+    assert names == {"time", "filesystem"}
+    # All rows enabled by default.
+    assert all(r.enabled for r in rows)
+    # Slugs are unique across the seeded batch.
+    slugs = [r.slug for r in rows]
+    assert len(set(slugs)) == 2
+    # Config dict preserved (transport/command/args round-trip).
+    time_row = next(r for r in rows if r.name == "time")
+    assert time_row.mcp_server_config["transport"] == "stdio"
+    assert time_row.mcp_server_config["command"] == "npx"
+    assert time_row.mcp_server_config["args"] == [
+        "-y",
+        "@modelcontextprotocol/server-time",
+    ]
+
+
+async def test_seed_mcp_servers_skips_when_table_nonempty(
+    sessionmaker_factory: async_sessionmaker, mcp_servers_yaml_path: Path
+) -> None:
+    """If the mcp_servers table has any row, the mcp_servers seeder is a no-op."""
+    async with sessionmaker_factory() as session:
+        session.add(
+            StandaloneMCPServerRow(
+                name="pre-existing",
+                slug="pre-existing",
+                enabled=True,
+                mcp_server_config={
+                    "transport": "stdio",
+                    "command": "echo",
+                    "args": ["hi"],
+                },
+            )
+        )
+        await session.commit()
+
+    async with sessionmaker_factory() as session:
+        pre_count = await session.scalar(
+            select(func.count()).select_from(StandaloneMCPServerRow)
+        )
+
+    await seed_from_yaml_if_empty(sessionmaker_factory, mcp_servers_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        post_count = await session.scalar(
+            select(func.count()).select_from(StandaloneMCPServerRow)
+        )
+        rows = (await session.scalars(select(StandaloneMCPServerRow))).all()
+
+    assert post_count == pre_count, "mcp_servers re-seeded despite non-empty table"
+    assert {r.name for r in rows} == {"pre-existing"}
+
+
+async def test_seed_mcp_servers_no_op_on_yaml_without_block(
+    sessionmaker_factory: async_sessionmaker, yaml_config_path: Path
+) -> None:
+    """YAML without an `mcp_servers:` block → no rows, no error."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, yaml_config_path)
+
+    async with sessionmaker_factory() as session:
+        count = await session.scalar(
+            select(func.count()).select_from(StandaloneMCPServerRow)
+        )
 
     assert count == 0

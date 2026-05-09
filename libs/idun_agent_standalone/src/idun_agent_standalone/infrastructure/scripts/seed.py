@@ -22,12 +22,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.models.mcp_server import (
+    StandaloneMCPServerRow,
+)
 from idun_agent_standalone.infrastructure.db.models.memory import StandaloneMemoryRow
 from idun_agent_standalone.infrastructure.db.models.observability import (
     StandaloneObservabilityRow,
 )
 from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
 from idun_agent_standalone.infrastructure.db.models.sso import StandaloneSsoRow
+from idun_agent_standalone.services.slugs import ensure_unique_slug, normalize_slug
 
 logger = get_logger(__name__)
 
@@ -204,6 +208,63 @@ async def _seed_sso_if_empty(session: AsyncSession, engine_config: EngineConfig)
     return 1
 
 
+async def _seed_mcp_servers_if_empty(
+    session: AsyncSession, engine_config: EngineConfig
+) -> int:
+    """Seed ``StandaloneMCPServerRow`` rows from ``engine_config.mcp_servers``.
+
+    No-op if the YAML omits the ``mcp_servers:`` block or if the
+    ``standalone_mcp_server`` table already has at least one row
+    (per-resource seed-if-empty semantics from SPEC §3). Returns the
+    number of rows written.
+
+    Each row gets a slug derived from the MCP server's ``name`` via
+    ``ensure_unique_slug``. We ``await session.flush()`` after each
+    insert so successive calls to ``ensure_unique_slug`` see the rows
+    we have already added in this loop — otherwise duplicate names in
+    the same YAML batch would all collapse onto the bare slug and
+    violate the unique constraint at commit time.
+    """
+    mcp_servers = engine_config.mcp_servers
+    if not mcp_servers:
+        return 0
+
+    existing_count = await session.scalar(
+        select(func.count()).select_from(StandaloneMCPServerRow)
+    )
+    if existing_count and existing_count > 0:
+        logger.info(
+            "mcp_servers table non-empty (count=%d); skipping seed",
+            existing_count,
+        )
+        return 0
+
+    seeded = 0
+    for mcp in mcp_servers:
+        candidate = normalize_slug(mcp.name)
+        slug = await ensure_unique_slug(
+            session,
+            StandaloneMCPServerRow,
+            StandaloneMCPServerRow.slug,
+            candidate,
+        )
+        session.add(
+            StandaloneMCPServerRow(
+                name=mcp.name,
+                slug=slug,
+                enabled=True,
+                mcp_server_config=mcp.model_dump(mode="json", exclude_none=True),
+            )
+        )
+        # Flush so ensure_unique_slug on the next iteration sees this
+        # row when checking the "is this slug taken" query.
+        await session.flush()
+        seeded += 1
+
+    await session.commit()
+    return seeded
+
+
 async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> None:
     """Seed each resource row from YAML if the DB is empty.
 
@@ -235,6 +296,7 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         "prompts": 0,
         "observability": 0,
         "sso": 0,
+        "mcp_servers": 0,
     }
 
     async with sm() as session:
@@ -269,12 +331,22 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         except Exception:
             logger.exception("Failed to seed sso row from %s", config_path)
 
+    async with sm() as session:
+        try:
+            seeded["mcp_servers"] = await _seed_mcp_servers_if_empty(
+                session, engine_config
+            )
+        except Exception:
+            logger.exception("Failed to seed mcp_server rows from %s", config_path)
+
     logger.info(
-        "seed complete from %s: agent=%d memory=%d prompts=%d observability=%d sso=%d",
+        "seed complete from %s: agent=%d memory=%d prompts=%d observability=%d "
+        "sso=%d mcp_servers=%d",
         config_path,
         seeded["agent"],
         seeded["memory"],
         seeded["prompts"],
         seeded["observability"],
         seeded["sso"],
+        seeded["mcp_servers"],
     )
