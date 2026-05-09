@@ -59,6 +59,33 @@ class TestInitOtel:
 
         assert provider_first is provider_second  # no rebuild on duplicate init
 
+    def test_init_swallows_constructor_exception(self, caplog, monkeypatch):
+        """A TracerProvider constructor failure must not abort agent boot."""
+        import logging
+
+        from idun_agent_engine.observability import otel_lifecycle
+
+        def _boom(*_a, **_kw):
+            raise RuntimeError("simulated TracerProvider failure")
+
+        monkeypatch.setattr(otel_lifecycle, "TracerProvider", _boom)
+
+        config = ObservabilityConfig(
+            provider=ObservabilityProvider.GCP_TRACE,
+            config=GCPTraceConfig(),
+        )
+
+        with caplog.at_level(logging.ERROR):
+            otel_lifecycle.init_otel(config)  # must not raise
+
+        # Helper degraded gracefully: no provider, no signature, fail-open.
+        assert otel_lifecycle.get_tracer_provider() is None
+        assert otel_lifecycle._init_signature is None
+        assert any(
+            "init_otel: TracerProvider construction failed" in rec.message
+            for rec in caplog.records
+        )
+
 
 @pytest.mark.unit
 class TestAttachSpanProcessor:
@@ -82,6 +109,38 @@ class TestAttachSpanProcessor:
         otel_lifecycle.get_tracer_provider().force_flush()
         spans = exporter.get_finished_spans()
         assert any(s.name == "smoke" for s in spans)
+
+    def test_attach_swallows_provider_exception(self, caplog):
+        """A processor that fails to register must not abort the boot."""
+        import logging
+
+        from idun_agent_engine.observability import otel_lifecycle
+
+        config = ObservabilityConfig(
+            provider=ObservabilityProvider.GCP_TRACE,
+            config=GCPTraceConfig(),
+        )
+        otel_lifecycle.init_otel(config)
+
+        # Force the provider's add_span_processor to raise. Patching the
+        # bound method on the live provider is the smallest-blast-radius
+        # way to exercise the fail-open path.
+        provider = otel_lifecycle.get_tracer_provider()
+
+        def _boom(_processor):
+            raise RuntimeError("simulated provider failure")
+
+        provider.add_span_processor = _boom  # type: ignore[method-assign]
+
+        with caplog.at_level(logging.ERROR):
+            otel_lifecycle.attach_span_processor(SimpleSpanProcessor(InMemorySpanExporter()))
+
+        # Helper degraded gracefully: nothing tracked, no exception.
+        assert otel_lifecycle._attached_processors == []
+        assert any(
+            "attach_span_processor: provider.add_span_processor failed" in rec.message
+            for rec in caplog.records
+        )
 
 
 @pytest.mark.unit

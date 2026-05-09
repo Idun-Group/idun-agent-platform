@@ -140,7 +140,17 @@ def init_otel(config: ObservabilityConfig | None) -> None:
 
     sampler = _sampler_for(config)
     resource = _resource_for(config)
-    _tracer_provider = TracerProvider(sampler=sampler, resource=resource)
+    try:
+        _tracer_provider = TracerProvider(sampler=sampler, resource=resource)
+    except Exception:
+        # Telemetry init must not block agent boot — degrade to off and let
+        # the runtime continue. See root CLAUDE.md § Error Handling.
+        logger.exception(
+            "init_otel: TracerProvider construction failed; observability disabled"
+        )
+        _tracer_provider = None
+        _init_signature = None
+        return
     _force_set_global_tracer_provider(_tracer_provider)
     _init_signature = signature
     logger.info(
@@ -162,7 +172,17 @@ def attach_span_processor(processor: SpanProcessor) -> None:
             processor,
         )
         return
-    _tracer_provider.add_span_processor(processor)
+    try:
+        _tracer_provider.add_span_processor(processor)
+    except Exception:
+        # Same fail-open contract as init_otel: a misbehaving processor
+        # must not abort agent boot. The processor is left out of the
+        # tracked list so shutdown_otel won't try to drain it.
+        logger.exception(
+            "attach_span_processor: provider.add_span_processor failed for %r; not tracking",
+            processor,
+        )
+        return
     _attached_processors.append(processor)
 
 
