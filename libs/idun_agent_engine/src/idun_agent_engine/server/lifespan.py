@@ -156,17 +156,17 @@ async def configure_app(app: FastAPI, engine_config):
     if not hasattr(app.state, "post_configure_callbacks"):
         app.state.post_configure_callbacks = []
 
+    # Per-guard init failures are caught and collected inside
+    # _parse_guardrails (returns the failure list). Anything that escapes
+    # _parse_guardrails is a parser bug, not an expected install error,
+    # and must propagate so the reload pipeline can roll back the DB
+    # write — silently swallowing it would re-introduce the very
+    # silent-passthrough behavior this surface was added to fix.
     guardrails_obj = engine_config.guardrails
-    failed_guardrails: list[FailedGuardrail] = []
-    try:
-        guardrails, failed_guardrails = (
-            _parse_guardrails(guardrails_obj) if guardrails_obj else ([], [])
-        )
-        logger.debug(f"Guardrails: {guardrails}")
-    except Exception as e:
-        logger.exception(f"Failed to parse guardrails: {e}, continuing without them")
-        guardrails = []
-        failed_guardrails = []
+    guardrails, failed_guardrails = (
+        _parse_guardrails(guardrails_obj) if guardrails_obj else ([], [])
+    )
+    logger.debug(f"Guardrails: {guardrails}")
     # Mirror the failed_mcp_servers pattern — surface install failures
     # so embedders (e.g. the standalone reload pipeline) can roll back
     # the DB write instead of letting the request flow through with
