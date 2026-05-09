@@ -23,4 +23,7 @@ ENV IDUN_CONFIG_PATH=/app/agent/config.yaml
 #   OPENAI_API_KEY=...                   (whatever your agent needs)
 
 EXPOSE 8000
-CMD ["idun", "serve", "--host", "0.0.0.0", "--port", "8000"]
+
+# `idun serve` reads host/port from IDUN_HOST/IDUN_PORT env (defaults: 0.0.0.0:8000).
+# Override via -e at run time if you need a different binding.
+CMD ["idun", "serve"]
