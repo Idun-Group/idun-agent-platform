@@ -1,0 +1,24 @@
+id: TEST-004
+title: UI and standalone tests gated on every PR
+category: testing
+severity: warn
+layer: [ci]
+detection:
+  type: command
+  spec: "ensure standalone-ci.yml + a UI workflow run on PR for paths touching standalone or UI"
+owner: platform-team
+description: |
+  Today only the engine package's tests are gated in CI. Standalone (FastAPI
+  admin REST + reload pipeline) and UI (Next.js) tests must also run on every PR
+  to develop, otherwise breakages land silently.
+fix_hint: |
+  Confirm .github/workflows/standalone-ci.yml triggers on this PR's paths;
+  add a ui-ci.yml job that runs `cd services/idun_agent_standalone_ui &&
+  npm test -- --run` on changes under that path.
+graduation:
+  promote_to_block_when: "after PLAN-3 ships ESLint/Prettier configs and the UI test runner is stable"
+  default_block_target: ci
+  current_phase: advisory
+state: active
+since: 2026-05-09
+last_updated: 2026-05-09

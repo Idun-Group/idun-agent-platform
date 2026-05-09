@@ -1,0 +1,34 @@
+id: SCHEMA-002
+title: Keep UI API types in sync when standalone backend routes change
+category: schema
+severity: warn
+layer: [pr-review-agent, ci]
+detection:
+  type: command
+  spec: "diff libs/idun_agent_standalone/src/idun_agent_standalone/api/ vs services/idun_agent_standalone_ui/lib/api/types/"
+owner: ui-team
+description: |
+  When libs/idun_agent_standalone/src/idun_agent_standalone/api/v1/routers/
+  changes (request/response models, new endpoints, renamed fields), the
+  hand-written TypeScript types under
+  services/idun_agent_standalone_ui/lib/api/types/ must be updated in the
+  same PR or the UI breaks at runtime.
+
+  Note: post-PR-#592 the UI lives at services/idun_agent_standalone_ui (Next.js)
+  and consumes the standalone admin REST API exposed by the
+  libs/idun_agent_standalone package. There is no auto-generated client today —
+  types are maintained by hand, so cross-package drift is the failure mode this
+  rule guards against.
+fix_hint: |
+  Update the matching file under
+  services/idun_agent_standalone_ui/lib/api/types/ (e.g. agent.ts, mcp.ts,
+  guardrails.ts) to mirror the Pydantic schema change, then run
+  `cd services/idun_agent_standalone_ui && npm run typecheck` to confirm
+  call sites still compile.
+graduation:
+  promote_to_block_when: "3 consecutive weeks zero violations"
+  default_block_target: ci
+  current_phase: advisory
+state: active
+since: 2026-05-09
+last_updated: 2026-05-09
