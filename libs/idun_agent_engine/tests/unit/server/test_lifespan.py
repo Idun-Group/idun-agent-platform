@@ -52,5 +52,8 @@ class TestLifespan:
                 call_args = mock_init.call_args
                 assert call_args[0][0] is engine_config
 
-            # After lifespan exits, agent should be closed
-            mock_agent.close.assert_called_once()
+            # After lifespan exits, agent should be closed AND awaited.
+            # assert_awaited_once also catches the regression where the
+            # coroutine is called but not awaited — exactly the bug class
+            # the AsyncMock-vs-MagicMock split in this fixture guards against.
+            mock_agent.close.assert_awaited_once()
