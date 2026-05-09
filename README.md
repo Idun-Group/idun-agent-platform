@@ -12,7 +12,9 @@
 
 <br/>
 
-### Everything you need to deploy AI agents to production
+### Productionize LangGraph & ADK agents.
+
+Self-hosted. Open source. No vendor lock-in.
 
 <br/>
 
@@ -33,9 +35,9 @@
 
 <br/>
 
-<p align="center">Idun Agent Platform is an open-source, self-hosted control plane for <b>LangGraph</b> and <b>Google ADK</b> agents. Enroll your agent and get a production-grade service with built-in observability, guardrails, memory persistence, MCP tool governance, prompt management, and SSO with workspace isolation.</p>
+<p align="center">Idun Agent Platform is an open-source, self-hosted production wrapper for <b>LangGraph</b> and <b>Google ADK</b> agents. <code>pip install idun-agent-standalone</code> and your agent runs as a FastAPI process with built-in chat UI, admin panel, traces, observability, guardrails, memory persistence, MCP tool governance, and prompt management.</p>
 
-> **Why Idun?** Teams building agents face a tradeoff: build the platform yourself (slow, expensive) or adopt a SaaS (sovereignty trade-off). Idun is the third path: you keep your agent code, your data, and your infrastructure on the open-source engine you can fork and audit. Your agent code couples to LangGraph or ADK SDKs (those are the adapters today); the platform layer is yours to run.
+> **Why Idun?** Teams building agents face a tradeoff: build the production wrapper yourself (FastAPI + traces + guardrails + admin UI — slow), or adopt a SaaS like LangGraph Cloud or LangSmith (sovereignty trade-off). Idun is the third path: pip install a self-sufficient FastAPI process that bundles your agent with chat UI, admin, traces, and guardrails — all open source, all on your infrastructure.
 
 <p align="center">
   <img src="docs/images/readme/demo.gif" alt="Idun Agent Platform demo" width="100%"/>
@@ -54,21 +56,6 @@ cd my-agent && idun-standalone serve
 ```
 
 Open [http://localhost:8000](http://localhost:8000). Chat with your agent, then explore the admin at [/admin](http://localhost:8000/admin) and traces at [/admin/traces](http://localhost:8000/admin/traces).
-
-## Want a single-agent deployment?
-
-Use **`idun-agent-standalone`** — a self-sufficient FastAPI process bundling
-one agent with chat UI, admin panel, and a traces viewer:
-
-```bash
-pip install idun-agent-standalone
-idun-standalone init my-agent
-cd my-agent && idun-standalone serve
-```
-
-See the [Standalone docs →](https://docs.idunplatform.com/standalone/overview).
-
----
 
 ## What's inside
 
@@ -120,31 +107,17 @@ Conversations persist across restarts. Pick a backend per agent.
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td colspan="2" valign="top" align="center">
 
 ### Prompt management
 
 Versioned templates with Jinja2 variables. Assign prompts to agents from the UI or API.
 
-<img src="docs/images/readme/prompts.png" alt="Prompts" width="100%"/>
-
-</td>
-<td width="50%" valign="top">
-
-### Messaging integrations
-
-WhatsApp · Discord · Slack
-
-Bidirectional: receive messages, invoke agents, send replies. Webhook verification handled.
-
-<img src="docs/images/readme/integrations.png" alt="Integrations" width="100%"/>
+<img src="docs/images/readme/prompts.png" alt="Prompts" width="50%"/>
 
 </td>
 </tr>
 </table>
-
-> [!NOTE]
-> **SSO and multi-tenancy (Manager tier)** — Google OIDC or username/password for the Manager API. Role-based workspaces (owner, admin, member, viewer). Every Manager resource is scoped to a workspace. The standalone product ships with `none` or `password` admin auth; OIDC there is on the roadmap.
 
 > [!NOTE]
 > **AG-UI streaming** — Every agent gets a standards-based streaming API, compatible with CopilotKit clients. Built-in chat playground for testing.
@@ -157,42 +130,19 @@ Bidirectional: receive messages, invoke agents, send replies. Webhook verificati
 
 ## Architecture
 
-| | |
-|---|---|
-| **Engine** | Wraps LangGraph/ADK agents into a FastAPI service with AG-UI streaming, checkpointing, guardrails, observability, MCP, and SSO. Config from YAML or Manager API. |
-| **Manager** | Control plane. Agent CRUD, resource management, multi-tenant workspaces. Serves materialized configs to engines. |
-| **Web UI** | React 19 admin dashboard. Agent creation wizard, resource config, built-in chat, user management. |
+Idun ships as one process: **`idun-agent-standalone`**. It bundles the engine SDK, a Next.js chat UI, an admin panel, and a traces viewer — your agent runs inside this process, configured from a YAML file and re-loaded live from the admin REST.
 
 ```mermaid
 flowchart LR
-  subgraph Actors
-    Users["End users / Apps"]
-    Admin["Admin / DevOps"]
-    CICD["CI/CD"]
-  end
-
-  subgraph Platform["Idun Agent Platform"]
+  subgraph Idun["idun-agent-standalone (one process)"]
     direction TB
-    UI["Web UI"]
-    MGR["Manager API"]
-    subgraph Engines["Engines"]
-      ENG1["LangGraph"]
-      ENG2["ADK"]
-    end
-    DB[(PostgreSQL)]
+    UI["Chat UI / Admin / Traces"] --> ENG["Engine SDK"]
+    ENG --> DB[(Postgres / SQLite)]
   end
-
-  subgraph Infra["Your stack"]
-    OBS["Observability"]
-    MEM[(Memory)]
-    LLM["LLMs"]
-    TOOLS["MCP tools"]
-  end
-
-  Admin --> UI --> MGR --> DB
-  Engines -- "config" --> MGR
-  CICD --> Engines
-  Users --> Engines --> Infra
+  Users --> UI
+  Admin --> UI
+  ENG --> Agent["Your LangGraph / ADK agent"]
+  Agent --> LLM["LLMs / MCP / tools"]
 ```
 
 ---
@@ -200,19 +150,18 @@ flowchart LR
 ## Integrations
 
 <p align="center">
-  <img src="old-docs/images/logo/langgraph-color.png" alt="LangGraph" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/agent-development-kit.png" alt="ADK" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/langfuse-color.png" alt="Langfuse" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/mcp.png" alt="MCP" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/Postgresql_elephant.png" alt="PostgreSQL" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/phoenix.svg" alt="Phoenix" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/langsmith-color.png" alt="LangSmith" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/google-cloud.png" alt="Google Cloud" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/Okta-Logo.png" alt="Okta" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/guardrails-ai.png" alt="Guardrails AI" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/langchain-color.png" alt="LangChain" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/A2A.png" alt="A2A" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/ag-ui.png" alt="AG-UI" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/langgraph-color.png" alt="LangGraph" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/agent-development-kit.png" alt="ADK" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/langfuse-color.png" alt="Langfuse" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/mcp.png" alt="MCP" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/Postgresql_elephant.png" alt="PostgreSQL" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/phoenix.svg" alt="Phoenix" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/langsmith-color.png" alt="LangSmith" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/google-cloud.png" alt="Google Cloud" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/guardrails-ai.png" alt="Guardrails AI" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/langchain-color.png" alt="LangChain" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/A2A.png" alt="A2A" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/ag-ui.png" alt="AG-UI" style="height:36px; margin:6px; vertical-align:middle;" />
 </p>
 
 > [!NOTE]
@@ -225,20 +174,13 @@ flowchart LR
 | | **Idun Platform** | **LangGraph Cloud** | **LangSmith** | **DIY (FastAPI + glue)** |
 |---|:---:|:---:|:---:|:---:|
 | Self-hosted / on-prem | ✅ | ❌ | ❌ | ✅ |
-| Multi-framework (LangGraph + ADK) | ✅ | LangGraph only | ❌ (observability only) | Manual |
-| Guardrails (PII, toxicity, topic) | ✅ 15+ built-in | ❌ | ❌ | Build yourself |
+| Multi-framework (LangGraph + ADK) | ✅ | LangGraph only | ❌ obs only | Manual |
+| Guardrails (15+ built-in) | ✅ | ❌ | ❌ | Build yourself |
 | MCP tool governance | ✅ per-agent | ❌ | ❌ | Build yourself |
-| Multi-tenant workspaces + RBAC | ✅ Manager tier | ❌ | ✅ | Build yourself |
-| SSO (Google OIDC) | ✅ Manager tier | ❌ | ✅ | Build yourself |
-| Observability (Langfuse, Phoenix, LangSmith, GCP) | ✅ multi-provider | ❌ LangSmith only | ✅ LangSmith only | Manual |
+| Observability (multi-provider) | ✅ Langfuse, Phoenix, LangSmith, GCP | ❌ LangSmith only | ✅ LangSmith only | Manual |
 | Memory / checkpointing | ✅ Postgres, SQLite, in-memory | ✅ | ❌ | Build yourself |
-| Prompt management (versioned, Jinja2) | ✅ | ❌ | ✅ Hub | Build yourself |
-| Messaging (WhatsApp, Discord, Slack) | ✅ | ❌ | ❌ | Build yourself |
 | AG-UI / CopilotKit streaming | ✅ | ✅ | ❌ | Manual |
-| Admin UI | ✅ | ✅ | ✅ | ❌ |
-| Vendor lock-in | Self-hosted; engine is open source. Adapter coupling: agents are written against LangGraph or ADK SDKs. | High | High | None |
-| Open source | ✅ GPLv3 | ❌ | ❌ | — |
-| Operational ownership | You self-host. The platform handles reload, traces, migrations. | Vendor-managed | Vendor-managed | You build and run everything |
+| Open source (GPLv3) | ✅ | ❌ | ❌ | — |
 
 > [!NOTE]
 > Idun is not a replacement for LangSmith (observability) or LangGraph Cloud (hosting). It is the layer between your agent code and production that handles governance, security, and operations, regardless of which observability or hosting you choose.
@@ -291,20 +233,6 @@ prompts:
     version: 1
     content: "You are a support agent for {{ company_name }}."
     tags: ["latest"]
-
-sso:
-  enabled: true
-  issuer: "https://accounts.google.com"
-  client_id: "123456789.apps.googleusercontent.com"
-  allowed_domains: ["yourcompany.com"]
-
-integrations:
-  - provider: "WHATSAPP"
-    enabled: true
-    config:
-      access_token: "${WHATSAPP_ACCESS_TOKEN}"
-      phone_number_id: "${WHATSAPP_PHONE_ID}"
-      verify_token: "${WHATSAPP_VERIFY_TOKEN}"
 ```
 
 > [!TIP]
@@ -315,14 +243,6 @@ Serve from a file:
 ```bash
 pip install idun-agent-engine
 idun agent serve --source file --path config.yaml
-```
-
-Or fetch config from the Manager:
-
-```bash
-export IDUN_AGENT_API_KEY=your-agent-api-key
-export IDUN_MANAGER_HOST=https://manager.example.com
-idun agent serve --source manager
 ```
 
 > [!IMPORTANT]
