@@ -17,7 +17,7 @@ ENV IDUN_CONFIG_PATH=/app/agent/config.yaml
 
 # Override defaults via env vars at deploy time:
 #   IDUN_ADMIN_AUTH_MODE=password
-#   IDUN_ADMIN_PASSWORD_HASH=...        (use: idun-standalone hash-password)
+#   IDUN_ADMIN_PASSWORD_HASH=...        (use: idun hash-password)
 #   IDUN_SESSION_SECRET=...              (use: openssl rand -hex 32)
 #   DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/idun
 #   OPENAI_API_KEY=...                   (whatever your agent needs)

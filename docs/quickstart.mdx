@@ -1,6 +1,6 @@
 ---
 title: "Quickstart"
-description: "Deploy your first AI agent with Idun in under 30 minutes — pip install to live chat UI."
+description: "Deploy your first AI agent with Idun in under 30 minutes, from pip install to live chat UI."
 keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", "idun-agent-engine", "pip install"]
 ---
 
@@ -10,7 +10,7 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
 
 - **Python 3.12+** ([python.org](https://www.python.org/downloads/))
 - **pip** (bundled with Python)
-- An LLM provider key (OpenAI, Anthropic, Google — whichever your agent calls)
+- An LLM provider key (OpenAI, Anthropic, or Google, whichever your agent calls)
 
 ## Steps
 
@@ -28,9 +28,9 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
     cd my-agent
     ```
     Scaffolds:
-    - `agent.py` — minimal LangGraph agent template
-    - `config.yaml` — engine + standalone config
-    - `.env.example` — environment variables stub
+    - `agent.py` (a minimal LangGraph agent template)
+    - `config.yaml` (engine + standalone config)
+    - `.env.example` (environment variables stub)
   </Step>
 
   <Step title="Configure">
@@ -52,13 +52,13 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
   </Step>
 
   <Step title="Chat">
-    Open [http://localhost:8000](http://localhost:8000) in your browser. Send a message — the response streams back in real time.
+    Open [http://localhost:8000](http://localhost:8000) in your browser. Send a message and the response streams back in real time.
 
     ![Chat conversation](/images/readme/chat.png)
   </Step>
 
   <Step title="Explore the admin">
-    Open [http://localhost:8000/admin](http://localhost:8000/admin). View your agent's config, attach guardrails, register MCP tools, and inspect traces — all without redeploying.
+    Open [http://localhost:8000/admin](http://localhost:8000/admin). View your agent's config, attach guardrails, register MCP tools, and inspect traces, all without redeploying.
 
     ![Agent detail](/images/readme/agent-detail.png)
   </Step>
@@ -66,11 +66,11 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
 
 ## What next?
 
-- [Pick a framework](/frameworks/overview) — LangGraph or Google ADK
-- [Add guardrails](/guardrails/overview) — 15+ built-in safety guards
-- [Wire observability](/observability/overview) — Langfuse, Phoenix, LangSmith, or GCP Trace
-- [Govern MCP tools](/tool-governance/overview) — per-agent tool access control
-- [Deploy](/deployment/overview) — Cloud Run, Kubernetes, or any single-container host
+- [Pick a framework](/frameworks/overview): LangGraph or Google ADK
+- [Add guardrails](/guardrails/overview): 15+ built-in safety guards
+- [Wire observability](/observability/overview): Langfuse, Phoenix, LangSmith, or GCP Trace
+- [Govern MCP tools](/tool-governance/overview): per-agent tool access control
+- [Deploy](/deployment/overview): Cloud Run, Kubernetes, or any single-container host
 
 <Note>
   The original `docker-compose` and Manager UI quickstart paths were retired in v0.6. If you're upgrading from a pre-v0.6 install, file a [GitHub issue](https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=docs%2Cmigration) and we'll publish a migration note.

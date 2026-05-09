@@ -6,7 +6,7 @@ keywords: ["architecture", "engine", "standalone", "schema", "config flow", "sys
 
 ## System overview
 
-Idun ships as two packages: **`idun-agent-engine`** — the SDK that wraps your agent into a FastAPI service — and **`idun-agent-standalone`** — a self-sufficient process that bundles the engine, a Next.js chat UI, an admin panel, and a traces viewer.
+Idun ships as two packages. **`idun-agent-engine`** is the SDK that wraps your agent into a FastAPI service. **`idun-agent-standalone`** is a self-sufficient process that bundles the engine, a Next.js chat UI, an admin panel, and a traces viewer.
 
 ```mermaid
 flowchart LR
@@ -45,11 +45,11 @@ The engine exposes these endpoints:
 
 ### Idun Agent Standalone
 
-The self-sufficient app that bundles the engine, a Next.js UI (chat + admin + traces), an admin REST API, password or unauthenticated admin auth, DB seeding, and a validate-rebuild reload pipeline — all in one process.
+The self-sufficient app that bundles the engine, a Next.js UI (chat + admin + traces), an admin REST API, password or unauthenticated admin auth, DB seeding, and a validate-rebuild reload pipeline, all in one process.
 
 Standalone adds two things on top of the engine:
 
-- **Embedded UI.** Chat at `/`, admin at `/admin/`, traces at `/admin/traces`. The UI is built as a static Next.js export and bundled into the standalone wheel — no separate frontend to deploy.
+- **Embedded UI.** Chat at `/`, admin at `/admin/`, traces at `/admin/traces`. The UI is built as a static Next.js export and bundled into the standalone wheel, so there is no separate frontend to deploy.
 - **Reload-over-restart.** Edits made through the admin UI route through a validate-rebuild-reload pipeline; engine init failures roll back the DB write so the running agent stays serving the previous config.
 
 [Learn more about Idun Agent Standalone](/standalone/overview)
@@ -67,4 +67,4 @@ flowchart LR
   Reload --> Engine["Engine instance"]
 ```
 
-YAML is the seed shape; the database is the runtime source of truth. After first boot, mutations flow through the admin REST and trigger a validated reload of the engine instance. Init failures roll back to the previous config — the running agent never crashes mid-flight on a bad edit.
+YAML is the seed shape; the database is the runtime source of truth. After first boot, mutations flow through the admin REST and trigger a validated reload of the engine instance. Init failures roll back to the previous config, so the running agent never crashes mid-flight on a bad edit.
