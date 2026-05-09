@@ -24,6 +24,7 @@ class GCPTraceHandler(ObservabilityHandlerBase):
     provider = "gcp_trace"
 
     def __init__(self, options: dict[str, Any] | None = None):
+        """Initialize the handler and configure the OTel pipeline via otel_lifecycle."""
         super().__init__(options)
         self.options = options or {}
 

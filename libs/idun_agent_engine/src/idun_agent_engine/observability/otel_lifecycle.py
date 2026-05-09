@@ -172,6 +172,13 @@ def attach_instrumentor(instrumentor: Any) -> None:
     The instrumentor must already be instantiated. We call
     ``.instrument(tracer_provider=<active>)`` ourselves and remember
     the instance so ``shutdown_otel`` can call ``.uninstrument()``.
+
+    Fire-and-forget: if ``.instrument()`` raises, the instrumentor is
+    *not* tracked and any partial side-effects (global hooks installed
+    before the failure) will not be undone by ``shutdown_otel``. The
+    caller is expected to live with that — instrumentor failures here
+    are logged and swallowed so a misbehaving instrumentor cannot block
+    engine boot. See root CLAUDE.md § Error Handling.
     """
     if _tracer_provider is None:
         logger.warning(

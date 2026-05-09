@@ -15,6 +15,7 @@ from idun_agent_schema.engine.capabilities import AgentCapabilities
 from idun_agent_schema.engine.graph import AgentGraph
 from idun_agent_schema.engine.guardrails import Guardrail
 from idun_agent_schema.engine.sessions import SessionDetail, SessionSummary
+from openinference.instrumentation import using_user
 from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
@@ -178,36 +179,41 @@ async def run(
         # session-listing fallbacks see the same value.
         token = current_user_id.set(resolved_user_id)
         try:
-            async for event in agent.run(input_data):
-                # Registry isolates per-observer exceptions, so dispatch cannot
-                # masquerade as an agent failure here. Route-synthesized
-                # RunErrorEvent fallbacks below are NOT dispatched — observers
-                # see only events yielded by the agent itself.
-                await agent.run_event_observers.dispatch(
-                    event,
-                    RunContext(
-                        thread_id=input_data.thread_id,
-                        run_id=input_data.run_id,
-                    ),
-                )
-                try:
-                    yield encoder.encode(event)
-                except Exception as encoding_error:
-                    logger.error(
-                        f"Event encoding error: {encoding_error}", exc_info=True
-                    )
-                    from ag_ui.core import EventType, RunErrorEvent
-
-                    error_event = RunErrorEvent(
-                        type=EventType.RUN_ERROR,
-                        message=f"Event encoding failed: {encoding_error}",
-                        code="ENCODING_ERROR",
+            # Project the resolved user into OTel context so
+            # LangChainInstrumentor stamps user.id on every span emitted
+            # while agent.run is running. See
+            # tasks/trace-feature-08-05-2026/15-user-session-propagation.md.
+            with using_user(resolved_user_id):
+                async for event in agent.run(input_data):
+                    # Registry isolates per-observer exceptions, so dispatch cannot
+                    # masquerade as an agent failure here. Route-synthesized
+                    # RunErrorEvent fallbacks below are NOT dispatched — observers
+                    # see only events yielded by the agent itself.
+                    await agent.run_event_observers.dispatch(
+                        event,
+                        RunContext(
+                            thread_id=input_data.thread_id,
+                            run_id=input_data.run_id,
+                        ),
                     )
                     try:
-                        yield encoder.encode(error_event)
-                    except Exception:
-                        yield 'event: error\ndata: {"error": "Event encoding failed"}\n\n'
-                    break
+                        yield encoder.encode(event)
+                    except Exception as encoding_error:
+                        logger.error(
+                            f"Event encoding error: {encoding_error}", exc_info=True
+                        )
+                        from ag_ui.core import EventType, RunErrorEvent
+
+                        error_event = RunErrorEvent(
+                            type=EventType.RUN_ERROR,
+                            message=f"Event encoding failed: {encoding_error}",
+                            code="ENCODING_ERROR",
+                        )
+                        try:
+                            yield encoder.encode(error_event)
+                        except Exception:
+                            yield 'event: error\ndata: {"error": "Event encoding failed"}\n\n'
+                        break
         except Exception as agent_error:
             logger.error(f"Agent run error: {agent_error}", exc_info=True)
             from ag_ui.core import EventType, RunErrorEvent
