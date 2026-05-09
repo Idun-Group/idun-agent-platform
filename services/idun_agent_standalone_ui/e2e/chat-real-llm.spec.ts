@@ -3,6 +3,17 @@ import { expect, test } from "@playwright/test";
 // Selectors mirror chat.spec.ts. The chat surface has no data-testid —
 // we use placeholder + role idioms.
 
+// Skip cleanly when the standalone wasn't booted with a real-LLM agent
+// (boot-standalone.sh swaps the agent module only when LLM_PROVIDER is
+// set). Without this skip the standalone-ci.yml Playwright job, which
+// boots the echo agent, would run this spec against echo and fail the
+// not-toContain("echo:") gate. Real-LLM job in e2e-real-llm.yml exports
+// LLM_PROVIDER=openai so the spec runs there.
+test.skip(
+  !process.env.LLM_PROVIDER,
+  "chat-real-llm requires LLM_PROVIDER set so boot-standalone.sh swaps in the real-LLM agent fixture; runs from the e2e-real-llm.yml workflow.",
+);
+
 test("chat happy path with real LLM streams a non-empty assistant reply", async ({
   page,
 }) => {
