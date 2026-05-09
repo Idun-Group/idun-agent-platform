@@ -1964,7 +1964,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "black" },
     { name = "langchain-openai" },
     { name = "mypy" },
     { name = "pre-commit" },
@@ -1986,7 +1985,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "black", specifier = ">=24.8.0,<27" },
     { name = "langchain-openai", specifier = ">=0.3.0" },
     { name = "mypy", specifier = ">=1.10.0,<2" },
     { name = "pre-commit", specifier = ">=3.8.0,<4" },

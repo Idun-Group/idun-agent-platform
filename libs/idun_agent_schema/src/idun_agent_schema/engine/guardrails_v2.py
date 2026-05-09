@@ -131,9 +131,7 @@ class DetectPIIConfig(GuardrailConfig):
     api_key: str = ""
     reject_message: str = "PII detected"
     guard_url: str = "hub://guardrails/detect_pii"
-    pii_entities: list[str] = Field(
-        description="List of PII entity types to detect"
-    )
+    pii_entities: list[str] = Field(description="List of PII entity types to detect")
     on_fail: str = Field(default="exception")
 
     @model_validator(mode="before")

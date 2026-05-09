@@ -1,4 +1,5 @@
 """LangGraph: simple linear chat graph (single echo node)."""
+
 from typing import Annotated, TypedDict
 
 from langchain_core.messages import AIMessage, HumanMessage

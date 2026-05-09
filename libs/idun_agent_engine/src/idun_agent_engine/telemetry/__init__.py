@@ -16,4 +16,9 @@ def get_telemetry() -> IdunTelemetry:
     return _telemetry_singleton
 
 
-__all__ = ["IdunTelemetry", "get_deployment_type", "get_telemetry", "sanitize_telemetry_config"]
+__all__ = [
+    "IdunTelemetry",
+    "get_deployment_type",
+    "get_telemetry",
+    "sanitize_telemetry_config",
+]

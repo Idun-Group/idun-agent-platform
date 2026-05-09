@@ -2,6 +2,7 @@
 
 Initializes the agent at startup and cleans up resources on shutdown.
 """
+
 import inspect
 import logging
 from collections.abc import Awaitable, Callable, Sequence
@@ -127,7 +128,9 @@ async def configure_app(app: FastAPI, engine_config):
     try:
         mcp_registry = MCPClientRegistry(engine_config.mcp_servers or [])
     except Exception as e:
-        logger.exception(f"⚠️ Failed to initialize MCP registry: {e}, continuing without MCP servers")
+        logger.exception(
+            f"⚠️ Failed to initialize MCP registry: {e}, continuing without MCP servers"
+        )
         mcp_registry = MCPClientRegistry()
     set_active_registry(mcp_registry)
     app.state.mcp_registry = mcp_registry
@@ -136,7 +139,9 @@ async def configure_app(app: FastAPI, engine_config):
     # logs. Replaced on every reload so stale failures don't linger.
     app.state.failed_mcp_servers = mcp_registry.failed
     try:
-        agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config, mcp_registry)
+        agent_instance = await ConfigBuilder.initialize_agent_from_config(
+            engine_config, mcp_registry
+        )
     except Exception as e:
         raise ValueError(
             f"Error retrieving agent instance from ConfigBuilder: {e}"
@@ -156,7 +161,9 @@ async def configure_app(app: FastAPI, engine_config):
                     f"🔧 MCP Server {s.name}: [{s.transport.upper()}] {s.url or s.command}"
                 )
         except Exception as e:
-            logger.exception(f"Failed to assign mcp servers to agent: {e}, continuing without them")
+            logger.exception(
+                f"Failed to assign mcp servers to agent: {e}, continuing without them"
+            )
             mcp_servers = []
 
     # SSO / OIDC setup
@@ -220,9 +227,7 @@ async def configure_app(app: FastAPI, engine_config):
         try:
             await cb(app)
         except Exception:
-            logger.exception(
-                "post_configure_callback %r raised; continuing", cb
-            )
+            logger.exception("post_configure_callback %r raised; continuing", cb)
 
 
 @asynccontextmanager

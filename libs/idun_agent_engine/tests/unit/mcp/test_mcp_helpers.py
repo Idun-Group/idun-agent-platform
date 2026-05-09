@@ -95,13 +95,16 @@ class TestGetLangchainToolsResolution:
         monkeypatch.setenv("IDUN_AGENT_API_KEY", "should-not-be-used")
         monkeypatch.setenv("IDUN_MANAGER_HOST", "http://should-not-be-used")
 
-        with patch(
-            "idun_agent_engine.mcp.helpers.get_langchain_tools_from_file",
-            new_callable=AsyncMock,
-        ) as mock_file, patch(
-            "idun_agent_engine.mcp.helpers.get_langchain_tools_from_api",
-            new_callable=AsyncMock,
-        ) as mock_api:
+        with (
+            patch(
+                "idun_agent_engine.mcp.helpers.get_langchain_tools_from_file",
+                new_callable=AsyncMock,
+            ) as mock_file,
+            patch(
+                "idun_agent_engine.mcp.helpers.get_langchain_tools_from_api",
+                new_callable=AsyncMock,
+            ) as mock_api,
+        ):
             with caplog.at_level("INFO", logger="idun_agent_engine.mcp.helpers"):
                 result = await get_langchain_tools()
 
@@ -157,9 +160,7 @@ class TestGetLangchainToolsResolution:
         registry = _make_enabled_registry(tools=expected_tools)
         set_active_registry(registry)
 
-        with patch(
-            "idun_agent_engine.mcp.helpers._build_registry"
-        ) as mock_build:
+        with patch("idun_agent_engine.mcp.helpers._build_registry") as mock_build:
             result = await get_langchain_tools()
             mock_build.assert_not_called()
             assert result == expected_tools
@@ -208,9 +209,7 @@ class TestGetAdkToolsResolution:
         set_active_registry(registry)
 
         expected_toolsets = [MagicMock(name="toolset1")]
-        with patch.object(
-            registry, "get_adk_toolsets", return_value=expected_toolsets
-        ):
+        with patch.object(registry, "get_adk_toolsets", return_value=expected_toolsets):
             result = get_adk_tools()
             assert result == expected_toolsets
 
@@ -224,11 +223,14 @@ class TestGetAdkToolsResolution:
         monkeypatch.setenv("IDUN_AGENT_API_KEY", "should-not-be-used")
         monkeypatch.setenv("IDUN_MANAGER_HOST", "http://should-not-be-used")
 
-        with patch(
-            "idun_agent_engine.mcp.helpers.get_adk_tools_from_file",
-        ) as mock_file, patch(
-            "idun_agent_engine.mcp.helpers.get_adk_tools_from_api",
-        ) as mock_api:
+        with (
+            patch(
+                "idun_agent_engine.mcp.helpers.get_adk_tools_from_file",
+            ) as mock_file,
+            patch(
+                "idun_agent_engine.mcp.helpers.get_adk_tools_from_api",
+            ) as mock_api,
+        ):
             with caplog.at_level("INFO", logger="idun_agent_engine.mcp.helpers"):
                 result = get_adk_tools()
 
@@ -278,12 +280,8 @@ class TestGetAdkToolsResolution:
         set_active_registry(registry)
 
         expected_toolsets = [MagicMock(name="toolset1")]
-        with patch.object(
-            registry, "get_adk_toolsets", return_value=expected_toolsets
-        ):
-            with patch(
-                "idun_agent_engine.mcp.helpers._build_registry"
-            ) as mock_build:
+        with patch.object(registry, "get_adk_toolsets", return_value=expected_toolsets):
+            with patch("idun_agent_engine.mcp.helpers._build_registry") as mock_build:
                 result = get_adk_tools()
                 mock_build.assert_not_called()
                 assert result == expected_toolsets
@@ -321,7 +319,7 @@ class TestFetchConfigFromApiTimeout:
             _fetch_config_from_api()
 
         get.assert_called_once()
-        assert "timeout" in get.call_args.kwargs, (
-            "requests.get must be called with a timeout to prevent indefinite hangs"
-        )
+        assert (
+            "timeout" in get.call_args.kwargs
+        ), "requests.get must be called with a timeout to prevent indefinite hangs"
         assert get.call_args.kwargs["timeout"] == helpers._API_FETCH_TIMEOUT_SECONDS

@@ -40,7 +40,7 @@ make dev                       # editable installs of the three libs
 # Fast inner loop
 make test                      # all pytest
 make lint                      # ruff check
-make format                    # black + ruff format
+make format                    # Ruff format (Black-compatible)
 make mypy                      # mypy on engine
 make precommit                 # all pre-commit hooks
 make ci                        # lint + mypy + pytest
@@ -146,7 +146,7 @@ Plus any of these domain blocks that genuinely apply, in this order: Config flow
 ## Branch and code conventions
 
 - Branch naming: `feat/*`, `fix/*`, `docs/*`, `chore/*`, `misc/*`.
-- Python line length: 88. Async throughout. Ruff + Black + Mypy.
+- Python line length: 88. Async throughout. Ruff (lint + format) + Mypy.
 - Schema changes land in `idun_agent_schema` first, then engine and standalone consumers. Frontend types regenerate from the standalone OpenAPI spec.
 
 <!-- BEGIN: generated-by render_guidelines -->

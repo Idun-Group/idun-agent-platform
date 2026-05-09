@@ -21,9 +21,7 @@ from idun_agent_standalone.core.settings import StandaloneSettings
 
 
 @pytest.fixture
-def empty_db_settings(
-    tmp_path, monkeypatch: pytest.MonkeyPatch
-) -> StandaloneSettings:
+def empty_db_settings(tmp_path, monkeypatch: pytest.MonkeyPatch) -> StandaloneSettings:
     """Build settings pointing at a fresh SQLite file in a tmp dir.
 
     The standalone's alembic env reads ``DATABASE_URL`` and uses the

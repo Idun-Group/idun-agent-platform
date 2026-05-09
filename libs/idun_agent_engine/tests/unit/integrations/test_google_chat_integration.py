@@ -31,9 +31,7 @@ def _make_config() -> IntegrationConfig:
 @pytest.mark.unit
 class TestGoogleChatIntegration:
     @pytest.mark.asyncio
-    @patch(
-        "idun_agent_engine.integrations.google_chat.integration.GoogleChatClient"
-    )
+    @patch("idun_agent_engine.integrations.google_chat.integration.GoogleChatClient")
     async def test_setup_stores_client_and_project_number_on_app_state(
         self, mock_client_cls
     ):
@@ -49,12 +47,8 @@ class TestGoogleChatIntegration:
         assert app.state.google_chat_project_number == "123456"
 
     @pytest.mark.asyncio
-    @patch(
-        "idun_agent_engine.integrations.google_chat.integration.GoogleChatClient"
-    )
-    async def test_setup_registers_google_chat_webhook_route(
-        self, mock_client_cls
-    ):
+    @patch("idun_agent_engine.integrations.google_chat.integration.GoogleChatClient")
+    async def test_setup_registers_google_chat_webhook_route(self, mock_client_cls):
         mock_client_cls.return_value = AsyncMock()
         integration = GoogleChatIntegration(_make_config())
         app = FastAPI()
@@ -66,9 +60,7 @@ class TestGoogleChatIntegration:
         assert "/integrations/google-chat/webhook" in route_paths
 
     @pytest.mark.asyncio
-    @patch(
-        "idun_agent_engine.integrations.google_chat.integration.GoogleChatClient"
-    )
+    @patch("idun_agent_engine.integrations.google_chat.integration.GoogleChatClient")
     async def test_shutdown_closes_client(self, mock_client_cls):
         mock_client_cls.return_value = AsyncMock()
         integration = GoogleChatIntegration(_make_config())

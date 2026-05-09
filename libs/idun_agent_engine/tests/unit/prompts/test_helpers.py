@@ -242,9 +242,7 @@ class TestGetPromptsFromApi:
         from idun_agent_engine.prompts.helpers import get_prompts_from_api
 
         mock_response = Mock()
-        mock_response.raise_for_status.side_effect = req.HTTPError(
-            "500 Server Error"
-        )
+        mock_response.raise_for_status.side_effect = req.HTTPError("500 Server Error")
         mock_get.return_value = mock_response
 
         with patch.dict(
@@ -301,9 +299,7 @@ class TestGetPrompts:
     def test_falls_back_to_api(self, mock_api: Mock) -> None:
         from idun_agent_engine.prompts.helpers import get_prompts
 
-        mock_api.return_value = [
-            PromptConfig(prompt_id="x", version=1, content="hi")
-        ]
+        mock_api.return_value = [PromptConfig(prompt_id="x", version=1, content="hi")]
 
         with patch.dict(
             "os.environ",
@@ -336,9 +332,7 @@ class TestGetPrompts:
     def test_env_var_pointing_to_missing_file_raises(self) -> None:
         from idun_agent_engine.prompts.helpers import get_prompts
 
-        with patch.dict(
-            "os.environ", {"IDUN_CONFIG_PATH": "/tmp/nonexistent.yaml"}
-        ):
+        with patch.dict("os.environ", {"IDUN_CONFIG_PATH": "/tmp/nonexistent.yaml"}):
             with pytest.raises(FileNotFoundError):
                 get_prompts()
 
@@ -362,9 +356,7 @@ class TestGetPrompt:
         assert result.prompt_id == "system-prompt"
         assert result.version == 2
 
-    def test_returns_first_match_regardless_of_list_order(
-        self, tmp_path: Path
-    ) -> None:
+    def test_returns_first_match_regardless_of_list_order(self, tmp_path: Path) -> None:
         """When list order is v1 then v2, get_prompt returns v1 (first match)."""
         from idun_agent_engine.prompts.helpers import get_prompt
 

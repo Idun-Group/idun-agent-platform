@@ -167,8 +167,7 @@ class MCPClientRegistry:
                                     "name": config.name,
                                     "kind": str(config.transport),
                                     "reason": (
-                                        f"client construction failed: "
-                                        f"{exc}"
+                                        f"client construction failed: " f"{exc}"
                                     ),
                                 }
                             )
@@ -235,9 +234,7 @@ class MCPClientRegistry:
             tools = []
             for server_name in self._client.connections:
                 try:
-                    server_tools = await self._client.get_tools(
-                        server_name=server_name
-                    )
+                    server_tools = await self._client.get_tools(server_name=server_name)
                     tools.extend(server_tools)
                 except Exception:
                     logger.exception(

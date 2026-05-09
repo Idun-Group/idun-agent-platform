@@ -89,9 +89,8 @@ class GuardrailsHubGuard(BaseGuardrail):
         from guardrails import install
 
         try:
-            api_key = (
-                self._guardrail_config.api_key
-                or os.getenv("GUARDRAILS_API_KEY", "")
+            api_key = self._guardrail_config.api_key or os.getenv(
+                "GUARDRAILS_API_KEY", ""
             )
             if not api_key:
                 raise ValueError(
@@ -138,7 +137,13 @@ class GuardrailsHubGuard(BaseGuardrail):
 
         config_dict = self._guardrail_config.model_dump()
         # Fields handled separately — not passed to the guard constructor
-        exclude_fields = {"config_id", "api_key", "reject_message", "guard_url", "on_fail"}
+        exclude_fields = {
+            "config_id",
+            "api_key",
+            "reject_message",
+            "guard_url",
+            "on_fail",
+        }
         guard_instance_params = {
             k: v for k, v in config_dict.items() if k not in exclude_fields
         }
@@ -151,8 +156,7 @@ class GuardrailsHubGuard(BaseGuardrail):
             and "pii_entities" in guard_instance_params
         ):
             guard_instance_params["pii_entities"] = [
-                PII_ENTITY_MAP.get(e, e)
-                for e in guard_instance_params["pii_entities"]
+                PII_ENTITY_MAP.get(e, e) for e in guard_instance_params["pii_entities"]
             ]
 
         try:

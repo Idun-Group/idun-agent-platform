@@ -106,9 +106,7 @@ class ConfigBuilder:
         headers = {"auth": f"Bearer {agent_api_key}"}
         try:
             logger.info(f"Fetching config from {url}/api/v1/agents/config")
-            response = requests.get(
-                url=url + "/api/v1/agents/config", headers=headers
-            )
+            response = requests.get(url=url + "/api/v1/agents/config", headers=headers)
             if response.status_code != 200:
                 raise ValueError(
                     f"Error retrieving config from url. response: {response.text}"
@@ -128,7 +126,9 @@ class ConfigBuilder:
 
             return self
         except Exception as e:
-            raise ValueError(f"Error occurred while getting config from api: {e}") from e
+            raise ValueError(
+                f"Error occurred while getting config from api: {e}"
+            ) from e
 
     def with_langgraph_agent(
         self,

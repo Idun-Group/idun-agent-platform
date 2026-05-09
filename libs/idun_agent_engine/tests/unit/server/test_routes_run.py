@@ -114,7 +114,9 @@ class TestRunRoute:
             )
             assert response.status_code == 200
             body = response.text
-            assert "RUN_STARTED" in body or "RunStarted" in body or "run_started" in body
+            assert (
+                "RUN_STARTED" in body or "RunStarted" in body or "run_started" in body
+            )
 
     def test_run_structured_invalid_json(self):
         """POST /agent/run with invalid JSON structured input returns a validation error event."""

@@ -73,9 +73,7 @@ class TestUnconfiguredBoot:
                 json={
                     "threadId": "t1",
                     "runId": "r1",
-                    "messages": [
-                        {"id": "m1", "role": "user", "content": "hello"}
-                    ],
+                    "messages": [{"id": "m1", "role": "user", "content": "hello"}],
                     "state": {},
                     "tools": [],
                     "context": [],

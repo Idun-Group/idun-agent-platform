@@ -41,7 +41,9 @@ class TeamsIntegration(BaseIntegration):
         agent_url = f"http://127.0.0.1:{port}"
 
         adapter_settings = TeamsAuthSettings(self._teams_config)
-        adapter = CloudAdapter(ConfigurationBotFrameworkAuthentication(adapter_settings))
+        adapter = CloudAdapter(
+            ConfigurationBotFrameworkAuthentication(adapter_settings)
+        )
 
         self._http = httpx.AsyncClient()
         bot = TeamsBot(agent_url, self._http, SeenActivities())

@@ -33,9 +33,7 @@ OPENAPI_TAGS: list[dict[str, str]] = [
     },
     {
         "name": "Integrations & Tools",
-        "description": (
-            "MCP server registry and external integration credentials."
-        ),
+        "description": ("MCP server registry and external integration credentials."),
     },
     {
         "name": "Observability",

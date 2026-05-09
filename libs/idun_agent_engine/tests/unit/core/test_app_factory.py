@@ -106,6 +106,7 @@ class TestAppFactoryConfigSources:
         assert agent_config.checkpointer.type == "sqlite"
         assert "test_checkpoint.db" in agent_config.checkpointer.db_url
 
+
 @pytest.mark.unit
 class TestAppFactoryRoutes:
     """Test basic routes on the created app."""

@@ -25,12 +25,8 @@ class TestPerServerFailureIsolation:
         whole construction and the broken server would silently kill the
         connection map for everyone.
         """
-        good = MCPServer(
-            name="good", transport="stdio", command="echo", args=["hi"]
-        )
-        bad = MCPServer(
-            name="bad", transport="stdio", command="bad-cmd", args=["x"]
-        )
+        good = MCPServer(name="good", transport="stdio", command="echo", args=["hi"])
+        bad = MCPServer(name="bad", transport="stdio", command="bad-cmd", args=["x"])
 
         original = MCPServer.as_connection_dict
 
@@ -42,7 +38,9 @@ class TestPerServerFailureIsolation:
         with patch.object(MCPServer, "as_connection_dict", _maybe_fail):
             registry = MCPClientRegistry(configs=[good, bad])
 
-        assert registry.enabled, "registry should still be enabled with surviving server"
+        assert (
+            registry.enabled
+        ), "registry should still be enabled with surviving server"
         assert registry.available_servers() == ["good"]
 
         failures = registry.failed
@@ -53,9 +51,7 @@ class TestPerServerFailureIsolation:
 
     def test_failed_is_a_snapshot_not_a_live_view(self):
         """``failed`` must return a fresh list each call — internal state is immutable to callers."""
-        bad = MCPServer(
-            name="bad", transport="stdio", command="bad-cmd", args=["x"]
-        )
+        bad = MCPServer(name="bad", transport="stdio", command="bad-cmd", args=["x"])
         with patch.object(
             MCPServer,
             "as_connection_dict",
@@ -69,12 +65,8 @@ class TestPerServerFailureIsolation:
         assert registry.failed[0]["name"] == "bad"
 
     def test_no_failures_when_every_server_initialises(self):
-        good_a = MCPServer(
-            name="a", transport="stdio", command="echo", args=["a"]
-        )
-        good_b = MCPServer(
-            name="b", transport="stdio", command="echo", args=["b"]
-        )
+        good_a = MCPServer(name="a", transport="stdio", command="echo", args=["a"])
+        good_b = MCPServer(name="b", transport="stdio", command="echo", args=["b"])
 
         registry = MCPClientRegistry(configs=[good_a, good_b])
 
@@ -93,9 +85,7 @@ class TestPerServerFailureIsolation:
         Otherwise the UI would show those servers as ``running`` even
         though they aren't reachable through the registry.
         """
-        good = MCPServer(
-            name="good", transport="stdio", command="echo", args=["hi"]
-        )
+        good = MCPServer(name="good", transport="stdio", command="echo", args=["hi"])
 
         with patch(
             "idun_agent_engine.mcp.registry.MultiServerMCPClient",
@@ -120,9 +110,7 @@ class TestLifespanSurfacesFailures:
 
         from idun_agent_engine.server.lifespan import configure_app
 
-        bad = MCPServer(
-            name="bad", transport="stdio", command="bad-cmd", args=["x"]
-        )
+        bad = MCPServer(name="bad", transport="stdio", command="bad-cmd", args=["x"])
 
         mock_app = MagicMock()
         mock_app.state = MagicMock()
@@ -142,10 +130,13 @@ class TestLifespanSurfacesFailures:
                 raise RuntimeError("nope")
             return original(self)
 
-        with patch.object(MCPServer, "as_connection_dict", _maybe_fail), patch(
-            "idun_agent_engine.server.lifespan.ConfigBuilder.initialize_agent_from_config",
-            new_callable=AsyncMock,
-        ) as mock_init:
+        with (
+            patch.object(MCPServer, "as_connection_dict", _maybe_fail),
+            patch(
+                "idun_agent_engine.server.lifespan.ConfigBuilder.initialize_agent_from_config",
+                new_callable=AsyncMock,
+            ) as mock_init,
+        ):
             mock_agent = MagicMock()
             mock_agent.discover_capabilities = MagicMock(return_value=MagicMock())
             mock_agent.copilotkit_agent_instance = MagicMock()

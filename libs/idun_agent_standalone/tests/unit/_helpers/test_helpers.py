@@ -39,7 +39,9 @@ def test_parsed_set_cookie_missing_raises() -> None:
         headers=[("set-cookie", "other=x; Path=/")],
     )
 
-    with pytest.raises(AssertionError, match="Set-Cookie for 'idun_session' not present"):
+    with pytest.raises(
+        AssertionError, match="Set-Cookie for 'idun_session' not present"
+    ):
         parsed_set_cookie(response, "idun_session")
 
 
