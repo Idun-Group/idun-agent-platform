@@ -7,16 +7,42 @@ Verifies the resolution order:
   4. Manager API fallback
 """
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from idun_agent_schema.engine.mcp_server import MCPServer
+from pydantic import BaseModel
 
 from idun_agent_engine.mcp.helpers import get_adk_tools, get_langchain_tools
 from idun_agent_engine.mcp.registry import (
     MCPClientRegistry,
     set_active_registry,
 )
+
+
+class _FakeArgs(BaseModel):
+    query: str = ""
+
+
+def _fake_mcp_tool(name: str) -> Any:
+    """Build a stand-in MCP tool that survives ``_serialization_safe_shim``.
+
+    The shim reads ``name``/``description``/``args_schema`` and forwards
+    via ``ainvoke``. ``args_schema`` must be a real pydantic model class
+    (not a MagicMock) because ``StructuredTool`` validates it at
+    construction time.
+    """
+
+    async def _ainvoke(_kwargs: dict[str, Any]) -> str:
+        return "ok"
+
+    tool = MagicMock()
+    tool.name = name
+    tool.description = f"description of {name}"
+    tool.args_schema = _FakeArgs
+    tool.ainvoke = _ainvoke
+    return tool
 
 
 @pytest.fixture(autouse=True)
@@ -76,12 +102,15 @@ class TestGetLangchainToolsResolution:
     @pytest.mark.asyncio
     async def test_uses_active_registry_when_enabled(self):
         """When no config_path and active registry is enabled, use it."""
-        expected_tools = [MagicMock(name="tool1"), MagicMock(name="tool2")]
+        expected_tools = [_fake_mcp_tool("tool1"), _fake_mcp_tool("tool2")]
         registry = _make_enabled_registry(tools=expected_tools)
         set_active_registry(registry)
 
         result = await get_langchain_tools()
-        assert result == expected_tools
+        # ``MCPClientRegistry.get_tools`` wraps each underlying tool in
+        # ``_serialization_safe_shim``, so identity comparison no
+        # longer applies. Match by name instead.
+        assert [t.name for t in result] == ["tool1", "tool2"]
         registry._client.get_tools.assert_called_once()
 
     @pytest.mark.asyncio
@@ -156,14 +185,15 @@ class TestGetLangchainToolsResolution:
     @pytest.mark.asyncio
     async def test_no_new_registry_constructed_when_active(self):
         """Active registry is used directly — no MCPClientRegistry is constructed."""
-        expected_tools = [MagicMock(name="tool1")]
+        expected_tools = [_fake_mcp_tool("tool1")]
         registry = _make_enabled_registry(tools=expected_tools)
         set_active_registry(registry)
 
         with patch("idun_agent_engine.mcp.helpers._build_registry") as mock_build:
             result = await get_langchain_tools()
             mock_build.assert_not_called()
-            assert result == expected_tools
+            # Wrapped via _serialization_safe_shim — match by name.
+            assert [t.name for t in result] == ["tool1"]
 
     @pytest.mark.asyncio
     async def test_active_registry_returns_empty_list(self):
