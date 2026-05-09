@@ -1,0 +1,86 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: Seeded Ada
+    graph_definition: ./agent.py:graph
+    checkpointer:
+      type: sqlite
+      db_url: sqlite:///checkpoint.db
+
+prompts:
+  - prompt_id: system-prompt
+    version: 2
+    content: "You are a helpful assistant for {{ domain }}."
+    tags:
+      - latest
+      - production
+  - prompt_id: rag-context
+    version: 1
+    content: "Use this context: {{ context }}"
+    tags:
+      - rag
+
+observability:
+  - provider: LANGFUSE
+    enabled: true
+    config:
+      host: https://cloud.langfuse.com
+      public_key: pk-test
+      secret_key: sk-test
+
+sso:
+  enabled: true
+  issuer: https://accounts.google.com
+  client_id: 123456.apps.googleusercontent.com
+  allowed_domains:
+    - example.com
+
+mcp_servers:
+  - name: time
+    transport: stdio
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-time"
+  - name: filesystem
+    transport: stdio
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-filesystem"
+      - "/tmp"
+
+integrations:
+  - provider: WHATSAPP
+    enabled: true
+    config:
+      access_token: test-token
+      phone_number_id: "123456"
+      verify_token: test-verify
+  - provider: DISCORD
+    enabled: false
+    config:
+      bot_token: test-bot-token
+      application_id: "987654"
+      public_key: abcdef
+
+guardrails:
+  input:
+    - config_id: ban_list
+      banned_words:
+        - secret-word
+        - another-banned
+      api_key: test-key
+    - config_id: detect_pii
+      pii_entities:
+        - EMAIL_ADDRESS
+        - PHONE_NUMBER
+      api_key: test-key
+  output:
+    - config_id: toxic_language
+      threshold: 0.5
+      api_key: test-key
