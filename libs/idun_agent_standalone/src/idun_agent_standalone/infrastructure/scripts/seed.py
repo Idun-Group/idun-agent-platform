@@ -27,6 +27,7 @@ from idun_agent_standalone.infrastructure.db.models.observability import (
     StandaloneObservabilityRow,
 )
 from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
+from idun_agent_standalone.infrastructure.db.models.sso import StandaloneSsoRow
 
 logger = get_logger(__name__)
 
@@ -173,6 +174,36 @@ async def _seed_observability_if_empty(
     return 1
 
 
+async def _seed_sso_if_empty(session: AsyncSession, engine_config: EngineConfig) -> int:
+    """Seed the singleton ``StandaloneSsoRow`` from YAML.
+
+    ``engine_config.sso`` is a single ``SSOConfig`` (not a list);
+    standalone stores it as a singleton row keyed by ``id="singleton"``.
+    The assembly layer (``services/engine_config._layer_sso``) reads the
+    row back and layers it onto ``EngineConfig.sso`` at runtime.
+
+    No-op if the singleton row already exists or the YAML omits the
+    ``sso:`` block. Absence means SSO is not configured and agent routes
+    are unprotected — that is a valid configuration, not an error.
+    """
+    if engine_config.sso is None:
+        return 0
+
+    existing = await session.get(StandaloneSsoRow, "singleton")
+    if existing is not None:
+        logger.info("sso singleton exists; skipping seed")
+        return 0
+
+    session.add(
+        StandaloneSsoRow(
+            id="singleton",
+            sso_config=engine_config.sso.model_dump(mode="json"),
+        )
+    )
+    await session.commit()
+    return 1
+
+
 async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> None:
     """Seed each resource row from YAML if the DB is empty.
 
@@ -203,6 +234,7 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         "memory": 0,
         "prompts": 0,
         "observability": 0,
+        "sso": 0,
     }
 
     async with sm() as session:
@@ -231,11 +263,18 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         except Exception:
             logger.exception("Failed to seed observability row from %s", config_path)
 
+    async with sm() as session:
+        try:
+            seeded["sso"] = await _seed_sso_if_empty(session, engine_config)
+        except Exception:
+            logger.exception("Failed to seed sso row from %s", config_path)
+
     logger.info(
-        "seed complete from %s: agent=%d memory=%d prompts=%d observability=%d",
+        "seed complete from %s: agent=%d memory=%d prompts=%d observability=%d sso=%d",
         config_path,
         seeded["agent"],
         seeded["memory"],
         seeded["prompts"],
         seeded["observability"],
+        seeded["sso"],
     )

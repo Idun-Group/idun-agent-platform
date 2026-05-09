@@ -21,6 +21,7 @@ from idun_agent_standalone.infrastructure.db.models.observability import (
     StandaloneObservabilityRow,
 )
 from idun_agent_standalone.infrastructure.db.models.prompt import StandalonePromptRow
+from idun_agent_standalone.infrastructure.db.models.sso import StandaloneSsoRow
 from idun_agent_standalone.infrastructure.db.session import Base
 from idun_agent_standalone.infrastructure.scripts import seed as seed_module
 from idun_agent_standalone.infrastructure.scripts.seed import seed_from_yaml_if_empty
@@ -122,6 +123,29 @@ def observability_yaml_path(tmp_path: Path) -> Path:
     config_path = tmp_path / "config-with-observability.yaml"
     with open(config_path, "w") as f:
         yaml.dump(_OBSERVABILITY_YAML, f)
+    return config_path
+
+
+# YAML with a top-level `sso:` block — exercises the SSO seeder. SSO is
+# a singleton in the engine schema (a single SSOConfig, not a list), so
+# the seeder writes one row keyed by id="singleton".
+_SSO_YAML: dict[str, Any] = {
+    **_AGENT_YAML,
+    "sso": {
+        "enabled": True,
+        "issuer": "https://accounts.google.com",
+        "client_id": "123456.apps.googleusercontent.com",
+        "allowed_domains": ["example.com"],
+    },
+}
+
+
+@pytest.fixture
+def sso_yaml_path(tmp_path: Path) -> Path:
+    """Write a YAML config with an `sso:` block and return its path."""
+    config_path = tmp_path / "config-with-sso.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump(_SSO_YAML, f)
     return config_path
 
 
@@ -355,5 +379,64 @@ async def test_seed_observability_no_op_on_yaml_without_block(
         count = await session.scalar(
             select(func.count()).select_from(StandaloneObservabilityRow)
         )
+
+    assert count == 0
+
+
+async def test_seed_sso_inserts_singleton_when_empty(
+    sessionmaker_factory: async_sessionmaker, sso_yaml_path: Path
+) -> None:
+    """YAML with sso block → 1 StandaloneSsoRow (singleton, fields preserved)."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, sso_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        rows = (await session.scalars(select(StandaloneSsoRow))).all()
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.id == "singleton"
+    config = row.sso_config
+    assert config["enabled"] is True
+    assert config["issuer"] == "https://accounts.google.com"
+    assert config["client_id"] == "123456.apps.googleusercontent.com"
+    assert config["allowed_domains"] == ["example.com"]
+
+
+async def test_seed_sso_skips_when_singleton_exists(
+    sessionmaker_factory: async_sessionmaker, sso_yaml_path: Path
+) -> None:
+    """If singleton row exists, no re-seed (existing config preserved)."""
+    async with sessionmaker_factory() as session:
+        session.add(
+            StandaloneSsoRow(
+                id="singleton",
+                sso_config={
+                    "enabled": False,
+                    "issuer": "https://other.idp",
+                    "client_id": "other-client",
+                },
+            )
+        )
+        await session.commit()
+
+    await seed_from_yaml_if_empty(sessionmaker_factory, sso_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        rows = (await session.scalars(select(StandaloneSsoRow))).all()
+
+    assert len(rows) == 1
+    # The pre-existing row was NOT overwritten with the YAML values.
+    assert rows[0].sso_config["issuer"] == "https://other.idp"
+    assert rows[0].sso_config["enabled"] is False
+
+
+async def test_seed_sso_no_op_on_yaml_without_block(
+    sessionmaker_factory: async_sessionmaker, yaml_config_path: Path
+) -> None:
+    """YAML without sso block → no row, no error."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, yaml_config_path)
+
+    async with sessionmaker_factory() as session:
+        count = await session.scalar(select(func.count()).select_from(StandaloneSsoRow))
 
     assert count == 0
