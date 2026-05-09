@@ -45,15 +45,15 @@
 
 ## Quick start
 
-> **Prerequisites**: Docker and Git.
+> **Prerequisites**: Python 3.12+ and pip.
 
 ```bash
-git clone https://github.com/Idun-Group/idun-agent-platform.git && cd idun-agent-platform
-cp .env.example .env
-docker compose -f docker-compose.dev.yml up --build
+pip install idun-agent-standalone
+idun-standalone init my-agent
+cd my-agent && idun-standalone serve
 ```
 
-Open [localhost:3000](http://localhost:3000). Create an account. Deploy your first agent in 3 clicks.
+Open [http://localhost:8000](http://localhost:8000). Chat with your agent, then explore the admin at [/admin](http://localhost:8000/admin) and traces at [/admin/traces](http://localhost:8000/admin/traces).
 
 ## Want a single-agent deployment?
 
