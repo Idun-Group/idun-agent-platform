@@ -22,6 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.models.integration import (
+    StandaloneIntegrationRow,
+)
 from idun_agent_standalone.infrastructure.db.models.mcp_server import (
     StandaloneMCPServerRow,
 )
@@ -265,6 +268,74 @@ async def _seed_mcp_servers_if_empty(
     return seeded
 
 
+async def _seed_integrations_if_empty(
+    session: AsyncSession, engine_config: EngineConfig
+) -> int:
+    """Seed ``StandaloneIntegrationRow`` rows from ``engine_config.integrations``.
+
+    No-op if the YAML omits the ``integrations:`` block or if the
+    ``standalone_integration`` table already has at least one row
+    (per-resource seed-if-empty semantics from SPEC §3). Returns the
+    number of rows written.
+
+    Each row gets a slug derived from the integration's ``provider``
+    enum value (e.g. ``WHATSAPP`` → ``whatsapp``) via
+    ``ensure_unique_slug``; the row's ``name`` mirrors that slug since
+    ``IntegrationConfig`` carries no display name field of its own. The
+    row level ``enabled`` flag is preserved verbatim from the YAML —
+    unlike the mcp_server seeder, integrations carry an explicit
+    ``enabled`` field at the engine config layer and the operator may
+    have intentionally seeded one as ``false``.
+
+    We ``await session.flush()`` after each insert so successive calls
+    to ``ensure_unique_slug`` see the rows we have already added in
+    this loop — otherwise duplicate providers in the same YAML batch
+    would all collapse onto the bare slug and violate the unique
+    constraint at commit time.
+    """
+    integrations = engine_config.integrations
+    if not integrations:
+        return 0
+
+    existing_count = await session.scalar(
+        select(func.count()).select_from(StandaloneIntegrationRow)
+    )
+    if existing_count and existing_count > 0:
+        logger.info(
+            "integrations table non-empty (count=%d); skipping seed",
+            existing_count,
+        )
+        return 0
+
+    seeded = 0
+    for integration in integrations:
+        provider_str = str(integration.provider.value).lower()
+        candidate = normalize_slug(provider_str)
+        slug = await ensure_unique_slug(
+            session,
+            StandaloneIntegrationRow,
+            StandaloneIntegrationRow.slug,
+            candidate,
+        )
+        session.add(
+            StandaloneIntegrationRow(
+                slug=slug,
+                name=slug,
+                enabled=integration.enabled,
+                integration_config=integration.model_dump(
+                    mode="json", exclude_none=True
+                ),
+            )
+        )
+        # Flush so ensure_unique_slug on the next iteration sees this
+        # row when checking the "is this slug taken" query.
+        await session.flush()
+        seeded += 1
+
+    await session.commit()
+    return seeded
+
+
 async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> None:
     """Seed each resource row from YAML if the DB is empty.
 
@@ -297,6 +368,7 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         "observability": 0,
         "sso": 0,
         "mcp_servers": 0,
+        "integrations": 0,
     }
 
     async with sm() as session:
@@ -339,9 +411,17 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         except Exception:
             logger.exception("Failed to seed mcp_server rows from %s", config_path)
 
+    async with sm() as session:
+        try:
+            seeded["integrations"] = await _seed_integrations_if_empty(
+                session, engine_config
+            )
+        except Exception:
+            logger.exception("Failed to seed integration rows from %s", config_path)
+
     logger.info(
         "seed complete from %s: agent=%d memory=%d prompts=%d observability=%d "
-        "sso=%d mcp_servers=%d",
+        "sso=%d mcp_servers=%d integrations=%d",
         config_path,
         seeded["agent"],
         seeded["memory"],
@@ -349,4 +429,5 @@ async def seed_from_yaml_if_empty(sm: async_sessionmaker, config_path: Path) -> 
         seeded["observability"],
         seeded["sso"],
         seeded["mcp_servers"],
+        seeded["integrations"],
     )

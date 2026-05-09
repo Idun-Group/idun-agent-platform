@@ -16,6 +16,9 @@ from typing import Any
 import pytest
 import yaml
 from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.models.integration import (
+    StandaloneIntegrationRow,
+)
 from idun_agent_standalone.infrastructure.db.models.mcp_server import (
     StandaloneMCPServerRow,
 )
@@ -548,6 +551,115 @@ async def test_seed_mcp_servers_no_op_on_yaml_without_block(
     async with sessionmaker_factory() as session:
         count = await session.scalar(
             select(func.count()).select_from(StandaloneMCPServerRow)
+        )
+
+    assert count == 0
+
+
+# YAML with a top-level `integrations:` block — exercises the integrations
+# seeder. Collection resource: each entry becomes its own row with a slug
+# derived from the provider, and the row level ``enabled`` flag preserved
+# from the YAML (NOT default-True like mcp_servers).
+_INTEGRATIONS_YAML: dict[str, Any] = {
+    **_AGENT_YAML,
+    "integrations": [
+        {
+            "provider": "WHATSAPP",
+            "enabled": True,
+            "config": {
+                "access_token": "test-token",
+                "phone_number_id": "123456",
+                "verify_token": "test-verify",
+            },
+        },
+        {
+            "provider": "DISCORD",
+            "enabled": False,
+            "config": {
+                "bot_token": "test-bot-token",
+                "application_id": "987654",
+                "public_key": "abcdef",
+            },
+        },
+    ],
+}
+
+
+@pytest.fixture
+def integrations_yaml_path(tmp_path: Path) -> Path:
+    """Write a YAML config with an `integrations:` block and return its path."""
+    config_path = tmp_path / "config-with-integrations.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump(_INTEGRATIONS_YAML, f)
+    return config_path
+
+
+async def test_seed_integrations_inserts_rows_when_empty(
+    sessionmaker_factory: async_sessionmaker, integrations_yaml_path: Path
+) -> None:
+    """YAML with 2 integrations → 2 rows with unique slugs, enabled flags preserved."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, integrations_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        rows = (await session.scalars(select(StandaloneIntegrationRow))).all()
+
+    assert len(rows) == 2
+    # Both providers are present in the seeded payloads.
+    providers = {r.integration_config["provider"] for r in rows}
+    assert providers == {"WHATSAPP", "DISCORD"}
+    # Enabled flag preserved from YAML (WhatsApp=true, Discord=false). The
+    # row level enabled is the single source of truth at assembly; the
+    # seeder must NOT default it to True like mcp_servers does.
+    by_provider = {r.integration_config["provider"]: r for r in rows}
+    assert by_provider["WHATSAPP"].enabled is True
+    assert by_provider["DISCORD"].enabled is False
+    # Slugs are unique across the seeded batch.
+    slugs = [r.slug for r in rows]
+    assert len(set(slugs)) == 2
+
+
+async def test_seed_integrations_skips_when_table_nonempty(
+    sessionmaker_factory: async_sessionmaker, integrations_yaml_path: Path
+) -> None:
+    """If the integrations table has any row, the seeder is a no-op."""
+    async with sessionmaker_factory() as session:
+        existing = StandaloneIntegrationRow(
+            slug="pre-existing",
+            name="pre-existing",
+            enabled=True,
+            integration_config={
+                "provider": "SLACK",
+                "enabled": True,
+                "config": {
+                    "bot_token": "xoxb-pre",
+                    "signing_secret": "shh",
+                },
+            },
+        )
+        session.add(existing)
+        await session.commit()
+
+    await seed_from_yaml_if_empty(sessionmaker_factory, integrations_yaml_path)
+
+    async with sessionmaker_factory() as session:
+        count = await session.scalar(
+            select(func.count()).select_from(StandaloneIntegrationRow)
+        )
+        rows = (await session.scalars(select(StandaloneIntegrationRow))).all()
+
+    assert count == 1
+    assert {r.integration_config["provider"] for r in rows} == {"SLACK"}
+
+
+async def test_seed_integrations_no_op_on_yaml_without_block(
+    sessionmaker_factory: async_sessionmaker, yaml_config_path: Path
+) -> None:
+    """YAML without an `integrations:` block → no rows, no error."""
+    await seed_from_yaml_if_empty(sessionmaker_factory, yaml_config_path)
+
+    async with sessionmaker_factory() as session:
+        count = await session.scalar(
+            select(func.count()).select_from(StandaloneIntegrationRow)
         )
 
     assert count == 0
