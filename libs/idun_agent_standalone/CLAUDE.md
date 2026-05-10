@@ -4,7 +4,7 @@
 
 `idun_agent_standalone` is a single-process, single-tenant agent runtime. It wraps `idun-agent-engine` with an embedded admin REST surface, an in-process reload pipeline, and a bundled Next.js UI (chat plus admin pages). One agent per install — laptop, VM, or Cloud Run.
 
-Published to PyPI as `idun-agent-standalone`. CLI entry point: `idun`.
+**Distribution.** This is a workspace dev package. It is **not published to PyPI or TestPyPI**. The `idun-agent-engine` wheel uses `[tool.hatch.build.targets.wheel.force-include]` to bundle the standalone source (`libs/idun_agent_standalone/src/idun_agent_standalone`) into the engine wheel, so end-users `pip install idun-agent-engine` and get the standalone CLI + bundled UI in one shot. The CLI entry point is `idun` (registered in this package's `pyproject.toml`); after a fresh engine install the operator runs `idun init` / `idun setup` / `idun serve` exactly as if standalone were a separate package.
 
 ## Module map
 

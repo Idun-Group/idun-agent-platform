@@ -123,7 +123,8 @@
           {
             "group": "Guides",
             "pages": [
-              "guides/langgraph-production-deployment"
+              "guides/langgraph-production-deployment",
+              "guides/programmatic-chat"
             ]
           },
           {

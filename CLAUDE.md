@@ -4,7 +4,7 @@ Guidance for Claude Code (and humans) working in `idun-agent-platform`.
 
 ## Project Overview
 
-Idun Agent Platform is the open-source toolkit for shipping a single LangGraph or Google ADK agent to production. Developers `pip install idun-agent-standalone`, point at their agent module, and get a FastAPI service with a chat UI, admin panel, and built-in MCP, guardrails, observability, and auth — deployable on a laptop or Cloud Run with no manager service required.
+Idun Agent Platform is the open-source toolkit for shipping a single LangGraph or Google ADK agent to production. Developers `pip install idun-agent-engine`, point at their agent module, and get a FastAPI service with a chat UI, admin panel, and built-in MCP, guardrails, observability, and auth — deployable on a laptop or Cloud Run with no manager service required. The `idun-agent-engine` wheel `force-include`s the standalone CLI + bundled UI, so a single `pip install` ships everything; `idun-agent-standalone` is a workspace dev package and is NOT published separately.
 
 ## Constitution
 
