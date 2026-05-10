@@ -83,6 +83,11 @@ class TraceWriter:
         self._stop_event: asyncio.Event | None = None
         self._task: asyncio.Task[None] | None = None
 
+    @property
+    def running(self) -> bool:
+        """Whether the drain task is alive on the current event loop."""
+        return self._task is not None and not self._task.done()
+
     async def start(self) -> None:
         """Schedule the drain loop on the current event loop."""
         if self._task is not None:

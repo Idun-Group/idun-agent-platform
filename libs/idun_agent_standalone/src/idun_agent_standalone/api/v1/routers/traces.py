@@ -274,8 +274,13 @@ async def trace_pipeline_health(request: Request) -> StandaloneTraceHealth:
     so the UI can conditionally render the SQLite operational banner
     without a second round-trip.
     """
+    # Bootstrap stores the ``TraceWriter`` instance under
+    # ``app.state.trace_writer_task`` (the ``_task`` suffix is historical
+    # — the slot holds the writer object itself, not the asyncio.Task it
+    # owns). Read from that slot here so the health probe surfaces real
+    # values for a running pipeline.
     exporter = getattr(request.app.state, "trace_exporter", None)
-    writer = getattr(request.app.state, "trace_writer", None)
+    writer = getattr(request.app.state, "trace_writer_task", None)
     database_dialect = _read_database_dialect(request)
     if exporter is None:
         return StandaloneTraceHealth(

@@ -42,6 +42,14 @@ class StandaloneSpanExporter(SpanExporter):
         return self._queue.qsize()
 
     @property
+    def queue_depth(self) -> int:
+        return self._queue.qsize()
+
+    @property
+    def max_queue_size(self) -> int:
+        return self._max_queue_size
+
+    @property
     def overflow_count(self) -> int:
         return self._overflow_count
 

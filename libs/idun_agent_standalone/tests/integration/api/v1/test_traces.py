@@ -246,6 +246,43 @@ async def test_health_endpoint_returns_zero_when_pipeline_absent(admin_app) -> N
     }
 
 
+async def test_health_endpoint_reports_running_pipeline(admin_app) -> None:
+    """When app.state has a populated pipeline, _health surfaces real values.
+
+    Regression test for the bug where the route read
+    ``app.state.trace_writer`` (wrong slot — bootstrap writes to
+    ``trace_writer_task``) and ``exporter.queue_depth`` /
+    ``exporter.max_queue_size`` (didn't exist as public properties).
+    """
+    from unittest.mock import MagicMock
+
+    from idun_agent_standalone.infrastructure.traces.exporter import (
+        StandaloneSpanExporter,
+    )
+
+    exporter = StandaloneSpanExporter(max_queue_size=128)
+    # Simulate some queued spans via the internal queue — the public API
+    # is ``export()`` which builds row dicts, but the health probe only
+    # cares about ``qsize()``, so stuffing raw payloads is sufficient.
+    for _ in range(3):
+        exporter._queue.put_nowait({"name": "x"})
+    writer_mock = MagicMock()
+    writer_mock.running = True
+
+    admin_app.state.trace_exporter = exporter
+    admin_app.state.trace_writer_task = writer_mock
+
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/admin/api/v1/traces/_health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["queueDepth"] == 3
+    assert body["maxQueueSize"] == 128
+    assert body["overflowCount"] == 0
+    assert body["writerRunning"] is True
+
+
 async def _seed_span(
     async_session,
     *,
