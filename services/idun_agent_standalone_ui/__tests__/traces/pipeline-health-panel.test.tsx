@@ -24,7 +24,7 @@ describe("PipelineHealthPanel", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders queue depth, drop count, and Running writer when healthy", async () => {
+  it("collapses to a one-line OK indicator when healthy", async () => {
     vi.spyOn(tracesApi, "getTraceHealth").mockResolvedValue({
       queueDepth: 5,
       maxQueueSize: 8192,
@@ -35,20 +35,19 @@ describe("PipelineHealthPanel", () => {
 
     render(withQuery(<PipelineHealthPanel />));
 
-    await waitFor(() => {
-      expect(screen.getByTestId("pipeline-health-panel")).toBeInTheDocument();
-    });
-
-    expect(screen.getByTestId("pipeline-queue-depth")).toHaveTextContent(
-      "5 / 8,192",
+    // Healthy state should render the collapsed indicator (#29) and
+    // NOT the full three-metric strip.
+    const collapsed = await screen.findByTestId(
+      "pipeline-health-collapsed",
     );
-    expect(screen.getByTestId("pipeline-drop-count")).toHaveTextContent(
-      /Drops:\s*0/,
-    );
-    expect(screen.getByTestId("pipeline-writer")).toHaveTextContent("Running");
-    // Healthy → CircleCheck visible.
+    expect(collapsed).toHaveTextContent(/Trace pipeline.*OK/);
     expect(screen.getByTestId("pipeline-health-ok")).toBeInTheDocument();
-    expect(screen.queryByTestId("pipeline-health-warn")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pipeline-health-panel"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pipeline-queue-depth"),
+    ).not.toBeInTheDocument();
   });
 
   it("highlights drops in red when overflowCount > 0", async () => {
@@ -93,19 +92,27 @@ describe("PipelineHealthPanel", () => {
     expect(screen.getByTestId("pipeline-health-warn")).toBeInTheDocument();
   });
 
-  it("renders nothing on a 401 (silent degrade)", async () => {
+  it("shows a 'Session expired' pill on 401 (#30)", async () => {
     vi.spyOn(tracesApi, "getTraceHealth").mockRejectedValue(
       new ApiError(401, null),
     );
 
-    const { container } = render(withQuery(<PipelineHealthPanel />));
+    render(withQuery(<PipelineHealthPanel />));
 
-    await waitFor(() => {
-      expect(
-        screen.queryByTestId("pipeline-health-panel"),
-      ).not.toBeInTheDocument();
-    });
-    expect(container.firstChild).toBeNull();
+    const pill = await screen.findByTestId("pipeline-health-auth-pill");
+    expect(pill).toHaveTextContent(/Session expired/);
+    // Sign-in link is rendered.
+    expect(screen.getByRole("link", { name: /sign in/i })).toHaveAttribute(
+      "href",
+      "/login",
+    );
+    // The healthy / degraded surfaces stay hidden.
+    expect(
+      screen.queryByTestId("pipeline-health-panel"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pipeline-health-collapsed"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders nothing on a 500 (silent degrade)", async () => {
@@ -120,5 +127,11 @@ describe("PipelineHealthPanel", () => {
         screen.queryByTestId("pipeline-health-panel"),
       ).not.toBeInTheDocument();
     });
+    expect(
+      screen.queryByTestId("pipeline-health-collapsed"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pipeline-health-auth-pill"),
+    ).not.toBeInTheDocument();
   });
 });

@@ -9,22 +9,38 @@
  *   - Drop count (red when > 0; "0 dropped" otherwise)
  *   - Writer status ("Running" / "Stopped")
  *
- * Renders nothing on auth / server failure — the panel is informational
- * and we'd rather degrade silently than block the trace list. The 5s
- * interval is the minimum admissible cadence per the design KB
- * (`tasks/standalone-traces-trace-pr-09-05-2026/PLAN.md` § Task 26)
- * because every poll touches the admin DB engine to read the dialect
- * and the in-process queue snapshot.
+ * Display modes:
  *
- * Selection state is owned by the parent (the trace list page); this
- * component is purely read-only — no mutations, no callbacks.
+ *   - **Healthy** (drops == 0 && writerRunning): collapses to a
+ *     single-line green dot + "Trace pipeline · OK" label. Operators
+ *     scrolling the list don't burn ~50px of vertical space on the
+ *     common case (#29).
+ *   - **Degraded** (drops > 0 OR writer stopped): expands to the full
+ *     three-metric strip. Degraded ALWAYS wins — even if the operator
+ *     manually re-collapsed during a healthy state, a fresh degraded
+ *     poll re-opens the panel.
+ *   - **401 (session expired)**: shows a "Session expired" pill that
+ *     links to /login instead of silently disappearing (#30).
+ *   - **Other errors / no data**: silent degrade as before — the panel
+ *     is informational and we'd rather render nothing than a noisy
+ *     yellow banner that adds no operator-actionable signal.
+ *
+ * The query key is shared with `SqliteBanner` (#39) so the two
+ * consumers de-duplicate to a single in-flight request.
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { CircleAlertIcon, CircleCheckIcon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  CircleCheckIcon,
+  ShieldAlertIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
-import { getTraceHealth } from "@/lib/api/traces";
+import { TRACE_HEALTH_QUERY_KEY, getTraceHealth } from "@/lib/api/traces";
 import { cn } from "@/lib/utils";
 
 const POLL_INTERVAL_MS = 5_000;
@@ -34,12 +50,13 @@ export type PipelineHealthPanelProps = {
 };
 
 export function PipelineHealthPanel({ className }: PipelineHealthPanelProps) {
-  const { data, isError } = useQuery({
-    queryKey: ["traces", "health", "panel"],
+  const { data, error, isError } = useQuery({
+    queryKey: TRACE_HEALTH_QUERY_KEY,
     queryFn: getTraceHealth,
     refetchInterval: POLL_INTERVAL_MS,
     refetchIntervalInBackground: false,
-    // Don't retry hard on auth failures — the panel just disappears.
+    // Don't retry hard on auth failures — the panel just disappears
+    // (or shows a session-expired pill in the 401 case).
     retry: (failureCount, err) => {
       if (err instanceof ApiError) {
         if (err.status === 401 || err.status >= 500) return false;
@@ -48,15 +65,70 @@ export function PipelineHealthPanel({ className }: PipelineHealthPanelProps) {
     },
   });
 
-  // Silently degrade: any API error → render nothing. The trace list
-  // itself surfaces real problems (and the SqliteBanner shares the
-  // same query so a banner-side failure manifests there too).
+  // Operator-controlled collapse only applies on a healthy state. A
+  // degraded state always wins and re-expands.
+  const [manuallyCollapsed, setManuallyCollapsed] = useState(false);
+
+  // Dedicated 401 surface so the operator gets a signpost back to
+  // /login instead of an unexplained empty toolbar (#30).
+  if (isError && error instanceof ApiError && error.status === 401) {
+    return (
+      <div
+        role="status"
+        aria-label="Trace pipeline health (session expired)"
+        data-testid="pipeline-health-auth-pill"
+        className={cn(
+          "flex flex-wrap items-center gap-2 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-1.5 text-xs dark:border-amber-700/60 dark:bg-amber-950/30",
+          className,
+        )}
+      >
+        <ShieldAlertIcon className="size-3.5 text-amber-700 dark:text-amber-300" />
+        <span className="font-medium text-foreground">Session expired</span>
+        <span className="text-muted-foreground">
+          — sign in to see pipeline health.
+        </span>
+        <Link
+          href="/login"
+          className="underline underline-offset-2 hover:text-foreground"
+        >
+          Sign in
+        </Link>
+      </div>
+    );
+  }
+
+  // Silently degrade on other errors / unloaded — see module docs.
   if (isError || !data) {
     return null;
   }
 
   const drops = data.overflowCount;
   const healthy = drops === 0 && data.writerRunning;
+
+  // Healthy + collapsed (default unless operator un-collapsed). Renders
+  // a one-line indicator. Click expands locally for one render; the
+  // next 5-second poll re-collapses if still healthy.
+  if (healthy && !manuallyCollapsed) {
+    return (
+      <button
+        type="button"
+        onClick={() => setManuallyCollapsed(true)}
+        aria-label="Trace pipeline OK — click to expand details"
+        data-testid="pipeline-health-collapsed"
+        className={cn(
+          "inline-flex w-fit items-center gap-1.5 rounded-md border bg-muted/20 px-2 py-1 text-xs hover:bg-muted/40",
+          className,
+        )}
+      >
+        <CircleCheckIcon
+          data-testid="pipeline-health-ok"
+          className="size-3 text-emerald-600 dark:text-emerald-400"
+        />
+        <span className="text-muted-foreground">Trace pipeline ·</span>
+        <span className="font-medium text-foreground">OK</span>
+      </button>
+    );
+  }
 
   return (
     <div
@@ -124,6 +196,19 @@ export function PipelineHealthPanel({ className }: PipelineHealthPanelProps) {
           {data.writerRunning ? "Running" : "Stopped"}
         </span>
       </span>
+
+      {healthy && manuallyCollapsed ? null : healthy ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-auto h-6 px-2 text-[11px]"
+          onClick={() => setManuallyCollapsed(true)}
+          aria-label="Collapse pipeline health"
+          data-testid="pipeline-health-collapse"
+        >
+          Hide
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -98,7 +98,7 @@ describe("TraceTree", () => {
     expect(screen.getByText("~$0.0123")).toBeInTheDocument();
 
     // Grandchild has a unique latency.
-    expect(screen.getByText("25ms")).toBeInTheDocument();
+    expect(screen.getByText("25 ms")).toBeInTheDocument();
   });
 
   it("supports ArrowDown / ArrowUp keyboard navigation", () => {

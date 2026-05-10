@@ -62,6 +62,8 @@ import {
   deleteTrace,
   getTrace,
 } from "@/lib/api/traces";
+import { formatDuration } from "@/lib/format/duration";
+import { formatCostUSD } from "@/lib/format/money";
 
 /** Walk the tree depth-first to find a span by id. */
 function findSpan(
@@ -87,22 +89,9 @@ function anyPartialCost(nodes: StandaloneSpanTreeNode[]): boolean {
   return false;
 }
 
-function formatLatency(ms: number | null): string {
-  if (ms == null) return "—";
-  if (ms < 1000) return `${ms.toFixed(0)} ms`;
-  return `${(ms / 1000).toFixed(2)} s`;
-}
-
 function formatTokens(n: number | null): string {
   if (n == null) return "—";
   return n.toLocaleString();
-}
-
-function formatCost(usd: number | null, partial: boolean): string {
-  if (usd == null) return "—";
-  if (usd === 0) return partial ? "~$0" : "$0";
-  const formatted = usd < 0.01 ? "<$0.01" : `$${usd.toFixed(usd < 1 ? 4 : 2)}`;
-  return partial ? `~${formatted}` : formatted;
 }
 
 function StatusBadge({ status }: { status: string | null }) {
@@ -249,7 +238,7 @@ export default function TraceDetailClient() {
             <span data-testid="trace-summary-latency">
               <span className="text-foreground/70">Latency:</span>{" "}
               <span className="font-mono text-foreground">
-                {formatLatency(data?.trace.latencyMs ?? null)}
+                {formatDuration(data?.trace.latencyMs ?? null)}
               </span>
             </span>
             <span data-testid="trace-summary-tokens">
@@ -261,7 +250,7 @@ export default function TraceDetailClient() {
             <span data-testid="trace-summary-cost">
               <span className="text-foreground/70">Cost:</span>{" "}
               <span className="font-mono text-foreground">
-                {formatCost(data?.trace.totalCostUsd ?? null, partial)}
+                {formatCostUSD(data?.trace.totalCostUsd ?? null, { partial })}
               </span>
             </span>
             <StatusBadge status={data?.trace.status ?? null} />

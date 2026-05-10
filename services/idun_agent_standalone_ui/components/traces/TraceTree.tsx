@@ -38,6 +38,8 @@ import { ChevronRightIcon } from "lucide-react";
 import * as React from "react";
 
 import { SpanKindIcon } from "@/components/traces/SpanKindIcon";
+import { formatDuration } from "@/lib/format/duration";
+import { formatCostUSD } from "@/lib/format/money";
 import {
   Collapsible,
   CollapsibleContent,
@@ -164,23 +166,13 @@ function formatTokens(value: number | null): string {
 
 /** Format a USD cost; never returns null because we want the cell to render. */
 function formatCost(span: StandaloneSpanRead): string {
-  if (span.costUsd === null || span.costUsd === undefined) return "—";
-  const partial = isPartialCost(span);
-  const value = span.costUsd;
-  // Up to 4 fraction digits — typical LLM costs sit at $0.0001–$0.10.
-  const formatted = `$${value.toFixed(4)}`;
-  return partial ? `~${formatted}` : formatted;
+  return formatCostUSD(span.costUsd, { partial: isPartialCost(span) });
 }
 
 function isPartialCost(span: StandaloneSpanRead): boolean {
   return Boolean(
     span.costBreakdown && (span.costBreakdown as { partial?: unknown }).partial,
   );
-}
-
-function formatLatency(value: number | null): string {
-  if (value === null || value === undefined) return "—";
-  return `${value.toLocaleString()}ms`;
 }
 
 export function TraceTree({
@@ -406,7 +398,7 @@ export function TraceTree({
                 data-slot="latency-badge"
                 className="shrink-0 rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground tabular-nums"
               >
-                {formatLatency(row.span.latencyMs)}
+                {formatDuration(row.span.latencyMs)}
               </span>
               <span
                 data-slot="tokens-badge"
