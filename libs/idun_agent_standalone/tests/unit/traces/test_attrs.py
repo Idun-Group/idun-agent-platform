@@ -70,15 +70,6 @@ class TestProviderQuirks:
         """Gemini via langchain-google-genai emits zero detail buckets — log a warning."""
         import logging
 
-        # Alembic's ``fileConfig()`` (run by upstream integration tests) sets
-        # ``disable_existing_loggers=True`` by default, which silently turns
-        # ``disabled=True`` on every already-imported module logger. caplog
-        # cannot capture from a disabled logger regardless of level or
-        # propagation, so we re-enable the specific logger the source module
-        # uses before exercising it.
-        _attrs.logger.disabled = False
-        _attrs.logger.propagate = True
-
         attrs = {
             "openinference.span.kind": "LLM",
             "llm.system": "google",

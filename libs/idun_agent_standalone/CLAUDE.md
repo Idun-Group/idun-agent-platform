@@ -117,6 +117,17 @@ standalone_trace + standalone_span tables
 
 **Bootstrap.** A `post_configure_callbacks` entry registered on `app.state` calls `otel_lifecycle.attach_span_processor(...)` (see `libs/idun_agent_engine/CLAUDE.md`) with our exporter on first agent boot, plus on every reload. When the user has selected no observability provider, or selected Langfuse / LangSmith (which both bypass OTel), the callback also self-installs `LangChainInstrumentor` via `attach_instrumentor(...)` so the local store always captures.
 
+**Span COPY path.** On Postgres the writer drains each batch through `asyncpg.Connection.copy_records_to_table("standalone_span", ...)` (one round-trip, no `ON CONFLICT` support). Duplicate `(started_at, otel_span_id)` pairs in a single batch — possible when the OTel `BatchSpanProcessor` re-exports a previously failed batch — are absorbed by a client-side dedupe pass before the COPY call (first occurrence wins). `total_tokens` is excluded from `SPAN_COPY_COLUMNS` because it is a PG `GENERATED ALWAYS AS ... STORED` column on `standalone_span`. JSONB columns (`attributes`, `events`, `cost_breakdown`) are pre-serialized via `json.dumps` because asyncpg's binary COPY protocol does not auto-encode dicts to JSONB. The trace-row finalize pass stays on `INSERT ... ON CONFLICT DO NOTHING` because of its UPSERT semantics — only the high-volume span path moves to COPY. SQLite continues to use SQLAlchemy executemany.
+
+**SpanKind plain-Enum audit (2026-05-10).** OpenInference span kind is
+read off the OTel span as a string attribute (key
+``openinference.span.kind``) — never compared against the OTel
+``SpanKind`` enum. The plain-``Enum``-vs-``IntEnum`` trap that bit
+``StatusCode`` (caught during CR review of #606) does not exist for
+``SpanKind`` in this codebase. If a future change introduces an
+``opentelemetry.trace.SpanKind`` import, that comparison must use
+``.value`` or ``.name`` rather than relying on integer coercion.
+
 **Root-span finalize.** On every span insert, the writer checks whether the parent `otel_trace_id` exists in `standalone_trace`. The first insert into a new trace creates the row. When the root span ends, `infrastructure/traces/_finalizer.py` aggregates child spans (`models text[]` denormalisation, `total_tokens`, `total_cost_usd`, end-to-end `latency_ms`) into the trace row.
 
 **Multi-worker.** Uvicorn `--workers > 1` is supported. Each worker has its own `TracerProvider`, exporter, queue, and asyncio writer task. Singleton tasks (Postgres partition lifecycle, LiteLLM pricing-table refresh) are fenced via `pg_try_advisory_lock` — only the worker that wins the lock runs the task.

@@ -28,6 +28,20 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: idun
+          POSTGRES_PASSWORD: idun
+          POSTGRES_DB: idun_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U idun"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,6 +50,8 @@ jobs:
       - run: pip install --no-cache-dir uv
       - run: uv sync --all-groups
       - run: uv run pytest libs/idun_agent_standalone/tests -q
+        env:
+          STANDALONE_TEST_POSTGRES_URL: postgresql+asyncpg://idun:idun@localhost:5432/idun_test
       - run: uv run pytest libs/idun_agent_engine/tests/integration/server libs/idun_agent_engine/tests/unit/agent/test_observers.py -q
 
   ui:

@@ -57,14 +57,6 @@ async def test_run_once_failopen_on_exception(caplog):
     """A failure in _run_once must not propagate."""
     sm = MagicMock(side_effect=RuntimeError("boom"))
     scheduler = RetentionScheduler(session_factory=sm, retention_days=14)
-    # Alembic's ``fileConfig()`` (run by upstream integration tests) sets
-    # ``disable_existing_loggers=True`` by default, which silently turns
-    # ``disabled=True`` on every already-imported module logger. caplog
-    # cannot capture from a disabled logger regardless of level or
-    # propagation, so we re-enable the specific logger the source module
-    # uses before exercising it.
-    retention_module.logger.disabled = False
-    retention_module.logger.propagate = True
     with caplog.at_level(logging.ERROR, logger=retention_module.logger.name):
         await scheduler._run_once()  # must not raise
     assert any(

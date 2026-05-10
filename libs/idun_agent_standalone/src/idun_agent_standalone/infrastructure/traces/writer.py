@@ -38,7 +38,9 @@ through the chat path.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import insert
@@ -58,6 +60,53 @@ logger = logging.getLogger(__name__)
 # Keys that the exporter stamps on row dicts for cross-pass carrying
 # but are not StandaloneSpanRow columns. Stripped before insert.
 _INTERNAL_KEYS = ("_full_trace_id",)
+
+
+# Column order for the asyncpg COPY path. ``total_tokens`` is omitted
+# because it is a PG ``GENERATED ALWAYS AS ... STORED`` column on
+# ``standalone_span``; including a generated column in COPY is a
+# runtime error. Order matches the ``CREATE TABLE`` declaration in the
+# c08f88a64574 migration's PG branch except for that single column.
+SPAN_COPY_COLUMNS: tuple[str, ...] = (
+    "started_at",
+    "otel_span_id",
+    "otel_trace_id",
+    "parent_span_id",
+    "name",
+    "kind",
+    "ended_at",
+    "latency_ms",
+    "model",
+    "provider",
+    "prompt_tokens",
+    "completion_tokens",
+    "cache_read_tokens",
+    "cache_write_tokens",
+    "cost_usd",
+    "cost_breakdown",
+    "cost_source",
+    "status",
+    "attributes",
+    "events",
+)
+
+_SPAN_JSONB_COLUMNS = frozenset({"cost_breakdown", "attributes", "events"})
+
+
+def _span_row_to_copy_tuple(row: dict[str, Any]) -> tuple[Any, ...]:
+    """Translate a writer ``row`` dict into the COPY tuple shape.
+
+    Drops ``total_tokens`` (GENERATED on PG); pre-serializes JSONB
+    columns to ``json.dumps`` strings since asyncpg's binary COPY
+    protocol does not auto-encode dicts to JSONB.
+    """
+    out: list[Any] = []
+    for col in SPAN_COPY_COLUMNS:
+        value = row.get(col)
+        if col in _SPAN_JSONB_COLUMNS and value is not None:
+            value = json.dumps(value)
+        out.append(value)
+    return tuple(out)
 
 
 class TraceWriter:
@@ -167,7 +216,50 @@ class TraceWriter:
 
         try:
             async with self._session_factory() as session:
-                await session.execute(insert(StandaloneSpanRow), span_rows)
+                bind = session.get_bind()
+                if bind.dialect.name == "postgresql":
+                    # Pre-dedupe by (started_at, otel_span_id) since asyncpg
+                    # COPY does not support ON CONFLICT. The
+                    # BatchSpanProcessor can re-export the same span if a
+                    # previous batch failed; absorbing duplicates here
+                    # preserves the previous ``ON CONFLICT DO NOTHING``
+                    # semantics. First occurrence wins.
+                    seen: set[tuple[datetime, bytes]] = set()
+                    deduped: list[dict[str, Any]] = []
+                    for row in span_rows:
+                        key = (row["started_at"], row["otel_span_id"])
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        deduped.append(row)
+                    dedup_dropped = len(span_rows) - len(deduped)
+                    if dedup_dropped:
+                        logger.debug(
+                            "trace writer dedup_dropped=%d batch_size=%d",
+                            dedup_dropped,
+                            len(span_rows),
+                        )
+
+                    records = [_span_row_to_copy_tuple(r) for r in deduped]
+                    # SQLAlchemy's ``AsyncConnection.connection`` accessor
+                    # raises ``InvalidRequestError`` by design (see
+                    # sqlalchemy.ext.asyncio.engine:AsyncConnection); the
+                    # driver-level asyncpg ``Connection`` is reachable
+                    # via ``get_raw_connection()`` → ``driver_connection``.
+                    # Going through the AsyncSession's connection keeps
+                    # the COPY call inside the session's outer transaction
+                    # so we don't open a separate pool checkout.
+                    async_conn = await session.connection()
+                    proxied = await async_conn.get_raw_connection()
+                    raw_conn = proxied.driver_connection
+                    await raw_conn.copy_records_to_table(
+                        "standalone_span",
+                        records=records,
+                        columns=SPAN_COPY_COLUMNS,
+                    )
+                else:
+                    # SQLite path unchanged — executemany via SQLAlchemy.
+                    await session.execute(insert(StandaloneSpanRow), span_rows)
                 if trace_rows:
                     await self._upsert_traces(session, trace_rows)
                 await session.commit()
