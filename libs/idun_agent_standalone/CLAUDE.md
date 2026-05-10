@@ -152,7 +152,7 @@ These were present in the pre-rework standalone but have **no router or service 
 | --- | --- | --- |
 | Real password auth (login, logout, change-password, /me) | `auth/` | **Implemented** in strict-minimum scope; see "Auth" above. Sliding renewal, rotation invalidation, rate-limit, CSRF token still deferred. |
 | `/admin/api/v1/theme` (theme model + admin route) | `theme/` | The runtime-config bootstrap (`runtime_config.py`) still exposes a default theme to the SPA, but there is no admin route to mutate it |
-| Traces | `traces/` | **Implemented in v1** — OTel-based trace pipeline lives at `infrastructure/traces/`, served via `/admin/api/v1/traces`. See "Trace pipeline" below. |
+| Traces | `traces/` | **Implemented in v1** — OTel-based trace pipeline lives at `infrastructure/traces/`, served via `/admin/api/v1/traces`. See "Trace pipeline" above. |
 | `idun init <name>` scaffold command | `scaffold.py` | **Restored** — see "Key entry points" above. Now a thin launcher (migrations + seed + browser + serve), not the legacy multi-file scaffolder. |
 | `idun hash-password` | `cli.py` | **Restored** — generates a bcrypt hash for `IDUN_ADMIN_PASSWORD_HASH`. |
 | `idun-standalone export` | `config_io.py` | Removed; YAML export comes back with the materialized-config endpoints (deferred) |

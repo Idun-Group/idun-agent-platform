@@ -43,8 +43,12 @@ class TestStandaloneSpanExporter:
         threads = [threading.Thread(target=push) for _ in range(10)]
         for t in threads:
             t.start()
+        # Bound the join so a regression that deadlocks ``export()`` cannot
+        # hang the whole suite — fail fast and surface the regression
+        # instead.
         for t in threads:
-            t.join()
+            t.join(timeout=5)
+            assert not t.is_alive(), "worker thread hung during concurrent export"
         assert exporter.qsize() == 1000
         # No span should have triggered drop-oldest; the queue ceiling is
         # exactly the number of spans we pushed.
