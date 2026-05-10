@@ -40,6 +40,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import insert
@@ -223,7 +224,7 @@ class TraceWriter:
                     # previous batch failed; absorbing duplicates here
                     # preserves the previous ``ON CONFLICT DO NOTHING``
                     # semantics. First occurrence wins.
-                    seen: set[tuple[Any, bytes]] = set()
+                    seen: set[tuple[datetime, bytes]] = set()
                     deduped: list[dict[str, Any]] = []
                     for row in span_rows:
                         key = (row["started_at"], row["otel_span_id"])
@@ -231,13 +232,30 @@ class TraceWriter:
                             continue
                         seen.add(key)
                         deduped.append(row)
+                    dedup_dropped = len(span_rows) - len(deduped)
+                    if dedup_dropped:
+                        logger.debug(
+                            "trace writer dedup_dropped=%d batch_size=%d",
+                            dedup_dropped,
+                            len(span_rows),
+                        )
 
                     records = [_span_row_to_copy_tuple(r) for r in deduped]
-                    raw_conn = (await session.connection()).driver_connection
+                    # SQLAlchemy's ``AsyncConnection.connection`` accessor
+                    # raises ``InvalidRequestError`` by design (see
+                    # sqlalchemy.ext.asyncio.engine:AsyncConnection); the
+                    # driver-level asyncpg ``Connection`` is reachable
+                    # via ``get_raw_connection()`` → ``driver_connection``.
+                    # Going through the AsyncSession's connection keeps
+                    # the COPY call inside the session's outer transaction
+                    # so we don't open a separate pool checkout.
+                    async_conn = await session.connection()
+                    proxied = await async_conn.get_raw_connection()
+                    raw_conn = proxied.driver_connection
                     await raw_conn.copy_records_to_table(
                         "standalone_span",
                         records=records,
-                        columns=list(SPAN_COPY_COLUMNS),
+                        columns=SPAN_COPY_COLUMNS,
                     )
                 else:
                     # SQLite path unchanged — executemany via SQLAlchemy.

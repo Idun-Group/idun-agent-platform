@@ -61,6 +61,11 @@ async def _make_pg_pipeline(monkeypatch):
     """
     url = os.environ["STANDALONE_TEST_POSTGRES_URL"]
     monkeypatch.setenv("DATABASE_URL", url)
+    # Reset state before upgrade so a previous test that crashed mid-run
+    # cannot leave dirty schema for this one. ``downgrade_base`` is a
+    # no-op on an empty / unstamped database, so this is safe to call
+    # unconditionally as a setup-time fence.
+    await asyncio.to_thread(downgrade_base)
     await asyncio.to_thread(command.upgrade, _alembic_config(), "head")
     engine = create_async_engine(url)
     sm = async_sessionmaker(engine, expire_on_commit=False)
@@ -69,8 +74,9 @@ async def _make_pg_pipeline(monkeypatch):
 
 async def _wait_for(predicate, *, timeout_s: float = _DRAIN_TIMEOUT_S) -> bool:
     """Poll ``predicate`` until truthy or ``timeout_s`` elapses."""
-    deadline = asyncio.get_event_loop().time() + timeout_s
-    while asyncio.get_event_loop().time() < deadline:
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_s
+    while loop.time() < deadline:
         if await predicate():
             return True
         await asyncio.sleep(_DRAIN_TICK_S)

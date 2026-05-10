@@ -391,8 +391,11 @@ async def test_pg_writer_calls_copy_records_to_table_with_correct_columns():
     with the exact column tuple and the JSONB-serialized records.
 
     The writer reaches the asyncpg connection via
-    ``(await session.connection()).driver_connection``, so the fake
-    session here exposes the same shape.
+    ``(await async_conn.get_raw_connection()).driver_connection`` —
+    SQLAlchemy's ``AsyncConnection.connection`` accessor is a property
+    that raises ``InvalidRequestError`` by design, so going through
+    ``get_raw_connection()`` is the documented escape hatch. The fake
+    session below mirrors that shape.
     """
     from unittest.mock import AsyncMock, MagicMock
 
@@ -417,10 +420,13 @@ async def test_pg_writer_calls_copy_records_to_table_with_correct_columns():
     fake_bind = MagicMock()
     fake_bind.dialect.name = "postgresql"
 
-    # ``await session.connection()`` returns an SQLAlchemy connection
-    # whose ``.driver_connection`` is the raw asyncpg conn.
+    # ``await async_conn.get_raw_connection()`` returns the
+    # ``_ConnectionFairy`` proxy whose ``.driver_connection`` is the
+    # raw asyncpg conn. The fake mirrors that two-step shape.
+    proxied = MagicMock()
+    proxied.driver_connection = fake_conn
     sa_conn = MagicMock()
-    sa_conn.driver_connection = fake_conn
+    sa_conn.get_raw_connection = AsyncMock(return_value=proxied)
 
     fake_session = MagicMock()
     fake_session.get_bind = MagicMock(return_value=fake_bind)
@@ -471,7 +477,11 @@ async def test_pg_writer_calls_copy_records_to_table_with_correct_columns():
     await writer._drain_once()
 
     assert captured["table"] == "standalone_span"
-    assert captured["columns"] == list(SPAN_COPY_COLUMNS)
+    # The writer passes ``SPAN_COPY_COLUMNS`` as a tuple directly to
+    # avoid a per-batch list materialization. Compare the column set
+    # rather than the concrete sequence type so the test does not pin
+    # an implementation detail.
+    assert tuple(captured["columns"]) == SPAN_COPY_COLUMNS
     # records is a list[tuple[...]] with len == batch size
     assert len(captured["records"]) == 3
     # Each tuple has the right arity.
