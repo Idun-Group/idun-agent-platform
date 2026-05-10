@@ -326,3 +326,112 @@ async def test_get_trace_detail_depth_capped_at_32(
     # The recursive CTE caps at depth 32 (decision §28). The 33rd level
     # and below are silently truncated.
     assert depth <= 32
+
+
+async def test_delete_trace_by_id_removes_spans_too(
+    admin_app, async_session
+) -> None:
+    """Single-id DELETE cascades to spans for that trace."""
+    base = datetime(2026, 5, 9, 12, 0, 0, tzinfo=UTC)
+    trace_id = _trace_id(0xDD)
+    await _seed_trace(async_session, trace_id=trace_id, started_at=base)
+    trace_id_8 = trace_id[8:]
+    await _seed_span(
+        async_session,
+        trace_id_8=trace_id_8,
+        span_id=_span_id(0x10),
+        parent_span_id=None,
+        started_at=base,
+    )
+    await _seed_span(
+        async_session,
+        trace_id_8=trace_id_8,
+        span_id=_span_id(0x11),
+        parent_span_id=_span_id(0x10),
+        started_at=base + timedelta(milliseconds=5),
+    )
+
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete(f"/admin/api/v1/traces/{trace_id.hex()}")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["deleted"] is True
+    assert body["deletedSpans"] == 2
+
+    # Trace + spans gone.
+    from sqlalchemy import select as _select  # local import to avoid module-level
+
+    remaining_traces = (
+        await async_session.execute(_select(StandaloneTraceRow))
+    ).scalars().all()
+    remaining_spans = (
+        await async_session.execute(_select(StandaloneSpanRow))
+    ).scalars().all()
+    assert remaining_traces == []
+    assert remaining_spans == []
+
+
+async def test_delete_trace_404_when_unknown(admin_app) -> None:
+    """Unknown id → 404; no rows touched."""
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete("/admin/api/v1/traces/" + ("aa" * 16))
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "not_found"
+
+
+async def test_bulk_delete_with_model_filter(admin_app, async_session) -> None:
+    """Bulk DELETE with ``model`` filter only removes matching traces.
+
+    Spans for a deleted trace are also removed; spans for a surviving
+    trace stay put.
+    """
+    base = datetime(2026, 5, 9, 12, 0, 0, tzinfo=UTC)
+    keep_id = _trace_id(0xEE)
+    drop_id = _trace_id(0xEF)
+
+    await _seed_trace(
+        async_session,
+        trace_id=keep_id,
+        started_at=base,
+        models=["openai/gpt-4o"],
+    )
+    await _seed_trace(
+        async_session,
+        trace_id=drop_id,
+        started_at=base + timedelta(seconds=1),
+        models=["anthropic/claude-opus"],
+    )
+    await _seed_span(
+        async_session,
+        trace_id_8=keep_id[8:],
+        span_id=_span_id(0x21),
+        parent_span_id=None,
+        started_at=base,
+    )
+    await _seed_span(
+        async_session,
+        trace_id_8=drop_id[8:],
+        span_id=_span_id(0x22),
+        parent_span_id=None,
+        started_at=base + timedelta(seconds=1),
+    )
+
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete(
+            "/admin/api/v1/traces?model=anthropic%2Fclaude-opus"
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["deletedTraces"] == 1
+    assert body["deletedSpans"] == 1
+
+    from sqlalchemy import select as _select
+
+    remaining_traces = (
+        await async_session.execute(_select(StandaloneTraceRow))
+    ).scalars().all()
+    assert len(remaining_traces) == 1
+    assert remaining_traces[0].otel_trace_id == keep_id

@@ -14,7 +14,7 @@ for span tree assembly).
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import Field
 
@@ -134,6 +134,28 @@ class StandaloneTraceHealth(_CamelModel):
     max_queue_size: int
     overflow_count: int
     writer_running: bool
+
+
+class StandaloneTraceDeleteResult(_CamelModel):
+    """Body of a single ``DELETE /admin/api/v1/traces/{id}`` response.
+
+    Reports the deleted trace plus the cascaded span count so the UI
+    can show "removed N spans" without a follow-up read.
+    """
+
+    deleted: Literal[True] = True
+    deleted_spans: int
+
+
+class StandaloneTraceBulkDeleteResult(_CamelModel):
+    """Body of ``DELETE /admin/api/v1/traces`` (bulk by filter).
+
+    The filter shape mirrors :class:`StandaloneTraceListFilters` (minus
+    ``limit`` / ``cursor``); the response counts what was removed.
+    """
+
+    deleted_traces: int
+    deleted_spans: int
 
 
 class StandaloneTraceListResponse(_CamelModel):

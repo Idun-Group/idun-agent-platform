@@ -93,6 +93,8 @@ from .sso import (  # noqa: F401
 from .traces import (  # noqa: F401
     StandaloneSpanRead,
     StandaloneSpanTreeNode,
+    StandaloneTraceBulkDeleteResult,
+    StandaloneTraceDeleteResult,
     StandaloneTraceDetail,
     StandaloneTraceHealth,
     StandaloneTraceListFilters,

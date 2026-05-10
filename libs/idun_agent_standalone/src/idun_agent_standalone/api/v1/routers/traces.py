@@ -32,18 +32,21 @@ from idun_agent_schema.standalone import (
     StandaloneErrorCode,
     StandaloneSpanRead,
     StandaloneSpanTreeNode,
+    StandaloneTraceBulkDeleteResult,
+    StandaloneTraceDeleteResult,
     StandaloneTraceDetail,
     StandaloneTraceHealth,
     StandaloneTraceListFilters,
     StandaloneTraceListItem,
     StandaloneTraceListResponse,
 )
-from sqlalchemy import String, cast, select, text
+from sqlalchemy import String, cast, delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from idun_agent_standalone.api.v1.deps import SessionDep, require_auth
 from idun_agent_standalone.api.v1.errors import AdminAPIError
 from idun_agent_standalone.core.logging import get_logger
+from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
 from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTraceRow
 
 router = APIRouter(
@@ -441,4 +444,123 @@ async def get_trace_detail(
     return StandaloneTraceDetail(
         trace=_row_to_list_item(trace_row),
         tree=_build_tree(spans),
+    )
+
+
+@router.delete("/{otel_trace_id}", response_model=StandaloneTraceDeleteResult)
+async def delete_trace(
+    otel_trace_id: str,
+    session: SessionDep,
+) -> StandaloneTraceDeleteResult:
+    """Delete a single trace and cascade to its spans.
+
+    The trace row's PK is composite ``(started_at, otel_trace_id)`` so
+    we look it up first to grab ``started_at``, then delete by full PK.
+    Spans match on the 8-byte trace id slice. The 404 path leaves both
+    tables untouched.
+    """
+    trace_id_16 = _decode_trace_id_path(otel_trace_id)
+    trace_id_8 = trace_id_16[8:]
+
+    trace_row = (
+        await session.execute(
+            select(StandaloneTraceRow).where(
+                StandaloneTraceRow.otel_trace_id == trace_id_16
+            )
+        )
+    ).scalar_one_or_none()
+    if trace_row is None:
+        raise AdminAPIError(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            error=StandaloneAdminError(
+                code=StandaloneErrorCode.NOT_FOUND,
+                message="No trace found for the given id.",
+            ),
+        )
+
+    span_result = await session.execute(
+        delete(StandaloneSpanRow).where(
+            StandaloneSpanRow.otel_trace_id == trace_id_8
+        )
+    )
+    deleted_spans = span_result.rowcount or 0
+
+    await session.execute(
+        delete(StandaloneTraceRow).where(
+            StandaloneTraceRow.otel_trace_id == trace_id_16
+        )
+    )
+    await session.commit()
+
+    logger.info(
+        "admin.traces.delete trace_id=%s spans=%d",
+        trace_id_16.hex(),
+        deleted_spans,
+    )
+    return StandaloneTraceDeleteResult(deleted_spans=deleted_spans)
+
+
+@router.delete("", response_model=StandaloneTraceBulkDeleteResult)
+async def bulk_delete_traces(
+    session: SessionDep,
+    started_after: datetime | None = None,
+    started_before: datetime | None = None,
+    model: str | None = None,
+    status: str | None = None,
+    user_id: str | None = None,
+    session_id: str | None = None,
+    name_contains: str | None = None,
+) -> StandaloneTraceBulkDeleteResult:
+    """Bulk-delete traces matching the same filters as ``GET ``.
+
+    Strategy: select the matching trace ids first, then DELETE both
+    tables by id. Two queries instead of a join keeps the SQL portable
+    across PG and SQLite and avoids ``DELETE ... USING`` syntax that
+    SQLite does not support.
+    """
+    filters = StandaloneTraceListFilters(
+        started_after=started_after,
+        started_before=started_before,
+        model=model,
+        status=status,
+        user_id=user_id,
+        session_id=session_id,
+        name_contains=name_contains,
+    )
+
+    is_pg = _is_postgres(session)
+    select_ids = select(
+        StandaloneTraceRow.started_at, StandaloneTraceRow.otel_trace_id
+    )
+    select_ids = _apply_filters(select_ids, filters, is_postgres=is_pg)
+    rows = (await session.execute(select_ids)).all()
+    if not rows:
+        return StandaloneTraceBulkDeleteResult(deleted_traces=0, deleted_spans=0)
+
+    trace_ids_16 = [row.otel_trace_id for row in rows]
+    trace_ids_8 = [tid[8:] for tid in trace_ids_16]
+
+    span_result = await session.execute(
+        delete(StandaloneSpanRow).where(
+            StandaloneSpanRow.otel_trace_id.in_(trace_ids_8)
+        )
+    )
+    deleted_spans = span_result.rowcount or 0
+
+    trace_result = await session.execute(
+        delete(StandaloneTraceRow).where(
+            StandaloneTraceRow.otel_trace_id.in_(trace_ids_16)
+        )
+    )
+    deleted_traces = trace_result.rowcount or 0
+    await session.commit()
+
+    logger.info(
+        "admin.traces.bulk_delete traces=%d spans=%d",
+        deleted_traces,
+        deleted_spans,
+    )
+    return StandaloneTraceBulkDeleteResult(
+        deleted_traces=deleted_traces,
+        deleted_spans=deleted_spans,
     )
