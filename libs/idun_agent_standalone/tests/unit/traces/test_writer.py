@@ -86,14 +86,6 @@ async def test_writer_failopen_logs_and_continues(tmp_path, caplog):
         max_export_batch_size=5,
         schedule_delay_millis=20,
     )
-    # Alembic's ``fileConfig()`` (run by upstream integration tests) sets
-    # ``disable_existing_loggers=True`` by default, which silently turns
-    # ``disabled=True`` on every already-imported module logger. caplog
-    # cannot capture from a disabled logger regardless of level or
-    # propagation, so we re-enable the specific logger the source module
-    # uses before exercising it.
-    writer_module.logger.disabled = False
-    writer_module.logger.propagate = True
     with caplog.at_level(logging.ERROR, logger=writer_module.logger.name):
         await writer.start()
         try:

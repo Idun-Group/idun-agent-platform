@@ -21,8 +21,14 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 config = context.config
 
+# Honor the alembic.ini logger configuration without disabling every
+# already-configured logger. The default ``disable_existing_loggers=True``
+# silently turns off every ``idun_agent_standalone.*`` logger when alembic
+# runs in-process (e.g. test fixtures driving Alembic upgrade), which made
+# caplog-based log assertions in three trace tests fail under full-suite
+# ordering until the workaround was removed by this PR.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 
