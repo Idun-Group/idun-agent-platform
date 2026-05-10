@@ -197,19 +197,25 @@ describe("TraceDetailPage", () => {
     // fireEvent.click alone is insufficient under jsdom.
     await userEvent.setup().click(waterfallTab);
 
-    // Waterfall renders all 3 spans as listitems; tree role disappears.
+    // Waterfall renders each span as a keyboard-operable button; the
+    // tree role disappears once the user switches to the Waterfall tab.
     await waitFor(() => {
-      expect(screen.getAllByRole("listitem")).toHaveLength(3);
+      // The "Waterfall" tab itself is also a button -- scope to the
+      // waterfall group container to avoid counting it.
+      const group = screen.getByRole("group", { name: /span waterfall/i });
+      expect(
+        group.querySelectorAll('[role="button"][data-span-id]'),
+      ).toHaveLength(3);
     });
     expect(screen.queryAllByRole("treeitem")).toHaveLength(0);
 
     // Selection is preserved across the view switch — same span on
-    // the rail; matching listitem flagged via data-selected.
+    // the rail; matching button flagged via data-selected.
     expect(screen.getByTestId("span-detail-rail")).toHaveTextContent(
       "tool.search",
     );
     const selected = document.querySelector(
-      '[role="listitem"][data-selected="true"]',
+      '[role="button"][data-selected="true"]',
     );
     expect(selected?.getAttribute("data-span-id")).toBe("child-tool");
   });

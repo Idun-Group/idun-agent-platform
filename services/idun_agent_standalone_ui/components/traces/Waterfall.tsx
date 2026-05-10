@@ -148,7 +148,7 @@ export function Waterfall({
   return (
     <TooltipProvider>
       <div
-        role="list"
+        role="group"
         aria-label="Span waterfall"
         className={cn("flex flex-col gap-1 text-xs", className)}
       >
@@ -164,15 +164,27 @@ export function Waterfall({
           return (
             <div
               key={row.span.otelSpanId}
-              role="listitem"
+              role="button"
+              tabIndex={0}
+              aria-pressed={isSelected}
+              aria-label={`Span ${row.span.name}, ${row.durationMs} ms`}
               data-span-id={row.span.otelSpanId}
               data-critical={isCritical || undefined}
               data-selected={isSelected || undefined}
               className={cn(
-                "group/wf-row grid cursor-pointer grid-cols-[200px_1fr] items-center gap-3 rounded-md px-2 py-1 hover:bg-muted/50",
+                "group/wf-row grid cursor-pointer grid-cols-[200px_1fr] items-center gap-3 rounded-md px-2 py-1 outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring",
                 isSelected && "bg-muted",
               )}
               onClick={() => onSelect(row.span)}
+              onKeyDown={(event) => {
+                // Activate on Enter or Space, matching the WAI-ARIA
+                // button pattern. ``preventDefault`` on Space stops the
+                // page from scrolling.
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelect(row.span);
+                }
+              }}
             >
               <div className="flex min-w-0 items-center gap-2">
                 <SpanKindIcon kind={row.span.kind} size={14} />

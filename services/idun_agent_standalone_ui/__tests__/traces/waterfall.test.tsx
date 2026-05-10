@@ -74,12 +74,15 @@ const TREE: StandaloneSpanTreeNode[] = [
 ];
 
 describe("Waterfall", () => {
-  it("renders a list with one bar per span and the right name labels", () => {
+  it("renders a group with one button per span and the right name labels", () => {
     render(
       <Waterfall nodes={TREE} selectedSpanId={null} onSelect={vi.fn()} />,
     );
-    expect(screen.getByRole("list", { name: /span waterfall/i })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    expect(
+      screen.getByRole("group", { name: /span waterfall/i }),
+    ).toBeInTheDocument();
+    // Each row is a button so it's keyboard-operable.
+    expect(screen.getAllByRole("button")).toHaveLength(3);
     expect(screen.getByText("root")).toBeInTheDocument();
     expect(screen.getByText("child-a")).toBeInTheDocument();
     expect(screen.getByText("child-b")).toBeInTheDocument();
@@ -111,7 +114,7 @@ describe("Waterfall", () => {
     render(
       <Waterfall nodes={TREE} selectedSpanId={null} onSelect={vi.fn()} />,
     );
-    const items = screen.getAllByRole("listitem");
+    const items = screen.getAllByRole("button");
     // Depth 0 has only root → critical.
     expect(items[0]).toHaveAttribute("data-critical", "true");
     // Depth 1: child-a (600ms) > child-b (200ms) → child-a is critical.
@@ -124,10 +127,44 @@ describe("Waterfall", () => {
     render(
       <Waterfall nodes={TREE} selectedSpanId={null} onSelect={onSelect} />,
     );
-    fireEvent.click(screen.getAllByRole("listitem")[1]);
+    fireEvent.click(screen.getAllByRole("button")[1]);
     expect(onSelect).toHaveBeenCalledWith(
       expect.objectContaining({ otelSpanId: "child-a" }),
     );
+  });
+
+  it("activates the row on Enter and Space (keyboard-operable)", () => {
+    const onSelect = vi.fn();
+    render(
+      <Waterfall nodes={TREE} selectedSpanId={null} onSelect={onSelect} />,
+    );
+    const items = screen.getAllByRole("button");
+    // Each row must be reachable via Tab.
+    expect(items[0]).toHaveAttribute("tabindex", "0");
+    expect(items[1]).toHaveAttribute("tabindex", "0");
+
+    fireEvent.keyDown(items[1], { key: "Enter" });
+    expect(onSelect).toHaveBeenCalledWith(
+      expect.objectContaining({ otelSpanId: "child-a" }),
+    );
+
+    fireEvent.keyDown(items[2], { key: " " });
+    expect(onSelect).toHaveBeenLastCalledWith(
+      expect.objectContaining({ otelSpanId: "child-b" }),
+    );
+  });
+
+  it("reflects selection through aria-pressed", () => {
+    render(
+      <Waterfall
+        nodes={TREE}
+        selectedSpanId="child-b"
+        onSelect={vi.fn()}
+      />,
+    );
+    const items = screen.getAllByRole("button");
+    expect(items[2]).toHaveAttribute("aria-pressed", "true");
+    expect(items[0]).toHaveAttribute("aria-pressed", "false");
   });
 
   it("flags the selected row with data-selected", () => {
@@ -138,7 +175,7 @@ describe("Waterfall", () => {
         onSelect={vi.fn()}
       />,
     );
-    const items = screen.getAllByRole("listitem");
+    const items = screen.getAllByRole("button");
     expect(items[2]).toHaveAttribute("data-selected", "true");
     expect(items[0]).not.toHaveAttribute("data-selected");
   });

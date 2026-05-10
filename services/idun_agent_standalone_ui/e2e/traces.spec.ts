@@ -262,15 +262,17 @@ test("trace detail — Tree, Waterfall, SpanDetailRail tabs", async ({
   // Switch to the Waterfall tab.
   await page.getByRole("tab", { name: /waterfall/i }).click();
 
-  // Waterfall renders a listitem per span. Scope to the labelled
-  // "Span waterfall" container — the admin shell sidebar exposes
-  // sidebar entries as listitems too.
-  const waterfall = page.getByRole("list", { name: /span waterfall/i });
-  await expect(waterfall.getByRole("listitem")).toHaveCount(3);
+  // Waterfall renders each span as a keyboard-operable button. Scope
+  // to the labelled "Span waterfall" container so we don't pick up
+  // unrelated buttons elsewhere on the page.
+  const waterfall = page.getByRole("group", { name: /span waterfall/i });
+  await expect(
+    waterfall.locator('[role="button"][data-span-id]'),
+  ).toHaveCount(3);
 
   // Click the LLM child span in the waterfall.
   await waterfall
-    .locator('[role="listitem"][data-span-id="childllm00000000"]')
+    .locator('[role="button"][data-span-id="childllm00000000"]')
     .click();
 
   // SpanDetailRail shows that span's name + Info tab is the default.
