@@ -16,6 +16,7 @@ from typing import Any
 
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
+from opentelemetry.trace import StatusCode
 
 from . import _attrs, costs
 
@@ -169,6 +170,15 @@ class StandaloneSpanExporter(SpanExporter):
             else None
         )
 
+        # Normalise OTel ``StatusCode`` to its numeric value. The SDK
+        # returns the enum member, but tests mock it with a bare int --
+        # both paths converge on ``status_value`` so the mapping below
+        # is consistent.
+        raw_status = span.status.status_code
+        status_value = (
+            raw_status.value if isinstance(raw_status, StatusCode) else raw_status
+        )
+
         prompt_tokens = llm["prompt_tokens"]
         completion_tokens = llm["completion_tokens"]
         total_tokens: int | None
@@ -196,7 +206,18 @@ class StandaloneSpanExporter(SpanExporter):
             "cost_usd": cost_breakdown["total"] if cost_breakdown else None,
             "cost_breakdown": cost_breakdown,
             "cost_source": costs.snapshot_version() if cost_breakdown else None,
-            "status": "OK" if span.status.status_code == 1 else "ERROR",
+            # OTel ``StatusCode`` is a 3-value enum: UNSET (0), OK (1),
+            # ERROR (2). Mapping non-OK to ERROR conflates UNSET (the
+            # default for a span that ended without an explicit status)
+            # with a real failure -- store NULL for UNSET so the trace
+            # status surfaces correctly downstream.
+            "status": (
+                "OK"
+                if status_value == StatusCode.OK.value
+                else "ERROR"
+                if status_value == StatusCode.ERROR.value
+                else None
+            ),
             "attributes": attrs,
             "events": [
                 {"name": e.name, "ts": e.timestamp} for e in (span.events or [])
