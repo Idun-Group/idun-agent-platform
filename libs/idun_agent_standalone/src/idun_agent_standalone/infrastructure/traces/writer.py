@@ -6,6 +6,24 @@ This writer lives on the FastAPI event loop, drains the queue every
 ``schedule_delay_millis`` milliseconds (or whenever the writer's stop
 event flips), and bulk-inserts the rows via ``session.execute(insert)``.
 
+The writer is also responsible for finalising ``standalone_trace`` rows.
+For every drained batch it groups the spans by full 16-byte trace_id
+and, **only when the batch contains a root span** (``parent_span_id IS
+None``), it emits one aggregate trace row per trace. Late spans of a
+trace whose root has already finalised do NOT retroactively update the
+trace row. This is an intentional v1 trade-off because:
+
+  * the BatchSpanProcessor's default ``schedule_delay_millis=2000``
+    keeps most traces inside one batch;
+  * trace-row aggregates are documented as approximate (design KB §2 —
+    "Tables");
+  * the trace detail view recomputes aggregates from spans on read,
+    so the source of truth for analytics stays span-derived.
+
+We use ``ON CONFLICT DO NOTHING`` (PG) / ``INSERT OR IGNORE`` (SQLite)
+so a duplicate root-span flush does not raise — the first finalise wins,
+later attempts are no-ops.
+
 Locked design:
 ``~/Documents/GitHub/idun-dev/tasks/trace-feature-08-05-2026/08-otel-pipeline-integration.md``
 ``~/Documents/GitHub/idun-dev/tasks/trace-feature-08-05-2026/13-sizing-perf.md``
@@ -24,10 +42,14 @@ import logging
 from typing import Any
 
 from sqlalchemy import insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
+from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTraceRow
 
+from ._finalizer import build_trace_rows
 from .exporter import StandaloneSpanExporter
 
 logger = logging.getLogger(__name__)
@@ -106,13 +128,21 @@ class TraceWriter:
         """Pull up to ``max_batch`` rows and insert them.
 
         Fail-open: any exception from the insert is logged and swallowed.
+        Both passes (span insert + trace finalise) live in the same
+        session/transaction so a partial trace row never lands without
+        its spans.
         """
         batch: list[dict[str, Any]] = []
         n = self._exporter.drain_into(batch, self._max_batch)
         if n == 0:
             return
 
-        rows: list[dict[str, Any]] = []
+        # Trace rows are derived from the *raw* batch (we need
+        # ``_full_trace_id`` to fill the 16-byte trace PK). Build them
+        # before stripping internal keys for the span insert.
+        trace_rows = build_trace_rows(batch)
+
+        span_rows: list[dict[str, Any]] = []
         for raw in batch:
             row = {k: v for k, v in raw.items() if k not in _INTERNAL_KEYS}
             # SQLite has no GENERATED ALWAYS AS — the migration declares
@@ -124,14 +154,41 @@ class TraceWriter:
                 ct = row.get("completion_tokens")
                 if pt is not None or ct is not None:
                     row["total_tokens"] = (pt or 0) + (ct or 0)
-            rows.append(row)
+            span_rows.append(row)
 
         try:
             async with self._session_factory() as session:
-                await session.execute(insert(StandaloneSpanRow), rows)
+                await session.execute(insert(StandaloneSpanRow), span_rows)
+                if trace_rows:
+                    await self._upsert_traces(session, trace_rows)
                 await session.commit()
         except Exception:
             logger.exception(
-                "trace writer batch insert failed (rows=%d) — dropping batch",
-                len(rows),
+                "trace writer batch insert failed "
+                "(spans=%d, traces=%d) — dropping batch",
+                len(span_rows),
+                len(trace_rows),
             )
+
+    async def _upsert_traces(
+        self, session: Any, trace_rows: list[dict[str, Any]]
+    ) -> None:
+        """Insert trace rows with dialect-specific ``DO NOTHING`` on conflict.
+
+        See module docstring — first finalise wins, later attempts are
+        no-ops, which trades full-history aggregation for write-path
+        simplicity. Acceptable per design KB § Tables.
+        """
+        dialect = session.get_bind().dialect.name
+        if dialect == "postgresql":
+            stmt = pg_insert(StandaloneTraceRow).values(trace_rows)
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=["started_at", "otel_trace_id"]
+            )
+            await session.execute(stmt)
+        else:
+            stmt = sqlite_insert(StandaloneTraceRow).values(trace_rows)
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=["started_at", "otel_trace_id"]
+            )
+            await session.execute(stmt)
