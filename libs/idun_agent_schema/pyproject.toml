@@ -64,11 +64,6 @@ extend-ignore = [
   "UP038",
 ]
 
-[tool.black]
-line-length = 88
-target-version = ["py312", "py313"]
-include = "\\.pyi?$"
-
 [tool.mypy]
 python_version = "3.12"
 warn_return_any = true

@@ -162,7 +162,7 @@ The empty `admin/`, `auth/`, `theme/` directories remain on disk so import paths
 
 ## Conventions
 
-Same as the rest of the monorepo: ruff + black, mypy, async throughout, schema lives in `idun_agent_schema`.
+Same as the rest of the monorepo: ruff (lint + format) + mypy, async throughout, schema lives in `idun_agent_schema`.
 
 **Don't duplicate engine logic.** The engine is the single source of truth for runtime config. If a helper feels useful here, push it down into engine first; standalone consumes it. Assembly in this package is JSON normalization plus the manager-shape converters — nothing that overlaps with adapter, observability, guardrails, or MCP behavior already owned by the engine. **Why:** standalone is a thin composition layer over engine. Duplicating logic here causes drift between adapters, observability, and the rebuild-reload pipeline, and breaks the constitutional rule in the root CLAUDE.md ("Engine is the runtime source of truth — `idun_agent_standalone` never duplicates engine logic, it composes it").
 
