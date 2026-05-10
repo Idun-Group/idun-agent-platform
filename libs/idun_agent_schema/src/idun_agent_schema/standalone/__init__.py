@@ -90,3 +90,12 @@ from .sso import (  # noqa: F401
     StandaloneSsoPatch,
     StandaloneSsoRead,
 )
+from .traces import (  # noqa: F401
+    StandaloneSpanRead,
+    StandaloneSpanTreeNode,
+    StandaloneTraceDetail,
+    StandaloneTraceHealth,
+    StandaloneTraceListFilters,
+    StandaloneTraceListItem,
+    StandaloneTraceListResponse,
+)
