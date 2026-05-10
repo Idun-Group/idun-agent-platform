@@ -221,6 +221,30 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
             for r in app.router.routes
             if not (isinstance(r, APIRoute) and r.path == "/" and "GET" in r.methods)
         ]
+
+        # SPA rewrite for the trace-detail dynamic route. Next.js static
+        # export emits the placeholder shell at admin/traces/__trace__/;
+        # arbitrary trace ids in the URL path won't resolve against
+        # StaticFiles because each id is a different filesystem path.
+        # Serve the placeholder for any /admin/traces/<id> request and
+        # let the client read the real id from window.location.
+        from fastapi.responses import FileResponse
+
+        _trace_shell = ui_dir / "admin" / "traces" / "__trace__" / "index.html"
+        _spa_root_shell = ui_dir / "index.html"
+
+        @app.get("/admin/traces/{trace_id}", include_in_schema=False)
+        async def _trace_detail_spa_shell(trace_id: str) -> FileResponse:
+            return FileResponse(
+                _trace_shell if _trace_shell.is_file() else _spa_root_shell
+            )
+
+        @app.get("/admin/traces/{trace_id}/", include_in_schema=False)
+        async def _trace_detail_spa_shell_slash(trace_id: str) -> FileResponse:
+            return FileResponse(
+                _trace_shell if _trace_shell.is_file() else _spa_root_shell
+            )
+
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
         logger.info("boot ui mounted from=%s", ui_dir)
 
