@@ -1,5 +1,4 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { Search } from 'lucide-react';
 import {
     Wrapper, HeaderRow, Label, SearchWrap, SearchInput,
@@ -38,9 +37,7 @@ export const CapabilityCatalog = ({
     const [query, setQuery] = useState('');
 
     useEffect(() => {
-        const id = setTimeout(() => {
-            flushSync(() => setQuery(rawQuery.trim().toLowerCase()));
-        }, 200);
+        const id = setTimeout(() => setQuery(rawQuery.trim().toLowerCase()), 200);
         return () => clearTimeout(id);
     }, [rawQuery]);
 

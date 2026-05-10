@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { Globe, Lock } from 'lucide-react';
 import { CapabilityCatalog, CapabilityItem } from './component';
 
@@ -74,7 +74,9 @@ describe('<CapabilityCatalog>', () => {
         vi.useFakeTimers();
         render(<CapabilityCatalog items={many} onSelect={() => {}} />);
         fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'epsilon' } });
-        vi.advanceTimersByTime(250);
+        act(() => {
+            vi.advanceTimersByTime(250);
+        });
         expect(screen.queryByText('Alpha')).toBeNull();
         expect(screen.getByText('Epsilon')).toBeInTheDocument();
         vi.useRealTimers();
