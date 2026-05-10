@@ -46,6 +46,9 @@ class TestStandaloneSpanExporter:
         for t in threads:
             t.join()
         assert exporter.qsize() == 1000
+        # No span should have triggered drop-oldest; the queue ceiling is
+        # exactly the number of spans we pushed.
+        assert exporter.overflow_count == 0
 
     def test_status_unset_maps_to_none_not_error(self):
         """OTel ``StatusCode.UNSET`` must NOT collapse to ``"ERROR"``.

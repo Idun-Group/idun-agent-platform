@@ -10,7 +10,7 @@ pool and surface as noise in shutdown logs.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import Any
+from types import TracebackType
 from unittest.mock import AsyncMock
 
 import pytest
@@ -49,17 +49,22 @@ async def test_lifespan_stops_trace_tasks_before_db_engine_dispose(monkeypatch):
     # ``sessionmaker()`` must return an async-context manager because
     # ``create_standalone_app`` opens a session against it on boot.
     class _StubSession:
-        async def __aenter__(self) -> Any:
+        async def __aenter__(self) -> _StubSession:
             return self
 
-        async def __aexit__(self, *exc: Any) -> None:
+        async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: TracebackType | None,
+        ) -> None:
             return None
 
     monkeypatch.setattr(
         app_module, "create_sessionmaker", lambda *a, **kw: lambda: _StubSession()
     )
 
-    async def _no_assemble(*_a: Any, **_kw: Any) -> None:
+    async def _no_assemble(*_a: object, **_kw: object) -> None:
         return None
 
     monkeypatch.setattr(app_module, "assemble_engine_config", _no_assemble)
@@ -125,17 +130,22 @@ async def test_lifespan_disposes_engine_when_no_trace_tasks(monkeypatch):
     # ``sessionmaker()`` must return an async-context manager because
     # ``create_standalone_app`` opens a session against it on boot.
     class _StubSession:
-        async def __aenter__(self) -> Any:
+        async def __aenter__(self) -> _StubSession:
             return self
 
-        async def __aexit__(self, *exc: Any) -> None:
+        async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: TracebackType | None,
+        ) -> None:
             return None
 
     monkeypatch.setattr(
         app_module, "create_sessionmaker", lambda *a, **kw: lambda: _StubSession()
     )
 
-    async def _no_assemble(*_a: Any, **_kw: Any) -> None:
+    async def _no_assemble(*_a: object, **_kw: object) -> None:
         return None
 
     monkeypatch.setattr(app_module, "assemble_engine_config", _no_assemble)
