@@ -152,7 +152,7 @@ export default function TracesPage() {
 
   // Wire the active page to the cursor; the accumulator merges pages.
   const apiFilters = useMemo(() => toApiFilters(filters), [filters]);
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["traces", "list", apiFilters, cursor ?? null],
     queryFn: () => listTraces({ ...apiFilters, cursor }),
   });
@@ -198,8 +198,18 @@ export default function TracesPage() {
     if (data?.nextCursor) setCursor(data.nextCursor);
   };
 
-  const showEmpty = !isLoading && items.length === 0 && !data?.nextCursor;
+  // ``isError`` takes precedence over ``showEmpty`` so a failed
+  // request does not masquerade as "no traces yet" -- a 401, 500, or
+  // network error must be visible to the operator.
+  const showEmpty =
+    !isLoading && !isError && items.length === 0 && !data?.nextCursor;
   const totalColumns = 7 + Object.values(visibleColumns).filter(Boolean).length;
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "Unable to load traces.";
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-7xl">
@@ -377,6 +387,21 @@ export default function TracesPage() {
                   ))}
                 </TableRow>
               ))
+            ) : isError ? (
+              <TableRow>
+                <TableCell
+                  colSpan={totalColumns}
+                  className="py-12 text-center text-sm"
+                  data-testid="trace-list-error"
+                >
+                  <div className="flex flex-col items-center gap-2 text-destructive">
+                    <span className="font-medium">Could not load traces.</span>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {errorMessage}
+                    </span>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : showEmpty ? (
               <TableRow>
                 <TableCell

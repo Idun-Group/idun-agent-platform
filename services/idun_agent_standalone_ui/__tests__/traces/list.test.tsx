@@ -122,6 +122,24 @@ describe("TracesPage list view", () => {
     });
   });
 
+  it("renders an error banner when listTraces fails (not the empty state)", async () => {
+    vi.spyOn(tracesApi, "listTraces").mockRejectedValue(
+      new Error("HTTP 500: server exploded"),
+    );
+
+    render(withQuery(<TracesPage />));
+
+    // Error row appears, empty-state copy does NOT.
+    const errorCell = await screen.findByTestId("trace-list-error");
+    expect(errorCell).toHaveTextContent("Could not load traces.");
+    expect(errorCell).toHaveTextContent("HTTP 500: server exploded");
+    expect(
+      screen.queryByText(
+        /No traces yet — run an agent invocation to see traces appear here\./,
+      ),
+    ).toBeNull();
+  });
+
   it("re-issues the query with name_contains when the user submits the search", async () => {
     const list = vi
       .spyOn(tracesApi, "listTraces")
