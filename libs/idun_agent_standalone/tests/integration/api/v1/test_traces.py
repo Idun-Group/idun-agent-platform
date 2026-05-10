@@ -226,7 +226,12 @@ async def test_list_traces_pagination_cursor_round_trip(
 
 
 async def test_health_endpoint_returns_zero_when_pipeline_absent(admin_app) -> None:
-    """No ``app.state.trace_exporter`` → health returns zeroes/idle."""
+    """No ``app.state.trace_exporter`` → health returns zeroes/idle.
+
+    The fixture does not attach a ``db_engine`` to ``app.state`` (it
+    stubs the sessionmaker directly), so ``database_dialect`` falls
+    back to ``"unknown"`` — exercising the safe-default branch.
+    """
     transport = ASGITransport(app=admin_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/admin/api/v1/traces/_health")
@@ -237,6 +242,7 @@ async def test_health_endpoint_returns_zero_when_pipeline_absent(admin_app) -> N
         "maxQueueSize": 0,
         "overflowCount": 0,
         "writerRunning": False,
+        "databaseDialect": "unknown",
     }
 
 

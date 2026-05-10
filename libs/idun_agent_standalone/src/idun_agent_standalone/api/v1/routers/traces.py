@@ -242,6 +242,21 @@ async def list_traces(
     )
 
 
+def _read_database_dialect(request: Request) -> str:
+    """Read the SQLAlchemy bind dialect off ``app.state.db_engine``.
+
+    Returns ``"unknown"`` when no engine is attached (test harness, very
+    early bootstrap) so the UI banner code can branch without crashing
+    the health probe. The wire shape is the SQLAlchemy dialect name —
+    ``"sqlite"``, ``"postgresql"``, etc.
+    """
+    db_engine = getattr(request.app.state, "db_engine", None)
+    if db_engine is None:
+        return "unknown"
+    dialect = getattr(db_engine, "dialect", None)
+    return getattr(dialect, "name", "unknown") or "unknown"
+
+
 @router.get("/_health", response_model=StandaloneTraceHealth)
 async def trace_pipeline_health(request: Request) -> StandaloneTraceHealth:
     """Return queue depth + drop count from the running exporter.
@@ -254,15 +269,21 @@ async def trace_pipeline_health(request: Request) -> StandaloneTraceHealth:
     Declared **before** the ``/{otel_trace_id}`` route so the literal
     path takes precedence over the path-parameter route at match time
     — FastAPI iterates in declaration order.
+
+    Also surfaces ``database_dialect`` (read off the sessionmaker bind)
+    so the UI can conditionally render the SQLite operational banner
+    without a second round-trip.
     """
     exporter = getattr(request.app.state, "trace_exporter", None)
     writer = getattr(request.app.state, "trace_writer", None)
+    database_dialect = _read_database_dialect(request)
     if exporter is None:
         return StandaloneTraceHealth(
             queue_depth=0,
             max_queue_size=0,
             overflow_count=0,
             writer_running=False,
+            database_dialect=database_dialect,
         )
 
     return StandaloneTraceHealth(
@@ -270,6 +291,7 @@ async def trace_pipeline_health(request: Request) -> StandaloneTraceHealth:
         max_queue_size=getattr(exporter, "max_queue_size", 0),
         overflow_count=getattr(exporter, "overflow_count", 0),
         writer_running=bool(writer is not None and getattr(writer, "running", False)),
+        database_dialect=database_dialect,
     )
 
 

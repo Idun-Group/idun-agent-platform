@@ -128,12 +128,18 @@ class StandaloneTraceHealth(_CamelModel):
     trace pipeline is not attached (engine booted without traces) the
     router returns zeroes + ``writer_running=False`` instead of 404 so
     the UI panel can render a stable "pipeline idle" state.
+
+    ``database_dialect`` lets the UI conditionally render the SQLite
+    operational banner without a second round-trip; it mirrors the
+    SQLAlchemy bind dialect name (``"sqlite"`` or ``"postgresql"``)
+    and falls back to ``"unknown"`` when no bind is reachable.
     """
 
     queue_depth: int
     max_queue_size: int
     overflow_count: int
     writer_running: bool
+    database_dialect: str = "unknown"
 
 
 class StandaloneTraceDeleteResult(_CamelModel):

@@ -119,12 +119,18 @@ export type StandaloneTraceListResponse = {
  *
  * When the trace pipeline is not attached the router returns zeroes
  * + `writerRunning: false` (a 404-free idle state for the UI panel).
+ *
+ * `databaseDialect` is the SQLAlchemy bind dialect name read off the
+ * standalone DB engine (`"sqlite"`, `"postgresql"`, ...). It falls
+ * back to `"unknown"` when the engine isn't reachable so the SQLite
+ * banner only renders on a confirmed signal.
  */
 export type StandaloneTraceHealth = {
   queueDepth: number;
   maxQueueSize: number;
   overflowCount: number;
   writerRunning: boolean;
+  databaseDialect: string;
 };
 
 /**
