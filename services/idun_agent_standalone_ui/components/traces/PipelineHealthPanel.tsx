@@ -36,7 +36,7 @@ import {
   ShieldAlertIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
@@ -65,9 +65,32 @@ export function PipelineHealthPanel({ className }: PipelineHealthPanelProps) {
     },
   });
 
-  // Operator-controlled collapse only applies on a healthy state. A
-  // degraded state always wins and re-expands.
-  const [manuallyCollapsed, setManuallyCollapsed] = useState(false);
+  // Operator-controlled expansion only applies on a healthy state. A
+  // degraded state always wins and re-expands. The default is the
+  // one-line collapsed pill; clicking it sets ``manuallyExpanded=true``;
+  // clicking Hide sets it back to false. The variable was renamed from
+  // ``manuallyCollapsed`` because the inverse name made every render
+  // guard read as a double-negative — the prior implementation's Hide
+  // button was unreachable as a result.
+  const [manuallyExpanded, setManuallyExpanded] = useState(false);
+
+  // Whether the panel is currently rendering data we already know is
+  // healthy. Captured outside the conditional so the reset-on-degraded
+  // effect below can depend on it without re-evaluating fetch state.
+  const drops = data?.overflowCount ?? 0;
+  const healthy = data ? drops === 0 && data.writerRunning : null;
+
+  // Degraded → healthy transitions reset the operator's expand intent.
+  // Without this, an operator who clicked the pill while healthy, saw
+  // a degraded blip, and then returned to healthy would stay in the
+  // (now-irrelevant) expanded view forever. Aligns with the SPEC line
+  // "degraded ALWAYS wins" — manual expansion only applies to the
+  // current healthy stretch.
+  useEffect(() => {
+    if (healthy === false) {
+      setManuallyExpanded(false);
+    }
+  }, [healthy]);
 
   // Dedicated 401 surface so the operator gets a signpost back to
   // /login instead of an unexplained empty toolbar (#30).
@@ -102,17 +125,14 @@ export function PipelineHealthPanel({ className }: PipelineHealthPanelProps) {
     return null;
   }
 
-  const drops = data.overflowCount;
-  const healthy = drops === 0 && data.writerRunning;
-
   // Healthy + collapsed (default unless operator un-collapsed). Renders
-  // a one-line indicator. Click expands locally for one render; the
-  // next 5-second poll re-collapses if still healthy.
-  if (healthy && !manuallyCollapsed) {
+  // a one-line indicator. Click expands locally; clicking Hide on the
+  // expanded panel returns to this collapsed state.
+  if (healthy && !manuallyExpanded) {
     return (
       <button
         type="button"
-        onClick={() => setManuallyCollapsed(true)}
+        onClick={() => setManuallyExpanded(true)}
         aria-label="Trace pipeline OK — click to expand details"
         data-testid="pipeline-health-collapsed"
         className={cn(
@@ -197,12 +217,12 @@ export function PipelineHealthPanel({ className }: PipelineHealthPanelProps) {
         </span>
       </span>
 
-      {healthy && manuallyCollapsed ? null : healthy ? (
+      {healthy && manuallyExpanded ? (
         <Button
           variant="ghost"
           size="sm"
           className="ml-auto h-6 px-2 text-[11px]"
-          onClick={() => setManuallyCollapsed(true)}
+          onClick={() => setManuallyExpanded(false)}
           aria-label="Collapse pipeline health"
           data-testid="pipeline-health-collapse"
         >

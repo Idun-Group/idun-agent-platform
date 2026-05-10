@@ -35,7 +35,9 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -402,20 +404,22 @@ export default function TracesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ANY_VALUE}>Any user</SelectItem>
-              <DropdownMenuLabel className="px-2 py-1 text-[10px] font-normal text-muted-foreground">
-                (observed in this page)
-              </DropdownMenuLabel>
-              {userOptions.length === 0 ? (
-                <span className="block px-2 py-1.5 text-xs text-muted-foreground">
-                  No users on this page
-                </span>
-              ) : (
-                userOptions.map((u) => (
-                  <SelectItem key={u} value={u}>
-                    {u}
-                  </SelectItem>
-                ))
-              )}
+              <SelectGroup>
+                <SelectLabel className="px-2 py-1 text-[10px] font-normal text-muted-foreground">
+                  (observed in this page)
+                </SelectLabel>
+                {userOptions.length === 0 ? (
+                  <span className="block px-2 py-1.5 text-xs text-muted-foreground">
+                    No users on this page
+                  </span>
+                ) : (
+                  userOptions.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectGroup>
             </SelectContent>
           </Select>
         </div>
@@ -445,20 +449,22 @@ export default function TracesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ANY_VALUE}>Any session</SelectItem>
-              <DropdownMenuLabel className="px-2 py-1 text-[10px] font-normal text-muted-foreground">
-                (observed in this page)
-              </DropdownMenuLabel>
-              {sessionOptions.length === 0 ? (
-                <span className="block px-2 py-1.5 text-xs text-muted-foreground">
-                  No sessions on this page
-                </span>
-              ) : (
-                sessionOptions.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))
-              )}
+              <SelectGroup>
+                <SelectLabel className="px-2 py-1 text-[10px] font-normal text-muted-foreground">
+                  (observed in this page)
+                </SelectLabel>
+                {sessionOptions.length === 0 ? (
+                  <span className="block px-2 py-1.5 text-xs text-muted-foreground">
+                    No sessions on this page
+                  </span>
+                ) : (
+                  sessionOptions.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectGroup>
             </SelectContent>
           </Select>
         </div>
