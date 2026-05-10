@@ -131,11 +131,42 @@ function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
+// Build-time placeholder from ``generateStaticParams`` in this route's
+// ``page.tsx``. Next.js's ``useParams`` returns this literal at runtime
+// because the static export only exports the placeholder; the operator's
+// real trace id lives only on ``window.location.pathname``. Reading
+// directly from the URL is the canonical SPA-rewrite trick — see the
+// docstring in ``page.tsx`` and AUDIT.md follow-up #43.
+const _PLACEHOLDER_TRACE_ID = "__trace__";
+
+function readTraceIdFromLocation(): string | null {
+  if (typeof window === "undefined") return null;
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  // ``/admin/traces/<id>`` and ``/admin/traces/<id>/`` both produce
+  // ``["admin", "traces", "<id>"]`` after the empty-segment filter. The
+  // id sits at index 2.
+  if (segments.length < 3) return null;
+  if (segments[0] !== "admin" || segments[1] !== "traces") return null;
+  const id = segments[2];
+  return id && id !== _PLACEHOLDER_TRACE_ID ? id : null;
+}
+
 export default function TraceDetailClient() {
   const params = useParams<{ traceId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const traceId = params?.traceId ?? "";
+  // Resolve the trace id from ``window.location.pathname`` first because
+  // ``useParams`` returns the build-time placeholder ``__trace__`` under
+  // ``output: "export"`` with ``dynamicParams: false`` — the static
+  // export only knows about the placeholder route, so the runtime
+  // params object reflects the placeholder, not the URL. Fall back to
+  // ``params?.traceId`` only when the location parser can't extract a
+  // value (e.g. an in-app ``router.push`` that hasn't flushed yet).
+  const paramTraceId = params?.traceId ?? "";
+  const locationTraceId = useMemo(readTraceIdFromLocation, []);
+  const traceId =
+    locationTraceId ??
+    (paramTraceId && paramTraceId !== _PLACEHOLDER_TRACE_ID ? paramTraceId : "");
 
   // ── URL-stateful view + selection (AUDIT.md #19, #33) ────────────────
   //
