@@ -215,7 +215,33 @@ class TraceWriter:
 
         try:
             async with self._session_factory() as session:
-                await session.execute(insert(StandaloneSpanRow), span_rows)
+                bind = session.get_bind()
+                if bind.dialect.name == "postgresql":
+                    # Pre-dedupe by (started_at, otel_span_id) since asyncpg
+                    # COPY does not support ON CONFLICT. The
+                    # BatchSpanProcessor can re-export the same span if a
+                    # previous batch failed; absorbing duplicates here
+                    # preserves the previous ``ON CONFLICT DO NOTHING``
+                    # semantics. First occurrence wins.
+                    seen: set[tuple[Any, bytes]] = set()
+                    deduped: list[dict[str, Any]] = []
+                    for row in span_rows:
+                        key = (row["started_at"], row["otel_span_id"])
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        deduped.append(row)
+
+                    records = [_span_row_to_copy_tuple(r) for r in deduped]
+                    raw_conn = (await session.connection()).driver_connection
+                    await raw_conn.copy_records_to_table(
+                        "standalone_span",
+                        records=records,
+                        columns=list(SPAN_COPY_COLUMNS),
+                    )
+                else:
+                    # SQLite path unchanged — executemany via SQLAlchemy.
+                    await session.execute(insert(StandaloneSpanRow), span_rows)
                 if trace_rows:
                     await self._upsert_traces(session, trace_rows)
                 await session.commit()

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
@@ -382,3 +383,97 @@ def test_span_row_to_copy_tuple_excludes_total_tokens_and_serializes_jsonb():
     assert tup[cost_idx] == json.dumps({"input": 0.001})
     assert tup[attrs_idx] == json.dumps({"foo": "bar"})
     assert tup[events_idx] == json.dumps([{"name": "evt"}])
+
+
+@pytest.mark.asyncio
+async def test_pg_writer_calls_copy_records_to_table_with_correct_columns():
+    """The PG dispatch must call ``copy_records_to_table`` once per batch
+    with the exact column tuple and the JSONB-serialized records.
+
+    The writer reaches the asyncpg connection via
+    ``(await session.connection()).driver_connection``, so the fake
+    session here exposes the same shape.
+    """
+    from unittest.mock import AsyncMock, MagicMock
+
+    from idun_agent_standalone.infrastructure.traces.writer import (
+        SPAN_COPY_COLUMNS,
+        TraceWriter,
+    )
+
+    captured: dict[str, Any] = {}
+
+    class _FakeConn:
+        async def copy_records_to_table(
+            self, table: str, *, records: Any, columns: Any
+        ) -> None:
+            captured["table"] = table
+            captured["records"] = list(records)
+            captured["columns"] = columns
+
+    fake_conn = _FakeConn()
+
+    # The PG dialect dispatch keys off ``session.get_bind().dialect.name``.
+    fake_bind = MagicMock()
+    fake_bind.dialect.name = "postgresql"
+
+    # ``await session.connection()`` returns an SQLAlchemy connection
+    # whose ``.driver_connection`` is the raw asyncpg conn.
+    sa_conn = MagicMock()
+    sa_conn.driver_connection = fake_conn
+
+    fake_session = MagicMock()
+    fake_session.get_bind = MagicMock(return_value=fake_bind)
+    fake_session.connection = AsyncMock(return_value=sa_conn)
+    # ``execute`` is still used for the trace upsert pass; mock it as
+    # an awaitable no-op so the writer can complete the drain. With no
+    # root span in the batch the trace pass is also a no-op (build_trace_rows
+    # returns []), but this keeps the fake robust either way.
+    fake_session.execute = AsyncMock()
+    fake_session.commit = AsyncMock()
+
+    # ``async with self._session_factory() as session:`` requires the
+    # factory return value to be an async context manager that yields
+    # the session.
+    class _SessionCtx:
+        async def __aenter__(self) -> Any:
+            return fake_session
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            return None
+
+    def _session_factory() -> _SessionCtx:
+        return _SessionCtx()
+
+    exporter = StandaloneSpanExporter(max_queue_size=10)
+    writer = TraceWriter(
+        exporter=exporter,
+        session_factory=_session_factory,  # type: ignore[arg-type]
+        max_export_batch_size=10,
+        schedule_delay_millis=50,
+    )
+
+    # Push 3 spans (no parent_span_id None → no root → trace finalize is a
+    # no-op, which simplifies the fake).
+    exporter.export(
+        [
+            _fake_span(
+                "llm.call",
+                span_id=0xA0 + i,
+                parent_span_id=0x99,
+            )
+            for i in range(3)
+        ]
+    )
+
+    # Drive one batch directly — bypassing the asyncio loop keeps the
+    # assertion deterministic.
+    await writer._drain_once()
+
+    assert captured["table"] == "standalone_span"
+    assert captured["columns"] == list(SPAN_COPY_COLUMNS)
+    # records is a list[tuple[...]] with len == batch size
+    assert len(captured["records"]) == 3
+    # Each tuple has the right arity.
+    for tup in captured["records"]:
+        assert len(tup) == len(SPAN_COPY_COLUMNS)
