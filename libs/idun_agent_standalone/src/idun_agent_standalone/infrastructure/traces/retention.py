@@ -29,6 +29,7 @@ Locked design:
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 from datetime import UTC, datetime, timedelta
@@ -41,10 +42,20 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 logger = logging.getLogger(__name__)
 
 
-# Stable advisory-lock key derived from a fixed string. Truncated to a
-# signed 32-bit value so it fits both pg_try_advisory_lock(int) and the
-# pg_advisory_unlock(int) signature.
-_LOCK_KEY = abs(hash("idun.traces.retention")) & 0x7FFFFFFF
+# Stable advisory-lock key derived from a fixed string. Must NOT use
+# Python's built-in ``hash()`` — that's seeded per-process via
+# PYTHONHASHSEED, so each uvicorn worker would compute a different key
+# and ``pg_try_advisory_lock`` would never collide. Use BLAKE2b-32 to
+# get a deterministic int that survives across processes. Truncated to
+# a signed 32-bit value so it fits the ``pg_try_advisory_lock(int)`` /
+# ``pg_advisory_unlock(int)`` signatures.
+_LOCK_KEY = (
+    int.from_bytes(
+        hashlib.blake2b(b"idun.traces.retention", digest_size=4).digest(),
+        "big",
+    )
+    & 0x7FFFFFFF
+)
 
 # Monthly cadence per the locked design. Hardcoded — not configurable.
 _RETENTION_TABLES = ("standalone_trace", "standalone_span")

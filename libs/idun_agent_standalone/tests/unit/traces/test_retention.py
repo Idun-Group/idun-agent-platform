@@ -107,3 +107,20 @@ def test_retention_days_env_override(monkeypatch):
     sm = MagicMock()
     scheduler = RetentionScheduler(session_factory=sm)
     assert scheduler._retention_days == 30
+
+
+def test_lock_key_is_stable_across_processes():
+    """The advisory-lock key must NOT use Python's hash randomisation.
+
+    Regression: when multi-worker uvicorn was deployed each worker
+    computed a different ``_LOCK_KEY`` because ``hash()`` is seeded by
+    ``PYTHONHASHSEED``. ``pg_try_advisory_lock`` would never collide
+    and every worker would race on the partition rotation. The fix
+    pins the key to a deterministic BLAKE2b digest of a fixed byte
+    string. Asserting the precomputed value catches any accidental
+    rotation back to ``hash()`` or a different seed string.
+    """
+    from idun_agent_standalone.infrastructure.traces.retention import _LOCK_KEY
+
+    # BLAKE2b-32 of b"idun.traces.retention" masked to 31 bits.
+    assert _LOCK_KEY == 1252085694
