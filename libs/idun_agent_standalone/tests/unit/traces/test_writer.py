@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from datetime import UTC, datetime
 
 import pytest
 from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
@@ -326,3 +328,57 @@ async def test_writer_trace_status_error_when_any_span_errored(tmp_path):
 
     assert trace is not None
     assert trace.status == "ERROR"
+
+
+# ---------------------------------------------------------------------------
+# P3.A — SPAN_COPY_COLUMNS + _span_row_to_copy_tuple (asyncpg COPY helpers)
+# ---------------------------------------------------------------------------
+
+
+def test_span_row_to_copy_tuple_excludes_total_tokens_and_serializes_jsonb():
+    """The PG COPY path must:
+    - exclude ``total_tokens`` (PG ``GENERATED`` column)
+    - pre-serialize ``attributes``, ``events``, ``cost_breakdown`` as JSON strings
+    - preserve every other column in the locked SPAN_COLS order
+    """
+    from idun_agent_standalone.infrastructure.traces.writer import (
+        SPAN_COPY_COLUMNS,
+        _span_row_to_copy_tuple,
+    )
+
+    started_at = datetime(2026, 5, 10, tzinfo=UTC)
+    row = {
+        "started_at": started_at,
+        "otel_span_id": b"\x01" * 8,
+        "otel_trace_id": b"\x02" * 8,
+        "parent_span_id": None,
+        "name": "agent.run",
+        "kind": "CHAIN",
+        "ended_at": started_at,
+        "latency_ms": 12.5,
+        "model": None,
+        "provider": None,
+        "prompt_tokens": None,
+        "completion_tokens": None,
+        "cache_read_tokens": None,
+        "cache_write_tokens": None,
+        "total_tokens": None,  # supplied here but MUST NOT appear in tuple
+        "cost_usd": None,
+        "cost_breakdown": {"input": 0.001},
+        "cost_source": None,
+        "status": "OK",
+        "attributes": {"foo": "bar"},
+        "events": [{"name": "evt"}],
+    }
+
+    tup = _span_row_to_copy_tuple(row)
+
+    assert "total_tokens" not in SPAN_COPY_COLUMNS
+    assert len(tup) == len(SPAN_COPY_COLUMNS)
+    # JSONB columns are now JSON strings.
+    cost_idx = SPAN_COPY_COLUMNS.index("cost_breakdown")
+    attrs_idx = SPAN_COPY_COLUMNS.index("attributes")
+    events_idx = SPAN_COPY_COLUMNS.index("events")
+    assert tup[cost_idx] == json.dumps({"input": 0.001})
+    assert tup[attrs_idx] == json.dumps({"foo": "bar"})
+    assert tup[events_idx] == json.dumps([{"name": "evt"}])

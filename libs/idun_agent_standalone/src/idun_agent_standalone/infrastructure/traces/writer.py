@@ -38,6 +38,7 @@ through the chat path.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from typing import Any
 
@@ -58,6 +59,53 @@ logger = logging.getLogger(__name__)
 # Keys that the exporter stamps on row dicts for cross-pass carrying
 # but are not StandaloneSpanRow columns. Stripped before insert.
 _INTERNAL_KEYS = ("_full_trace_id",)
+
+
+# Column order for the asyncpg COPY path. ``total_tokens`` is omitted
+# because it is a PG ``GENERATED ALWAYS AS ... STORED`` column on
+# ``standalone_span``; including a generated column in COPY is a
+# runtime error. Order matches the ``CREATE TABLE`` declaration in the
+# c08f88a64574 migration's PG branch except for that single column.
+SPAN_COPY_COLUMNS: tuple[str, ...] = (
+    "started_at",
+    "otel_span_id",
+    "otel_trace_id",
+    "parent_span_id",
+    "name",
+    "kind",
+    "ended_at",
+    "latency_ms",
+    "model",
+    "provider",
+    "prompt_tokens",
+    "completion_tokens",
+    "cache_read_tokens",
+    "cache_write_tokens",
+    "cost_usd",
+    "cost_breakdown",
+    "cost_source",
+    "status",
+    "attributes",
+    "events",
+)
+
+_SPAN_JSONB_COLUMNS = frozenset({"cost_breakdown", "attributes", "events"})
+
+
+def _span_row_to_copy_tuple(row: dict[str, Any]) -> tuple[Any, ...]:
+    """Translate a writer ``row`` dict into the COPY tuple shape.
+
+    Drops ``total_tokens`` (GENERATED on PG); pre-serializes JSONB
+    columns to ``json.dumps`` strings since asyncpg's binary COPY
+    protocol does not auto-encode dicts to JSONB.
+    """
+    out: list[Any] = []
+    for col in SPAN_COPY_COLUMNS:
+        value = row.get(col)
+        if col in _SPAN_JSONB_COLUMNS and value is not None:
+            value = json.dumps(value)
+        out.append(value)
+    return tuple(out)
 
 
 class TraceWriter:
