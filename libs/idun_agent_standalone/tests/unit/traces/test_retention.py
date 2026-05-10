@@ -10,6 +10,7 @@ import logging
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from idun_agent_standalone.infrastructure.traces import retention as retention_module
 from idun_agent_standalone.infrastructure.traces.retention import RetentionScheduler
 
 
@@ -56,7 +57,15 @@ async def test_run_once_failopen_on_exception(caplog):
     """A failure in _run_once must not propagate."""
     sm = MagicMock(side_effect=RuntimeError("boom"))
     scheduler = RetentionScheduler(session_factory=sm, retention_days=14)
-    with caplog.at_level(logging.ERROR):
+    # Alembic's ``fileConfig()`` (run by upstream integration tests) sets
+    # ``disable_existing_loggers=True`` by default, which silently turns
+    # ``disabled=True`` on every already-imported module logger. caplog
+    # cannot capture from a disabled logger regardless of level or
+    # propagation, so we re-enable the specific logger the source module
+    # uses before exercising it.
+    retention_module.logger.disabled = False
+    retention_module.logger.propagate = True
+    with caplog.at_level(logging.ERROR, logger=retention_module.logger.name):
         await scheduler._run_once()  # must not raise
     assert any(
         "retention" in r.message.lower() or "boom" in r.message.lower()
