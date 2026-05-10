@@ -8,9 +8,10 @@ export interface DrawerProps {
     onClose: () => void;
     title: string;
     children: ReactNode;
+    closeLabel?: string;
 }
 
-export const Drawer = ({ open, onClose, title, children }: DrawerProps) => {
+export const Drawer = ({ open, onClose, title, children, closeLabel = 'Close' }: DrawerProps) => {
     const triggerRef = useRef<HTMLElement | null>(null);
     const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -53,7 +54,7 @@ export const Drawer = ({ open, onClose, title, children }: DrawerProps) => {
             >
                 <Header>
                     <Title>{title}</Title>
-                    <CloseButton aria-label="Close" onClick={onClose}>
+                    <CloseButton aria-label={closeLabel} onClick={onClose}>
                         <X size={18} />
                     </CloseButton>
                 </Header>

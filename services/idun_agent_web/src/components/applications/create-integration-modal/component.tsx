@@ -499,10 +499,10 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                                 onClick={() => { setSelectedProvider(key); setShowProviderPicker(false); }}
                             >
                                 <ProviderPickerIcon $color={meta.color}>
-                                    {key === 'WHATSAPP' ? '💬' : key === 'DISCORD' ? '🎮' : key === 'GOOGLE_CHAT' ? '💬' : '⚡'}
+                                    {key === 'WHATSAPP' ? '💬' : key === 'DISCORD' ? '🎮' : key === 'GOOGLE_CHAT' ? '💬' : key === 'TEAMS' ? '👥' : '⚡'}
                                 </ProviderPickerIcon>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <ProviderPickerName>{key === 'WHATSAPP' ? 'WhatsApp' : key === 'DISCORD' ? 'Discord' : key === 'GOOGLE_CHAT' ? 'Google Chat' : 'Slack'}</ProviderPickerName>
+                                    <ProviderPickerName>{key === 'WHATSAPP' ? 'WhatsApp' : key === 'DISCORD' ? 'Discord' : key === 'GOOGLE_CHAT' ? 'Google Chat' : key === 'TEAMS' ? 'Microsoft Teams' : 'Slack'}</ProviderPickerName>
                                     <ProviderPickerDesc>{meta.label}</ProviderPickerDesc>
                                 </div>
                             </ProviderPickerCard>

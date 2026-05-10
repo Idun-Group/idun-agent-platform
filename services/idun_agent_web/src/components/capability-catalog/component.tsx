@@ -23,6 +23,7 @@ export interface CapabilityCatalogProps {
     searchPlaceholder?: string;
     onSelect: (id: string) => void;
     groupOrder?: ReadonlyArray<string>;
+    comingSoonLabel?: string;
 }
 
 export const CapabilityCatalog = ({
@@ -32,6 +33,7 @@ export const CapabilityCatalog = ({
     searchPlaceholder = 'Search…',
     onSelect,
     groupOrder,
+    comingSoonLabel = 'Soon',
 }: CapabilityCatalogProps) => {
     const showSearch = search ?? items.length > 8;
     const [rawQuery, setRawQuery] = useState('');
@@ -114,13 +116,13 @@ export const CapabilityCatalog = ({
                                     key={item.id}
                                     role="button"
                                     aria-label={item.label}
-                                    aria-disabled={item.comingSoon ? 'true' : undefined}
-                                    tabIndex={0}
+                                    aria-disabled={item.comingSoon || undefined}
+                                    tabIndex={item.comingSoon ? -1 : 0}
                                     $disabled={item.comingSoon}
                                     onClick={() => handleClick(item)}
                                     onKeyDown={e => handleKey(e, item)}
                                 >
-                                    {item.comingSoon && <SoonPill>Soon</SoonPill>}
+                                    {item.comingSoon && <SoonPill>{comingSoonLabel}</SoonPill>}
                                     <CardTopRow>
                                         <IconBox>{item.icon}</IconBox>
                                         <CardTitle>{item.label}</CardTitle>

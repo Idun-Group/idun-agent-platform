@@ -6,7 +6,8 @@
             "search_placeholder": "Rechercher…",
             "soon": "Bientôt",
             "new": "Nouveau",
-            "custom": "Personnalisé"
+            "custom": "Personnalisé",
+            "close": "Fermer"
         },
         "mcp": {
             "title": "Serveurs MCP",

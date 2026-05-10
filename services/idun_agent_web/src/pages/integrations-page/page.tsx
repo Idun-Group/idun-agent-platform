@@ -475,6 +475,7 @@ const IntegrationsPage: React.FC = () => {
                 items={catalogItems}
                 label={t('admin.integrations.available_label', 'AVAILABLE CHANNELS')}
                 onSelect={id => openCreate(id as IntegrationProvider)}
+                comingSoonLabel={t('admin.common.soon', 'Soon')}
             />
 
             <SectionDivider />

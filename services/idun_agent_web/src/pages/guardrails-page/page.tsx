@@ -799,7 +799,7 @@ const GuardrailDrawer: React.FC<GuardrailDrawerProps> = ({ open, typeId, appToEd
         : '';
 
     return (
-        <Drawer open={open} onClose={onClose} title={drawerTitle}>
+        <Drawer open={open} onClose={onClose} title={drawerTitle} closeLabel={t('admin.common.close', 'Close')}>
             <form onSubmit={handleSubmit}>
                 {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
 
@@ -1028,7 +1028,7 @@ const GuardrailsPage: React.FC = () => {
                 const slug = guardSlug(id);
                 return {
                     id,
-                    label: id,
+                    label: GUARDRAIL_LABELS[id] ?? id,
                     description: t(`admin.guardrails.guard.${slug}`, meta.description),
                     icon: <Icon size={20} />,
                     group: t(groupTranslationKey(meta.group), meta.group),
@@ -1106,6 +1106,7 @@ const GuardrailsPage: React.FC = () => {
                 searchPlaceholder={t('admin.guardrails.search_placeholder', 'Search guards…')}
                 groupOrder={translatedGroupOrder}
                 onSelect={id => openCreate(id)}
+                comingSoonLabel={t('admin.common.soon', 'Soon')}
             />
 
             <SectionDivider />
@@ -1147,7 +1148,7 @@ const GuardrailsPage: React.FC = () => {
                                                 <CardType>{app.type}</CardType>
                                             </CardMeta>
                                         </CardInfo>
-                                        <GroupBadge>{meta.group}</GroupBadge>
+                                        <GroupBadge>{t(groupTranslationKey(meta.group), meta.group)}</GroupBadge>
                                     </CardHeader>
 
                                     {meta.description && <CardDesc>{meta.description}</CardDesc>}

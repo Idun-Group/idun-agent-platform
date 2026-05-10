@@ -1049,7 +1049,7 @@ const TransportDrawer: React.FC<TransportDrawerProps> = ({ open, transportId, ap
         : '';
 
     return (
-        <Drawer open={open} onClose={onClose} title={drawerTitle}>
+        <Drawer open={open} onClose={onClose} title={drawerTitle} closeLabel={t('admin.common.close', 'Close')}>
             <form onSubmit={handleSubmit}>
                 {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
 
@@ -1172,8 +1172,10 @@ const MCPPage: React.FC = () => {
     };
     const openEdit = (app: ApplicationConfig) => {
         setAppToEdit(app);
-        // Reverse-map stored transport value back to the UI transport type
-        const transportId = API_VALUE_TO_TRANSPORT[app.type] ?? 'StreamableHTTP';
+        // Reverse-map stored transport value (from config.transport) back to the UI transport type
+        const transportFromConfig = (app.config as { transport?: string } | undefined)?.transport;
+        const transportId =
+            (transportFromConfig && API_VALUE_TO_TRANSPORT[transportFromConfig]) ?? 'StreamableHTTP';
         setModalTransportId(transportId);
         setIsDrawerOpen(true);
     };
@@ -1239,6 +1241,7 @@ const MCPPage: React.FC = () => {
                 items={catalogItems}
                 label={t('admin.mcp.available_label', 'AVAILABLE TRANSPORTS')}
                 onSelect={id => openCreate(id as TransportType)}
+                comingSoonLabel={t('admin.common.soon', 'Soon')}
             />
 
             <SectionDivider />

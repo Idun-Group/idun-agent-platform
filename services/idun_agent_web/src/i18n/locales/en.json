@@ -6,7 +6,8 @@
             "search_placeholder": "Search…",
             "soon": "Soon",
             "new": "New",
-            "custom": "Custom"
+            "custom": "Custom",
+            "close": "Close"
         },
         "mcp": {
             "title": "MCP Servers",
