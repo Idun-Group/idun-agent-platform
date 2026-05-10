@@ -7,7 +7,8 @@ import CreateIntegrationModal from '../../components/applications/create-integra
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import type { IntegrationProvider } from '../../services/integrations';
 import { useTranslation } from 'react-i18next';
-import { CapabilityCatalog, CapabilityItem } from '../../components/capability-catalog';
+import { CapabilityCatalog } from '../../components/capability-catalog';
+import type { CapabilityItem } from '../../components/capability-catalog';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 

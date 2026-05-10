@@ -27,10 +27,16 @@ export interface GoogleChatIntegrationConfig {
     local_mode?: boolean;
 }
 
+export interface TeamsIntegrationConfig {
+    app_id: string;
+    app_password: string;
+    app_tenant_id: string;
+}
+
 export interface IntegrationConfig {
     provider: IntegrationProvider;
     enabled: boolean;
-    config: WhatsAppIntegrationConfig | DiscordIntegrationConfig | SlackIntegrationConfig | GoogleChatIntegrationConfig;
+    config: WhatsAppIntegrationConfig | DiscordIntegrationConfig | SlackIntegrationConfig | GoogleChatIntegrationConfig | TeamsIntegrationConfig;
 }
 
 export interface ManagedIntegration {

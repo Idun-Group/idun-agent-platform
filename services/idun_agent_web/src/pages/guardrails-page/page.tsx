@@ -35,7 +35,8 @@ import {
     isSupportedGuardrailType,
 } from '../../services/guardrail-payloads';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
-import { CapabilityCatalog, CapabilityItem } from '../../components/capability-catalog';
+import { CapabilityCatalog } from '../../components/capability-catalog';
+import type { CapabilityItem } from '../../components/capability-catalog';
 import { Drawer } from '../../components/drawer';
 
 // ── Guardrail type metadata ──────────────────────────────────────────────────
@@ -68,7 +69,10 @@ const TYPE_META: Record<string, GuardrailMeta> = {
 const GROUPS = ['Content Safety', 'Identity & Security', 'Enterprise', 'Context & Quality'];
 
 const guardSlug = (id: string) =>
-    id.replace(/([A-Z])/g, '_$1').replace(/^_/, '').toLowerCase();
+    id
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        .toLowerCase();
 
 const groupTranslationKey = (group: string) => {
     if (group === 'Content Safety') return 'admin.guardrails.group.content_safety';

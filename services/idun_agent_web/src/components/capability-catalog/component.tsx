@@ -1,4 +1,5 @@
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import {
     Wrapper, HeaderRow, Label, SearchWrap, SearchInput,

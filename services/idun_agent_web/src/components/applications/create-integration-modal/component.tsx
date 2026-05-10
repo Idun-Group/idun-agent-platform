@@ -258,6 +258,7 @@ const PROVIDER_META: Record<IntegrationProvider, { label: string; color: string 
     DISCORD: { label: 'Discord Interactions Endpoint', color: '#5865F2' },
     SLACK: { label: 'Slack Events API', color: '#E01E5A' },
     GOOGLE_CHAT: { label: 'Google Chat App', color: '#1A73E8' },
+    TEAMS: { label: 'Microsoft Teams', color: '#5059C9' },
 };
 
 const ProviderPickerGrid = styled.div`
@@ -340,6 +341,11 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
     const [projectNumber, setProjectNumber] = useState('');
     const [localMode, setLocalMode] = useState(false);
 
+    // Teams fields
+    const [appId, setAppId] = useState('');
+    const [appPassword, setAppPassword] = useState('');
+    const [appTenantId, setAppTenantId] = useState('');
+
     useEffect(() => {
         if (isOpen && appToEdit) {
             setName(appToEdit.name);
@@ -364,6 +370,10 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                 setServiceAccountCredentials(cfg.service_account_credentials_json);
                 setProjectNumber(cfg.project_number);
                 setLocalMode(cfg.local_mode ?? false);
+            } else if (appToEdit.integration.provider === 'TEAMS' && 'app_id' in cfg) {
+                setAppId(cfg.app_id);
+                setAppPassword(cfg.app_password);
+                setAppTenantId(cfg.app_tenant_id);
             }
         } else if (isOpen) {
             setName('');
@@ -373,6 +383,7 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
             setBotToken(''); setApplicationId(''); setPublicKey(''); setGuildId('');
             setSlackBotToken(''); setSigningSecret('');
             setServiceAccountCredentials(''); setProjectNumber(''); setLocalMode(false);
+            setAppId(''); setAppPassword(''); setAppTenantId('');
             setShowProviderPicker(!providerProp);
             if (providerProp) setSelectedProvider(providerProp);
         }
@@ -412,6 +423,15 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
             config = {
                 bot_token: slackBotToken.trim(),
                 signing_secret: signingSecret.trim(),
+            };
+        } else if (provider === 'TEAMS') {
+            if (!appId.trim()) { setErrorMessage('Microsoft App ID is required'); return; }
+            if (!appPassword.trim()) { setErrorMessage('Client Secret is required'); return; }
+            if (!appTenantId.trim()) { setErrorMessage('Azure Tenant ID is required'); return; }
+            config = {
+                app_id: appId.trim(),
+                app_password: appPassword.trim(),
+                app_tenant_id: appTenantId.trim(),
             };
         } else {
             if (!serviceAccountCredentials.trim()) { setErrorMessage('Service Account Credentials JSON is required'); return; }
@@ -695,6 +715,52 @@ const CreateIntegrationModal: React.FC<Props> = ({ isOpen, onClose, onCreated, a
                                         onClick={() => setLocalMode(v => !v)}
                                     />
                                 </ToggleRow>
+                            </>
+                        )}
+
+                        {provider === 'TEAMS' && (
+                            <>
+                                <FieldGroup>
+                                    <Label htmlFor="int-app-id">
+                                        Microsoft App ID <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
+                                    </Label>
+                                    <Input
+                                        id="int-app-id"
+                                        type="text"
+                                        placeholder="00000000-0000-0000-0000-000000000000"
+                                        value={appId}
+                                        onChange={e => setAppId(e.target.value)}
+                                    />
+                                    <HelpText>App ID from your Azure AD app registration</HelpText>
+                                </FieldGroup>
+
+                                <FieldGroup>
+                                    <Label htmlFor="int-app-password">
+                                        Client Secret <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
+                                    </Label>
+                                    <Input
+                                        id="int-app-password"
+                                        type="password"
+                                        placeholder="Client secret from Azure AD app registration"
+                                        value={appPassword}
+                                        onChange={e => setAppPassword(e.target.value)}
+                                    />
+                                    <HelpText>Client secret value (not the secret ID)</HelpText>
+                                </FieldGroup>
+
+                                <FieldGroup>
+                                    <Label htmlFor="int-app-tenant-id">
+                                        Azure Tenant ID <span style={{ color: 'hsl(var(--destructive))' }}>*</span>
+                                    </Label>
+                                    <Input
+                                        id="int-app-tenant-id"
+                                        type="text"
+                                        placeholder="00000000-0000-0000-0000-000000000000"
+                                        value={appTenantId}
+                                        onChange={e => setAppTenantId(e.target.value)}
+                                    />
+                                    <HelpText>Azure AD tenant ID that owns the app registration (single-tenant)</HelpText>
+                                </FieldGroup>
                             </>
                         )}
 

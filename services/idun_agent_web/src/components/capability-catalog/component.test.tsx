@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, render, screen, fireEvent } from '@testing-library/react';
 import { Globe, Lock } from 'lucide-react';
-import { CapabilityCatalog, CapabilityItem } from './component';
+import { CapabilityCatalog } from './component';
+import type { CapabilityItem } from './component';
 
 const items: CapabilityItem[] = [
     { id: 'a', label: 'Alpha', description: 'First item', icon: <Globe size={20} /> },
