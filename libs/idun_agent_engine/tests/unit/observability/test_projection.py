@@ -191,3 +191,57 @@ def test_llm_input_value_only_set_when_request_present() -> None:
 
     assert "input.value" not in out
     assert "input.mime_type" not in out
+
+
+def test_call_llm_with_suffix_still_projects_to_llm() -> None:
+    """ADK may suffix ``call_llm`` in future versions; prefix-match catches it."""
+    src = {
+        "gen_ai.request.model": "gpt-4o",
+        "gen_ai.usage.input_tokens": 10,
+    }
+    out = project_to_openinference(src, span_name="call_llm gpt-4o")
+
+    assert out["openinference.span.kind"] == "LLM"
+    assert out["llm.model_name"] == "gpt-4o"
+    assert out["llm.token_count.prompt"] == 10
+
+
+def test_token_count_rejects_bool_values() -> None:
+    """``isinstance(True, int)`` is True; the projection must reject bools."""
+    src = {
+        "gen_ai.usage.input_tokens": True,
+        "gen_ai.usage.output_tokens": False,
+    }
+    out = project_to_openinference(src, span_name="call_llm")
+
+    assert "llm.token_count.prompt" not in out
+    assert "llm.token_count.completion" not in out
+    assert "llm.token_count.total" not in out
+
+
+def test_token_count_rejects_negative_values() -> None:
+    """A buggy instrumentor emitting negatives cannot poison cost downstream."""
+    src = {
+        "gen_ai.usage.input_tokens": -5,
+        "gen_ai.usage.output_tokens": 10,
+    }
+    out = project_to_openinference(src, span_name="call_llm")
+
+    assert "llm.token_count.prompt" not in out
+    # The valid completion still projects.
+    assert out["llm.token_count.completion"] == 10
+    # Total requires both halves valid; absent here.
+    assert "llm.token_count.total" not in out
+
+
+def test_token_count_zero_is_valid() -> None:
+    """Zero tokens is a legitimate value (e.g. cached responses)."""
+    src = {
+        "gen_ai.usage.input_tokens": 0,
+        "gen_ai.usage.output_tokens": 0,
+    }
+    out = project_to_openinference(src, span_name="call_llm")
+
+    assert out["llm.token_count.prompt"] == 0
+    assert out["llm.token_count.completion"] == 0
+    assert out["llm.token_count.total"] == 0

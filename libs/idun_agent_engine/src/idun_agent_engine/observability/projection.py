@@ -42,7 +42,11 @@ def _projected_kind(
         return "TOOL"
     if op == "call_llm":
         return "LLM"
-    if span_name == "call_llm":
+    # ADK emits the bare ``call_llm`` name today, but defend against a
+    # future variant that suffixes it (parallel to the existing
+    # ``invoke_agent <X>`` / ``execute_tool <X>`` patterns) so the UI
+    # surface keeps populating LLM columns either way.
+    if span_name == "call_llm" or span_name.startswith("call_llm "):
         return "LLM"
     if span_name.startswith("invoke_agent "):
         return "AGENT"
@@ -66,14 +70,25 @@ def _project_llm(
     if isinstance(model, str):
         out.setdefault("llm.model_name", model)
 
+    # ``isinstance(x, int)`` matches ``True`` / ``False`` because
+    # ``bool`` subclasses ``int``. Reject bools and negatives so a
+    # buggy instrumentor cannot poison cost computation downstream.
     prompt = attrs.get("gen_ai.usage.input_tokens")
     completion = attrs.get("gen_ai.usage.output_tokens")
-    if isinstance(prompt, int):
+    prompt_ok = (
+        isinstance(prompt, int) and not isinstance(prompt, bool) and prompt >= 0
+    )
+    completion_ok = (
+        isinstance(completion, int)
+        and not isinstance(completion, bool)
+        and completion >= 0
+    )
+    if prompt_ok:
         out.setdefault("llm.token_count.prompt", prompt)
-    if isinstance(completion, int):
+    if completion_ok:
         out.setdefault("llm.token_count.completion", completion)
-    if isinstance(prompt, int) and isinstance(completion, int):
-        out.setdefault("llm.token_count.total", prompt + completion)
+    if prompt_ok and completion_ok:
+        out.setdefault("llm.token_count.total", prompt + completion)  # type: ignore[operator]
 
     reasons = attrs.get("gen_ai.response.finish_reasons")
     if isinstance(reasons, list) and reasons and isinstance(reasons[0], str):
