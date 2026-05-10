@@ -201,6 +201,29 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
                 await asyncio.sleep(0)
                 yield
         finally:
+            # Stop the trace pipeline tasks before disposing the engine,
+            # otherwise the writer's next ``_drain_once`` (which opens a
+            # session against the disposed pool) and the retention
+            # scheduler's daily job race against a closed AsyncEngine
+            # and surface as noise in the shutdown logs.
+            #
+            # ``getattr`` with a default keeps shutdown idempotent: if
+            # the bootstrap callback never fired (admin-only mode, no
+            # post_configure pass), the attrs simply don't exist.
+            writer = getattr(app.state, "trace_writer_task", None)
+            if writer is not None:
+                try:
+                    await writer.stop()
+                except Exception:
+                    logger.exception("shutdown trace writer stop failed")
+                app.state.trace_writer_task = None
+            retention = getattr(app.state, "trace_retention_task", None)
+            if retention is not None:
+                try:
+                    await retention.stop()
+                except Exception:
+                    logger.exception("shutdown trace retention stop failed")
+                app.state.trace_retention_task = None
             await db_engine.dispose()
 
     app.router.lifespan_context = standalone_lifespan
