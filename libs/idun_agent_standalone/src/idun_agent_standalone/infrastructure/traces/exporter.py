@@ -62,21 +62,35 @@ class StandaloneSpanExporter(SpanExporter):
     def overflow_count(self) -> int:
         return self._overflow_count
 
+    # Cap the full→empty retry loop so a pathological writer/exporter
+    # contention never spins forever -- three iterations is well above
+    # any realistic interleaving (in practice the loop exits on the
+    # first or second try).
+    _PUT_RETRY_LIMIT = 3
+
     def export(self, spans: list[ReadableSpan]) -> SpanExportResult:
         for span in spans:
             row = self._span_to_row(span)
             with self._lock:
-                while True:
+                attempts = 0
+                while attempts < self._PUT_RETRY_LIMIT:
+                    attempts += 1
                     try:
                         self._queue.put_nowait(row)
                         break
                     except queue.Full:
-                        # Drop-oldest: discard one row, retry once.
+                        # Drop-oldest: discard one row, retry the put.
                         try:
                             self._queue.get_nowait()
                             self._overflow_count += 1
+                            # Loop continues -- the put_nowait above
+                            # will retry against the now-shorter queue.
                         except queue.Empty:
-                            break  # racy edge — treat as success-with-loss
+                            # The writer drained the queue between the
+                            # ``Full`` raise and this fallback. Loop
+                            # again so the next ``put_nowait`` lands;
+                            # the retry cap stops a runaway interleave.
+                            continue
         return SpanExportResult.SUCCESS
 
     def shutdown(self) -> None:
