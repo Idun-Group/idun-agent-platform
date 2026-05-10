@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import {
     Ban,
@@ -22,11 +22,10 @@ import {
     EyeOff,
     BookOpen,
     AlertCircle,
-    GitPullRequest,
-    X,
     Search,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { fetchApplications, deleteApplication, createApplication, updateApplication } from '../../services/applications';
 import type { ApplicationConfig } from '../../types/application.types';
 import type { AppType } from '../../types/application.types';
@@ -36,6 +35,8 @@ import {
     isSupportedGuardrailType,
 } from '../../services/guardrail-payloads';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { CapabilityCatalog, CapabilityItem } from '../../components/capability-catalog';
+import { Drawer } from '../../components/drawer';
 
 // ── Guardrail type metadata ──────────────────────────────────────────────────
 
@@ -65,6 +66,17 @@ const TYPE_META: Record<string, GuardrailMeta> = {
 };
 
 const GROUPS = ['Content Safety', 'Identity & Security', 'Enterprise', 'Context & Quality'];
+
+const guardSlug = (id: string) =>
+    id.replace(/([A-Z])/g, '_$1').replace(/^_/, '').toLowerCase();
+
+const groupTranslationKey = (group: string) => {
+    if (group === 'Content Safety') return 'admin.guardrails.group.content_safety';
+    if (group === 'Identity & Security') return 'admin.guardrails.group.identity_security';
+    if (group === 'Enterprise') return 'admin.guardrails.group.enterprise';
+    if (group === 'Context & Quality') return 'admin.guardrails.group.context_quality';
+    return group;
+};
 
 // ── Animations ────────────────────────────────────────────────────────────────
 
@@ -175,7 +187,7 @@ const RequiredBadge = styled.span`
     border: 1px solid rgba(245, 158, 11, 0.25);
 `;
 
-// ── API Key Dropdown ─────────────────────────────────────────────────────────
+// ── Search bar (header) ──────────────────────────────────────────────────────
 
 const SearchBar = styled.div`
     display: flex;
@@ -284,181 +296,56 @@ const DropdownLink = styled.a`
     &:hover { text-decoration: underline; }
 `;
 
-// ── Two-column layout ────────────────────────────────────────────────────────
+// ── Stacked sections ─────────────────────────────────────────────────────────
 
-const MainLayout = styled.div`
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    gap: 0;
+const SectionDivider = styled.hr`
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+    margin: 4px 0;
 `;
 
-// ── Left column: type picker ─────────────────────────────────────────────────
-
-const TypeColumn = styled.div`
-    width: 260px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--border-subtle);
-    padding-right: 24px;
-    overflow-y: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-`;
-
-const GroupLabel = styled.p`
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: hsl(var(--text-tertiary));
-    margin: 20px 0 8px 10px;
-
-    &:first-child { margin-top: 0; }
-`;
-
-const TypeBtn = styled.button<{ $disabled?: boolean }>`
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--text-secondary))'};
-    font-size: 13px;
-    font-weight: 400;
-    cursor: ${p => p.$disabled ? 'default' : 'pointer'};
-    opacity: ${p => p.$disabled ? 0.5 : 1};
-    transition: all 0.15s ease;
-    text-align: left;
-    margin-bottom: 2px;
-
-    &:hover {
-        background: ${p => p.$disabled ? 'transparent' : 'var(--overlay-light)'};
-        color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))'};
-    }
-`;
-
-const TypeIconBox = styled.span`
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    background: hsl(var(--primary) / 0.08);
-    color: hsl(var(--primary));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-`;
-
-const AddIndicator = styled.span`
-    margin-left: auto;
-    font-size: 16px;
-    color: hsl(var(--muted-foreground));
-    flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.15s;
-
-    ${TypeBtn}:hover & {
-        opacity: 1;
-    }
-`;
-
-const ComingSoonBadge = styled.span`
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 2px 5px;
-    border-radius: 4px;
-    background: var(--overlay-light);
-    color: hsl(var(--muted-foreground));
-    margin-left: auto;
-    flex-shrink: 0;
-`;
-
-const RequestBtn = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px dashed var(--border-light);
-    background: transparent;
-    color: hsl(var(--muted-foreground));
-    font-size: 13px;
-    font-weight: 400;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-align: left;
-    margin-top: 16px;
-
-    &:hover {
-        border-color: hsl(var(--primary) / 0.4);
-        color: hsl(var(--foreground));
-        background: hsl(var(--primary) / 0.04);
-    }
-`;
-
-// ── Right column: config cards + empty state ─────────────────────────────────
-
-const ContentColumn = styled.div`
-    flex: 1;
-    padding-left: 28px;
-    overflow-y: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-`;
-
-const EmptyState = styled.div`
+const ConfiguredSection = styled.section`
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 60px 20px;
-    gap: 16px;
+    gap: 14px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
 `;
 
-const EmptyTitle = styled.h3`
-    font-size: 16px;
-    font-weight: 600;
-    color: hsl(var(--foreground));
-    margin: 0;
-`;
-
-const EmptyDescription = styled.p`
-    font-size: 13px;
-    line-height: 1.7;
-    color: hsl(var(--text-secondary));
-    margin: 0;
-    max-width: 420px;
-`;
-
-const EmptyChips = styled.div`
+const ConfiguredHeader = styled.div`
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 `;
 
-const Chip = styled.span<{ $color: string }>`
-    padding: 4px 12px;
+const SectionLabel = styled.div`
     font-size: 11px;
     font-weight: 600;
-    border-radius: 6px;
-    background: ${p => `${p.$color}14`};
-    color: ${p => p.$color};
-    border: 1px solid ${p => `${p.$color}20`};
-    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: hsl(var(--muted-foreground));
 `;
 
-const EmptyImage = styled.img`
-    width: 100%;
-    max-width: 380px;
-    margin-top: 8px;
+const PrimaryButton = styled.button`
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    &:hover { opacity: 0.9; }
+`;
+
+const EmptyHint = styled.div`
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+    padding: 20px 0;
 `;
 
 // ── Config cards ─────────────────────────────────────────────────────────────
@@ -654,93 +541,7 @@ const GUARDRAIL_LABELS: Record<string, string> = {
     CompetitionCheck: 'Competition Check', CorrectLanguage: 'Correct Language', RestrictTopic: 'Restrict Topic',
 };
 
-// ── Per-guardrail modal styled components ────────────────────────────────────
-
-const modalIn = keyframes`from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); }`;
-
-const Overlay = styled.div`
-    position: fixed;
-    inset: 0;
-    z-index: 1001;
-    background: var(--overlay-backdrop);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-`;
-
-const Modal = styled.div`
-    background: hsl(var(--card));
-    border-radius: 16px;
-    width: 520px;
-    max-width: 95vw;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
-    animation: ${modalIn} 0.2s ease;
-`;
-
-const ModalHeader = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 24px 28px 20px;
-    border-bottom: 1px solid var(--border-subtle);
-`;
-
-const ModalIconBox = styled.div`
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: hsl(var(--primary) / 0.12);
-    color: hsl(var(--primary));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-`;
-
-const ModalTitleBlock = styled.div`
-    flex: 1;
-`;
-
-const ModalTitle = styled.h2`
-    font-size: 17px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
-    margin: 0;
-`;
-
-const ModalSubtitle = styled.p`
-    font-size: 12px;
-    color: hsl(var(--muted-foreground));
-    margin: 2px 0 0;
-`;
-
-const CloseBtn = styled.button`
-    background: var(--overlay-light);
-    border: none;
-    border-radius: 8px;
-    width: 32px;
-    height: 32px;
-    color: hsl(var(--muted-foreground));
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-    flex-shrink: 0;
-
-    &:hover { background: var(--border-medium); color: hsl(var(--foreground)); }
-`;
-
-const ModalBody = styled.div`
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px 28px;
-`;
+// ── Drawer form styled components ────────────────────────────────────────────
 
 const FieldGroup = styled.div`
     margin-bottom: 20px;
@@ -862,11 +663,12 @@ const ErrorMsg = styled.p`
     border: 1px solid rgba(248, 113, 113, 0.2);
 `;
 
-const ModalFooter = styled.div`
+const FormFooter = styled.div`
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 20px 28px;
+    padding-top: 20px;
+    margin-top: 8px;
     border-top: 1px solid var(--border-subtle);
 `;
 
@@ -911,22 +713,22 @@ const SmallSpinner = styled.div`
     animation: ${spin} 0.7s linear infinite;
 `;
 
-// ── Per-guardrail modal component ────────────────────────────────────────────
+// ── Per-guardrail drawer component ───────────────────────────────────────────
 
-interface GuardrailModalProps {
-    typeId: string;
+interface GuardrailDrawerProps {
+    open: boolean;
+    typeId: string | null;
     appToEdit: ApplicationConfig | null;
     defaultApiKey: string;
     onClose: () => void;
     onSaved: () => void;
 }
 
-const GuardrailModal: React.FC<GuardrailModalProps> = ({ typeId, appToEdit, defaultApiKey, onClose, onSaved }) => {
-    const meta = TYPE_META[typeId];
-    const fields = GUARDRAIL_FIELDS[typeId] ?? [];
-    const label = GUARDRAIL_LABELS[typeId] ?? typeId;
+const GuardrailDrawer: React.FC<GuardrailDrawerProps> = ({ open, typeId, appToEdit, defaultApiKey, onClose, onSaved }) => {
+    const { t } = useTranslation();
+    const fields = typeId ? GUARDRAIL_FIELDS[typeId] ?? [] : [];
+    const label = typeId ? GUARDRAIL_LABELS[typeId] ?? typeId : '';
     const isEditMode = !!appToEdit;
-    const Icon = meta?.icon ?? Shield;
 
     const [name, setName] = useState('');
     const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -959,6 +761,7 @@ const GuardrailModal: React.FC<GuardrailModalProps> = ({ typeId, appToEdit, defa
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMessage(null);
+        if (!typeId) return;
 
         if (isSupportedGuardrailType(typeId as AppType)) {
             const errors = validateGuardrailForm(typeId as AppType, formValues);
@@ -985,118 +788,111 @@ const GuardrailModal: React.FC<GuardrailModalProps> = ({ typeId, appToEdit, defa
         }
     };
 
+    const drawerTitle = typeId
+        ? (isEditMode
+            ? t('admin.guardrails.drawer_title_edit', `Edit ${label}`)
+            : label)
+        : '';
+
     return (
-        <Overlay onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-            <Modal>
-                <ModalHeader>
-                    <ModalIconBox><Icon size={20} /></ModalIconBox>
-                    <ModalTitleBlock>
-                        <ModalTitle>{isEditMode ? `Edit ${label}` : label}</ModalTitle>
-                        <ModalSubtitle>{meta?.description ?? ''}</ModalSubtitle>
-                    </ModalTitleBlock>
-                    <CloseBtn type="button" onClick={onClose}><X size={16} /></CloseBtn>
-                </ModalHeader>
+        <Drawer open={open} onClose={onClose} title={drawerTitle}>
+            <form onSubmit={handleSubmit}>
+                {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-                    <ModalBody>
-                        {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
+                <FieldGroup>
+                    <Label htmlFor="guardrail-name">Guardrail Name</Label>
+                    <Input
+                        id="guardrail-name"
+                        type="text"
+                        placeholder={label}
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                    />
+                </FieldGroup>
 
-                        <FieldGroup>
-                            <Label htmlFor="guardrail-name">Guardrail Name</Label>
-                            <Input
-                                id="guardrail-name"
-                                type="text"
-                                placeholder={label}
-                                value={name}
-                                onChange={e => setName(e.target.value)}
+                {fields.map(field => (
+                    <FieldGroup key={field.key}>
+                        <Label htmlFor={field.key}>
+                            {field.label}{field.required && <Required> *</Required>}
+                        </Label>
+
+                        {field.type === 'password' ? (
+                            <PasswordWrapper>
+                                <Input
+                                    id={field.key}
+                                    type={visiblePasswords[field.key] ? 'text' : 'password'}
+                                    placeholder={field.placeholder}
+                                    value={formValues[field.key] ?? ''}
+                                    onChange={e => handleChange(field.key, e.target.value)}
+                                    style={{ paddingRight: 40 }}
+                                />
+                                <PasswordToggleBtn type="button" onClick={() => setVisiblePasswords(prev => ({ ...prev, [field.key]: !prev[field.key] }))}>
+                                    {visiblePasswords[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </PasswordToggleBtn>
+                            </PasswordWrapper>
+                        ) : field.type === 'textarea' ? (
+                            <Textarea
+                                id={field.key}
+                                placeholder={field.placeholder}
+                                value={formValues[field.key] ?? ''}
+                                onChange={e => handleChange(field.key, e.target.value)}
                             />
-                        </FieldGroup>
+                        ) : field.type === 'number' ? (
+                            <Input
+                                id={field.key}
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="1"
+                                placeholder={field.placeholder}
+                                value={formValues[field.key] ?? ''}
+                                onChange={e => handleChange(field.key, e.target.value)}
+                            />
+                        ) : field.type === 'multicheck' && field.options ? (
+                            <CheckboxGrid>
+                                {field.options.map(opt => {
+                                    const selected = (formValues[field.key] ?? '').split(',').filter(Boolean);
+                                    const isChecked = selected.includes(opt);
+                                    return (
+                                        <CheckboxLabel key={opt}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={() => {
+                                                    const next = isChecked
+                                                        ? selected.filter(s => s !== opt)
+                                                        : [...selected, opt];
+                                                    handleChange(field.key, next.join(','));
+                                                }}
+                                            />
+                                            {opt}
+                                        </CheckboxLabel>
+                                    );
+                                })}
+                            </CheckboxGrid>
+                        ) : (
+                            <Input
+                                id={field.key}
+                                type="text"
+                                placeholder={field.placeholder}
+                                value={formValues[field.key] ?? ''}
+                                onChange={e => handleChange(field.key, e.target.value)}
+                            />
+                        )}
 
-                        {fields.map(field => (
-                            <FieldGroup key={field.key}>
-                                <Label htmlFor={field.key}>
-                                    {field.label}{field.required && <Required> *</Required>}
-                                </Label>
+                        {field.hint && <Hint>{field.hint}</Hint>}
+                    </FieldGroup>
+                ))}
 
-                                {field.type === 'password' ? (
-                                    <PasswordWrapper>
-                                        <Input
-                                            id={field.key}
-                                            type={visiblePasswords[field.key] ? 'text' : 'password'}
-                                            placeholder={field.placeholder}
-                                            value={formValues[field.key] ?? ''}
-                                            onChange={e => handleChange(field.key, e.target.value)}
-                                            style={{ paddingRight: 40 }}
-                                        />
-                                        <PasswordToggleBtn type="button" onClick={() => setVisiblePasswords(prev => ({ ...prev, [field.key]: !prev[field.key] }))}>
-                                            {visiblePasswords[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </PasswordToggleBtn>
-                                    </PasswordWrapper>
-                                ) : field.type === 'textarea' ? (
-                                    <Textarea
-                                        id={field.key}
-                                        placeholder={field.placeholder}
-                                        value={formValues[field.key] ?? ''}
-                                        onChange={e => handleChange(field.key, e.target.value)}
-                                    />
-                                ) : field.type === 'number' ? (
-                                    <Input
-                                        id={field.key}
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max="1"
-                                        placeholder={field.placeholder}
-                                        value={formValues[field.key] ?? ''}
-                                        onChange={e => handleChange(field.key, e.target.value)}
-                                    />
-                                ) : field.type === 'multicheck' && field.options ? (
-                                    <CheckboxGrid>
-                                        {field.options.map(opt => {
-                                            const selected = (formValues[field.key] ?? '').split(',').filter(Boolean);
-                                            const isChecked = selected.includes(opt);
-                                            return (
-                                                <CheckboxLabel key={opt}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        onChange={() => {
-                                                            const next = isChecked
-                                                                ? selected.filter(s => s !== opt)
-                                                                : [...selected, opt];
-                                                            handleChange(field.key, next.join(','));
-                                                        }}
-                                                    />
-                                                    {opt}
-                                                </CheckboxLabel>
-                                            );
-                                        })}
-                                    </CheckboxGrid>
-                                ) : (
-                                    <Input
-                                        id={field.key}
-                                        type="text"
-                                        placeholder={field.placeholder}
-                                        value={formValues[field.key] ?? ''}
-                                        onChange={e => handleChange(field.key, e.target.value)}
-                                    />
-                                )}
-
-                                {field.hint && <Hint>{field.hint}</Hint>}
-                            </FieldGroup>
-                        ))}
-                    </ModalBody>
-
-                    <ModalFooter>
-                        <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
-                        <SubmitBtn type="submit" disabled={isSubmitting}>
-                            {isSubmitting && <SmallSpinner />}
-                            {isEditMode ? 'Save Changes' : `Add ${label}`}
-                        </SubmitBtn>
-                    </ModalFooter>
-                </form>
-            </Modal>
-        </Overlay>
+                <FormFooter>
+                    <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
+                    <SubmitBtn type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <SmallSpinner />}
+                        {isEditMode ? 'Save Changes' : `Add ${label}`}
+                    </SubmitBtn>
+                </FormFooter>
+            </form>
+        </Drawer>
     );
 };
 
@@ -1142,6 +938,7 @@ const truncate = (s: string, max = 28) => s.length > max ? s.slice(0, max) + '�
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const GuardrailsPage: React.FC = () => {
+    const { t } = useTranslation();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -1153,9 +950,10 @@ const GuardrailsPage: React.FC = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Modal
+    // Drawer
     const [modalTypeId, setModalTypeId] = useState<string | null>(null);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     // Delete
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
@@ -1186,9 +984,21 @@ const GuardrailsPage: React.FC = () => {
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
-    const openCreate = (typeId: string) => { setAppToEdit(null); setModalTypeId(typeId); };
-    const openEdit = (app: ApplicationConfig) => { setAppToEdit(app); setModalTypeId(app.type); };
-    const closeModal = () => { setModalTypeId(null); setAppToEdit(null); };
+    const openCreate = (typeId: string) => {
+        setAppToEdit(null);
+        setModalTypeId(typeId);
+        setIsDrawerOpen(true);
+    };
+    const openEdit = (app: ApplicationConfig) => {
+        setAppToEdit(app);
+        setModalTypeId(app.type);
+        setIsDrawerOpen(true);
+    };
+    const closeModal = () => {
+        setIsDrawerOpen(false);
+        setModalTypeId(null);
+        setAppToEdit(null);
+    };
 
     const handleSaveApiKey = () => {
         const trimmed = globalApiKey.trim();
@@ -1207,12 +1017,40 @@ const GuardrailsPage: React.FC = () => {
 
     const hasApiKey = !!localStorage.getItem(LOCALSTORAGE_KEY);
 
+    const catalogItems: CapabilityItem[] = useMemo(
+        () =>
+            Object.entries(TYPE_META).map(([id, meta]) => {
+                const Icon = meta.icon;
+                const slug = guardSlug(id);
+                return {
+                    id,
+                    label: id,
+                    description: t(`admin.guardrails.guard.${slug}`, meta.description),
+                    icon: <Icon size={20} />,
+                    group: t(groupTranslationKey(meta.group), meta.group),
+                    comingSoon: meta.comingSoon ?? false,
+                };
+            }),
+        [t],
+    );
+
+    const translatedGroupOrder = useMemo(
+        () => GROUPS.map(g => t(groupTranslationKey(g), g)),
+        [t],
+    );
+
+    const filteredApps = apps.filter(a => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        return (a.name?.toLowerCase().includes(term) || a.type?.toLowerCase().includes(term));
+    });
+
     return (
         <PageWrapper>
             <PageHeader>
                 <TitleBlock>
-                    <PageTitle>Guardrails</PageTitle>
-                    <PageSubtitle>Enforce safety rules and content policies on your agents</PageSubtitle>
+                    <PageTitle>{t('admin.guardrails.title', 'Guardrails')}</PageTitle>
+                    <PageSubtitle>{t('admin.guardrails.subtitle', 'Enforce safety rules and content policies on your agents')}</PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -1257,143 +1095,98 @@ const GuardrailsPage: React.FC = () => {
                 </HeaderActions>
             </PageHeader>
 
-            <MainLayout>
-                {/* ── Left: Type picker ──────────────────────────── */}
-                <TypeColumn>
-                    {GROUPS.map(group => {
-                        const types = Object.entries(TYPE_META).filter(([, m]) => m.group === group);
-                        return (
-                            <React.Fragment key={group}>
-                                <GroupLabel>{group}</GroupLabel>
-                                {types.map(([id, meta]) => (
-                                    <TypeBtn
-                                        key={id}
-                                        type="button"
-                                        $disabled={!!meta.comingSoon}
-                                        onClick={() => { if (!meta.comingSoon) openCreate(id); }}
-                                    >
-                                        <TypeIconBox><meta.icon size={15} /></TypeIconBox>
-                                        {id === 'BanList' ? 'Ban List' :
-                                         id === 'NSFWText' ? 'NSFW Text' :
-                                         id === 'ToxicLanguage' ? 'Toxic Language' :
-                                         id === 'GibberishText' ? 'Gibberish Text' :
-                                         id === 'CodeScanner' ? 'Code Scanner' :
-                                         id === 'DetectPII' ? 'Detect PII' :
-                                         id === 'DetectJailbreak' ? 'Detect Jailbreak' :
-                                         id === 'PromptInjection' ? 'Prompt Injection' :
-                                         id === 'ModelArmor' ? 'Model Armor' :
-                                         id === 'CustomLLM' ? 'Custom LLM' :
-                                         id === 'BiasCheck' ? 'Bias Check' :
-                                         id === 'CompetitionCheck' ? 'Competition Check' :
-                                         id === 'CorrectLanguage' ? 'Correct Language' :
-                                         id === 'RestrictTopic' ? 'Restrict Topic' :
-                                         id === 'RagHallucination' ? 'RAG Hallucination' :
-                                         id}
-                                        {meta.comingSoon ? <ComingSoonBadge>Soon</ComingSoonBadge> : <AddIndicator>+</AddIndicator>}
-                                    </TypeBtn>
-                                ))}
-                            </React.Fragment>
-                        );
-                    })}
+            <CapabilityCatalog
+                items={catalogItems}
+                label={t('admin.guardrails.available_label', 'AVAILABLE GUARDS')}
+                search={true}
+                searchPlaceholder={t('admin.guardrails.search_placeholder', 'Search guards…')}
+                groupOrder={translatedGroupOrder}
+                onSelect={id => openCreate(id)}
+            />
 
-                    <RequestBtn
-                        type="button"
-                        onClick={() => window.open('https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=enhancement&template=feature_request.md&title=%5BGuardrails%5D+New+guardrail+request', '_blank')}
-                    >
-                        <TypeIconBox><GitPullRequest size={15} /></TypeIconBox>
-                        Request a guardrail
-                    </RequestBtn>
-                </TypeColumn>
+            <SectionDivider />
 
-                {/* ── Right: Configured guardrails ───────────────── */}
-                <ContentColumn>
-                    {isLoading ? (
-                        <CenterBox>
-                            <LoadingSpinner />
-                            <p>Loading guardrails…</p>
-                        </CenterBox>
-                    ) : apps.length === 0 ? (
-                        <EmptyState>
-                            <EmptyTitle>Select a guardrail to get started</EmptyTitle>
-                            <EmptyDescription>
-                                15+ ready-to-use guardrails for AI governance. Block PII leaks with prompt injection protection, topic filtering, and custom guardrails tailored to your use case.
-                            </EmptyDescription>
-                            <EmptyChips>
-                                <Chip $color="#ef4444">Content Safety</Chip>
-                                <Chip $color="#f59e0b">Identity &amp; Security</Chip>
-                                <Chip $color="#8b5cf6">Enterprise</Chip>
-                                <Chip $color="#10b981">Context &amp; Quality</Chip>
-                            </EmptyChips>
-                            <EmptyImage src="/img/guardrails-flow.png" alt="" />
-                        </EmptyState>
-                    ) : (
-                        <CardsGrid>
-                            {apps.filter(a => {
-                                if (!searchTerm) return true;
-                                const term = searchTerm.toLowerCase();
-                                return (a.name?.toLowerCase().includes(term) || a.type?.toLowerCase().includes(term));
-                            }).map(app => {
-                                const meta = TYPE_META[app.type] ?? { icon: Shield, group: 'Other', description: '' };
-                                const config = flattenConfig(app.config);
-                                const configEntries = Object.entries(config).filter(([k]) => k !== 'api_key');
+            <ConfiguredSection>
+                <ConfiguredHeader>
+                    <SectionLabel>
+                        {t('admin.guardrails.configured_label', 'YOUR GUARDS')}
+                        {apps.length > 0 && ` · ${apps.length} configured`}
+                    </SectionLabel>
+                    <PrimaryButton onClick={() => openCreate('BanList')}>
+                        + {t('admin.guardrails.new_button', 'New guard')}
+                    </PrimaryButton>
+                </ConfiguredHeader>
 
-                                return (
-                                    <Card key={app.id}>
-                                        <CardHeader>
-                                            <CardInfo>
-                                                <CardIcon><meta.icon size={18} /></CardIcon>
-                                                <CardMeta>
-                                                    <CardName>{app.name}</CardName>
-                                                    <CardType>{app.type}</CardType>
-                                                </CardMeta>
-                                            </CardInfo>
-                                            <GroupBadge>{meta.group}</GroupBadge>
-                                        </CardHeader>
+                {isLoading ? (
+                    <CenterBox>
+                        <LoadingSpinner />
+                        <p>Loading guardrails…</p>
+                    </CenterBox>
+                ) : apps.length === 0 ? (
+                    <EmptyHint>
+                        {t('admin.guardrails.empty_state', 'No guards yet — pick one from the catalog above to get started.')}
+                    </EmptyHint>
+                ) : (
+                    <CardsGrid>
+                        {filteredApps.map(app => {
+                            const meta = TYPE_META[app.type] ?? { icon: Shield, group: 'Other', description: '' };
+                            const config = flattenConfig(app.config);
+                            const configEntries = Object.entries(config).filter(([k]) => k !== 'api_key');
 
-                                        {meta.description && <CardDesc>{meta.description}</CardDesc>}
+                            return (
+                                <Card key={app.id}>
+                                    <CardHeader>
+                                        <CardInfo>
+                                            <CardIcon><meta.icon size={18} /></CardIcon>
+                                            <CardMeta>
+                                                <CardName>{app.name}</CardName>
+                                                <CardType>{app.type}</CardType>
+                                            </CardMeta>
+                                        </CardInfo>
+                                        <GroupBadge>{meta.group}</GroupBadge>
+                                    </CardHeader>
 
-                                        {configEntries.length > 0 && (
-                                            <>
-                                                <Divider />
-                                                <ConfigList>
-                                                    {configEntries.slice(0, 3).map(([k, v]) => (
-                                                        <ConfigRow key={k}>
-                                                            <ConfigKey>{k.replace(/_/g, ' ')}</ConfigKey>
-                                                            <ConfigValue title={v}>{truncate(v)}</ConfigValue>
-                                                        </ConfigRow>
-                                                    ))}
-                                                </ConfigList>
-                                            </>
-                                        )}
+                                    {meta.description && <CardDesc>{meta.description}</CardDesc>}
 
-                                        {(app.agentCount ?? 0) > 0 && (
-                                            <AgentCountBadge>
-                                                Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}
-                                            </AgentCountBadge>
-                                        )}
+                                    {configEntries.length > 0 && (
+                                        <>
+                                            <Divider />
+                                            <ConfigList>
+                                                {configEntries.slice(0, 3).map(([k, v]) => (
+                                                    <ConfigRow key={k}>
+                                                        <ConfigKey>{k.replace(/_/g, ' ')}</ConfigKey>
+                                                        <ConfigValue title={v}>{truncate(v)}</ConfigValue>
+                                                    </ConfigRow>
+                                                ))}
+                                            </ConfigList>
+                                        </>
+                                    )}
 
-                                        <CardActions>
-                                            <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
-                                            <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
-                                        </CardActions>
-                                    </Card>
-                                );
-                            })}
-                        </CardsGrid>
-                    )}
-                </ContentColumn>
-            </MainLayout>
+                                    {(app.agentCount ?? 0) > 0 && (
+                                        <AgentCountBadge>
+                                            Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}
+                                        </AgentCountBadge>
+                                    )}
 
-            {/* ── Per-guardrail modal ──────────────────────────── */}
-            {modalTypeId && (
-                <GuardrailModal
-                    typeId={modalTypeId}
-                    appToEdit={appToEdit}
-                    defaultApiKey={globalApiKey.trim()}
-                    onClose={closeModal}
-                    onSaved={loadApps}
-                />
-            )}
+                                    <CardActions>
+                                        <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
+                                        <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
+                                    </CardActions>
+                                </Card>
+                            );
+                        })}
+                    </CardsGrid>
+                )}
+            </ConfiguredSection>
+
+            <GuardrailDrawer
+                open={isDrawerOpen}
+                typeId={modalTypeId}
+                appToEdit={appToEdit}
+                defaultApiKey={globalApiKey.trim()}
+                onClose={closeModal}
+                onSaved={loadApps}
+            />
 
             <DeleteConfirmModal
                 isOpen={!!appToDelete}
