@@ -578,7 +578,7 @@ function InfoTab({ span }: { span: StandaloneSpanRead }) {
             </Tooltip>
           </TooltipProvider>
         ) : null}
-        {tokensGap && !partial && span.costUsd === null ? (
+        {tokensGap && !partial && span.costUsd == null ? (
           <TokensEmptyHint />
         ) : null}
       </span>,

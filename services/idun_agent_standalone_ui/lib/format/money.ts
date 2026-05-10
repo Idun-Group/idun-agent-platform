@@ -25,7 +25,11 @@ export function formatCostUSD(
   if (usd == null) return "—";
   const partial = options.partial === true;
   if (usd === 0) return partial ? "~$0" : "$0";
-  const digits = usd < 1 ? 4 : 2;
+  // Defensive guard for negative inputs — shouldn't happen at the wire
+  // model layer (cost_usd is non-negative numeric on both PG and SQLite)
+  // but treating negatives as "<1 → 4 decimals" produced odd renders
+  // when a future model ever surfaces a refund-like signed value.
+  const digits = usd > 0 && usd < 1 ? 4 : 2;
   const formatted = `$${usd.toFixed(digits)}`;
   return partial ? `~${formatted}` : formatted;
 }

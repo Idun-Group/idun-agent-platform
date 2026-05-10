@@ -19,6 +19,10 @@ const MS_PER_MINUTE = 60 * MS_PER_SECOND;
 export function formatDuration(ms: number | null): string {
   if (ms == null) return "—";
   if (ms === 0) return "0 ms";
+  // Defensive guard: negative durations should never reach the wire,
+  // but the helper used to read them as "<1ms → microseconds" which
+  // produced confusing renders. Coerce to absolute on the boundary.
+  if (ms < 0) ms = Math.abs(ms);
   if (ms < 1) {
     const us = Math.round(ms * 1000);
     return `${us} µs`;
