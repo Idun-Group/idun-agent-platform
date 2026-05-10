@@ -123,6 +123,39 @@ function collectAllIds(nodes: StandaloneSpanTreeNode[]): Set<string> {
   return out;
 }
 
+/**
+ * Walk back up the parent chain from ``targetId`` and return the set
+ * of every ancestor's ``otelSpanId``. Used when a sibling component
+ * (the Waterfall) selects a span whose ancestors are collapsed in
+ * this tree -- we expand the chain so the row becomes visible.
+ *
+ * Returns an empty set when the target id is not in the tree.
+ */
+function collectAncestorIds(
+  nodes: StandaloneSpanTreeNode[],
+  targetId: string,
+): Set<string> {
+  const out = new Set<string>();
+  function visit(
+    node: StandaloneSpanTreeNode,
+    chain: readonly string[],
+  ): boolean {
+    if (node.span.otelSpanId === targetId) {
+      for (const id of chain) out.add(id);
+      return true;
+    }
+    const next = [...chain, node.span.otelSpanId];
+    for (const child of node.children) {
+      if (visit(child, next)) return true;
+    }
+    return false;
+  }
+  for (const n of nodes) {
+    if (visit(n, [])) break;
+  }
+  return out;
+}
+
 /** Format a token count, falling back to em-dash for null/zero. */
 function formatTokens(value: number | null): string {
   if (value === null || value === undefined) return "—";
@@ -190,6 +223,28 @@ export function TraceTree({
     // from the dep list so external changes don't clobber user state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [treeKey]);
+
+  // External selection (e.g. clicking a bar in the Waterfall) must
+  // make the row visible here, even if one of its ancestors is
+  // collapsed. Expand the entire ancestor chain when ``selectedSpanId``
+  // changes from the outside, then move focus to the selected row.
+  React.useEffect(() => {
+    if (selectedSpanId === null) return;
+    const ancestors = collectAncestorIds(nodes, selectedSpanId);
+    if (ancestors.size === 0) return;
+    setExpanded((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const id of ancestors) {
+        if (!next.has(id)) {
+          next.add(id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setFocusedId(selectedSpanId);
+  }, [selectedSpanId, nodes]);
 
   const rows = React.useMemo(() => flatten(nodes, expanded), [nodes, expanded]);
 

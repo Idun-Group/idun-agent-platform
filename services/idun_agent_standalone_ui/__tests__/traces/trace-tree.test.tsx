@@ -211,6 +211,40 @@ describe("TraceTree", () => {
     );
   });
 
+  it("expands ancestors when selectedSpanId changes externally", () => {
+    // Start fully collapsed so the grandchild is hidden under root + child.
+    const empty = new Set<string>();
+    const { rerender } = render(
+      <TraceTree
+        nodes={TREE}
+        selectedSpanId={null}
+        onSelect={vi.fn()}
+        initialExpanded={empty}
+      />,
+    );
+
+    // Only the root row is visible at this point.
+    expect(screen.getAllByRole("treeitem")).toHaveLength(1);
+
+    // External selection (e.g. user clicked the grandchild bar in the
+    // Waterfall) -- the tree must expand the ancestor chain so the
+    // selected row becomes visible.
+    rerender(
+      <TraceTree
+        nodes={TREE}
+        selectedSpanId="grandchild"
+        onSelect={vi.fn()}
+        initialExpanded={empty}
+      />,
+    );
+
+    const items = screen.getAllByRole("treeitem");
+    expect(items).toHaveLength(3);
+    // Focus moves to the externally-selected row.
+    expect(items[2]).toHaveAttribute("tabindex", "0");
+    expect(items[2]).toHaveAttribute("aria-selected", "true");
+  });
+
   it("marks the selected row with aria-selected=true", () => {
     render(
       <TraceTree
