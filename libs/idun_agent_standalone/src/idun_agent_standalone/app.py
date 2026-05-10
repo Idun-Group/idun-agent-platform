@@ -261,6 +261,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         # static handler before the dynamic route sees it, yielding
         # ``404`` on every link-share / Slack-unfurl form. Declaring
         # the slashed sibling route fixes that.
+        from fastapi import HTTPException
         from fastapi.responses import FileResponse
 
         # Resolve the SPA shell path once at boot — the file layout cannot
@@ -284,14 +285,31 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         else:
             _selected_trace_shell = _spa_root_shell
 
+        # The legacy ``__trace__`` segment is the build-time placeholder
+        # path that ships into the static export when ``pnpm build`` runs
+        # without the rename pass. Even after the rename pass it remains
+        # reachable via the dynamic SPA-rewrite below if a stale link
+        # leaks into the wild — surface a 410 Gone so operators clicking
+        # an old bookmark see a clear "this isn't a real trace id"
+        # signal instead of the SPA's softer client-side 404.
+        _placeholder_trace_id = "__trace__"
+
         @app.get("/admin/traces/{trace_id}", include_in_schema=False)
         async def _trace_detail_spa_shell(trace_id: str) -> FileResponse:
+            if trace_id == _placeholder_trace_id:
+                raise HTTPException(
+                    status_code=410, detail="trace placeholder is not a real id"
+                )
             return FileResponse(_selected_trace_shell)
 
         @app.get("/admin/traces/{trace_id}/", include_in_schema=False)
         async def _trace_detail_spa_shell_slashed(
             trace_id: str,
         ) -> FileResponse:
+            if trace_id == _placeholder_trace_id:
+                raise HTTPException(
+                    status_code=410, detail="trace placeholder is not a real id"
+                )
             return FileResponse(_selected_trace_shell)
 
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
