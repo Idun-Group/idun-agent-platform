@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import {
     Globe,
@@ -9,14 +9,15 @@ import {
     EyeOff,
     Copy,
     BookOpen,
-    GitPullRequest,
-    X,
     Search,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { fetchApplications, deleteApplication, createApplication, updateApplication, discoverTools } from '../../services/applications';
 import type { MCPTool } from '../../services/applications';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
+import { CapabilityCatalog, CapabilityItem } from '../../components/capability-catalog';
+import { Drawer } from '../../components/drawer';
 import type { ApplicationConfig } from '../../types/application.types';
 import type { AppType } from '../../types/application.types';
 
@@ -173,171 +174,59 @@ const HeaderBtn = styled.a`
     }
 `;
 
-// ── Two-column layout ────────────────────────────────────────────────────────
+// ── Stacked sections ─────────────────────────────────────────────────────────
 
-const MainLayout = styled.div`
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    gap: 0;
+const SectionDivider = styled.hr`
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+    margin: 4px 0;
 `;
 
-// ── Left column: transport picker ────────────────────────────────────────────
-
-const TypeColumn = styled.div`
-    width: 260px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--border-subtle);
-    padding-right: 24px;
-    overflow-y: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-`;
-
-const GroupLabel = styled.p`
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: hsl(var(--text-tertiary));
-    margin: 20px 0 8px 10px;
-
-    &:first-child { margin-top: 0; }
-`;
-
-const TypeBtn = styled.button<{ $disabled?: boolean }>`
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--text-secondary))'};
-    font-size: 13px;
-    font-weight: 400;
-    cursor: ${p => p.$disabled ? 'default' : 'pointer'};
-    opacity: ${p => p.$disabled ? 0.5 : 1};
-    transition: all 0.15s ease;
-    text-align: left;
-    margin-bottom: 2px;
-
-    &:hover {
-        background: ${p => p.$disabled ? 'transparent' : 'var(--overlay-light)'};
-        color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))'};
-    }
-`;
-
-const TypeIconBox = styled.span`
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    background: hsl(var(--primary) / 0.08);
-    color: hsl(var(--primary));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-`;
-
-const AddIndicator = styled.span`
-    margin-left: auto;
-    font-size: 16px;
-    color: hsl(var(--muted-foreground));
-    flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.15s;
-
-    ${TypeBtn}:hover & {
-        opacity: 1;
-    }
-`;
-
-const RequestBtn = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px dashed var(--border-light);
-    background: transparent;
-    color: hsl(var(--muted-foreground));
-    font-size: 13px;
-    font-weight: 400;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-align: left;
-    margin-top: 16px;
-
-    &:hover {
-        border-color: hsl(var(--primary) / 0.4);
-        color: hsl(var(--foreground));
-        background: hsl(var(--primary) / 0.04);
-    }
-`;
-
-// ── Right column: content ────────────────────────────────────────────────────
-
-const ContentColumn = styled.div`
-    flex: 1;
-    padding-left: 28px;
-    overflow-y: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-`;
-
-const EmptyState = styled.div`
+const ConfiguredSection = styled.section`
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 60px 20px;
-    gap: 16px;
+    gap: 14px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
 `;
 
-const EmptyTitle = styled.h3`
-    font-size: 16px;
-    font-weight: 600;
-    color: hsl(var(--foreground));
-    margin: 0;
-`;
-
-const EmptyDescription = styled.p`
-    font-size: 13px;
-    line-height: 1.7;
-    color: hsl(var(--text-secondary));
-    margin: 0;
-    max-width: 420px;
-`;
-
-const EmptyChips = styled.div`
+const ConfiguredHeader = styled.div`
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 `;
 
-const Chip = styled.span<{ $color: string }>`
-    padding: 4px 12px;
+const SectionLabel = styled.div`
     font-size: 11px;
     font-weight: 600;
-    border-radius: 6px;
-    background: ${p => `${p.$color}14`};
-    color: ${p => p.$color};
-    border: 1px solid ${p => `${p.$color}20`};
-    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: hsl(var(--muted-foreground));
 `;
 
-const EmptyImage = styled.img`
-    width: 100%;
-    max-width: 380px;
-    margin-top: 8px;
+const PrimaryButton = styled.button`
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    &:hover { opacity: 0.9; }
 `;
 
-// ── Search bar (in right column) ─────────────────────────────────────────────
+const EmptyHint = styled.div`
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+    padding: 20px 0;
+`;
+
+// ── Search bar (header) ──────────────────────────────────────────────────────
 
 const SearchBar = styled.div`
     display: flex;
@@ -886,93 +775,7 @@ const DeleteBtn = styled.button`
     &:hover { background: rgba(248, 113, 113, 0.18); }
 `;
 
-// ── Per-transport modal styled components ────────────────────────────────────
-
-const modalIn = keyframes`from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); }`;
-
-const Overlay = styled.div`
-    position: fixed;
-    inset: 0;
-    z-index: 1001;
-    background: var(--overlay-backdrop);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-`;
-
-const Modal = styled.div`
-    background: hsl(var(--card));
-    border-radius: 16px;
-    width: 520px;
-    max-width: 95vw;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-light);
-    animation: ${modalIn} 0.2s ease;
-`;
-
-const ModalHeader = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 24px 28px 20px;
-    border-bottom: 1px solid var(--border-subtle);
-`;
-
-const ModalIconBox = styled.div`
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: hsl(var(--primary) / 0.12);
-    color: hsl(var(--primary));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-`;
-
-const ModalTitleBlock = styled.div`
-    flex: 1;
-`;
-
-const ModalTitle = styled.h2`
-    font-size: 17px;
-    font-weight: 700;
-    color: hsl(var(--foreground));
-    margin: 0;
-`;
-
-const ModalSubtitle = styled.p`
-    font-size: 12px;
-    color: hsl(var(--muted-foreground));
-    margin: 2px 0 0;
-`;
-
-const CloseBtn = styled.button`
-    background: var(--overlay-light);
-    border: none;
-    border-radius: 8px;
-    width: 32px;
-    height: 32px;
-    color: hsl(var(--muted-foreground));
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-    flex-shrink: 0;
-
-    &:hover { background: var(--border-medium); color: hsl(var(--foreground)); }
-`;
-
-const ModalBody = styled.div`
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px 28px;
-`;
+// ── Drawer form styled components ────────────────────────────────────────────
 
 const FieldGroup = styled.div`
     margin-bottom: 20px;
@@ -1043,11 +846,12 @@ const ErrorMsg = styled.p`
     border: 1px solid rgba(248, 113, 113, 0.2);
 `;
 
-const ModalFooter = styled.div`
+const FormFooter = styled.div`
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 20px 28px;
+    padding-top: 20px;
+    margin-top: 8px;
     border-top: 1px solid var(--border-subtle);
 `;
 
@@ -1151,18 +955,19 @@ const SecretField: React.FC<{ value: string }> = ({ value }) => {
 
 // ── Per-transport modal component ────────────────────────────────────────────
 
-interface TransportModalProps {
-    transportId: TransportType;
+interface TransportDrawerProps {
+    open: boolean;
+    transportId: TransportType | null;
     appToEdit: ApplicationConfig | null;
     onClose: () => void;
     onSaved: () => void;
 }
 
-const TransportModal: React.FC<TransportModalProps> = ({ transportId, appToEdit, onClose, onSaved }) => {
-    const meta = TRANSPORT_MAP[transportId];
-    const fields = meta.fields;
+const TransportDrawer: React.FC<TransportDrawerProps> = ({ open, transportId, appToEdit, onClose, onSaved }) => {
+    const { t } = useTranslation();
+    const meta = transportId ? TRANSPORT_MAP[transportId] : null;
+    const fields = meta?.fields ?? [];
     const isEditMode = !!appToEdit;
-    const Icon = meta.icon;
 
     const [name, setName] = useState('');
     const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -1195,6 +1000,7 @@ const TransportModal: React.FC<TransportModalProps> = ({ transportId, appToEdit,
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMessage(null);
+        if (!meta || !transportId) return;
 
         // Validate required fields
         for (const field of fields) {
@@ -1235,94 +1041,93 @@ const TransportModal: React.FC<TransportModalProps> = ({ transportId, appToEdit,
         }
     };
 
+    const drawerTitle = meta
+        ? (isEditMode
+            ? t('admin.mcp.drawer_title_edit', `Edit ${meta.label}`)
+            : t(`admin.mcp.transport.${transportSlug(meta.id)}.label`, meta.label))
+        : '';
+
     return (
-        <Overlay onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-            <Modal>
-                <ModalHeader>
-                    <ModalIconBox><Icon size={20} /></ModalIconBox>
-                    <ModalTitleBlock>
-                        <ModalTitle>{isEditMode ? `Edit ${meta.label}` : meta.label}</ModalTitle>
-                        <ModalSubtitle>{meta.description}</ModalSubtitle>
-                    </ModalTitleBlock>
-                    <CloseBtn type="button" onClick={onClose}><X size={16} /></CloseBtn>
-                </ModalHeader>
+        <Drawer open={open} onClose={onClose} title={drawerTitle}>
+            <form onSubmit={handleSubmit}>
+                {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-                    <ModalBody>
-                        {errorMessage && <ErrorMsg>{errorMessage}</ErrorMsg>}
+                <FieldGroup>
+                    <Label htmlFor="server-name">Server Name</Label>
+                    <Input
+                        id="server-name"
+                        type="text"
+                        placeholder={meta?.label ?? ''}
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                    />
+                </FieldGroup>
 
-                        <FieldGroup>
-                            <Label htmlFor="server-name">Server Name</Label>
+                {fields.map(field => (
+                    <FieldGroup key={field.key}>
+                        <Label htmlFor={field.key}>
+                            {field.label}{field.required && <Required> *</Required>}
+                        </Label>
+
+                        {field.type === 'password' ? (
+                            <PasswordWrapper>
+                                <Input
+                                    id={field.key}
+                                    type={visiblePasswords[field.key] ? 'text' : 'password'}
+                                    placeholder={field.placeholder}
+                                    value={formValues[field.key] ?? ''}
+                                    onChange={e => handleChange(field.key, e.target.value)}
+                                    style={{ paddingRight: 40 }}
+                                />
+                                <PasswordToggleBtn type="button" onClick={() => setVisiblePasswords(prev => ({ ...prev, [field.key]: !prev[field.key] }))}>
+                                    {visiblePasswords[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </PasswordToggleBtn>
+                            </PasswordWrapper>
+                        ) : (
                             <Input
-                                id="server-name"
-                                type="text"
-                                placeholder={meta.label}
-                                value={name}
-                                onChange={e => setName(e.target.value)}
+                                id={field.key}
+                                type={field.type === 'url' ? 'url' : 'text'}
+                                placeholder={field.placeholder}
+                                value={formValues[field.key] ?? ''}
+                                onChange={e => handleChange(field.key, e.target.value)}
                             />
-                        </FieldGroup>
+                        )}
 
-                        {fields.map(field => (
-                            <FieldGroup key={field.key}>
-                                <Label htmlFor={field.key}>
-                                    {field.label}{field.required && <Required> *</Required>}
-                                </Label>
+                        {field.key === 'args' && <Hint>JSON array of command arguments</Hint>}
+                        {field.key === 'env' && <Hint>JSON object of environment variables</Hint>}
+                    </FieldGroup>
+                ))}
 
-                                {field.type === 'password' ? (
-                                    <PasswordWrapper>
-                                        <Input
-                                            id={field.key}
-                                            type={visiblePasswords[field.key] ? 'text' : 'password'}
-                                            placeholder={field.placeholder}
-                                            value={formValues[field.key] ?? ''}
-                                            onChange={e => handleChange(field.key, e.target.value)}
-                                            style={{ paddingRight: 40 }}
-                                        />
-                                        <PasswordToggleBtn type="button" onClick={() => setVisiblePasswords(prev => ({ ...prev, [field.key]: !prev[field.key] }))}>
-                                            {visiblePasswords[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </PasswordToggleBtn>
-                                    </PasswordWrapper>
-                                ) : (
-                                    <Input
-                                        id={field.key}
-                                        type={field.type === 'url' ? 'url' : 'text'}
-                                        placeholder={field.placeholder}
-                                        value={formValues[field.key] ?? ''}
-                                        onChange={e => handleChange(field.key, e.target.value)}
-                                    />
-                                )}
-
-                                {field.key === 'args' && <Hint>JSON array of command arguments</Hint>}
-                                {field.key === 'env' && <Hint>JSON object of environment variables</Hint>}
-                            </FieldGroup>
-                        ))}
-                    </ModalBody>
-
-                    <ModalFooter>
-                        <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
-                        <SubmitBtn type="submit" disabled={isSubmitting}>
-                            {isSubmitting && <SmallSpinner />}
-                            {isEditMode ? 'Save Changes' : 'Add Server'}
-                        </SubmitBtn>
-                    </ModalFooter>
-                </form>
-            </Modal>
-        </Overlay>
+                <FormFooter>
+                    <CancelBtn type="button" onClick={onClose}>Cancel</CancelBtn>
+                    <SubmitBtn type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <SmallSpinner />}
+                        {isEditMode ? 'Save Changes' : 'Add Server'}
+                    </SubmitBtn>
+                </FormFooter>
+            </form>
+        </Drawer>
     );
 };
+
+// Helper used by both the catalog and drawer title resolution.
+const transportSlug = (id: string) =>
+    id === 'StreamableHTTP' ? 'streamable_http' : id.toLowerCase();
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const MCPPage: React.FC = () => {
+    const { t } = useTranslation();
     const [apps, setApps] = useState<ApplicationConfig[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [openId, setOpenId] = useState<string | null>(null);
     const [quickStartOpen, setQuickStartOpen] = useState(true);
 
-    // Modal
+    // Drawer
     const [modalTransportId, setModalTransportId] = useState<TransportType | null>(null);
     const [appToEdit, setAppToEdit] = useState<ApplicationConfig | null>(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     // Delete
     const [appToDelete, setAppToDelete] = useState<ApplicationConfig | null>(null);
@@ -1359,14 +1164,38 @@ const MCPPage: React.FC = () => {
 
     useEffect(() => { loadApps(); }, [loadApps]);
 
-    const openCreate = (transportId: TransportType) => { setAppToEdit(null); setModalTransportId(transportId); };
+    const openCreate = (transportId: TransportType) => {
+        setAppToEdit(null);
+        setModalTransportId(transportId);
+        setIsDrawerOpen(true);
+    };
     const openEdit = (app: ApplicationConfig) => {
         setAppToEdit(app);
         // Reverse-map stored transport value back to the UI transport type
         const transportId = API_VALUE_TO_TRANSPORT[app.type] ?? 'StreamableHTTP';
         setModalTransportId(transportId);
+        setIsDrawerOpen(true);
     };
-    const closeModal = () => { setModalTransportId(null); setAppToEdit(null); };
+    const closeModal = () => {
+        setIsDrawerOpen(false);
+        setModalTransportId(null);
+        setAppToEdit(null);
+    };
+
+    const catalogItems: CapabilityItem[] = useMemo(
+        () =>
+            TRANSPORTS.map(transport => {
+                const Icon = transport.icon;
+                const slug = transportSlug(transport.id);
+                return {
+                    id: transport.id,
+                    label: t(`admin.mcp.transport.${slug}.label`, transport.label),
+                    description: t(`admin.mcp.transport.${slug}.description`, transport.description),
+                    icon: <Icon size={20} />,
+                };
+            }),
+        [t],
+    );
 
     const handleDeleteConfirm = async () => {
         if (!appToDelete?.id) return;
@@ -1387,8 +1216,8 @@ const MCPPage: React.FC = () => {
         <PageWrapper>
             <PageHeader>
                 <TitleBlock>
-                    <PageTitle>MCP Servers</PageTitle>
-                    <PageSubtitle>Model Context Protocol integrations for your agents</PageSubtitle>
+                    <PageTitle>{t('admin.mcp.title', 'MCP Servers')}</PageTitle>
+                    <PageSubtitle>{t('admin.mcp.subtitle', 'Model Context Protocol integrations for your agents')}</PageSubtitle>
                 </TitleBlock>
                 <HeaderActions>
                     <SearchBar>
@@ -1405,203 +1234,182 @@ const MCPPage: React.FC = () => {
                 </HeaderActions>
             </PageHeader>
 
-            <MainLayout>
-                {/* ── Left: Transport picker ────────────────────── */}
-                <TypeColumn>
-                    <GroupLabel>Transports</GroupLabel>
-                    {TRANSPORTS.map(transport => (
-                        <TypeBtn
-                            key={transport.id}
-                            type="button"
-                            onClick={() => openCreate(transport.id)}
-                        >
-                            <TypeIconBox><transport.icon size={15} /></TypeIconBox>
-                            {transport.label}
-                            <AddIndicator>+</AddIndicator>
-                        </TypeBtn>
-                    ))}
+            <CapabilityCatalog
+                items={catalogItems}
+                label={t('admin.mcp.available_label', 'AVAILABLE TRANSPORTS')}
+                onSelect={id => openCreate(id as TransportType)}
+            />
 
-                    <RequestBtn
-                        type="button"
-                        onClick={() => window.open('https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=enhancement&template=feature_request.md&title=%5BMCP%5D+New+transport+request', '_blank')}
-                    >
-                        <TypeIconBox><GitPullRequest size={15} /></TypeIconBox>
-                        Request a transport
-                    </RequestBtn>
-                </TypeColumn>
+            <SectionDivider />
 
-                {/* ── Right: Configured servers ─────────────────── */}
-                <ContentColumn>
-                    {isLoading ? (
-                        <CenterBox>
-                            <LoadingSpinner />
-                            <p>Loading MCP servers…</p>
-                        </CenterBox>
-                    ) : apps.length === 0 ? (
-                        <EmptyState>
-                            <EmptyTitle>Add an MCP server to get started</EmptyTitle>
-                            <EmptyDescription>
-                                Connect your agents to external tools and data sources via Model Context Protocol. Add an MCP server to get started.
-                            </EmptyDescription>
-                            <EmptyChips>
-                                <Chip $color="#8b5cf6">Streamable HTTP</Chip>
-                                <Chip $color="#f59e0b">SSE</Chip>
-                                <Chip $color="#10b981">WebSocket</Chip>
-                                <Chip $color="#ef4444">STDIO</Chip>
-                            </EmptyChips>
-                            <EmptyImage src="/img/mcp-flow.png" alt="" />
-                        </EmptyState>
-                    ) : (
-                        <>
-                            <StatsBar>
-                                <StatChip><strong>{apps.length}</strong> Total servers</StatChip>
-                                <StatChip><strong>{activeCount}</strong> Active</StatChip>
-                            </StatsBar>
+            <ConfiguredSection>
+                <ConfiguredHeader>
+                    <SectionLabel>
+                        {t('admin.mcp.configured_label', 'YOUR MCP SERVERS')}
+                        {apps.length > 0 && ` · ${apps.length} configured`}
+                    </SectionLabel>
+                    <PrimaryButton onClick={() => openCreate('StreamableHTTP')}>
+                        + {t('admin.mcp.new_button', 'New MCP server')}
+                    </PrimaryButton>
+                </ConfiguredHeader>
 
-                            <QuickStart>
-                                <QuickStartHeader onClick={() => setQuickStartOpen(o => !o)}>
-                                    <QuickStartTitle>
-                                        Quick Start
-                                        <QuickStartBadge>Guide</QuickStartBadge>
-                                    </QuickStartTitle>
-                                    <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 12 }}>
-                                        {quickStartOpen ? '\u25B2' : '\u25BC'}
-                                    </span>
-                                </QuickStartHeader>
-                                <QuickStartBody $open={quickStartOpen}>
-                                    <CodeGrid>
-                                        <div>
-                                            <CodeLabel>LangGraph</CodeLabel>
-                                            <CodeBlock>
-                                                <pre><PyHighlight code={LANGGRAPH_EXAMPLE} /></pre>
-                                                <CodeCopyBtn onClick={() => navigator.clipboard.writeText(LANGGRAPH_EXAMPLE)}>
-                                                    <Copy size={11} /> Copy
-                                                </CodeCopyBtn>
-                                            </CodeBlock>
-                                        </div>
-                                        <div>
-                                            <CodeLabel>Google ADK</CodeLabel>
-                                            <CodeBlock>
-                                                <pre><PyHighlight code={ADK_EXAMPLE} /></pre>
-                                                <CodeCopyBtn onClick={() => navigator.clipboard.writeText(ADK_EXAMPLE)}>
-                                                    <Copy size={11} /> Copy
-                                                </CodeCopyBtn>
-                                            </CodeBlock>
-                                        </div>
-                                    </CodeGrid>
-                                </QuickStartBody>
-                            </QuickStart>
+                {isLoading ? (
+                    <CenterBox>
+                        <LoadingSpinner />
+                        <p>Loading MCP servers…</p>
+                    </CenterBox>
+                ) : apps.length === 0 ? (
+                    <EmptyHint>
+                        {t('admin.mcp.empty_state', 'No MCP servers yet — pick a transport above to add one.')}
+                    </EmptyHint>
+                ) : (
+                    <>
+                        <StatsBar>
+                            <StatChip><strong>{apps.length}</strong> Total servers</StatChip>
+                            <StatChip><strong>{activeCount}</strong> Active</StatChip>
+                        </StatsBar>
 
-                            <ServerList>
-                                {filtered.map(app => {
-                                    const config = flattenConfig(app.config);
-                                    const configEntries = Object.entries(config);
-                                    const url = getServerUrl(config);
-                                    const transportLabel =
-                                        config.transport === 'streamable_http' ? 'Streamable HTTP' :
-                                        config.transport === 'sse' ? 'SSE' :
-                                        config.transport === 'websocket' ? 'WebSocket' :
-                                        config.transport === 'stdio' ? 'STDIO' :
-                                        app.type;
+                        <QuickStart>
+                            <QuickStartHeader onClick={() => setQuickStartOpen(o => !o)}>
+                                <QuickStartTitle>
+                                    Quick Start
+                                    <QuickStartBadge>Guide</QuickStartBadge>
+                                </QuickStartTitle>
+                                <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 12 }}>
+                                    {quickStartOpen ? '\u25B2' : '\u25BC'}
+                                </span>
+                            </QuickStartHeader>
+                            <QuickStartBody $open={quickStartOpen}>
+                                <CodeGrid>
+                                    <div>
+                                        <CodeLabel>LangGraph</CodeLabel>
+                                        <CodeBlock>
+                                            <pre><PyHighlight code={LANGGRAPH_EXAMPLE} /></pre>
+                                            <CodeCopyBtn onClick={() => navigator.clipboard.writeText(LANGGRAPH_EXAMPLE)}>
+                                                <Copy size={11} /> Copy
+                                            </CodeCopyBtn>
+                                        </CodeBlock>
+                                    </div>
+                                    <div>
+                                        <CodeLabel>Google ADK</CodeLabel>
+                                        <CodeBlock>
+                                            <pre><PyHighlight code={ADK_EXAMPLE} /></pre>
+                                            <CodeCopyBtn onClick={() => navigator.clipboard.writeText(ADK_EXAMPLE)}>
+                                                <Copy size={11} /> Copy
+                                            </CodeCopyBtn>
+                                        </CodeBlock>
+                                    </div>
+                                </CodeGrid>
+                            </QuickStartBody>
+                        </QuickStart>
 
-                                    return (
-                                        <ServerCard key={app.id}>
-                                            <ServerHeader>
-                                                <ServerIcon><img src="/img/mcp.png" alt="MCP" /></ServerIcon>
-                                                <ServerMeta>
-                                                    <ServerName>{app.name}</ServerName>
-                                                    <ServerSubtitle>{url || app.type}</ServerSubtitle>
-                                                </ServerMeta>
-                                            </ServerHeader>
+                        <ServerList>
+                            {filtered.map(app => {
+                                const config = flattenConfig(app.config);
+                                const configEntries = Object.entries(config);
+                                const url = getServerUrl(config);
+                                const transportLabel =
+                                    config.transport === 'streamable_http' ? 'Streamable HTTP' :
+                                    config.transport === 'sse' ? 'SSE' :
+                                    config.transport === 'websocket' ? 'WebSocket' :
+                                    config.transport === 'stdio' ? 'STDIO' :
+                                    app.type;
 
-                                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                                <TransportBadge>{transportLabel}</TransportBadge>
-                                                {toolsMap[app.id] && toolsMap[app.id].length > 0 && (
-                                                    <ToolCountBadge>{toolsMap[app.id].length} tools</ToolCountBadge>
-                                                )}
-                                                <StatusBadge $active={true}>Active</StatusBadge>
-                                            </div>
+                                return (
+                                    <ServerCard key={app.id}>
+                                        <ServerHeader>
+                                            <ServerIcon><img src="/img/mcp.png" alt="MCP" /></ServerIcon>
+                                            <ServerMeta>
+                                                <ServerName>{app.name}</ServerName>
+                                                <ServerSubtitle>{url || app.type}</ServerSubtitle>
+                                            </ServerMeta>
+                                        </ServerHeader>
 
-                                            {configEntries.length > 0 && (
-                                                <>
-                                                    <Divider />
-                                                    <ConfigList>
-                                                        {configEntries.slice(0, 4).map(([k, v]) => (
-                                                            <ConfigRow key={k}>
-                                                                <ConfigKey>{k.replace(/_/g, ' ')}</ConfigKey>
-                                                                {isSecretKey(k) ? (
-                                                                    <SecretField value={v} />
-                                                                ) : (
-                                                                    <ConfigValue title={v}>{v}</ConfigValue>
-                                                                )}
-                                                            </ConfigRow>
-                                                        ))}
-                                                    </ConfigList>
-                                                </>
-                                            )}
-
-                                            {!toolsMap[app.id] && (
-                                                <>
-                                                    <DiscoverButton
-                                                        onClick={() => handleDiscover(app.id)}
-                                                        disabled={loadingTools[app.id]}
-                                                    >
-                                                        {loadingTools[app.id] ? (
-                                                            <><DiscoverSpinner /> Discovering…</>
-                                                        ) : (
-                                                            'Discover tools'
-                                                        )}
-                                                    </DiscoverButton>
-                                                    {toolErrors[app.id] && (
-                                                        <DiscoverError>{toolErrors[app.id]}</DiscoverError>
-                                                    )}
-                                                </>
-                                            )}
-
+                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                            <TransportBadge>{transportLabel}</TransportBadge>
                                             {toolsMap[app.id] && toolsMap[app.id].length > 0 && (
-                                                <>
-                                                    <Divider />
-                                                    <ToolList>
-                                                        {toolsMap[app.id].map(tool => (
-                                                            <ToolItem key={tool.name}>
-                                                                <ToolName>{tool.name}</ToolName>
-                                                                {tool.description && (
-                                                                    <ToolDescription>{tool.description}</ToolDescription>
-                                                                )}
-                                                            </ToolItem>
-                                                        ))}
-                                                    </ToolList>
-                                                </>
+                                                <ToolCountBadge>{toolsMap[app.id].length} tools</ToolCountBadge>
                                             )}
+                                            <StatusBadge $active={true}>Active</StatusBadge>
+                                        </div>
 
-                                            {(app.agentCount ?? 0) > 0 && (
-                                                <AgentCountBadge>
-                                                    Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}
-                                                </AgentCountBadge>
-                                            )}
+                                        {configEntries.length > 0 && (
+                                            <>
+                                                <Divider />
+                                                <ConfigList>
+                                                    {configEntries.slice(0, 4).map(([k, v]) => (
+                                                        <ConfigRow key={k}>
+                                                            <ConfigKey>{k.replace(/_/g, ' ')}</ConfigKey>
+                                                            {isSecretKey(k) ? (
+                                                                <SecretField value={v} />
+                                                            ) : (
+                                                                <ConfigValue title={v}>{v}</ConfigValue>
+                                                            )}
+                                                        </ConfigRow>
+                                                    ))}
+                                                </ConfigList>
+                                            </>
+                                        )}
 
-                                            <CardActions>
-                                                <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
-                                                <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
-                                            </CardActions>
-                                        </ServerCard>
-                                    );
-                                })}
-                            </ServerList>
-                        </>
-                    )}
-                </ContentColumn>
-            </MainLayout>
+                                        {!toolsMap[app.id] && (
+                                            <>
+                                                <DiscoverButton
+                                                    onClick={() => handleDiscover(app.id)}
+                                                    disabled={loadingTools[app.id]}
+                                                >
+                                                    {loadingTools[app.id] ? (
+                                                        <><DiscoverSpinner /> Discovering…</>
+                                                    ) : (
+                                                        'Discover tools'
+                                                    )}
+                                                </DiscoverButton>
+                                                {toolErrors[app.id] && (
+                                                    <DiscoverError>{toolErrors[app.id]}</DiscoverError>
+                                                )}
+                                            </>
+                                        )}
 
-            {/* ── Per-transport modal ──────────────────────────── */}
-            {modalTransportId && (
-                <TransportModal
-                    transportId={modalTransportId}
-                    appToEdit={appToEdit}
-                    onClose={closeModal}
-                    onSaved={loadApps}
-                />
-            )}
+                                        {toolsMap[app.id] && toolsMap[app.id].length > 0 && (
+                                            <>
+                                                <Divider />
+                                                <ToolList>
+                                                    {toolsMap[app.id].map(tool => (
+                                                        <ToolItem key={tool.name}>
+                                                            <ToolName>{tool.name}</ToolName>
+                                                            {tool.description && (
+                                                                <ToolDescription>{tool.description}</ToolDescription>
+                                                            )}
+                                                        </ToolItem>
+                                                    ))}
+                                                </ToolList>
+                                            </>
+                                        )}
+
+                                        {(app.agentCount ?? 0) > 0 && (
+                                            <AgentCountBadge>
+                                                Used by {app.agentCount} agent{app.agentCount !== 1 ? 's' : ''}
+                                            </AgentCountBadge>
+                                        )}
+
+                                        <CardActions>
+                                            <EditBtn onClick={() => openEdit(app)}>Edit</EditBtn>
+                                            <DeleteBtn onClick={() => setAppToDelete(app)}>Remove</DeleteBtn>
+                                        </CardActions>
+                                    </ServerCard>
+                                );
+                            })}
+                        </ServerList>
+                    </>
+                )}
+            </ConfiguredSection>
+
+            <TransportDrawer
+                open={isDrawerOpen}
+                transportId={modalTransportId}
+                appToEdit={appToEdit}
+                onClose={closeModal}
+                onSaved={loadApps}
+            />
 
             <DeleteConfirmModal
                 isOpen={!!appToDelete}
