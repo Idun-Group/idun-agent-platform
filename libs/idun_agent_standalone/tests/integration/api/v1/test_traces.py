@@ -19,6 +19,7 @@ from idun_agent_standalone.api.v1.errors import (
 )
 from idun_agent_standalone.api.v1.routers.traces import router as traces_router
 from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
+from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
 from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTraceRow
 
 
@@ -197,4 +198,131 @@ async def test_health_endpoint_returns_zero_when_pipeline_absent(admin_app) -> N
     }
 
 
-# Detail / delete / auth-gate tests are added in subsequent commits.
+async def _seed_span(
+    async_session,
+    *,
+    trace_id_8: bytes,
+    span_id: bytes,
+    parent_span_id: bytes | None,
+    started_at: datetime,
+    name: str = "span",
+    kind: str = "INTERNAL",
+) -> StandaloneSpanRow:
+    row = StandaloneSpanRow(
+        started_at=started_at,
+        otel_span_id=span_id,
+        otel_trace_id=trace_id_8,
+        parent_span_id=parent_span_id,
+        name=name,
+        kind=kind,
+    )
+    async_session.add(row)
+    await async_session.commit()
+    return row
+
+
+async def test_get_trace_detail_returns_tree_for_seeded_trace(
+    admin_app, async_session
+) -> None:
+    """Three-span trace (root + 2 children) → tree with one root + 2 leaves."""
+    base = datetime(2026, 5, 9, 12, 0, 0, tzinfo=UTC)
+    trace_id = _trace_id(0xAB)
+    await _seed_trace(
+        async_session,
+        trace_id=trace_id,
+        started_at=base,
+    )
+    trace_id_8 = trace_id[8:]
+    root_id = _span_id(0x01)
+    child_a = _span_id(0x02)
+    child_b = _span_id(0x03)
+    await _seed_span(
+        async_session,
+        trace_id_8=trace_id_8,
+        span_id=root_id,
+        parent_span_id=None,
+        started_at=base,
+        name="root",
+    )
+    await _seed_span(
+        async_session,
+        trace_id_8=trace_id_8,
+        span_id=child_a,
+        parent_span_id=root_id,
+        started_at=base + timedelta(milliseconds=10),
+        name="child_a",
+    )
+    await _seed_span(
+        async_session,
+        trace_id_8=trace_id_8,
+        span_id=child_b,
+        parent_span_id=root_id,
+        started_at=base + timedelta(milliseconds=20),
+        name="child_b",
+    )
+
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(f"/admin/api/v1/traces/{trace_id.hex()}")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["trace"]["otelTraceId"] == trace_id.hex()
+    tree = body["tree"]
+    assert len(tree) == 1
+    root_node = tree[0]
+    assert root_node["span"]["name"] == "root"
+    children = root_node["children"]
+    assert {c["span"]["name"] for c in children} == {"child_a", "child_b"}
+    assert all(c["children"] == [] for c in children)
+
+
+async def test_get_trace_detail_404_when_unknown(admin_app) -> None:
+    """Random hex trace id → 404 with the standalone error envelope."""
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            "/admin/api/v1/traces/" + ("ff" * 16),
+        )
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "not_found"
+
+
+async def test_get_trace_detail_depth_capped_at_32(
+    admin_app, async_session
+) -> None:
+    """35-deep linear chain → returned tree depth is at most 32."""
+    base = datetime(2026, 5, 9, 12, 0, 0, tzinfo=UTC)
+    trace_id = _trace_id(0xCD)
+    await _seed_trace(async_session, trace_id=trace_id, started_at=base)
+    trace_id_8 = trace_id[8:]
+
+    parent: bytes | None = None
+    for i in range(35):
+        span_id = bytes([i + 1, 0, 0, 0, 0, 0, 0, 0])
+        await _seed_span(
+            async_session,
+            trace_id_8=trace_id_8,
+            span_id=span_id,
+            parent_span_id=parent,
+            started_at=base + timedelta(milliseconds=i),
+            name=f"depth-{i}",
+        )
+        parent = span_id
+
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(f"/admin/api/v1/traces/{trace_id.hex()}")
+    assert response.status_code == 200
+    body = response.json()
+    tree = body["tree"]
+    assert len(tree) == 1
+
+    depth = 1
+    node = tree[0]
+    while node["children"]:
+        depth += 1
+        node = node["children"][0]
+
+    # The recursive CTE caps at depth 32 (decision §28). The 33rd level
+    # and below are silently truncated.
+    assert depth <= 32

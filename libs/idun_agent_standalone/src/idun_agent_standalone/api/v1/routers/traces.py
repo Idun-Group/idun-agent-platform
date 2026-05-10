@@ -30,12 +30,15 @@ from fastapi import status as http_status
 from idun_agent_schema.standalone import (
     StandaloneAdminError,
     StandaloneErrorCode,
+    StandaloneSpanRead,
+    StandaloneSpanTreeNode,
+    StandaloneTraceDetail,
     StandaloneTraceHealth,
     StandaloneTraceListFilters,
     StandaloneTraceListItem,
     StandaloneTraceListResponse,
 )
-from sqlalchemy import String, cast, select
+from sqlalchemy import String, cast, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from idun_agent_standalone.api.v1.deps import SessionDep, require_auth
@@ -50,6 +53,11 @@ router = APIRouter(
 )
 
 logger = get_logger(__name__)
+
+# Decision §28: cap span tree at 32 levels to bound runaway-agent
+# response size. The CTE seed row counts as level 1; recursion adds
+# one level per round, capped at ``_MAX_DEPTH_LEVELS`` total.
+_MAX_DEPTH_LEVELS = 32
 
 
 def _row_to_list_item(row: StandaloneTraceRow) -> StandaloneTraceListItem:
@@ -239,6 +247,10 @@ async def trace_pipeline_health(request: Request) -> StandaloneTraceHealth:
     booted without a trace pipeline, or T7 wiring not present), return
     zeroes plus ``writer_running=False`` so the UI panel stays
     renderable instead of erroring.
+
+    Declared **before** the ``/{otel_trace_id}`` route so the literal
+    path takes precedence over the path-parameter route at match time
+    — FastAPI iterates in declaration order.
     """
     exporter = getattr(request.app.state, "trace_exporter", None)
     writer = getattr(request.app.state, "trace_writer", None)
@@ -255,4 +267,178 @@ async def trace_pipeline_health(request: Request) -> StandaloneTraceHealth:
         max_queue_size=getattr(exporter, "max_queue_size", 0),
         overflow_count=getattr(exporter, "overflow_count", 0),
         writer_running=bool(writer is not None and getattr(writer, "running", False)),
+    )
+
+
+def _decode_trace_id_path(otel_trace_id: str) -> bytes:
+    """Decode the hex path parameter to a 16-byte trace id.
+
+    Surfaces a ``404`` (not 422) on invalid hex so the route shape
+    mirrors "no such trace" — clients can't probe for the existence of
+    arbitrary keys via the error code.
+    """
+    try:
+        decoded = bytes.fromhex(otel_trace_id)
+    except ValueError as exc:
+        raise AdminAPIError(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            error=StandaloneAdminError(
+                code=StandaloneErrorCode.NOT_FOUND,
+                message="No trace found for the given id.",
+            ),
+        ) from exc
+    if len(decoded) != 16:
+        raise AdminAPIError(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            error=StandaloneAdminError(
+                code=StandaloneErrorCode.NOT_FOUND,
+                message="No trace found for the given id.",
+            ),
+        )
+    return decoded
+
+
+def _row_mapping_to_span_read(mapping: Any) -> StandaloneSpanRead:
+    """Translate a ``Result.mappings()`` row into the wire model."""
+    return StandaloneSpanRead(
+        otel_span_id=bytes(mapping["otel_span_id"]).hex(),
+        otel_trace_id=bytes(mapping["otel_trace_id"]).hex(),
+        parent_span_id=(
+            bytes(mapping["parent_span_id"]).hex()
+            if mapping["parent_span_id"] is not None
+            else None
+        ),
+        name=mapping["name"],
+        kind=mapping["kind"],
+        started_at=mapping["started_at"],
+        ended_at=mapping["ended_at"],
+        latency_ms=(
+            float(mapping["latency_ms"])
+            if mapping["latency_ms"] is not None
+            else None
+        ),
+        model=mapping["model"],
+        provider=mapping["provider"],
+        prompt_tokens=mapping["prompt_tokens"],
+        completion_tokens=mapping["completion_tokens"],
+        cache_read_tokens=mapping["cache_read_tokens"],
+        cache_write_tokens=mapping["cache_write_tokens"],
+        total_tokens=mapping["total_tokens"],
+        cost_usd=(
+            float(mapping["cost_usd"]) if mapping["cost_usd"] is not None else None
+        ),
+        cost_breakdown=mapping["cost_breakdown"],
+        cost_source=mapping["cost_source"],
+        status=mapping["status"],
+        attributes=mapping["attributes"],
+        events=mapping["events"],
+    )
+
+
+def _build_tree(
+    spans: list[StandaloneSpanRead],
+) -> list[StandaloneSpanTreeNode]:
+    """Assemble a flat span list into a forest of trees.
+
+    Spans whose ``parent_span_id`` is missing from the input set are
+    surfaced as roots (orphans) so the UI never silently hides them —
+    e.g. when the parent fell outside the depth-32 window or when the
+    upstream agent emitted a span pointing to a parent in a different
+    trace.
+    """
+    by_id: dict[str, StandaloneSpanTreeNode] = {
+        s.otel_span_id: StandaloneSpanTreeNode(span=s, children=[])
+        for s in spans
+    }
+    roots: list[StandaloneSpanTreeNode] = []
+    for span in spans:
+        node = by_id[span.otel_span_id]
+        parent_key = span.parent_span_id
+        if parent_key is None or parent_key not in by_id:
+            roots.append(node)
+            continue
+        by_id[parent_key].children.append(node)
+    return roots
+
+
+_SPAN_TREE_CTE = text(
+    """
+    WITH RECURSIVE span_tree AS (
+        SELECT
+            started_at, otel_span_id, otel_trace_id, parent_span_id,
+            name, kind, ended_at, latency_ms, model, provider,
+            prompt_tokens, completion_tokens, cache_read_tokens,
+            cache_write_tokens, total_tokens, cost_usd, cost_breakdown,
+            cost_source, status, attributes, events,
+            0 AS depth
+        FROM standalone_span
+        WHERE otel_trace_id = :trace_id_8
+        AND (
+            parent_span_id IS NULL
+            OR parent_span_id NOT IN (
+                SELECT otel_span_id FROM standalone_span
+                WHERE otel_trace_id = :trace_id_8
+            )
+        )
+        UNION ALL
+        SELECT
+            s.started_at, s.otel_span_id, s.otel_trace_id, s.parent_span_id,
+            s.name, s.kind, s.ended_at, s.latency_ms, s.model, s.provider,
+            s.prompt_tokens, s.completion_tokens, s.cache_read_tokens,
+            s.cache_write_tokens, s.total_tokens, s.cost_usd, s.cost_breakdown,
+            s.cost_source, s.status, s.attributes, s.events,
+            t.depth + 1
+        FROM standalone_span s
+        JOIN span_tree t ON s.parent_span_id = t.otel_span_id
+        WHERE s.otel_trace_id = :trace_id_8 AND t.depth < :max_depth
+    )
+    SELECT * FROM span_tree
+    ORDER BY started_at, otel_span_id
+    """
+)
+
+
+@router.get("/{otel_trace_id}", response_model=StandaloneTraceDetail)
+async def get_trace_detail(
+    otel_trace_id: str,
+    session: SessionDep,
+) -> StandaloneTraceDetail:
+    """Return the trace + its span tree.
+
+    Trace lookup uses the full 16-byte W3C id stored on
+    ``standalone_trace``. The span query uses the trailing 8-byte slice
+    (``trace_id[8:]``) — that's the form the exporter persists onto
+    ``standalone_span.otel_trace_id``.
+    """
+    trace_id_16 = _decode_trace_id_path(otel_trace_id)
+    trace_id_8 = trace_id_16[8:]
+
+    trace_row = (
+        await session.execute(
+            select(StandaloneTraceRow).where(
+                StandaloneTraceRow.otel_trace_id == trace_id_16
+            )
+        )
+    ).scalar_one_or_none()
+    if trace_row is None:
+        raise AdminAPIError(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            error=StandaloneAdminError(
+                code=StandaloneErrorCode.NOT_FOUND,
+                message="No trace found for the given id.",
+            ),
+        )
+
+    # Recursion cap: seed counts as one level, every UNION ALL pass
+    # adds one more, so ``t.depth < N - 1`` yields exactly N levels
+    # in the result set. Decision §28 asks for 32 total levels.
+    result = await session.execute(
+        _SPAN_TREE_CTE,
+        {"trace_id_8": trace_id_8, "max_depth": _MAX_DEPTH_LEVELS - 1},
+    )
+    spans = [_row_mapping_to_span_read(m) for m in result.mappings().all()]
+
+    return StandaloneTraceDetail(
+        trace=_row_to_list_item(trace_row),
+        tree=_build_tree(spans),
     )
