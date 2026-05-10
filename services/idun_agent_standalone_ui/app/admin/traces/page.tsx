@@ -19,6 +19,7 @@ import { ChevronDown, Columns, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { PipelineHealthPanel } from "@/components/traces/PipelineHealthPanel";
 import { SqliteBanner } from "@/components/traces/SqliteBanner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -212,6 +213,8 @@ export default function TracesPage() {
       </header>
 
       <SqliteBanner />
+
+      <PipelineHealthPanel />
 
       <div className="flex flex-wrap items-end gap-3" data-testid="filter-bar">
         <div className="flex flex-col gap-1">
