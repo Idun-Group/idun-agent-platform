@@ -807,7 +807,32 @@ class LanggraphAgent(agent_base.BaseAgent):
             input_fields = None
             output_fields = None
 
-        # Detect input mode
+        # Detect input mode.
+        #
+        # When the operator declares ``StateGraph(OverallState)`` without an
+        # explicit ``input_schema=``, LangGraph defaults the public input
+        # to OverallState. Common LangGraph patterns mix a ``messages``
+        # field with internal scalars (``intent``, ``draft``, etc.) — the
+        # scalars are runtime-only carry-state, not user-facing inputs,
+        # but the prior heuristic (>1 field ⇒ structured) flipped the
+        # whole pipeline into structured-mode and demanded JSON-encoded
+        # ``messages[].content`` for every chat. That trapped operators
+        # who hand-wrote a TypedDict for their state without realising
+        # an explicit input/output schema split was the right idiom.
+        #
+        # Detection: ``builder.input_schema is builder.state_schema``
+        # ⇒ implicit (no explicit input_schema= supplied). When implicit
+        # AND messages is one of the fields, treat as chat — a typed
+        # public input contract is opt-in via the explicit-schema
+        # idiom. The recommended pattern is documented at
+        # https://langchain-ai.github.io/langgraph/how-tos/input_output_schema/.
+        builder = getattr(graph, "builder", None)
+        explicit_input_schema = (
+            builder is not None
+            and getattr(builder, "input_schema", None)
+            is not getattr(builder, "state_schema", None)
+        )
+
         input_mode = "chat"
         input_json_schema = None
         if input_fields is not None:
@@ -815,6 +840,11 @@ class LanggraphAgent(agent_base.BaseAgent):
             only_messages = has_messages and len(input_fields) == 1
 
             if only_messages:
+                input_mode = "chat"
+            elif has_messages and not explicit_input_schema:
+                # Implicit OverallState that happens to have messages —
+                # treat as chat. Operators who want a strict structured
+                # input contract supply ``input_schema=`` explicitly.
                 input_mode = "chat"
             else:
                 input_mode = "structured"
