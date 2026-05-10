@@ -228,6 +228,8 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         # StaticFiles because each id is a different filesystem path.
         # Serve the placeholder for any /admin/traces/<id> request and
         # let the client read the real id from window.location.
+        # FastAPI's default ``redirect_slashes=True`` handles the
+        # trailing-slash variant, so a single route covers both.
         from fastapi.responses import FileResponse
 
         _trace_shell = ui_dir / "admin" / "traces" / "__trace__" / "index.html"
@@ -235,12 +237,6 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 
         @app.get("/admin/traces/{trace_id}", include_in_schema=False)
         async def _trace_detail_spa_shell(trace_id: str) -> FileResponse:
-            return FileResponse(
-                _trace_shell if _trace_shell.is_file() else _spa_root_shell
-            )
-
-        @app.get("/admin/traces/{trace_id}/", include_in_schema=False)
-        async def _trace_detail_spa_shell_slash(trace_id: str) -> FileResponse:
             return FileResponse(
                 _trace_shell if _trace_shell.is_file() else _spa_root_shell
             )
