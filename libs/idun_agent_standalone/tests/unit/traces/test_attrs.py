@@ -81,3 +81,55 @@ class TestProviderQuirks:
             _attrs.extract_llm_span(attrs)
         # Log line must mention recommending the native google-genai instrumentor.
         assert any("google-genai" in r.message for r in caplog.records)
+
+
+class TestProjectionIntegration:
+    """ADK-shape attrs flow through engine projection then extract_*.
+
+    The exporter's ``_span_to_row`` calls ``project_to_openinference``
+    before ``extract_llm_span`` / ``extract_tool_span``. This test
+    pair pins that call chain end-to-end at unit-test scope so a
+    regression in the engine helper or the extract surfaces here
+    without needing the full integration harness.
+    """
+
+    def test_extract_llm_span_after_projection(self):
+        """ADK gen_ai.* raw attrs project + extract → materialised LLM cols."""
+        from idun_agent_engine.observability.projection import (
+            project_to_openinference,
+        )
+
+        raw = {
+            "gen_ai.system": "gcp.vertex.agent",
+            "gen_ai.request.model": "gemini-2.5-flash",
+            "gen_ai.usage.input_tokens": 756,
+            "gen_ai.usage.output_tokens": 11,
+        }
+        projected = project_to_openinference(raw, span_name="call_llm")
+        out = _attrs.extract_llm_span(projected)
+
+        assert out["model"] == "gemini-2.5-flash"
+        assert out["provider"] == "google"
+        assert out["prompt_tokens"] == 756
+        assert out["completion_tokens"] == 11
+
+    def test_langgraph_passthrough_preserves_existing_extract(self):
+        """Already-projected (LangGraph) attrs still flow through extract."""
+        from idun_agent_engine.observability.projection import (
+            project_to_openinference,
+        )
+
+        raw = {
+            "openinference.span.kind": "LLM",
+            "llm.model_name": "gpt-4o",
+            "llm.provider": "openai",
+            "llm.token_count.prompt": 100,
+            "llm.token_count.completion": 50,
+        }
+        projected = project_to_openinference(raw, span_name="ChatOpenAI")
+        out = _attrs.extract_llm_span(projected)
+
+        assert out["model"] == "gpt-4o"
+        assert out["provider"] == "openai"
+        assert out["prompt_tokens"] == 100
+        assert out["completion_tokens"] == 50

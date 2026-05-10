@@ -14,6 +14,7 @@ import threading
 from datetime import UTC, datetime
 from typing import Any
 
+from idun_agent_engine.observability.projection import project_to_openinference
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 from opentelemetry.trace import StatusCode
@@ -130,6 +131,12 @@ class StandaloneSpanExporter(SpanExporter):
                     "utf-8", errors="ignore"
                 )
                 attrs[key] = truncated + "…[truncated]"
+
+        # Project ADK / gen_ai keys onto OpenInference so the writer's
+        # column extraction (model, tokens, cost) works the same on ADK
+        # traces as on LangGraph traces. Already-projected spans pass
+        # through bit-identical via the helper's early-return.
+        attrs = project_to_openinference(attrs, span_name=span.name)
 
         kind = attrs.get(_OPENINFERENCE_KIND_KEY) or "INTERNAL"
         started_at = datetime.fromtimestamp(span.start_time / 1e9, tz=UTC)

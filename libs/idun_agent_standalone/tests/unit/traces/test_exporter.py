@@ -190,3 +190,94 @@ class TestStandaloneSpanExporter:
 
         # Bounded: at most _PUT_RETRY_LIMIT attempts.
         assert racy.put_calls == StandaloneSpanExporter._PUT_RETRY_LIMIT
+
+
+class TestExporterADKProjection:
+    """End-to-end projection regression at the exporter row-build seam.
+
+    The exporter calls ``project_to_openinference`` between attribute
+    truncation and the kind read, so an ADK-shape span (kind=INTERNAL,
+    only ``gen_ai.*`` keys) must produce a row whose ``kind`` flips to
+    the projected OpenInference value and whose materialised columns
+    (``model``, ``prompt_tokens``, ``completion_tokens``) come out
+    populated.
+    """
+
+    def test_adk_call_llm_produces_populated_llm_columns(self):
+        exporter = StandaloneSpanExporter(max_queue_size=10)
+        span = _fake_span(
+            "call_llm",
+            attributes={
+                # No ``openinference.span.kind`` — ADK does not emit it.
+                "gen_ai.system": "gcp.vertex.agent",
+                "gen_ai.request.model": "gemini-2.5-flash",
+                "gen_ai.usage.input_tokens": 756,
+                "gen_ai.usage.output_tokens": 11,
+            },
+        )
+
+        row = exporter._span_to_row(span)
+
+        assert row["kind"] == "LLM"
+        assert row["model"] == "gemini-2.5-flash"
+        assert row["provider"] == "google"
+        assert row["prompt_tokens"] == 756
+        assert row["completion_tokens"] == 11
+        assert row["total_tokens"] == 767
+
+    def test_adk_invoke_agent_flips_kind_to_agent(self):
+        exporter = StandaloneSpanExporter(max_queue_size=10)
+        span = _fake_span(
+            "invoke_agent planner_node",
+            attributes={
+                "gen_ai.operation.name": "invoke_agent",
+                "gen_ai.agent.name": "planner_node",
+            },
+        )
+
+        row = exporter._span_to_row(span)
+
+        assert row["kind"] == "AGENT"
+        # AGENT spans don't materialise LLM columns.
+        assert row["model"] is None
+        assert row["prompt_tokens"] is None
+
+    def test_adk_execute_tool_flips_kind_to_tool(self):
+        exporter = StandaloneSpanExporter(max_queue_size=10)
+        span = _fake_span(
+            "execute_tool transfer_to_agent",
+            attributes={
+                "gen_ai.operation.name": "execute_tool",
+                "gen_ai.tool.name": "transfer_to_agent",
+                "gcp.vertex.agent.tool_call_args": '{"agent_name": "x"}',
+            },
+        )
+
+        row = exporter._span_to_row(span)
+
+        assert row["kind"] == "TOOL"
+        # TOOL spans should not produce phantom LLM columns.
+        assert row["model"] is None
+        assert row["prompt_tokens"] is None
+
+    def test_langgraph_openinference_passthrough_unchanged(self):
+        """OpenInference-shaped spans flow through identical to pre-projection behaviour."""
+        exporter = StandaloneSpanExporter(max_queue_size=10)
+        span = _fake_span(
+            "ChatOpenAI",
+            attributes={
+                "openinference.span.kind": "LLM",
+                "llm.model_name": "gpt-4o",
+                "llm.provider": "openai",
+                "llm.token_count.prompt": 100,
+                "llm.token_count.completion": 50,
+            },
+        )
+
+        row = exporter._span_to_row(span)
+
+        assert row["kind"] == "LLM"
+        assert row["model"] == "gpt-4o"
+        assert row["provider"] == "openai"
+        assert row["prompt_tokens"] == 100
+        assert row["completion_tokens"] == 50
