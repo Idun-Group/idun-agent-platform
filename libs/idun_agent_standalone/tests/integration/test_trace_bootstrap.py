@@ -13,6 +13,8 @@ not leak duplicate exporters or BatchSpanProcessors.
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 from fastapi import FastAPI
 from idun_agent_engine.observability import otel_lifecycle
@@ -24,6 +26,8 @@ from idun_agent_standalone.infrastructure.traces.exporter import (
     StandaloneSpanExporter,
 )
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -53,7 +57,10 @@ def _reset_otel_after_test():
     try:
         otel_lifecycle.shutdown_otel()
     except Exception:
-        pass
+        # Surface teardown failures so a regression in
+        # ``otel_lifecycle.shutdown_otel`` (e.g. a None TracerProvider
+        # crash) is visible in CI logs instead of silently masked.
+        logger.exception("otel_lifecycle.shutdown_otel raised on teardown")
 
 
 @pytest.mark.asyncio
