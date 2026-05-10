@@ -246,28 +246,52 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         ]
 
         # SPA rewrite for the trace-detail dynamic route. Next.js static
-        # export emits the placeholder shell at admin/traces/__trace__/;
+        # export emits the placeholder shell at admin/traces/_shell/;
         # arbitrary trace ids in the URL path won't resolve against
         # StaticFiles because each id is a different filesystem path.
         # Serve the placeholder for any /admin/traces/<id> request and
         # let the client read the real id from window.location.
-        # FastAPI's default ``redirect_slashes=True`` handles the
-        # trailing-slash variant, so a single route covers both.
+        #
+        # Both URL forms (``/admin/traces/<id>`` and
+        # ``/admin/traces/<id>/``) need explicit route declarations.
+        # FastAPI's ``redirect_slashes=True`` only redirects ``/foo/``
+        # back to ``/foo`` for routes declared without the trailing
+        # slash, *not* the inverse — and once ``StaticFiles(html=True)``
+        # is mounted at ``/``, the slashed form is consumed by the
+        # static handler before the dynamic route sees it, yielding
+        # ``404`` on every link-share / Slack-unfurl form. Declaring
+        # the slashed sibling route fixes that.
         from fastapi.responses import FileResponse
 
         # Resolve the SPA shell path once at boot — the file layout cannot
         # change at runtime and the request handler is on the async hot
         # path, so the per-request ``Path.is_file()`` syscall is wasteful
-        # (ASYNC-001). Falls back to the root ``index.html`` when the
-        # static export is older than the trace-detail route.
-        _trace_shell = ui_dir / "admin" / "traces" / "__trace__" / "index.html"
+        # (ASYNC-001). Prefers the renamed ``_shell/`` directory shipped
+        # by the ``build-standalone-ui`` Make target; falls back to the
+        # legacy ``__trace__/`` directory when the static export was
+        # produced by ``pnpm build`` directly (no rename pass), and to
+        # the root ``index.html`` when neither directory exists. The
+        # legacy ``__trace__`` fallback exists so the boot harness
+        # (``e2e/boot-standalone.sh``) and direct ``pnpm build``
+        # workflows keep working until they run through the rename.
+        _trace_shell_renamed = ui_dir / "admin" / "traces" / "_shell" / "index.html"
+        _trace_shell_legacy = ui_dir / "admin" / "traces" / "__trace__" / "index.html"
         _spa_root_shell = ui_dir / "index.html"
-        _selected_trace_shell = (
-            _trace_shell if _trace_shell.is_file() else _spa_root_shell
-        )
+        if _trace_shell_renamed.is_file():
+            _selected_trace_shell = _trace_shell_renamed
+        elif _trace_shell_legacy.is_file():
+            _selected_trace_shell = _trace_shell_legacy
+        else:
+            _selected_trace_shell = _spa_root_shell
 
         @app.get("/admin/traces/{trace_id}", include_in_schema=False)
         async def _trace_detail_spa_shell(trace_id: str) -> FileResponse:
+            return FileResponse(_selected_trace_shell)
+
+        @app.get("/admin/traces/{trace_id}/", include_in_schema=False)
+        async def _trace_detail_spa_shell_slashed(
+            trace_id: str,
+        ) -> FileResponse:
             return FileResponse(_selected_trace_shell)
 
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")

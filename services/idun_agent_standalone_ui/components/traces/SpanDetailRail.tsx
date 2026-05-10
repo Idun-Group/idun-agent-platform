@@ -54,6 +54,62 @@ function isPartialCost(span: StandaloneSpanRead): boolean {
   );
 }
 
+/**
+ * Detect spans where the instrumentation emitted an LLM-call attribute
+ * (``gen_ai.usage.*`` or ``llm.token_count.*``) but the writer's
+ * normalised ``promptTokens`` / ``completionTokens`` columns are
+ * ``null``. This is the OpenInference→ADK projection gap (AUDIT.md
+ * #4): ADK ships ``gen_ai.usage.input_tokens`` / ``output_tokens``
+ * which the finalizer does not yet read, so the trace UI shows
+ * universal em-dashes for tokens / cost.
+ *
+ * Sharp edge: do NOT fire on legitimately-zero spans (a TOOL span
+ * that just doesn't make an LLM call). Detect via the *presence* of
+ * a recognized LLM-call key, not the magnitude of the values.
+ */
+function hasUnreportedLlmTokens(span: StandaloneSpanRead): boolean {
+  if (span.promptTokens !== null && span.promptTokens !== undefined) {
+    return false;
+  }
+  if (span.completionTokens !== null && span.completionTokens !== undefined) {
+    return false;
+  }
+  const attrs = span.attributes;
+  if (!attrs || typeof attrs !== "object") return false;
+  for (const key of Object.keys(attrs as Record<string, unknown>)) {
+    if (key.startsWith("gen_ai.usage.")) return true;
+    if (key.startsWith("llm.token_count.")) return true;
+  }
+  return false;
+}
+
+const _TOKEN_GAP_TOOLTIP_BODY =
+  "Tokens / cost are aggregated from OpenInference attributes " +
+  "(llm.token_count.*, llm.model_name). This span was instrumented " +
+  "via Google ADK's gen_ai.* keys, which the platform finalizer " +
+  "does not yet read. ADK→OpenInference projection is on the roadmap.";
+
+function TokensEmptyHint(): React.ReactElement {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            data-testid="tokens-empty-hint"
+            aria-label="Why empty?"
+            className="inline-flex size-4 cursor-help items-center justify-center rounded-full border text-[10px] text-muted-foreground"
+          >
+            ?
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          {_TOKEN_GAP_TOOLTIP_BODY}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 /** Format a number with up to 4 fraction digits; "—" for null. */
 function formatNumber(value: number | null, suffix = ""): string {
   if (value === null || value === undefined) return "—";
@@ -265,12 +321,13 @@ function PayloadViewer({
 
 function InfoTab({ span }: { span: StandaloneSpanRead }) {
   const partial = isPartialCost(span);
+  const tokensGap = hasUnreportedLlmTokens(span);
   const rows: Array<[string, React.ReactNode]> = [
     ["Name", span.name],
     [
       "Kind",
       <span key="kind" className="inline-flex items-center gap-1.5">
-        <SpanKindIcon kind={span.kind} size={14} />
+        <SpanKindIcon span={span} size={14} />
         <span className="font-mono text-[11px]">{span.kind}</span>
       </span>,
     ],
@@ -280,8 +337,23 @@ function InfoTab({ span }: { span: StandaloneSpanRead }) {
     ["Status", span.status ?? "—"],
     ["Model", span.model ?? "—"],
     ["Provider", span.provider ?? "—"],
-    ["Prompt tokens", formatNumber(span.promptTokens)],
-    ["Completion tokens", formatNumber(span.completionTokens)],
+    [
+      "Prompt tokens",
+      <span key="prompt-tokens" className="inline-flex items-center gap-1.5">
+        <span>{formatNumber(span.promptTokens)}</span>
+        {tokensGap ? <TokensEmptyHint /> : null}
+      </span>,
+    ],
+    [
+      "Completion tokens",
+      <span
+        key="completion-tokens"
+        className="inline-flex items-center gap-1.5"
+      >
+        <span>{formatNumber(span.completionTokens)}</span>
+        {tokensGap ? <TokensEmptyHint /> : null}
+      </span>,
+    ],
     ["Total tokens", formatNumber(span.totalTokens)],
     [
       "Cost",
@@ -304,6 +376,9 @@ function InfoTab({ span }: { span: StandaloneSpanRead }) {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+        ) : null}
+        {tokensGap && !partial && span.costUsd === null ? (
+          <TokensEmptyHint />
         ) : null}
       </span>,
     ],
@@ -390,7 +465,7 @@ export function SpanDetailRail({
     >
       <header className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b bg-background p-3">
         <div className="flex min-w-0 items-center gap-2">
-          <SpanKindIcon kind={span.kind} size={16} />
+          <SpanKindIcon span={span} size={16} />
           <span
             className="min-w-0 truncate font-mono text-sm font-medium"
             title={span.name}

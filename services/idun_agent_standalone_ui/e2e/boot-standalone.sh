@@ -52,6 +52,17 @@ trap cleanup EXIT INT TERM
 # `make build-standalone-ui` which copies into libs/.../static/).
 echo "[boot] building UI -> $UIDIR" >&2
 ( cd "$ROOT/services/idun_agent_standalone_ui" && pnpm build >/dev/null )
+# Mirror the ``build-standalone-ui`` Make target: rename the build-time
+# ``__trace__`` placeholder directory to ``_shell`` so the trace detail
+# SPA-rewrite route resolves to the renamed file (instead of the legacy
+# fallback) AND ``/admin/traces/__trace__/`` is no longer publicly
+# reachable as a static asset. Without this, the trailing-slash e2e
+# test would pass against the legacy fallback rather than the renamed
+# shell, masking the placeholder-rename regression.
+if [[ -d "$ROOT/services/idun_agent_standalone_ui/out/admin/traces/__trace__" ]]; then
+  mv "$ROOT/services/idun_agent_standalone_ui/out/admin/traces/__trace__" \
+     "$ROOT/services/idun_agent_standalone_ui/out/admin/traces/_shell"
+fi
 mkdir -p "$UIDIR"
 cp -R "$ROOT/services/idun_agent_standalone_ui/out/." "$UIDIR/"
 

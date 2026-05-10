@@ -8,6 +8,15 @@
  * The set of kinds is locked to the design KB (decision: trace-feature
  * 08-05-2026 § "kinds"); unknown values fall back to a dashed circle so
  * the cell still renders rather than throwing.
+ *
+ * Two call shapes:
+ *
+ * - ``<SpanKindIcon kind="LLM" />`` — legacy / standalone use.
+ * - ``<SpanKindIcon span={span} />`` — preferred for span rows.
+ *   Routes through ``inferKind`` so ADK-instrumented spans (kind=
+ *   ``INTERNAL``, no ``openinference.span.kind`` attribute) render
+ *   the AGENT / TOOL / LLM icon inferred from the span name pattern,
+ *   instead of the dashed-circle "Unknown" fallback.
  */
 
 import {
@@ -24,12 +33,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { inferKind } from "@/components/traces/_kind";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { StandaloneSpanRead } from "@/lib/api/traces";
 
 type KindMeta = {
   Icon: LucideIcon;
@@ -54,13 +65,30 @@ const KIND_MAP: Record<string, KindMeta> = {
 const FALLBACK: KindMeta = { Icon: CircleDashed, label: "Unknown span kind" };
 
 export type SpanKindIconProps = {
-  kind: string;
+  /** Explicit kind string. Used when no full ``span`` is available. */
+  kind?: string;
+  /** Full span — preferred shape; routes through ``inferKind``. */
+  span?: StandaloneSpanRead;
   size?: number;
   className?: string;
 };
 
-export function SpanKindIcon({ kind, size = 16, className }: SpanKindIconProps) {
-  const meta = KIND_MAP[kind?.toUpperCase()] ?? FALLBACK;
+/**
+ * Resolve the effective kind to render. ``span`` takes precedence
+ * because ``inferKind`` already knows how to honour explicit OI kinds
+ * AND fall through to name inference for ADK spans.
+ */
+function resolveKind(props: SpanKindIconProps): string | undefined {
+  if (props.span) {
+    return inferKind(props.span) ?? props.span.kind;
+  }
+  return props.kind;
+}
+
+export function SpanKindIcon(props: SpanKindIconProps) {
+  const { size = 16, className } = props;
+  const resolved = resolveKind(props);
+  const meta = KIND_MAP[resolved?.toUpperCase() ?? ""] ?? FALLBACK;
   const { Icon, label } = meta;
 
   return (
@@ -71,7 +99,7 @@ export function SpanKindIcon({ kind, size = 16, className }: SpanKindIconProps) 
             className={className}
             role="img"
             aria-label={label}
-            data-kind={kind}
+            data-kind={resolved}
           >
             <Icon size={size} aria-hidden="true" />
           </span>

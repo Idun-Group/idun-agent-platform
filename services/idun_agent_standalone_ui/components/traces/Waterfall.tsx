@@ -22,6 +22,7 @@
 
 import * as React from "react";
 
+import { inferKind } from "@/components/traces/_kind";
 import { SpanKindIcon } from "@/components/traces/SpanKindIcon";
 import {
   Tooltip,
@@ -158,8 +159,13 @@ export function Waterfall({
           const widthPct = (row.durationMs / bounds.total) * 100;
           const isSelected = row.span.otelSpanId === selectedSpanId;
           const isCritical = critical.has(row.span.otelSpanId);
+          // Route through ``inferKind`` so ADK spans (kind=INTERNAL,
+          // no ``openinference.span.kind`` attribute) pick up the
+          // per-kind palette rather than the muted-grey fallback.
+          const resolvedKind =
+            inferKind(row.span) ?? row.span.kind?.toUpperCase();
           const kindClass =
-            KIND_BAR_CLASS[row.span.kind?.toUpperCase()] ?? FALLBACK_BAR_CLASS;
+            (resolvedKind && KIND_BAR_CLASS[resolvedKind]) ?? FALLBACK_BAR_CLASS;
 
           return (
             <div
@@ -187,7 +193,7 @@ export function Waterfall({
               }}
             >
               <div className="flex min-w-0 items-center gap-2">
-                <SpanKindIcon kind={row.span.kind} size={14} />
+                <SpanKindIcon span={row.span} size={14} />
                 <span
                   className="min-w-0 flex-1 truncate font-mono text-[11px] text-foreground"
                   title={row.span.name}

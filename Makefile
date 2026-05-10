@@ -47,6 +47,17 @@ sync-engine:
 
 build-standalone-ui:
 	cd services/idun_agent_standalone_ui && pnpm install --frozen-lockfile && pnpm build
+	# Rename the trace-detail SPA shell from the build-time
+	# ``__trace__`` placeholder used by Next.js ``generateStaticParams``
+	# to ``_shell``. Without this rename the placeholder directory ships
+	# in the wheel's ``static/`` tree and is publicly reachable at
+	# ``/admin/traces/__trace__/`` — a presentation finding (the build
+	# artefact escapes) and an operator-confusion source. The dynamic
+	# SPA-rewrite route in ``app.py`` reads from ``_shell/index.html``.
+	if [ -d services/idun_agent_standalone_ui/out/admin/traces/__trace__ ]; then \
+		mv services/idun_agent_standalone_ui/out/admin/traces/__trace__ \
+			services/idun_agent_standalone_ui/out/admin/traces/_shell ; \
+	fi
 	rm -rf libs/idun_agent_standalone/src/idun_agent_standalone/static
 	cp -R services/idun_agent_standalone_ui/out libs/idun_agent_standalone/src/idun_agent_standalone/static
 

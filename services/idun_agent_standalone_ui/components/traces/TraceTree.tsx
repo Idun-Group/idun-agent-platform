@@ -395,7 +395,7 @@ export function TraceTree({
               >
                 <ChevronRightIcon size={14} />
               </button>
-              <SpanKindIcon kind={row.span.kind} size={14} />
+              <SpanKindIcon span={row.span} size={14} />
               <span
                 className="min-w-0 flex-1 truncate text-foreground"
                 title={row.span.name}
