@@ -1,4 +1,97 @@
 {
+    "admin": {
+        "common": {
+            "available": "AVAILABLE",
+            "your_configuration": "YOUR CONFIGURATION",
+            "search_placeholder": "Search…",
+            "soon": "Soon",
+            "new": "New",
+            "custom": "Custom"
+        },
+        "mcp": {
+            "title": "MCP Servers",
+            "subtitle": "Plug external tools into your agents over Model Context Protocol.",
+            "available_label": "AVAILABLE TRANSPORTS",
+            "configured_label": "YOUR MCP SERVERS",
+            "configured_count": "{{count}} configured",
+            "empty_state": "No MCP servers yet — pick a transport above to add one.",
+            "new_button": "New MCP server",
+            "drawer_title_new": "New MCP server",
+            "drawer_title_edit": "Edit MCP server",
+            "transport": {
+                "streamable_http": {
+                    "label": "Streamable HTTP",
+                    "description": "Connect to a remote MCP server over HTTP streaming. The modern default."
+                },
+                "sse": {
+                    "label": "SSE",
+                    "description": "Server-Sent Events transport. Use when a server only exposes SSE."
+                },
+                "websocket": {
+                    "label": "WebSocket",
+                    "description": "Bidirectional WebSocket connection for live tool servers."
+                },
+                "stdio": {
+                    "label": "STDIO",
+                    "description": "Run a local MCP process and pipe over stdin / stdout. Great for filesystem, git, local tools."
+                }
+            }
+        },
+        "integrations": {
+            "title": "Integrations",
+            "subtitle": "Connect channels so users can talk to your agent where they already are.",
+            "available_label": "AVAILABLE CHANNELS",
+            "configured_label": "YOUR INTEGRATIONS",
+            "empty_state": "No integrations yet — pick a channel above to get started.",
+            "new_button": "New integration",
+            "drawer_title_new": "New integration",
+            "drawer_title_edit": "Edit integration",
+            "provider": {
+                "slack": "Send and receive messages in any Slack channel.",
+                "discord": "Run your agent inside Discord servers and DMs.",
+                "whatsapp": "Reach users on WhatsApp Business through the cloud API.",
+                "google_chat": "Wire your agent into Google Chat spaces and direct messages.",
+                "teams": "Talk to your agent from Microsoft Teams via the Bot Framework.",
+                "telegram": "Reach users on Telegram via a bot account.",
+                "line": "Send and receive LINE messages from your agent.",
+                "notion": "Run conversations and post updates inside Notion."
+            }
+        },
+        "guardrails": {
+            "title": "Guardrails",
+            "subtitle": "Safety gates that run on every agent request and response.",
+            "available_label": "AVAILABLE GUARDS",
+            "configured_label": "YOUR GUARDS",
+            "search_placeholder": "Search guards…",
+            "empty_state": "No guards yet — pick one from the catalog above to get started.",
+            "new_button": "New guard",
+            "drawer_title_new": "New guard",
+            "drawer_title_edit": "Edit guard",
+            "group": {
+                "content_safety": "Content Safety",
+                "identity_security": "Identity & Security",
+                "enterprise": "Enterprise",
+                "context_quality": "Context & Quality"
+            },
+            "guard": {
+                "ban_list": "Block messages containing forbidden words or phrases.",
+                "toxic_language": "Filter slurs, harassment, and threats from inputs and outputs.",
+                "nsfw_text": "Block adult or sexual content.",
+                "gibberish_text": "Reject inputs that don't form coherent language.",
+                "detect_pii": "Catch emails, phone numbers, credit cards, and other personal data.",
+                "restrict_topic": "Keep the conversation on the topics you allow.",
+                "detect_jailbreak": "Detect attempts to bypass safety constraints.",
+                "prompt_injection": "Detect prompts that try to override system instructions.",
+                "model_armor": "Google Cloud Model Armor policy enforcement.",
+                "custom_llm": "Run your own LLM-based guard.",
+                "code_scanner": "Scan generated code for risky patterns.",
+                "bias_check": "Detect biased or stereotyping language.",
+                "competition_check": "Block mentions of competitors you've listed.",
+                "correct_language": "Validate that the output is in the expected language.",
+                "rag_hallucination": "Flag answers unsupported by retrieved context."
+            }
+        }
+    },
     "navigation": {
         "agent": "Agent",
         "guard": "Guard",

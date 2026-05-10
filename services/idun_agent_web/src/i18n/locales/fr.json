@@ -1,4 +1,97 @@
 {
+    "admin": {
+        "common": {
+            "available": "DISPONIBLE",
+            "your_configuration": "VOTRE CONFIGURATION",
+            "search_placeholder": "Rechercher…",
+            "soon": "Bientôt",
+            "new": "Nouveau",
+            "custom": "Personnalisé"
+        },
+        "mcp": {
+            "title": "Serveurs MCP",
+            "subtitle": "Branchez des outils externes à vos agents via le Model Context Protocol.",
+            "available_label": "TRANSPORTS DISPONIBLES",
+            "configured_label": "VOS SERVEURS MCP",
+            "configured_count": "{{count}} configurés",
+            "empty_state": "Aucun serveur MCP — choisissez un transport ci-dessus pour en ajouter un.",
+            "new_button": "Nouveau serveur MCP",
+            "drawer_title_new": "Nouveau serveur MCP",
+            "drawer_title_edit": "Modifier le serveur MCP",
+            "transport": {
+                "streamable_http": {
+                    "label": "Streamable HTTP",
+                    "description": "Connectez-vous à un serveur MCP distant via HTTP streaming. La valeur par défaut moderne."
+                },
+                "sse": {
+                    "label": "SSE",
+                    "description": "Transport Server-Sent Events. À utiliser lorsque seul SSE est exposé."
+                },
+                "websocket": {
+                    "label": "WebSocket",
+                    "description": "Connexion WebSocket bidirectionnelle pour des serveurs d'outils en direct."
+                },
+                "stdio": {
+                    "label": "STDIO",
+                    "description": "Lancez un processus MCP local et communiquez via stdin / stdout. Idéal pour fichiers, git, outils locaux."
+                }
+            }
+        },
+        "integrations": {
+            "title": "Intégrations",
+            "subtitle": "Connectez des canaux pour que vos utilisateurs parlent à votre agent là où ils sont déjà.",
+            "available_label": "CANAUX DISPONIBLES",
+            "configured_label": "VOS INTÉGRATIONS",
+            "empty_state": "Aucune intégration — choisissez un canal ci-dessus pour commencer.",
+            "new_button": "Nouvelle intégration",
+            "drawer_title_new": "Nouvelle intégration",
+            "drawer_title_edit": "Modifier l'intégration",
+            "provider": {
+                "slack": "Envoyez et recevez des messages dans n'importe quel canal Slack.",
+                "discord": "Faites tourner votre agent dans des serveurs Discord et en messages privés.",
+                "whatsapp": "Touchez vos utilisateurs sur WhatsApp Business via l'API Cloud.",
+                "google_chat": "Branchez votre agent dans les espaces et messages directs Google Chat.",
+                "teams": "Discutez avec votre agent depuis Microsoft Teams via le Bot Framework.",
+                "telegram": "Touchez vos utilisateurs sur Telegram via un compte bot.",
+                "line": "Envoyez et recevez des messages LINE depuis votre agent.",
+                "notion": "Tenez des conversations et publiez des mises à jour directement dans Notion."
+            }
+        },
+        "guardrails": {
+            "title": "Garde-fous",
+            "subtitle": "Filtres de sécurité exécutés à chaque requête et réponse de l'agent.",
+            "available_label": "GARDE-FOUS DISPONIBLES",
+            "configured_label": "VOS GARDE-FOUS",
+            "search_placeholder": "Rechercher un garde-fou…",
+            "empty_state": "Aucun garde-fou — choisissez-en un dans le catalogue ci-dessus pour commencer.",
+            "new_button": "Nouveau garde-fou",
+            "drawer_title_new": "Nouveau garde-fou",
+            "drawer_title_edit": "Modifier le garde-fou",
+            "group": {
+                "content_safety": "Sécurité du contenu",
+                "identity_security": "Identité & Sécurité",
+                "enterprise": "Entreprise",
+                "context_quality": "Contexte & Qualité"
+            },
+            "guard": {
+                "ban_list": "Bloque les messages contenant des mots ou expressions interdits.",
+                "toxic_language": "Filtre les insultes, le harcèlement et les menaces, en entrée et sortie.",
+                "nsfw_text": "Bloque les contenus sexuels ou pour adultes.",
+                "gibberish_text": "Rejette les entrées qui ne forment pas un langage cohérent.",
+                "detect_pii": "Détecte emails, numéros de téléphone, cartes de crédit et autres données personnelles.",
+                "restrict_topic": "Maintient la conversation sur les sujets que vous autorisez.",
+                "detect_jailbreak": "Détecte les tentatives de contournement des garde-fous.",
+                "prompt_injection": "Détecte les invites visant à contourner les instructions système.",
+                "model_armor": "Application des règles Google Cloud Model Armor.",
+                "custom_llm": "Lancez votre propre garde-fou basé sur un LLM.",
+                "code_scanner": "Scanne le code généré à la recherche de schémas risqués.",
+                "bias_check": "Détecte les contenus biaisés ou stéréotypés.",
+                "competition_check": "Bloque les mentions des concurrents que vous avez listés.",
+                "correct_language": "Vérifie que la sortie est dans la langue attendue.",
+                "rag_hallucination": "Signale les réponses non étayées par le contexte récupéré."
+            }
+        }
+    },
     "navigation": {
         "agent": "Agent",
         "guard": "Garde",
