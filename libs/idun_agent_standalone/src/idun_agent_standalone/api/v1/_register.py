@@ -36,6 +36,7 @@ from idun_agent_standalone.api.v1.routers.prompts import (
 )
 from idun_agent_standalone.api.v1.routers.sso import router as sso_router
 from idun_agent_standalone.api.v1.routers.sso_info import router as sso_info_router
+from idun_agent_standalone.api.v1.routers.traces import router as traces_router
 from idun_agent_standalone.runtime_config import router as runtime_config_router
 
 
@@ -66,6 +67,7 @@ def register_standalone_routers(
     app.include_router(integrations_router, dependencies=deps)
     app.include_router(sso_router, dependencies=deps)
     app.include_router(onboarding_router, dependencies=deps)
+    app.include_router(traces_router, dependencies=deps)
     # Public (always reachable) routers.
     app.include_router(runtime_config_router)
     app.include_router(sso_info_router)
