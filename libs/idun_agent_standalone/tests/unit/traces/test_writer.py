@@ -387,8 +387,13 @@ def test_span_row_to_copy_tuple_excludes_total_tokens_and_serializes_jsonb():
 
 @pytest.mark.asyncio
 async def test_pg_writer_calls_copy_records_to_table_with_correct_columns():
-    """The PG dispatch must call ``copy_records_to_table`` once per batch
-    with the exact column tuple and the JSONB-serialized records.
+    """Shape-only test for the PG dispatch — asserts ``copy_records_to_table``
+    is called once per batch with the exact column tuple and the
+    JSONB-serialized records. End-to-end round-trip against a real
+    Postgres lives in
+    ``tests/integration/db/test_writer_pg_copy_path.py`` (gated on
+    ``STANDALONE_TEST_POSTGRES_URL``); CI exercises that path on every
+    PR via the ``standalone-ci.yml`` postgres service.
 
     The writer reaches the asyncpg connection via
     ``(await async_conn.get_raw_connection()).driver_connection`` —
