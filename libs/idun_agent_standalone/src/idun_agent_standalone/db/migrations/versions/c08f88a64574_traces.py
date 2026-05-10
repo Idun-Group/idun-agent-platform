@@ -123,6 +123,14 @@ def _pg_upgrade() -> None:
             )
 
     # Indexes on the parent (PG propagates them to attached partitions).
+    # ``otel_trace_id`` is indexed because the detail/delete paths key off
+    # it directly (`WHERE otel_trace_id = ...`); the PK starts with
+    # ``started_at`` so otherwise those queries become partition-wide
+    # scans on PG.
+    op.execute(
+        "CREATE INDEX standalone_trace_otel_trace_id_idx "
+        "ON standalone_trace (otel_trace_id);"
+    )
     op.execute(
         "CREATE INDEX standalone_trace_started_desc_idx "
         "ON standalone_trace (started_at DESC);"
@@ -140,6 +148,10 @@ def _pg_upgrade() -> None:
         "ON standalone_trace USING GIN (models);"
     )
 
+    op.execute(
+        "CREATE INDEX standalone_span_otel_trace_id_idx "
+        "ON standalone_span (otel_trace_id);"
+    )
     op.execute(
         "CREATE INDEX standalone_span_started_desc_idx "
         "ON standalone_span (started_at DESC);"
@@ -224,6 +236,14 @@ def _sqlite_upgrade() -> None:
             PRIMARY KEY (started_at, otel_span_id)
         );
         """
+    )
+    op.execute(
+        "CREATE INDEX standalone_trace_otel_trace_id_idx "
+        "ON standalone_trace (otel_trace_id);"
+    )
+    op.execute(
+        "CREATE INDEX standalone_span_otel_trace_id_idx "
+        "ON standalone_span (otel_trace_id);"
     )
     op.execute(
         "CREATE INDEX standalone_trace_started_idx "

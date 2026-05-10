@@ -98,7 +98,7 @@ Structural changes the running engine cannot pick up (e.g. agent.type switch) co
 
 Standalone owns the default local trace store. The pipeline is on by default; spans flow:
 
-```
+```text
 Engine TracerProvider (LangChain/ADK/MCP/Guardrails instrumentors)
         │
         ▼  (BatchSpanProcessor, max_queue_size=8192, batch=512, schedule=2s)

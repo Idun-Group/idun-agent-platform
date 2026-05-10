@@ -141,10 +141,15 @@ function StatusCell({ status }: { status: string | null }) {
   return <span className={tone}>{status}</span>;
 }
 
+type TracePageBucket = {
+  cursor: string | null;
+  items: StandaloneTraceListItem[];
+};
+
 export default function TracesPage() {
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [searchInput, setSearchInput] = useState("");
-  const [pages, setPages] = useState<StandaloneTraceListItem[][]>([]);
+  const [pages, setPages] = useState<TracePageBucket[]>([]);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [visibleColumns, setVisibleColumns] = useState<
     Record<ToggleableKey, boolean>
@@ -157,25 +162,36 @@ export default function TracesPage() {
     queryFn: () => listTraces({ ...apiFilters, cursor }),
   });
 
-  // Reset accumulator + cursor whenever the filter shape changes.
-  useEffect(() => {
-    setPages([]);
+  // Filter mutations have to flush ``cursor`` and ``pages`` in the same
+  // React batch as the filter change. Splitting the resets into a
+  // ``useEffect([apiFilters])`` left a one-render window where the query
+  // would fire with new filters + the old cursor, returning a stale page
+  // that then accumulated into the new filter view.
+  const updateFilters = (next: (prev: FilterState) => FilterState) => {
     setCursor(undefined);
-  }, [apiFilters]);
+    setPages([]);
+    setFilters(next);
+  };
 
-  // Merge the latest page into the accumulator.
+  // Merge the latest page into the accumulator, keyed by the cursor that
+  // produced it. Identity-based dedup (the previous heuristic) misses
+  // refetches that return a fresh array with the same content, which
+  // would silently duplicate rows.
   useEffect(() => {
     if (!data) return;
+    const pageCursor = cursor ?? null;
     setPages((prev) => {
-      // Avoid duplicate appends if React Query re-renders with the
-      // same data reference: only push when the last page identity
-      // doesn't match the response.
-      if (prev.length > 0 && prev[prev.length - 1] === data.items) return prev;
-      return [...prev, data.items];
+      const idx = prev.findIndex((bucket) => bucket.cursor === pageCursor);
+      if (idx >= 0) {
+        const replaced = prev.slice();
+        replaced[idx] = { cursor: pageCursor, items: data.items };
+        return replaced;
+      }
+      return [...prev, { cursor: pageCursor, items: data.items }];
     });
-  }, [data]);
+  }, [data, cursor]);
 
-  const items = useMemo(() => pages.flat(), [pages]);
+  const items = useMemo(() => pages.flatMap((bucket) => bucket.items), [pages]);
 
   // Build the model dropdown from the loaded set so the user picks
   // from observed values. (No dedicated "list models" endpoint yet.)
@@ -186,11 +202,11 @@ export default function TracesPage() {
   }, [items]);
 
   const onApplySearch = () => {
-    setFilters((prev) => ({ ...prev, nameContains: searchInput.trim() }));
+    updateFilters((prev) => ({ ...prev, nameContains: searchInput.trim() }));
   };
 
   const onResetFilters = () => {
-    setFilters(EMPTY_FILTERS);
+    updateFilters(() => EMPTY_FILTERS);
     setSearchInput("");
   };
 
@@ -256,7 +272,7 @@ export default function TracesPage() {
           <Select
             value={filters.model || ANY_VALUE}
             onValueChange={(v) =>
-              setFilters((prev) => ({ ...prev, model: v === ANY_VALUE ? "" : v }))
+              updateFilters((prev) => ({ ...prev, model: v === ANY_VALUE ? "" : v }))
             }
           >
             <SelectTrigger className="w-44">
@@ -286,7 +302,7 @@ export default function TracesPage() {
             placeholder="OK / ERROR"
             className="w-32"
             onChange={(e) =>
-              setFilters((prev) => ({ ...prev, status: e.target.value }))
+              updateFilters((prev) => ({ ...prev, status: e.target.value }))
             }
           />
         </div>
@@ -304,7 +320,7 @@ export default function TracesPage() {
             placeholder="user@host"
             className="w-40"
             onChange={(e) =>
-              setFilters((prev) => ({ ...prev, userId: e.target.value }))
+              updateFilters((prev) => ({ ...prev, userId: e.target.value }))
             }
           />
         </div>
@@ -322,7 +338,7 @@ export default function TracesPage() {
             placeholder="session id"
             className="w-40"
             onChange={(e) =>
-              setFilters((prev) => ({ ...prev, sessionId: e.target.value }))
+              updateFilters((prev) => ({ ...prev, sessionId: e.target.value }))
             }
           />
         </div>

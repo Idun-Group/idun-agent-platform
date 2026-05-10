@@ -255,14 +255,20 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         # trailing-slash variant, so a single route covers both.
         from fastapi.responses import FileResponse
 
+        # Resolve the SPA shell path once at boot — the file layout cannot
+        # change at runtime and the request handler is on the async hot
+        # path, so the per-request ``Path.is_file()`` syscall is wasteful
+        # (ASYNC-001). Falls back to the root ``index.html`` when the
+        # static export is older than the trace-detail route.
         _trace_shell = ui_dir / "admin" / "traces" / "__trace__" / "index.html"
         _spa_root_shell = ui_dir / "index.html"
+        _selected_trace_shell = (
+            _trace_shell if _trace_shell.is_file() else _spa_root_shell
+        )
 
         @app.get("/admin/traces/{trace_id}", include_in_schema=False)
         async def _trace_detail_spa_shell(trace_id: str) -> FileResponse:
-            return FileResponse(
-                _trace_shell if _trace_shell.is_file() else _spa_root_shell
-            )
+            return FileResponse(_selected_trace_shell)
 
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
         logger.info("boot ui mounted from=%s", ui_dir)

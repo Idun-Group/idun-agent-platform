@@ -109,7 +109,7 @@ Postgres unlocks 5–8k spans/sec sustained write (Linux production floor) versu
 | --- | --- | --- |
 | `IDUN_TRACE_RETENTION_DAYS` | `14` | How many days of traces to keep before dropping. On Postgres, expired monthly partitions are detached and dropped. On SQLite, a scheduled `DELETE` runs. |
 | `IDUN_TRACES_INPUT_VALUE_MAX_BYTES` | `65536` | Per-attribute byte cap before truncation. Lower this on heavy-payload deployments to recover throughput, or raise it to keep more raw input/output. |
-| `IDUN_PRICES_REFRESH` | `false` | When `true`, the cost calculator fetches the LiteLLM model-prices snapshot at boot (5 second timeout, snapshot fallback). Default uses the vendored monthly snapshot. |
+| `IDUN_PRICES_REFRESH` | `false` | When `true`, the cost calculator fetches the LiteLLM model-prices snapshot at boot (5-second timeout, snapshot fallback). Default uses the vendored monthly snapshot. |
 
 <Note>
   The original `docker-compose` and Manager UI quickstart paths were retired in v0.6. If you're upgrading from a pre-v0.6 install, file a [GitHub issue](https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=docs%2Cmigration) and we'll publish a migration note.
