@@ -33,6 +33,32 @@ def _span_id(byte_value: int) -> bytes:
     return bytes([byte_value]) * 8
 
 
+class _StubSessionmaker:
+    """Sessionmaker that yields the provided async session without lifecycle.
+
+    Mirrors the pattern from ``test_auth_gate.py`` so the trace tests
+    can plug a single ``async_session`` fixture into ``app.state``
+    without spinning up a fresh engine per request.
+    """
+
+    def __init__(self, session) -> None:
+        self._session = session
+
+    def __call__(self):
+        return _StubSessionCtx(self._session)
+
+
+class _StubSessionCtx:
+    def __init__(self, session) -> None:
+        self._session = session
+
+    async def __aenter__(self):
+        return self._session
+
+    async def __aexit__(self, *_a):
+        return None
+
+
 @pytest.fixture
 async def admin_app(async_session):
     """Bare FastAPI app with the trace router mounted under
@@ -43,19 +69,7 @@ async def admin_app(async_session):
     app = FastAPI()
     register_admin_exception_handlers(app)
     app.state.settings = StandaloneSettings(auth_mode=AuthMode.NONE)
-
-    class _Sm:
-        def __call__(self):
-            return _Ctx()
-
-    class _Ctx:
-        async def __aenter__(self):
-            return async_session
-
-        async def __aexit__(self, *_a):
-            return None
-
-    app.state.sessionmaker = _Sm()
+    app.state.sessionmaker = _StubSessionmaker(async_session)
     app.include_router(traces_router)
 
     async def override_session():
@@ -63,6 +77,34 @@ async def admin_app(async_session):
 
     app.dependency_overrides[get_session] = override_session
     return app
+
+
+@pytest.fixture
+async def client_password_mode_no_session(async_session):
+    """Client wired against an app in PASSWORD auth mode with no cookie.
+
+    Mirrors ``test_auth_gate.py``'s setup: ``require_auth`` runs
+    against a real settings object so the gate exercises the cookie
+    path. Tests using this fixture should expect every gated route to
+    return 401 since the client never sets ``idun_session``.
+    """
+    app = FastAPI()
+    register_admin_exception_handlers(app)
+    app.state.settings = StandaloneSettings(
+        auth_mode=AuthMode.PASSWORD,
+        session_secret="x" * 64,
+    )
+    app.state.sessionmaker = _StubSessionmaker(async_session)
+    app.include_router(traces_router)
+
+    async def override_session():
+        yield async_session
+
+    app.dependency_overrides[get_session] = override_session
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
 
 
 async def _seed_trace(
@@ -435,3 +477,24 @@ async def test_bulk_delete_with_model_filter(admin_app, async_session) -> None:
     ).scalars().all()
     assert len(remaining_traces) == 1
     assert remaining_traces[0].otel_trace_id == keep_id
+
+
+async def test_traces_routes_require_auth_when_password_mode(
+    client_password_mode_no_session,
+) -> None:
+    """All five trace routes return 401 in PASSWORD mode without a cookie.
+
+    Regression test for the admin auth gate. The router declares
+    ``Depends(require_auth)`` at the router level, so every route — list,
+    health, detail, single delete, and bulk delete — must be intercepted
+    before the handler runs.
+    """
+    for method, path in [
+        ("GET", "/admin/api/v1/traces"),
+        ("GET", "/admin/api/v1/traces/_health"),
+        ("GET", "/admin/api/v1/traces/0123456789abcdef0123456789abcdef"),
+        ("DELETE", "/admin/api/v1/traces/0123456789abcdef0123456789abcdef"),
+        ("DELETE", "/admin/api/v1/traces"),
+    ]:
+        response = await client_password_mode_no_session.request(method, path)
+        assert response.status_code == 401, f"{method} {path} should require auth"
