@@ -328,7 +328,7 @@ def _decode_trace_id_path(otel_trace_id: str) -> bytes:
     return decoded
 
 
-def _maybe_decode_json(value: Any) -> Any:
+def _maybe_decode_json(value: Any, *, column: str) -> Any:
     """Decode a JSON column from raw text when SQLAlchemy didn't.
 
     The recursive-CTE read path uses raw ``text(...)`` SQL, which
@@ -342,6 +342,9 @@ def _maybe_decode_json(value: Any) -> Any:
     Returns ``None`` instead of a stringly-typed value when decode
     fails — the wire model declares ``dict | None`` / ``list[dict] |
     None`` and a malformed payload should not 500 the whole route.
+    Decode failures are logged at WARNING (per ERR-003 / LOG-001) so
+    a silently-corrupt span row leaves an operator-discoverable trail
+    instead of just rendering an empty Attributes / Events tab.
     """
     if isinstance(value, (bytes, bytearray)):
         value = value.decode("utf-8")
@@ -349,6 +352,11 @@ def _maybe_decode_json(value: Any) -> Any:
         try:
             return json.loads(value)
         except json.JSONDecodeError:
+            logger.warning(
+                "admin.traces span_json_decode_failed column=%s payload_len=%d",
+                column,
+                len(value),
+            )
             return None
     return value
 
@@ -380,11 +388,13 @@ def _row_mapping_to_span_read(mapping: Any) -> StandaloneSpanRead:
         cost_usd=(
             float(mapping["cost_usd"]) if mapping["cost_usd"] is not None else None
         ),
-        cost_breakdown=_maybe_decode_json(mapping["cost_breakdown"]),
+        cost_breakdown=_maybe_decode_json(
+            mapping["cost_breakdown"], column="cost_breakdown"
+        ),
         cost_source=mapping["cost_source"],
         status=mapping["status"],
-        attributes=_maybe_decode_json(mapping["attributes"]),
-        events=_maybe_decode_json(mapping["events"]),
+        attributes=_maybe_decode_json(mapping["attributes"], column="attributes"),
+        events=_maybe_decode_json(mapping["events"], column="events"),
     )
 
 

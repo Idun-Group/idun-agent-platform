@@ -275,6 +275,11 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         # legacy ``__trace__`` fallback exists so the boot harness
         # (``e2e/boot-standalone.sh``) and direct ``pnpm build``
         # workflows keep working until they run through the rename.
+        # TODO(#608): drop the ``__trace__`` legacy fallback once every
+        # active install has rebuilt with the renamed Make target. Track
+        # at one release cycle past v0.6 — the fallback exists only so
+        # ``e2e/boot-standalone.sh`` and direct ``pnpm build`` workflows
+        # keep booting without running through ``make build-standalone-ui``.
         _trace_shell_renamed = ui_dir / "admin" / "traces" / "_shell" / "index.html"
         _trace_shell_legacy = ui_dir / "admin" / "traces" / "__trace__" / "index.html"
         _spa_root_shell = ui_dir / "index.html"

@@ -55,6 +55,7 @@ build-standalone-ui:
 	# artefact escapes) and an operator-confusion source. The dynamic
 	# SPA-rewrite route in ``app.py`` reads from ``_shell/index.html``.
 	if [ -d services/idun_agent_standalone_ui/out/admin/traces/__trace__ ]; then \
+		rm -rf services/idun_agent_standalone_ui/out/admin/traces/_shell ; \
 		mv services/idun_agent_standalone_ui/out/admin/traces/__trace__ \
 			services/idun_agent_standalone_ui/out/admin/traces/_shell ; \
 	fi
