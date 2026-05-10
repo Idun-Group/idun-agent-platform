@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { BookOpen, GitPullRequest, Search } from 'lucide-react';
+import { BookOpen, Search } from 'lucide-react';
 import { fetchIntegrations, deleteIntegration } from '../../services/integrations';
 import type { ManagedIntegration } from '../../services/integrations';
 import CreateIntegrationModal from '../../components/applications/create-integration-modal/component';
 import DeleteConfirmModal from '../../components/applications/delete-confirm-modal/component';
 import type { IntegrationProvider } from '../../services/integrations';
 import { useTranslation } from 'react-i18next';
+import { CapabilityCatalog, CapabilityItem } from '../../components/capability-catalog';
 
 // ── Provider metadata ────────────────────────────────────────────────────────
 
@@ -20,7 +21,7 @@ const PROVIDERS: Record<string, ProviderMeta> = {
     WHATSAPP: { label: 'WhatsApp', color: '#25D366' },
     DISCORD: { label: 'Discord', color: '#5865F2' },
     SLACK: { label: 'Slack', color: '#E01E5A' },
-    TEAMS: { label: 'Microsoft Teams', color: '#5059C9', comingSoon: true },
+    TEAMS: { label: 'Microsoft Teams', color: '#5059C9' },
     TELEGRAM: { label: 'Telegram', color: '#26A5E4', comingSoon: true },
     LINE: { label: 'LINE', color: '#06C755', comingSoon: true },
     NOTION: { label: 'Notion', color: '#FFFFFF', comingSoon: true },
@@ -85,8 +86,6 @@ const PROVIDER_ICONS: Record<string, React.FC> = {
     NOTION: NotionIcon,
     GOOGLE_CHAT: GoogleChatIcon,
 };
-
-const PROVIDER_GROUPS = ['Messaging', 'Coming Soon'];
 
 // ── Animations ────────────────────────────────────────────────────────────────
 
@@ -180,60 +179,51 @@ const SearchInput = styled.input`
     &::placeholder { color: hsl(var(--muted-foreground)); }
 `;
 
-// ── Two-column layout ─────────────────────────────────────────────────────────
+// ── Configured section ────────────────────────────────────────────────────────
 
-const MainLayout = styled.div`
+const ConfiguredSection = styled.section`
     display: flex;
-    flex: 1;
-    min-height: 0;
-    gap: 0;
+    flex-direction: column;
+    gap: 14px;
 `;
 
-// ── Left column: provider picker ──────────────────────────────────────────────
-
-const ProviderColumn = styled.div`
-    width: 260px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--border-subtle);
-    padding-right: 24px;
-    overflow-y: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-`;
-
-const GroupLabel = styled.p`
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: hsl(var(--text-tertiary));
-    margin: 20px 0 8px 10px;
-
-    &:first-child { margin-top: 0; }
-`;
-
-const ProviderBtn = styled.button<{ $disabled?: boolean }>`
+const ConfiguredHeader = styled.div`
     display: flex;
     align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--text-secondary))'};
-    font-size: 13px;
-    font-weight: 400;
-    cursor: ${p => p.$disabled ? 'default' : 'pointer'};
-    opacity: ${p => p.$disabled ? 0.5 : 1};
-    transition: all 0.15s ease;
-    text-align: left;
-    margin-bottom: 2px;
+    justify-content: space-between;
+    gap: 12px;
+`;
 
-    &:hover {
-        background: ${p => p.$disabled ? 'transparent' : 'var(--overlay-light)'};
-        color: ${p => p.$disabled ? 'hsl(var(--muted-foreground))' : 'hsl(var(--foreground))'};
-    }
+const Label = styled.div`
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: hsl(var(--muted-foreground));
+`;
+
+const PrimaryButton = styled.button`
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    &:hover { opacity: 0.9; }
+`;
+
+const EmptyHint = styled.div`
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
+    padding: 20px 0;
+`;
+
+const SectionDivider = styled.hr`
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+    margin: 4px 0;
 `;
 
 const ProviderIconBox = styled.div<{ $color: string }>`
@@ -246,136 +236,6 @@ const ProviderIconBox = styled.div<{ $color: string }>`
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-`;
-
-const ProviderIconBoxSmall = styled.div<{ $color: string }>`
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    background: ${p => `${p.$color}15`};
-    color: ${p => p.$color};
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-
-    svg {
-        width: 15px;
-        height: 15px;
-    }
-`;
-
-const AddIndicator = styled.span`
-    margin-left: auto;
-    font-size: 16px;
-    color: hsl(var(--muted-foreground));
-    flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.15s;
-
-    ${ProviderBtn}:hover & {
-        opacity: 1;
-    }
-`;
-
-const ComingSoonBadge = styled.span`
-    font-size: 9px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 2px 5px;
-    border-radius: 4px;
-    background: var(--overlay-light);
-    color: hsl(var(--muted-foreground));
-    margin-left: auto;
-    flex-shrink: 0;
-`;
-
-const RequestBtn = styled.button`
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px dashed var(--border-light);
-    background: transparent;
-    color: hsl(var(--muted-foreground));
-    font-size: 13px;
-    font-weight: 400;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-align: left;
-    margin-top: 16px;
-
-    &:hover {
-        border-color: hsl(var(--primary) / 0.4);
-        color: hsl(var(--foreground));
-        background: hsl(var(--primary) / 0.04);
-    }
-`;
-
-const RequestIcon = styled.span`
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: hsl(var(--primary));
-`;
-
-// ── Right column: configs + empty state ───────────────────────────────────────
-
-const ContentColumn = styled.div`
-    flex: 1;
-    padding-left: 28px;
-    overflow-y: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-`;
-
-const EmptyState = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 60px 20px;
-    gap: 16px;
-`;
-
-const EmptyTitle = styled.h3`
-    font-size: 16px;
-    font-weight: 600;
-    color: hsl(var(--foreground));
-    margin: 0;
-`;
-
-const EmptyDescription = styled.p`
-    font-size: 13px;
-    line-height: 1.7;
-    color: hsl(var(--text-secondary));
-    margin: 0;
-    max-width: 420px;
-`;
-
-const EmptyChips = styled.div`
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-`;
-
-const Chip = styled.span<{ $color: string }>`
-    padding: 4px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    border-radius: 6px;
-    background: ${p => `${p.$color}14`};
-    color: ${p => p.$color};
-    border: 1px solid ${p => `${p.$color}20`};
-    letter-spacing: 0.02em;
 `;
 
 // ── Config cards ──────────────────────────────────────────────────────────────
@@ -576,8 +436,21 @@ const IntegrationsPage: React.FC = () => {
         loadConfigs();
     };
 
-    const availableProviders = Object.entries(PROVIDERS).filter(([, meta]) => !meta.comingSoon);
-    const comingSoonProviders = Object.entries(PROVIDERS).filter(([, meta]) => meta.comingSoon);
+    const catalogItems: CapabilityItem[] = useMemo(
+        () =>
+            Object.entries(PROVIDERS).map(([id, meta]) => {
+                const Icon = PROVIDER_ICONS[id];
+                const descriptionKey = `admin.integrations.provider.${id.toLowerCase()}`;
+                return {
+                    id,
+                    label: meta.label,
+                    description: t(descriptionKey, ''),
+                    icon: <Icon />,
+                    comingSoon: meta.comingSoon ?? false,
+                };
+            }),
+        [t],
+    );
 
     return (
         <PageWrapper>
@@ -597,181 +470,145 @@ const IntegrationsPage: React.FC = () => {
                 </HeaderActions>
             </PageHeader>
 
-            <MainLayout>
-                {/* ── Left: Provider picker ──────────────────────── */}
-                <ProviderColumn>
-                    {PROVIDER_GROUPS.map(group => {
-                        const providers = group === 'Messaging' ? availableProviders : comingSoonProviders;
-                        if (providers.length === 0) return null;
-                        return (
-                            <React.Fragment key={group}>
-                                <GroupLabel>{group}</GroupLabel>
-                                {providers.map(([key, meta]) => {
-                                    const Icon = PROVIDER_ICONS[key];
-                                    const isDisabled = !!meta.comingSoon;
-                                    return (
-                                        <ProviderBtn
-                                            key={key}
-                                            type="button"
-                                            $disabled={isDisabled}
-                                            onClick={() => { if (!isDisabled) openCreate(key as IntegrationProvider); }}
-                                        >
-                                            <ProviderIconBoxSmall $color={meta.color}>
+            <CapabilityCatalog
+                items={catalogItems}
+                label={t('admin.integrations.available_label', 'AVAILABLE CHANNELS')}
+                onSelect={id => openCreate(id as IntegrationProvider)}
+            />
+
+            <SectionDivider />
+
+            <ConfiguredSection>
+                <ConfiguredHeader>
+                    <Label>{t('admin.integrations.configured_label', 'YOUR INTEGRATIONS')}</Label>
+                    <PrimaryButton onClick={() => openCreate('WHATSAPP')}>
+                        + {t('admin.integrations.new_button', 'New integration')}
+                    </PrimaryButton>
+                </ConfiguredHeader>
+                {isLoading ? (
+                    <CenterBox>
+                        <LoadingSpinner />
+                        <p>{t('integrations.loading', 'Loading integrations...')}</p>
+                    </CenterBox>
+                ) : configs.length === 0 ? (
+                    <EmptyHint>
+                        {t('admin.integrations.empty_state', 'No integrations yet — pick a channel above to get started.')}
+                    </EmptyHint>
+                ) : (
+                    <CardsGrid>
+                        {configs.filter(c => {
+                            if (!searchTerm) return true;
+                            const term = searchTerm.toLowerCase();
+                            const providerLabel = PROVIDERS[c.integration.provider]?.label ?? c.integration.provider;
+                            return (c.name?.toLowerCase().includes(term) || providerLabel.toLowerCase().includes(term));
+                        }).map(config => {
+                            const provider = config.integration.provider;
+                            const meta = PROVIDERS[provider] ?? { label: provider, color: 'hsl(var(--primary))' };
+                            const Icon = PROVIDER_ICONS[provider];
+
+                            return (
+                                <Card key={config.id} $borderColor={meta.color}>
+                                    <CardHeader>
+                                        <ProviderInfo>
+                                            <ProviderIconBox $color={meta.color}>
                                                 {Icon ? <Icon /> : <span>+</span>}
-                                            </ProviderIconBoxSmall>
-                                            {meta.label}
-                                            {isDisabled ? <ComingSoonBadge>Soon</ComingSoonBadge> : <AddIndicator>+</AddIndicator>}
-                                        </ProviderBtn>
-                                    );
-                                })}
-                            </React.Fragment>
-                        );
-                    })}
+                                            </ProviderIconBox>
+                                            <ProviderName>
+                                                <ProviderTitle>{config.name}</ProviderTitle>
+                                                <ProviderType>{meta.label}</ProviderType>
+                                            </ProviderName>
+                                        </ProviderInfo>
+                                        <StatusBadge $active={config.integration.enabled}>
+                                            {config.integration.enabled ? 'Active' : 'Disabled'}
+                                        </StatusBadge>
+                                    </CardHeader>
 
-                    <RequestBtn
-                        type="button"
-                        onClick={() => window.open('https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=enhancement&template=feature_request.md&title=%5BIntegrations%5D+New+integration+request', '_blank')}
-                    >
-                        <RequestIcon><GitPullRequest size={15} /></RequestIcon>
-                        Request an integration
-                    </RequestBtn>
-                </ProviderColumn>
-
-                {/* ── Right: Configured integrations ────────────────── */}
-                <ContentColumn>
-                    {isLoading ? (
-                        <CenterBox>
-                            <LoadingSpinner />
-                            <p>{t('integrations.loading', 'Loading integrations...')}</p>
-                        </CenterBox>
-                    ) : configs.length === 0 ? (
-                        <EmptyState>
-                            <EmptyTitle>{t('integrations.emptyTitle', 'Connect a messaging platform to get started')}</EmptyTitle>
-                            <EmptyDescription>
-                                {t('integrations.emptyDescription', 'Bridge your AI agents to messaging platforms. Idun handles webhooks, message routing, and bidirectional communication so your agents can interact with users on any channel.')}
-                            </EmptyDescription>
-                            <EmptyChips>
-                                {availableProviders.map(([key, meta]) => (
-                                    <Chip key={key} $color={meta.color}>{meta.label}</Chip>
-                                ))}
-                            </EmptyChips>
-                        </EmptyState>
-                    ) : (
-                        <CardsGrid>
-                            {configs.filter(c => {
-                                if (!searchTerm) return true;
-                                const term = searchTerm.toLowerCase();
-                                const providerLabel = PROVIDERS[c.integration.provider]?.label ?? c.integration.provider;
-                                return (c.name?.toLowerCase().includes(term) || providerLabel.toLowerCase().includes(term));
-                            }).map(config => {
-                                const provider = config.integration.provider;
-                                const meta = PROVIDERS[provider] ?? { label: provider, color: 'hsl(var(--primary))' };
-                                const Icon = PROVIDER_ICONS[provider];
-
-                                return (
-                                    <Card key={config.id} $borderColor={meta.color}>
-                                        <CardHeader>
-                                            <ProviderInfo>
-                                                <ProviderIconBox $color={meta.color}>
-                                                    {Icon ? <Icon /> : <span>+</span>}
-                                                </ProviderIconBox>
-                                                <ProviderName>
-                                                    <ProviderTitle>{config.name}</ProviderTitle>
-                                                    <ProviderType>{meta.label}</ProviderType>
-                                                </ProviderName>
-                                            </ProviderInfo>
-                                            <StatusBadge $active={config.integration.enabled}>
-                                                {config.integration.enabled ? 'Active' : 'Disabled'}
-                                            </StatusBadge>
-                                        </CardHeader>
-
-                                        <Divider />
-                                        <ConfigList>
-                                            {provider === 'WHATSAPP' && 'phone_number_id' in config.integration.config && (
-                                                <>
-                                                    <ConfigRow>
-                                                        <ConfigKey>Phone Number ID</ConfigKey>
-                                                        <ConfigValue>{config.integration.config.phone_number_id}</ConfigValue>
-                                                    </ConfigRow>
-                                                    <ConfigRow>
-                                                        <ConfigKey>Access Token</ConfigKey>
-                                                        <ConfigValue title={config.integration.config.access_token}>
-                                                            {maskToken(config.integration.config.access_token)}
-                                                        </ConfigValue>
-                                                    </ConfigRow>
-                                                    <ConfigRow>
-                                                        <ConfigKey>API Version</ConfigKey>
-                                                        <ConfigValue>{config.integration.config.api_version ?? 'v21.0'}</ConfigValue>
-                                                    </ConfigRow>
-                                                </>
-                                            )}
-                                            {provider === 'DISCORD' && 'application_id' in config.integration.config && (
-                                                <>
-                                                    <ConfigRow>
-                                                        <ConfigKey>Application ID</ConfigKey>
-                                                        <ConfigValue>{config.integration.config.application_id}</ConfigValue>
-                                                    </ConfigRow>
-                                                    <ConfigRow>
-                                                        <ConfigKey>Bot Token</ConfigKey>
-                                                        <ConfigValue title={config.integration.config.bot_token}>
-                                                            {maskToken(config.integration.config.bot_token)}
-                                                        </ConfigValue>
-                                                    </ConfigRow>
-                                                    <ConfigRow>
-                                                        <ConfigKey>Guild ID</ConfigKey>
-                                                        <ConfigValue>{config.integration.config.guild_id ?? 'All servers'}</ConfigValue>
-                                                    </ConfigRow>
-                                                </>
-                                            )}
-                                            {provider === 'SLACK' && 'signing_secret' in config.integration.config && (
-                                                <>
-                                                    <ConfigRow>
-                                                        <ConfigKey>Bot Token</ConfigKey>
-                                                        <ConfigValue title={config.integration.config.bot_token}>
-                                                            {maskToken(config.integration.config.bot_token)}
-                                                        </ConfigValue>
-                                                    </ConfigRow>
-                                                    <ConfigRow>
-                                                        <ConfigKey>Signing Secret</ConfigKey>
-                                                        <ConfigValue title={config.integration.config.signing_secret}>
-                                                            {maskToken(config.integration.config.signing_secret)}
-                                                        </ConfigValue>
-                                                    </ConfigRow>
-                                                </>
-                                            )}
-                                            {provider === 'GOOGLE_CHAT' && 'project_number' in config.integration.config && (
-                                                <>
-                                                    <ConfigRow>
-                                                        <ConfigKey>Project Number</ConfigKey>
-                                                        <ConfigValue>{config.integration.config.project_number}</ConfigValue>
-                                                    </ConfigRow>
-                                                    <ConfigRow>
-                                                        <ConfigKey>Credentials</ConfigKey>
-                                                        <ConfigValue>
-                                                            {maskToken(config.integration.config.service_account_credentials_json)}
-                                                        </ConfigValue>
-                                                    </ConfigRow>
-                                                </>
-                                            )}
-                                        </ConfigList>
-
-                                        {(config.agentCount ?? 0) > 0 && (
-                                            <AgentCountBadge>
-                                                Used by {config.agentCount} agent{config.agentCount !== 1 ? 's' : ''}
-                                            </AgentCountBadge>
+                                    <Divider />
+                                    <ConfigList>
+                                        {provider === 'WHATSAPP' && 'phone_number_id' in config.integration.config && (
+                                            <>
+                                                <ConfigRow>
+                                                    <ConfigKey>Phone Number ID</ConfigKey>
+                                                    <ConfigValue>{config.integration.config.phone_number_id}</ConfigValue>
+                                                </ConfigRow>
+                                                <ConfigRow>
+                                                    <ConfigKey>Access Token</ConfigKey>
+                                                    <ConfigValue title={config.integration.config.access_token}>
+                                                        {maskToken(config.integration.config.access_token)}
+                                                    </ConfigValue>
+                                                </ConfigRow>
+                                                <ConfigRow>
+                                                    <ConfigKey>API Version</ConfigKey>
+                                                    <ConfigValue>{config.integration.config.api_version ?? 'v21.0'}</ConfigValue>
+                                                </ConfigRow>
+                                            </>
                                         )}
+                                        {provider === 'DISCORD' && 'application_id' in config.integration.config && (
+                                            <>
+                                                <ConfigRow>
+                                                    <ConfigKey>Application ID</ConfigKey>
+                                                    <ConfigValue>{config.integration.config.application_id}</ConfigValue>
+                                                </ConfigRow>
+                                                <ConfigRow>
+                                                    <ConfigKey>Bot Token</ConfigKey>
+                                                    <ConfigValue title={config.integration.config.bot_token}>
+                                                        {maskToken(config.integration.config.bot_token)}
+                                                    </ConfigValue>
+                                                </ConfigRow>
+                                                <ConfigRow>
+                                                    <ConfigKey>Guild ID</ConfigKey>
+                                                    <ConfigValue>{config.integration.config.guild_id ?? 'All servers'}</ConfigValue>
+                                                </ConfigRow>
+                                            </>
+                                        )}
+                                        {provider === 'SLACK' && 'signing_secret' in config.integration.config && (
+                                            <>
+                                                <ConfigRow>
+                                                    <ConfigKey>Bot Token</ConfigKey>
+                                                    <ConfigValue title={config.integration.config.bot_token}>
+                                                        {maskToken(config.integration.config.bot_token)}
+                                                    </ConfigValue>
+                                                </ConfigRow>
+                                                <ConfigRow>
+                                                    <ConfigKey>Signing Secret</ConfigKey>
+                                                    <ConfigValue title={config.integration.config.signing_secret}>
+                                                        {maskToken(config.integration.config.signing_secret)}
+                                                    </ConfigValue>
+                                                </ConfigRow>
+                                            </>
+                                        )}
+                                        {provider === 'GOOGLE_CHAT' && 'project_number' in config.integration.config && (
+                                            <>
+                                                <ConfigRow>
+                                                    <ConfigKey>Project Number</ConfigKey>
+                                                    <ConfigValue>{config.integration.config.project_number}</ConfigValue>
+                                                </ConfigRow>
+                                                <ConfigRow>
+                                                    <ConfigKey>Credentials</ConfigKey>
+                                                    <ConfigValue>
+                                                        {maskToken(config.integration.config.service_account_credentials_json)}
+                                                    </ConfigValue>
+                                                </ConfigRow>
+                                            </>
+                                        )}
+                                    </ConfigList>
 
-                                        <CardActions>
-                                            <EditBtn onClick={() => openEdit(config)}>Edit</EditBtn>
-                                            <DeleteBtn onClick={() => setConfigToDelete(config)}>Remove</DeleteBtn>
-                                        </CardActions>
-                                    </Card>
-                                );
-                            })}
-                        </CardsGrid>
-                    )}
-                </ContentColumn>
-            </MainLayout>
+                                    {(config.agentCount ?? 0) > 0 && (
+                                        <AgentCountBadge>
+                                            Used by {config.agentCount} agent{config.agentCount !== 1 ? 's' : ''}
+                                        </AgentCountBadge>
+                                    )}
+
+                                    <CardActions>
+                                        <EditBtn onClick={() => openEdit(config)}>Edit</EditBtn>
+                                        <DeleteBtn onClick={() => setConfigToDelete(config)}>Remove</DeleteBtn>
+                                    </CardActions>
+                                </Card>
+                            );
+                        })}
+                    </CardsGrid>
+                )}
+            </ConfiguredSection>
 
             <CreateIntegrationModal
                 isOpen={isModalOpen}
